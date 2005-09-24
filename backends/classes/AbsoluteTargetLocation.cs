@@ -10,20 +10,20 @@ namespace Mono.Debugger.Languages
 		TargetAddress address;
 
 		public AbsoluteTargetLocation (StackFrame frame, TargetAddress address)
-			: base (frame, false)
+			: base (frame)
 		{
 			this.address = address;
 		}
 
 		public AbsoluteTargetLocation (StackFrame frame, ITargetAccess target,
 					       TargetAddress address)
-			: base (frame, target, false)
+			: base (frame, target)
 		{
 			this.address = address;
 		}
 
 		public AbsoluteTargetLocation (ITargetAccess target, TargetAddress address)
-			: base (null, target, false)
+			: base (null, target)
 		{
 			this.address = address;
 		}

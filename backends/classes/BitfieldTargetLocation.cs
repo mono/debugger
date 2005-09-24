@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages
 		int bit_offset, bit_size;
 
 		public BitfieldTargetLocation (TargetLocation relative_to, int offset, int size)
-			: base (relative_to.StackFrame, false)
+			: base (null, relative_to.TargetAccess)
 		{
 			this.relative_to = relative_to;
 			this.bit_offset = offset;

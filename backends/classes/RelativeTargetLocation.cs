@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages
 		long offset;
 
 		public RelativeTargetLocation (TargetLocation relative_to, long offset)
-			: base (relative_to.StackFrame, relative_to.TargetAccess, false)
+			: base (relative_to.StackFrame, relative_to.TargetAccess)
 		{
 			this.relative_to = relative_to;
 			this.offset = offset;

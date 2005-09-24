@@ -9,6 +9,7 @@ namespace Mono.Debugger.Languages
 	[Serializable]
 	internal sealed class MonoVariableLocation : TargetLocation
 	{
+		bool is_byref;
 		bool is_regoffset;
 		int register;
 		long regoffset;
@@ -17,11 +18,12 @@ namespace Mono.Debugger.Languages
 
 		public MonoVariableLocation (StackFrame frame, bool is_regoffset, int register,
 					     long regoffset, bool is_byref)
-			: base (frame, is_byref)
+			: base (frame)
 		{
 			this.is_regoffset = is_regoffset;
 			this.register = register;
 			this.regoffset = regoffset;
+			this.is_byref = is_byref;
 
 			update ();
 		}
@@ -48,7 +50,7 @@ namespace Mono.Debugger.Languages
 		}
 
 		public override bool HasAddress {
-			get { return is_regoffset || IsByRef; }
+			get { return is_regoffset || is_byref; }
 		}
 
 		protected override TargetAddress GetAddress ()

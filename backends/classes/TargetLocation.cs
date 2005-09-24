@@ -11,15 +11,13 @@ namespace Mono.Debugger.Languages
 	{
 		protected ITargetAccess target;
 		protected StackFrame frame;
-		protected bool is_byref;
 
-		protected TargetLocation (StackFrame frame, bool is_byref)
-			: this (frame, frame.TargetAccess, is_byref)
+		protected TargetLocation (StackFrame frame)
+			: this (frame, frame.TargetAccess)
 		{ }
 
-		protected TargetLocation (StackFrame frame, ITargetAccess target, bool is_byref)
+		protected TargetLocation (StackFrame frame, ITargetAccess target)
 		{
-			this.is_byref = is_byref;
 			this.target = target;
 			this.frame = frame;
 		}
@@ -29,14 +27,6 @@ namespace Mono.Debugger.Languages
 		// </summary>
 		public StackFrame StackFrame {
 			get { return frame; }
-		}
-
-		// <summary>
-		//   If this variable is a reference type.  The actual contents of a
-		//   reference type starts at the dereferenced address plus `Offset'.
-		// </summary>
-		public bool IsByRef {
-			get { return is_byref; }
 		}
 
 		// <summary>
@@ -158,12 +148,12 @@ namespace Mono.Debugger.Languages
 		public override string ToString ()
 		{
 			if (frame != null)
-				return String.Format ("{0} ({1}:{2}:{3})",
-						      GetType (), frame.TargetAddress, is_byref,
+				return String.Format ("{0} ({1}:{2})",
+						      GetType (), frame.TargetAddress,
 						      MyToString ());
 			else
-				return String.Format ("{0} ({1}:{2})",
-						      GetType (), is_byref, MyToString ());
+				return String.Format ("{0} ({1})",
+						      GetType (), MyToString ());
 		}
 	}
 }
