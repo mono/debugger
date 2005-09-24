@@ -18,12 +18,13 @@ namespace Mono.Debugger.Languages
 		}
 
 		public override bool HasAddress {
-			get { return true; }
+			get { return relative_to.HasAddress; }
 		}
 
-		protected override TargetAddress GetAddress ()
-		{
-			return relative_to.Address + offset;
+		public override TargetAddress Address {
+			get {
+				return relative_to.Address + offset;
+			}
 		}
 
 		public override string Print ()

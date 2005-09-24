@@ -28,34 +28,11 @@ namespace Mono.Debugger.Languages
 		//   If the variable has an address (HasAddress must be true), compute the
 		//   address of its actual contents.
 		// </summary>
-		public TargetAddress Address {
-			get {
-				if (!HasAddress)
-					throw new InvalidOperationException ();
-
-				// First get the address of this variable.
-				try {
-					return GetAddress ();
-				} catch (TargetException ex) {
-					return TargetAddress.Null;
-				}
-			}
+		public abstract TargetAddress Address {
+			get;
 		}
 
-		public TargetAddress GlobalAddress {
-			get {
-				TargetAddress address = Address;
-				if (address.IsNull)
-					return TargetAddress.Null;
-
-				return new TargetAddress (
-					TargetMemoryInfo.GlobalAddressDomain, address.Address);
-			}
-		}
-
-		protected abstract TargetAddress GetAddress ();
-
-		public virtual TargetBlob ReadMemory (ITargetAccess target, int size)
+		internal virtual TargetBlob ReadMemory (ITargetAccess target, int size)
 		{
 			return target.TargetMemoryAccess.ReadMemory (Address, size);
 		}
@@ -63,40 +40,40 @@ namespace Mono.Debugger.Languages
 		// <summary>
 		//   Same than ReadMemory(), but returns a byte[] array.
 		// </summary>
-		public byte[] ReadBuffer (ITargetAccess target, int size)
+		internal byte[] ReadBuffer (ITargetAccess target, int size)
 		{
 			return ReadMemory (target, size).Contents;
 		}
 
-		public virtual void WriteBuffer (ITargetAccess target, byte[] data)
+		internal virtual void WriteBuffer (ITargetAccess target, byte[] data)
 		{
 			target.TargetMemoryAccess.WriteBuffer (Address, data);
 		}
 
-		public virtual void WriteAddress (ITargetAccess target, TargetAddress address)
+		internal virtual void WriteAddress (ITargetAccess target, TargetAddress address)
 		{
 			target.TargetMemoryAccess.WriteAddress (Address, address);
 		}
 
-		public ITargetAccess TargetAccess {
+		internal ITargetAccess TargetAccess {
 			get {
 				return target;
 			}
 		}
 
-		public ITargetMemoryAccess TargetMemoryAccess {
+		internal ITargetMemoryAccess TargetMemoryAccess {
 			get {
 				return target.TargetMemoryAccess;
 			}
 		}
 
-		public ITargetInfo TargetInfo {
+		internal ITargetInfo TargetInfo {
 			get {
 				return target.TargetInfo;
 			}
 		}
 
-		public ITargetMemoryInfo TargetMemoryInfo {
+		internal ITargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target.TargetMemoryInfo;
 			}
@@ -111,7 +88,7 @@ namespace Mono.Debugger.Languages
 		//   the variable's contents (for instance to skip a header or access an
 		//   array element).
 		// </summary>
-		public TargetLocation GetLocationAtOffset (long offset)
+		internal TargetLocation GetLocationAtOffset (long offset)
 		{
 			if (offset != 0)
 				return new RelativeTargetLocation (this, offset);
@@ -119,7 +96,7 @@ namespace Mono.Debugger.Languages
 				return this;
 		}
 
-		public TargetLocation GetDereferencedLocation (ITargetAccess target)
+		internal TargetLocation GetDereferencedLocation (ITargetAccess target)
 		{
 			TargetAddress address = target.TargetMemoryAccess.ReadAddress (Address);
 			return new AbsoluteTargetLocation (target, address);
