@@ -56,10 +56,10 @@ namespace Mono.Debugger.Languages
 			return address;
 		}
 
-		public override TargetBlob ReadMemory (int size)
+		public override TargetBlob ReadMemory (ITargetAccess target, int size)
 		{
 			if (HasAddress)
-				return base.ReadMemory (size);
+				return base.ReadMemory (target, size);
 
 			// If this is a valuetype, the register hold the whole data.
 			long contents = address.Address;
@@ -72,22 +72,22 @@ namespace Mono.Debugger.Languages
 			else
 				throw new ArgumentException ();
 
-			return new TargetBlob (buffer, TargetInfo);
+			return new TargetBlob (buffer, target.TargetInfo);
 		}
 
-		public override void WriteBuffer (byte[] data)
+		public override void WriteBuffer (ITargetAccess target, byte[] data)
 		{
 			if (HasAddress) {
-				base.WriteBuffer (data);
+				base.WriteBuffer (target, data);
 				return;
 			}
 
 			long contents;
 
-			if (data.Length > TargetMemoryInfo.TargetIntegerSize)
+			if (data.Length > target.TargetMemoryInfo.TargetIntegerSize)
 				throw new InternalError ();
 
-			if (data.Length < TargetMemoryInfo.TargetIntegerSize) {
+			if (data.Length < target.TargetMemoryInfo.TargetIntegerSize) {
 				switch (data.Length) {
 				case 1: contents = data[0]; break;
 				case 2: contents = BitConverter.ToInt16 (data, 0); break;
@@ -96,9 +96,9 @@ namespace Mono.Debugger.Languages
 				  throw new InternalError ();
 				}
 			}
-			else if (TargetMemoryInfo.TargetIntegerSize == 4)
+			else if (target.TargetMemoryInfo.TargetIntegerSize == 4)
 				contents = BitConverter.ToInt32 (data, 0);
-			else if (TargetMemoryInfo.TargetIntegerSize == 8)
+			else if (target.TargetMemoryInfo.TargetIntegerSize == 8)
 				contents = BitConverter.ToInt64 (data, 0);
 			else
 				throw new InternalError ();

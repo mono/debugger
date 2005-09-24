@@ -37,9 +37,9 @@ namespace Mono.Debugger.Languages
 			return sb.ToString ();
 		}
 
-		public override TargetBlob ReadMemory (int size)
+		public override TargetBlob ReadMemory (ITargetAccess target, int size)
 		{
-			byte[] data = relative_to.ReadBuffer (size);
+			byte[] data = relative_to.ReadBuffer (target, size);
 
 			int total_size = 8 * data.Length;
 			bool[] bit_data = new bool [total_size];
@@ -62,18 +62,18 @@ namespace Mono.Debugger.Languages
 			for (int i = bit_offset; i < bit_offset + bit_size; i++)
 				target_bits [bit_pos++] = bit_data [i];
 
-			byte[] target = new byte [data.Length];
+			byte[] blob = new byte [data.Length];
 			bit_pos = 0;
-			for (int i = 0; i < target.Length; i++) {
+			for (int i = 0; i < blob.Length; i++) {
 				int current = 0;
 				for (int j = 0; j < 8; j++) {
 					if (target_bits [bit_pos++])
 						current |= 1 << j;
 				}
-				target [i] = (byte) current;
+				blob [i] = (byte) current;
 			}
 
-			return new TargetBlob (target, TargetInfo);
+			return new TargetBlob (blob, TargetInfo);
 		}
 
 		public override string Print ()

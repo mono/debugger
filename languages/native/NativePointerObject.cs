@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.Native
 		public byte[] GetDereferencedContents (int size)
 		{
 			try {
-				return location.ReadBuffer (size);
+				return location.ReadBuffer (location.TargetAccess, size);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

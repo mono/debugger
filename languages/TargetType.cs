@@ -63,8 +63,8 @@ namespace Mono.Debugger.Languages
 			if (Size != obj.Type.Size)
 				throw new InvalidOperationException ();
 
-			byte[] contents = obj.Location.ReadBuffer (obj.Type.Size);
-			location.WriteBuffer (contents);
+			byte[] contents = obj.Location.ReadBuffer (target, obj.Type.Size);
+			location.WriteBuffer (target, contents);
 		}
 
 		internal abstract TargetObject GetObject (TargetLocation location);

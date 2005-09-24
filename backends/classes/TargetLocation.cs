@@ -78,22 +78,22 @@ namespace Mono.Debugger.Languages
 
 		protected abstract TargetAddress GetAddress ();
 
-		public virtual TargetBlob ReadMemory (int size)
+		public virtual TargetBlob ReadMemory (ITargetAccess target, int size)
 		{
-			return TargetMemoryAccess.ReadMemory (Address, size);
+			return target.TargetMemoryAccess.ReadMemory (Address, size);
 		}
 
 		// <summary>
 		//   Same than ReadMemory(), but returns a byte[] array.
 		// </summary>
-		public byte[] ReadBuffer (int size)
+		public byte[] ReadBuffer (ITargetAccess target, int size)
 		{
-			return ReadMemory (size).Contents;
+			return ReadMemory (target, size).Contents;
 		}
 
-		public virtual void WriteBuffer (byte[] data)
+		public virtual void WriteBuffer (ITargetAccess target, byte[] data)
 		{
-			TargetMemoryAccess.WriteBuffer (Address, data);
+			target.TargetMemoryAccess.WriteBuffer (Address, data);
 		}
 
 		public virtual void WriteAddress (ITargetAccess target, TargetAddress address)

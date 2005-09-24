@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages
 
 		public virtual object GetObject (ITargetAccess target)
 		{
-			TargetBlob blob = location.ReadMemory (Type.Size);
+			TargetBlob blob = location.ReadMemory (target, Type.Size);
 
 			switch (Type.FundamentalKind) {
 			case FundamentalKind.Boolean:

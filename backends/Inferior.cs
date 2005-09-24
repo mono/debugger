@@ -286,7 +286,8 @@ namespace Mono.Debugger.Backends
 					addresses [i] = obj.Location.Address.Address;
 					continue;
 				}
-				blobs [i] = obj.Location.ReadBuffer (obj.Type.Size);
+				blobs [i] = obj.Location.ReadBuffer (
+					obj.Location.TargetAccess, obj.Type.Size);
 				blob_offsets [i] = blob_size;
 				blob_size += blobs [i].Length;
 			}

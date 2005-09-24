@@ -24,13 +24,13 @@ namespace Mono.Debugger.Languages.Mono
 		public override object GetObject (ITargetAccess target)
 		{
 			TargetLocation dynamic_location;
-			TargetBlob object_blob = location.ReadMemory (type.Size);
+			TargetBlob object_blob = location.ReadMemory (target, type.Size);
 			long size = GetDynamicSize (object_blob, location, out dynamic_location);
 
 			if (size > (long) MonoStringType.MaximumStringLength)
 				size = MonoStringType.MaximumStringLength;
 
-			TargetBlob blob = dynamic_location.ReadMemory ((int) size);
+			TargetBlob blob = dynamic_location.ReadMemory (target, (int) size);
 
 			TargetBinaryReader reader = blob.GetReader ();
 			int length = (int) reader.Size / 2;

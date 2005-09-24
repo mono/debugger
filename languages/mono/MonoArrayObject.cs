@@ -17,7 +17,8 @@ namespace Mono.Debugger.Languages.Mono
 			this.rank = type.Rank;
 
 			try {
-				TargetBinaryReader reader = location.ReadMemory (type.Size).GetReader ();
+				TargetBinaryReader reader = location.ReadMemory (
+					location.TargetAccess, type.Size).GetReader ();
 
 				reader.Position = 3 * reader.TargetInfo.TargetAddressSize;
 				length = reader.ReadInt32 ();
@@ -106,7 +107,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBlob blob;
 			TargetLocation dynamic_location;
 			try {
-				blob = location.ReadMemory (type.Size);
+				blob = location.ReadMemory (target, type.Size);
 				GetDynamicSize (blob, location, out dynamic_location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
@@ -130,7 +131,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBlob blob;
 			TargetLocation dynamic_location;
 			try {
-				blob = location.ReadMemory (type.Size);
+				blob = location.ReadMemory (target, type.Size);
 				GetDynamicSize (blob, location, out dynamic_location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
