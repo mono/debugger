@@ -489,7 +489,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.DebuggerManager.Wait (process);
 		}
 
-		public void RuntimeInvoke (ITargetFunctionType func,
+		public void RuntimeInvoke (TargetFunctionType func,
 					   ITargetObject instance, ITargetObject[] args)
 		{
 			if (process == null)
@@ -505,7 +505,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.DebuggerManager.Wait (process);
 		}
 
-		public ITargetObject RuntimeInvoke (ITargetFunctionType func,
+		public ITargetObject RuntimeInvoke (TargetFunctionType func,
 						    ITargetObject instance, ITargetObject[] args,
 						    out string exc_message)
 		{
@@ -1099,7 +1099,7 @@ namespace Mono.Debugger.Frontend
 
 			switch (type.Kind) {
 			case TargetObjectKind.Fundamental:
-				sb.Append (((ITargetFundamentalType) type).FundamentalKind);
+				sb.Append (((TargetFundamentalType) type).FundamentalKind);
 				break;
 
 			case TargetObjectKind.Pointer: {
@@ -1115,7 +1115,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case TargetObjectKind.Array:
-				sb.Append (((ITargetArrayType) type).ElementType.Name);
+				sb.Append (((TargetArrayType) type).ElementType.Name);
 				break;
 
 			case TargetObjectKind.Alias: {

@@ -1,6 +1,6 @@
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetFunctionType : TargetType, ITargetFunctionType
+	public abstract class TargetFunctionType : TargetType
 	{
 		protected TargetFunctionType (ILanguage language)
 			: base (language, TargetObjectKind.Function)
@@ -20,14 +20,6 @@ namespace Mono.Debugger.Languages
 
 		public abstract SourceMethod Source {
 			get;
-		}
-
-		ITargetType ITargetFunctionType.ReturnType {
-			get { return ReturnType; }
-		}
-
-		ITargetType[] ITargetFunctionType.ParameterTypes {
-			get { return ParameterTypes; }
 		}
 
 		// <summary>

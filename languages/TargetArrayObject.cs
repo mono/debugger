@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetArrayObject : TargetObject, ITargetArrayObject
+	public abstract class TargetArrayObject : TargetObject
 	{
 		public new readonly TargetArrayType Type;
 		public readonly int Rank;
@@ -96,10 +96,6 @@ namespace Mono.Debugger.Languages
 			for (int i = 1; i < Rank; i++)
 				length *= bounds [i].Length;
 			return length;
-		}
-
-		ITargetArrayType ITargetArrayObject.Type {
-			get { return Type; }
 		}
 
 		public abstract ITargetObject GetElement (ITargetAccess target, int[] indices);

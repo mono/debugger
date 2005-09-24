@@ -1354,7 +1354,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (ITargetFunctionType method_argument,
+		public void RuntimeInvoke (TargetFunctionType method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects)
 		{
@@ -1364,7 +1364,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (ITargetFunctionType method_argument,
+		public void RuntimeInvoke (TargetFunctionType method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects,
 					   CommandResult result)
@@ -1440,7 +1440,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void InsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func,
+		public void InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func,
 					      CommandResult result)
 		{
 			StartOperation ();
@@ -2388,7 +2388,7 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public OperationRuntimeInvoke (ITargetFunctionType method_argument,
+		public OperationRuntimeInvoke (TargetFunctionType method_argument,
 					       ITargetObject object_argument,
 					       ITargetObject[] param_objects)
 		{
@@ -2402,7 +2402,7 @@ namespace Mono.Debugger.Backends
 			this.method_argument = TargetAddress.Null;
 		}
 
-		public OperationRuntimeInvoke (ITargetFunctionType method_argument,
+		public OperationRuntimeInvoke (TargetFunctionType method_argument,
 					       ITargetObject object_argument,
 					       ITargetObject[] param_objects,
 					       CommandResult result)
@@ -2468,7 +2468,7 @@ namespace Mono.Debugger.Backends
 			if (data2 != 0) {
 				TargetAddress exc_address = new TargetAddress (
 					inferior.AddressDomain, data2);
-				ITargetFundamentalObject exc_obj = (ITargetFundamentalObject)
+				TargetFundamentalObject exc_obj = (TargetFundamentalObject)
 					language.CreateObject (sse.target_access, exc_address);
 
 				result.ExceptionMessage = (string) exc_obj.GetObject (sse.target_access);
@@ -2662,7 +2662,7 @@ namespace Mono.Debugger.Backends
 		MonoLanguageBackend language;
 		TargetAddress method, address;
 
-		public OperationInsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func,
+		public OperationInsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func,
 						  CommandResult result)
 		{
 			this.Breakpoint = breakpoint;

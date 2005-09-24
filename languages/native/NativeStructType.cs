@@ -136,7 +136,7 @@ namespace Mono.Debugger.Languages.Native
 			this.Type = function_type;
 		}
 
-		ITargetFunctionType ITargetMethodInfo.Type {
+		TargetFunctionType ITargetMethodInfo.Type {
 			get {
 				return Type;
 			}

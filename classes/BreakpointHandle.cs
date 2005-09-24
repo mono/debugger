@@ -8,7 +8,7 @@ namespace Mono.Debugger
 	public class BreakpointHandle : EventHandle
 	{
 		SourceLocation location;
-		ITargetFunctionType function;
+		TargetFunctionType function;
 		TargetAddress address = TargetAddress.Null;
 		int breakpoint_id = -1;
 		IDisposable load_handler;
@@ -25,7 +25,7 @@ namespace Mono.Debugger
 		}
 
 		internal BreakpointHandle (Process process, Breakpoint breakpoint,
-					   ITargetFunctionType func)
+					   TargetFunctionType func)
 			: base (breakpoint)
 		{
 			this.function = func;

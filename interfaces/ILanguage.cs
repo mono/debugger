@@ -12,15 +12,15 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetFundamentalType IntegerType {
+		TargetFundamentalType IntegerType {
 			get;
 		}
 
-		ITargetFundamentalType LongIntegerType {
+		TargetFundamentalType LongIntegerType {
 			get;
 		}
 
-		ITargetFundamentalType StringType {
+		TargetFundamentalType StringType {
 			get;
 		}
 
@@ -48,7 +48,7 @@ namespace Mono.Debugger.Languages
 
 		ITargetObject CreateInstance (StackFrame frame, object obj);
 
-		ITargetFundamentalObject CreateInstance (ITargetAccess target, int value);
+		TargetFundamentalObject CreateInstance (ITargetAccess target, int value);
 
 		ITargetPointerObject CreatePointer (StackFrame frame, TargetAddress address);
 

@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetFunctionType Getter {
+		TargetFunctionType Getter {
 			get;
 		}
 
@@ -46,29 +46,29 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetFunctionType Setter {
+		TargetFunctionType Setter {
 			get;
 		}
 	}
 
 	public interface ITargetEventInfo : ITargetMemberInfo
 	{
-		ITargetFunctionType Add {
+		TargetFunctionType Add {
 			get;
 		}
 
-		ITargetFunctionType Remove {
+		TargetFunctionType Remove {
 			get;
 		}
 
-		ITargetFunctionType Raise {
+		TargetFunctionType Raise {
 			get;
 		}
 	}
 
 	public interface ITargetMethodInfo : ITargetMemberInfo
 	{
-		new ITargetFunctionType Type {
+		new TargetFunctionType Type {
 			get;
 		}
 

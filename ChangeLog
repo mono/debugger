@@ -1,5 +1,13 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetFundamentalType.cs: Removed.
+	* interfaces/ITargetFundamentalObject.cs: Removed.
+	* interfaces/ITargetFunctionType.cs: Removed.
+	* interfaces/ITargetArrayType.cs: Removed.
+	* interfaces/ITargetArrayObject.cs: Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetArrayType.cs: New file.
 	* languages/TargetArrayObject.cs: New file.
 

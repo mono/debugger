@@ -445,7 +445,7 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, ITargetFunctionType func)
+		public int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
 		{
 			CommandResult result = new CommandResult ();
 
@@ -562,7 +562,7 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public void RuntimeInvoke (ITargetFunctionType method_argument,
+		public void RuntimeInvoke (TargetFunctionType method_argument,
 					   ITargetObject object_argument,
 					   ITargetObject[] param_objects)
 		{
@@ -575,7 +575,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
+		public ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects,
 						    out string exc_message)

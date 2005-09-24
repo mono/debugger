@@ -1707,7 +1707,7 @@ namespace Mono.Debugger.Frontend
 			set { all = value; }
 		}
 
-		protected ITargetFunctionType EvaluateMethod (ScriptingContext context)
+		protected TargetFunctionType EvaluateMethod (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
 			if (expr == null)
@@ -1828,7 +1828,7 @@ namespace Mono.Debugger.Frontend
 	{
 		string group;
 		int process_id = -1;
-		ITargetFunctionType func;
+		TargetFunctionType func;
 		ProcessHandle process;
 		ThreadGroup tgroup;
 

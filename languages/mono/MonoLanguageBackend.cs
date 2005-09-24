@@ -838,7 +838,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.CreateInstance (frame.TargetAccess, obj);
 		}
 
-		public ITargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		public TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
 		{
 			return builtin_types.Int32Type.CreateInstance (target, value);
 		}
@@ -874,15 +874,15 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoNullObject ((TargetType) type, location);
 		}
 
-		ITargetFundamentalType ILanguage.IntegerType {
+		TargetFundamentalType ILanguage.IntegerType {
 			get { return builtin_types.Int32Type; }
 		}
 
-		ITargetFundamentalType ILanguage.LongIntegerType {
+		TargetFundamentalType ILanguage.LongIntegerType {
 			get { return builtin_types.Int64Type; }
 		}
 
-		ITargetFundamentalType ILanguage.StringType {
+		TargetFundamentalType ILanguage.StringType {
 			get { return builtin_types.StringType; }
 		}
 

@@ -34,11 +34,11 @@ namespace Mono.Debugger
 		TargetAddress CallMethod (TargetAddress method, long method_argument,
 					  string string_argument);
 
-		void RuntimeInvoke (ITargetFunctionType method_argument,
+		void RuntimeInvoke (TargetFunctionType method_argument,
 				    ITargetObject object_argument,
 				    ITargetObject[] param_objects);
 
-		ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
+		ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
 					     ITargetObject object_argument,
 					     ITargetObject[] param_objects,
 					     out string exc_message);

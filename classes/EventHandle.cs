@@ -21,7 +21,7 @@ namespace Mono.Debugger
 		}
 
 		public static EventHandle InsertBreakpoint (Process process, Breakpoint bpt,
-							    ITargetFunctionType func)
+							    TargetFunctionType func)
 		{
 			return new BreakpointHandle (process, bpt, func);
 		}

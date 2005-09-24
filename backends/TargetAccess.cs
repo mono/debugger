@@ -49,11 +49,11 @@ namespace Mono.Debugger.Backends
 		public abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
 							  string string_argument);
 
-		public abstract void RuntimeInvoke (ITargetFunctionType method_argument,
+		public abstract void RuntimeInvoke (TargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects);
 
-		public abstract ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
+		public abstract ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
 							     ITargetObject object_argument,
 							     ITargetObject[] param_objects,
 							     out string exc_message);
@@ -132,14 +132,14 @@ namespace Mono.Debugger.Backends
 			return process.CallMethod (method, method_argument, string_argument);
 		}
 
-		public override void RuntimeInvoke (ITargetFunctionType method_argument,
+		public override void RuntimeInvoke (TargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects)
 		{
 			process.RuntimeInvoke (method_argument, object_argument, param_objects);
 		}
 
-		public override ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
+		public override ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
 							     ITargetObject object_argument,
 							     ITargetObject[] param_objects,
 							     out string exc_message)
@@ -211,7 +211,7 @@ namespace Mono.Debugger.Backends
 				return sse.Process.CallMethod (method, method_argument, string_argument);
 		}
 
-		public override void RuntimeInvoke (ITargetFunctionType method_argument,
+		public override void RuntimeInvoke (TargetFunctionType method_argument,
 						    ITargetObject object_argument,
 						    ITargetObject[] param_objects)
 		{
@@ -222,7 +222,7 @@ namespace Mono.Debugger.Backends
 					method_argument, object_argument, param_objects);
 		}
 
-		public override ITargetObject RuntimeInvoke (ITargetFunctionType method_argument,
+		public override ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
 							     ITargetObject object_argument,
 							     ITargetObject[] param_objects,
 							     out string exc_message)

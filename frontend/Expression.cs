@@ -106,7 +106,7 @@ namespace Mono.Debugger.Frontend
 		protected virtual SourceLocation DoEvaluateLocation (ScriptingContext context,
 								     LocationType type, Expression[] types)
 		{
-			ITargetFunctionType func = DoEvaluateMethod (context, type, types);
+			TargetFunctionType func = DoEvaluateMethod (context, type, types);
 			if (func == null)
 				return null;
 
@@ -140,14 +140,14 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected virtual ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+		protected virtual TargetFunctionType DoEvaluateMethod (ScriptingContext context,
 									LocationType type,
 									Expression[] types)
 		{
 			return null;
 		}
 
-		public ITargetFunctionType EvaluateMethod (ScriptingContext context,
+		public TargetFunctionType EvaluateMethod (ScriptingContext context,
 							   LocationType type, Expression [] types)
 		{
 			if (!resolved)
@@ -157,7 +157,7 @@ namespace Mono.Debugger.Frontend
 						"unresolved expression `{0}'", Name));
 
 			try {
-				ITargetFunctionType func = DoEvaluateMethod (context, type, types);
+				TargetFunctionType func = DoEvaluateMethod (context, type, types);
 				if (func == null)
 					throw new ScriptingException (
 						"Expression `{0}' is not a method", Name);
@@ -930,14 +930,14 @@ namespace Mono.Debugger.Frontend
 						      "field or property.", Name);
 		}
 
-		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
 									 LocationType type,
 									 Expression[] types)
 		{
 			if (type != LocationType.Method)
 				return null;
 
-			ITargetFunctionType func = OverloadResolve (context, types);
+			TargetFunctionType func = OverloadResolve (context, types);
 			if (func != null)
 				return func;
 
@@ -954,7 +954,7 @@ namespace Mono.Debugger.Frontend
 			throw new MultipleLocationsMatchException (sources);
 		}
 
-		public ITargetFunctionType OverloadResolve (ScriptingContext context,
+		public TargetFunctionType OverloadResolve (ScriptingContext context,
 							    Expression[] types)
 		{
 			ArrayList candidates = new ArrayList ();
@@ -968,7 +968,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (candidates.Count == 1)
-				return (ITargetFunctionType) candidates [0];
+				return (TargetFunctionType) candidates [0];
 
 			if (candidates.Count == 0)
 				throw new ScriptingException (
@@ -980,7 +980,7 @@ namespace Mono.Debugger.Frontend
 					"Ambiguous method `{0}'; need to use " +
 					"full name", Name);
 
-			ITargetFunctionType match = OverloadResolve (
+			TargetFunctionType match = OverloadResolve (
 				context, stype, types, candidates);
 
 			if (match == null)
@@ -991,7 +991,7 @@ namespace Mono.Debugger.Frontend
 			return match;
 		}
 
-		public static ITargetFunctionType OverloadResolve (ScriptingContext context,
+		public static TargetFunctionType OverloadResolve (ScriptingContext context,
 								   ITargetStructType stype,
 								   Expression[] types,
 								   ArrayList candidates)
@@ -1002,8 +1002,8 @@ namespace Mono.Debugger.Frontend
 				argtypes [i] = types [i].EvaluateType (context);
 
 			// Ok, no we need to find an exact match.
-			ITargetFunctionType match = null;
-			foreach (ITargetFunctionType method in candidates) {
+			TargetFunctionType match = null;
+			foreach (TargetFunctionType method in candidates) {
 				bool ok = true;
 				for (int i = 0; i < types.Length; i++) {
 					if (method.ParameterTypes [i] != argtypes [i]) {
@@ -1257,7 +1257,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)
 		{
-			ITargetFundamentalObject fobj = tobj as ITargetFundamentalObject;
+			TargetFundamentalObject fobj = tobj as TargetFundamentalObject;
 			if (fobj == null)
 				throw new ScriptingException (
 					"Cannot store non-fundamental object `{0}' in " +
@@ -1422,7 +1422,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public ITargetFunctionType ResolveMethod (ScriptingContext context)
+		public TargetFunctionType ResolveMethod (ScriptingContext context)
 		{
 			MethodGroupExpression mg = InvocationExpression.ResolveDelegate (
 				context, this);
@@ -1432,7 +1432,7 @@ namespace Mono.Debugger.Frontend
 			return mg.OverloadResolve (context, null);
 		}
 
-		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
 									 LocationType type,
 									 Expression[] types)
 		{
@@ -1714,7 +1714,7 @@ namespace Mono.Debugger.Frontend
 				if (idx is int)
 					return (int) idx;
 
-				ITargetFundamentalObject obj = (ITargetFundamentalObject) idx;
+				TargetFundamentalObject obj = (TargetFundamentalObject) idx;
 				return (int) obj.GetObject (target);
 			} catch (Exception e) {
 				throw new ScriptingException (
@@ -1737,7 +1737,7 @@ namespace Mono.Debugger.Frontend
 			ITargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
-			ITargetArrayObject aobj = obj as ITargetArrayObject;
+			TargetArrayObject aobj = obj as TargetArrayObject;
 			if (aobj != null) {
 				int[] int_indices = GetIntIndices (target, context);
 				try {
@@ -1815,8 +1815,8 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetType DoEvaluateType (ScriptingContext context)
 		{
-			ITargetArrayType type = expr.EvaluateType (context)
-				as ITargetArrayType;
+			TargetArrayType type = expr.EvaluateType (context)
+				as TargetArrayType;
 			if (type == null)
 				throw new ScriptingException (
 					"Variable {0} is not an array type.", expr.Name);
@@ -1830,7 +1830,7 @@ namespace Mono.Debugger.Frontend
 			ITargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
-			ITargetArrayObject aobj = obj as ITargetArrayObject;
+			TargetArrayObject aobj = obj as TargetArrayObject;
 			if (aobj != null) {
 				int[] int_indices = GetIntIndices (target, context);
 				try {
@@ -2150,7 +2150,7 @@ namespace Mono.Debugger.Frontend
 			return Invoke (context, false);
 		}
 
-		protected override ITargetFunctionType DoEvaluateMethod (ScriptingContext context,
+		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
 									 LocationType type,
 									 Expression[] types)
 		{
@@ -2166,7 +2166,7 @@ namespace Mono.Debugger.Frontend
 					return null;
 			}
 
-			ITargetFunctionType func = mg.OverloadResolve (context, args);
+			TargetFunctionType func = mg.OverloadResolve (context, args);
 
 			ITargetObject[] objs = new ITargetObject [args.Length];
 			for (int i = 0; i < args.Length; i++)
@@ -2257,7 +2257,7 @@ namespace Mono.Debugger.Frontend
 			ArrayList candidates = new ArrayList ();
 			candidates.AddRange (stype.Constructors);
 
-			ITargetFunctionType ctor;
+			TargetFunctionType ctor;
 			if (candidates.Count == 0)
 				throw new ScriptingException (
 					"Type `{0}' has no public constructor.",

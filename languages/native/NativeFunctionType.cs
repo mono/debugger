@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeFunctionType : TargetType, ITargetFunctionType
+	internal class NativeFunctionType : TargetFunctionType
 	{
 		string name;
 		TargetType return_type;
@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public NativeFunctionType (ILanguage language, string name,
 					   TargetType return_type, TargetType[] parameter_types)
-			: base (language, TargetObjectKind.Function)
+			: base (language)
 		{
 			this.name = name;
 			this.return_type = return_type;
@@ -35,43 +35,31 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public bool HasReturnValue {
+		public override bool HasReturnValue {
 			get {
 				return return_type != Language.VoidType;
 			}
 		}
 
-		public TargetType ReturnType {
+		public override TargetType ReturnType {
 			get {
 				return return_type;
 			}
 		}
 
-		public TargetType[] ParameterTypes {
+		public override TargetType[] ParameterTypes {
 			get {
 				return parameter_types;
 			}
 		}
 
-		ITargetType ITargetFunctionType.ReturnType {
-			get {
-				return return_type;
-			}
-		}
-
-		ITargetType[] ITargetFunctionType.ParameterTypes {
-			get {
-				return parameter_types;
-			}
-		}
-
-		SourceMethod ITargetFunctionType.Source {
+		public override SourceMethod Source {
 			get {
 				return null;
 			}
 		}
 
-		object ITargetFunctionType.MethodHandle {
+		public override object MethodHandle {
 			get {
 				return null;
 			}
@@ -83,7 +71,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
-		ITargetStructType ITargetFunctionType.DeclaringType {
+		public override ITargetStructType DeclaringType {
 			get {
 				return null;
 			}

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetArrayType : TargetType, ITargetArrayType
+	public abstract class TargetArrayType : TargetType
 	{
 		TargetType element_type;
 		string full_name;

@@ -126,7 +126,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return FunctionType; }
 		}
 
-		ITargetFunctionType ITargetMethodInfo.Type {
+		TargetFunctionType ITargetMethodInfo.Type {
 			get {
 				return FunctionType;
 			}
@@ -191,19 +191,19 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type; }
 		}
 
-		ITargetFunctionType ITargetEventInfo.Add {
+		TargetFunctionType ITargetEventInfo.Add {
 			get {
 				return AddType;
 			}
 		}
 
-		ITargetFunctionType ITargetEventInfo.Remove {
+		TargetFunctionType ITargetEventInfo.Remove {
 			get {
 				return RemoveType;
 			}
 		}
 
-		ITargetFunctionType ITargetEventInfo.Raise {
+		TargetFunctionType ITargetEventInfo.Raise {
 			get {
 				return RaiseType;
 			}
@@ -247,7 +247,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return CanRead; }
 		}
 
-		ITargetFunctionType ITargetPropertyInfo.Getter {
+		TargetFunctionType ITargetPropertyInfo.Getter {
 			get {
 				if (!CanRead)
 					throw new InvalidOperationException ();
@@ -262,7 +262,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		ITargetFunctionType ITargetPropertyInfo.Setter {
+		TargetFunctionType ITargetPropertyInfo.Setter {
 			get {
 				if (!CanWrite)
 					throw new InvalidOperationException ();

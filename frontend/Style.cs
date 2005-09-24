@@ -206,7 +206,7 @@ namespace Mono.Debugger.Frontend
 			else
 				sb.Append ("   ");
 
-			ITargetFunctionType ftype = method.Type;
+			TargetFunctionType ftype = method.Type;
 			if (!is_ctor) {
 				if (ftype.HasReturnValue)
 					sb.Append (ftype.ReturnType.Name);
@@ -249,7 +249,7 @@ namespace Mono.Debugger.Frontend
 
 			switch (type.Kind) {
 			case TargetObjectKind.Array: {
-				ITargetArrayType atype = (ITargetArrayType) type;
+				TargetArrayType atype = (TargetArrayType) type;
 				retval = atype.Name;
 				break;
 			}
@@ -428,7 +428,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void DoFormatArray (ITargetAccess target, ITargetArrayObject aobj,
+		protected void DoFormatArray (ITargetAccess target, TargetArrayObject aobj,
 					      StringBuilder sb, int dimension, int rank, int[] indices)
 		{
 			sb.Append ("[ ");
@@ -453,7 +453,7 @@ namespace Mono.Debugger.Frontend
 			sb.Append (" ]");
 		}
 
-		protected string DoFormatArray (ITargetAccess target, ITargetArrayObject aobj)
+		protected string DoFormatArray (ITargetAccess target, TargetArrayObject aobj)
 		{
 			int rank = aobj.Type.Rank;
 			StringBuilder sb = new StringBuilder ();
@@ -469,7 +469,7 @@ namespace Mono.Debugger.Frontend
 
 			switch (obj.Kind) {
 			case TargetObjectKind.Array:
-				return DoFormatArray (target, (ITargetArrayObject) obj);
+				return DoFormatArray (target, (TargetArrayObject) obj);
 
 			case TargetObjectKind.Pointer: {
 				ITargetPointerObject pobj = (ITargetPointerObject) obj;
@@ -628,7 +628,7 @@ namespace Mono.Debugger.Frontend
 		public override string ShowVariableType (ITargetType type, string name)
 		{
 			StringBuilder sb = new StringBuilder ();
-			ITargetArrayType array = type as ITargetArrayType;
+			TargetArrayType array = type as TargetArrayType;
 			if (array != null)
 				print (sb, "{0} is an array of {1}", name, array.ElementType);
 

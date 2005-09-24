@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public class TargetFundamentalObject : TargetObject, ITargetFundamentalObject
+	public class TargetFundamentalObject : TargetObject
 	{
 		new public readonly TargetFundamentalType Type;
 

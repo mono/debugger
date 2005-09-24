@@ -544,7 +544,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
-					     ITargetFunctionType func)
+					     TargetFunctionType func)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 

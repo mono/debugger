@@ -29,15 +29,15 @@ namespace Mono.Debugger.Languages.Native
 			get { return "native"; }
 		}
 
-		public ITargetFundamentalType IntegerType {
+		public TargetFundamentalType IntegerType {
 			get { return integer_type; }
 		}
 
-		public ITargetFundamentalType LongIntegerType {
+		public TargetFundamentalType LongIntegerType {
 			get { return long_type; }
 		}
 
-		public ITargetFundamentalType StringType {
+		public TargetFundamentalType StringType {
 			get { return null; }
 		}
 
@@ -81,7 +81,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		public TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
 		{
 			throw new InvalidOperationException ();
 		}
