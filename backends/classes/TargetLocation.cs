@@ -96,30 +96,9 @@ namespace Mono.Debugger.Languages
 			TargetMemoryAccess.WriteBuffer (Address, data);
 		}
 
-		public virtual void WriteAddress (TargetAddress address)
+		public virtual void WriteAddress (ITargetAccess target, TargetAddress address)
 		{
-			TargetMemoryAccess.WriteAddress (Address, address);
-		}
-
-		public virtual TargetAddress ReadAddress ()
-		{
-			if (HasAddress)
-				return Address;
-
-			byte[] data = ReadBuffer (TargetMemoryInfo.TargetAddressSize);
-
-			long address;
-			if (TargetMemoryInfo.TargetAddressSize == 4)
-				address = BitConverter.ToInt32 (data, 0);
-			else if (TargetMemoryInfo.TargetAddressSize == 8)
-				address = BitConverter.ToInt64 (data, 0);
-			else
-				throw new InternalError ();
-
-			if (address == 0)
-				return TargetAddress.Null;
-
-			return new TargetAddress (TargetMemoryInfo.AddressDomain, address);
+			target.TargetMemoryAccess.WriteAddress (Address, address);
 		}
 
 		public ITargetAccess TargetAccess {

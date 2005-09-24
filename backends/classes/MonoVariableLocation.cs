@@ -108,10 +108,10 @@ namespace Mono.Debugger.Languages
 			update ();
 		}
 
-		public override void WriteAddress (TargetAddress new_address)
+		public override void WriteAddress (ITargetAccess target, TargetAddress new_address)
 		{
 			if (is_regoffset) {
-				TargetMemoryAccess.WriteAddress (address, new_address);
+				target.TargetMemoryAccess.WriteAddress (address, new_address);
 			} else {
 				frame.SetRegister (register, new_address.Address);
 				update ();

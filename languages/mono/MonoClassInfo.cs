@@ -141,7 +141,7 @@ namespace Mono.Debugger.Languages.Mono
 					field_loc = field_loc.GetDereferencedLocation (
 						location.TargetAccess);
 
-				finfo.Type.SetObject (field_loc, obj);
+				finfo.Type.SetObject (location.TargetAccess, field_loc, obj);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -191,7 +191,7 @@ namespace Mono.Debugger.Languages.Mono
 					field_loc = field_loc.GetDereferencedLocation (
 						location.TargetAccess);
 
-				finfo.Type.SetObject (field_loc, obj);
+				finfo.Type.SetObject (target, field_loc, obj);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

@@ -2619,7 +2619,7 @@ namespace Mono.Debugger.Architecture
 				if (var_object == null)
 					return;
 
-				var_object.SetObject (obj);
+				var_object.SetObject (frame.TargetAccess, obj);
 			}
 
 			public override string ToString ()

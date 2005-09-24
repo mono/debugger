@@ -76,9 +76,9 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public void SetObject (ITargetObject obj)
+		public void SetObject (ITargetAccess target, ITargetObject obj)
 		{
-			Type.SetObject (location, (TargetObject) obj);
+			Type.SetObject (target, location, (TargetObject) obj);
 		}
 
 		public override string Print (ITargetAccess target)

@@ -125,7 +125,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			type.SetObject (location, (TargetObject) obj);
+			type.SetObject (frame.TargetAccess, location, (TargetObject) obj);
 		}
 
 		public override string ToString ()

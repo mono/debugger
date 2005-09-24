@@ -37,11 +37,12 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal void SetObject (TargetLocation location, TargetObject obj)
+		internal void SetObject (ITargetAccess target, TargetLocation location,
+					 TargetObject obj)
 		{
 			if (obj == null) {
 				if (IsByRef) {
-					location.WriteAddress (TargetAddress.Null);
+					location.WriteAddress (target, TargetAddress.Null);
 					return;
 				}
 
@@ -50,7 +51,7 @@ namespace Mono.Debugger.Languages
 
 			if (IsByRef) {
 				if (obj.Type.IsByRef) {
-					location.WriteAddress (obj.Location.Address);
+					location.WriteAddress (target, obj.Location.Address);
 					return;
 				}
 

@@ -9,6 +9,6 @@ namespace Mono.Debugger.Languages
 
 		// <summary>
 		// </summary>
-		void SetObject (ITargetObject obj);
+		void SetObject (ITargetAccess target, ITargetObject obj);
 	}
 }

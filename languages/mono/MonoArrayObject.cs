@@ -138,7 +138,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetLocation new_loc = dynamic_location.GetLocationAtOffset (offset);
 
-			type.ElementType.SetObject (new_loc, (TargetObject) obj);
+			type.ElementType.SetObject (target, new_loc, (TargetObject) obj);
 		}
 
 		int GetElementSize (ITargetInfo info)
