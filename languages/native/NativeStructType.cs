@@ -286,8 +286,11 @@ namespace Mono.Debugger.Languages.Native
 		{
 			NativeFieldInfo field = fields [index];
 
-			TargetLocation field_loc = location.GetLocationAtOffset (
-				field.Offset, field.Type.IsByRef);
+			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);
+
+			if (field.Type.IsByRef)
+				field_loc = field_loc.GetDereferencedLocation (
+					location.TargetAccess);
 
 			if (!field.Type.IsByRef && field.IsBitfield)
 				field_loc = new BitfieldTargetLocation (
@@ -300,8 +303,11 @@ namespace Mono.Debugger.Languages.Native
 		{
 			NativeFieldInfo field = fields [index];
 
-			TargetLocation field_loc = location.GetLocationAtOffset (
-				field.Offset, field.Type.IsByRef);
+			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);
+
+			if (field.Type.IsByRef)
+				field_loc = field_loc.GetDereferencedLocation (
+					location.TargetAccess);
 
 			if (!field.Type.IsByRef && field.IsBitfield)
 				field_loc = new BitfieldTargetLocation (

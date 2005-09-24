@@ -1,5 +1,15 @@
 2005-09-24  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetPointerObject.cs
+	(ITargetPointerObject.GetArrayElement): Added `ITargetAccess' arg.
+
+	* backends/classes/TargetLocation.cs
+	(TargetLocation.GetLocationAtOffset): Removed the `bool
+	dereference' argument.
+	(TargetLocation.GetDereferencedLocation): New method.
+	
+2005-09-24  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetArrayObject.cs
 	(ITargetArrayObject.this): Replaced the indexer with a
 	`GetElement()' and a `SetElement()' method; both taking an

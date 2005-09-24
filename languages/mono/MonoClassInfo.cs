@@ -110,8 +110,11 @@ namespace Mono.Debugger.Languages.Mono
 				int offset = field_offsets [finfo.Position];
 				if (!type.IsByRef)
 					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
-				TargetLocation field_loc = location.GetLocationAtOffset (
-					offset, finfo.Type.IsByRef);
+				TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+				if (finfo.Type.IsByRef)
+					field_loc = field_loc.GetDereferencedLocation (
+						location.TargetAccess);
 
 				if (field_loc.Address.IsNull)
 					return null;
@@ -132,8 +135,11 @@ namespace Mono.Debugger.Languages.Mono
 				int offset = field_offsets [finfo.Position];
 				if (!type.IsByRef)
 					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
-				TargetLocation field_loc = location.GetLocationAtOffset (
-					offset, finfo.Type.IsByRef);
+				TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+				if (finfo.Type.IsByRef)
+					field_loc = field_loc.GetDereferencedLocation (
+						location.TargetAccess);
 
 				finfo.Type.SetObject (field_loc, obj);
 			} catch (TargetException ex) {
@@ -154,7 +160,11 @@ namespace Mono.Debugger.Languages.Mono
 				TargetLocation location = new AbsoluteTargetLocation (
 					null, target, data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
-					field_offsets [finfo.Position], finfo.Type.IsByRef);
+					field_offsets [finfo.Position]);
+
+				if (finfo.Type.IsByRef)
+					field_loc = field_loc.GetDereferencedLocation (
+						location.TargetAccess);
 
 				return finfo.Type.GetObject (field_loc);
 			} catch (TargetException ex) {
@@ -175,7 +185,11 @@ namespace Mono.Debugger.Languages.Mono
 				TargetLocation location = new AbsoluteTargetLocation (
 					null, target, data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
-					field_offsets [finfo.Position], finfo.Type.IsByRef);
+					field_offsets [finfo.Position]);
+
+				if (finfo.Type.IsByRef)
+					field_loc = field_loc.GetDereferencedLocation (
+						location.TargetAccess);
 
 				finfo.Type.SetObject (field_loc, obj);
 			} catch (TargetException ex) {

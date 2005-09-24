@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.Native
 				if (!type.HasStaticType)
 					throw new InvalidOperationException ();
 
-				TargetLocation new_location = location.GetLocationAtOffset (0, false);
+				TargetLocation new_location = location.GetLocationAtOffset (0);
 				return type.StaticType.GetObject (new_location);
 			}
 		}
@@ -64,16 +64,18 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetObject GetArrayElement (int index)
+		public ITargetObject GetArrayElement (ITargetAccess target, int index)
 		{
 			if (!type.IsArray)
 				throw new InvalidOperationException ();
 
 			int size = type.Size;
-			TargetLocation new_location = location.GetLocationAtOffset (
-				index * size, type.StaticType.IsByRef);
+			TargetLocation new_loc = location.GetLocationAtOffset (index * size);
 
-			return type.StaticType.GetObject (new_location);
+			if (type.StaticType.IsByRef)
+				new_loc = new_loc.GetDereferencedLocation (target);
+
+			return type.StaticType.GetObject (new_loc);
 		}
 
 		public override string Print (ITargetAccess target)

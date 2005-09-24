@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetBinaryReader reader = blob.GetReader ();
 			reader.Position = Type.ObjectSize;
-			dynamic_location = location.GetLocationAtOffset (Type.ObjectSize + 4, false);
+			dynamic_location = location.GetLocationAtOffset (Type.ObjectSize + 4);
 			return reader.ReadInteger (4) * 2;
 		}
 

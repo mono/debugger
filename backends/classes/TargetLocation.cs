@@ -157,22 +157,10 @@ namespace Mono.Debugger.Languages
 		// </summary>
 		public TargetLocation GetLocationAtOffset (long offset)
 		{
-			TargetLocation new_location;
 			if (offset != 0)
-				new_location = new RelativeTargetLocation (this, offset);
+				return new RelativeTargetLocation (this, offset);
 			else
-				new_location = this;
-			return new_location;
-		}
-
-		public TargetLocation GetLocationAtOffset (long offset, bool dereference)
-		{
-			TargetLocation new_location = GetLocationAtOffset (offset);
-			if (!dereference)
-				return new_location;
-
-			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
-			return new AbsoluteTargetLocation (frame, target, address);
+				return this;
 		}
 
 		public TargetLocation GetDereferencedLocation (ITargetAccess target)

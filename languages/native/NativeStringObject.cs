@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Native
 			bool quoted_chars = false;
 
 			while (!done && (offset < MaximumDynamicSize)) {
-				TargetLocation location = start.GetLocationAtOffset (offset, false);
+				TargetLocation location = start.GetLocationAtOffset (offset);
 				byte[] buffer = location.ReadBuffer (ChunkSize);
 
 				int pos = 0;

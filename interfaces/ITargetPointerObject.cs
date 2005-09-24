@@ -35,6 +35,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetObject GetArrayElement (int index);
+		ITargetObject GetArrayElement (ITargetAccess target, int index);
 	}
 }

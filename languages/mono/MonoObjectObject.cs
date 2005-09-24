@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Mono
 				// after the `MonoObject' header.
 
 				int offset = current_type.IsByRef ? 0 : type.Size;
-				TargetLocation new_location = location.GetLocationAtOffset (offset, false);
+				TargetLocation new_location = location.GetLocationAtOffset (offset);
 				ITargetObject obj = current_type.GetObject (new_location);
 				return obj;
 			}
@@ -82,7 +82,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return location.Address; }
 		}
 
-		public ITargetObject GetArrayElement (int index)
+		public ITargetObject GetArrayElement (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}

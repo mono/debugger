@@ -1760,7 +1760,7 @@ namespace Mono.Debugger.Frontend
 						expr.Name);
 
 				if (pobj.Type.IsArray)
-					return pobj.GetArrayElement (int_indices [0]);
+					return pobj.GetArrayElement (target, int_indices [0]);
 
 				throw new ScriptingException (
 						       "Variable {0} is not an array type.", expr.Name);

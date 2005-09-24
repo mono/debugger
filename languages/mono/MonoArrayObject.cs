@@ -114,12 +114,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetLocation new_loc = dynamic_location.GetLocationAtOffset (offset);
 
-			if (type.ElementType.IsByRef) {
-				TargetAddress address = target.TargetMemoryAccess.ReadAddress (
-					new_loc.Address);
-
-				new_loc = new AbsoluteTargetLocation (target, address);
-			}
+			if (type.ElementType.IsByRef)
+				new_loc = new_loc.GetDereferencedLocation (target);
 
 			if (new_loc.HasAddress && new_loc.Address.IsNull)
 				return new MonoNullObject (type.ElementType, new_loc);
