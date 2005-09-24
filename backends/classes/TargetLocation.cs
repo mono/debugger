@@ -155,18 +155,30 @@ namespace Mono.Debugger.Languages
 		//   the variable's contents (for instance to skip a header or access an
 		//   array element).
 		// </summary>
-		public virtual TargetLocation GetLocationAtOffset (long offset, bool dereference)
+		public TargetLocation GetLocationAtOffset (long offset)
 		{
 			TargetLocation new_location;
 			if (offset != 0)
 				new_location = new RelativeTargetLocation (this, offset);
 			else
 				new_location = this;
+			return new_location;
+		}
+
+		public TargetLocation GetLocationAtOffset (long offset, bool dereference)
+		{
+			TargetLocation new_location = GetLocationAtOffset (offset);
 			if (!dereference)
 				return new_location;
 
 			TargetAddress address = TargetMemoryAccess.ReadAddress (new_location.Address);
 			return new AbsoluteTargetLocation (frame, target, address);
+		}
+
+		public TargetLocation GetDereferencedLocation (ITargetAccess target)
+		{
+			TargetAddress address = target.TargetMemoryAccess.ReadAddress (Address);
+			return new AbsoluteTargetLocation (target, address);
 		}
 
 		protected virtual string MyToString ()

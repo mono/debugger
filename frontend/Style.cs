@@ -447,7 +447,7 @@ namespace Mono.Debugger.Frontend
 				if (dimension + 1 < rank)
 					DoFormatArray (target, aobj, sb, dimension + 1, rank, new_indices);
 				else
-					sb.Append (DoFormatObject (target, aobj [new_indices], false));
+					sb.Append (DoFormatObject (target, aobj.GetElement (target, new_indices), false));
 			}
 
 			sb.Append (" ]");

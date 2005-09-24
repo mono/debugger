@@ -1741,7 +1741,7 @@ namespace Mono.Debugger.Frontend
 			if (aobj != null) {
 				int[] int_indices = GetIntIndices (target, context);
 				try {
-					return aobj [int_indices];
+					return aobj.GetElement (target, int_indices);
 				} catch (ArgumentException ex) {
 					throw new ScriptingException (
 						"Index of array expression `{0}' out of bounds.",
@@ -1834,7 +1834,7 @@ namespace Mono.Debugger.Frontend
 			if (aobj != null) {
 				int[] int_indices = GetIntIndices (target, context);
 				try {
-					aobj [int_indices] = right;
+					aobj.SetElement (target, int_indices, right);
 				} catch (ArgumentException ex) {
 					throw new ScriptingException (
 						"Index of array expression `{0}' out of bounds.",

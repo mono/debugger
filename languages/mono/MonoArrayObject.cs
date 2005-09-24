@@ -99,46 +99,50 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 		}
 
-		public ITargetObject this [int[] indices] {
-			get {
-				int offset = GetArrayOffset (indices);
+		public ITargetObject GetElement (ITargetAccess target, int[] indices)
+		{
+			int offset = GetArrayOffset (indices);
 
-				TargetBlob blob;
-				TargetLocation dynamic_location;
-				try {
-					blob = location.ReadMemory (type.Size);
-					GetDynamicSize (blob, location, out dynamic_location);
-				} catch (TargetException ex) {
-					throw new LocationInvalidException (ex);
-				}
-
-				TargetLocation new_location =
-					dynamic_location.GetLocationAtOffset (
-						offset, type.ElementType.IsByRef);
-
-				if (new_location.HasAddress && new_location.Address.IsNull)
-					return new MonoNullObject (type.ElementType, new_location);
-
-				return type.ElementType.GetObject (new_location);
+			TargetBlob blob;
+			TargetLocation dynamic_location;
+			try {
+				blob = location.ReadMemory (type.Size);
+				GetDynamicSize (blob, location, out dynamic_location);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
 			}
 
-			set {
-				int offset = GetArrayOffset (indices);
+			TargetLocation new_loc = dynamic_location.GetLocationAtOffset (offset);
 
-				TargetBlob blob;
-				TargetLocation dynamic_location;
-				try {
-					blob = location.ReadMemory (type.Size);
-					GetDynamicSize (blob, location, out dynamic_location);
-				} catch (TargetException ex) {
-					throw new LocationInvalidException (ex);
-				}
+			if (type.ElementType.IsByRef) {
+				TargetAddress address = target.TargetMemoryAccess.ReadAddress (
+					new_loc.Address);
 
-				TargetLocation new_location =
-					dynamic_location.GetLocationAtOffset (offset, false);
-
-				type.ElementType.SetObject (new_location, (TargetObject) value);
+				new_loc = new AbsoluteTargetLocation (target, address);
 			}
+
+			if (new_loc.HasAddress && new_loc.Address.IsNull)
+				return new MonoNullObject (type.ElementType, new_loc);
+
+			return type.ElementType.GetObject (new_loc);
+		}
+
+		public void SetElement (ITargetAccess target, int[] indices, ITargetObject obj)
+		{
+			int offset = GetArrayOffset (indices);
+
+			TargetBlob blob;
+			TargetLocation dynamic_location;
+			try {
+				blob = location.ReadMemory (type.Size);
+				GetDynamicSize (blob, location, out dynamic_location);
+			} catch (TargetException ex) {
+				throw new LocationInvalidException (ex);
+			}
+
+			TargetLocation new_loc = dynamic_location.GetLocationAtOffset (offset);
+
+			type.ElementType.SetObject (new_loc, (TargetObject) obj);
 		}
 
 		int GetElementSize (ITargetInfo info)
@@ -163,7 +167,7 @@ namespace Mono.Debugger.Languages.Mono
 							out TargetLocation dynamic_location)
 		{
 			int element_size = GetElementSize (blob.TargetInfo);
-			dynamic_location = location.GetLocationAtOffset (type.Size, false);
+			dynamic_location = location.GetLocationAtOffset (type.Size);
 			return element_size * GetLength ();
 		}
 

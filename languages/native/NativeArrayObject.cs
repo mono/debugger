@@ -37,23 +37,24 @@ namespace Mono.Debugger.Languages.Native
 			return upper_bound;
 		}
 
-		public ITargetObject this [int[] indices] {
-			get {
-				if (indices.Length != 1)
-					throw new ArgumentException ();
+		public ITargetObject GetElement (ITargetAccess target, int[] indices)
+		{
+			if (indices.Length != 1)
+				throw new ArgumentException ();
 
-				int index = indices [0];
-				int size = type.ElementType.Size;
+			int index = indices [0];
+			int size = type.ElementType.Size;
 
-				TargetLocation new_location = location.GetLocationAtOffset (
-						    index * size, type.ElementType.IsByRef);
+			TargetLocation new_location = location.GetLocationAtOffset (index * size);
+			if (type.ElementType.IsByRef)
+				new_location = new_location.GetDereferencedLocation (target);
 
-				return type.ElementType.GetObject (new_location);
-			}
+			return type.ElementType.GetObject (new_location);
+		}
 
-			set {
-				throw new NotSupportedException ();
-			}
+		public void SetElement (ITargetAccess target, int[] indices, ITargetObject obj)
+		{
+			throw new NotSupportedException ();
 		}
 
 		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
