@@ -277,7 +277,7 @@ namespace Mono.Debugger.Languages.Native
 			return true;
 		}
 
-		public override TargetObject GetObject (TargetLocation location)
+		internal override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeStructObject (this, location);
 		}

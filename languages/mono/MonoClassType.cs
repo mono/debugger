@@ -404,7 +404,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassInfo (this, info);
 		}
 
-		public override TargetObject GetObject (TargetLocation location)
+		internal override TargetObject GetObject (TargetLocation location)
 		{
 			MonoClassInfo info = GetTypeInfo ();
 			return info.GetObject (location);

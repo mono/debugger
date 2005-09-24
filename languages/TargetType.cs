@@ -37,12 +37,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public virtual bool CheckValid (TargetLocation location)
-		{
-			return !location.HasAddress || !location.Address.IsNull;
-		}
-
-		public void SetObject (TargetLocation location, TargetObject obj)
+		internal void SetObject (TargetLocation location, TargetObject obj)
 		{
 			if (obj == null) {
 				if (IsByRef) {
@@ -71,7 +66,7 @@ namespace Mono.Debugger.Languages
 			location.WriteBuffer (contents);
 		}
 
-		public abstract TargetObject GetObject (TargetLocation location);
+		internal abstract TargetObject GetObject (TargetLocation location);
 
 		public override string ToString ()
 		{

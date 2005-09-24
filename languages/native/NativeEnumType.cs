@@ -77,7 +77,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetObject GetObject (TargetLocation location)
+		internal override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeEnumObject (this, location);
 		}

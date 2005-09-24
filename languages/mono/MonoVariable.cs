@@ -95,19 +95,6 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 		}
 
-		public bool CheckValid (StackFrame frame)
-		{
-			if (!IsAlive (frame.TargetAddress))
-				return false;
-
-			TargetLocation location = GetLocation (frame);
-
-			if (location == null)
-				return false;
-
-			return type.CheckValid (location);
-		}
-
 		public bool IsAlive (TargetAddress address)
 		{
 			return (address >= start_liveness) && (address <= end_liveness);

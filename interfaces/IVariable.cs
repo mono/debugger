@@ -22,13 +22,6 @@ namespace Mono.Debugger.Languages
 		bool IsAlive (TargetAddress address);
 
 		// <summary>
-		//   Checks whether the variable can actually be accessed at the specified
-		//   address.  Note that this call returns false if the variable is a null
-		//   pointer.
-		// </summary>
-		bool CheckValid (StackFrame frame);
-
-		// <summary>
 		//   Retrieve an instance of this variable from the stack-frame @frame.
 		//   May only be called if Type.HasObject is true.
 		// </summary>

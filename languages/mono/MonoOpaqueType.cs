@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
-		public override TargetObject GetObject (TargetLocation location)
+		internal override TargetObject GetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

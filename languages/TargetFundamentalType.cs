@@ -110,7 +110,7 @@ namespace Mono.Debugger.Languages
 			get { return size; }
 		}
 
-		public override TargetObject GetObject (TargetLocation location)
+		internal override TargetObject GetObject (TargetLocation location)
 		{
 			return new TargetFundamentalObject (this, location);
 		}

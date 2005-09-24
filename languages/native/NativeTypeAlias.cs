@@ -54,7 +54,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return target_type; }
 		}
 
-		public override TargetObject GetObject (TargetLocation location)
+		internal override TargetObject GetObject (TargetLocation location)
 		{
 			if (target_type == null)
 				return null;
