@@ -1,5 +1,24 @@
 2005-09-24  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetType.cs (TargetType): Made this public.
+
+	* languages/TargetObject.cs (TargetObject): Made this public.
+	(TargetObject.Location): Replaced the `location' field and the
+	`Location' property with an `internal readonly' field `Location'.
+	(TargetObject.GetDynamicSize): Made this `internal', not
+	`protected'.	
+
+	* languages/TargetFundamentalObject.cs
+	(TargetFundamentalObject): Made this public.
+
+	* languages/TargetFundamentalType.cs
+	(TargetFundamentalType): Made this public.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType): Made this public.
+
+2005-09-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/classes/TargetLocation.cs
 	(TargetLocation.StackFrame): Removed.
 

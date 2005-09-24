@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	internal class TargetFundamentalType : TargetType, ITargetFundamentalType
+	public class TargetFundamentalType : TargetType, ITargetFundamentalType
 	{
 		protected readonly int size;
 		protected readonly FundamentalKind fundamental_kind;

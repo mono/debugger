@@ -20,11 +20,11 @@ namespace Mono.Debugger.Languages.Native
 
 		public ITargetObject Value {
 			get {
-				return type.GetObject (location);
+				return type.GetObject (Location);
 			}
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Native
 			int index = indices [0];
 			int size = type.ElementType.Size;
 
-			TargetLocation new_location = location.GetLocationAtOffset (index * size);
+			TargetLocation new_location = Location.GetLocationAtOffset (index * size);
 			if (type.ElementType.IsByRef)
 				new_location = new_location.GetDereferencedLocation (target);
 
@@ -57,7 +57,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

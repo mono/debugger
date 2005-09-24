@@ -20,12 +20,12 @@ namespace Mono.Debugger.Languages.Native
 
 		public ITargetObject GetField (int index)
 		{
-			return type.GetField (location, index);
+			return type.GetField (Location, index);
 		}
 
 		public void SetField (int index, ITargetObject obj)
 		{
-			type.SetField (location, index, (TargetObject) obj);
+			type.SetField (Location, index, (TargetObject) obj);
 		}
 
 		public ITargetObject GetProperty (int index)
@@ -48,7 +48,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

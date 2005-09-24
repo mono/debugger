@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			TargetBinaryReader reader = blob.GetReader ();
@@ -24,8 +24,8 @@ namespace Mono.Debugger.Languages.Mono
 		public override object GetObject (ITargetAccess target)
 		{
 			TargetLocation dynamic_location;
-			TargetBlob object_blob = location.ReadMemory (target, type.Size);
-			long size = GetDynamicSize (object_blob, location, out dynamic_location);
+			TargetBlob object_blob = Location.ReadMemory (target, type.Size);
+			long size = GetDynamicSize (object_blob, Location, out dynamic_location);
 
 			if (size > (long) MonoStringType.MaximumStringLength)
 				size = MonoStringType.MaximumStringLength;
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string Print (ITargetAccess target)
 		{
-			if (location.Address.IsNull)
+			if (Location.Address.IsNull)
 				return "null";
 			object obj = GetObject (target);
 			return '"' + (string) obj + '"';

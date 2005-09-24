@@ -26,23 +26,23 @@ namespace Mono.Debugger.Languages.Mono
 				if (!type.Type.HasParent)
 					return null;
 
-				return type.GetParentObject (location);
+				return type.GetParentObject (Location);
 			}
 		}
 
 		[Command]
 		public ITargetObject GetField (int index)
 		{
-			return type.GetField (location, index);
+			return type.GetField (Location, index);
 		}
 
 		[Command]
 		public void SetField (int index, ITargetObject obj)
 		{
-			type.SetField (location, index, (TargetObject) obj);
+			type.SetField (Location, index, (TargetObject) obj);
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

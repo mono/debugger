@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.Native
 				if (!type.HasStaticType)
 					throw new InvalidOperationException ();
 
-				TargetLocation new_location = location.GetLocationAtOffset (0);
+				TargetLocation new_location = Location.GetLocationAtOffset (0);
 				return type.StaticType.GetObject (new_location);
 			}
 		}
@@ -40,13 +40,13 @@ namespace Mono.Debugger.Languages.Native
 		public byte[] GetDereferencedContents (int size)
 		{
 			try {
-				return location.ReadBuffer (location.TargetAccess, size);
+				return Location.ReadBuffer (Location.TargetAccess, size);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
@@ -54,13 +54,13 @@ namespace Mono.Debugger.Languages.Native
 
 		public bool HasAddress {
 			get {
-				return location.HasAddress;
+				return Location.HasAddress;
 			}
 		}
 
 		public TargetAddress Address {
 			get {
-				return location.Address;
+				return Location.Address;
 			}
 		}
 
@@ -70,7 +70,7 @@ namespace Mono.Debugger.Languages.Native
 				throw new InvalidOperationException ();
 
 			int size = type.Size;
-			TargetLocation new_loc = location.GetLocationAtOffset (index * size);
+			TargetLocation new_loc = Location.GetLocationAtOffset (index * size);
 
 			if (type.StaticType.IsByRef)
 				new_loc = new_loc.GetDereferencedLocation (target);

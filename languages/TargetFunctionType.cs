@@ -1,6 +1,6 @@
 namespace Mono.Debugger.Languages
 {
-	internal abstract class TargetFunctionType : TargetType, ITargetFunctionType
+	public abstract class TargetFunctionType : TargetType, ITargetFunctionType
 	{
 		protected TargetFunctionType (ILanguage language)
 			: base (language, TargetObjectKind.Function)

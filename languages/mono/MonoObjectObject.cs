@@ -22,10 +22,10 @@ namespace Mono.Debugger.Languages.Mono
 			// dereferencing it once gives us the vtable, dereferencing it
 			// twice the class.
 			TargetAddress address;
-			address = location.TargetMemoryAccess.ReadAddress (location.Address);
-			address = location.TargetMemoryAccess.ReadGlobalAddress (address);
+			address = Location.TargetMemoryAccess.ReadAddress (Location.Address);
+			address = Location.TargetMemoryAccess.ReadGlobalAddress (address);
 
-			return type.File.MonoLanguage.GetClass (location.TargetAccess, address);
+			return type.File.MonoLanguage.GetClass (Location.TargetAccess, address);
 		}
 
 		public TargetType CurrentType {
@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Mono
 				// after the `MonoObject' header.
 
 				int offset = current_type.IsByRef ? 0 : type.Size;
-				TargetLocation new_location = location.GetLocationAtOffset (offset);
+				TargetLocation new_location = Location.GetLocationAtOffset (offset);
 				ITargetObject obj = current_type.GetObject (new_location);
 				return obj;
 			}
@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
@@ -74,12 +74,12 @@ namespace Mono.Debugger.Languages.Mono
 
 		public bool HasAddress {
 			get {
-				return location.HasAddress;
+				return Location.HasAddress;
 			}
 		}
 
 		public TargetAddress Address {
-			get { return location.Address; }
+			get { return Location.Address; }
 		}
 
 		public ITargetObject GetArrayElement (ITargetAccess target, int index)
@@ -92,7 +92,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (HasAddress)
 				return String.Format ("MonoObject ({0})", Address);
 			else
-				return String.Format ("MonoObject ({0})", location);
+				return String.Format ("MonoObject ({0})", Location);
 		}
 	}
 }

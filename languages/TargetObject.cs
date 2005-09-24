@@ -2,15 +2,15 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	internal abstract class TargetObject : MarshalByRefObject, ITargetObject
+	public abstract class TargetObject : MarshalByRefObject, ITargetObject
 	{
+		internal readonly TargetLocation Location;
 		protected ITargetType type;
-		protected TargetLocation location;
 
-		public TargetObject (TargetType type, TargetLocation location)
+		internal TargetObject (TargetType type, TargetLocation location)
 		{
 			this.type = type;
-			this.location = location;
+			this.Location = location;
 		}
 
 		public ITargetType Type {
@@ -33,21 +33,15 @@ namespace Mono.Debugger.Languages
 
 		public bool IsNull {
 			get {
-				if (!location.HasAddress)
+				if (!Location.HasAddress)
 					return false;
 				else
-					return location.Address.IsNull;
+					return Location.Address.IsNull;
 			}
 		}
 
-		protected abstract long GetDynamicSize (TargetBlob blob, TargetLocation location,
-							out TargetLocation dynamic_location);
-
-		public TargetLocation Location {
-			get {
-				return location;
-			}
-		}
+		internal abstract long GetDynamicSize (TargetBlob blob, TargetLocation location,
+						       out TargetLocation dynamic_location);
 
 		public virtual string Print (ITargetAccess target)
 		{

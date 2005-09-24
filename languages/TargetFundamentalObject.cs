@@ -2,17 +2,17 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	internal class TargetFundamentalObject : TargetObject, ITargetFundamentalObject
+	public class TargetFundamentalObject : TargetObject, ITargetFundamentalObject
 	{
 		new public readonly TargetFundamentalType Type;
 
-		public TargetFundamentalObject (TargetFundamentalType type, TargetLocation location)
+		internal TargetFundamentalObject (TargetFundamentalType type, TargetLocation location)
 			: base (type, location)
 		{
 			this.Type = type;
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages
 
 		public virtual object GetObject (ITargetAccess target)
 		{
-			TargetBlob blob = location.ReadMemory (target, Type.Size);
+			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 
 			switch (Type.FundamentalKind) {
 			case FundamentalKind.Boolean:
@@ -78,7 +78,7 @@ namespace Mono.Debugger.Languages
 
 		public void SetObject (ITargetAccess target, ITargetObject obj)
 		{
-			Type.SetObject (target, location, (TargetObject) obj);
+			Type.SetObject (target, Location, (TargetObject) obj);
 		}
 
 		public override string Print (ITargetAccess target)

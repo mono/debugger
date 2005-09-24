@@ -93,7 +93,7 @@ namespace Mono.Debugger.Languages.Mono
 				index = index * bounds [i].Length + indices [i];
 
 			if (type.ElementType.IsByRef)
-				return index * location.TargetInfo.TargetAddressSize;
+				return index * Location.TargetInfo.TargetAddressSize;
 			else if (type.ElementType.HasFixedSize)
 				return index * type.ElementType.Size;
 			else
@@ -107,8 +107,8 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBlob blob;
 			TargetLocation dynamic_location;
 			try {
-				blob = location.ReadMemory (target, type.Size);
-				GetDynamicSize (blob, location, out dynamic_location);
+				blob = Location.ReadMemory (target, type.Size);
+				GetDynamicSize (blob, Location, out dynamic_location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -131,8 +131,8 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBlob blob;
 			TargetLocation dynamic_location;
 			try {
-				blob = location.ReadMemory (target, type.Size);
-				GetDynamicSize (blob, location, out dynamic_location);
+				blob = Location.ReadMemory (target, type.Size);
+				GetDynamicSize (blob, Location, out dynamic_location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -160,7 +160,7 @@ namespace Mono.Debugger.Languages.Mono
 			return length;
 		}
 
-		protected override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
 							out TargetLocation dynamic_location)
 		{
 			int element_size = GetElementSize (blob.TargetInfo);
