@@ -6,9 +6,9 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		int GetLowerBound (int dimension);
+		int GetLowerBound (ITargetAccess target, int dimension);
 
-		int GetUpperBound (int dimension);
+		int GetUpperBound (ITargetAccess target, int dimension);
 
 		ITargetObject GetElement (ITargetAccess target, int[] indices);
 

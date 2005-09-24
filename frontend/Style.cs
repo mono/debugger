@@ -436,8 +436,8 @@ namespace Mono.Debugger.Frontend
 			int[] new_indices = new int [dimension + 1];
 			indices.CopyTo (new_indices, 0);
 
-			int lower = aobj.GetLowerBound (dimension);
-			int upper = aobj.GetUpperBound (dimension);
+			int lower = aobj.GetLowerBound (target, dimension);
+			int upper = aobj.GetUpperBound (target, dimension);
 
 			for (int i = lower; i < upper; i++) {
 				if (i > lower)

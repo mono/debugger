@@ -360,8 +360,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (result != null)
 				return result;
 
-			if (type is Cecil.IArrayType)
-				result = new MonoArrayType (this, (Cecil.IArrayType) type);
+			if (type is Cecil.IArrayType) {
+				Cecil.IArrayType atype = (Cecil.IArrayType) type;
+				TargetType element_type = LookupMonoType (atype.ElementType);
+				result = new MonoArrayType (element_type, atype.Rank);
+			}
 #if CECIL_NOTYET
 			else if (type.IsEnum)
 				result = new MonoEnumType (this, type);

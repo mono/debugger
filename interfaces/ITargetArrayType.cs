@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages
 		// <summary>
 		//   The array's element type.
 		// </summary>
-		ITargetType ElementType {
+		TargetType ElementType {
 			get;
 		}
 	}

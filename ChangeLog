@@ -1,3 +1,8 @@
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetArrayType.cs: New file.
+	* languages/TargetArrayObject.cs: New file.
+
 2005-09-24  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetType.cs (TargetType): Made this public.
