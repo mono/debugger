@@ -472,7 +472,7 @@ namespace Mono.Debugger.Frontend
 				return DoFormatArray (target, (TargetArrayObject) obj);
 
 			case TargetObjectKind.Pointer: {
-				ITargetPointerObject pobj = (ITargetPointerObject) obj;
+				TargetPointerObject pobj = (TargetPointerObject) obj;
 				if (pobj.Type.IsTypesafe) {
 					try {
 						ITargetObject deref = pobj.DereferencedObject;

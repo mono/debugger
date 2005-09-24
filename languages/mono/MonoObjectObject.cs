@@ -2,18 +2,14 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectObject : TargetObject, ITargetPointerObject
+	internal class MonoObjectObject : TargetPointerObject
 	{
-		new MonoObjectType type;
+		public new readonly MonoObjectType Type;
 
 		public MonoObjectObject (MonoObjectType type, TargetLocation location)
 			: base (type, location)
 		{
-			this.type = type;
-		}
-
-		public new ITargetPointerType Type {
-			get { return type; }
+			this.Type = type;
 		}
 
 		protected TargetType GetCurrentType ()
@@ -25,10 +21,10 @@ namespace Mono.Debugger.Languages.Mono
 			address = Location.TargetMemoryAccess.ReadAddress (Location.Address);
 			address = Location.TargetMemoryAccess.ReadGlobalAddress (address);
 
-			return type.File.MonoLanguage.GetClass (Location.TargetAccess, address);
+			return Type.File.MonoLanguage.GetClass (Location.TargetAccess, address);
 		}
 
-		public TargetType CurrentType {
+		public override TargetType CurrentType {
 			get {
 				TargetType type = GetCurrentType ();
 				if (type == null)
@@ -37,13 +33,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		ITargetType ITargetPointerObject.CurrentType {
-			get {
-				return CurrentType;
-			}
-		}
-
-		public ITargetObject DereferencedObject {
+		public override TargetObject DereferencedObject {
 			get {
 				TargetType current_type = GetCurrentType ();
 				if (current_type == null)
@@ -56,12 +46,12 @@ namespace Mono.Debugger.Languages.Mono
 
 				int offset = current_type.IsByRef ? 0 : type.Size;
 				TargetLocation new_location = Location.GetLocationAtOffset (offset);
-				ITargetObject obj = current_type.GetObject (new_location);
+				TargetObject obj = current_type.GetObject (new_location);
 				return obj;
 			}
 		}
 
-		public byte[] GetDereferencedContents (int size)
+		public override byte[] GetDereferencedContents (int size)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -72,17 +62,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		public bool HasAddress {
-			get {
-				return Location.HasAddress;
-			}
-		}
-
-		public TargetAddress Address {
-			get { return Location.Address; }
-		}
-
-		public ITargetObject GetArrayElement (ITargetAccess target, int index)
+		public override TargetObject GetArrayElement (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}

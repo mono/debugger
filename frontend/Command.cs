@@ -309,8 +309,8 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case Format.Address: {
-				ITargetPointerObject obj = expression.EvaluateVariable (context)
-					as ITargetPointerObject;
+				TargetPointerObject obj = expression.EvaluateVariable (context)
+					as TargetPointerObject;
 				if (obj == null)
 					context.Print ("<cannot take address>");
 				else

@@ -3,62 +3,41 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectType : TargetType, ITargetPointerType
+	internal class MonoObjectType : TargetPointerType
 	{
-		int size;
 		MonoSymbolFile file;
-		Cecil.ITypeDefinition typedef;
 
 		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeDefinition typedef, int size)
-			: base (file.MonoLanguage, TargetObjectKind.Pointer)
+			: base (file.MonoLanguage, typedef.FullName, size)
 		{
-			this.size = size;
 			this.file = file;
-			this.typedef = typedef;
-		}
-
-		public override bool IsByRef {
-			get { return true; }
-		}
-
-		public override string Name {
-			get { return typedef.FullName; }
 		}
 
 		public MonoSymbolFile File {
 			get { return file; }
 		}
 
-		public bool IsTypesafe {
+		public override bool IsTypesafe {
 			get { return true; }
 		}
 
-		public bool HasStaticType {
+		public override bool HasStaticType {
 			get { return false; }
 		}
 
-		public bool IsArray {
+		public override bool IsArray {
 			get { return false; }
 		}
 
-		public ITargetType StaticType {
+		public override TargetType StaticType {
 			get {
 				throw new InvalidOperationException ();
 			}
-		}
-
-		public override int Size {
-			get { return size; }
-		}
-
-		public override bool HasFixedSize {
-			get { return true; }
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			return new MonoObjectObject (this, location);
 		}
-
 	}
 }

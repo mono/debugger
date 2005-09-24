@@ -1,5 +1,13 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetPointerType.cs: New file.
+	* languages/TargetPointerObject.cs: New file.
+
+	* interfaces/ITargetPointerType.cs: Removed.
+	* interfaces/ITargetPointerObject.cs: Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetFundamentalType.cs: Removed.
 	* interfaces/ITargetFundamentalObject.cs: Removed.
 	* interfaces/ITargetFunctionType.cs: Removed.

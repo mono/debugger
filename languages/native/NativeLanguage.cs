@@ -86,8 +86,8 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetPointerObject CreatePointer (StackFrame frame,
-							   TargetAddress address)
+		public TargetPointerObject CreatePointer (StackFrame frame,
+							  TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (
 				frame.TargetAccess, address);

@@ -1103,7 +1103,7 @@ namespace Mono.Debugger.Frontend
 				break;
 
 			case TargetObjectKind.Pointer: {
-				ITargetPointerType ptype = (ITargetPointerType) type;
+				TargetPointerType ptype = (TargetPointerType) type;
 				sb.Append (ptype.IsTypesafe);
 				sb.Append (":");
 				sb.Append (ptype.HasStaticType);

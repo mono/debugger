@@ -2,42 +2,32 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativePointerObject : TargetObject, ITargetPointerObject
+	internal class NativePointerObject : TargetPointerObject
 	{
-		new NativePointerType type;
-
 		public NativePointerObject (NativePointerType type, TargetLocation location)
 			: base (type, location)
-		{
-			this.type = type;
-		}
+		{ }
 
-		public new ITargetPointerType Type {
+		public override TargetType CurrentType {
 			get {
-				return type;
-			}
-		}
-
-		ITargetType ITargetPointerObject.CurrentType {
-			get {
-				if (!type.HasStaticType)
+				if (!Type.HasStaticType)
 					throw new InvalidOperationException ();
 
-				return type.StaticType;
+				return Type.StaticType;
 			}
 		}
 
-		ITargetObject ITargetPointerObject.DereferencedObject {
+		public override TargetObject DereferencedObject {
 			get {
-				if (!type.HasStaticType)
+				if (!Type.HasStaticType)
 					throw new InvalidOperationException ();
 
 				TargetLocation new_location = Location.GetLocationAtOffset (0);
-				return type.StaticType.GetObject (new_location);
+				return Type.StaticType.GetObject (new_location);
 			}
 		}
 
-		public byte[] GetDereferencedContents (int size)
+		public override byte[] GetDereferencedContents (int size)
 		{
 			try {
 				return Location.ReadBuffer (Location.TargetAccess, size);
@@ -52,30 +42,18 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public bool HasAddress {
-			get {
-				return Location.HasAddress;
-			}
-		}
-
-		public TargetAddress Address {
-			get {
-				return Location.Address;
-			}
-		}
-
-		public ITargetObject GetArrayElement (ITargetAccess target, int index)
+		public override TargetObject GetArrayElement (ITargetAccess target, int index)
 		{
-			if (!type.IsArray)
+			if (!Type.IsArray)
 				throw new InvalidOperationException ();
 
-			int size = type.Size;
+			int size = Type.Size;
 			TargetLocation new_loc = Location.GetLocationAtOffset (index * size);
 
-			if (type.StaticType.IsByRef)
+			if (Type.StaticType.IsByRef)
 				new_loc = new_loc.GetDereferencedLocation (target);
 
-			return type.StaticType.GetObject (new_loc);
+			return Type.StaticType.GetObject (new_loc);
 		}
 
 		public override string Print (ITargetAccess target)

@@ -843,7 +843,7 @@ namespace Mono.Debugger.Languages.Mono
 			return builtin_types.Int32Type.CreateInstance (target, value);
 		}
 
-		public ITargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
+		public TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
 		{
 			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}

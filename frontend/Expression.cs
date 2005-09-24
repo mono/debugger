@@ -1545,7 +1545,7 @@ namespace Mono.Debugger.Frontend
 		{
 			ITargetType type = expr.EvaluateType (context);
 
-			ITargetPointerType ptype = type as ITargetPointerType;
+			TargetPointerType ptype = type as TargetPointerType;
 			if (ptype != null)
 				return ptype.StaticType;
 
@@ -1557,7 +1557,7 @@ namespace Mono.Debugger.Frontend
 		{
 			ITargetObject obj = expr.EvaluateVariable (context);
 
-			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj != null) {
 				ITargetObject result;
 				try {
@@ -1589,7 +1589,7 @@ namespace Mono.Debugger.Frontend
 			if (obj is long)
 				return new TargetAddress (context.GlobalAddressDomain, (long) obj);
 
-			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj == null)
 				throw new ScriptingException (
 					"Expression `{0}' is not a pointer type.", expr.Name);
@@ -1629,8 +1629,8 @@ namespace Mono.Debugger.Frontend
 		{
 			FrameHandle frame = context.CurrentFrame;
 
-			ITargetPointerType ptype = expr.EvaluateType (context)
-				as ITargetPointerType;
+			TargetPointerType ptype = expr.EvaluateType (context)
+				as TargetPointerType;
 			if (ptype != null)
 				return ptype;
 
@@ -1652,8 +1652,8 @@ namespace Mono.Debugger.Frontend
 			if (pexpr != null)
 				return pexpr.EvaluateAddress (context);
 
-			ITargetPointerObject obj = expr.EvaluateVariable (context) as
-				ITargetPointerObject;
+			TargetPointerObject obj = expr.EvaluateVariable (context) as
+				TargetPointerObject;
 			if (obj == null)
 				throw new ScriptingException (
 					"Cannot take address of expression `{0}'", expr.Name);
@@ -1750,7 +1750,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			// pointer[int]
-			ITargetPointerObject pobj = obj as ITargetPointerObject;
+			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj != null) {
 				// single dimensional array only at present
 				int[] int_indices = GetIntIndices (target, context);

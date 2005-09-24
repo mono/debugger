@@ -2,17 +2,11 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativePointerType : TargetType, ITargetPointerType
+	internal class NativePointerType : TargetPointerType
 	{
-		string name;
-		int size;
-
 		public NativePointerType (ILanguage language, string name, int size)
-			: base (language, TargetObjectKind.Pointer)
-		{
-			this.name = name;
-			this.size = size;
-		}
+			: base (language, name, size)
+		{ }
 
 		public NativePointerType (ILanguage language, string name,
 					  TargetType target_type, int size)
@@ -23,54 +17,24 @@ namespace Mono.Debugger.Languages.Native
 
 		TargetType target_type;
 
-		public override string Name {
-			get { return name; }
+		public override bool IsTypesafe {
+			get { return false; }
 		}
 
-		public override int Size {
-			get { return size; }
+		public override bool HasStaticType {
+			get { return target_type != null; }
 		}
 
-		public override bool HasFixedSize {
+		public override bool IsArray {
 			get { return true; }
 		}
 
-		public override bool IsByRef {
-			get {
-				return true;
-			}
-		}
-
-		public bool IsTypesafe {
-			get {
-				return false;
-			}
-		}
-
-		public bool HasStaticType {
-			get {
-				return target_type != null;
-			}
-		}
-
-		public bool IsArray {
-			get {
-				return true;
-			}
-		}
-
-		public TargetType StaticType {
+		public override TargetType StaticType {
 			get {
 				if (target_type == null)
 					throw new InvalidOperationException ();
 
 				return target_type;
-			}
-		}
-
-		ITargetType ITargetPointerType.StaticType {
-			get {
-				return StaticType;
 			}
 		}
 
