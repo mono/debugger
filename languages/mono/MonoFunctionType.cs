@@ -5,7 +5,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoFunctionType : TargetType, ITargetFunctionType
+	internal class MonoFunctionType : TargetFunctionType
 	{
 		MonoClassType klass;
 		Cecil.IMethodDefinition method_info;
@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass,
 					 Cecil.IMethodDefinition mdef, string full_name)
-			: base (file.MonoLanguage, TargetObjectKind.Function)
+			: base (file.MonoLanguage)
 		{
 			this.klass = klass;
 			this.method_info = mdef;
@@ -48,15 +48,15 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		public TargetType ReturnType {
+		public override TargetType ReturnType {
 			get { return return_type; }
 		}
 
-		public bool HasReturnValue {
+		public override bool HasReturnValue {
 			get { return has_return_type; }
 		}
 
-		public TargetType[] ParameterTypes {
+		public override TargetType[] ParameterTypes {
 			get { return parameter_types; }
 		}
 
@@ -64,26 +64,18 @@ namespace Mono.Debugger.Languages.Mono
 			get { return token; }
 		}
 
-		ITargetType ITargetFunctionType.ReturnType {
-			get { return return_type; }
-		}
-
-		ITargetType[] ITargetFunctionType.ParameterTypes {
-			get { return parameter_types; }
-		}
-
-		ITargetStructType ITargetFunctionType.DeclaringType {
+		public override ITargetStructType DeclaringType {
 			get { return klass; }
 		}
 
-		public SourceMethod Source {
+		public override SourceMethod Source {
 			get {
 				int token = MonoDebuggerSupport.GetMethodToken (method_info);
 				return klass.File.GetMethodByToken (token);
 			}
 		}
 
-		object ITargetFunctionType.MethodHandle {
+		public override object MethodHandle {
 			get { return method_info; }
 		}
 
