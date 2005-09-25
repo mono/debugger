@@ -1030,13 +1030,13 @@ namespace Mono.Debugger.Frontend
 	{
 		TargetClassType stype;
 		TargetClassObject instance;
-		ILanguage language;
+		Language language;
 		string name;
 		ArrayList props;
 
 		public PropertyGroupExpression (TargetClassType stype, string name,
 						TargetClassObject instance,
-						ILanguage language, ArrayList props)
+						Language language, ArrayList props)
 		{
 			this.stype = stype;
 			this.instance = instance;
@@ -1098,10 +1098,10 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public static TargetPropertyInfo OverloadResolve (ScriptingContext context,
-								   ILanguage language,
-								   TargetClassType stype,
-								   TargetType[] types,
-								   ArrayList candidates)
+								  Language language,
+								  TargetClassType stype,
+								  TargetType[] types,
+								  ArrayList candidates)
 		{
 			TargetPropertyInfo match = null;
 			foreach (TargetPropertyInfo prop in candidates) {

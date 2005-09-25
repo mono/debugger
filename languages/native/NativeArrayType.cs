@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.Native
 		string name;
 		int size;
 
-		public NativeArrayType (ILanguage language, string name, TargetType element_type,
+		public NativeArrayType (Language language, string name, TargetType element_type,
 					int lower_bound, int upper_bound, int size)
 			: base (element_type, 1)
 		{

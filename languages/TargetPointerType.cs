@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages
 		string name;
 		int size;
 
-		public TargetPointerType (ILanguage language, string name, int size)
+		public TargetPointerType (Language language, string name, int size)
 			: base (language, TargetObjectKind.Pointer)
 		{
 			this.name = name;

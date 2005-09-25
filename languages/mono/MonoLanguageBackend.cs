@@ -252,7 +252,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoLanguageBackend : MarshalByRefObject, ILanguage, ILanguageBackend
+	internal class MonoLanguageBackend : Language, ILanguageBackend
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
 		public const int  MinDynamicVersion = 52;
@@ -284,8 +284,7 @@ namespace Mono.Debugger.Languages.Mono
 			mutex = new DebuggerMutex ("mono_mutex");
 		}
 
-		// needed for both ILanguage and ILanguageBackend interfaces
-		public string Name {
+		public override string Name {
 			get { return "Mono"; }
 		}
 
@@ -301,7 +300,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return backend.SourceFileFactory; }
 		}
 
-		public ITargetInfo TargetInfo {
+		public override ITargetInfo TargetInfo {
 			get { return corlib.TargetInfo; }
 		}
 
@@ -423,7 +422,7 @@ namespace Mono.Debugger.Languages.Mono
 			return (MonoSymbolFile) image_hash [address];
 		}
 
-		public TargetAddress AllocateMemory (ITargetAccess target, int size)
+		public override TargetAddress AllocateMemory (ITargetAccess target, int size)
 		{
 			return heap.Allocate (target, size);
 		}
@@ -726,13 +725,13 @@ namespace Mono.Debugger.Languages.Mono
 		}
 #endregion
 
-#region ILanguage implementation
-		public string SourceLanguage (StackFrame frame)
+#region Language implementation
+		public override string SourceLanguage (StackFrame frame)
 		{
 			return "";
 		}
 
-		public TargetType LookupType (StackFrame frame, string name)
+		public override TargetType LookupType (StackFrame frame, string name)
 		{
 			switch (name) {
 			case "short":   name = "System.Int16";   break;
@@ -824,12 +823,12 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public bool CanCreateInstance (Type type)
+		public override bool CanCreateInstance (Type type)
 		{
 			return GetFundamentalType (type) != null;
 		}
 
-		public TargetObject CreateInstance (StackFrame frame, object obj)
+		public override TargetObject CreateInstance (StackFrame frame, object obj)
 		{
 			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
 			if (type == null)
@@ -838,17 +837,17 @@ namespace Mono.Debugger.Languages.Mono
 			return type.CreateInstance (frame.TargetAccess, obj);
 		}
 
-		public TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		public override TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
 		{
 			return builtin_types.Int32Type.CreateInstance (target, value);
 		}
 
-		public TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
+		public override TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
 		{
 			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public TargetObject CreateObject (ITargetAccess target, TargetAddress address)
+		public override TargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
@@ -867,38 +866,38 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public TargetObject CreateNullObject (ITargetAccess target, TargetType type)
+		public override TargetObject CreateNullObject (ITargetAccess target, TargetType type)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, TargetAddress.Null);
 
 			return new MonoNullObject ((TargetType) type, location);
 		}
 
-		TargetFundamentalType ILanguage.IntegerType {
+		public override TargetFundamentalType IntegerType {
 			get { return builtin_types.Int32Type; }
 		}
 
-		TargetFundamentalType ILanguage.LongIntegerType {
+		public override TargetFundamentalType LongIntegerType {
 			get { return builtin_types.Int64Type; }
 		}
 
-		TargetFundamentalType ILanguage.StringType {
+		public override TargetFundamentalType StringType {
 			get { return builtin_types.StringType; }
 		}
 
-		TargetType ILanguage.PointerType {
+		public override TargetType PointerType {
 			get { return builtin_types.IntType; }
 		}
 
-		TargetType ILanguage.VoidType {
+		public override TargetType VoidType {
 			get { return builtin_types.VoidType; }
 		}
 
-		TargetClassType ILanguage.ExceptionType {
+		public override TargetClassType ExceptionType {
 			get { return builtin_types.ExceptionType; }
 		}
 
-		TargetClassType ILanguage.DelegateType {
+		public override TargetClassType DelegateType {
 			get { return builtin_types.DelegateType; }
 		}
 #endregion

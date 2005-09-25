@@ -5,7 +5,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeLanguage : MarshalByRefObject, ILanguage
+	internal class NativeLanguage : Language
 	{
 		BfdContainer bfd_container;
 		TargetFundamentalType integer_type;
@@ -25,86 +25,86 @@ namespace Mono.Debugger.Languages.Native
 			void_type = new NativeOpaqueType (this, "void", 0);
 		}
 
-		public string Name {
+		public override string Name {
 			get { return "native"; }
 		}
 
-		public TargetFundamentalType IntegerType {
+		public override TargetFundamentalType IntegerType {
 			get { return integer_type; }
 		}
 
-		public TargetFundamentalType LongIntegerType {
+		public override TargetFundamentalType LongIntegerType {
 			get { return long_type; }
 		}
 
-		public TargetFundamentalType StringType {
+		public override TargetFundamentalType StringType {
 			get { return null; }
 		}
 
-		public TargetType PointerType {
+		public override TargetType PointerType {
 			get { return pointer_type; }
 		}
 
-		public TargetType VoidType {
+		public override TargetType VoidType {
 			get { return void_type; }
 		}
 
-		public ITargetInfo TargetInfo {
+		public override ITargetInfo TargetInfo {
 			get { return info; }
 		}
 
-		TargetClassType ILanguage.ExceptionType {
+		public override TargetClassType ExceptionType {
 			get { return null; }
 		}
 
-		TargetClassType ILanguage.DelegateType {
+		public override TargetClassType DelegateType {
 			get { return null; }
 		}
 
-		public string SourceLanguage (StackFrame frame)
+		public override string SourceLanguage (StackFrame frame)
 		{
 			return "";
 		}
 
-		public TargetType LookupType (StackFrame frame, string name)
+		public override TargetType LookupType (StackFrame frame, string name)
 		{
 			return bfd_container.LookupType (frame, name);
 		}
 
-		public bool CanCreateInstance (Type type)
+		public override bool CanCreateInstance (Type type)
 		{
 			return false;
 		}
 
-		public TargetObject CreateInstance (StackFrame frame, object obj)
+		public override TargetObject CreateInstance (StackFrame frame, object obj)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		public override TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public TargetPointerObject CreatePointer (StackFrame frame,
-							  TargetAddress address)
+		public override TargetPointerObject CreatePointer (StackFrame frame,
+								   TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (
 				frame.TargetAccess, address);
 			return new NativePointerObject (pointer_type, location);
 		}
 
-		public TargetObject CreateObject (ITargetAccess target, TargetAddress address)
+		public override TargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
 			throw new NotSupportedException ();
 		}
 
-		public TargetAddress AllocateMemory (ITargetAccess target, int size)
+		public override TargetAddress AllocateMemory (ITargetAccess target, int size)
 		{
 			throw new NotSupportedException ();
 		}
 
-		public TargetObject CreateNullObject (ITargetAccess target, TargetType type)
+		public override TargetObject CreateNullObject (ITargetAccess target, TargetType type)
 		{
 			throw new NotSupportedException ();
 		}

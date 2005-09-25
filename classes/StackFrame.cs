@@ -204,7 +204,7 @@ namespace Mono.Debugger
 		SimpleStackFrame simple;
 		SourceAddress source;
 		AddressDomain address_domain;
-		ILanguage language;
+		Language language;
 		Symbol name;
 
 		public StackFrame (Process process, ITargetAccess target,
@@ -404,7 +404,7 @@ namespace Mono.Debugger
 
 		public event ObjectInvalidHandler FrameInvalidEvent;
 
-		public ILanguage Language {
+		public Language Language {
 			get {
 				check_disposed ();
 				return language;

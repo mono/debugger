@@ -2,7 +2,7 @@ namespace Mono.Debugger.Languages
 {
 	public abstract class TargetClassType : TargetType
 	{
-		protected TargetClassType (ILanguage language, TargetObjectKind kind)
+		protected TargetClassType (Language language, TargetObjectKind kind)
 			: base (language, kind)
 		{ }
 

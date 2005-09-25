@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages
 		protected readonly FundamentalKind fundamental_kind;
 		protected readonly string name;
 
-		public TargetFundamentalType (ILanguage language, string name,
+		public TargetFundamentalType (Language language, string name,
 					      FundamentalKind kind, int size)
 			: base (language, TargetObjectKind.Fundamental)
 		{

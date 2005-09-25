@@ -13,7 +13,7 @@ namespace Mono.Debugger.Languages.Native
 		NativeFieldInfo[] members;
 		NativeFieldInfo value;
 
-		public NativeEnumType (ILanguage language, string name, int size,
+		public NativeEnumType (Language language, string name, int size,
 				       string[] element_names, int[] element_values)
 			: base (language)
 		{

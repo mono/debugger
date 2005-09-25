@@ -6,7 +6,7 @@ namespace Mono.Debugger.Languages.Native
 	{
 		static int max_string_length = 100;
 
-		public NativeStringType (ILanguage language, int size)
+		public NativeStringType (Language language, int size)
 			: base (language, "char *", FundamentalKind.String, size)
 		{ }
 

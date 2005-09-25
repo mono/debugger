@@ -4,10 +4,10 @@ namespace Mono.Debugger.Languages
 {
 	public abstract class TargetType : MarshalByRefObject
 	{
-		protected readonly ILanguage language;
+		protected readonly Language language;
 		protected readonly TargetObjectKind kind;
 
-		protected TargetType (ILanguage language, TargetObjectKind kind)
+		protected TargetType (Language language, TargetObjectKind kind)
 		{
 			this.language = language;
 			this.kind = kind;
@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public ILanguage Language {
+		public Language Language {
 			get { return language; }
 		}
 

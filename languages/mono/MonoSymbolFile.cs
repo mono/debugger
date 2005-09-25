@@ -302,7 +302,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return name; }
 		}
 
-		public override ILanguage Language {
+		public override Language Language {
 			get { return MonoLanguage; }
 		}
 

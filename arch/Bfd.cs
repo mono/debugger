@@ -532,7 +532,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public override ILanguage Language {
+		public override Language Language {
 			get {
 				return container.NativeLanguage;
 			}

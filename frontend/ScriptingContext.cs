@@ -189,7 +189,7 @@ namespace Mono.Debugger.Frontend
 			return var.GetObject (frame);
 		}
 
-		public ILanguage Language {
+		public Language Language {
 			get {
 				if (frame.Language == null)
 					throw new ScriptingException (

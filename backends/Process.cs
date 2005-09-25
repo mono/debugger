@@ -55,7 +55,7 @@ namespace Mono.Debugger
 			get { return operation_completed_event; }
 		}
 
-		protected internal ILanguage NativeLanguage {
+		protected internal Language NativeLanguage {
 			get {
 				check_engine ();
 				return DebuggerBackend.BfdContainer.NativeLanguage;

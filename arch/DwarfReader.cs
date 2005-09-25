@@ -2630,7 +2630,7 @@ namespace Mono.Debugger.Architecture
 			string name;
 			long offset;
 			bool resolved, ok, type_created;
-			protected readonly ILanguage language;
+			protected readonly Language language;
 			TargetType type;
 
 			public DieType (DwarfBinaryReader reader, CompilationUnit comp_unit,

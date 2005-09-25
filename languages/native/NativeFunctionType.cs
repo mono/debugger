@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Native
 		TargetType return_type;
 		TargetType[] parameter_types;
 
-		public NativeFunctionType (ILanguage language, string name,
+		public NativeFunctionType (Language language, string name,
 					   TargetType return_type, TargetType[] parameter_types)
 			: base (language)
 		{

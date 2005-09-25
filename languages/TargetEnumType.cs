@@ -2,7 +2,7 @@ namespace Mono.Debugger.Languages
 {
 	public abstract class TargetEnumType : TargetType
 	{
-		public TargetEnumType (ILanguage language)
+		public TargetEnumType (Language language)
 			: base (language, TargetObjectKind.Enum)
 		{ }
 

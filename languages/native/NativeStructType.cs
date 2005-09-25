@@ -70,14 +70,14 @@ namespace Mono.Debugger.Languages.Native
 		int size;
 		NativeFieldInfo[] fields;
 
-		internal NativeStructType (ILanguage language, string name, int size)
+		internal NativeStructType (Language language, string name, int size)
 			: base (language, TargetObjectKind.Struct)
 		{
 			this.name = name;
 			this.size = size;
 		}
 
-		internal NativeStructType (ILanguage language, string name,
+		internal NativeStructType (Language language, string name,
 					   NativeFieldInfo[] fields, int size)
 			: this (language, name, size)
 		{

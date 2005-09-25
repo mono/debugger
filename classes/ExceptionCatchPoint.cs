@@ -6,14 +6,14 @@ namespace Mono.Debugger
 	[Serializable]
 	public class ExceptionCatchPoint : Breakpoint
 	{
-		public ExceptionCatchPoint (ILanguage language, TargetType exception, ThreadGroup group)
+		public ExceptionCatchPoint (Language language, TargetType exception, ThreadGroup group)
 			: base (exception.Name, group)
 		{
 			this.language = language;
 			this.exception = exception;
 		}
 
-		ILanguage language;
+		Language language;
 		TargetType exception;
 
 		bool IsSubclassOf (TargetClassType type, TargetType parent)

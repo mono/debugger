@@ -561,7 +561,7 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public int InsertExceptionCatchPoint (ILanguage language, ProcessHandle thread,
+		public int InsertExceptionCatchPoint (Language language, ProcessHandle thread,
 						      ThreadGroup group, TargetType exception)
 		{
 			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);

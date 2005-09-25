@@ -1,5 +1,11 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ILanguage.cs: Removed.
+
+	* languages/Language.cs: New file.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/TargetObjectKind.cs: Moved to
 	languages/TargetObjectKind.	
 

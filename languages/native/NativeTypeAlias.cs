@@ -6,14 +6,14 @@ namespace Mono.Debugger.Languages.Native
 	{
 		string name;
 
-		public NativeTypeAlias (ILanguage language, string name, string target_name)
+		public NativeTypeAlias (Language language, string name, string target_name)
 			: base (language, TargetObjectKind.Alias)
 		{
 			this.target_name = target_name;
 			this.name = name;
 		}
 
-		public NativeTypeAlias (ILanguage language, string name, string target_name,
+		public NativeTypeAlias (Language language, string name, string target_name,
 					TargetType target)
 			: this (language, name, target_name)
 		{

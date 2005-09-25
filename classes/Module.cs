@@ -29,7 +29,7 @@ namespace Mono.Debugger
 			step_into = true;
 		}
 
-		public abstract ILanguage Language {
+		public abstract Language Language {
 			get;
 		}
 

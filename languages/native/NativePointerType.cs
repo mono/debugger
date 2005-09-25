@@ -4,11 +4,11 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativePointerType : TargetPointerType
 	{
-		public NativePointerType (ILanguage language, string name, int size)
+		public NativePointerType (Language language, string name, int size)
 			: base (language, name, size)
 		{ }
 
-		public NativePointerType (ILanguage language, string name,
+		public NativePointerType (Language language, string name,
 					  TargetType target_type, int size)
 			: this (language, name, size)
 		{
