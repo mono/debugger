@@ -894,11 +894,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types.VoidType; }
 		}
 
-		ITargetClassType ILanguage.ExceptionType {
+		TargetClassType ILanguage.ExceptionType {
 			get { return builtin_types.ExceptionType; }
 		}
 
-		ITargetClassType ILanguage.DelegateType {
+		TargetClassType ILanguage.DelegateType {
 			get { return builtin_types.DelegateType; }
 		}
 #endregion

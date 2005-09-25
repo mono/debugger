@@ -53,11 +53,11 @@ namespace Mono.Debugger.Languages.Native
 			get { return info; }
 		}
 
-		ITargetClassType ILanguage.ExceptionType {
+		TargetClassType ILanguage.ExceptionType {
 			get { return null; }
 		}
 
-		ITargetClassType ILanguage.DelegateType {
+		TargetClassType ILanguage.DelegateType {
 			get { return null; }
 		}
 

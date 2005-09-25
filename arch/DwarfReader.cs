@@ -2331,7 +2331,7 @@ namespace Mono.Debugger.Architecture
 				get { return this; }
 			}
 
-			public override ITargetStructType DeclaringType {
+			public override TargetClassType DeclaringType {
 				get { return null; }
 			}
 

@@ -170,12 +170,12 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected virtual bool DoAssign (ScriptingContext context, ITargetObject obj)
+		protected virtual bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			return false;
 		}
 
-		public void Assign (ScriptingContext context, ITargetObject obj)
+		public void Assign (ScriptingContext context, TargetObject obj)
 		{
 			if (!resolved)
 				throw new InvalidOperationException (
@@ -493,7 +493,7 @@ namespace Mono.Debugger.Frontend
 			if (var.Type.Kind != TargetObjectKind.Class)
 				throw new ScriptingException (
 					"`base' is only allowed in a class.");
-			if (!((ITargetClassType) var.Type).HasParent)
+			if (!((TargetClassType) var.Type).HasParent)
 				throw new ScriptingException (
 					"Current class has no base class.");
 
@@ -502,7 +502,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			return ((ITargetClassObject) base.DoEvaluateVariable (context)).Parent;
+			return ((TargetClassObject) base.DoEvaluateVariable (context)).Parent;
 		}
 	}
 
@@ -595,7 +595,7 @@ namespace Mono.Debugger.Frontend
 			return context.CurrentFrame.GetVariable (var);
 		}
 
-		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			if (!var.CanWrite)
 				return false;
@@ -668,9 +668,9 @@ namespace Mono.Debugger.Frontend
 			if ((method == null) || (method.DeclaringType == null))
 				return null;
 
-			ITargetStructObject instance = null;
+			TargetClassObject instance = null;
 			if (method.HasThis)
-				instance = (ITargetStructObject) frame.GetVariable (method.This);
+				instance = (TargetClassObject) frame.GetVariable (method.This);
 
 			MemberExpression member = StructAccessExpression.FindMember (
 				method.DeclaringType, instance, full_name, true, true);
@@ -770,8 +770,8 @@ namespace Mono.Debugger.Frontend
 
 			Expression lexpr = left.TryResolve (context);
 			if (lexpr is TypeExpression) {
-				ITargetStructType stype = lexpr.EvaluateType (context)
-					as ITargetStructType;
+				TargetClassType stype = lexpr.EvaluateType (context)
+					as TargetClassType;
 				if (stype == null)
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", lexpr.Name);
@@ -792,8 +792,8 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (lexpr != null) {
-				ITargetStructObject sobj = lexpr.EvaluateVariable (context)
-					as ITargetStructObject;
+				TargetClassObject sobj = lexpr.EvaluateVariable (context)
+					as TargetClassObject;
 				if (sobj == null)
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", left.Name);
@@ -816,8 +816,8 @@ namespace Mono.Debugger.Frontend
 
 			Expression ltype = left.TryResolveType (context);
 			if (ltype != null) {
-				ITargetStructType stype = ltype.EvaluateType (context)
-					as ITargetStructType;
+				TargetClassType stype = ltype.EvaluateType (context)
+					as TargetClassType;
 				if (stype == null)
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", ltype.Name);
@@ -869,7 +869,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class MemberExpression : Expression
 	{
-		public abstract ITargetStructObject InstanceObject {
+		public abstract TargetClassObject InstanceObject {
 			get;
 		}
 
@@ -884,13 +884,13 @@ namespace Mono.Debugger.Frontend
 
 	public class MethodGroupExpression : MemberExpression
 	{
-		protected readonly ITargetStructType stype;
-		protected readonly ITargetStructObject instance;
+		protected readonly TargetClassType stype;
+		protected readonly TargetClassObject instance;
 		protected readonly string name;
 		protected readonly ArrayList methods;
 		protected readonly bool is_instance, is_static;
 
-		public MethodGroupExpression (ITargetStructType stype, ITargetStructObject instance,
+		public MethodGroupExpression (TargetClassType stype, TargetClassObject instance,
 					      string name, ArrayList methods, bool is_instance,
 					      bool is_static)
 		{
@@ -907,7 +907,7 @@ namespace Mono.Debugger.Frontend
 			get { return stype.Name + "." + name; }
 		}
 
-		public override ITargetStructObject InstanceObject {
+		public override TargetClassObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -992,7 +992,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public static TargetFunctionType OverloadResolve (ScriptingContext context,
-								   ITargetStructType stype,
+								   TargetClassType stype,
 								   Expression[] types,
 								   ArrayList candidates)
 		{
@@ -1028,14 +1028,14 @@ namespace Mono.Debugger.Frontend
 
 	public class PropertyGroupExpression : Expression
 	{
-		ITargetStructType stype;
-		ITargetStructObject instance;
+		TargetClassType stype;
+		TargetClassObject instance;
 		ILanguage language;
 		string name;
 		ArrayList props;
 
-		public PropertyGroupExpression (ITargetStructType stype, string name,
-						ITargetStructObject instance,
+		public PropertyGroupExpression (TargetClassType stype, string name,
+						TargetClassObject instance,
 						ILanguage language, ArrayList props)
 		{
 			this.stype = stype;
@@ -1099,7 +1099,7 @@ namespace Mono.Debugger.Frontend
 
 		public static TargetPropertyInfo OverloadResolve (ScriptingContext context,
 								   ILanguage language,
-								   ITargetStructType stype,
+								   TargetClassType stype,
 								   ITargetType[] types,
 								   ArrayList candidates)
 		{
@@ -1255,7 +1255,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected override bool DoAssign (ScriptingContext context, ITargetObject tobj)
+		protected override bool DoAssign (ScriptingContext context, TargetObject tobj)
 		{
 			TargetFundamentalObject fobj = tobj as TargetFundamentalObject;
 			if (fobj == null)
@@ -1274,12 +1274,12 @@ namespace Mono.Debugger.Frontend
 
 	public class StructAccessExpression : MemberExpression
 	{
-		public readonly ITargetStructType Type;
+		public readonly TargetClassType Type;
 		public readonly TargetMemberInfo Member;
-		protected readonly ITargetStructObject instance;
+		protected readonly TargetClassObject instance;
 
-		protected StructAccessExpression (ITargetStructType type,
-						  ITargetStructObject instance,
+		protected StructAccessExpression (TargetClassType type,
+						  TargetClassObject instance,
 						  TargetMemberInfo member)
 		{
 			this.Type = type;
@@ -1292,7 +1292,7 @@ namespace Mono.Debugger.Frontend
 			get { return Member.Name; }
 		}
 
-		public override ITargetStructObject InstanceObject {
+		public override TargetClassObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1345,8 +1345,8 @@ namespace Mono.Debugger.Frontend
 							      Name, member.GetType ());
 		}
 
-		public static MemberExpression FindMember (ITargetStructType stype,
-							   ITargetStructObject instance, string name,
+		public static MemberExpression FindMember (TargetClassType stype,
+							   TargetClassObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
 		again:
@@ -1396,10 +1396,10 @@ namespace Mono.Debugger.Frontend
 				return new MethodGroupExpression (
 					stype, instance, name, methods, is_instance, is_static);
 
-			ITargetClassType ctype = stype as ITargetClassType;
+			TargetClassType ctype = stype as TargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
 				stype = ctype.ParentType;
-				instance = ((ITargetClassObject) instance).Parent;
+				instance = ((TargetClassObject) instance).Parent;
 				goto again;
 			}
 
@@ -1480,7 +1480,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void SetField (ITargetAccess target, TargetFieldInfo field, ITargetObject obj)
+		protected void SetField (ITargetAccess target, TargetFieldInfo field, TargetObject obj)
 		{
 			if (field.IsStatic)
 				Type.SetStaticField (target, field.Index, obj);
@@ -1488,7 +1488,7 @@ namespace Mono.Debugger.Frontend
 				InstanceObject.SetField (field.Index, obj);
 		}
 
-		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
+		protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			if (Member is TargetFieldInfo) {
 				StackFrame frame = context.CurrentFrame.Frame;
@@ -1573,7 +1573,7 @@ namespace Mono.Debugger.Frontend
 				return result;
 			}
 
-			ITargetClassObject cobj = obj as ITargetClassObject;
+			TargetClassObject cobj = obj as TargetClassObject;
 			if (current_ok && (cobj != null))
 				return cobj;
 
@@ -1767,7 +1767,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			// indexers
-			ITargetStructObject sobj = obj as ITargetStructObject;
+			TargetClassObject sobj = obj as TargetClassObject;
 			if (sobj != null) {
 				StackFrame frame = context.CurrentFrame.Frame;
 				TargetPropertyInfo prop_info;
@@ -1824,7 +1824,7 @@ namespace Mono.Debugger.Frontend
 			return type.ElementType;
 		}
 
-		protected override bool DoAssign (ScriptingContext context, ITargetObject right)
+		protected override bool DoAssign (ScriptingContext context, TargetObject right)
 		{
 			ITargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 			ITargetObject obj = expr.EvaluateVariable (context);
@@ -1845,7 +1845,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			// indexers
-			ITargetStructObject sobj = obj as ITargetStructObject;
+			TargetClassObject sobj = obj as TargetClassObject;
 			if (sobj != null) {
 				StackFrame frame = context.CurrentFrame.Frame;
 				TargetPropertyInfo prop_info;
@@ -1927,10 +1927,10 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		static ITargetClassObject TryParentCast (ScriptingContext context,
-							 ITargetClassObject source,
-							 ITargetClassType source_type,
-							 ITargetClassType target_type)
+		static TargetClassObject TryParentCast (ScriptingContext context,
+							 TargetClassObject source,
+							 TargetClassType source_type,
+							 TargetClassType target_type)
 		{
 			if (source_type == target_type)
 				return source;
@@ -1946,12 +1946,12 @@ namespace Mono.Debugger.Frontend
 			return source.Parent;
 		}
 
-		static ITargetClassObject TryCurrentCast (ScriptingContext context,
-							  ITargetClassObject source,
-							  ITargetClassType source_type,
-							  ITargetClassType target_type)
+		static TargetClassObject TryCurrentCast (ScriptingContext context,
+							  TargetClassObject source,
+							  TargetClassType source_type,
+							  TargetClassType target_type)
 		{
-			ITargetClassObject current = source;
+			TargetClassObject current = source;
 			if (current.Type == source_type)
 				return null;
 
@@ -1959,16 +1959,16 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public static ITargetObject TryCast (ScriptingContext context, ITargetObject source,
-						     ITargetClassType target_type)
+						     TargetClassType target_type)
 		{
 			if (source.Type == target_type)
 				return source;
 
-			ITargetClassObject sobj = source as ITargetClassObject;
+			TargetClassObject sobj = source as TargetClassObject;
 			if (sobj == null)
 				return null;
 
-			ITargetClassObject result;
+			TargetClassObject result;
 			result = TryParentCast (context, sobj, sobj.Type, target_type);
 			if (result != null)
 				return result;
@@ -1978,14 +1978,14 @@ namespace Mono.Debugger.Frontend
 
 		protected override ITargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			ITargetClassType type = target.EvaluateType (context)
-				as ITargetClassType;
+			TargetClassType type = target.EvaluateType (context)
+				as TargetClassType;
 			if (type == null)
 				throw new ScriptingException (
 					"Type {0} is not a class type.", target.Name);
 
-			ITargetClassObject source = expr.EvaluateVariable (context)
-				as ITargetClassObject;
+			TargetClassObject source = expr.EvaluateVariable (context)
+				as TargetClassObject;
 			if (source == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
@@ -2099,12 +2099,12 @@ namespace Mono.Debugger.Frontend
 		public static MethodGroupExpression ResolveDelegate (ScriptingContext context,
 								     Expression expr)
 		{
-			ITargetStructObject sobj = expr.EvaluateVariable (context)
-				as ITargetStructObject;
+			TargetClassObject sobj = expr.EvaluateVariable (context)
+				as TargetClassObject;
 			if (sobj == null)
 				return null;
 
-			ITargetClassType delegate_type = sobj.Type.Language.DelegateType;
+			TargetClassType delegate_type = sobj.Type.Language.DelegateType;
 			if (CastExpression.TryCast (context, sobj, delegate_type) == null)
 				return null;
 
@@ -2247,8 +2247,8 @@ namespace Mono.Debugger.Frontend
 
 		public ITargetObject Invoke (ScriptingContext context, bool debug)
 		{
-			ITargetStructType stype = type_expr.EvaluateType (context)
-				as ITargetStructType;
+			TargetClassType stype = type_expr.EvaluateType (context)
+				as TargetClassType;
 			if (stype == null)
 				throw new ScriptingException (
 					"Type `{0}' is not a struct or class.",
@@ -2331,7 +2331,7 @@ namespace Mono.Debugger.Frontend
 			} else
 				obj = right.EvaluateVariable (context);
 
-			left.Assign (context, obj);
+			left.Assign (context, (TargetObject) obj);
 			return obj;
 		}
 	}

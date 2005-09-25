@@ -118,8 +118,8 @@ namespace Mono.Debugger.Frontend
 			else if (obj is string) {
 				return '"' + (string) obj + '"';
 			}
-			else if (obj is ITargetStructType) {
-				ITargetStructType stype = (ITargetStructType) obj;
+			else if (obj is TargetClassType) {
+				TargetClassType stype = (TargetClassType) obj;
 				return FormatStructType (target, stype);
 			}
 			else if (obj is TargetEnumType) {
@@ -280,9 +280,9 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
-				ITargetStructType stype = (ITargetStructType) type;
+				TargetClassType stype = (TargetClassType) type;
 				StringBuilder sb = new StringBuilder ();
-				ITargetClassType ctype = type as ITargetClassType;
+				TargetClassType ctype = type as TargetClassType;
 				if (type.Kind == TargetObjectKind.Struct)
 					sb.Append ("struct ");
 				else
@@ -366,7 +366,7 @@ namespace Mono.Debugger.Frontend
 			return String.Format ("enum {0}", etype.Name);
 		}
 
-		public string FormatStructType (ITargetAccess target, ITargetStructType stype)
+		public string FormatStructType (ITargetAccess target, TargetClassType stype)
 		{
 			string header = "";
 			switch (stype.Kind) {
@@ -488,7 +488,7 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
-				ITargetStructObject sobj = (ITargetStructObject) obj;
+				TargetClassObject sobj = (TargetClassObject) obj;
 				StructFormatter formatter = new StructFormatter ("");
 				TargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (TargetFieldInfo field in fields) {
@@ -632,8 +632,8 @@ namespace Mono.Debugger.Frontend
 			if (array != null)
 				print (sb, "{0} is an array of {1}", name, array.ElementType);
 
-			ITargetClassType tclass = type as ITargetClassType;
-			ITargetStructType tstruct = type as ITargetStructType;
+			TargetClassType tclass = type as TargetClassType;
+			TargetClassType tstruct = type as TargetClassType;
 			if (tclass != null) {
 				if (tclass.HasParent)
 					print (sb, "{0} is a class of type {1} which inherits from {2}",

@@ -8,7 +8,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassType : TargetType, ITargetClassType
+	internal class MonoClassType : TargetClassType
 	{
 		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
@@ -63,15 +63,15 @@ namespace Mono.Debugger.Languages.Mono
 			get { return file; }
 		}
 
-		public bool HasParent {
+		public override bool HasParent {
 			get { return parent_type != null; }
 		}
 
-		ITargetClassType ITargetClassType.ParentType {
+		public override TargetClassType ParentType {
 			get { return parent_type; }
 		}
 
-		public MonoClassType ParentType {
+		internal MonoClassType MonoParentType {
 			get { return parent_type; }
 		}
 
@@ -107,38 +107,31 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal MonoFieldInfo[] Fields {
+		public override TargetFieldInfo[] Fields {
 			get {
 				get_fields ();
 				return fields;
 			}
 		}
 
-		internal MonoFieldInfo[] StaticFields {
+		public override TargetFieldInfo[] StaticFields {
 			get {
 				get_fields ();
 				return static_fields;
 			}
 		}
 
-		TargetFieldInfo[] ITargetStructType.Fields {
-			get { return Fields; }
-		}
-
-		TargetFieldInfo[] ITargetStructType.StaticFields {
-			get { return StaticFields; }
-		}
-
-		public ITargetObject GetStaticField (ITargetAccess target, int index)
+		public override TargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			MonoClassInfo info = GetTypeInfo ();
 			return info.GetStaticField (target, index);
 		}
 
-		public void SetStaticField (ITargetAccess target, int index, ITargetObject obj)
+		public override void SetStaticField (ITargetAccess target, int index,
+						     TargetObject obj)
 		{
 			MonoClassInfo info = GetTypeInfo ();
-			info.SetStaticField (target, index, (TargetObject) obj);
+			info.SetStaticField (target, index, obj);
 		}
 
 		public int CountMethods {
@@ -196,20 +189,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		TargetMethodInfo[] ITargetStructType.Methods {
-			get {
-				get_methods ();
-				return methods;
-			}
-		}
-
-		TargetMethodInfo[] ITargetStructType.StaticMethods {
-			get {
-				get_methods ();
-				return static_methods;
-			}
-		}
-
 		void get_properties ()
 		{
 			if (properties != null)
@@ -248,26 +227,32 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal MonoPropertyInfo[] Properties {
+		public override TargetMethodInfo[] Methods {
+			get {
+				get_methods ();
+				return methods;
+			}
+		}
+
+		public override TargetMethodInfo[] StaticMethods {
+			get {
+				get_methods ();
+				return static_methods;
+			}
+		}
+
+		public override TargetPropertyInfo[] Properties {
 			get {
 				get_properties ();
 				return properties;
 			}
 		}
 
-		internal MonoPropertyInfo[] StaticProperties {
+		public override TargetPropertyInfo[] StaticProperties {
 			get {
 				get_properties ();
 				return static_properties;
 			}
-		}
-
-		TargetPropertyInfo[] ITargetStructType.Properties {
-			get { return Properties; }
-		}
-
-		TargetPropertyInfo[] ITargetStructType.StaticProperties {
-			get { return StaticProperties; }
 		}
 
 		void get_events ()
@@ -303,14 +288,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public TargetEventInfo[] Events {
+		public override TargetEventInfo[] Events {
 			get {
 				get_events ();
 				return events;
 			}
 		}
 
-		public TargetEventInfo[] StaticEvents {
+		public override TargetEventInfo[] StaticEvents {
 			get {
 				get_events ();
 				return static_events;
@@ -354,14 +339,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public TargetMethodInfo[] Constructors {
+		public override TargetMethodInfo[] Constructors {
 			get {
 				get_constructors ();
 				return constructors;
 			}
 		}
 
-		public TargetMethodInfo[] StaticConstructors {
+		public override TargetMethodInfo[] StaticConstructors {
 			get {
 				get_constructors ();
 				return static_constructors;
@@ -380,7 +365,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type_info;
 		}
 
-		public bool ResolveClass (ITargetAccess target)
+		public override bool ResolveClass (ITargetAccess target)
 		{
 			if (type_info != null)
 				return true;
@@ -416,8 +401,8 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		[Command]
-		public TargetMemberInfo FindMember (string name, bool search_static,
-						     bool search_instance)
+		public override TargetMemberInfo FindMember (string name, bool search_static,
+							     bool search_instance)
 		{
 			if (search_static) {
 				foreach (TargetFieldInfo field in StaticFields)

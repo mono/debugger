@@ -32,11 +32,11 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetClassType DelegateType {
+		TargetClassType DelegateType {
 			get;
 		}
 
-		ITargetClassType ExceptionType {
+		TargetClassType ExceptionType {
 			get;
 		}
 

@@ -31,12 +31,14 @@ namespace Mono.Debugger.Languages
 	public abstract class TargetFieldInfo : TargetMemberInfo
 	{
 		public readonly int Offset;
+		public readonly int Position;
 		public readonly bool HasConstValue;
 
 		protected TargetFieldInfo (TargetType type, string name, int index, bool is_static,
-					   int offset, bool has_const_value)
+					   int position, int offset, bool has_const_value)
 			: base (type, name, index, is_static)
 		{
+			this.Position = position;
 			this.Offset = offset;
 			this.HasConstValue = has_const_value;
 		}

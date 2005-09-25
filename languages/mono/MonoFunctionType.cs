@@ -64,7 +64,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return token; }
 		}
 
-		public override ITargetStructType DeclaringType {
+		public override TargetClassType DeclaringType {
 			get { return klass; }
 		}
 

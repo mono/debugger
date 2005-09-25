@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract ITargetStructType DeclaringType {
+		public abstract TargetClassType DeclaringType {
 			get;
 		}
 	}

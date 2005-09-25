@@ -9,14 +9,12 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.IFieldDefinition FieldInfo;
-		public readonly int Position;
 
 		public MonoFieldInfo (TargetType type, int index, int pos,
 				      Cecil.IFieldDefinition finfo)
-			: base (type, finfo.Name, index, finfo.IsStatic, 0, finfo.IsLiteral)
+			: base (type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.IsLiteral)
 		{
 			FieldInfo = finfo;
-			Position = pos;
 		}
 
 		public override TargetObject GetConstValue (ITargetAccess target) 

@@ -740,7 +740,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			public override ITargetStructType DeclaringType {
+			public override TargetClassType DeclaringType {
 				get {
 					if (!is_loaded)
 						throw new InvalidOperationException ();
@@ -1141,7 +1141,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return Entry.WrapperMethod; }
 			}
 
-			public override ITargetStructType DeclaringType {
+			public override TargetClassType DeclaringType {
 				get { return null; }
 			}
 

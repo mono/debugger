@@ -71,7 +71,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
-		public override ITargetStructType DeclaringType {
+		public override TargetClassType DeclaringType {
 			get {
 				return null;
 			}

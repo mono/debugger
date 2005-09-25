@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages.Mono
 		object do_initialize (ITargetAccess target, object data)
 		{
 			if (type.ParentType != null) {
-				parent = type.ParentType.GetTypeInfo ();
+				parent = type.MonoParentType.GetTypeInfo ();
 				parent.initialize (target);
 			}
 
@@ -100,12 +100,12 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		internal ITargetObject GetField (TargetLocation location, int index)
+		internal TargetObject GetField (TargetLocation location, int index)
 		{
 			try {
 				initialize (location.TargetAccess);
 
-				MonoFieldInfo finfo = type.Fields [index];
+				TargetFieldInfo finfo = type.Fields [index];
 
 				int offset = field_offsets [finfo.Position];
 				if (!type.IsByRef)
@@ -130,7 +130,7 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				initialize (location.TargetAccess);
 
-				MonoFieldInfo finfo = type.Fields [index];
+				TargetFieldInfo finfo = type.Fields [index];
 
 				int offset = field_offsets [finfo.Position];
 				if (!type.IsByRef)
@@ -147,7 +147,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal ITargetObject GetStaticField (ITargetAccess target, int index)
+		internal TargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			try {
 				initialize (target);
@@ -155,7 +155,7 @@ namespace Mono.Debugger.Languages.Mono
 					debugger_info.ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 
-				MonoFieldInfo finfo = type.StaticFields [index];
+				TargetFieldInfo finfo = type.StaticFields [index];
 
 				TargetLocation location = new AbsoluteTargetLocation (
 					target, data_address);
@@ -180,7 +180,7 @@ namespace Mono.Debugger.Languages.Mono
 					debugger_info.ClassGetStaticFieldData, KlassAddress,
 					TargetAddress.Null);
 
-				MonoFieldInfo finfo = type.StaticFields [index];
+				TargetFieldInfo finfo = type.StaticFields [index];
 
 				TargetLocation location = new AbsoluteTargetLocation (
 					target, data_address);

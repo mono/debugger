@@ -303,7 +303,7 @@ namespace Mono.Debugger.Frontend
 
 			case Format.Current: {
 				ITargetObject obj = expression.EvaluateVariable (context);
-				ITargetClassObject cobj = obj as ITargetClassObject;
+				TargetClassObject cobj = obj as TargetClassObject;
 				context.PrintObject (cobj);
 				break;
 			}
@@ -347,7 +347,7 @@ namespace Mono.Debugger.Frontend
 
 			case Format.Current:
 				obj = expression.EvaluateVariable (context);
-				ITargetClassObject cobj = obj as ITargetClassObject;
+				TargetClassObject cobj = obj as TargetClassObject;
 				context.PrintType (cobj.Type);
 				break;
 
@@ -1947,14 +1947,14 @@ namespace Mono.Debugger.Frontend
 		string group;
 		FrameHandle frame;
 		ThreadGroup tgroup;
-		ITargetClassType type;
+		TargetClassType type;
 
 		public string Group {
 			get { return group; }
 			set { group = value; }
 		}
 
-		bool IsSubclassOf (ITargetClassType type, ITargetType parent)
+		bool IsSubclassOf (TargetClassType type, ITargetType parent)
 		{
 			while (type != null) {
 				if (type == parent)
@@ -1985,7 +1985,7 @@ namespace Mono.Debugger.Frontend
 			if (expr == null)
 				return false;
 
-			type = expr.EvaluateType (context) as ITargetClassType;
+			type = expr.EvaluateType (context) as TargetClassType;
 			if (!IsSubclassOf (type, exception_type))
 				throw new ScriptingException ("Type `{0}' is not an exception type.", expr.Name);
 

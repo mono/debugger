@@ -2,9 +2,9 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeStructObject : TargetObject, ITargetStructObject
+	internal class NativeStructObject : TargetClassObject
 	{
-		new NativeStructType type;
+		public new NativeStructType type;
 
 		public NativeStructObject (NativeStructType type, TargetLocation location)
 			: base (type, location)
@@ -12,44 +12,22 @@ namespace Mono.Debugger.Languages.Native
 			this.type = type;
 		}
 
-		public new ITargetStructType Type {
-			get {
-				return type;
-			}
+		public override TargetClassObject Parent {
+			get { throw new InvalidOperationException (); }
 		}
 
-		public ITargetObject GetField (int index)
+		public override TargetObject GetField (int index)
 		{
 			return type.GetField (Location, index);
 		}
 
-		public void SetField (int index, ITargetObject obj)
+		public override void SetField (int index, TargetObject obj)
 		{
-			type.SetField (Location, index, (TargetObject) obj);
-		}
-
-		public ITargetObject GetProperty (int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public ITargetObject GetEvent (int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public string PrintObject ()
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public ITargetObject InvokeMethod (int index, params ITargetObject[] args)
-		{
-			throw new InvalidOperationException ();
+			type.SetField (Location, index, obj);
 		}
 
 		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
-							out TargetLocation dynamic_location)
+						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}

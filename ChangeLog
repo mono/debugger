@@ -1,5 +1,15 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClassType.cs: New file.
+	* languages/TargetClassObject.cs: New file.
+
+	* interfaces/ITargetStructType.cs: Removed.
+	* interfaces/ITargetStructObject.cs: Removed.
+	* interfaces/ITargetClassType.cs: Removed.
+	* interfaces/ITargetClassObject.cs: Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetEnumType.cs: New file.
 	* languages/TargetEnumObject.cs: New file.
 

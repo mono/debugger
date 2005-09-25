@@ -16,7 +16,7 @@ namespace Mono.Debugger
 		ILanguage language;
 		ITargetType exception;
 
-		bool IsSubclassOf (ITargetClassType type, ITargetType parent)
+		bool IsSubclassOf (TargetClassType type, ITargetType parent)
 		{
 			while (type != null) {
 				if (type == parent)
@@ -33,8 +33,8 @@ namespace Mono.Debugger
 
 		public override bool CheckBreakpointHit (ITargetAccess target, TargetAddress address)
 		{
-			ITargetClassObject exc = language.CreateObject (target, address)
-				as ITargetClassObject;
+			TargetClassObject exc = language.CreateObject (target, address)
+				as TargetClassObject;
 			if (exc == null)
 				return false; // OOOPS
 

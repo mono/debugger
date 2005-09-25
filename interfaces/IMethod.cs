@@ -120,7 +120,7 @@ namespace Mono.Debugger
 		// language, this will be the class/struct in which
 		// this method is declared.
 		// </summary>
-		ITargetStructType DeclaringType {
+		TargetClassType DeclaringType {
 			get;
 		}
 

@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassObject : TargetObject, ITargetClassObject
+	internal class MonoClassObject : TargetClassObject
 	{
 		new MonoClassInfo type;
 
@@ -13,15 +13,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 		}
 
-		ITargetStructType ITargetStructObject.Type {
-			get { return type.Type; }
-		}
-
-		ITargetClassType ITargetClassObject.Type {
-			get { return type.Type; }
-		}
-
-		public ITargetClassObject Parent {
+		public override TargetClassObject Parent {
 			get {
 				if (!type.Type.HasParent)
 					return null;
@@ -31,19 +23,19 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		[Command]
-		public ITargetObject GetField (int index)
+		public override TargetObject GetField (int index)
 		{
 			return type.GetField (Location, index);
 		}
 
 		[Command]
-		public void SetField (int index, ITargetObject obj)
+		public override void SetField (int index, TargetObject obj)
 		{
-			type.SetField (Location, index, (TargetObject) obj);
+			type.SetField (Location, index, obj);
 		}
 
 		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
-							out TargetLocation dynamic_location)
+						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages.Native
 		int const_value;
 
 		public NativeFieldInfo (TargetType type, string name, int index, int offset)
-			: base (type, name, index, false, offset, false)
+			: base (type, name, index, false, 0, offset, false)
 		{ }
 
 		public NativeFieldInfo (TargetType type, string name, int index, int offset,
@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public NativeFieldInfo (TargetType type, string name, int index,
 					bool has_const_value, int const_value)
-			: base (type, name, index, false, 0, has_const_value)
+			: base (type, name, index, false, 0, 0, has_const_value)
 		{
 			this.const_value = const_value;
 		}
@@ -64,7 +64,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
-	internal class NativeStructType : TargetType, ITargetStructType
+	internal class NativeStructType : TargetClassType
 	{
 		string name;
 		int size;
@@ -82,6 +82,14 @@ namespace Mono.Debugger.Languages.Native
 			: this (language, name, size)
 		{
 			this.fields = fields;
+		}
+
+		public override bool HasParent {
+			get { return false; }
+		}
+
+		public override TargetClassType ParentType {
+			get { throw new InvalidOperationException (); }
 		}
 
 		internal void SetFields (NativeFieldInfo[] fields)
@@ -107,87 +115,78 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public TargetFieldInfo[] Fields {
+		public override TargetFieldInfo[] Fields {
 			get {
 				return fields;
 			}
 		}
 
-		public TargetFieldInfo[] StaticFields {
+		public override TargetFieldInfo[] StaticFields {
 			get {
 				return new TargetFieldInfo [0];
 			}
 		}
 
-		public ITargetObject GetStaticField (ITargetAccess target, int index)
+		public override TargetObject GetStaticField (ITargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public void SetStaticField (ITargetAccess target, int index, ITargetObject obj)
+		public override void SetStaticField (ITargetAccess target, int index,
+						     TargetObject obj)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public TargetPropertyInfo[] Properties {
+		public override TargetPropertyInfo[] Properties {
 			get {
 				return new TargetPropertyInfo [0];
 			}
 		}
 
-		public TargetPropertyInfo[] StaticProperties {
+		public override TargetPropertyInfo[] StaticProperties {
 			get {
 				return new TargetPropertyInfo [0];
 			}
 		}
 
-		public ITargetObject GetStaticProperty (ITargetAccess target, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public TargetEventInfo[] Events {
+		public override TargetEventInfo[] Events {
 			get {
 				return new TargetEventInfo [0];
 			}
 		}
 
-		public TargetEventInfo[] StaticEvents {
+		public override TargetEventInfo[] StaticEvents {
 			get {
 				return new TargetEventInfo [0];
 			}
 		}
 
-		public ITargetObject GetStaticEvent (StackFrame frame, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public TargetMethodInfo[] Methods {
+		public override TargetMethodInfo[] Methods {
 			get {
 				return new TargetMethodInfo [0];
 			}
 		}
 
-		public TargetMethodInfo[] StaticMethods {
+		public override TargetMethodInfo[] StaticMethods {
 			get {
 				return new TargetMethodInfo [0];
 			}
 		}
 
-		public TargetMethodInfo[] Constructors {
+		public override TargetMethodInfo[] Constructors {
 			get {
 				return new TargetMethodInfo [0];
 			}
 		}
 
-		public TargetMethodInfo[] StaticConstructors {
+		public override TargetMethodInfo[] StaticConstructors {
 			get {
 				return new TargetMethodInfo [0];
 			}
 		}
 
-		public bool ResolveClass (ITargetAccess target)
+		public override bool ResolveClass (ITargetAccess target)
 		{
 			return true;
 		}
@@ -232,8 +231,8 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotImplementedException ();
 		}
 
-		public TargetMemberInfo FindMember (string name, bool search_static,
-						    bool search_instance)
+		public override TargetMemberInfo FindMember (string name, bool search_static,
+							     bool search_instance)
 		{
 			if (search_static) {
 				foreach (TargetFieldInfo field in StaticFields)

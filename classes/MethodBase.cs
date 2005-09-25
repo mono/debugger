@@ -228,7 +228,7 @@ namespace Mono.Debugger
                         return true;
                 }
 
-		public abstract ITargetStructType DeclaringType {
+		public abstract TargetClassType DeclaringType {
 			get;
 		}
 
