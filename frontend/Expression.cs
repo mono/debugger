@@ -1314,7 +1314,7 @@ namespace Mono.Debugger.Frontend
 			if (field.IsStatic)
 				return Type.GetStaticField (target, field.Index);
 			else
-				return InstanceObject.GetField (field.Index);
+				return InstanceObject.GetField (target, field.Index);
 		}
 
 		protected TargetObject GetProperty (ScriptingContext context,
@@ -1485,7 +1485,7 @@ namespace Mono.Debugger.Frontend
 			if (field.IsStatic)
 				Type.SetStaticField (target, field.Index, obj);
 			else
-				InstanceObject.SetField (field.Index, obj);
+				InstanceObject.SetField (target, field.Index, obj);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)

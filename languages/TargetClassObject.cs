@@ -14,8 +14,8 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetObject GetField (int index);
+		public abstract TargetObject GetField (TargetAccess target, int index);
 
-		public abstract void SetField (int index, TargetObject obj);
+		public abstract void SetField (TargetAccess target, int index, TargetObject obj);
 	}
 }

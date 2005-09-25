@@ -16,12 +16,12 @@ namespace Mono.Debugger.Languages.Native
 			get { throw new InvalidOperationException (); }
 		}
 
-		public override TargetObject GetField (int index)
+		public override TargetObject GetField (TargetAccess target, int index)
 		{
 			return type.GetField (Location, index);
 		}
 
-		public override void SetField (int index, TargetObject obj)
+		public override void SetField (TargetAccess target, int index, TargetObject obj)
 		{
 			type.SetField (Location, index, obj);
 		}

@@ -494,7 +494,7 @@ namespace Mono.Debugger.Frontend
 				StructFormatter formatter = new StructFormatter ("");
 				TargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (TargetFieldInfo field in fields) {
-					TargetObject fobj = sobj.GetField (field.Index);
+					TargetObject fobj = sobj.GetField (target, field.Index);
 					string item;
 					if (fobj == null)
 						item = field.Name + " = null";

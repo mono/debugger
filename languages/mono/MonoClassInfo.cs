@@ -100,21 +100,21 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		internal TargetObject GetField (TargetLocation location, int index)
+		internal TargetObject GetField (TargetAccess target, TargetLocation location,
+						int index)
 		{
 			try {
-				initialize (location.TargetAccess);
+				initialize (target);
 
 				TargetFieldInfo finfo = type.Fields [index];
 
 				int offset = field_offsets [finfo.Position];
 				if (!type.IsByRef)
-					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
+					offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 				TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 				if (finfo.Type.IsByRef)
-					field_loc = field_loc.GetDereferencedLocation (
-						location.TargetAccess);
+					field_loc = field_loc.GetDereferencedLocation (target);
 
 				if (field_loc.Address.IsNull)
 					return null;
@@ -125,23 +125,23 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal void SetField (TargetLocation location, int index, TargetObject obj)
+		internal void SetField (TargetAccess target, TargetLocation location,
+					int index, TargetObject obj)
 		{
 			try {
-				initialize (location.TargetAccess);
+				initialize (target);
 
 				TargetFieldInfo finfo = type.Fields [index];
 
 				int offset = field_offsets [finfo.Position];
 				if (!type.IsByRef)
-					offset -= 2 * location.TargetMemoryInfo.TargetAddressSize;
+					offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 				TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 				if (finfo.Type.IsByRef)
-					field_loc = field_loc.GetDereferencedLocation (
-						location.TargetAccess);
+					field_loc = field_loc.GetDereferencedLocation (target);
 
-				finfo.Type.SetObject (location.TargetAccess, field_loc, obj);
+				finfo.Type.SetObject (target, field_loc, obj);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}

@@ -74,7 +74,7 @@ namespace Mono.Debugger.Languages
 				blob [i] = (byte) current;
 			}
 
-			return new TargetBlob (blob, TargetInfo);
+			return new TargetBlob (blob, target.TargetInfo);
 		}
 
 		public override string Print ()

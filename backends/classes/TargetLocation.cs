@@ -61,18 +61,6 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		internal ITargetInfo TargetInfo {
-			get {
-				return target.TargetInfo;
-			}
-		}
-
-		internal ITargetMemoryInfo TargetMemoryInfo {
-			get {
-				return target.TargetMemoryInfo;
-			}
-		}
-
 		// <summary>
 		//   Clones this location, but adds `offset' to its offset.
 		//   Note that this'll just affect the new location's `Offset' property -

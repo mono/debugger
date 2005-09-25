@@ -1,5 +1,11 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClassObject.cs
+	(TargetClassObject.GetField): Added `TargetAccess' argument.
+	(TargetClassObject.SetField): Likewise.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetPointerObject.cs
 	(TargetPointerObject.CurrentType): Replaced the property with a
 	`GetCurrentType()' method.
