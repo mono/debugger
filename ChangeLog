@@ -1,5 +1,10 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/TargetAccess.cs
+	(TargetAccess.RuntimeInvoke): Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadManager.cs
 	(ThreadManager): Made this `internal'.
 	(ThreadEventHandler): Moved to Debugger.cs and renamed to

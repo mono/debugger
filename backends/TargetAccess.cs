@@ -51,15 +51,6 @@ namespace Mono.Debugger
 		public abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
 							  string string_argument);
 
-		public abstract void RuntimeInvoke (TargetFunctionType method_argument,
-						    TargetObject object_argument,
-						    TargetObject[] param_objects);
-
-		public abstract TargetObject RuntimeInvoke (TargetFunctionType method_argument,
-							     TargetObject object_argument,
-							     TargetObject[] param_objects,
-							     out string exc_message);
-
 		public abstract object Invoke (TargetAccessDelegate func, object data);
 
 		public abstract AssemblerLine DisassembleInstruction (IMethod method,
@@ -137,22 +128,6 @@ namespace Mono.Debugger.Backends
 			return process.CallMethod (method, method_argument, string_argument);
 		}
 
-		public override void RuntimeInvoke (TargetFunctionType method_argument,
-						    TargetObject object_argument,
-						    TargetObject[] param_objects)
-		{
-			process.RuntimeInvoke (method_argument, object_argument, param_objects);
-		}
-
-		public override TargetObject RuntimeInvoke (TargetFunctionType method_argument,
-							     TargetObject object_argument,
-							     TargetObject[] param_objects,
-							     out string exc_message)
-		{
-			return process.RuntimeInvoke (
-				method_argument, object_argument, param_objects, out exc_message);
-		}
-
 		public override object Invoke (TargetAccessDelegate func, object data)
 		{
 			return process.Invoke (func, data);
@@ -214,30 +189,6 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			else
 				return sse.Process.CallMethod (method, method_argument, string_argument);
-		}
-
-		public override void RuntimeInvoke (TargetFunctionType method_argument,
-						    TargetObject object_argument,
-						    TargetObject[] param_objects)
-		{
-			if (sse.ThreadManager.InBackgroundThread)
-				throw new InvalidOperationException ();
-			else
-				sse.Process.RuntimeInvoke (
-					method_argument, object_argument, param_objects);
-		}
-
-		public override TargetObject RuntimeInvoke (TargetFunctionType method_argument,
-							    TargetObject object_argument,
-							    TargetObject[] param_objects,
-							    out string exc_message)
-		{
-			if (sse.ThreadManager.InBackgroundThread)
-				throw new InvalidOperationException ();
-			else
-				return sse.Process.RuntimeInvoke (
-					method_argument, object_argument, param_objects,
-					out exc_message);
 		}
 
 		public override object Invoke (TargetAccessDelegate func, object data)
