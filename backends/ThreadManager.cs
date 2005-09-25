@@ -17,9 +17,7 @@ using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger
 {
-	public delegate void ThreadEventHandler (ThreadManager manager, Process process);
-
-	public class ThreadManager : MarshalByRefObject
+	internal class ThreadManager : MarshalByRefObject
 	{
 		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (500);
 
@@ -100,7 +98,7 @@ namespace Mono.Debugger
 			thread_hash.Add (the_engine.PID, the_engine);
 			engine_hash.Add (the_engine.ID, the_engine);
 
-			OnThreadCreatedEvent (the_engine.Process);
+			backend.OnThreadCreatedEvent (the_engine.Process);
 
 			event_queue.Lock ();
 
@@ -157,7 +155,7 @@ namespace Mono.Debugger
 			wait_until_engine_is_ready ();
 		}
 
-		public Process WaitForApplication ()
+		internal Process WaitForApplication ()
 		{
 			ready_event.WaitOne ();
 
@@ -180,8 +178,8 @@ namespace Mono.Debugger
 
 		internal void ReachedMain ()
 		{
-			OnInitializedEvent (main_process);
-			OnMainThreadCreatedEvent (main_process);
+			backend.OnInitializedEvent (main_process);
+			backend.OnMainThreadCreatedEvent (main_process);
 
 			ready_event.Set ();
 		}
@@ -276,7 +274,7 @@ namespace Mono.Debugger
 			}
 
 			new_inferior.Continue ();
-			OnThreadCreatedEvent (new_thread.Process);
+			backend.OnThreadCreatedEvent (new_thread.Process);
 
 			inferior.Continue ();
 		}
@@ -286,7 +284,7 @@ namespace Mono.Debugger
 			thread_hash.Remove (engine.PID);
 			engine_hash.Remove (engine.ID);
 			engine.Process.Kill ();
-			OnThreadExitedEvent (engine.Process);
+			backend.OnThreadExitedEvent (engine.Process);
 		}
 
 		void Kill ()
@@ -355,8 +353,7 @@ namespace Mono.Debugger
 				if (engine == main_engine) {
 					abort_requested = true;
 					Kill ();
-					if (TargetExitedEvent != null)
-						TargetExitedEvent ();
+					backend.OnTargetExitedEvent ();
 					backend.Dispose ();
 					return true;
 				} else {
@@ -381,49 +378,6 @@ namespace Mono.Debugger
 
 		public AddressDomain AddressDomain {
 			get { return address_domain; }
-		}
-
-		public event ThreadEventHandler InitializedEvent;
-		public event ThreadEventHandler MainThreadCreatedEvent;
-		public event ThreadEventHandler ThreadCreatedEvent;
-		public event ThreadEventHandler ThreadExitedEvent;
-		public event TargetExitedHandler TargetExitedEvent;
-
-		public event TargetEventHandler TargetEvent;
-
-		void OnInitializedEvent (Process new_process)
-		{
-			if (InitializedEvent != null)
-				InitializedEvent (this, new_process);
-		}
-
-		void OnMainThreadCreatedEvent (Process new_process)
-		{
-			if (MainThreadCreatedEvent != null)
-				MainThreadCreatedEvent (this, new_process);
-		}
-
-		void OnThreadCreatedEvent (Process new_process)
-		{
-			if (ThreadCreatedEvent != null)
-				ThreadCreatedEvent (this, new_process);
-		}
-
-		void OnThreadExitedEvent (Process process)
-		{
-			if (ThreadExitedEvent != null)
-				ThreadExitedEvent (this, process);
-		}
-
-		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
-		{
-			try {
-				if (TargetEvent != null)
-					TargetEvent (sse.TargetAccess, args);
-			} catch (Exception ex) {
-				backend.Error ("{0} caught exception while sending {1}:\n{2}",
-					       sse, args, ex);
-			}
 		}
 
 		internal bool InBackgroundThread {

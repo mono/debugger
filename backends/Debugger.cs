@@ -18,6 +18,8 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
+	public delegate void DebuggerEventHandler (Debugger debugger, Process process);
+
 	public abstract class Debugger : MarshalByRefObject, IDisposable
 	{
 		BfdContainer bfd_container;
@@ -50,7 +52,6 @@ namespace Mono.Debugger
 			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
 
 			thread_manager = new ThreadManager (this);
-			thread_manager.InitializedEvent += new ThreadEventHandler (initialized_event);
 		}
 
 		public ModuleManager ModuleManager {
@@ -65,7 +66,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ThreadManager ThreadManager {
+		internal ThreadManager ThreadManager {
 			get {
 				return thread_manager;
 			}
@@ -89,6 +90,14 @@ namespace Mono.Debugger
 			}
 		}
 
+		public event DebuggerEventHandler InitializedEvent;
+		public event DebuggerEventHandler MainThreadCreatedEvent;
+		public event DebuggerEventHandler ThreadCreatedEvent;
+		public event DebuggerEventHandler ThreadExitedEvent;
+		public event TargetExitedHandler TargetExitedEvent;
+
+		public event TargetEventHandler TargetEvent;
+
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		public event ModulesChangedHandler ModulesChangedEvent;
@@ -109,9 +118,51 @@ namespace Mono.Debugger
 			return start;
 		}
 
-		void initialized_event (ThreadManager manager, Process process)
+		public Process WaitForApplication ()
 		{
-			ThreadGroup.Main.AddThread (process.ID);
+			return thread_manager.WaitForApplication ();
+		}
+
+		internal void OnInitializedEvent (Process main_process)
+		{
+			ThreadGroup.Main.AddThread (main_process.ID);
+			if (InitializedEvent != null)
+				InitializedEvent (this, main_process);
+		}
+
+		internal void OnMainThreadCreatedEvent (Process new_process)
+		{
+			if (MainThreadCreatedEvent != null)
+				MainThreadCreatedEvent (this, new_process);
+		}
+
+		internal void OnThreadCreatedEvent (Process new_process)
+		{
+			if (ThreadCreatedEvent != null)
+				ThreadCreatedEvent (this, new_process);
+		}
+
+		internal void OnThreadExitedEvent (Process process)
+		{
+			if (ThreadExitedEvent != null)
+				ThreadExitedEvent (this, process);
+		}
+
+		internal void OnTargetExitedEvent ()
+		{
+			if (TargetExitedEvent != null)
+				TargetExitedEvent ();
+		}
+
+		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			try {
+				if (TargetEvent != null)
+					TargetEvent (sse.TargetAccess, args);
+			} catch (Exception ex) {
+				Error ("{0} caught exception while sending {1}:\n{2}",
+				       sse, args, ex);
+			}
 		}
 
 		void modules_changed ()

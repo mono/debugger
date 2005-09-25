@@ -1,5 +1,16 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs
+	(ThreadManager): Made this `internal'.
+	(ThreadEventHandler): Moved to Debugger.cs and renamed to
+	`DebuggerEventHandler'.
+	(ThreadManager): Moved the `InitializedEvent',
+	`MainThreadCreatedEvent', `ThreadCreatedEvent',
+	`ThreadExitedEvent', `TargetExitedEvent' and `TargetEvent' into
+	the `Debugger' class.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(DebuggerBackend): Renamed to `Debugger'.
 

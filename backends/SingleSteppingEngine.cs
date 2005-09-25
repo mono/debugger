@@ -468,7 +468,7 @@ namespace Mono.Debugger.Backends
 				engine_stopped = true;
 				engine_stopped_event.Set ();
 				if (result != null)
-					manager.SendTargetEvent (this, result);
+					manager.Debugger.SendTargetEvent (this, result);
 				process.SendTargetEvent (result, true);
 			}
 		}
@@ -483,7 +483,7 @@ namespace Mono.Debugger.Backends
 				do_continue ();
 			} else {
 				TargetEventArgs args = new TargetEventArgs (TargetEventType.TargetRunning);
-				manager.SendTargetEvent (this, args);
+				manager.Debugger.SendTargetEvent (this, args);
 				process.SendTargetEvent (args, false);
 				current_operation = new OperationRun (TargetAddress.Null, true);
 				do_continue ();

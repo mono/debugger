@@ -308,10 +308,10 @@ namespace Mono.Debugger.Frontend
 				Debugger backend = client.Debugger;
 
 				new InterpreterEventSink (this, client, backend);
-				new ProcessEventSink (this, backend.ThreadManager);
+				new ProcessEventSink (this, backend);
 
 				backend.Run (options, argv);
-				Process process = backend.ThreadManager.WaitForApplication ();
+				Process process = backend.WaitForApplication ();
 				main_process = (ProcessHandle) procs [process.ID];
 
 				start_event.WaitOne ();
@@ -332,10 +332,10 @@ namespace Mono.Debugger.Frontend
 				Debugger backend = client.Debugger;
 
 				new InterpreterEventSink (this, client, backend);
-				new ProcessEventSink (this, backend.ThreadManager);
+				new ProcessEventSink (this, backend);
 
 				backend.Run (null, argv);
-				Process process = backend.ThreadManager.WaitForApplication ();
+				Process process = backend.WaitForApplication ();
 				Print ("Server started: @{0}", process.ID);
 				process.Continue (true);
 				process.Wait ();
@@ -355,7 +355,7 @@ namespace Mono.Debugger.Frontend
 				Print ("New process @{0}", handle.Process.ID);
 		}
 
-		protected void ThreadManagerInitialized (ThreadManager manager, Process process)
+		protected void DebuggerInitialized ()
 		{
 			initialized = true;
 			start_event.Set ();
@@ -594,12 +594,12 @@ namespace Mono.Debugger.Frontend
 				this.interpreter = interpreter;
 				this.client = client;
 
-				backend.ThreadManager.ThreadCreatedEvent += new ThreadEventHandler (thread_created);
-				backend.ThreadManager.TargetExitedEvent += new TargetExitedHandler (target_exited);
-				backend.ThreadManager.InitializedEvent += new ThreadEventHandler (thread_manager_initialized);
+				backend.ThreadCreatedEvent += new DebuggerEventHandler (thread_created);
+				backend.TargetExitedEvent += new TargetExitedHandler (target_exited);
+				backend.InitializedEvent += new DebuggerEventHandler (debugger_initialized);
 			}
 
-			public void thread_created (ThreadManager manager, Process process)
+			public void thread_created (Debugger debugger, Process process)
 			{
 				ProcessHandle handle = new ProcessHandle (interpreter, client, process);
 				handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
@@ -607,9 +607,9 @@ namespace Mono.Debugger.Frontend
 				interpreter.ThreadCreated (handle);
 			}
 
-			public void thread_manager_initialized (ThreadManager manager, Process process)
+			public void debugger_initialized (Debugger debugger, Process process)
 			{
-				interpreter.ThreadManagerInitialized (manager, process);
+				interpreter.DebuggerInitialized ();
 			}
 
 			public void target_exited ()
@@ -633,11 +633,11 @@ namespace Mono.Debugger.Frontend
 		{
 			Interpreter interpreter;
 
-			public ProcessEventSink (Interpreter interpreter, ThreadManager manager)
+			public ProcessEventSink (Interpreter interpreter, Debugger debugger)
 			{
 				this.interpreter = interpreter;
 
-				manager.TargetEvent += new TargetEventHandler (target_event);
+				debugger.TargetEvent += new TargetEventHandler (target_event);
 			}
 
 			public void target_event (TargetAccess target, TargetEventArgs args)

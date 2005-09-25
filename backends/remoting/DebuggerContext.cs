@@ -26,7 +26,7 @@ namespace Mono.Debugger.Remoting
 			CurrentContext = new DebuggerClientContext (manager);
 		}
 
-		public static ThreadManager ThreadManager {
+		internal static ThreadManager ThreadManager {
 			get { return CurrentContext.ThreadManager; }
 		}
 
@@ -37,7 +37,7 @@ namespace Mono.Debugger.Remoting
 
 		protected abstract class DebuggerContextBase
 		{
-			public abstract ThreadManager ThreadManager {
+			internal abstract ThreadManager ThreadManager {
 				get;
 			}
 
@@ -53,7 +53,7 @@ namespace Mono.Debugger.Remoting
 				this.manager = manager;
 			}
 
-			public override ThreadManager ThreadManager {
+			internal override ThreadManager ThreadManager {
 				get { throw new InvalidOperationException (); }
 			}
 
@@ -73,7 +73,7 @@ namespace Mono.Debugger.Remoting
 				this.backend = backend;
 			}
 
-			public override ThreadManager ThreadManager {
+			internal override ThreadManager ThreadManager {
 				get { return backend.ThreadManager; }
 			}
 
