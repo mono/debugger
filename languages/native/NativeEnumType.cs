@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeEnumType : TargetType, ITargetEnumType
+	internal class NativeEnumType : TargetEnumType
 	{
 		string name;
 		int size;
@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public NativeEnumType (ILanguage language, string name, int size,
 				       string[] element_names, int[] element_values)
-			: base (language, TargetObjectKind.Enum)
+			: base (language)
 		{
 			this.name = name;
 			this.size = size;
@@ -54,19 +54,19 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public TargetFieldInfo Value {
+		public override TargetFieldInfo Value {
 			get {
 				return value;
 			}
 		}
 
-		public TargetFieldInfo[] Members {
+		public override TargetFieldInfo[] Members {
 			get {
 				return members;
 			}
 		}
 
-		public ITargetObject GetMember (StackFrame frame, int index)
+		public override TargetObject GetMember (StackFrame frame, int index)
 		{
 			return null;
 		}

@@ -1,5 +1,13 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetEnumType.cs: New file.
+	* languages/TargetEnumObject.cs: New file.
+
+	* interfaces/ITargetEnumType.cs: Removed.
+	* interfaces/ITargetEnumObject.cs: Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* langauges/TargetMember.cs: New file.
 	(TargetMemberInfo): New public abstract class.
 	(TargetFieldInfo): New public abstract class.

@@ -122,8 +122,8 @@ namespace Mono.Debugger.Frontend
 				ITargetStructType stype = (ITargetStructType) obj;
 				return FormatStructType (target, stype);
 			}
-			else if (obj is ITargetEnumType) {
-				ITargetEnumType etype = (ITargetEnumType) obj;
+			else if (obj is TargetEnumType) {
+				TargetEnumType etype = (TargetEnumType) obj;
 				return FormatEnumType (target, etype);
 			}
 			else if (obj is ITargetType) {
@@ -256,7 +256,7 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Enum: {
 				StringBuilder sb = new StringBuilder ();
-				ITargetEnumType etype = type as ITargetEnumType;
+				TargetEnumType etype = type as TargetEnumType;
 				sb.Append ("enum ");
 
 				if (etype.Name != null)
@@ -361,7 +361,7 @@ namespace Mono.Debugger.Frontend
 			return retval;
 		}
 
-		public string FormatEnumType (ITargetAccess target, ITargetEnumType etype)
+		public string FormatEnumType (ITargetAccess target, TargetEnumType etype)
 		{
 			return String.Format ("enum {0}", etype.Name);
 		}
@@ -505,7 +505,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case TargetObjectKind.Enum: {
-				ITargetEnumObject eobj = (ITargetEnumObject) obj;
+				TargetEnumObject eobj = (TargetEnumObject) obj;
 				ITargetObject fobj = eobj.Value;
 
 				return DoFormatObject (target, fobj, true);
