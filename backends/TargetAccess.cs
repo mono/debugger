@@ -45,13 +45,13 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-							  TargetAddress arg2);
+		internal abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+							    TargetAddress arg2);
 
-		public abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
-							  string string_argument);
+		internal abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
+							    string string_argument);
 
-		public abstract object Invoke (TargetAccessDelegate func, object data);
+		internal abstract object Invoke (TargetAccessDelegate func, object data);
 
 		public abstract AssemblerLine DisassembleInstruction (IMethod method,
 								      TargetAddress address);
@@ -116,21 +116,21 @@ namespace Mono.Debugger.Backends
 			get { return process.TargetMemoryInfo; }
 		}
 
-		public override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2)
 		{
-			return process.CallMethod (method, arg1, arg2);
+			throw new InvalidOperationException ();
 		}
 
-		public override TargetAddress CallMethod (TargetAddress method, long method_argument,
-							  string string_argument)
+		internal override TargetAddress CallMethod (TargetAddress method, long method_argument,
+							    string string_argument)
 		{
-			return process.CallMethod (method, method_argument, string_argument);
+			throw new InvalidOperationException ();
 		}
 
-		public override object Invoke (TargetAccessDelegate func, object data)
+		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
-			return process.Invoke (func, data);
+			throw new InvalidOperationException ();
 		}
 
 		public override AssemblerLine DisassembleInstruction (IMethod method,
@@ -173,8 +173,8 @@ namespace Mono.Debugger.Backends
 			get { return sse.TargetInfo; }
 		}
 
-		public override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-							  TargetAddress arg2)
+		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+							    TargetAddress arg2)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
 				throw new InvalidOperationException ();
@@ -182,8 +182,8 @@ namespace Mono.Debugger.Backends
 				return sse.Process.CallMethod (method, arg1, arg2);
 		}
 
-		public override TargetAddress CallMethod (TargetAddress method, long method_argument,
-							  string string_argument)
+		internal override TargetAddress CallMethod (TargetAddress method, long method_argument,
+							    string string_argument)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
 				throw new InvalidOperationException ();
@@ -191,7 +191,7 @@ namespace Mono.Debugger.Backends
 				return sse.Process.CallMethod (method, method_argument, string_argument);
 		}
 
-		public override object Invoke (TargetAccessDelegate func, object data)
+		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
 				return func (this, data);
