@@ -1,5 +1,14 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetPointerObject.cs
+	(TargetPointerObject.CurrentType): Replaced the property with a
+	`GetCurrentType()' method.
+	(TargetPointerObject.DereferencedObject): Replaced the property
+	with a `GetDereferencedObject()' method.
+	(TargetPointerObject.DereferencedContents): Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/ptrace/PTrace.cs: Removed.
 	(PTraceInferior): Merged with `Inferior'.
 

@@ -12,48 +12,33 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		protected TargetType GetCurrentType ()
+		public override TargetType GetCurrentType (TargetAccess target)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
 			// twice the class.
 			TargetAddress address;
-			address = Location.TargetMemoryAccess.ReadAddress (Location.Address);
-			address = Location.TargetMemoryAccess.ReadGlobalAddress (address);
+			address = target.TargetMemoryAccess.ReadAddress (Location.Address);
+			address = target.TargetMemoryAccess.ReadGlobalAddress (address);
 
-			return Type.File.MonoLanguage.GetClass (Location.TargetAccess, address);
+			return Type.File.MonoLanguage.GetClass (target, address);
 		}
 
-		public override TargetType CurrentType {
-			get {
-				TargetType type = GetCurrentType ();
-				if (type == null)
-					throw new LocationInvalidException ();
-				return type;
-			}
-		}
-
-		public override TargetObject DereferencedObject {
-			get {
-				TargetType current_type = GetCurrentType ();
-				if (current_type == null)
-					return null;
-
-				// If this is a reference type, then the `MonoObject *' already
-				// points to the boxed object itself.
-				// If it's a valuetype, then the boxed contents is immediately
-				// after the `MonoObject' header.
-
-				int offset = current_type.IsByRef ? 0 : type.Size;
-				TargetLocation new_location = Location.GetLocationAtOffset (offset);
-				TargetObject obj = current_type.GetObject (new_location);
-				return obj;
-			}
-		}
-
-		public override byte[] GetDereferencedContents (int size)
+		public override TargetObject GetDereferencedObject (TargetAccess target)
 		{
-			throw new InvalidOperationException ();
+			TargetType current_type = GetCurrentType (target);
+			if (current_type == null)
+				return null;
+
+			// If this is a reference type, then the `MonoObject *' already
+			// points to the boxed object itself.
+			// If it's a valuetype, then the boxed contents is immediately
+			// after the `MonoObject' header.
+
+			int offset = current_type.IsByRef ? 0 : type.Size;
+			TargetLocation new_location = Location.GetLocationAtOffset (offset);
+			TargetObject obj = current_type.GetObject (new_location);
+			return obj;
 		}
 
 		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,

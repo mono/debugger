@@ -8,32 +8,21 @@ namespace Mono.Debugger.Languages.Native
 			: base (type, location)
 		{ }
 
-		public override TargetType CurrentType {
-			get {
-				if (!Type.HasStaticType)
-					throw new InvalidOperationException ();
-
-				return Type.StaticType;
-			}
-		}
-
-		public override TargetObject DereferencedObject {
-			get {
-				if (!Type.HasStaticType)
-					throw new InvalidOperationException ();
-
-				TargetLocation new_location = Location.GetLocationAtOffset (0);
-				return Type.StaticType.GetObject (new_location);
-			}
-		}
-
-		public override byte[] GetDereferencedContents (int size)
+		public override TargetType GetCurrentType (TargetAccess target)
 		{
-			try {
-				return Location.ReadBuffer (Location.TargetAccess, size);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
+			if (!Type.HasStaticType)
+				throw new InvalidOperationException ();
+
+			return Type.StaticType;
+		}
+
+		public override TargetObject GetDereferencedObject (TargetAccess target)
+		{
+			if (!Type.HasStaticType)
+				throw new InvalidOperationException ();
+
+			TargetLocation new_location = Location.GetLocationAtOffset (0);
+			return Type.StaticType.GetObject (new_location);
 		}
 
 		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
@@ -64,7 +53,7 @@ namespace Mono.Debugger.Languages.Native
 				else
 					return String.Format ("{0}", Address);
 			} else {
-				byte[] data = GetDereferencedContents (type.Size);
+				byte[] data = Location.ReadBuffer (target, type.Size);
 
 				long address;
 				if (type.Size == 4)

@@ -25,10 +25,10 @@ namespace Mono.Debugger.Languages
 			this.regoffset = regoffset;
 			this.is_byref = is_byref;
 
-			update ();
+			update (target);
 		}
 
-		void update ()
+		void update (TargetAccess target)
 		{
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
@@ -42,10 +42,10 @@ namespace Mono.Debugger.Languages
 				address = TargetAddress.Null;
 			else
 				address = new TargetAddress (
-					TargetMemoryInfo.AddressDomain, contents + regoffset);
+					target.TargetMemoryInfo.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
-				address = TargetMemoryAccess.ReadAddress (address);
+				address = target.TargetMemoryAccess.ReadAddress (address);
 		}
 
 		public override bool HasAddress {
@@ -105,7 +105,7 @@ namespace Mono.Debugger.Languages
 
 			// If this is a valuetype, the register hold the whole data.
 			register.WriteRegister (target, contents);
-			update ();
+			update (target);
 		}
 
 		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
@@ -114,7 +114,7 @@ namespace Mono.Debugger.Languages
 				target.TargetMemoryAccess.WriteAddress (address, new_address);
 			} else {
 				register.WriteRegister (target, new_address.Address);
-				update ();
+				update (target);
 			}
 		}
 

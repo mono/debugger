@@ -14,22 +14,12 @@ namespace Mono.Debugger.Languages
 		//   The current type of the object pointed to by this pointer.
 		//   May only be used if ITargetPointerType.HasStaticType is false.
 		// </summary>
-		public abstract TargetType CurrentType {
-			get;
-		}
+		public abstract TargetType GetCurrentType (TargetAccess target);
 
 		// <summary>
 		//   If HasDereferencedObject is true, return the dereferenced object.
 		// </summary>
-		public abstract TargetObject DereferencedObject {
-			get;
-		}
-
-		// <summary>
-		//   Dereference the pointer and read @size bytes from the location it
-		//   points to.  Only allowed for non-typesafe pointers.
-		// </summary>
-		public abstract byte[] GetDereferencedContents (int size);
+		public abstract TargetObject GetDereferencedObject (TargetAccess target);
 
 		public bool HasAddress {
 			get { return Location.HasAddress; }

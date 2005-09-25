@@ -61,12 +61,6 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		internal ITargetMemoryAccess TargetMemoryAccess {
-			get {
-				return target.TargetMemoryAccess;
-			}
-		}
-
 		internal ITargetInfo TargetInfo {
 			get {
 				return target.TargetInfo;

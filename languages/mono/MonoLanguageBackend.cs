@@ -856,7 +856,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetObject result;
 			try {
-				result = obj.DereferencedObject;
+				result = obj.GetDereferencedObject (target);
 				if (result == null)
 					result = obj;
 			} catch {

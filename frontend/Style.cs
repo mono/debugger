@@ -477,7 +477,7 @@ namespace Mono.Debugger.Frontend
 				TargetPointerObject pobj = (TargetPointerObject) obj;
 				if (pobj.Type.IsTypesafe) {
 					try {
-						TargetObject deref = pobj.DereferencedObject;
+						TargetObject deref = pobj.GetDereferencedObject (target);
 						return String.Format (
 							"&({0}) {1}", deref.TypeName,
 							DoFormatObject (target, deref, false));

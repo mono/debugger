@@ -1557,11 +1557,12 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetObject obj = expr.EvaluateVariable (context);
 
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj != null) {
 				TargetObject result;
 				try {
-					result = pobj.DereferencedObject;
+					result = pobj.GetDereferencedObject (target);
 				} catch {
 					result = null;
 				}
