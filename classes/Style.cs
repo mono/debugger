@@ -71,7 +71,7 @@ namespace Mono.Debugger
 
 		public abstract string ShowVariableType (TargetType type, string name);
 
-		public abstract string PrintVariable (IVariable variable, StackFrame frame);
+		public abstract string PrintVariable (TargetVariable variable, StackFrame frame);
 
 		public abstract string FormatObject (ITargetAccess target, object obj);
 

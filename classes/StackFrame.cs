@@ -383,15 +383,15 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IVariable[] Locals {
+		public TargetVariable[] Locals {
 			get {
 				check_disposed ();
 				ArrayList list = new ArrayList ();
-				foreach (IVariable local in Method.Locals) {
+				foreach (TargetVariable local in Method.Locals) {
 					if (local.IsAlive (TargetAddress))
 						list.Add (local);
 				}
-				IVariable[] retval = new IVariable [list.Count];
+				TargetVariable[] retval = new TargetVariable [list.Count];
 				list.CopyTo (retval, 0);
 				return retval;
 			}

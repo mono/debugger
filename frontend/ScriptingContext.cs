@@ -142,8 +142,8 @@ namespace Mono.Debugger.Frontend
 			if (frame.Method == null)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			IVariable[] param_vars = frame.Method.Parameters;
-			foreach (IVariable var in param_vars) {
+			TargetVariable[] param_vars = frame.Method.Parameters;
+			foreach (TargetVariable var in param_vars) {
 				string msg = context.Interpreter.Style.PrintVariable (var, frame);
 				context.Interpreter.Print (msg);
 			}
@@ -154,14 +154,14 @@ namespace Mono.Debugger.Frontend
 			if (frame.Method == null)
 				throw new ScriptingException ("Selected stack frame has no method.");
 
-			IVariable[] local_vars = frame.Locals;
-			foreach (IVariable var in local_vars) {
+			TargetVariable[] local_vars = frame.Locals;
+			foreach (TargetVariable var in local_vars) {
 				string msg = context.Interpreter.Style.PrintVariable (var, frame);
 				context.Interpreter.Print (msg);
 			}
 		}
 
-		public IVariable GetVariableInfo (string identifier, bool report_errors)
+		public TargetVariable GetVariableInfo (string identifier, bool report_errors)
 		{
 			if (frame.Method == null) {
 				if (!report_errors)
@@ -170,7 +170,7 @@ namespace Mono.Debugger.Frontend
 					"Selected stack frame has no method.");
 			}
 
-			IVariable var = frame.Method.GetVariableByName (identifier);
+			TargetVariable var = frame.Method.GetVariableByName (identifier);
 			if (var != null)
 				return var;
 
@@ -181,7 +181,7 @@ namespace Mono.Debugger.Frontend
 				"No variable or parameter with that name: `{0}'.", identifier);
 		}
 
-		public TargetObject GetVariable (IVariable var)
+		public TargetObject GetVariable (TargetVariable var)
 		{
 			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");

@@ -1,5 +1,11 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IVariable.cs: Removed.
+
+	* languages/TargetVariable.cs: New file.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetType.cs: Removed.
 
 	* interfaces/ITargetObject.cs: Removed.

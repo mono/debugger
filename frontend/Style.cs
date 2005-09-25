@@ -518,7 +518,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public override string PrintVariable (IVariable variable, StackFrame frame)
+		public override string PrintVariable (TargetVariable variable, StackFrame frame)
 		{
 			string contents;
 			TargetObject obj = null;
@@ -591,7 +591,7 @@ namespace Mono.Debugger.Frontend
 			frame.PrintSource (context);
 		}
 
-		public override string PrintVariable (IVariable variable, StackFrame frame)
+		public override string PrintVariable (TargetVariable variable, StackFrame frame)
 		{
 			TargetObject obj = null;
 			try {

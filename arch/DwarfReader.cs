@@ -2058,7 +2058,7 @@ namespace Mono.Debugger.Architecture
 			DwarfTargetMethod method;
 			LineNumberEngine engine;
 			ArrayList param_dies, local_dies;
-			IVariable[] parameters, locals;
+			TargetVariable[] parameters, locals;
 
 			protected override void ProcessAttribute (Attribute attribute)
 			{
@@ -2232,24 +2232,24 @@ namespace Mono.Debugger.Architecture
 				local_dies.Add (variable);
 			}
 
-			IVariable[] resolve_variables (ArrayList variables)
+			TargetVariable[] resolve_variables (ArrayList variables)
 			{
 				if (variables == null)
-					return new IVariable [0];
+					return new TargetVariable [0];
 
 				ArrayList list = new ArrayList ();
 				foreach (DieMethodVariable variable in variables) {
-					IVariable resolved = variable.Variable;
+					TargetVariable resolved = variable.Variable;
 					if (resolved != null)
 						list.Add (resolved);
 				}
 
-				IVariable[] retval = new IVariable [list.Count];
+				TargetVariable[] retval = new TargetVariable [list.Count];
 				list.CopyTo (retval, 0);
 				return retval;
 			}
 
-			public IVariable[] Parameters {
+			public TargetVariable[] Parameters {
 				get {
 					if (parameters == null)
 						parameters = resolve_variables (param_dies);
@@ -2258,7 +2258,7 @@ namespace Mono.Debugger.Architecture
 				}
 			}
 
-			public IVariable[] Locals {
+			public TargetVariable[] Locals {
 				get {
 					if (locals == null)
 						locals = resolve_variables (local_dies);
@@ -2339,17 +2339,17 @@ namespace Mono.Debugger.Architecture
 				get { return false; }
 			}
 
-			public override IVariable This {
+			public override TargetVariable This {
 				get {
 					throw new InvalidOperationException ();
 				}
 			}
 
-			public override IVariable[] Parameters {
+			public override TargetVariable[] Parameters {
 				get { return subprog.Parameters; }
 			}
 
-			public override IVariable[] Locals {
+			public override TargetVariable[] Locals {
 				get { return subprog.Locals; }
 			}
 
@@ -2523,7 +2523,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		protected class TargetVariable : MarshalByRefObject, IVariable
+		protected class DwarfTargetVariable : TargetVariable
 		{
 			DwarfReader dwarf;
 			string name;
@@ -2531,8 +2531,8 @@ namespace Mono.Debugger.Architecture
 			TargetBinaryReader location;
 			int offset;
 
-			public TargetVariable (DwarfReader dwarf, string name, TargetType type,
-					       TargetBinaryReader location)
+			public DwarfTargetVariable (DwarfReader dwarf, string name, TargetType type,
+						    TargetBinaryReader location)
 			{
 				this.dwarf = dwarf;
 				this.name = name;
@@ -2540,8 +2540,8 @@ namespace Mono.Debugger.Architecture
 				this.location = location;
 			}
 
-			public TargetVariable (DwarfReader dwarf, string name, TargetType type,
-					       int offset)
+			public DwarfTargetVariable (DwarfReader dwarf, string name, TargetType type,
+						    int offset)
 			{
 				this.dwarf = dwarf;
 				this.name = name;
@@ -2549,19 +2549,15 @@ namespace Mono.Debugger.Architecture
 				this.offset = offset;
 			}
 
-			public string Name {
+			public override string Name {
 				get { return name; }
 			}
 
-			TargetType IVariable.Type {
+			public override TargetType Type {
 				get { return type; }
 			}
 
-			public TargetType Type {
-				get { return type; }
-			}
-
-			public bool IsAlive (TargetAddress address)
+			public override bool IsAlive (TargetAddress address)
 			{
 				return true;
 			}
@@ -2598,7 +2594,7 @@ namespace Mono.Debugger.Architecture
 					frame.TargetAccess, true, reg, off, type.IsByRef);
 			}
 
-			public TargetObject GetObject (StackFrame frame)
+			public override TargetObject GetObject (StackFrame frame)
 			{
 				TargetLocation location = GetLocation (frame);
 				if (location == null)
@@ -2607,11 +2603,11 @@ namespace Mono.Debugger.Architecture
 				return type.GetObject (location);
 			}
 
-			public bool CanWrite {
+			public override bool CanWrite {
 				get { return type.Kind == TargetObjectKind.Fundamental; }
 			}
 
-			public void SetObject (StackFrame frame, TargetObject obj)
+			public override void SetObject (StackFrame frame, TargetObject obj)
 			{
 				if (obj.Type != Type)
 					throw new InvalidOperationException ();
@@ -3502,11 +3498,11 @@ namespace Mono.Debugger.Architecture
 				if (!use_constant) {
 					TargetBinaryReader locreader = new TargetBinaryReader (
 						       location_block, target_info);
-					variable = new TargetVariable (
+					variable = new DwarfTargetVariable (
 						dwarf, Name, type, locreader);
 				}
 				else {
-					variable = new TargetVariable (
+					variable = new DwarfTargetVariable (
 						dwarf, Name, type, (int)location_constant);
 				}
 				return true;

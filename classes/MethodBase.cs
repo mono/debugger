@@ -236,29 +236,29 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract IVariable This {
+		public abstract TargetVariable This {
 			get;
 		}
 
-		public abstract IVariable[] Parameters {
+		public abstract TargetVariable[] Parameters {
 			get;
 		}
 
-		public abstract IVariable[] Locals {
+		public abstract TargetVariable[] Locals {
 			get;
 		}
 
 		public abstract SourceMethod GetTrampoline (ITargetMemoryAccess memory,
 							    TargetAddress address);
 
-		public IVariable GetVariableByName (string name)
+		public TargetVariable GetVariableByName (string name)
 		{
-			foreach (IVariable var in Locals) {
+			foreach (TargetVariable var in Locals) {
 				if (var.Name == name)
 					return var;
 			}
 
-			foreach (IVariable var in Parameters) {
+			foreach (TargetVariable var in Parameters) {
 				if (var.Name == name)
 					return var;
 			}

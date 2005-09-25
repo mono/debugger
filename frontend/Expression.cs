@@ -452,7 +452,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected FrameHandle frame;
-		protected IVariable var;
+		protected TargetVariable var;
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
@@ -567,9 +567,9 @@ namespace Mono.Debugger.Frontend
 
 	public class VariableAccessExpression : Expression
 	{
-		IVariable var;
+		TargetVariable var;
 
-		public VariableAccessExpression (IVariable var)
+		public VariableAccessExpression (TargetVariable var)
 		{
 			this.var = var;
 			resolved = true;
@@ -704,7 +704,7 @@ namespace Mono.Debugger.Frontend
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
-			IVariable var = frame.GetVariableInfo (name, false);
+			TargetVariable var = frame.GetVariableInfo (name, false);
 			if (var != null)
 				return new VariableAccessExpression (var);
 

@@ -1,15 +1,17 @@
+using System;
+
 namespace Mono.Debugger.Languages
 {
 	// <summary>
 	//   This interface provides information about a variable in the target application.
 	// </summary>
-	public interface IVariable
+	public abstract class TargetVariable : MarshalByRefObject
 	{
-		string Name {
+		public abstract string Name {
 			get;
 		}
 
-		TargetType Type {
+		public abstract TargetType Type {
 			get;
 		}
 
@@ -19,7 +21,7 @@ namespace Mono.Debugger.Languages
 		//   from the symbol file and - if appropriate - from the JIT to find out
 		//   whether the specified address is within the variable's live range.
 		// </summary>
-		bool IsAlive (TargetAddress address);
+		public abstract bool IsAlive (TargetAddress address);
 
 		// <summary>
 		//   Retrieve an instance of this variable from the stack-frame @frame.
@@ -31,12 +33,12 @@ namespace Mono.Debugger.Languages
 		//   bound to any particular target location.  This also means that it won't
 		//   get invalid after the target exited.
 		// </remarks>
-		TargetObject GetObject (StackFrame frame);
+		public abstract TargetObject GetObject (StackFrame frame);
 
-		bool CanWrite {
+		public abstract bool CanWrite {
 			get;
 		}
 
-		void SetObject (StackFrame frame, TargetObject obj);
+		public abstract void SetObject (StackFrame frame, TargetObject obj);
 	}
 }

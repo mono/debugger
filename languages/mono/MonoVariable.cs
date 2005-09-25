@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoVariable : MarshalByRefObject, IVariable
+	internal class MonoVariable : TargetVariable
 	{
 		VariableInfo info;
 		string name;
@@ -67,11 +67,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return backend; }
 		}
 
-		public string Name {
+		public override string Name {
 			get { return name; }
 		}
 
-		public TargetType Type {
+		public override TargetType Type {
 			get { return type; }
 		}
 
@@ -96,12 +96,12 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 		}
 
-		public bool IsAlive (TargetAddress address)
+		public override bool IsAlive (TargetAddress address)
 		{
 			return (address >= start_liveness) && (address <= end_liveness);
 		}
 
-		public TargetObject GetObject (StackFrame frame)
+		public override TargetObject GetObject (StackFrame frame)
 		{
 			TargetLocation location = GetLocation (frame);
 
@@ -115,11 +115,11 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (location);
 		}
 
-		public bool CanWrite {
+		public override bool CanWrite {
 			get { return true; }
 		}
 
-		public void SetObject (StackFrame frame, TargetObject obj)
+		public override void SetObject (StackFrame frame, TargetObject obj)
 		{
 			TargetLocation location = GetLocation (frame);
 

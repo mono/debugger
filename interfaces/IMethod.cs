@@ -136,21 +136,21 @@ namespace Mono.Debugger
 		// The method's "this" pointer.
 		// </summary>
 
-		IVariable This {
+		TargetVariable This {
 			get;
 		}
 
 		// <summary>
 		//   The method's parameters.
 		// </summary>
-		IVariable[] Parameters {
+		TargetVariable[] Parameters {
 			get;
 		}
 
 		// <summary>
 		//   The method's local variables
 		// </summary>
-		IVariable[] Locals {
+		TargetVariable[] Locals {
 			get;
 		}
 
@@ -161,6 +161,6 @@ namespace Mono.Debugger
 					      ITargetMemoryAccess memory,
 					      IArchitecture arch);
 
-		IVariable GetVariableByName (string name);
+		TargetVariable GetVariableByName (string name);
 	}
 }

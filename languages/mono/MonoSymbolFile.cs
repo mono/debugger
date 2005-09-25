@@ -630,9 +630,9 @@ namespace Mono.Debugger.Languages.Mono
 			MonoClassType decl_type;
 			TargetType[] param_types;
 			TargetType[] local_types;
-			IVariable this_var;
-			IVariable[] parameters;
-			IVariable[] locals;
+			TargetVariable this_var;
+			TargetVariable[] parameters;
+			TargetVariable[] locals;
 			bool has_variables;
 			bool is_loaded;
 			MethodAddress address;
@@ -675,7 +675,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				Cecil.IParameterDefinitionCollection param_info = mdef.Parameters;
 				param_types = new TargetType [param_info.Count];
-				parameters = new IVariable [param_info.Count];
+				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
 					Cecil.ITypeReference type = param_info [i].ParameterType;
 
@@ -688,7 +688,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 
 				local_types = new TargetType [method.NumLocals];
-				locals = new IVariable [method.NumLocals];
+				locals = new TargetVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
 					local_types [i] = MonoDebuggerSupport.GetLocalTypeFromSignature (
@@ -720,7 +720,7 @@ namespace Mono.Debugger.Languages.Mono
 				has_variables = true;
 			}
 
-			public override IVariable[] Parameters {
+			public override TargetVariable[] Parameters {
 				get {
 					if (!is_loaded)
 						throw new InvalidOperationException ();
@@ -730,7 +730,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			public override IVariable[] Locals {
+			public override TargetVariable[] Locals {
 				get {
 					if (!is_loaded)
 						throw new InvalidOperationException ();
@@ -760,7 +760,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			public override IVariable This {
+			public override TargetVariable This {
 				get {
 					if (!is_loaded)
 						throw new InvalidOperationException ();
@@ -1149,15 +1149,15 @@ namespace Mono.Debugger.Languages.Mono
 				get { return false; }
 			}
 
-			public override IVariable This {
+			public override TargetVariable This {
 				get { throw new InvalidOperationException (); }
 			}
 
-			public override IVariable[] Parameters {
+			public override TargetVariable[] Parameters {
 				get { return null; }
 			}
 
-			public override IVariable[] Locals {
+			public override TargetVariable[] Locals {
 				get { return null; }
 			}
 
