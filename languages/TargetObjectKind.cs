@@ -1,4 +1,4 @@
-namespace Mono.Debugger
+namespace Mono.Debugger.Languages
 {
 	public enum TargetObjectKind
 	{
