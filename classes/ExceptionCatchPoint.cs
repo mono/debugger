@@ -31,7 +31,7 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		public override bool CheckBreakpointHit (ITargetAccess target, TargetAddress address)
+		public override bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
 		{
 			TargetClassObject exc = language.CreateObject (target, address)
 				as TargetClassObject;

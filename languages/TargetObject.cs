@@ -43,7 +43,7 @@ namespace Mono.Debugger.Languages
 		internal abstract long GetDynamicSize (TargetBlob blob, TargetLocation location,
 						       out TargetLocation dynamic_location);
 
-		public virtual string Print (ITargetAccess target)
+		public virtual string Print (TargetAccess target)
 		{
 			return ToString ();
 		}

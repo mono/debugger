@@ -58,7 +58,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public void Disassemble (ScriptingContext context, ITargetAccess target)
+		public void Disassemble (ScriptingContext context, TargetAccess target)
 		{
 			AssemblerLine line = Disassemble (target);
 
@@ -69,12 +69,12 @@ namespace Mono.Debugger.Frontend
 					       frame.TargetAddress);
 		}
 
-		public AssemblerLine Disassemble (ITargetAccess target)
+		public AssemblerLine Disassemble (TargetAccess target)
 		{
 			return Disassemble (target, frame.TargetAddress);
 		}
 
-		public AssemblerLine Disassemble (ITargetAccess target, TargetAddress address)
+		public AssemblerLine Disassemble (TargetAccess target, TargetAddress address)
 		{
 			IMethod method = frame.Method;
 			if ((method == null) || !method.IsLoaded)
@@ -85,7 +85,7 @@ namespace Mono.Debugger.Frontend
 				return target.DisassembleInstruction (method, address);
 		}
 
-		public void DisassembleMethod (ScriptingContext context, ITargetAccess target)
+		public void DisassembleMethod (ScriptingContext context, TargetAccess target)
 		{
 			IMethod method = frame.Method;
 
@@ -205,7 +205,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void TargetEvent (ITargetAccess target, TargetEventArgs args)
+		public void TargetEvent (TargetAccess target, TargetEventArgs args)
 		{
 			switch (args.Type) {
 			case TargetEventType.TargetStopped: {

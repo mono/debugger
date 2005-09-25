@@ -15,9 +15,9 @@ namespace Mono.Debugger.Languages
 			this.Rank = type.Rank;
 		}
 
-		protected abstract void DoGetArrayBounds (ITargetAccess target);
+		protected abstract void DoGetArrayBounds (TargetAccess target);
 
-		protected bool GetArrayBounds (ITargetAccess target)
+		protected bool GetArrayBounds (TargetAccess target)
 		{
 			if (bounds != null)
 				return true;
@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public int GetLowerBound (ITargetAccess target, int dimension)
+		public int GetLowerBound (TargetAccess target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -43,7 +43,7 @@ namespace Mono.Debugger.Languages
 			return bounds [dimension].Lower;
 		}
 
-		public int GetUpperBound (ITargetAccess target, int dimension)
+		public int GetUpperBound (TargetAccess target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -54,7 +54,7 @@ namespace Mono.Debugger.Languages
 			return bounds [dimension].Lower + bounds [dimension].Length;
 		}
 
-		protected int GetArrayOffset (ITargetAccess target, int[] indices)
+		protected int GetArrayOffset (TargetAccess target, int[] indices)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -87,7 +87,7 @@ namespace Mono.Debugger.Languages
 				throw new InvalidOperationException ();
 		}
 
-		protected int GetLength (ITargetAccess target)
+		protected int GetLength (TargetAccess target)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -98,9 +98,9 @@ namespace Mono.Debugger.Languages
 			return length;
 		}
 
-		public abstract TargetObject GetElement (ITargetAccess target, int[] indices);
+		public abstract TargetObject GetElement (TargetAccess target, int[] indices);
 
-		public abstract void SetElement (ITargetAccess target, int[] indices,
+		public abstract void SetElement (TargetAccess target, int[] indices,
 						 TargetObject obj);
 
 		public override string ToString ()

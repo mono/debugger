@@ -110,7 +110,7 @@ namespace Mono.Debugger.Frontend
 			TargetStopped (context, frame, insn);
 		}
 
-		public override string FormatObject (ITargetAccess target, object obj)
+		public override string FormatObject (TargetAccess target, object obj)
 		{
 			if (obj is long) {
 				return String.Format ("0x{0:x}", (long) obj);
@@ -139,7 +139,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string FormatEnumMember (ITargetAccess target, string prefix,
+		protected string FormatEnumMember (TargetAccess target, string prefix,
 						   TargetMemberInfo member, bool is_static,
 						   Hashtable hash)
 		{
@@ -229,12 +229,12 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		public override string FormatType (ITargetAccess target, TargetType type)
+		public override string FormatType (TargetAccess target, TargetType type)
 		{
 			return FormatType (target, "", type, null);
 		}
 
-		protected string FormatType (ITargetAccess target, string prefix,
+		protected string FormatType (TargetAccess target, string prefix,
 					     TargetType type, Hashtable hash)
 		{
 			string retval;
@@ -363,12 +363,12 @@ namespace Mono.Debugger.Frontend
 			return retval;
 		}
 
-		public string FormatEnumType (ITargetAccess target, TargetEnumType etype)
+		public string FormatEnumType (TargetAccess target, TargetEnumType etype)
 		{
 			return String.Format ("enum {0}", etype.Name);
 		}
 
-		public string FormatStructType (ITargetAccess target, TargetClassType stype)
+		public string FormatStructType (TargetAccess target, TargetClassType stype)
 		{
 			string header = "";
 			switch (stype.Kind) {
@@ -402,7 +402,7 @@ namespace Mono.Debugger.Frontend
 			}       
 		}       
 
-		protected string DoFormatObject (ITargetAccess target, TargetObject obj, bool recursed)
+		protected string DoFormatObject (TargetAccess target, TargetObject obj, bool recursed)
 		{
 			try {
 				if (recursed)
@@ -414,7 +414,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string DoFormatObjectRecursed (ITargetAccess target, TargetObject obj)
+		protected string DoFormatObjectRecursed (TargetAccess target, TargetObject obj)
 		{
 			if (obj.IsNull)
 				return "null";
@@ -430,7 +430,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void DoFormatArray (ITargetAccess target, TargetArrayObject aobj,
+		protected void DoFormatArray (TargetAccess target, TargetArrayObject aobj,
 					      StringBuilder sb, int dimension, int rank, int[] indices)
 		{
 			sb.Append ("[ ");
@@ -455,7 +455,7 @@ namespace Mono.Debugger.Frontend
 			sb.Append (" ]");
 		}
 
-		protected string DoFormatArray (ITargetAccess target, TargetArrayObject aobj)
+		protected string DoFormatArray (TargetAccess target, TargetArrayObject aobj)
 		{
 			int rank = aobj.Type.Rank;
 			StringBuilder sb = new StringBuilder ();
@@ -464,7 +464,7 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		protected string DoFormatObject (ITargetAccess target, TargetObject obj)
+		protected string DoFormatObject (TargetAccess target, TargetObject obj)
 		{
 			if (obj.IsNull)
 				return "null";
@@ -609,7 +609,7 @@ namespace Mono.Debugger.Frontend
 				"{0} = ({1}) {2}", variable.Name, variable.Type.Name, contents);
 		}
 
-		public override string FormatObject (ITargetAccess target, object obj)
+		public override string FormatObject (TargetAccess target, object obj)
 		{
 			if (obj is long)
 				return String.Format ("0x{0:x}", (long) obj);
@@ -617,7 +617,7 @@ namespace Mono.Debugger.Frontend
 				return obj.ToString ();
 		}
 
-		public override string FormatType (ITargetAccess target, TargetType type)
+		public override string FormatType (TargetAccess target, TargetType type)
 		{
 			return type.ToString ();
 		}

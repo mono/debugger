@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate bool BreakpointCheckHandler (Breakpoint bpt, ITargetAccess target,
+	public delegate bool BreakpointCheckHandler (Breakpoint bpt, TargetAccess target,
 						     TargetAddress address);
 
 	[Serializable]
@@ -25,7 +25,7 @@ namespace Mono.Debugger
 
 		BreakpointCheckHandler check_handler;
 
-		public override bool CheckBreakpointHit (ITargetAccess target, TargetAddress address)
+		public override bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
 		{
 			if (check_handler != null)
 				return check_handler (this, target, address);

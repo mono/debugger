@@ -46,7 +46,7 @@ namespace Mono.Debugger
 
 		public event ObjectInvalidHandler BacktraceInvalidEvent;
 
-		public void GetBacktrace (ITargetAccess target, IArchitecture arch,
+		public void GetBacktrace (TargetAccess target, IArchitecture arch,
 					  ISymbolTable symtab, ISimpleSymbolTable simple)
 		{
 			while (TryUnwind (target, arch, symtab, simple)) {
@@ -55,7 +55,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void GetBacktrace (ITargetAccess target, IArchitecture arch,
+		public void GetBacktrace (TargetAccess target, IArchitecture arch,
 					  ISymbolTable symtab, ISimpleSymbolTable simple,
 					  TargetAddress stack)
 		{
@@ -73,7 +73,7 @@ namespace Mono.Debugger
 			GetBacktrace (target, arch, symtab, simple);
 		}
 
-		public bool TryUnwind (ITargetAccess target, IArchitecture arch,
+		public bool TryUnwind (TargetAccess target, IArchitecture arch,
 				       ISymbolTable symtab, ISimpleSymbolTable simple_symtab)
 		{
 			if (finished)

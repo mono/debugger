@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
 		}
 
-		void initialize (ITargetAccess target)
+		void initialize (TargetAccess target)
 		{
 			if (initialized)
 				return;

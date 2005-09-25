@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 			FieldInfo = finfo;
 		}
 
-		public override TargetObject GetConstValue (ITargetAccess target) 
+		public override TargetObject GetConstValue (TargetAccess target) 
 		{
 			// this is definitely swayed toward enums,
 			// where we know we can get the const value

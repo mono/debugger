@@ -640,7 +640,7 @@ namespace Mono.Debugger.Frontend
 				manager.TargetEvent += new TargetEventHandler (target_event);
 			}
 
-			public void target_event (ITargetAccess target, TargetEventArgs args)
+			public void target_event (TargetAccess target, TargetEventArgs args)
 			{
 				ProcessHandle proc = (ProcessHandle) interpreter.procs [target.ID];
 

@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages
 			return sb.ToString ();
 		}
 
-		internal override TargetBlob ReadMemory (ITargetAccess target, int size)
+		internal override TargetBlob ReadMemory (TargetAccess target, int size)
 		{
 			byte[] data = relative_to.ReadBuffer (target, size);
 

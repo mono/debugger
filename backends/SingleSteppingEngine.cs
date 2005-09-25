@@ -603,7 +603,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal ITargetAccess TargetAccess {
+		internal TargetAccess TargetAccess {
 			get { return target_access; }
 		}
 

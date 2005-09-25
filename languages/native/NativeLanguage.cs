@@ -81,7 +81,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		public override TargetFundamentalObject CreateInstance (TargetAccess target, int value)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -94,17 +94,17 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerObject (pointer_type, location);
 		}
 
-		public override TargetObject CreateObject (ITargetAccess target, TargetAddress address)
+		public override TargetObject CreateObject (TargetAccess target, TargetAddress address)
 		{
 			throw new NotSupportedException ();
 		}
 
-		public override TargetAddress AllocateMemory (ITargetAccess target, int size)
+		public override TargetAddress AllocateMemory (TargetAccess target, int size)
 		{
 			throw new NotSupportedException ();
 		}
 
-		public override TargetObject CreateNullObject (ITargetAccess target, TargetType type)
+		public override TargetObject CreateNullObject (TargetAccess target, TargetType type)
 		{
 			throw new NotSupportedException ();
 		}

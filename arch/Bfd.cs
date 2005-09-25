@@ -302,7 +302,7 @@ namespace Mono.Debugger.Architecture
 			return simple_symbols;
 		}
 
-		bool dynlink_handler (Breakpoint bpt, ITargetAccess target, TargetAddress address)
+		bool dynlink_handler (Breakpoint bpt, TargetAccess target, TargetAddress address)
 		{
 			ITargetMemoryAccess memory = target.TargetMemoryAccess;
 			if (memory.ReadInteger (rdebug_state_addr) != 0)

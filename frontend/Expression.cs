@@ -1309,7 +1309,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected TargetObject GetField (ITargetAccess target, TargetFieldInfo field)
+		protected TargetObject GetField (TargetAccess target, TargetFieldInfo field)
 		{
 			if (field.IsStatic)
 				return Type.GetStaticField (target, field.Index);
@@ -1333,7 +1333,7 @@ namespace Mono.Debugger.Frontend
 			return res;
 		}
 
-		protected TargetObject GetMember (ScriptingContext context, ITargetAccess target,
+		protected TargetObject GetMember (ScriptingContext context, TargetAccess target,
 						   TargetMemberInfo member)
 		{
 			if (member is TargetPropertyInfo)
@@ -1480,7 +1480,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void SetField (ITargetAccess target, TargetFieldInfo field, TargetObject obj)
+		protected void SetField (TargetAccess target, TargetFieldInfo field, TargetObject obj)
 		{
 			if (field.IsStatic)
 				Type.SetStaticField (target, field.Index, obj);
@@ -1706,7 +1706,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		int GetIntIndex (ITargetAccess target, Expression index, ScriptingContext context)
+		int GetIntIndex (TargetAccess target, Expression index, ScriptingContext context)
 		{
 			try {
 				object idx = index.Evaluate (context);
@@ -1723,7 +1723,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		int[] GetIntIndices (ITargetAccess target, ScriptingContext context)
+		int[] GetIntIndices (TargetAccess target, ScriptingContext context)
 		{
 			int[] int_indices = new int [indices.Length];
 			for (int i = 0; i < indices.Length; i++)
@@ -1733,7 +1733,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			ITargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 			TargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
@@ -1826,7 +1826,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject right)
 		{
-			ITargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 			TargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]

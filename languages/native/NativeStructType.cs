@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Native
 			this.const_value = const_value;
 		}
 
-		public override TargetObject GetConstValue (ITargetAccess target)
+		public override TargetObject GetConstValue (TargetAccess target)
 		{
 			return null;
 		}
@@ -127,12 +127,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetObject GetStaticField (ITargetAccess target, int index)
+		public override TargetObject GetStaticField (TargetAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override void SetStaticField (ITargetAccess target, int index,
+		public override void SetStaticField (TargetAccess target, int index,
 						     TargetObject obj)
 		{
 			throw new InvalidOperationException ();
@@ -186,7 +186,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override bool ResolveClass (ITargetAccess target)
+		public override bool ResolveClass (TargetAccess target)
 		{
 			return true;
 		}

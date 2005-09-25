@@ -39,6 +39,6 @@ namespace Mono.Debugger.Languages
 			get { return Location.Address; }
 		}
 
-		public abstract TargetObject GetArrayElement (ITargetAccess target, int index);
+		public abstract TargetObject GetArrayElement (TargetAccess target, int index);
 	}
 }

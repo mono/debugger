@@ -73,7 +73,7 @@ namespace Mono.Debugger
 			this.value = value.Address;
 		}
 
-		public void WriteRegister (ITargetAccess target, long value)
+		public void WriteRegister (TargetAccess target, long value)
 		{
 			this.value = value;
 
@@ -200,14 +200,14 @@ namespace Mono.Debugger
 	{
 		IMethod method;
 		Process process;
-		ITargetAccess target;
+		TargetAccess target;
 		SimpleStackFrame simple;
 		SourceAddress source;
 		AddressDomain address_domain;
 		Language language;
 		Symbol name;
 
-		public StackFrame (Process process, ITargetAccess target,
+		public StackFrame (Process process, TargetAccess target,
 				   SimpleStackFrame simple, Symbol name)
 		{
 			this.process = process;
@@ -218,7 +218,7 @@ namespace Mono.Debugger
 			language = process.NativeLanguage;
 		}
 
-		public StackFrame (Process process, ITargetAccess target,
+		public StackFrame (Process process, TargetAccess target,
 				   SimpleStackFrame simple, IMethod method,
 				   SourceAddress source)
 		{
@@ -237,7 +237,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal static StackFrame CreateFrame (Process process, ITargetAccess target,
+		internal static StackFrame CreateFrame (Process process, TargetAccess target,
 							SimpleStackFrame simple,
 							IMethod method)
 		{
@@ -247,14 +247,14 @@ namespace Mono.Debugger
 			return CreateFrame (process, target, simple, method, source);
 		}
 
-		internal static StackFrame CreateFrame (Process process, ITargetAccess target,
+		internal static StackFrame CreateFrame (Process process, TargetAccess target,
 							SimpleStackFrame simple,
 							IMethod method, SourceAddress source)
 		{
 			return new StackFrame (process, target, simple, method, source);
 		}
 
-		internal static StackFrame CreateFrame (Process process, ITargetAccess target,
+		internal static StackFrame CreateFrame (Process process, TargetAccess target,
 							SimpleStackFrame simple,
 							ISymbolTable symtab,
 							ISimpleSymbolTable simple_symtab)
@@ -350,7 +350,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetAccess TargetAccess {
+		public TargetAccess TargetAccess {
 			get {
 				check_disposed ();
 				return target;

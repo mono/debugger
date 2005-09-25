@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (ITargetAccess target, int index)
+		public override TargetObject GetArrayElement (TargetAccess target, int index)
 		{
 			if (!Type.IsArray)
 				throw new InvalidOperationException ();
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.StaticType.GetObject (new_loc);
 		}
 
-		public override string Print (ITargetAccess target)
+		public override string Print (TargetAccess target)
 		{
 			if (HasAddress) {
 				if (Address.IsNull)

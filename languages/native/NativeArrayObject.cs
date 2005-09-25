@@ -12,10 +12,10 @@ namespace Mono.Debugger.Languages.Native
 			bounds [0] = new ArrayBounds (lower_bound, upper_bound - lower_bound);
 		}
 
-		protected override void DoGetArrayBounds (ITargetAccess target)
+		protected override void DoGetArrayBounds (TargetAccess target)
 		{ }
 
-		public override TargetObject GetElement (ITargetAccess target, int[] indices)
+		public override TargetObject GetElement (TargetAccess target, int[] indices)
 		{
 			if (indices.Length != 1)
 				throw new ArgumentException ();
@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.ElementType.GetObject (new_location);
 		}
 
-		public override void SetElement (ITargetAccess target, int[] indices,
+		public override void SetElement (TargetAccess target, int[] indices,
 						 TargetObject obj)
 		{
 			throw new NotSupportedException ();

@@ -9,10 +9,12 @@ using System.Runtime.Remoting.Messaging;
 using Mono.Debugger.Remoting;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger
 {
+	public delegate object TargetAccessDelegate (TargetAccess target, object user_data);
+
 	[Serializable]
-	public abstract class TargetAccess : ITargetAccess, ISerializable
+	public abstract class TargetAccess : ISerializable
 	{
 		int id;
 		string name;
@@ -72,10 +74,13 @@ namespace Mono.Debugger.Backends
 		public void GetObjectData (SerializationInfo info, StreamingContext context)
 		{
 			info.AddValue ("id", id);
-			info.SetType (typeof (TargetAccessHelper));
+			info.SetType (typeof (Mono.Debugger.Backends.TargetAccessHelper));
 		}
 	}
+}
 
+namespace Mono.Debugger.Backends
+{
 	[Serializable]
 	internal sealed class TargetAccessHelper : ISerializable, IObjectReference
 	{

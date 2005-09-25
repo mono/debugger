@@ -43,7 +43,7 @@ namespace Mono.Debugger.Languages
 			this.HasConstValue = has_const_value;
 		}
 
-		public abstract TargetObject GetConstValue (ITargetAccess target);
+		public abstract TargetObject GetConstValue (TargetAccess target);
 
 		protected override string MyToString ()
 		{

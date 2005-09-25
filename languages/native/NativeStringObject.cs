@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override object GetObject (ITargetAccess target)
+		public override object GetObject (TargetAccess target)
 		{
 			try {
 				return ReadString (Location);

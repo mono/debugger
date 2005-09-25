@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 			: base (type, location)
 		{ }
 
-		protected override void DoGetArrayBounds (ITargetAccess target)
+		protected override void DoGetArrayBounds (TargetAccess target)
 		{
 			TargetBinaryReader reader = Location.ReadMemory (target, type.Size).GetReader ();
 
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetObject GetElement (ITargetAccess target, int[] indices)
+		public override TargetObject GetElement (TargetAccess target, int[] indices)
 		{
 			int offset = GetArrayOffset (target, indices);
 
@@ -60,7 +60,7 @@ namespace Mono.Debugger.Languages.Mono
 			return Type.ElementType.GetObject (new_loc);
 		}
 
-		public override void SetElement (ITargetAccess target, int[] indices,
+		public override void SetElement (TargetAccess target, int[] indices,
 						 TargetObject obj)
 		{
 			int offset = GetArrayOffset (target, indices);

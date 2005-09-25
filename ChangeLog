@@ -1,5 +1,9 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetAccess.cs: Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ILanguage.cs: Removed.
 
 	* languages/Language.cs: New file.

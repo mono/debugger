@@ -87,7 +87,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass.File.TargetInfo.TargetAddressSize; }
 		}
 
-		public TargetAddress GetMethodAddress (ITargetAccess target)
+		public TargetAddress GetMethodAddress (TargetAccess target)
 		{
 			try {
 				MonoClassInfo info = klass.GetTypeInfo ();

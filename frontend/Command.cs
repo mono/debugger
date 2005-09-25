@@ -428,7 +428,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			FrameHandle frame = ResolveFrame (context);
-			ITargetAccess target = frame.Frame.TargetAccess;
+			TargetAccess target = frame.Frame.TargetAccess;
 
 			if (!Repeating) {
 				PointerExpression pexp = expression as PointerExpression;

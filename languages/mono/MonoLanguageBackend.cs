@@ -408,7 +408,7 @@ namespace Mono.Debugger.Languages.Mono
 			AddClass (klass, type);
 		}
 
-		public TargetType GetClass (ITargetAccess target, TargetAddress klass_address)
+		public TargetType GetClass (TargetAccess target, TargetAddress klass_address)
 		{
 			TargetType type = (TargetType) class_hash [klass_address];
 			if (type != null)
@@ -422,7 +422,7 @@ namespace Mono.Debugger.Languages.Mono
 			return (MonoSymbolFile) image_hash [address];
 		}
 
-		public override TargetAddress AllocateMemory (ITargetAccess target, int size)
+		public override TargetAddress AllocateMemory (TargetAccess target, int size)
 		{
 			return heap.Allocate (target, size);
 		}
@@ -774,7 +774,7 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		public TargetAddress LookupClass (ITargetAccess target, TargetAddress image,
+		public TargetAddress LookupClass (TargetAccess target, TargetAddress image,
 						  int token)
 		{
 			TargetAddress arg = new TargetAddress (
@@ -837,7 +837,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.CreateInstance (frame.TargetAccess, obj);
 		}
 
-		public override TargetFundamentalObject CreateInstance (ITargetAccess target, int value)
+		public override TargetFundamentalObject CreateInstance (TargetAccess target, int value)
 		{
 			return builtin_types.Int32Type.CreateInstance (target, value);
 		}
@@ -847,7 +847,7 @@ namespace Mono.Debugger.Languages.Mono
 			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public override TargetObject CreateObject (ITargetAccess target, TargetAddress address)
+		public override TargetObject CreateObject (TargetAccess target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
@@ -866,7 +866,7 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public override TargetObject CreateNullObject (ITargetAccess target, TargetType type)
+		public override TargetObject CreateNullObject (TargetAccess target, TargetType type)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, TargetAddress.Null);
 

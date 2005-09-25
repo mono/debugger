@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages
 	{
 		TargetAddress address;
 
-		public AbsoluteTargetLocation (ITargetAccess target, TargetAddress address)
+		public AbsoluteTargetLocation (TargetAccess target, TargetAddress address)
 			: base (target)
 		{
 			this.address = address;

@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
 		}
 
-		public MonoClassInfo (MonoClassType type, ITargetAccess target,
+		public MonoClassInfo (MonoClassType type, TargetAccess target,
 				      TargetAddress klass_address)
 		{
 			this.type = type;
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 			do_initialize (target, null);
 		}
 
-		void initialize (ITargetAccess target)
+		void initialize (TargetAccess target)
 		{
 			if (initialized)
 				return;
@@ -53,7 +53,7 @@ namespace Mono.Debugger.Languages.Mono
 			target.Invoke (do_initialize, null);
 		}
 
-		object do_initialize (ITargetAccess target, object data)
+		object do_initialize (TargetAccess target, object data)
 		{
 			if (type.ParentType != null) {
 				parent = type.MonoParentType.GetTypeInfo ();
@@ -147,7 +147,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal TargetObject GetStaticField (ITargetAccess target, int index)
+		internal TargetObject GetStaticField (TargetAccess target, int index)
 		{
 			try {
 				initialize (target);
@@ -172,7 +172,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal void SetStaticField (ITargetAccess target, int index, TargetObject obj)
+		internal void SetStaticField (TargetAccess target, int index, TargetObject obj)
 		{
 			try {
 				initialize (target);
@@ -197,7 +197,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal TargetAddress GetMethodAddress (ITargetAccess target, int token)
+		internal TargetAddress GetMethodAddress (TargetAccess target, int token)
 		{
 			try {
 				initialize (target);

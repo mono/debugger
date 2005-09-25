@@ -22,9 +22,9 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetObject GetStaticField (ITargetAccess target, int index);
+		public abstract TargetObject GetStaticField (TargetAccess target, int index);
 
-		public abstract void SetStaticField (ITargetAccess target, int index,
+		public abstract void SetStaticField (TargetAccess target, int index,
 						     TargetObject obj);
 
 		public abstract TargetPropertyInfo[] Properties {
@@ -62,6 +62,6 @@ namespace Mono.Debugger.Languages
 		public abstract  TargetMemberInfo FindMember (string name, bool search_static,
 							      bool search_instance);
 
-		public abstract bool ResolveClass (ITargetAccess target);
+		public abstract bool ResolveClass (TargetAccess target);
 	}
 }

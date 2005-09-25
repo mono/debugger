@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		int end;
 
-		public TargetAddress Allocate (ITargetAccess target, int size)
+		public TargetAddress Allocate (TargetAccess target, int size)
 		{
 			if (end + size >= Size)
 				throw new StackOverflowException ();

@@ -18,7 +18,7 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public virtual object GetObject (ITargetAccess target)
+		public virtual object GetObject (TargetAccess target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 
@@ -76,12 +76,12 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public void SetObject (ITargetAccess target, TargetObject obj)
+		public void SetObject (TargetAccess target, TargetObject obj)
 		{
 			Type.SetObject (target, Location, obj);
 		}
 
-		public override string Print (ITargetAccess target)
+		public override string Print (TargetAccess target)
 		{
 			object obj = GetObject (target);
 			if (obj is IntPtr)

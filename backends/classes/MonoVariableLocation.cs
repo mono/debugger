@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages
 
 		TargetAddress address;
 
-		public MonoVariableLocation (ITargetAccess target, bool is_regoffset,
+		public MonoVariableLocation (TargetAccess target, bool is_regoffset,
 					     Register register, long regoffset, bool is_byref)
 			: base (target)
 		{
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages
 			get { return address; }
 		}
 
-		internal override TargetBlob ReadMemory (ITargetAccess target, int size)
+		internal override TargetBlob ReadMemory (TargetAccess target, int size)
 		{
 			if (HasAddress)
 				return base.ReadMemory (target, size);
@@ -75,7 +75,7 @@ namespace Mono.Debugger.Languages
 			return new TargetBlob (buffer, target.TargetInfo);
 		}
 
-		internal override void WriteBuffer (ITargetAccess target, byte[] data)
+		internal override void WriteBuffer (TargetAccess target, byte[] data)
 		{
 			if (HasAddress) {
 				base.WriteBuffer (target, data);
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Languages
 			update ();
 		}
 
-		internal override void WriteAddress (ITargetAccess target, TargetAddress new_address)
+		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
 		{
 			if (is_regoffset) {
 				target.TargetMemoryAccess.WriteAddress (address, new_address);
