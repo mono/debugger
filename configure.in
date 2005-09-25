@@ -222,10 +222,10 @@ wrapper/Mono.Debugger.dll.config
 backends/Makefile
 backends/classes/Makefile
 backends/server/Makefile
-backends/ptrace/Makefile
-backends/mono/Makefile
-backends/native/Makefile
 backends/remoting/Makefile
+languages/Makefile
+languages/mono/Makefile
+languages/native/Makefile
 frontend/Makefile
 frontend/libedit/Makefile
 arch/Makefile
