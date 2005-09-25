@@ -18,7 +18,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void ChildOutputHandler (string output);
 
-	internal abstract class Inferior : ITargetMemoryAccess, ITargetNotification, IDisposable
+	internal class Inferior : ITargetMemoryAccess, ITargetNotification, IDisposable
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
@@ -45,6 +45,9 @@ namespace Mono.Debugger.Backends
 		TargetInfo target_info;
 		TargetMemoryInfo target_memory_info;
 		IArchitecture arch;
+
+		bool has_signals;
+		SignalInfo signal_info;
 
 		public bool HasTarget {
 			get {
@@ -147,6 +150,12 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
 
+		[DllImport("monodebuggerserver")]
+		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, out IntPtr data);
+
 		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
@@ -189,11 +198,29 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected Inferior (DebuggerBackend backend, ProcessStart start,
-				    BreakpointManager bpm,
+		private struct SignalInfo
+		{
+			public int SIGKILL;
+			public int SIGSTOP;
+			public int SIGINT;
+			public int SIGCHLD;
+
+			public int MonoThreadAbortSignal;
+
+			public override string ToString ()
+			{
+				return String.Format ("SignalInfo ({0}:{1}:{2}:{3} - {4})",
+						      SIGKILL, SIGSTOP, SIGINT, SIGCHLD,
+						      MonoThreadAbortSignal);
+			}
+		}
+
+		protected Inferior (ThreadManager thread_manager, DebuggerBackend backend,
+				    ProcessStart start, BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
 				    AddressDomain global_address_domain)
 		{
+			this.thread_manager = thread_manager;
 			this.backend = backend;
 			this.start = start;
 			this.native = start.IsNative;
@@ -210,13 +237,18 @@ namespace Mono.Debugger.Backends
 		public static Inferior CreateInferior (ThreadManager thread_manager,
 						       ProcessStart start)
 		{
-			return new PTraceInferior (
+			return new Inferior (
+				thread_manager,
 				thread_manager.DebuggerBackend, start,
 				thread_manager.BreakpointManager, null,
-				thread_manager.AddressDomain, null);
+				thread_manager.AddressDomain);
 		}
 
-		public abstract Inferior CreateThread ();
+		public Inferior CreateThread ()
+		{
+			return new Inferior (thread_manager, backend, start, breakpoint_manager,
+					     error_handler, global_address_domain);
+		}
 
 		[DllImport("libglib-2.0-0.dll")]
 		protected extern static void g_free (IntPtr data);
@@ -436,10 +468,44 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public abstract ChildEvent ProcessEvent (int status);
-
-		protected virtual void SetupInferior ()
+		public ChildEvent ProcessEvent (int status)
 		{
+			long arg, data1, data2;
+			ChildEventType message;
+
+			message = mono_debugger_server_dispatch_event (
+				server_handle, status, out arg, out data1, out data2);
+
+			switch (message) {
+			case ChildEventType.CHILD_EXITED:
+			case ChildEventType.CHILD_SIGNALED:
+				change_target_state (TargetState.EXITED);
+				break;
+
+			case ChildEventType.CHILD_CALLBACK:
+			case ChildEventType.CHILD_STOPPED:
+			case ChildEventType.CHILD_HIT_BREAKPOINT:
+				change_target_state (TargetState.STOPPED);
+				break;
+			}
+
+			return new ChildEvent (message, arg, data1, data2);
+		}
+
+		protected void SetupInferior ()
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				check_error (mono_debugger_server_get_signal_info (
+						     server_handle, out data));
+
+				signal_info = (SignalInfo) Marshal.PtrToStructure (
+					data, typeof (SignalInfo));
+				has_signals = true;
+			} finally {
+				g_free (data);
+			}
+
 			address_domain = new AddressDomain (String.Format ("ptrace ({0})", child_pid));
 
 			int target_int_size, target_long_size, target_addr_size, is_bigendian;
@@ -1139,20 +1205,49 @@ namespace Mono.Debugger.Backends
 			// child_event (ChildEventType.CHILD_MEMORY_CHANGED, 0);
 		}
 
-		public abstract int SIGKILL {
-			get;
+		public int SIGKILL {
+			get {
+				if (!has_signals || (signal_info.SIGKILL < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGKILL;
+			}
 		}
-		public abstract int SIGSTOP {
-			get;
+
+		public int SIGSTOP {
+			get {
+				if (!has_signals || (signal_info.SIGSTOP < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGSTOP;
+			}
 		}
-		public abstract int SIGINT {
-			get;
+
+		public int SIGINT {
+			get {
+				if (!has_signals || (signal_info.SIGINT < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGINT;
+			}
 		}
-		public abstract int SIGCHLD {
-			get;
+
+		public int SIGCHLD {
+			get {
+				if (!has_signals || (signal_info.SIGCHLD < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGCHLD;
+			}
 		}
-		public abstract int MonoThreadAbortSignal {
-			get;
+
+		public int MonoThreadAbortSignal {
+			get {
+				if (!has_signals || (signal_info.MonoThreadAbortSignal < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.MonoThreadAbortSignal;
+			}
 		}
 
 		//

@@ -1,5 +1,13 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/ptrace/PTrace.cs: Removed.
+	(PTraceInferior): Merged with `Inferior'.
+
+	* backends/Inferior.cs
+	(Inferior): Don't make this abstract.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetAccess.cs: Removed.
 
 2005-09-25  Martin Baulig  <martin@ximian.com>
