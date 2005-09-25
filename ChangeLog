@@ -1,5 +1,21 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* langauges/TargetMember.cs: New file.
+	(TargetMemberInfo): New public abstract class.
+	(TargetFieldInfo): New public abstract class.
+	(TargetPropertyInfo): New public abstract class.
+	(TargetEventInfo): New public abstract class.
+	(TargetMethodInfo): New public abstract class.
+
+	* interfaces/ITargetStructType.cs
+	(ITargetStructType.ITargetMemberInfo): Removed.
+	(ITargetStructType.ITargetFieldInfo): Removed.
+	(ITargetStructType.ITargetPropertyInfo): Removed.
+	(ITargetStructType.ITargetEventInfo): Removed.
+	(ITargetStructType.ITargetMethodInfo): Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetPointerType.cs: New file.
 	* languages/TargetPointerObject.cs: New file.
 

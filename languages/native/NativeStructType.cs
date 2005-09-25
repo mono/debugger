@@ -3,66 +3,15 @@ using System;
 namespace Mono.Debugger.Languages.Native
 {
 	[Serializable]
-	internal abstract class NativeStructMember : ITargetMemberInfo
+	internal class NativeFieldInfo : TargetFieldInfo
 	{
-		public readonly TargetType Type;
-		public readonly string Name;
-		public readonly int Index;
-		public readonly bool IsStatic;
-
-		public NativeStructMember (TargetType type, string name, int index, bool is_static)
-		{
-			this.Type = type;
-			this.Name = name;
-			this.Index = index;
-			this.IsStatic = is_static;
-		}
-
-		ITargetType ITargetMemberInfo.Type {
-			get {
-				return Type;
-			}
-		}
-
-		string ITargetMemberInfo.Name {
-			get {
-				return Name;
-			}
-		}
-
-		int ITargetMemberInfo.Index {
-			get {
-				return Index;
-			}
-		}
-
-		bool ITargetMemberInfo.IsStatic {
-			get {
-				return IsStatic;
-			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4})",
-					      GetType (), Name, Type, Index, IsStatic);
-		}
-	}
-
-	[Serializable]
-	internal class NativeFieldInfo : NativeStructMember, ITargetFieldInfo
-	{
-		int offset;
 		int bit_offset, bit_size;
 		bool is_bitfield;
-		bool has_const_value;
 		int const_value;
 
 		public NativeFieldInfo (TargetType type, string name, int index, int offset)
-			: base (type, name, index, false)
-		{
-			this.offset = offset;
-		}
+			: base (type, name, index, false, offset, false)
+		{ }
 
 		public NativeFieldInfo (TargetType type, string name, int index, int offset,
 					int bit_offset, int bit_size)
@@ -75,36 +24,14 @@ namespace Mono.Debugger.Languages.Native
 
 		public NativeFieldInfo (TargetType type, string name, int index,
 					bool has_const_value, int const_value)
-			: base (type, name, index, false)
+			: base (type, name, index, false, 0, has_const_value)
 		{
-			this.has_const_value = has_const_value;
 			this.const_value = const_value;
 		}
 
-		public bool HasConstValue {
-			get {
-				return has_const_value;
-			}
-		}
-
-		public int ConstValue {
-			get {
-				if (!has_const_value)
-					throw new InvalidOperationException ();
-
-				return const_value;
-			}
-		}
-
-		public ITargetObject GetConstValue (ITargetAccess target)
+		public override TargetObject GetConstValue (ITargetAccess target)
 		{
 			return null;
-		}
-
-		public int Offset {
-			get {
-				return offset;
-			}
 		}
 
 		public int BitOffset {
@@ -126,26 +53,14 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
-	internal class NativeMethodInfo  : NativeStructMember, ITargetMethodInfo
+	internal class NativeMethodInfo  : TargetMethodInfo
 	{
-		public new readonly NativeFunctionType Type;
+		public new readonly NativeFunctionType FunctionType;
 
-		public NativeMethodInfo (string name, int index, NativeFunctionType function_type)
-			: base (function_type, name, index, false)
+		public NativeMethodInfo (NativeFunctionType type, string name, int index)
+			: base (type, name, index, false, name)
 		{
-			this.Type = function_type;
-		}
-
-		TargetFunctionType ITargetMethodInfo.Type {
-			get {
-				return Type;
-			}
-		}
-
-		string ITargetMethodInfo.FullName {
-			get {
-				return Name;
-			}
+			this.FunctionType = type;
 		}
 	}
 
@@ -192,15 +107,15 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetFieldInfo[] Fields {
+		public TargetFieldInfo[] Fields {
 			get {
 				return fields;
 			}
 		}
 
-		public ITargetFieldInfo[] StaticFields {
+		public TargetFieldInfo[] StaticFields {
 			get {
-				return new ITargetFieldInfo [0];
+				return new TargetFieldInfo [0];
 			}
 		}
 
@@ -214,15 +129,15 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetPropertyInfo[] Properties {
+		public TargetPropertyInfo[] Properties {
 			get {
-				return new ITargetPropertyInfo [0];
+				return new TargetPropertyInfo [0];
 			}
 		}
 
-		public ITargetPropertyInfo[] StaticProperties {
+		public TargetPropertyInfo[] StaticProperties {
 			get {
-				return new ITargetPropertyInfo [0];
+				return new TargetPropertyInfo [0];
 			}
 		}
 
@@ -231,15 +146,15 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetEventInfo[] Events {
+		public TargetEventInfo[] Events {
 			get {
-				return new ITargetEventInfo [0];
+				return new TargetEventInfo [0];
 			}
 		}
 
-		public ITargetEventInfo[] StaticEvents {
+		public TargetEventInfo[] StaticEvents {
 			get {
-				return new ITargetEventInfo [0];
+				return new TargetEventInfo [0];
 			}
 		}
 
@@ -248,27 +163,27 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public ITargetMethodInfo[] Methods {
+		public TargetMethodInfo[] Methods {
 			get {
-				return new ITargetMethodInfo [0];
+				return new TargetMethodInfo [0];
 			}
 		}
 
-		public ITargetMethodInfo[] StaticMethods {
+		public TargetMethodInfo[] StaticMethods {
 			get {
-				return new ITargetMethodInfo [0];
+				return new TargetMethodInfo [0];
 			}
 		}
 
-		public ITargetMethodInfo[] Constructors {
+		public TargetMethodInfo[] Constructors {
 			get {
-				return new ITargetMethodInfo [0];
+				return new TargetMethodInfo [0];
 			}
 		}
 
-		public ITargetMethodInfo[] StaticConstructors {
+		public TargetMethodInfo[] StaticConstructors {
 			get {
-				return new ITargetMethodInfo [0];
+				return new TargetMethodInfo [0];
 			}
 		}
 
@@ -317,33 +232,33 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotImplementedException ();
 		}
 
-		public ITargetMemberInfo FindMember (string name, bool search_static,
-						     bool search_instance)
+		public TargetMemberInfo FindMember (string name, bool search_static,
+						    bool search_instance)
 		{
 			if (search_static) {
-				foreach (ITargetFieldInfo field in StaticFields)
+				foreach (TargetFieldInfo field in StaticFields)
 					if (field.Name == name)
 						return field;
 
-				foreach (ITargetPropertyInfo property in StaticProperties)
+				foreach (TargetPropertyInfo property in StaticProperties)
 					if (property.Name == name)
 						return property;
 
-				foreach (ITargetEventInfo ev in StaticEvents)
+				foreach (TargetEventInfo ev in StaticEvents)
 					if (ev.Name == name)
 						return ev;
 			}
 
 			if (search_instance) {
-				foreach (ITargetFieldInfo field in Fields)
+				foreach (TargetFieldInfo field in Fields)
 					if (field.Name == name)
 						return field;
 
-				foreach (ITargetPropertyInfo property in Properties)
+				foreach (TargetPropertyInfo property in Properties)
 					if (property.Name == name)
 						return property;
 
-				foreach (ITargetEventInfo ev in Events)
+				foreach (TargetEventInfo ev in Events)
 					if (ev.Name == name)
 						return ev;
 			}

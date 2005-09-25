@@ -54,13 +54,13 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public ITargetFieldInfo Value {
+		public TargetFieldInfo Value {
 			get {
 				return value;
 			}
 		}
 
-		public ITargetFieldInfo[] Members {
+		public TargetFieldInfo[] Members {
 			get {
 				return members;
 			}

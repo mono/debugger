@@ -140,10 +140,10 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected string FormatEnumMember (ITargetAccess target, string prefix,
-						   ITargetMemberInfo member, bool is_static,
+						   TargetMemberInfo member, bool is_static,
 						   Hashtable hash)
 		{
-			ITargetFieldInfo fi = member as ITargetFieldInfo;
+			TargetFieldInfo fi = member as TargetFieldInfo;
 			string value = "";
 			if (fi.HasConstValue) {
 				ITargetObject cv = fi.GetConstValue (target);
@@ -153,7 +153,7 @@ namespace Mono.Debugger.Frontend
 			return String.Format ("{0}   {1}{2}", prefix, member.Name, value);
 		}
 
-		protected string FormatMember (string prefix, ITargetMemberInfo member,
+		protected string FormatMember (string prefix, TargetMemberInfo member,
 					       bool is_static, Hashtable hash)
 		{
 			string tname = member.Type.Name;
@@ -165,7 +165,7 @@ namespace Mono.Debugger.Frontend
 					"{0}   {1} {2}", prefix, tname, member.Name);
 		}
 
-		protected string FormatProperty (string prefix, ITargetPropertyInfo prop,
+		protected string FormatProperty (string prefix, TargetPropertyInfo prop,
 						 bool is_static, Hashtable hash)
 		{
 			StringBuilder sb = new StringBuilder ();
@@ -179,7 +179,7 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		protected string FormatEvent (string prefix, ITargetEventInfo ev,
+		protected string FormatEvent (string prefix, TargetEventInfo ev,
 					      bool is_static, Hashtable hash)
 		{
 			string tname = ev.Type.Name;
@@ -191,7 +191,7 @@ namespace Mono.Debugger.Frontend
 					"{0}   event {1} {2};\n", prefix, tname, ev.Name);
 		}
 
-		protected string FormatMethod (string prefix, ITargetMethodInfo method,
+		protected string FormatMethod (string prefix, TargetMethodInfo method,
 					       bool is_static, bool is_ctor, Hashtable hash)
 		{
 			StringBuilder sb = new StringBuilder ();
@@ -264,7 +264,7 @@ namespace Mono.Debugger.Frontend
 
 				sb.Append ("\n" + prefix + "{\n");
 
-				foreach (ITargetFieldInfo field in etype.Members) {
+				foreach (TargetFieldInfo field in etype.Members) {
 					sb.Append (FormatEnumMember (target, prefix, field, false, hash));
 					if (field != etype.Members[etype.Members.Length - 1])
 						sb.Append (",");
@@ -303,34 +303,34 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 				sb.Append ("\n" + prefix + "{\n");
-				foreach (ITargetFieldInfo field in stype.Fields)
+				foreach (TargetFieldInfo field in stype.Fields)
 					sb.Append (FormatMember (
 							   prefix, field, false, hash) + ";\n");
-				foreach (ITargetFieldInfo field in stype.StaticFields)
+				foreach (TargetFieldInfo field in stype.StaticFields)
 					sb.Append (FormatMember (
 							   prefix, field, true, hash) + ";\n");
-				foreach (ITargetPropertyInfo property in stype.Properties)
+				foreach (TargetPropertyInfo property in stype.Properties)
 					sb.Append (FormatProperty (
 							   prefix, property, false, hash));
-				foreach (ITargetPropertyInfo property in stype.StaticProperties)
+				foreach (TargetPropertyInfo property in stype.StaticProperties)
 					sb.Append (FormatProperty (
 							   prefix, property, true, hash));
-				foreach (ITargetEventInfo ev in stype.Events)
+				foreach (TargetEventInfo ev in stype.Events)
 					sb.Append (FormatEvent (
 							   prefix, ev, false, hash));
-				foreach (ITargetEventInfo ev in stype.StaticEvents)
+				foreach (TargetEventInfo ev in stype.StaticEvents)
 					sb.Append (FormatEvent (
 							   prefix, ev, true, hash));
-				foreach (ITargetMethodInfo method in stype.Methods)
+				foreach (TargetMethodInfo method in stype.Methods)
 					sb.Append (FormatMethod (
 							   prefix, method, false, false, hash));
-				foreach (ITargetMethodInfo method in stype.StaticMethods)
+				foreach (TargetMethodInfo method in stype.StaticMethods)
 					sb.Append (FormatMethod (
 							   prefix, method, true, false, hash));
-				foreach (ITargetMethodInfo method in stype.Constructors)
+				foreach (TargetMethodInfo method in stype.Constructors)
 					sb.Append (FormatMethod (
 							   prefix, method, false, true, hash));
-				foreach (ITargetMethodInfo method in stype.StaticConstructors)
+				foreach (TargetMethodInfo method in stype.StaticConstructors)
 					sb.Append (FormatMethod (
 							   prefix, method, true, true, hash));
 
@@ -382,8 +382,8 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
 				StructFormatter formatter = new StructFormatter (header);
-				ITargetFieldInfo[] fields = stype.StaticFields;
-				foreach (ITargetFieldInfo field in fields) {
+				TargetFieldInfo[] fields = stype.StaticFields;
+				foreach (TargetFieldInfo field in fields) {
 					ITargetObject fobj = stype.GetStaticField (target, field.Index);
 					string item;
 					if (fobj == null)
@@ -490,8 +490,8 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Struct: {
 				ITargetStructObject sobj = (ITargetStructObject) obj;
 				StructFormatter formatter = new StructFormatter ("");
-				ITargetFieldInfo[] fields = sobj.Type.Fields;
-				foreach (ITargetFieldInfo field in fields) {
+				TargetFieldInfo[] fields = sobj.Type.Fields;
+				foreach (TargetFieldInfo field in fields) {
 					ITargetObject fobj = sobj.GetField (field.Index);
 					string item;
 					if (fobj == null)
@@ -644,16 +644,16 @@ namespace Mono.Debugger.Frontend
 				print (sb, "{0} is a value type of type {1}", name, tstruct.Name);
 
 			if (tstruct != null) {
-				foreach (ITargetFieldInfo field in tstruct.Fields)
+				foreach (TargetFieldInfo field in tstruct.Fields)
 					print (sb, "  It has a field `{0}' of type {1}",
 					       field.Name, field.Type.Name);
-				foreach (ITargetFieldInfo field in tstruct.StaticFields)
+				foreach (TargetFieldInfo field in tstruct.StaticFields)
 					print (sb, "  It has a static field `{0}' of type {1}",
 					       field.Name, field.Type.Name);
-				foreach (ITargetFieldInfo property in tstruct.Properties)
+				foreach (TargetPropertyInfo property in tstruct.Properties)
 					print (sb, "  It has a property `{0}' of type {1}",
 					       property.Name, property.Type.Name);
-				foreach (ITargetMethodInfo method in tstruct.Methods) {
+				foreach (TargetMethodInfo method in tstruct.Methods) {
 					if (method.Type.HasReturnValue)
 						print (sb, "  It has a method: {0} {1}",
 						       method.Type.ReturnType.Name, method.FullName);
@@ -661,7 +661,7 @@ namespace Mono.Debugger.Frontend
 						print (sb, "  It has a method: void {0}",
 						       method.FullName);
 				}
-				foreach (ITargetMethodInfo method in tstruct.StaticMethods) {
+				foreach (TargetMethodInfo method in tstruct.StaticMethods) {
 					if (method.Type.HasReturnValue)
 						print (sb, "  It has a static method: {0} {1}",
 						       method.Type.ReturnType.Name, method.FullName);
@@ -669,7 +669,7 @@ namespace Mono.Debugger.Frontend
 						print (sb, "  It has a static method: void {0}",
 						       method.FullName);
 				}
-				foreach (ITargetMethodInfo method in tstruct.Constructors) {
+				foreach (TargetMethodInfo method in tstruct.Constructors) {
 					print (sb, "  It has a constructor: {0}", method.FullName);
 				}
 				return sb.ToString ();

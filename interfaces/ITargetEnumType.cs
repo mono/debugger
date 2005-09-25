@@ -2,11 +2,11 @@ namespace Mono.Debugger.Languages
 {
 	public interface ITargetEnumType : ITargetType
 	{
-		ITargetFieldInfo Value {
+		TargetFieldInfo Value {
 			get ;
 		}
 
-		ITargetFieldInfo[] Members {
+		TargetFieldInfo[] Members {
 			get;
 		}
 

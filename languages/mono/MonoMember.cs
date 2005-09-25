@@ -5,83 +5,21 @@ using Cecil = Mono.Cecil;
 namespace Mono.Debugger.Languages.Mono
 {
 	[Serializable]
-	internal abstract class MonoMember : ITargetMemberInfo
+	internal class MonoFieldInfo : TargetFieldInfo
 	{
-		public readonly MonoSymbolFile File;
-		public readonly string Name;
-		public readonly int Index;
-		public readonly bool IsStatic;
-
-		public MonoMember (MonoSymbolFile file, Cecil.IMemberReference minfo, int index,
-				   bool is_static)
-		{
-			this.File = file;
-			this.Index = index;
-			this.Name = minfo.Name;
-			this.IsStatic = is_static;
-		}
-
-		public abstract TargetType Type {
-			get;
-		}
-
-		ITargetType ITargetMemberInfo.Type {
-			get { return Type; }
-		}
-
-		string ITargetMemberInfo.Name {
-			get { return Name; }
-		}
-
-		int ITargetMemberInfo.Index {
-			get { return Index; }
-		}
-
-		bool ITargetMemberInfo.IsStatic {
-			get { return IsStatic; }
-		}
-
-		protected abstract string MyToString ();
-
-		public override string ToString ()
-		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4})",
-					      GetType (), Type, Index, IsStatic, MyToString ());
-		}
-	}
-
-	[Serializable]
-	internal class MonoFieldInfo : MonoMember, ITargetFieldInfo
-	{
-		TargetType type;
-		bool is_literal;
-
 		[NonSerialized]
 		public readonly Cecil.IFieldDefinition FieldInfo;
 		public readonly int Position;
 
-		public MonoFieldInfo (MonoSymbolFile file, int index, int pos, Cecil.IFieldDefinition finfo)
-			: base (file, finfo, index, finfo.IsStatic)
+		public MonoFieldInfo (TargetType type, int index, int pos,
+				      Cecil.IFieldDefinition finfo)
+			: base (type, finfo.Name, index, finfo.IsStatic, 0, finfo.IsLiteral)
 		{
 			FieldInfo = finfo;
 			Position = pos;
-			is_literal = finfo.IsLiteral;
-			type = File.MonoLanguage.LookupMonoType (finfo.FieldType);
 		}
 
-		public override TargetType Type {
-			get { return type; }
-		}
-
-		int ITargetFieldInfo.Offset {
-			get { return 0; }
-		}
-
-		public bool HasConstValue {
-			get { return is_literal; }
-		}
-
-		public ITargetObject GetConstValue (ITargetAccess target) 
+		public override TargetObject GetConstValue (ITargetAccess target) 
 		{
 			// this is definitely swayed toward enums,
 			// where we know we can get the const value
@@ -100,45 +38,24 @@ namespace Mono.Debugger.Languages.Mono
 			throw new NotImplementedException ();
 #endif
 		}
-
-		protected override string MyToString ()
-		{
-			return String.Format ("{0}", type);
-		}
 	}
 
 	[Serializable]
-	internal class MonoMethodInfo : MonoMember, ITargetMethodInfo
+	internal class MonoMethodInfo : TargetMethodInfo
 	{
 		public readonly MonoFunctionType FunctionType;
 		public readonly MonoClassType Klass;
-		public readonly string FullName;
 
-		internal MonoMethodInfo (MonoClassType klass, int index, Cecil.IMethodDefinition minfo)
-			: base (klass.File, minfo, index, minfo.IsStatic)
+		private MonoMethodInfo (MonoClassType klass, int index, Cecil.IMethodDefinition minfo,
+					string full_name, MonoFunctionType type)
+			: base (type, minfo.Name, index, minfo.IsStatic, full_name)
 		{
 			Klass = klass;
-			FullName = compute_fullname (minfo);
-			FunctionType = new MonoFunctionType (File, Klass, minfo, FullName);
+			FunctionType = type;
 		}
 
-		public override TargetType Type {
-			get { return FunctionType; }
-		}
-
-		TargetFunctionType ITargetMethodInfo.Type {
-			get {
-				return FunctionType;
-			}
-		}
-
-		string ITargetMethodInfo.FullName {
-			get {
-				return FullName;
-			}
-		}
-
-		string compute_fullname (Cecil.IMethodDefinition minfo)
+		internal static MonoMethodInfo Create (MonoClassType klass, int index,
+						       Cecil.IMethodDefinition minfo)
 		{
 			StringBuilder sb = new StringBuilder ();
 			bool first = true;
@@ -150,130 +67,92 @@ namespace Mono.Debugger.Languages.Mono
 				sb.Append (pinfo.ParameterType);
 			}
 
-			return String.Format ("{0}.{1}({2})", Klass.Name, Name, sb.ToString ());
-		}
+			string fname = String.Format (
+				"{0}.{1}({2})", klass.Name, minfo.Name, sb.ToString ());
 
-		protected override string MyToString ()
-		{
-			return String.Format ("{0}", FullName);
+			MonoFunctionType type = new MonoFunctionType (klass, minfo, fname);
+			return new MonoMethodInfo (klass, index, minfo, fname, type);
 		}
 	}
 
 	[Serializable]
-	internal class MonoEventInfo : MonoMember, ITargetEventInfo
+	internal class MonoEventInfo : TargetEventInfo
 	{
-		TargetType type;
 		public readonly MonoClassType Klass;
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
-		internal MonoEventInfo (MonoClassType klass, int index, Cecil.IEventDefinition einfo,
-					bool is_static)
-			: base (klass.File, einfo, index, is_static)
+		private MonoEventInfo (MonoClassType klass, int index, Cecil.IEventDefinition einfo,
+				       bool is_static, TargetType type, MonoFunctionType add,
+				       MonoFunctionType remove, MonoFunctionType raise)
+			: base (type, einfo.Name, index, is_static, add, remove, raise)
 		{
-			Klass = klass;
-
-			type = File.MonoLanguage.LookupMonoType (einfo.EventType);
-
-			Cecil.IMethodDefinition add = einfo.AddMethod;
-			if (add != null)
-				AddType = new MonoFunctionType (File, Klass, add, Name);
-
-			Cecil.IMethodDefinition remove = einfo.RemoveMethod;
-			if (remove != null)
-				RemoveType = new MonoFunctionType (File, Klass, remove, Name);
-
-			Cecil.IMethodDefinition raise = einfo.InvokeMethod;
-			if (raise != null)
-				RaiseType = new MonoFunctionType (File, Klass, raise, Name);
+			this.Klass = klass;
+			this.AddType = add;
+			this.RemoveType = remove;
+			this.RaiseType = raise;
 		}
 
-		public override TargetType Type {
-			get { return type; }
-		}
-
-		TargetFunctionType ITargetEventInfo.Add {
-			get {
-				return AddType;
-			}
-		}
-
-		TargetFunctionType ITargetEventInfo.Remove {
-			get {
-				return RemoveType;
-			}
-		}
-
-		TargetFunctionType ITargetEventInfo.Raise {
-			get {
-				return RaiseType;
-			}
-		}
-
-		protected override string MyToString ()
+		internal static MonoEventInfo Create (MonoClassType klass, int index,
+						      Cecil.IEventDefinition einfo, bool is_static)
 		{
-			return String.Format ("{0}:{1}:{2}", AddType, RemoveType, RaiseType);
+			TargetType type = klass.File.MonoLanguage.LookupMonoType (einfo.EventType);
+
+			MonoFunctionType add, remove, raise;
+			if (einfo.AddMethod != null)
+				add = new MonoFunctionType (klass, einfo.AddMethod, einfo.Name);
+			else
+				add = null;
+
+			if (einfo.RemoveMethod != null)
+				remove = new MonoFunctionType (klass, einfo.RemoveMethod, einfo.Name);
+			else
+				remove = null;
+
+			if (einfo.InvokeMethod != null)
+				raise = new MonoFunctionType (klass, einfo.InvokeMethod, einfo.Name);
+			else
+				raise = null;
+
+			return new MonoEventInfo (klass, index, einfo, is_static,
+						  type, add, remove, raise);
 		}
 	}
 
 	[Serializable]
-	internal class MonoPropertyInfo : MonoMember, ITargetPropertyInfo
+	internal class MonoPropertyInfo : TargetPropertyInfo
 	{
-		TargetType type;
 		public readonly MonoClassType Klass;
-		public readonly MonoFunctionType Getter, Setter;
-		public readonly bool CanRead, CanWrite;
+		public readonly MonoFunctionType GetterType, SetterType;
 
-		internal MonoPropertyInfo (MonoClassType klass, int index, Cecil.IPropertyDefinition pinfo,
-					   bool is_static)
-			: base (klass.File, pinfo, index, is_static)
+		private MonoPropertyInfo (TargetType type, MonoClassType klass, int index,
+					  Cecil.IPropertyDefinition pinfo, bool is_static,
+					  MonoFunctionType getter, MonoFunctionType setter)
+			: base (type, pinfo.Name, index, is_static, getter, setter)
 		{
-			Klass = klass;
-			type = File.MonoLanguage.LookupMonoType (pinfo.PropertyType);
-			CanRead = pinfo.GetMethod != null;
-			CanWrite = pinfo.SetMethod != null;
+			this.Klass = klass;
+			this.GetterType = getter;
+			this.SetterType = setter;
+		}
 
+		internal static MonoPropertyInfo Create (MonoClassType klass, int index,
+							 Cecil.IPropertyDefinition pinfo,
+							 bool is_static)
+		{
+			TargetType type = klass.File.MonoLanguage.LookupMonoType (pinfo.PropertyType);
+
+			MonoFunctionType getter, setter;
 			if (pinfo.GetMethod != null)
-				Getter = new MonoFunctionType (File, Klass, pinfo.GetMethod, Name);
+				getter = new MonoFunctionType (klass, pinfo.GetMethod, pinfo.Name);
+			else
+				getter = null;
 
 			if (pinfo.SetMethod != null)
-				Setter = new MonoFunctionType (File, Klass, pinfo.SetMethod, Name);
-		}
+				setter = new MonoFunctionType (klass, pinfo.SetMethod, pinfo.Name);
+			else
+				setter = null;
 
-		public override TargetType Type {
-			get { return type; }
-		}
-
-		bool ITargetPropertyInfo.CanRead {
-			get { return CanRead; }
-		}
-
-		TargetFunctionType ITargetPropertyInfo.Getter {
-			get {
-				if (!CanRead)
-					throw new InvalidOperationException ();
-
-				return Getter;
-			}
-		}
-
-		bool ITargetPropertyInfo.CanWrite {
-			get {
-				return CanWrite;
-			}
-		}
-
-		TargetFunctionType ITargetPropertyInfo.Setter {
-			get {
-				if (!CanWrite)
-					throw new InvalidOperationException ();
-
-				return Setter;
-			}
-		}
-
-		protected override string MyToString ()
-		{
-			return String.Format ("{0}:{1}", CanRead, CanWrite);
+			return new MonoPropertyInfo (
+				type, klass, index, pinfo, is_static, getter, setter);
 		}
 	}
 }

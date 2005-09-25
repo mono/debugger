@@ -942,7 +942,7 @@ namespace Mono.Debugger.Frontend
 				return func;
 
 			ArrayList list = new ArrayList ();
-			foreach (ITargetMethodInfo method in methods) {
+			foreach (TargetMethodInfo method in methods) {
 				if (method.Type.Source == null)
 					continue;
 				list.Add (method.Type.Source);
@@ -959,7 +959,7 @@ namespace Mono.Debugger.Frontend
 		{
 			ArrayList candidates = new ArrayList ();
 
-			foreach (ITargetMethodInfo method in methods) {
+			foreach (TargetMethodInfo method in methods) {
 				if ((types != null) &&
 				    (method.Type.ParameterTypes.Length != types.Length))
 					continue;
@@ -1059,13 +1059,13 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected ITargetPropertyInfo OverloadResolve (ScriptingContext context,
+		protected TargetPropertyInfo OverloadResolve (ScriptingContext context,
 							       bool getter,
 							       ITargetType[] types)
 		{
 			ArrayList candidates = new ArrayList ();
 
-			foreach (ITargetPropertyInfo prop in props) {
+			foreach (TargetPropertyInfo prop in props) {
 				if ((types != null) &&
 				    (prop.Getter.ParameterTypes.Length != types.Length))
 					continue;
@@ -1074,7 +1074,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (candidates.Count == 1)
-				return (ITargetPropertyInfo) candidates [0];
+				return (TargetPropertyInfo) candidates [0];
 
 			if (candidates.Count == 0)
 				throw new ScriptingException (
@@ -1086,7 +1086,7 @@ namespace Mono.Debugger.Frontend
 					"Ambiguous property `{0}'; need to use " +
 					"full name", Name);
 
-			ITargetPropertyInfo match = OverloadResolve (
+			TargetPropertyInfo match = OverloadResolve (
 				context, language, stype, types, candidates);
 
 			if (match == null)
@@ -1097,14 +1097,14 @@ namespace Mono.Debugger.Frontend
 			return match;
 		}
 
-		public static ITargetPropertyInfo OverloadResolve (ScriptingContext context,
+		public static TargetPropertyInfo OverloadResolve (ScriptingContext context,
 								   ILanguage language,
 								   ITargetStructType stype,
 								   ITargetType[] types,
 								   ArrayList candidates)
 		{
-			ITargetPropertyInfo match = null;
-			foreach (ITargetPropertyInfo prop in candidates) {
+			TargetPropertyInfo match = null;
+			foreach (TargetPropertyInfo prop in candidates) {
 
 				if (prop.Getter.ParameterTypes.Length != types.Length)
 					continue;
@@ -1275,12 +1275,12 @@ namespace Mono.Debugger.Frontend
 	public class StructAccessExpression : MemberExpression
 	{
 		public readonly ITargetStructType Type;
-		public readonly ITargetMemberInfo Member;
+		public readonly TargetMemberInfo Member;
 		protected readonly ITargetStructObject instance;
 
 		protected StructAccessExpression (ITargetStructType type,
 						  ITargetStructObject instance,
-						  ITargetMemberInfo member)
+						  TargetMemberInfo member)
 		{
 			this.Type = type;
 			this.Member = member;
@@ -1309,7 +1309,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected ITargetObject GetField (ITargetAccess target, ITargetFieldInfo field)
+		protected ITargetObject GetField (ITargetAccess target, TargetFieldInfo field)
 		{
 			if (field.IsStatic)
 				return Type.GetStaticField (target, field.Index);
@@ -1318,7 +1318,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected ITargetObject GetProperty (ScriptingContext context,
-						     ITargetPropertyInfo prop)
+						     TargetPropertyInfo prop)
 		{
 			string exc_message;
 			ITargetObject res = context.CurrentProcess.RuntimeInvoke (
@@ -1334,12 +1334,12 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected ITargetObject GetMember (ScriptingContext context, ITargetAccess target,
-						   ITargetMemberInfo member)
+						   TargetMemberInfo member)
 		{
-			if (member is ITargetPropertyInfo)
-				return GetProperty (context, (ITargetPropertyInfo) member);
-			else if (member is ITargetFieldInfo)
-				return GetField (target, (ITargetFieldInfo) member);
+			if (member is TargetPropertyInfo)
+				return GetProperty (context, (TargetPropertyInfo) member);
+			else if (member is TargetFieldInfo)
+				return GetField (target, (TargetFieldInfo) member);
 			else
 				throw new ScriptingException ("Member `{0}' is of unknown type {1}",
 							      Name, member.GetType ());
@@ -1350,7 +1350,7 @@ namespace Mono.Debugger.Frontend
 							   bool search_static, bool search_instance)
 		{
 		again:
-			ITargetMemberInfo member = stype.FindMember (
+			TargetMemberInfo member = stype.FindMember (
 				name, search_static, search_instance);
 
 			if (member != null)
@@ -1361,18 +1361,18 @@ namespace Mono.Debugger.Frontend
 			bool is_static = false;
 
 			if (name == ".ctor") {
-				foreach (ITargetMethodInfo method in stype.Constructors) {
+				foreach (TargetMethodInfo method in stype.Constructors) {
 					methods.Add (method);
 					is_instance = true;
 				}
 			} else if (name == ".cctor") {
-				foreach (ITargetMethodInfo method in stype.StaticConstructors) {
+				foreach (TargetMethodInfo method in stype.StaticConstructors) {
 					methods.Add (method);
 					is_static = true;
 				}
 			} else {
 				if (search_instance) {
-					foreach (ITargetMethodInfo method in stype.Methods) {
+					foreach (TargetMethodInfo method in stype.Methods) {
 						if (method.Name != name)
 							continue;
 
@@ -1382,7 +1382,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				if (search_static) {
-					foreach (ITargetMethodInfo method in stype.StaticMethods) {
+					foreach (TargetMethodInfo method in stype.StaticMethods) {
 						if (method.Name != name)
 							continue;
 
@@ -1439,7 +1439,7 @@ namespace Mono.Debugger.Frontend
 			switch (type) {
 			case LocationType.PropertyGetter:
 			case LocationType.PropertySetter:
-				ITargetPropertyInfo property = Member as ITargetPropertyInfo;
+				TargetPropertyInfo property = Member as TargetPropertyInfo;
 				if (property == null)
 					return null;
 
@@ -1457,7 +1457,7 @@ namespace Mono.Debugger.Frontend
 
 			case LocationType.EventAdd:
 			case LocationType.EventRemove:
-				ITargetEventInfo ev = Member as ITargetEventInfo;
+				TargetEventInfo ev = Member as TargetEventInfo;
 				if (ev == null)
 					return null;
 
@@ -1480,7 +1480,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void SetField (ITargetAccess target, ITargetFieldInfo field, ITargetObject obj)
+		protected void SetField (ITargetAccess target, TargetFieldInfo field, ITargetObject obj)
 		{
 			if (field.IsStatic)
 				Type.SetStaticField (target, field.Index, obj);
@@ -1490,7 +1490,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, ITargetObject obj)
 		{
-			if (Member is ITargetFieldInfo) {
+			if (Member is TargetFieldInfo) {
 				StackFrame frame = context.CurrentFrame.Frame;
 
 				if (Member.Type != obj.Type)
@@ -1499,13 +1499,13 @@ namespace Mono.Debugger.Frontend
 						"`{0}' to field `{1}', which is of type `{2}'.",
 						obj.TypeName, Name, Member.Type.Name);
 
-				SetField (frame.TargetAccess, (ITargetFieldInfo) Member, obj);
+				SetField (frame.TargetAccess, (TargetFieldInfo) Member, obj);
 			}
-			else if (Member is ITargetPropertyInfo) 
+			else if (Member is TargetPropertyInfo) 
 			  	throw new ScriptingException ("Can't set properties directly.");
-			else if (Member is ITargetEventInfo)
+			else if (Member is TargetEventInfo)
 				throw new ScriptingException ("Can't set events directly.");
-			else if (Member is ITargetMethodInfo)
+			else if (Member is TargetMethodInfo)
 				throw new ScriptingException ("Can't set methods directly.");
 
 			return true;
@@ -1770,7 +1770,7 @@ namespace Mono.Debugger.Frontend
 			ITargetStructObject sobj = obj as ITargetStructObject;
 			if (sobj != null) {
 				StackFrame frame = context.CurrentFrame.Frame;
-				ITargetPropertyInfo prop_info;
+				TargetPropertyInfo prop_info;
 				ArrayList candidates = new ArrayList ();
 
 				candidates.AddRange (sobj.Type.Properties);
@@ -1848,7 +1848,7 @@ namespace Mono.Debugger.Frontend
 			ITargetStructObject sobj = obj as ITargetStructObject;
 			if (sobj != null) {
 				StackFrame frame = context.CurrentFrame.Frame;
-				ITargetPropertyInfo prop_info;
+				TargetPropertyInfo prop_info;
 				ArrayList candidates = new ArrayList ();
 
 				candidates.AddRange (sobj.Type.Properties);
@@ -2108,8 +2108,8 @@ namespace Mono.Debugger.Frontend
 			if (CastExpression.TryCast (context, sobj, delegate_type) == null)
 				return null;
 
-			ITargetMemberInfo invoke = null;
-			foreach (ITargetMemberInfo member in sobj.Type.Methods) {
+			TargetMemberInfo invoke = null;
+			foreach (TargetMemberInfo member in sobj.Type.Methods) {
 				if (member.Name == "Invoke") {
 					invoke = member;
 					break;
@@ -2263,7 +2263,7 @@ namespace Mono.Debugger.Frontend
 					"Type `{0}' has no public constructor.",
 					type_expr.Name);
 			else if (candidates.Count == 1)
-				ctor = ((ITargetMethodInfo) candidates [0]).Type;
+				ctor = ((TargetMethodInfo) candidates [0]).Type;
 			else
 				ctor = MethodGroupExpression.OverloadResolve (
 					context, stype, arguments, candidates);

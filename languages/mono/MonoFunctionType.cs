@@ -15,9 +15,9 @@ namespace Mono.Debugger.Languages.Mono
 		string full_name;
 		int token;
 
-		public MonoFunctionType (MonoSymbolFile file, MonoClassType klass,
-					 Cecil.IMethodDefinition mdef, string full_name)
-			: base (file.MonoLanguage)
+		public MonoFunctionType (MonoClassType klass, Cecil.IMethodDefinition mdef,
+					 string full_name)
+			: base (klass.File.MonoLanguage)
 		{
 			this.klass = klass;
 			this.method_info = mdef;
@@ -32,11 +32,11 @@ namespace Mono.Debugger.Languages.Mono
 				rtype = mdef.ReturnType.ReturnType;
 				has_return_type = rtype.FullName != "System.Void";
 			}
-			return_type = file.MonoLanguage.LookupMonoType (rtype);
+			return_type = klass.File.MonoLanguage.LookupMonoType (rtype);
 
 			parameter_types = new TargetType [mdef.Parameters.Count];
 			for (int i = 0; i < mdef.Parameters.Count; i++)
-				parameter_types [i] = file.MonoLanguage.LookupMonoType (
+				parameter_types [i] = klass.File.MonoLanguage.LookupMonoType (
 					mdef.Parameters[i].ParameterType);
 		}
 
