@@ -9,13 +9,6 @@ namespace Mono.Debugger.Languages
 	// </summary>
 	internal abstract class TargetLocation
 	{
-		protected TargetAccess target;
-
-		protected TargetLocation (TargetAccess target)
-		{
-			this.target = target;
-		}
-
 		// <summary>
 		//   Whether this variable has an address.  A variable may not have an
 		//   address, for instance if it's stored in a register.
@@ -55,12 +48,6 @@ namespace Mono.Debugger.Languages
 			target.TargetMemoryAccess.WriteAddress (Address, address);
 		}
 
-		internal TargetAccess TargetAccess {
-			get {
-				return target;
-			}
-		}
-
 		// <summary>
 		//   Clones this location, but adds `offset' to its offset.
 		//   Note that this'll just affect the new location's `Offset' property -
@@ -81,7 +68,7 @@ namespace Mono.Debugger.Languages
 		internal TargetLocation GetDereferencedLocation (TargetAccess target)
 		{
 			TargetAddress address = target.TargetMemoryAccess.ReadAddress (Address);
-			return new AbsoluteTargetLocation (target, address);
+			return new AbsoluteTargetLocation (address);
 		}
 
 		protected virtual string MyToString ()

@@ -2454,9 +2454,8 @@ namespace Mono.Debugger.Backends
 					sse.insert_temporary_breakpoint (invoke);
 
 				inferior.RuntimeInvoke (
-					language.RuntimeInvokeFunc,
-					method, ObjectArgument,
-					ParamObjects, ID, Debug);
+					sse.target_access, language.RuntimeInvokeFunc,
+					method, ObjectArgument, ParamObjects, ID, Debug);
 				return false;
 			}
 

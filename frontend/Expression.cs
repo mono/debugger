@@ -502,7 +502,9 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			return ((TargetClassObject) base.DoEvaluateVariable (context)).Parent;
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetClassObject cobj = (TargetClassObject) base.DoEvaluateVariable (context);
+			return cobj.GetParentObject (target);
 		}
 	}
 
@@ -672,8 +674,9 @@ namespace Mono.Debugger.Frontend
 			if (method.HasThis)
 				instance = (TargetClassObject) frame.GetVariable (method.This);
 
+			TargetAccess target = frame.Frame.TargetAccess;
 			MemberExpression member = StructAccessExpression.FindMember (
-				method.DeclaringType, instance, full_name, true, true);
+				target, method.DeclaringType, instance, full_name, true, true);
 			if (member == null)
 				return null;
 
@@ -768,6 +771,8 @@ namespace Mono.Debugger.Frontend
 		{
 			MemberExpression member;
 
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+
 			Expression lexpr = left.TryResolve (context);
 			if (lexpr is TypeExpression) {
 				TargetClassType stype = lexpr.EvaluateType (context)
@@ -777,7 +782,7 @@ namespace Mono.Debugger.Frontend
 						"`{0}' is not a struct or class", lexpr.Name);
 
 				member = StructAccessExpression.FindMember (
-					stype, null, name, true, true);
+					target, stype, null, name, true, true);
 				if (member == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -799,7 +804,7 @@ namespace Mono.Debugger.Frontend
 						"`{0}' is not a struct or class", left.Name);
 
 				member = StructAccessExpression.FindMember (
-					sobj.Type, sobj, name, true, true);
+					target, sobj.Type, sobj, name, true, true);
 				if (member == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -823,7 +828,7 @@ namespace Mono.Debugger.Frontend
 						"`{0}' is not a struct or class", ltype.Name);
 
 				member = StructAccessExpression.FindMember (
-					stype, null, name, true, true);
+					target, stype, null, name, true, true);
 				if (member == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -1345,7 +1350,7 @@ namespace Mono.Debugger.Frontend
 							      Name, member.GetType ());
 		}
 
-		public static MemberExpression FindMember (TargetClassType stype,
+		public static MemberExpression FindMember (TargetAccess target, TargetClassType stype,
 							   TargetClassObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
@@ -1399,7 +1404,7 @@ namespace Mono.Debugger.Frontend
 			TargetClassType ctype = stype as TargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
 				stype = ctype.ParentType;
-				instance = ((TargetClassObject) instance).Parent;
+				instance = ((TargetClassObject) instance).GetParentObject (target);
 				goto again;
 			}
 
@@ -1929,9 +1934,10 @@ namespace Mono.Debugger.Frontend
 		}
 
 		static TargetClassObject TryParentCast (ScriptingContext context,
-							 TargetClassObject source,
-							 TargetClassType source_type,
-							 TargetClassType target_type)
+							TargetAccess target,
+							TargetClassObject source,
+							TargetClassType source_type,
+							TargetClassType target_type)
 		{
 			if (source_type == target_type)
 				return source;
@@ -1940,27 +1946,28 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			source = TryParentCast (
-				context, source, source_type.ParentType, target_type);
+				context, target, source, source_type.ParentType, target_type);
 			if (source == null)
 				return null;
 
-			return source.Parent;
+			return source.GetParentObject (target);
 		}
 
 		static TargetClassObject TryCurrentCast (ScriptingContext context,
-							  TargetClassObject source,
-							  TargetClassType source_type,
-							  TargetClassType target_type)
+							 TargetAccess target,
+							 TargetClassObject source,
+							 TargetClassType source_type,
+							 TargetClassType target_type)
 		{
 			TargetClassObject current = source;
 			if (current.Type == source_type)
 				return null;
 
-			return TryParentCast (context, current, current.Type, target_type);
+			return TryParentCast (context, target, current, current.Type, target_type);
 		}
 
 		public static TargetObject TryCast (ScriptingContext context, TargetObject source,
-						     TargetClassType target_type)
+						    TargetClassType target_type)
 		{
 			if (source.Type == target_type)
 				return source;
@@ -1969,12 +1976,14 @@ namespace Mono.Debugger.Frontend
 			if (sobj == null)
 				return null;
 
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+
 			TargetClassObject result;
-			result = TryParentCast (context, sobj, sobj.Type, target_type);
+			result = TryParentCast (context, target, sobj, sobj.Type, target_type);
 			if (result != null)
 				return result;
 
-			return TryCurrentCast (context, sobj, sobj.Type, target_type);
+			return TryCurrentCast (context, target, sobj, sobj.Type, target_type);
 		}
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)

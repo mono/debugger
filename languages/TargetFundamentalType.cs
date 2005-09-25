@@ -119,7 +119,7 @@ namespace Mono.Debugger.Languages
 			TargetAddress address = Language.AllocateMemory (target, size);
 			target.TargetMemoryAccess.WriteBuffer (address, CreateObject (obj));
 
-			TargetLocation location = new AbsoluteTargetLocation (target, address);
+			TargetLocation location = new AbsoluteTargetLocation (address);
 			return new TargetFundamentalObject (this, location);
 		}
 

@@ -1,6 +1,18 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClassObject.cs
+	(TargetClassObject.Parent): Replaced the property with a
+	`GetParentObject()' method.
+
+	* languages/TargetObject.cs
+	(TargetObject.GetDynamicSize): Added `TargetAccess' argument.
+
+	* backends/classes/TargetLocation.cs
+	(TargetLocation.TargetAccess): Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClassObject.cs
 	(TargetClassObject.GetField): Added `TargetAccess' argument.
 	(TargetClassObject.SetField): Likewise.
 

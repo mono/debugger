@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation dynamic_location;
 			try {
 				blob = Location.ReadMemory (target, Type.Size);
-				GetDynamicSize (blob, Location, out dynamic_location);
+				GetDynamicSize (target, blob, Location, out dynamic_location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -69,7 +69,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation dynamic_location;
 			try {
 				blob = Location.ReadMemory (target, Type.Size);
-				GetDynamicSize (blob, Location, out dynamic_location);
+				GetDynamicSize (target, blob, Location, out dynamic_location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -89,12 +89,13 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 		}
 
-		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			int element_size = GetElementSize (blob.TargetInfo);
 			dynamic_location = location.GetLocationAtOffset (Type.Size);
-			return element_size * GetLength (location.TargetAccess);
+			return element_size * GetLength (target);
 		}
 	}
 }

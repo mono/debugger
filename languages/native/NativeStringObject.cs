@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.Native
 		public override object GetObject (TargetAccess target)
 		{
 			try {
-				return ReadString (Location);
+				return ReadString (target, Location);
 			} catch (TargetException ex) {
 				throw new LocationInvalidException (ex);
 			}
@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Native
 		static char[] hex_chars = { '0', '1', '2', '3', '4', '5', '6', '7',
 					    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-		protected string ReadString (TargetLocation start)
+		protected string ReadString (TargetAccess target, TargetLocation start)
 		{
 			if (start.HasAddress && start.Address.IsNull)
 				return "null";
@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Native
 
 			while (!done && (offset < MaximumDynamicSize)) {
 				TargetLocation location = start.GetLocationAtOffset (offset);
-				byte[] buffer = location.ReadBuffer (location.TargetAccess, ChunkSize);
+				byte[] buffer = location.ReadBuffer (target, ChunkSize);
 
 				int pos = 0;
 				int size = buffer.Length;

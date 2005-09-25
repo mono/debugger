@@ -196,15 +196,15 @@ namespace Mono.Debugger.Languages.Native
 			return new NativeStructObject (this, location);
 		}
 
-		internal TargetObject GetField (TargetLocation location, int index)
+		internal TargetObject GetField (TargetAccess target, TargetLocation location,
+						int index)
 		{
 			NativeFieldInfo field = fields [index];
 
 			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);
 
 			if (field.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (
-					location.TargetAccess);
+				field_loc = field_loc.GetDereferencedLocation (target);
 
 			if (!field.Type.IsByRef && field.IsBitfield)
 				field_loc = new BitfieldTargetLocation (
@@ -213,15 +213,15 @@ namespace Mono.Debugger.Languages.Native
 			return field.Type.GetObject (field_loc);
 		}
 
-		internal void SetField (TargetLocation location, int index, TargetObject obj)
+		internal void SetField (TargetAccess target, TargetLocation location,
+					int index, TargetObject obj)
 		{
 			NativeFieldInfo field = fields [index];
 
 			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);
 
 			if (field.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (
-					location.TargetAccess);
+				field_loc = field_loc.GetDereferencedLocation (target);
 
 			if (!field.Type.IsByRef && field.IsBitfield)
 				field_loc = new BitfieldTargetLocation (

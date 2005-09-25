@@ -849,7 +849,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject CreateObject (TargetAccess target, TargetAddress address)
 		{
-			TargetLocation location = new AbsoluteTargetLocation (target, address);
+			TargetLocation location = new AbsoluteTargetLocation (address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
 			if (obj == null)
 				return null;
@@ -868,7 +868,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject CreateNullObject (TargetAccess target, TargetType type)
 		{
-			TargetLocation location = new AbsoluteTargetLocation (target, TargetAddress.Null);
+			TargetLocation location = new AbsoluteTargetLocation (TargetAddress.Null);
 
 			return new MonoNullObject ((TargetType) type, location);
 		}

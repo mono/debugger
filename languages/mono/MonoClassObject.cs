@@ -13,13 +13,12 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 		}
 
-		public override TargetClassObject Parent {
-			get {
-				if (!type.Type.HasParent)
-					return null;
+		public override TargetClassObject GetParentObject (TargetAccess target)
+		{
+			if (!type.Type.HasParent)
+				return null;
 
-				return type.GetParentObject (Location);
-			}
+			return type.GetParentObject (target, Location);
 		}
 
 		[Command]
@@ -34,7 +33,8 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetField (target, Location, index, obj);
 		}
 
-		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

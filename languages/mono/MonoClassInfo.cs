@@ -157,14 +157,12 @@ namespace Mono.Debugger.Languages.Mono
 
 				TargetFieldInfo finfo = type.StaticFields [index];
 
-				TargetLocation location = new AbsoluteTargetLocation (
-					target, data_address);
+				TargetLocation location = new AbsoluteTargetLocation (data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					field_offsets [finfo.Position]);
 
 				if (finfo.Type.IsByRef)
-					field_loc = field_loc.GetDereferencedLocation (
-						location.TargetAccess);
+					field_loc = field_loc.GetDereferencedLocation (target);
 
 				return finfo.Type.GetObject (field_loc);
 			} catch (TargetException ex) {
@@ -182,14 +180,12 @@ namespace Mono.Debugger.Languages.Mono
 
 				TargetFieldInfo finfo = type.StaticFields [index];
 
-				TargetLocation location = new AbsoluteTargetLocation (
-					target, data_address);
+				TargetLocation location = new AbsoluteTargetLocation (data_address);
 				TargetLocation field_loc = location.GetLocationAtOffset (
 					field_offsets [finfo.Position]);
 
 				if (finfo.Type.IsByRef)
-					field_loc = field_loc.GetDereferencedLocation (
-						location.TargetAccess);
+					field_loc = field_loc.GetDereferencedLocation (target);
 
 				finfo.Type.SetObject (target, field_loc, obj);
 			} catch (TargetException ex) {
@@ -222,10 +218,10 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (this, location);
 		}
 
-		internal MonoClassObject GetParentObject (TargetLocation location)
+		internal MonoClassObject GetParentObject (TargetAccess target, TargetLocation location)
 		{
 			try {
-				initialize (location.TargetAccess);
+				initialize (target);
 
 				if (parent == null)
 					throw new InvalidOperationException ();

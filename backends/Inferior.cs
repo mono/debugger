@@ -291,7 +291,8 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void RuntimeInvoke (TargetAddress invoke_method, TargetAddress method_argument,
+		public void RuntimeInvoke (TargetAccess target, TargetAddress invoke_method,
+					   TargetAddress method_argument,
 					   TargetObject object_argument, TargetObject[] param_objects,
 					   long callback_arg, bool debug)
 		{
@@ -318,8 +319,7 @@ namespace Mono.Debugger.Backends
 					addresses [i] = obj.Location.Address.Address;
 					continue;
 				}
-				blobs [i] = obj.Location.ReadBuffer (
-					obj.Location.TargetAccess, obj.Type.Size);
+				blobs [i] = obj.Location.ReadBuffer (target, obj.Type.Size);
 				blob_offsets [i] = blob_size;
 				blob_size += blobs [i].Length;
 			}

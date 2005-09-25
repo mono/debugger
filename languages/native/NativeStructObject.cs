@@ -12,21 +12,23 @@ namespace Mono.Debugger.Languages.Native
 			this.type = type;
 		}
 
-		public override TargetClassObject Parent {
-			get { throw new InvalidOperationException (); }
+		public override TargetClassObject GetParentObject (TargetAccess target)
+		{
+			throw new InvalidOperationException ();
 		}
 
 		public override TargetObject GetField (TargetAccess target, int index)
 		{
-			return type.GetField (Location, index);
+			return type.GetField (target, Location, index);
 		}
 
 		public override void SetField (TargetAccess target, int index, TargetObject obj)
 		{
-			type.SetField (Location, index, obj);
+			type.SetField (target, Location, index, obj);
 		}
 
-		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
+		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();

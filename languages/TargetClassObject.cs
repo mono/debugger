@@ -10,9 +10,7 @@ namespace Mono.Debugger.Languages
 			this.Type = type;
 		}
 
-		public abstract TargetClassObject Parent {
-			get;
-		}
+		public abstract TargetClassObject GetParentObject (TargetAccess target);
 
 		public abstract TargetObject GetField (TargetAccess target, int index);
 
