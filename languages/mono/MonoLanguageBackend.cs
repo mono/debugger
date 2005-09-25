@@ -732,7 +732,7 @@ namespace Mono.Debugger.Languages.Mono
 			return "";
 		}
 
-		public ITargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (StackFrame frame, string name)
 		{
 			switch (name) {
 			case "short":   name = "System.Int16";   break;
@@ -829,7 +829,7 @@ namespace Mono.Debugger.Languages.Mono
 			return GetFundamentalType (type) != null;
 		}
 
-		public ITargetObject CreateInstance (StackFrame frame, object obj)
+		public TargetObject CreateInstance (StackFrame frame, object obj)
 		{
 			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
 			if (type == null)
@@ -848,14 +848,14 @@ namespace Mono.Debugger.Languages.Mono
 			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public ITargetObject CreateObject (ITargetAccess target, TargetAddress address)
+		public TargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
 			if (obj == null)
 				return null;
 
-			ITargetObject result;
+			TargetObject result;
 			try {
 				result = obj.DereferencedObject;
 				if (result == null)
@@ -867,7 +867,7 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public ITargetObject CreateNullObject (ITargetAccess target, ITargetType type)
+		public TargetObject CreateNullObject (ITargetAccess target, TargetType type)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (target, TargetAddress.Null);
 
@@ -886,11 +886,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types.StringType; }
 		}
 
-		ITargetType ILanguage.PointerType {
+		TargetType ILanguage.PointerType {
 			get { return builtin_types.IntType; }
 		}
 
-		ITargetType ILanguage.VoidType {
+		TargetType ILanguage.VoidType {
 			get { return builtin_types.VoidType; }
 		}
 

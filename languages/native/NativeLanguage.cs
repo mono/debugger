@@ -41,11 +41,11 @@ namespace Mono.Debugger.Languages.Native
 			get { return null; }
 		}
 
-		public ITargetType PointerType {
+		public TargetType PointerType {
 			get { return pointer_type; }
 		}
 
-		public ITargetType VoidType {
+		public TargetType VoidType {
 			get { return void_type; }
 		}
 
@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.Native
 			return "";
 		}
 
-		public ITargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (StackFrame frame, string name)
 		{
 			return bfd_container.LookupType (frame, name);
 		}
@@ -76,7 +76,7 @@ namespace Mono.Debugger.Languages.Native
 			return false;
 		}
 
-		public ITargetObject CreateInstance (StackFrame frame, object obj)
+		public TargetObject CreateInstance (StackFrame frame, object obj)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -94,7 +94,7 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerObject (pointer_type, location);
 		}
 
-		public ITargetObject CreateObject (ITargetAccess target, TargetAddress address)
+		public TargetObject CreateObject (ITargetAccess target, TargetAddress address)
 		{
 			throw new NotSupportedException ();
 		}
@@ -104,7 +104,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
-		public ITargetObject CreateNullObject (ITargetAccess target, ITargetType type)
+		public TargetObject CreateNullObject (ITargetAccess target, TargetType type)
 		{
 			throw new NotSupportedException ();
 		}

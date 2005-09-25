@@ -296,13 +296,13 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case Format.Object: {
-				ITargetObject obj = expression.EvaluateVariable (context);
+				TargetObject obj = expression.EvaluateVariable (context);
 				context.PrintObject (obj);
 				break;
 			}
 
 			case Format.Current: {
-				ITargetObject obj = expression.EvaluateVariable (context);
+				TargetObject obj = expression.EvaluateVariable (context);
 				TargetClassObject cobj = obj as TargetClassObject;
 				context.PrintObject (cobj);
 				break;
@@ -336,12 +336,12 @@ namespace Mono.Debugger.Frontend
 		{
 			switch (format) {
 			case Format.Default:
-				ITargetType type = expression.EvaluateType (context);
+				TargetType type = expression.EvaluateType (context);
 				context.PrintType (type);
 				break;
 
 			case Format.Object:
-				ITargetObject obj = expression.EvaluateVariable (context);
+				TargetObject obj = expression.EvaluateVariable (context);
 				context.PrintType (obj.Type);
 				break;
 
@@ -1954,7 +1954,7 @@ namespace Mono.Debugger.Frontend
 			set { group = value; }
 		}
 
-		bool IsSubclassOf (TargetClassType type, ITargetType parent)
+		bool IsSubclassOf (TargetClassType type, TargetType parent)
 		{
 			while (type != null) {
 				if (type == parent)
@@ -1973,7 +1973,7 @@ namespace Mono.Debugger.Frontend
 		{
 			frame = ResolveFrame (context);
 
-			ITargetType exception_type = frame.Language.ExceptionType;
+			TargetType exception_type = frame.Language.ExceptionType;
 			if (exception_type == null)
 				throw new ScriptingException ("Current language doesn't have any exceptions.");
 

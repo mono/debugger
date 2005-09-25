@@ -991,7 +991,7 @@ namespace Mono.Debugger.Architecture
 			return null;
 		}
 
-		public ITargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (StackFrame frame, string name)
 		{
 			if (dwarf != null)
 				return dwarf.LookupType (frame, name);

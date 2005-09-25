@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override ITargetObject GetElement (ITargetAccess target, int[] indices)
+		public override TargetObject GetElement (ITargetAccess target, int[] indices)
 		{
 			int offset = GetArrayOffset (target, indices);
 
@@ -61,7 +61,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override void SetElement (ITargetAccess target, int[] indices,
-						 ITargetObject obj)
+						 TargetObject obj)
 		{
 			int offset = GetArrayOffset (target, indices);
 
@@ -76,7 +76,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetLocation new_loc = dynamic_location.GetLocationAtOffset (offset);
 
-			Type.ElementType.SetObject (target, new_loc, (TargetObject) obj);
+			Type.ElementType.SetObject (target, new_loc, obj);
 		}
 
 		int GetElementSize (ITargetInfo info)

@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.Native
 		protected override void DoGetArrayBounds (ITargetAccess target)
 		{ }
 
-		public override ITargetObject GetElement (ITargetAccess target, int[] indices)
+		public override TargetObject GetElement (ITargetAccess target, int[] indices)
 		{
 			if (indices.Length != 1)
 				throw new ArgumentException ();
@@ -31,7 +31,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override void SetElement (ITargetAccess target, int[] indices,
-						 ITargetObject obj)
+						 TargetObject obj)
 		{
 			throw new NotSupportedException ();
 		}

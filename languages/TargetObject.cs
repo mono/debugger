@@ -2,10 +2,10 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetObject : MarshalByRefObject, ITargetObject
+	public abstract class TargetObject : MarshalByRefObject
 	{
 		internal readonly TargetLocation Location;
-		protected ITargetType type;
+		protected TargetType type;
 
 		internal TargetObject (TargetType type, TargetLocation location)
 		{
@@ -13,7 +13,7 @@ namespace Mono.Debugger.Languages
 			this.Location = location;
 		}
 
-		public ITargetType Type {
+		public TargetType Type {
 			get {
 				return type;
 			}

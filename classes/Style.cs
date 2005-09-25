@@ -69,12 +69,12 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract string ShowVariableType (ITargetType type, string name);
+		public abstract string ShowVariableType (TargetType type, string name);
 
 		public abstract string PrintVariable (IVariable variable, StackFrame frame);
 
 		public abstract string FormatObject (ITargetAccess target, object obj);
 
-		public abstract string FormatType (ITargetAccess target, ITargetType type);
+		public abstract string FormatType (ITargetAccess target, TargetType type);
 	}
 }

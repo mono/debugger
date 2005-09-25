@@ -27,7 +27,7 @@ namespace Mono.Debugger.Frontend
 
 		public override void UnhandledException (ScriptingContext context,
 							 FrameHandle frame, AssemblerLine insn,
-							 ITargetObject exc)
+							 TargetObject exc)
 		{
 			base.UnhandledException (context, frame, insn, exc);
 		}
@@ -105,7 +105,7 @@ namespace Mono.Debugger.Frontend
 
 		public override void UnhandledException (ScriptingContext context,
 							 FrameHandle frame, AssemblerLine insn,
-							 ITargetObject exc)
+							 TargetObject exc)
 		{
 			TargetStopped (context, frame, insn);
 		}
@@ -126,11 +126,11 @@ namespace Mono.Debugger.Frontend
 				TargetEnumType etype = (TargetEnumType) obj;
 				return FormatEnumType (target, etype);
 			}
-			else if (obj is ITargetType) {
-				return ((ITargetType) obj).Name;
+			else if (obj is TargetType) {
+				return ((TargetType) obj).Name;
 			}
-			else if (obj is ITargetObject) {
-				ITargetObject tobj = (ITargetObject) obj;
+			else if (obj is TargetObject) {
+				TargetObject tobj = (TargetObject) obj;
 				return String.Format ("({0}) {1}", tobj.TypeName,
 						      DoFormatObject (target, tobj, false));
 			}
@@ -146,7 +146,7 @@ namespace Mono.Debugger.Frontend
 			TargetFieldInfo fi = member as TargetFieldInfo;
 			string value = "";
 			if (fi.HasConstValue) {
-				ITargetObject cv = fi.GetConstValue (target);
+				TargetObject cv = fi.GetConstValue (target);
 				if (cv != null)
 					value = String.Format (" = {0}", cv.Print(target));
 			}
@@ -218,7 +218,7 @@ namespace Mono.Debugger.Frontend
 			}
 			sb.Append ("(");
 			bool first = true;
-			foreach (ITargetType ptype in ftype.ParameterTypes) {
+			foreach (TargetType ptype in ftype.ParameterTypes) {
 				if (first)
 					first = false;
 				else
@@ -229,13 +229,13 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		public override string FormatType (ITargetAccess target, ITargetType type)
+		public override string FormatType (ITargetAccess target, TargetType type)
 		{
 			return FormatType (target, "", type, null);
 		}
 
 		protected string FormatType (ITargetAccess target, string prefix,
-					     ITargetType type, Hashtable hash)
+					     TargetType type, Hashtable hash)
 		{
 			string retval;
 
@@ -343,7 +343,7 @@ namespace Mono.Debugger.Frontend
 
 #if FIXME
 			case TargetObjectKind.Alias: {
-				ITargetTypeAlias alias = (ITargetTypeAlias) type;
+				TargetTypeAlias alias = (TargetTypeAlias) type;
 				string name;
 				if (alias.TargetType != null)
 					name = FormatType (target, prefix, alias.TargetType, hash);
@@ -386,7 +386,7 @@ namespace Mono.Debugger.Frontend
 				StructFormatter formatter = new StructFormatter (header);
 				TargetFieldInfo[] fields = stype.StaticFields;
 				foreach (TargetFieldInfo field in fields) {
-					ITargetObject fobj = stype.GetStaticField (target, field.Index);
+					TargetObject fobj = stype.GetStaticField (target, field.Index);
 					string item;
 					if (fobj == null)
 						item = field.Name + " = null";
@@ -402,7 +402,7 @@ namespace Mono.Debugger.Frontend
 			}       
 		}       
 
-		protected string DoFormatObject (ITargetAccess target, ITargetObject obj, bool recursed)
+		protected string DoFormatObject (ITargetAccess target, TargetObject obj, bool recursed)
 		{
 			try {
 				if (recursed)
@@ -414,7 +414,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string DoFormatObjectRecursed (ITargetAccess target, ITargetObject obj)
+		protected string DoFormatObjectRecursed (ITargetAccess target, TargetObject obj)
 		{
 			if (obj.IsNull)
 				return "null";
@@ -464,7 +464,7 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		protected string DoFormatObject (ITargetAccess target, ITargetObject obj)
+		protected string DoFormatObject (ITargetAccess target, TargetObject obj)
 		{
 			if (obj.IsNull)
 				return "null";
@@ -477,7 +477,7 @@ namespace Mono.Debugger.Frontend
 				TargetPointerObject pobj = (TargetPointerObject) obj;
 				if (pobj.Type.IsTypesafe) {
 					try {
-						ITargetObject deref = pobj.DereferencedObject;
+						TargetObject deref = pobj.DereferencedObject;
 						return String.Format (
 							"&({0}) {1}", deref.TypeName,
 							DoFormatObject (target, deref, false));
@@ -494,7 +494,7 @@ namespace Mono.Debugger.Frontend
 				StructFormatter formatter = new StructFormatter ("");
 				TargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (TargetFieldInfo field in fields) {
-					ITargetObject fobj = sobj.GetField (field.Index);
+					TargetObject fobj = sobj.GetField (field.Index);
 					string item;
 					if (fobj == null)
 						item = field.Name + " = null";
@@ -508,7 +508,7 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Enum: {
 				TargetEnumObject eobj = (TargetEnumObject) obj;
-				ITargetObject fobj = eobj.Value;
+				TargetObject fobj = eobj.Value;
 
 				return DoFormatObject (target, fobj, true);
 			}
@@ -521,7 +521,7 @@ namespace Mono.Debugger.Frontend
 		public override string PrintVariable (IVariable variable, StackFrame frame)
 		{
 			string contents;
-			ITargetObject obj = null;
+			TargetObject obj = null;
 
 			try {
 				obj = variable.GetObject (frame);
@@ -537,7 +537,7 @@ namespace Mono.Debugger.Frontend
 				"{0} = ({1}) {2}", variable.Name, variable.Type.Name, contents);
 		}
 
-		public override string ShowVariableType (ITargetType type, string name)
+		public override string ShowVariableType (TargetType type, string name)
 		{
 			return type.Name;
 		}
@@ -579,7 +579,7 @@ namespace Mono.Debugger.Frontend
 
 		public override void UnhandledException (ScriptingContext context,
 							 FrameHandle frame, AssemblerLine insn,
-							 ITargetObject exc)
+							 TargetObject exc)
 		{
 			TargetStopped (context, frame, insn);
 		}
@@ -593,7 +593,7 @@ namespace Mono.Debugger.Frontend
 
 		public override string PrintVariable (IVariable variable, StackFrame frame)
 		{
-			ITargetObject obj = null;
+			TargetObject obj = null;
 			try {
 				obj = variable.GetObject (frame);
 			} catch {
@@ -617,7 +617,7 @@ namespace Mono.Debugger.Frontend
 				return obj.ToString ();
 		}
 
-		public override string FormatType (ITargetAccess target, ITargetType type)
+		public override string FormatType (ITargetAccess target, TargetType type)
 		{
 			return type.ToString ();
 		}
@@ -627,7 +627,7 @@ namespace Mono.Debugger.Frontend
 			sb.Append (String.Format (format + "\n", args));
 		}
 
-		public override string ShowVariableType (ITargetType type, string name)
+		public override string ShowVariableType (TargetType type, string name)
 		{
 			StringBuilder sb = new StringBuilder ();
 			TargetArrayType array = type as TargetArrayType;
@@ -704,6 +704,6 @@ namespace Mono.Debugger.Frontend
 						    AssemblerLine current_insn);
 
 		public abstract void UnhandledException (ScriptingContext context, FrameHandle frame,
-							 AssemblerLine current_insn, ITargetObject exc);
+							 AssemblerLine current_insn, TargetObject exc);
 	}
 }

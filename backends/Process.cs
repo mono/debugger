@@ -490,13 +490,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		public string PrintObject (Style style, ITargetObject obj)
+		public string PrintObject (Style style, TargetObject obj)
 		{
 			check_engine ();
 			return engine.PrintObject (style, obj);
 		}
 
-		public string PrintType (Style style, ITargetType type)
+		public string PrintType (Style style, TargetType type)
 		{
 			check_engine ();
 			return engine.PrintType (style, type);
@@ -563,8 +563,8 @@ namespace Mono.Debugger
 		}
 
 		public void RuntimeInvoke (TargetFunctionType method_argument,
-					   ITargetObject object_argument,
-					   ITargetObject[] param_objects)
+					   TargetObject object_argument,
+					   TargetObject[] param_objects)
 		{
 			lock (this) {
 				check_engine ();
@@ -575,10 +575,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
-						    ITargetObject object_argument,
-						    ITargetObject[] param_objects,
-						    out string exc_message)
+		public TargetObject RuntimeInvoke (TargetFunctionType method_argument,
+						   TargetObject object_argument,
+						   TargetObject[] param_objects,
+						   out string exc_message)
 		{
 			CommandResult result = new CommandResult ();
 

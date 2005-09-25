@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetType Type {
+		TargetType Type {
 			get;
 		}
 
@@ -31,12 +31,12 @@ namespace Mono.Debugger.Languages
 		//   bound to any particular target location.  This also means that it won't
 		//   get invalid after the target exited.
 		// </remarks>
-		ITargetObject GetObject (StackFrame frame);
+		TargetObject GetObject (StackFrame frame);
 
 		bool CanWrite {
 			get;
 		}
 
-		void SetObject (StackFrame frame, ITargetObject obj);
+		void SetObject (StackFrame frame, TargetObject obj);
 	}
 }

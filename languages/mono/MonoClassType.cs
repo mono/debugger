@@ -302,7 +302,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public ITargetObject GetStaticEvent (StackFrame frame, int index)
+		public TargetObject GetStaticEvent (StackFrame frame, int index)
 		{
 			get_events ();
 			return null;

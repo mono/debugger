@@ -294,7 +294,7 @@ namespace Mono.Debugger.Architecture
 				type_hash.Add (name, type);
 		}
 
-		public ITargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (StackFrame frame, string name)
 		{
 			DieType type = (DieType) type_hash [name];
 			if (type == null)
@@ -2553,7 +2553,7 @@ namespace Mono.Debugger.Architecture
 				get { return name; }
 			}
 
-			ITargetType IVariable.Type {
+			TargetType IVariable.Type {
 				get { return type; }
 			}
 
@@ -2598,7 +2598,7 @@ namespace Mono.Debugger.Architecture
 					frame.TargetAccess, true, reg, off, type.IsByRef);
 			}
 
-			public ITargetObject GetObject (StackFrame frame)
+			public TargetObject GetObject (StackFrame frame)
 			{
 				TargetLocation location = GetLocation (frame);
 				if (location == null)
@@ -2611,7 +2611,7 @@ namespace Mono.Debugger.Architecture
 				get { return type.Kind == TargetObjectKind.Fundamental; }
 			}
 
-			public void SetObject (StackFrame frame, ITargetObject obj)
+			public void SetObject (StackFrame frame, TargetObject obj)
 			{
 				if (obj.Type != Type)
 					throw new InvalidOperationException ();

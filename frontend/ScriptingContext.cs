@@ -21,7 +21,7 @@ namespace Mono.Debugger.Frontend
 		Interpreter interpreter;
 		ProcessHandle process;
 		StackFrame frame;
-		ITargetObject current_exception;
+		TargetObject current_exception;
 
 		public FrameHandle (Interpreter interpreter, ProcessHandle process,
 				    StackFrame frame)
@@ -120,12 +120,12 @@ namespace Mono.Debugger.Frontend
 			return process.GetRegisterIndex (name);
 		}
 
-		public ITargetType GetRegisterType (int index)
+		public TargetType GetRegisterType (int index)
 		{
 			return frame.Language.PointerType;
 		}
 
-		public ITargetObject GetRegister (int index)
+		public TargetObject GetRegister (int index)
 		{
 			TargetAddress address = new TargetAddress (
 				frame.AddressDomain, frame.GetRegister (index));
@@ -181,7 +181,7 @@ namespace Mono.Debugger.Frontend
 				"No variable or parameter with that name: `{0}'.", identifier);
 		}
 
-		public ITargetObject GetVariable (IVariable var)
+		public TargetObject GetVariable (IVariable var)
 		{
 			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
@@ -199,7 +199,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public ITargetObject ExceptionObject {
+		public TargetObject ExceptionObject {
 			get {
 				return current_exception;
 			}
@@ -267,7 +267,7 @@ namespace Mono.Debugger.Frontend
 						   "" : "unhandled ");
 
 				TargetAddress exc = (TargetAddress) args.Data;
-				ITargetObject exc_object = null;
+				TargetObject exc_object = null;
 
 				try {
 					if (frame.Language != null)
@@ -490,7 +490,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public void RuntimeInvoke (TargetFunctionType func,
-					   ITargetObject instance, ITargetObject[] args)
+					   TargetObject instance, TargetObject[] args)
 		{
 			if (process == null)
 				throw new ScriptingException ("{0} not running.", Name);
@@ -505,8 +505,8 @@ namespace Mono.Debugger.Frontend
 				interpreter.DebuggerManager.Wait (process);
 		}
 
-		public ITargetObject RuntimeInvoke (TargetFunctionType func,
-						    ITargetObject instance, ITargetObject[] args,
+		public TargetObject RuntimeInvoke (TargetFunctionType func,
+						    TargetObject instance, TargetObject[] args,
 						    out string exc_message)
 		{
 			if (process == null)
@@ -921,9 +921,9 @@ namespace Mono.Debugger.Frontend
 					formatted = String.Format ("0x{0:x}", (long) obj);
 				else if (obj is string)
 					formatted = '"' + (string) obj + '"';
-				else if (obj is ITargetObject)
+				else if (obj is TargetObject)
 					formatted = CurrentProcess.Process.PrintObject (
-						interpreter.Style, (ITargetObject) obj);
+						interpreter.Style, (TargetObject) obj);
 				else
 					formatted = obj.ToString ();
 			} catch {
@@ -932,7 +932,7 @@ namespace Mono.Debugger.Frontend
 			Print (formatted);
 		}
 
-		public void PrintType (ITargetType type)
+		public void PrintType (TargetType type)
 		{
 			string formatted;
 			try {
@@ -1074,18 +1074,18 @@ namespace Mono.Debugger.Frontend
 		{
 			if (obj == null)
 				Print ("null");
-			else if (obj is ITargetObject)
-				Print (DumpObject ((ITargetObject) obj));
+			else if (obj is TargetObject)
+				Print (DumpObject ((TargetObject) obj));
 			else
 				Print ("unknown:{0}:{1}", obj.GetType (), obj);
 		}
 
-		public string DumpObject (ITargetObject obj)
+		public string DumpObject (TargetObject obj)
 		{
 			return String.Format ("object:{0}", DumpType (obj.Type));
 		}
 
-		public string DumpType (ITargetType type)
+		public string DumpType (TargetType type)
 		{
 			StringBuilder sb = new StringBuilder ();
 			sb.Append (type.Name);
@@ -1120,7 +1120,7 @@ namespace Mono.Debugger.Frontend
 
 #if FIXME
 			case TargetObjectKind.Alias: {
-				ITargetTypeAlias alias = (ITargetTypeAlias) type;
+				TargetTypeAlias alias = (TargetTypeAlias) type;
 				sb.Append (alias.TargetName);
 				if (alias.TargetType != null) {
 					sb.Append (":");

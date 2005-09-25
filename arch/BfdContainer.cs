@@ -83,10 +83,10 @@ namespace Mono.Debugger.Architecture
 			return TargetAddress.Null;
 		}
 
-		public ITargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (StackFrame frame, string name)
 		{
 			foreach (Bfd bfd in bfd_hash.Values) {
-				ITargetType type = bfd.LookupType (frame, name);
+				TargetType type = bfd.LookupType (frame, name);
 				if (type != null)
 					return type;
 			}

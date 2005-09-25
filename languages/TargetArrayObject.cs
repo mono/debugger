@@ -98,10 +98,10 @@ namespace Mono.Debugger.Languages
 			return length;
 		}
 
-		public abstract ITargetObject GetElement (ITargetAccess target, int[] indices);
+		public abstract TargetObject GetElement (ITargetAccess target, int[] indices);
 
 		public abstract void SetElement (ITargetAccess target, int[] indices,
-						 ITargetObject obj);
+						 TargetObject obj);
 
 		public override string ToString ()
 		{

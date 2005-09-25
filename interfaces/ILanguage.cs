@@ -24,11 +24,11 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		ITargetType PointerType {
+		TargetType PointerType {
 			get;
 		}
 
-		ITargetType VoidType {
+		TargetType VoidType {
 			get;
 		}
 
@@ -42,19 +42,19 @@ namespace Mono.Debugger.Languages
 
 		string SourceLanguage (StackFrame frame);
 
-		ITargetType LookupType (StackFrame frame, string name);
+		TargetType LookupType (StackFrame frame, string name);
 
 		bool CanCreateInstance (Type type);
 
-		ITargetObject CreateInstance (StackFrame frame, object obj);
+		TargetObject CreateInstance (StackFrame frame, object obj);
 
 		TargetFundamentalObject CreateInstance (ITargetAccess target, int value);
 
 		TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address);
 
-		ITargetObject CreateObject (ITargetAccess target, TargetAddress address);
+		TargetObject CreateObject (ITargetAccess target, TargetAddress address);
 
-		ITargetObject CreateNullObject (ITargetAccess target, ITargetType type);
+		TargetObject CreateNullObject (ITargetAccess target, TargetType type);
 
 		TargetAddress AllocateMemory (ITargetAccess target, int size);
 	}

@@ -1355,8 +1355,8 @@ namespace Mono.Debugger.Backends
 
 		[Command]
 		public void RuntimeInvoke (TargetFunctionType method_argument,
-					   ITargetObject object_argument,
-					   ITargetObject[] param_objects)
+					   TargetObject object_argument,
+					   TargetObject[] param_objects)
 		{
 			StartOperation ();
 			ProcessOperation (new OperationRuntimeInvoke (
@@ -1365,8 +1365,8 @@ namespace Mono.Debugger.Backends
 
 		[Command]
 		public void RuntimeInvoke (TargetFunctionType method_argument,
-					   ITargetObject object_argument,
-					   ITargetObject[] param_objects,
+					   TargetObject object_argument,
+					   TargetObject[] param_objects,
 					   CommandResult result)
 		{
 			StartOperation ();
@@ -1537,13 +1537,13 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public string PrintObject (Style style, ITargetObject obj)
+		public string PrintObject (Style style, TargetObject obj)
 		{
 			return style.FormatObject (target_access, obj);
 		}
 
 		[Command]
-		public string PrintType (Style style, ITargetType type)
+		public string PrintType (Style style, TargetType type)
 		{
 			return style.FormatType (target_access, type);
 		}
@@ -2389,8 +2389,8 @@ namespace Mono.Debugger.Backends
 		}
 
 		public OperationRuntimeInvoke (TargetFunctionType method_argument,
-					       ITargetObject object_argument,
-					       ITargetObject[] param_objects)
+					       TargetObject object_argument,
+					       TargetObject[] param_objects)
 		{
 			this.MethodArgument = (MonoFunctionType) method_argument;
 			this.ObjectArgument = (TargetObject) object_argument;
@@ -2403,8 +2403,8 @@ namespace Mono.Debugger.Backends
 		}
 
 		public OperationRuntimeInvoke (TargetFunctionType method_argument,
-					       ITargetObject object_argument,
-					       ITargetObject[] param_objects,
+					       TargetObject object_argument,
+					       TargetObject[] param_objects,
 					       CommandResult result)
 			: this (method_argument, object_argument, param_objects)
 		{
@@ -2837,7 +2837,7 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal class RuntimeInvokeResult
 	{
-		public ITargetObject ReturnObject;
+		public TargetObject ReturnObject;
 		public string ExceptionMessage;
 	}
 

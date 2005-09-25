@@ -71,7 +71,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return name; }
 		}
 
-		public ITargetType Type {
+		public TargetType Type {
 			get { return type; }
 		}
 
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Languages.Mono
 			return (address >= start_liveness) && (address <= end_liveness);
 		}
 
-		public ITargetObject GetObject (StackFrame frame)
+		public TargetObject GetObject (StackFrame frame)
 		{
 			TargetLocation location = GetLocation (frame);
 
@@ -119,7 +119,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		public void SetObject (StackFrame frame, ITargetObject obj)
+		public void SetObject (StackFrame frame, TargetObject obj)
 		{
 			TargetLocation location = GetLocation (frame);
 

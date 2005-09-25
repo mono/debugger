@@ -35,12 +35,12 @@ namespace Mono.Debugger
 					  string string_argument);
 
 		void RuntimeInvoke (TargetFunctionType method_argument,
-				    ITargetObject object_argument,
-				    ITargetObject[] param_objects);
+				    TargetObject object_argument,
+				    TargetObject[] param_objects);
 
-		ITargetObject RuntimeInvoke (TargetFunctionType method_argument,
-					     ITargetObject object_argument,
-					     ITargetObject[] param_objects,
+		TargetObject RuntimeInvoke (TargetFunctionType method_argument,
+					     TargetObject object_argument,
+					     TargetObject[] param_objects,
 					     out string exc_message);
 
 		object Invoke (TargetAccessDelegate func, object user_data);
