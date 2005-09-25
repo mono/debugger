@@ -1118,6 +1118,7 @@ namespace Mono.Debugger.Frontend
 				sb.Append (((TargetArrayType) type).ElementType.Name);
 				break;
 
+#if FIXME
 			case TargetObjectKind.Alias: {
 				ITargetTypeAlias alias = (ITargetTypeAlias) type;
 				sb.Append (alias.TargetName);
@@ -1127,6 +1128,7 @@ namespace Mono.Debugger.Frontend
 				}
 				break;
 			}
+#endif
 
 			}
 
