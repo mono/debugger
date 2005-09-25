@@ -14,10 +14,10 @@ namespace Mono.Debugger.Architecture
 	internal class BfdContainer : MarshalByRefObject, IDisposable
 	{
 		Hashtable bfd_hash;
-		DebuggerBackend backend;
+		Debugger backend;
 		NativeLanguage language;
 
-		public BfdContainer (DebuggerBackend backend)
+		public BfdContainer (Debugger backend)
 		{
 			this.backend = backend;
 			this.bfd_hash = new Hashtable ();
@@ -27,7 +27,7 @@ namespace Mono.Debugger.Architecture
 			get { return language; }
 		}
 
-		public DebuggerBackend DebuggerBackend {
+		public Debugger Debugger {
 			get { return backend; }
 		}
 

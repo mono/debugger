@@ -210,7 +210,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly AddressDomain GlobalAddressDomain;
 		internal readonly ITargetMemoryInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
-		protected readonly DebuggerBackend backend;
+		protected readonly Debugger backend;
 		MonoSymbolTable symtab;
 		string name;
 		int address_size;
@@ -226,7 +226,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable source_file_hash;
 		Hashtable method_index_hash;
 
-		internal MonoSymbolFile (MonoLanguageBackend language, DebuggerBackend backend,
+		internal MonoSymbolFile (MonoLanguageBackend language, Debugger backend,
 					 ITargetMemoryInfo target_info, ITargetMemoryAccess memory,
 					 TargetAddress address)
 		{
@@ -282,7 +282,7 @@ namespace Mono.Debugger.Languages.Mono
 					      SymbolsLoaded, StepInto, LoadSymbols);
 		}
 
-		public override DebuggerBackend DebuggerBackend {
+		public override Debugger Debugger {
 			get { return backend; }
 		}
 

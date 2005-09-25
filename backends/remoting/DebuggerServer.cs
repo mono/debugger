@@ -11,7 +11,7 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Remoting
 {
-	public class DebuggerServer : DebuggerBackend
+	public class DebuggerServer : Debugger
 	{
 		static DebuggerChannel channel;
 		DebuggerClient client;
@@ -47,7 +47,7 @@ namespace Mono.Debugger.Remoting
 			RemotingServices.Disconnect (this);
 		}
 
-		public DebuggerBackend DebuggerBackend {
+		public Debugger Debugger {
 			get { return this; }
 		}
 	}

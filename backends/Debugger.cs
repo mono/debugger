@@ -18,7 +18,7 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public abstract class DebuggerBackend : MarshalByRefObject, IDisposable
+	public abstract class Debugger : MarshalByRefObject, IDisposable
 	{
 		BfdContainer bfd_container;
 
@@ -31,7 +31,7 @@ namespace Mono.Debugger
 		ThreadManager thread_manager;
 		ProcessStart start;
 
-		protected DebuggerBackend (DebuggerManager manager)
+		protected Debugger (DebuggerManager manager)
 		{
 			this.manager = manager;
 
@@ -298,7 +298,7 @@ namespace Mono.Debugger
 			GC.SuppressFinalize (this);
 		}
 
-		~DebuggerBackend ()
+		~Debugger ()
 		{
 			Dispose (false);
 		}

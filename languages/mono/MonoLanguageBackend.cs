@@ -271,14 +271,14 @@ namespace Mono.Debugger.Languages.Mono
 		int last_num_data_tables;
 		int last_data_table_offset;
 
-		DebuggerBackend backend;
+		Debugger backend;
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
 		bool initialized;
 		DebuggerMutex mutex;
 		Heap heap;
 
-		public MonoLanguageBackend (DebuggerBackend backend)
+		public MonoLanguageBackend (Debugger backend)
 		{
 			this.backend = backend;
 			mutex = new DebuggerMutex ("mono_mutex");

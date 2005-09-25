@@ -30,7 +30,7 @@ namespace Mono.Debugger.Backends
 
 		protected readonly BfdContainer bfd_container;
 		protected readonly SymbolTableCollection symtab_collection;
-		protected readonly DebuggerBackend backend;
+		protected readonly Debugger backend;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
 		protected readonly AddressDomain global_address_domain;
@@ -215,7 +215,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected Inferior (ThreadManager thread_manager, DebuggerBackend backend,
+		protected Inferior (ThreadManager thread_manager, Debugger backend,
 				    ProcessStart start, BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
 				    AddressDomain global_address_domain)
@@ -239,7 +239,7 @@ namespace Mono.Debugger.Backends
 		{
 			return new Inferior (
 				thread_manager,
-				thread_manager.DebuggerBackend, start,
+				thread_manager.Debugger, start,
 				thread_manager.BreakpointManager, null,
 				thread_manager.AddressDomain);
 		}
@@ -403,7 +403,7 @@ namespace Mono.Debugger.Backends
 				server_handle, breakpoint));
 		}
 
-		public DebuggerBackend DebuggerBackend {
+		public Debugger Debugger {
 			get {
 				return backend;
 			}

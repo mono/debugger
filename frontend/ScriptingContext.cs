@@ -788,12 +788,12 @@ namespace Mono.Debugger.Frontend
 			get { return interpreter; }
 		}
 
-		public DebuggerBackend GetDebuggerBackend ()
+		public Debugger GetDebugger ()
 		{
 			if (current_process == null)
 				throw new ScriptingException ("No program to debug.");
 
-			DebuggerBackend backend = current_process.Process.DebuggerBackend;
+			Debugger backend = current_process.Process.Debugger;
 			if (backend == null)
 				throw new ScriptingException ("No program to debug.");
 
@@ -1137,7 +1137,7 @@ namespace Mono.Debugger.Frontend
 
 		public string GetFullPathByFilename (string filename)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 
 			try {
 				backend.ModuleManager.Lock ();
@@ -1163,7 +1163,7 @@ namespace Mono.Debugger.Frontend
 
 		public string GetFullPath (string filename)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 
 			if (Path.IsPathRooted (filename))
 				return filename;
@@ -1180,7 +1180,7 @@ namespace Mono.Debugger.Frontend
 		public SourceLocation FindLocation (string file, int line)
 		{
 			string path = GetFullPath (file);
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 			SourceLocation location = backend.FindLocation (path, line);
 
 			if (location != null)
@@ -1202,13 +1202,13 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation FindMethod (string name)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 			return backend.FindMethod (name);
 		}
 
 		public Module[] GetModules (int[] indices)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 
 			try {
 				backend.ModuleManager.Lock ();
@@ -1233,14 +1233,14 @@ namespace Mono.Debugger.Frontend
 
 		public Module[] Modules 	{
 			get {
-				DebuggerBackend backend = GetDebuggerBackend ();
+				Debugger backend = GetDebugger ();
 				return backend.Modules;
 			}
 		}
 
 		public SourceFile[] GetSources (int[] indices)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 
 			try {
 				backend.ModuleManager.Lock ();
@@ -1277,7 +1277,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowModules ()
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 
 			try {
 				backend.ModuleManager.Lock ();
@@ -1322,7 +1322,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 
 			try {
 				backend.ModuleManager.Lock ();
@@ -1348,13 +1348,13 @@ namespace Mono.Debugger.Frontend
 
 		public ISourceBuffer FindFile (string filename)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 			return backend.SourceFileFactory.FindFile (filename);
 		}
 
 		public void LoadLibrary (Process process, string filename)
 		{
-			DebuggerBackend backend = GetDebuggerBackend ();
+			Debugger backend = GetDebugger ();
 			string pathname = Path.GetFullPath (filename);
 			if (!File.Exists (pathname))
 				throw new ScriptingException (

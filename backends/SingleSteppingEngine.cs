@@ -138,11 +138,11 @@ namespace Mono.Debugger.Backends
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			disassembler.SymbolTable = inferior.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
-			current_simple_symtab = inferior.DebuggerBackend.SymbolTableManager.SimpleSymbolTable;
-			current_symtab = inferior.DebuggerBackend.SymbolTableManager.SymbolTable;
+			disassembler.SymbolTable = inferior.Debugger.SymbolTableManager.SimpleSymbolTable;
+			current_simple_symtab = inferior.Debugger.SymbolTableManager.SimpleSymbolTable;
+			current_symtab = inferior.Debugger.SymbolTableManager.SymbolTable;
 
-			inferior.DebuggerBackend.SymbolTableManager.SymbolTableChangedEvent +=
+			inferior.Debugger.SymbolTableManager.SymbolTableChangedEvent +=
 				new SymbolTableManager.SymbolTableHandler (update_symtabs);
 
 			exception_handlers = new Hashtable ();
@@ -563,7 +563,7 @@ namespace Mono.Debugger.Backends
 
 		public IMethod Lookup (TargetAddress address)
 		{
-			inferior.DebuggerBackend.UpdateSymbolTable (inferior);
+			inferior.Debugger.UpdateSymbolTable (inferior);
 
 			if (current_symtab == null)
 				return null;
@@ -624,7 +624,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public DebuggerManager DebuggerManager {
-			get { return manager.DebuggerBackend.DebuggerManager; }
+			get { return manager.Debugger.DebuggerManager; }
 		}
 
 		public Backtrace CurrentBacktrace {
@@ -736,7 +736,7 @@ namespace Mono.Debugger.Backends
 		//   If @index is zero, we hit an "unknown" breakpoint - ie. a
 		//   breakpoint which we did not create.  Normally, this means that there
 		//   is a breakpoint instruction (such as G_BREAKPOINT ()) in the code.
-		//   Such unknown breakpoints are handled by the DebuggerBackend; one of
+		//   Such unknown breakpoints are handled by the Debugger; one of
 		//   the language backends may recognize the breakpoint's address, for
 		//   instance if this is the JIT's breakpoint trampoline.
 		//
@@ -1122,7 +1122,7 @@ namespace Mono.Debugger.Backends
 			if ((source == null) || source.IsDynamic)
 				return false;
 
-			SourceFileFactory factory = method.Module.DebuggerBackend.SourceFileFactory;
+			SourceFileFactory factory = method.Module.Debugger.SourceFileFactory;
 			if (!factory.Exists (source.SourceFile.FileName))
 				return false;
 
@@ -1395,7 +1395,7 @@ namespace Mono.Debugger.Backends
 		[Command]
 		public Backtrace GetBacktrace (int max_frames)
 		{
-			inferior.DebuggerBackend.UpdateSymbolTable (inferior);
+			inferior.Debugger.UpdateSymbolTable (inferior);
 
 			if (current_frame == null)
 				throw new TargetException (TargetError.NoStack);
@@ -1929,7 +1929,7 @@ namespace Mono.Debugger.Backends
 
 		protected bool CheckTrampoline (SingleSteppingEngine sse, TargetAddress call)
 		{
-			foreach (ILanguageBackend language in sse.inferior.DebuggerBackend.Languages) {
+			foreach (ILanguageBackend language in sse.inferior.Debugger.Languages) {
 				bool is_start;
 				TargetAddress trampoline = language.GetTrampolineAddress (
 					sse.inferior, call, out is_start);
@@ -2414,7 +2414,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
+			language = sse.ThreadManager.Debugger.MonoLanguage;
 			method_argument = MethodArgument.GetMethodAddress (sse.TargetAccess);
 
 			if ((ObjectArgument != null) && ObjectArgument.Location.HasAddress) {
@@ -2672,7 +2672,7 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			if (language == null)
-				language = sse.ThreadManager.DebuggerBackend.MonoLanguage;
+				language = sse.ThreadManager.Debugger.MonoLanguage;
 
 			method = Function.GetMethodAddress (sse.target_access);
 

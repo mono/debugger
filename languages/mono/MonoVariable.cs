@@ -8,12 +8,12 @@ namespace Mono.Debugger.Languages.Mono
 		VariableInfo info;
 		string name;
 		TargetType type;
-		DebuggerBackend backend;
+		Debugger backend;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
 		bool has_liveness_info, is_byref;
 
-		public MonoVariable (DebuggerBackend backend, string name, TargetType type,
+		public MonoVariable (Debugger backend, string name, TargetType type,
 				     bool is_local, bool is_byref, IMethod method,
 				     VariableInfo info, int start_scope_offset,
 				     int end_scope_offset)
@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoVariable (DebuggerBackend backend, string name, TargetType type,
+		public MonoVariable (Debugger backend, string name, TargetType type,
 				     bool is_local, bool is_byref, IMethod method,
 				     VariableInfo info)
 		{
@@ -63,7 +63,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public DebuggerBackend Backend {
+		public Debugger Backend {
 			get { return backend; }
 		}
 

@@ -1,5 +1,10 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(DebuggerBackend): Renamed to `Debugger'.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClassObject.cs
 	(TargetClassObject.Parent): Replaced the property with a
 	`GetParentObject()' method.

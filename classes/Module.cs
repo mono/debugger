@@ -33,7 +33,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract DebuggerBackend DebuggerBackend {
+		public abstract Debugger Debugger {
 			get;
 		}
 

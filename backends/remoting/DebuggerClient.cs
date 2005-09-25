@@ -26,7 +26,7 @@ namespace Mono.Debugger.Remoting
 		string url;
 		DebuggerManager manager;
 		DebuggerServer server;
-		DebuggerBackend backend;
+		Debugger backend;
 		DebuggerConnection connection;
 		ILease lease;
 		Sponsor sponsor;
@@ -114,7 +114,7 @@ namespace Mono.Debugger.Remoting
 			get { return server; }
 		}
 
-		public DebuggerBackend DebuggerBackend {
+		public Debugger Debugger {
 			get { return backend; }
 		}
 

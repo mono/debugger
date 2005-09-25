@@ -121,7 +121,7 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed main sse: {0}",
 					      sse);
-				csharp_language = thread_manager.DebuggerBackend.CreateDebuggerHandler ();
+				csharp_language = thread_manager.Debugger.CreateDebuggerHandler ();
 				return true;
 			} else if (thread_hash.Count > first_index) {
 				Report.Debug (DebugFlags.Threads,

@@ -109,7 +109,7 @@ namespace Mono.Debugger
 				return method.UnwindStack (
 					last_frame.SimpleFrame, memory, arch);
 
-			foreach (Module module in last_frame.Process.DebuggerBackend.Modules) {
+			foreach (Module module in last_frame.Process.Debugger.Modules) {
 				SimpleStackFrame new_frame = null;
 				try {
 					new_frame = module.UnwindStack (last_frame.SimpleFrame, memory);

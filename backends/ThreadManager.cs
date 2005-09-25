@@ -23,7 +23,7 @@ namespace Mono.Debugger
 	{
 		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (500);
 
-		internal ThreadManager (DebuggerBackend backend)
+		internal ThreadManager (Debugger backend)
 		{
 			this.backend = backend;
 
@@ -53,7 +53,7 @@ namespace Mono.Debugger
 		SingleSteppingEngine the_engine;
 
 		ProcessStart start;
-		DebuggerBackend backend;
+		Debugger backend;
 		DebuggerEventQueue event_queue;
 		BreakpointManager breakpoint_manager;
 		Thread inferior_thread;
@@ -367,7 +367,7 @@ namespace Mono.Debugger
 			return retval;
 		}
 
-		public DebuggerBackend DebuggerBackend {
+		public Debugger Debugger {
 			get { return backend; }
 		}
 

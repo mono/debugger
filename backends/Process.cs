@@ -27,7 +27,7 @@ namespace Mono.Debugger
 			this.debugger_manager = debugger_manager;
 
 			this.manager = engine.ThreadManager;
-			this.backend = manager.DebuggerBackend;
+			this.backend = manager.Debugger;
 
 			this.pid = engine.PID;
 			this.tid = engine.TID;
@@ -42,7 +42,7 @@ namespace Mono.Debugger
 		bool is_daemon;
 		int id, pid, tid;
 		SingleSteppingEngine engine;
-		DebuggerBackend backend;
+		Debugger backend;
 		ThreadManager manager;
 		DebuggerManager debugger_manager;
 		ManualResetEvent operation_completed_event;
@@ -58,7 +58,7 @@ namespace Mono.Debugger
 		protected internal Language NativeLanguage {
 			get {
 				check_engine ();
-				return DebuggerBackend.BfdContainer.NativeLanguage;
+				return Debugger.BfdContainer.NativeLanguage;
 			}
 		}
 
@@ -133,7 +133,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public DebuggerBackend DebuggerBackend {
+		public Debugger Debugger {
 			get {
 				check_engine ();
 				return backend;

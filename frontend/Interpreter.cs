@@ -305,7 +305,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				DebuggerClient client;
 				client = manager.Run (options.RemoteHost, options.RemoteMono);
-				DebuggerBackend backend = client.DebuggerBackend;
+				Debugger backend = client.Debugger;
 
 				new InterpreterEventSink (this, client, backend);
 				new ProcessEventSink (this, backend.ThreadManager);
@@ -329,7 +329,7 @@ namespace Mono.Debugger.Frontend
 		{
 			try {
 				DebuggerClient client = manager.Run (null, null);
-				DebuggerBackend backend = client.DebuggerBackend;
+				Debugger backend = client.Debugger;
 
 				new InterpreterEventSink (this, client, backend);
 				new ProcessEventSink (this, backend.ThreadManager);
@@ -533,7 +533,7 @@ namespace Mono.Debugger.Frontend
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
-			EventHandle handle = thread.Process.DebuggerBackend.InsertBreakpoint (
+			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
 				thread.Process, breakpoint, location);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
@@ -551,7 +551,7 @@ namespace Mono.Debugger.Frontend
 			if (!func.DeclaringType.ResolveClass (thread.Process.TargetAccess))
 				throw new ScriptingException ("Could not insert breakpoint.");
 
-			EventHandle handle = thread.Process.DebuggerBackend.InsertBreakpoint (
+			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
 				thread.Process, breakpoint, func);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
@@ -589,7 +589,7 @@ namespace Mono.Debugger.Frontend
 			DebuggerClient client;
 
 			public InterpreterEventSink (Interpreter interpreter, DebuggerClient client,
-						     DebuggerBackend backend)
+						     Debugger backend)
 			{
 				this.interpreter = interpreter;
 				this.client = client;

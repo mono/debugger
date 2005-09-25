@@ -17,7 +17,7 @@ namespace Mono.Debugger.Architecture
 	{
 		IntPtr bfd;
 		protected BfdContainer container;
-		protected DebuggerBackend backend;
+		protected Debugger backend;
 		protected ITargetMemoryInfo info;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
@@ -175,7 +175,7 @@ namespace Mono.Debugger.Architecture
 			this.info = info;
 			this.filename = filename;
 			this.base_address = base_address;
-			this.backend = container.DebuggerBackend;
+			this.backend = container.Debugger;
 			this.is_main_module = is_main_module;
 			this.is_loaded = is_loaded;
 
@@ -449,7 +449,7 @@ namespace Mono.Debugger.Architecture
 			}
 		}
 
-		public override DebuggerBackend DebuggerBackend {
+		public override Debugger Debugger {
 			get {
 				return backend;
 			}

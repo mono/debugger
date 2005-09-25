@@ -10,7 +10,7 @@ namespace Mono.Debugger.Remoting
 	{
 		static DebuggerContextBase CurrentContext;
 
-		internal static void CreateServerContext (DebuggerBackend backend)
+		internal static void CreateServerContext (Debugger backend)
 		{
 			if (CurrentContext != null)
 				throw new InvalidOperationException ();
@@ -66,9 +66,9 @@ namespace Mono.Debugger.Remoting
 
 		private sealed class DebuggerServerContext : DebuggerContextBase
 		{
-			DebuggerBackend backend;
+			Debugger backend;
 
-			public DebuggerServerContext (DebuggerBackend backend)
+			public DebuggerServerContext (Debugger backend)
 			{
 				this.backend = backend;
 			}
