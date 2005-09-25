@@ -1,5 +1,9 @@
 2005-09-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetTypeAlias.cs: Removed.
+
+2005-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClassType.cs: New file.
 	* languages/TargetClassObject.cs: New file.
 

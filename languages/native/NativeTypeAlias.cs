@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeTypeAlias : TargetType, ITargetTypeAlias
+	internal class NativeTypeAlias : TargetType
 	{
 		string name;
 
@@ -48,10 +48,6 @@ namespace Mono.Debugger.Languages.Native
 		public TargetType TargetType {
 			get { return target_type; }
 			set { target_type = value; }
-		}
-
-		ITargetType ITargetTypeAlias.TargetType {
-			get { return target_type; }
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)
