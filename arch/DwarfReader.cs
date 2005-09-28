@@ -91,7 +91,7 @@ namespace Mono.Debugger.Architecture
 		}
 	}
 
-	internal class DwarfReader : ISymbolFile
+	internal class DwarfReader : MarshalByRefObject, ISymbolFile
 	{
 		protected Bfd bfd;
 		protected Module module;
