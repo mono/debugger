@@ -1425,7 +1425,8 @@ namespace Mono.Debugger.Frontend
 			TargetClassType ctype = stype as TargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
 				stype = ctype.ParentType;
-				instance = ((TargetClassObject) instance).GetParentObject (target);
+				if (instance != null)
+					instance = ((TargetClassObject) instance).GetParentObject (target);
 				goto again;
 			}
 
