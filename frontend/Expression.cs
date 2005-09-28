@@ -804,7 +804,7 @@ namespace Mono.Debugger.Frontend
 						"Type `{0}' has no member `{1}'",
 						stype.Name, name);
 
-				if (!member.IsStatic)
+				if (!member.IsStatic && !allow_instance)
 					throw new ScriptingException (
 						"Cannot access instance member `{0}' with a type " +
 						"reference.", Name);
