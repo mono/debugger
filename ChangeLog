@@ -1,5 +1,11 @@
 2005-09-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(OperationRuntimeInvoke.DoProcessEvent): Stop if we're in debug
+	mode.	
+
+2005-09-28  Martin Baulig  <martin@ximian.com>
+
 	* tests/TestInheritance.cs: Added tests for abstract classes.
 
 2005-09-25  Martin Baulig  <martin@ximian.com>

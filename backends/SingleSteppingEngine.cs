@@ -2491,24 +2491,31 @@ namespace Mono.Debugger.Backends
 							       Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
-			if (Debug)
-				return base.DoProcessEvent (sse, inferior, cevent, out args);
-
 			if (cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} hit breakpoint {1} at {2} during runtime-invoke",
 					      sse, cevent.Argument, inferior.CurrentFrame);
-				sse.do_continue ();
+
 				args = null;
-				return EventResult.Running;
+				if (Debug)
+					return EventResult.Completed;
+				else {
+					sse.do_continue ();
+					return EventResult.Running;
+				}
 			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 				   (cevent.Argument == 0)) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} stopped at {1} during runtime-invoke",
 					      sse, inferior.CurrentFrame);
-				sse.do_continue ();
+
 				args = null;
-				return EventResult.Running;
+				if (Debug)
+					return EventResult.Completed;
+				else {
+					sse.do_continue ();
+					return EventResult.Running;
+				}
 			}
 
 			return base.DoProcessEvent (sse, inferior, cevent, out args);
