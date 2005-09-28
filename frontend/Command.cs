@@ -226,7 +226,8 @@ namespace Mono.Debugger.Frontend
 			Default = 0,
 			Object,
 			Current,
-			Address
+			Address,
+			HexaDecimal
 		};
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -250,6 +251,11 @@ namespace Mono.Debugger.Frontend
 				case "a":
 				case "address":
 					format = Format.Address;
+					break;
+
+				case "x":
+				case "hex":
+					format = Format.HexaDecimal;
 					break;
 
 				default:
@@ -292,6 +298,26 @@ namespace Mono.Debugger.Frontend
 			case Format.Default: {
 				object retval = expression.Evaluate (context);
 				context.PrintObject (retval);
+				break;
+			}
+
+			case Format.HexaDecimal: {
+				object retval = expression.Evaluate (context);
+			again:
+				if (retval is long)
+					context.Print (String.Format ("0x{0:x}", (long) retval));
+				else if (retval is ulong)
+					context.Print (String.Format ("0x{0:x}", (ulong) retval));
+				else if (retval is int)
+					context.Print (String.Format ("0x{0:x}", (int) retval));
+				else if (retval is uint)
+					context.Print (String.Format ("0x{0:x}", (uint) retval));
+				else if (retval is TargetFundamentalObject) {
+					TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+					retval = ((TargetFundamentalObject) retval).GetObject (target);
+					goto again;
+				} else
+					context.PrintObject (retval);
 				break;
 			}
 

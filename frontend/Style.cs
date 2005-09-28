@@ -80,12 +80,13 @@ namespace Mono.Debugger.Frontend
 
 		public override void Reset ()
 		{
-			IsNative = true;
+			IsNative = false;
 		}
 
 		public override void PrintFrame (ScriptingContext context, FrameHandle frame)
 		{
 			context.Print (frame);
+			bool native = false;
 			if (!frame.PrintSource (context))
 				native = true;
 			if (native)
@@ -480,7 +481,7 @@ namespace Mono.Debugger.Frontend
 						TargetObject deref = pobj.GetDereferencedObject (target);
 						return String.Format (
 							"&({0}) {1}", deref.TypeName,
-							DoFormatObject (target, deref, false));
+							DoFormatObject (target, deref, true));
 					} catch {
 						return pobj.Print (target);
 					}

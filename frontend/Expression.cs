@@ -810,7 +810,7 @@ namespace Mono.Debugger.Frontend
 						"Type `{0}' has no member `{1}'",
 						sobj.Type.Name, name);
 
-				if (member.IsStatic)
+				if (!member.IsInstance)
 					throw new ScriptingException (
 						"Cannot access static member `{0}.{1}' with an " +
 						"instance reference; use a type name instead.",

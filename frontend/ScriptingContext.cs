@@ -186,7 +186,12 @@ namespace Mono.Debugger.Frontend
 			if (!var.IsAlive (frame.TargetAddress))
 				throw new ScriptingException ("Variable out of scope.");
 
-			return var.GetObject (frame);
+			try {
+				return var.GetObject (frame);
+			} catch (Exception ex) {
+				throw new ScriptingException ("Cannot access variable `{0}': {1}",
+							      var.Name, ex.Message);
+			}
 		}
 
 		public Language Language {
