@@ -344,8 +344,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			Cecil.IReferenceType reftype = type as Cecil.IReferenceType;
 			if (reftype != null) {
-				// FIXME FIXME FIXME
-				return null;
+				TargetType element_type = LookupMonoType (reftype.ElementType);
+				if (element_type == null)
+					return null;
+
+				return new MonoPointerType (element_type);
 			}
 
 			if (type.Scope == null) {

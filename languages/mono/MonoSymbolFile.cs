@@ -680,6 +680,8 @@ namespace Mono.Debugger.Languages.Mono
 					Cecil.ITypeReference type = param_info [i].ParameterType;
 
 					param_types [i] = file.MonoLanguage.LookupMonoType (type);
+					if (param_types [i] == null)
+						param_types [i] = file.MonoLanguage.VoidType;
 
 					parameters [i] = new MonoVariable (
 						file.backend, param_info [i].Name, param_types [i],

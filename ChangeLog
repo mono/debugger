@@ -1,5 +1,18 @@
 2005-09-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoPointerType.cs: New file.
+	* languages/mono/MonoPointerObject.cs: New file.
+
+	* languages/mono/MonoDebuggerSupport.cs
+	(MonoDebuggerSupport.GetTypeFromSignature): Added support for
+	`MONO_TYPE_PTR' and `MONO_TYPE_BYREF'.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.LookupMonoType): Create a `MonoPointerType'
+	for `byref' types.
+
+2005-09-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationRuntimeInvoke.DoProcessEvent): Stop if we're in debug
 	mode.	

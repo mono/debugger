@@ -35,7 +35,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override TargetObject GetObject (TargetLocation location)
 		{
-			throw new InvalidOperationException ();
+			throw new TargetException (TargetError.LocationInvalid,
+						   "Cannot access variables of type `{0}'", Name);
 		}
 	}
 }

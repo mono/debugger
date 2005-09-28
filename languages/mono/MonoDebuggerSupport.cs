@@ -37,10 +37,15 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			TargetType type = GetTypeFromSignature (file, reader);
-			if (type != null)
+			if (type == null)
+				return file.MonoLanguage.BuiltinTypes.VoidType;
+
+			if (is_byref)
+				return new MonoPointerType (type);
+			else
 				return type;
 
-			return file.MonoLanguage.BuiltinTypes.VoidType;
+			return type;
 		}
 
 		static int ReadCompressedInteger (TargetBinaryReader reader)
@@ -94,6 +99,12 @@ namespace Mono.Debugger.Languages.Mono
 				return file.MonoLanguage.BuiltinTypes.DoubleType;
 			case 0x0e:
 				return file.MonoLanguage.BuiltinTypes.StringType;
+
+			case 0x0f: /* PTR */
+			case 0x10: /* BYREF */ {
+				TargetType element_type = GetTypeFromSignature (file, reader);
+				return new MonoPointerType (element_type);
+			}
 
 			case 0x11: /* VALUETYPE */
 			case 0x12: /* CLASS */ {

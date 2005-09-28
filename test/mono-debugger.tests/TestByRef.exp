@@ -1,0 +1,36 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set line_main 20
+set line_test 7
+set line_unsafe 14
+set file $srcdir/TestByRef.cs
+
+mdb_start "TestByRef.exe"
+mdb_expect_frame 0 "X.Main()" $file $line_main
+
+mdb_send "break Test"
+set bpt_test [mdb_expect_breakpoint]
+
+mdb_send "continue"
+mdb_expect_hit_breakpoint 0 "X.Test(System.Int32&)" $bpt_test $file $line_test
+mdb_send "step"
+mdb_expect_stopped 0 "X.Test(System.Int32&)" $file [expr $line_test + 1]
+
+mdb_send_and_expect "print foo" "(System.Int32&) &(System.Int32) 3"
+
+mdb_send "break $line_unsafe"
+set bpt_unsafe [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_line "3"
+mdb_expect_hit_breakpoint 0 "X.UnsafeTest(System.Int32)" $bpt_unsafe $file $line_unsafe
+mdb_send_and_expect "print ptr" "(System.Int32&) &(System.Int32) 3"
+mdb_send_and_expect "print *ptr" "(System.Int32) 3"
+
+mdb_send "continue"
+mdb_expect_line "3"
+mdb_expect_line "Process @4 terminated normally."
+mdb_expect_prompt
+mdb_send "quit"
