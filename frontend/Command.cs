@@ -1739,7 +1739,7 @@ namespace Mono.Debugger.Frontend
 			if (expr == null)
 				return null;
 
-			expr = expr.Resolve (context);
+			expr = expr.ResolveMethod (context);
 			if (expr == null)
 				return null;
 
@@ -1878,23 +1878,17 @@ namespace Mono.Debugger.Frontend
 		{
 			bool resolved = false;
 
-			// only try to resolve the breakpoint if we're
-			// currently running a process (and therefore
-			// have symbols loaded)
-			if (context.CurrentProcess != null) {
-				try {
-					if (All) {
-						if (Argument == "" && context.NumMethodSearchResults == 0) {
-							context.Error ("to use -all you must either specify a method or have previously done a search");
-							return false;
-						}
+			try {
+				if (All) {
+					if (Argument == "" && context.NumMethodSearchResults == 0) {
+						context.Error ("to use -all you must either specify a method or have previously done a search");
+						return false;
 					}
+				}
 					  
-					resolved = base.DoResolve (context);
-				}
-				catch (ScriptingException ex) {
-					context.Error (ex);
-				}
+				resolved = base.DoResolve (context);
+			} catch (ScriptingException ex) {
+				context.Error (ex);
 			}
 
 			if (!resolved)

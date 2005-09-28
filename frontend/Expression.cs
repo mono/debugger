@@ -227,6 +227,21 @@ namespace Mono.Debugger.Frontend
 			return expr;
 		}
 
+		protected virtual Expression DoResolveMethod (ScriptingContext context)
+		{
+			return DoResolve (context);
+		}
+
+		public Expression ResolveMethod (ScriptingContext context)
+		{
+			Expression expr = DoResolveMethod (context);
+			if (expr == null)
+				throw new ScriptingException (
+					"Expression `{0}' is not a method.", Name);
+
+			return expr;
+		}
+
 		public Expression TryResolve (ScriptingContext context)
 		{
 			try {
@@ -767,7 +782,8 @@ namespace Mono.Debugger.Frontend
 			get { return left.Name + "." + name; }
 		}
 
-		public MemberExpression ResolveMemberAccess (ScriptingContext context)
+		public MemberExpression ResolveMemberAccess (ScriptingContext context,
+							     bool allow_instance)
 		{
 			MemberExpression member;
 
@@ -834,7 +850,7 @@ namespace Mono.Debugger.Frontend
 						"Type `{0}' has no member `{1}'",
 						stype.Name, name);
 
-				if (!member.IsStatic)
+				if (!member.IsStatic && !allow_instance)
 					throw new ScriptingException (
 						"Cannot access instance member `{0}' with a type " +
 						"reference.", Name);
@@ -848,7 +864,12 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return ResolveMemberAccess (context);
+			return ResolveMemberAccess (context, false);
+		}
+
+		protected override Expression DoResolveMethod (ScriptingContext context)
+		{
+			return ResolveMemberAccess (context, true);
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -1427,7 +1448,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public TargetFunctionType ResolveMethod (ScriptingContext context)
+		public TargetFunctionType ResolveDelegate (ScriptingContext context)
 		{
 			MethodGroupExpression mg = InvocationExpression.ResolveDelegate (
 				context, this);

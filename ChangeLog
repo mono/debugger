@@ -1,5 +1,18 @@
 2005-09-28  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(Expression.ResolveMethod): New method.
+	(MemberAccessExpression.ResolveMemberAccess): Allow accessing an
+	instance member in static context if we're doing a method lookup.
+
+	* frontend/Command.cs (SourceCommand.EvaluateMethod): use
+	`expr.ResolveMethod ()' instead of `expr.Resolve ()'.
+
+	* tests/mono-debugger.tests/TestBreakpoint.exp: Added test case
+	for inserting a breakpoint on an instance method.
+
+2005-09-28  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoPointerType.cs: New file.
 	* languages/mono/MonoPointerObject.cs: New file.
 

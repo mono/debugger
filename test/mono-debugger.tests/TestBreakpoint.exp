@@ -20,7 +20,8 @@ set roman_baths_url "http://de.wikipedia.org/wiki/Bild:Trier_roman_baths_DSC0237
 mdb_start "TestBreakpoint.exe"
 mdb_expect_frame 0 "X.Main()" $file $line_main
 
-mdb_send "break TestBreakpoint.cs:$line_test"
+mdb_send "break Martin.Baulig.Hello.Test"
+# mdb_send "break TestBreakpoint.cs:$line_test"
 set bpt_1 [mdb_expect_breakpoint]
 mdb_send "break $line_test_2"
 set bpt_2 [mdb_expect_breakpoint]
