@@ -112,6 +112,27 @@ public class D : C
 	}
 }
 
+public abstract class AbstractTest
+{
+	public abstract string Test ();
+}
+
+public class AbstractHello : AbstractTest
+{
+	public override string Test ()
+	{
+		return "Hello";
+	}
+}
+
+public class AbstractWorld : AbstractTest
+{
+	public override string Test ()
+	{
+		return "World";
+	}
+}
+
 public class X
 {
 	public static void Main ()
@@ -120,6 +141,17 @@ public class X
 		a.Test ();
 
 		D d = new D (8, 3.14F, 500L);
+		d.Hello ();
+
+		C c = d;
+		c.Virtual ();
+
+		AbstractTest hello = new AbstractHello ();
+		AbstractTest world = new AbstractWorld ();
+
+		Console.WriteLine (hello.Test ());
+		Console.WriteLine (world.Test ());
+		Console.WriteLine (c.f);
 		d.Hello ();
 	}
 }
