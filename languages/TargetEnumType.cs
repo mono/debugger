@@ -13,7 +13,5 @@ namespace Mono.Debugger.Languages
 		public abstract TargetFieldInfo[] Members {
 			get;
 		}
-
-		public abstract TargetObject GetMember (StackFrame frame, int index);
 	}
 }

@@ -822,18 +822,13 @@ namespace Mono.Debugger.Languages.Mono
 			return GetFundamentalType (type) != null;
 		}
 
-		public override TargetObject CreateInstance (StackFrame frame, object obj)
+		public override TargetFundamentalObject CreateInstance (TargetAccess target, object obj)
 		{
 			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
 			if (type == null)
 				return null;
 
-			return type.CreateInstance (frame.TargetAccess, obj);
-		}
-
-		public override TargetFundamentalObject CreateInstance (TargetAccess target, int value)
-		{
-			return builtin_types.Int32Type.CreateInstance (target, value);
+			return type.CreateInstance (target, obj);
 		}
 
 		public override TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)

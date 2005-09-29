@@ -1,5 +1,19 @@
 2005-09-29  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetEnumType.cs (TargetEnumType.GetMember): Removed.
+
+	* languages/Language.cs
+	(Language.CreateInstance): Removed the overloaded version taking a
+	`StackFrame' and an `object'; the other one is now taking a
+	`TargetAccess' and an `object'.
+
+	* languages/mono/MonoEnumTypeInfo.cs: Removed.
+
+	* languages/mono/MonoEnumType.cs: This is now working again.
+	* languages/mono/MonoEnumObject.cs: This is now working again.
+
+2005-09-29  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassType.cs
 	(MonoClassType.ResolveClass): Resolve our parent first.
 

@@ -2,30 +2,25 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-#if FIXME
-	internal class MonoEnumObject : MonoObject, ITargetEnumObject
+	internal class MonoEnumObject : TargetEnumObject
 	{
-		new MonoEnumTypeInfo type;
+		public new readonly MonoEnumType Type;
 
-		public MonoEnumObject (MonoEnumTypeInfo type, TargetLocation location)
+		public MonoEnumObject (MonoEnumType type, TargetLocation location)
 			: base (type, location)
 		{
-			this.type = type;
+			this.Type = type;
 		}
 
-		public ITargetEnumType Type {
+		public override TargetObject Value {
 			get {
-				return type.Type;
-			}
-		}
-		public ITargetObject Value {
-			get {
-				return type.GetValue (location);
+				return Type.GetValue (Location);
 			}
 		}
 
-		internal override long GetDynamicSize (TargetBlob blob, TargetLocation location,
-							out TargetLocation dynamic_location)
+		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+						       TargetLocation location,
+						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -35,5 +30,4 @@ namespace Mono.Debugger.Languages.Mono
 			return String.Format ("{0}", GetType());
 		}
 	}
-#endif
 }

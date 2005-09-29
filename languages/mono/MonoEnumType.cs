@@ -5,18 +5,23 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-#if FIXME
-	internal class MonoEnumType : MonoType, ITargetEnumType
+	internal class MonoEnumType : TargetEnumType
 	{
 		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
 
+		MonoSymbolFile file;
 		Cecil.ITypeDefinition type;
 
 		public MonoEnumType (MonoSymbolFile file, Cecil.ITypeDefinition type)
-			: base (file, TargetObjectKind.Enum)
+			: base (file.MonoLanguage)
 		{
 			this.type = type;
+			this.file = file;
+		}
+
+		public MonoSymbolFile File {
+			get { return file; }
 		}
 
 		public Cecil.ITypeDefinition Type {
@@ -33,6 +38,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool HasFixedSize {
 			get { return true; }
+		}
+
+		public override int Size {
+			get { return 2 * Language.TargetInfo.TargetAddressSize; }
 		}
 
 		void get_fields ()
@@ -54,13 +63,14 @@ namespace Mono.Debugger.Languages.Mono
 
 			int pos = 0, spos = 0, i = 0;
 			foreach (Cecil.IFieldDefinition field in type.Fields) {
+				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (File, spos, i, field);
+					static_fields [spos] = new MonoFieldInfo (ftype, spos, i, field);
 					spos++;
 				} else {
 					if (field.Name != "value__")
 						throw new InternalError ("Mono enum type has instance field with name other than 'value__'.");
-					fields [pos] = new MonoFieldInfo (File, pos, i, field);
+					fields [pos] = new MonoFieldInfo (ftype, pos, i, field);
 					pos++;
 				}
 
@@ -70,49 +80,28 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InternalError ("Mono enum type has more than one instance field.");
 		}
 
-		internal MonoFieldInfo Value {
+		public override TargetFieldInfo Value {
 			get {
 				get_fields ();
 				return fields[0];
 			}
 		}
 
-		internal MonoFieldInfo[] Members {
+		public override TargetFieldInfo[] Members {
 			get {
 				get_fields ();
 				return static_fields;
 			}
 		}
 
-		ITargetFieldInfo ITargetEnumType.Value {
-			get { return Value; }		    
-		}
-
-		ITargetFieldInfo[] ITargetEnumType.Members {
-			get { return Members; }
-		}
-
-		public ITargetObject GetMember (StackFrame frame, int index)
+		public TargetObject GetValue (TargetLocation location)
 		{
-			MonoEnumTypeInfo info = GetTypeInfo () as MonoEnumTypeInfo;
-			if (info == null)
-				return null;
-
-			return info.GetMember (frame, index);
+			return Value.Type.GetObject (location);
 		}
 
-		protected override IMonoTypeInfo DoGetTypeInfo ()
+		internal override TargetObject GetObject (TargetLocation location)
 		{
-			TargetBinaryReader info = file.GetTypeInfo (type);
-			if (info == null)
-				return null;
-
-			info.Position = 8;
-			info.ReadLeb128 ();
-			info.ReadLeb128 ();
-
-			return new MonoEnumTypeInfo (this, info);
+			return new MonoEnumObject (this, location);
 		}
 	}
-#endif
 }

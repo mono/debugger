@@ -364,13 +364,16 @@ namespace Mono.Debugger.Languages.Mono
 				Cecil.IArrayType atype = (Cecil.IArrayType) type;
 				TargetType element_type = LookupMonoType (atype.ElementType);
 				result = new MonoArrayType (element_type, atype.Rank);
+			} else if (type is Cecil.ITypeDefinition) {
+				Cecil.ITypeDefinition tdef = (Cecil.ITypeDefinition) type;
+				if (tdef.IsEnum)
+					result = new MonoEnumType (this, tdef);
+				else
+					result = new MonoClassType (this, tdef);
+			} else {
+				Console.WriteLine ("UNKNOWN TYPE: {0}", type);
+				return null;
 			}
-#if CECIL_NOTYET
-			else if (type.IsEnum)
-				result = new MonoEnumType (this, type);
-#endif
-			else
-				result = new MonoClassType (this, (Cecil.ITypeDefinition) type);
 
 			type_hash.Add (type, result);
 			return result;

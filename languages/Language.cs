@@ -46,9 +46,8 @@ namespace Mono.Debugger.Languages
 
 		public abstract bool CanCreateInstance (Type type);
 
-		public abstract TargetObject CreateInstance (StackFrame frame, object obj);
-
-		public abstract TargetFundamentalObject CreateInstance (TargetAccess target, int value);
+		public abstract TargetFundamentalObject CreateInstance (TargetAccess target,
+									object value);
 
 		public abstract TargetPointerObject CreatePointer (StackFrame frame,
 								   TargetAddress address);

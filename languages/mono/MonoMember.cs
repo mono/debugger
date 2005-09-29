@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoFieldInfo (TargetType type, int index, int pos,
 				      Cecil.IFieldDefinition finfo)
-			: base (type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.IsLiteral)
+			: base (type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
 		}
@@ -24,17 +24,12 @@ namespace Mono.Debugger.Languages.Mono
 			// from a null instance (i.e. it's a static
 			// field.  we need to take into account
 			// finfo.IsStatic, though.
-#if FIXME
-			if ((FieldInfo != null) && FieldInfo.DeclaringType.IsEnum) {
+			if (FieldInfo.HasConstant) {
 				object value = FieldInfo.Constant;
-			  
-				return type.File.MonoLanguage.CreateInstance (target, (int)value);
+				return Type.Language.CreateInstance (target, value);
 			} else {
 				throw new InvalidOperationException ();
 			}
-#else
-			throw new NotImplementedException ();
-#endif
 		}
 	}
 

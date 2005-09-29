@@ -66,11 +66,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetObject GetMember (StackFrame frame, int index)
-		{
-			return null;
-		}
-
 		public override bool IsByRef {
 			get {
 				return false;

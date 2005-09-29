@@ -426,6 +426,9 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Array:
 				return String.Format ("({0})", obj.TypeName);
 
+			case TargetObjectKind.Enum:
+				return DoFormatObject (target, obj);
+
 			default:
 				return obj.Print (target);
 			}

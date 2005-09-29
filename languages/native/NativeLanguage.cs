@@ -76,12 +76,8 @@ namespace Mono.Debugger.Languages.Native
 			return false;
 		}
 
-		public override TargetObject CreateInstance (StackFrame frame, object obj)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override TargetFundamentalObject CreateInstance (TargetAccess target, int value)
+		public override TargetFundamentalObject CreateInstance (TargetAccess target,
+									object value)
 		{
 			throw new InvalidOperationException ();
 		}
