@@ -370,6 +370,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (type_info != null)
 				return true;
 
+			if (parent_type != null) {
+				if (!parent_type.ResolveClass (target))
+					return false;
+			}
+
 			type_info = DoGetTypeInfo ();
 			if (type_info != null)
 				return true;
