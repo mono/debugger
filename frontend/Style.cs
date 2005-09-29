@@ -495,14 +495,17 @@ namespace Mono.Debugger.Frontend
 				StructFormatter formatter = new StructFormatter ("");
 				TargetFieldInfo[] fields = sobj.Type.Fields;
 				foreach (TargetFieldInfo field in fields) {
-					TargetObject fobj = sobj.GetField (target, field.Index);
 					string item;
-					if (fobj == null)
-						item = field.Name + " = null";
-					else
-						item = field.Name + " = " +
-							DoFormatObject (target, fobj, true);
-					formatter.Add (item);
+					try {
+						TargetObject fobj = sobj.GetField (target, field.Index);
+						if (fobj == null)
+							item = "null";
+						else
+							item = DoFormatObject (target, fobj, true);
+					} catch {
+						item = "<cannot display object>";
+					}
+					formatter.Add (field.Name + " = " + item);
 				}
 				return formatter.Format ();
 			}
