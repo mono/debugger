@@ -270,6 +270,14 @@ namespace Mono.Debugger.Frontend
 			if (expression == null)
 				return false;
 
+			if (this is PrintTypeCommand) {
+				Expression resolved = expression.TryResolveType (context);
+				if (resolved != null) {
+					expression = resolved;
+					return true;
+				}
+			}
+
 			expression = expression.Resolve (context);
 			return expression != null;
 		}
