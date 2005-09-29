@@ -401,7 +401,16 @@ namespace Mono.Debugger.Frontend
 			default:
 				return stype.Name;
 			}       
-		}       
+		}
+
+		protected string PrintObject (TargetAccess target, TargetObject obj)
+		{
+			try {
+				return obj.Print (target);
+			} catch {
+				return "<cannot display object>";
+			}
+		}
 
 		protected string DoFormatObject (TargetAccess target, TargetObject obj, bool recursed)
 		{
@@ -424,13 +433,14 @@ namespace Mono.Debugger.Frontend
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
 			case TargetObjectKind.Array:
-				return String.Format ("({0})", obj.TypeName);
+				return String.Format (
+					"({0}) {1}", obj.TypeName, PrintObject (target, obj));
 
 			case TargetObjectKind.Enum:
 				return DoFormatObject (target, obj);
 
 			default:
-				return obj.Print (target);
+				return PrintObject (target, obj);
 			}
 		}
 
@@ -486,10 +496,10 @@ namespace Mono.Debugger.Frontend
 							"&({0}) {1}", deref.TypeName,
 							DoFormatObject (target, deref, true));
 					} catch {
-						return pobj.Print (target);
+						return PrintObject (target, pobj);
 					}
 				} else
-					return pobj.Print (target);
+					return PrintObject (target, pobj);
 			}
 
 			case TargetObjectKind.Class:
@@ -521,7 +531,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			default:
-				return obj.Print (target);
+				return PrintObject (target, obj);
 			}
 		}
 

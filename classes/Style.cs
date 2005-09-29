@@ -9,7 +9,7 @@ namespace Mono.Debugger
 	public class StructFormatter
 	{
 		public string head;
-		public static int Columns = 60;
+		public static int Columns = 75;
 
 		ArrayList items = new ArrayList ();
 
@@ -43,7 +43,7 @@ namespace Mono.Debugger
 				if (pos > Columns) {
 					sb.Append ("\n  ");
 					multi_line = true;
-					pos = 2;
+					pos = item.Length + 2;
 				}
 
 				sb.Append (item);
