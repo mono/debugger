@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 		Cecil.ITypeReference typeref;
 
 		public MonoOpaqueType (MonoSymbolFile file, Cecil.ITypeReference typeref)
-			: base (file.MonoLanguage, TargetObjectKind.Opaque)
+			: base (file.MonoLanguage, TargetObjectKind.Unknown)
 		{
 			this.typeref = typeref;
 		}

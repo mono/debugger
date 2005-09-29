@@ -10,7 +10,6 @@ namespace Mono.Debugger.Languages
 		Class,
 		Pointer,
 		Function,
-		Opaque,
 		Alias
 	}
 }

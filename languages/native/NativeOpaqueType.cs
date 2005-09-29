@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Native
 		int size;
 
 		public NativeOpaqueType (Language language, string name, int size)
-			: base (language, TargetObjectKind.Opaque)
+			: base (language, TargetObjectKind.Unknown)
 		{
 			this.name = name;
 			this.size = size;
