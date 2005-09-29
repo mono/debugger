@@ -359,10 +359,11 @@ namespace Mono.Debugger.Languages.Mono
 				return type_info;
 			type_info = DoGetTypeInfo ();
 
-			if (type_info == null)
-				throw new LocationInvalidException ();
+			if (type_info != null)
+				return type_info;
 
-			return type_info;
+			throw new TargetException (
+				TargetError.LocationInvalid, "Can't find class `{0}'", Name);
 		}
 
 		public override bool ResolveClass (TargetAccess target)
