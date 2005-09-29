@@ -1445,7 +1445,7 @@ namespace Mono.Debugger.Frontend
 				return GetMember (context, frame.TargetAccess, Member);
 			} catch (TargetException ex) {
 				throw new ScriptingException ("Cannot access struct member `{0}': {1}",
-							      Name, ex);
+							      Name, ex.Message);
 			}
 		}
 
