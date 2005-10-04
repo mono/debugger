@@ -81,6 +81,7 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly MonoSymbolFile Corlib;
 		public readonly MonoObjectType ObjectType;
+		public readonly MonoClassType ObjectClass;
 		public readonly TargetFundamentalType ByteType;
 		public readonly MonoOpaqueType VoidType;
 		public readonly TargetFundamentalType BooleanType;
@@ -150,7 +151,8 @@ namespace Mono.Debugger.Languages.Mono
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
 			Cecil.ITypeDefinition object_type = corlib.Module.Types ["System.Object"];
 			ObjectType = new MonoObjectType (corlib, object_type, object_size);
-			language.AddCoreType (ObjectType, object_type, klass);
+			ObjectClass = new MonoClassType (corlib, object_type);
+			language.AddCoreType (ObjectClass, object_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition byte_type = corlib.Module.Types ["System.Byte"];
@@ -164,7 +166,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			klass = mono_defaults.ReadGlobalAddress ();
 			Cecil.ITypeDefinition bool_type = corlib.Module.Types ["System.Boolean"];
-			BooleanType = new TargetFundamentalType (language, bool_type.FullName, FundamentalKind.Byte, 1);
+			BooleanType = new TargetFundamentalType (language, bool_type.FullName, FundamentalKind.Boolean, 1);
 			language.AddCoreType (BooleanType, bool_type, klass);
 
 			klass = mono_defaults.ReadGlobalAddress ();
@@ -759,10 +761,14 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			foreach (MonoSymbolFile symfile in symbol_files) {
-				Cecil.ITypeDefinition type = symfile.Assembly.MainModule.Types [name];
-				if (type == null)
-					continue;
-				return symfile.LookupMonoType (type);
+				Cecil.ITypeDefinitionCollection types = symfile.Assembly.MainModule.Types;
+				// FIXME: Work around an API problem in Cecil.
+				foreach (Cecil.ITypeDefinition type in types) {
+					if (type.FullName != name)
+						continue;
+
+					return symfile.LookupMonoType (type);
+				}
 			}
 
 			return null;

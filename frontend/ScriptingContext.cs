@@ -918,19 +918,16 @@ namespace Mono.Debugger.Frontend
 			interpreter.Print (obj);
 		}
 
-		public void PrintObject (object obj)
+		public void PrintObject (object obj, DisplayFormat format)
 		{
 			string formatted;
 			try {
-				if (obj is long)
-					formatted = String.Format ("0x{0:x}", (long) obj);
-				else if (obj is string)
-					formatted = '"' + (string) obj + '"';
-				else if (obj is TargetObject)
+				if (obj is TargetObject)
 					formatted = CurrentProcess.Process.PrintObject (
-						interpreter.Style, (TargetObject) obj);
+						interpreter.Style, (TargetObject) obj, format);
 				else
-					formatted = obj.ToString ();
+					formatted = interpreter.Style.FormatObject (
+						CurrentProcess.Process.TargetAccess, obj, format);
 			} catch {
 				formatted = "<cannot display object>";
 			}

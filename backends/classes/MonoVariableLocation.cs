@@ -64,7 +64,11 @@ namespace Mono.Debugger.Languages
 			long contents = address.Address;
 
 			byte[] buffer;
-			if (size == 4)
+			if (size == 1)
+				buffer = BitConverter.GetBytes ((byte) contents);
+			else if (size == 2)
+				buffer = BitConverter.GetBytes ((short) contents);
+			else if (size == 4)
 				buffer = BitConverter.GetBytes ((int) contents);
 			else if (size == 8)
 				buffer = BitConverter.GetBytes (contents);

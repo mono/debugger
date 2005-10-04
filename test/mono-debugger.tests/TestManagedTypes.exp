@@ -50,7 +50,7 @@ mdb_expect_line "0.7142857"
 mdb_expect_line "Monkey"
 mdb_expect_hit_breakpoint 0 "X.BoxedValueType()" $breakpoint $file $bpt_boxed_value
 mdb_send_and_expect "print a" "(System.Int32) 5"
-mdb_send_and_expect "print boxed_a" "(System.Object) &(System.Int32) 5"
+mdb_send_and_expect "print boxed_a" "(object) &(System.Int32) 5"
 mdb_send_and_expect "print *boxed_a" "(System.Int32) 5"
 
 mdb_send "break $bpt_boxed_ref"
@@ -60,7 +60,7 @@ mdb_expect_line "5"
 mdb_expect_line "5"
 mdb_expect_hit_breakpoint 0 "X.BoxedReferenceType()" $breakpoint $file $bpt_boxed_ref
 mdb_send_and_expect "print hello" "(System.String) \"Hello World\""
-mdb_send_and_expect "print boxed_hello" "(System.Object) &(System.String) \"Hello World\""
+mdb_send_and_expect "print boxed_hello" "(object) &(System.String) \"Hello World\""
 mdb_send_and_expect "print *boxed_hello" "(System.String) \"Hello World\""
 
 mdb_send "break $bpt_simple_array"

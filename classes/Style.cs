@@ -57,6 +57,15 @@ namespace Mono.Debugger
 		}
 	}
 
+	[Serializable]
+	public enum DisplayFormat
+	{
+		Default,
+		HexaDecimal,
+		Address,
+		Object
+	}
+
 	/// <summary>
 	///   This interface controls how things are being displayed to the
 	///   user, for instance the current stack frame or variables from
@@ -73,7 +82,8 @@ namespace Mono.Debugger
 
 		public abstract string PrintVariable (TargetVariable variable, StackFrame frame);
 
-		public abstract string FormatObject (TargetAccess target, object obj);
+		public abstract string FormatObject (TargetAccess target, object obj,
+						     DisplayFormat format);
 
 		public abstract string FormatType (TargetAccess target, TargetType type);
 	}

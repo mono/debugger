@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 		MonoSymbolFile file;
 
 		public MonoObjectType (MonoSymbolFile file, Cecil.ITypeDefinition typedef, int size)
-			: base (file.MonoLanguage, typedef.FullName, size)
+			: base (file.MonoLanguage, "object", size)
 		{
 			this.file = file;
 		}

@@ -490,10 +490,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public string PrintObject (Style style, TargetObject obj)
+		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
 			check_engine ();
-			return engine.PrintObject (style, obj);
+			return engine.PrintObject (style, obj, format);
 		}
 
 		public string PrintType (Style style, TargetType type)

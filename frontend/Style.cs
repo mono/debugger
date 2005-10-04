@@ -111,15 +111,21 @@ namespace Mono.Debugger.Frontend
 			TargetStopped (context, frame, insn);
 		}
 
-		public override string FormatObject (TargetAccess target, object obj)
+		public override string FormatObject (TargetAccess target, object obj,
+						     DisplayFormat format)
 		{
-			if (obj is long) {
-				return String.Format ("0x{0:x}", (long) obj);
-			}
-			else if (obj is string) {
+			if ((obj is byte) || (obj is sbyte) || (obj is char) ||
+			    (obj is short) || (obj is ushort) || (obj is int) || (obj is uint) ||
+			    (obj is long) || (obj is ulong)) {
+				if (format == DisplayFormat.HexaDecimal)
+					return String.Format ("0x{0:x}", obj);
+				else
+					return obj.ToString ();
+			} else if (obj is bool) {
+				return ((bool) obj) ? "true" : "false";
+			} else if (obj is string) {
 				return '"' + (string) obj + '"';
-			}
-			else if (obj is TargetClassType) {
+			} else if (obj is TargetClassType) {
 				TargetClassType stype = (TargetClassType) obj;
 				return FormatStructType (target, stype);
 			}
@@ -133,9 +139,8 @@ namespace Mono.Debugger.Frontend
 			else if (obj is TargetObject) {
 				TargetObject tobj = (TargetObject) obj;
 				return String.Format ("({0}) {1}", tobj.TypeName,
-						      DoFormatObject (target, tobj, false));
-			}
-			else {
+						      DoFormatObject (target, tobj, false, format));
+			} else {
 				return obj.ToString ();
 			}
 		}
@@ -389,12 +394,16 @@ namespace Mono.Debugger.Frontend
 				foreach (TargetFieldInfo field in fields) {
 					TargetObject fobj = stype.GetStaticField (target, field.Index);
 					string item;
-					if (fobj == null)
-						item = field.Name + " = null";
-					else
-						item = field.Name + " = " +
-							DoFormatObject (target, fobj, false);
-					formatter.Add (item);
+					try {
+						if (fobj == null)
+							item = "null";
+						else
+							item = DoFormatObject (target, fobj, false,
+									       DisplayFormat.Default);
+					} catch {
+						item = "<cannot display object>";
+					}
+					formatter.Add (String.Format ("{0} = {1}", field.Name, item));
 				}
 				return formatter.Format ();
 
@@ -412,19 +421,22 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string DoFormatObject (TargetAccess target, TargetObject obj, bool recursed)
+		protected string DoFormatObject (TargetAccess target, TargetObject obj,
+						 bool recursed, DisplayFormat format)
 		{
 			try {
 				if (recursed)
-					return DoFormatObjectRecursed (target, obj);
+					return DoFormatObjectRecursed (target, obj, format);
 				else
-					return DoFormatObject (target, obj);
-			} catch {
+					return DoFormatObject (target, obj, format);
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0}", ex);
 				return "<cannot display object>";
 			}
 		}
 
-		protected string DoFormatObjectRecursed (TargetAccess target, TargetObject obj)
+		protected string DoFormatObjectRecursed (TargetAccess target, TargetObject obj,
+							 DisplayFormat format)
 		{
 			if (obj.IsNull)
 				return "null";
@@ -437,7 +449,11 @@ namespace Mono.Debugger.Frontend
 					"({0}) {1}", obj.TypeName, PrintObject (target, obj));
 
 			case TargetObjectKind.Enum:
-				return DoFormatObject (target, obj);
+				return DoFormatObject (target, obj, format);
+
+			case TargetObjectKind.Fundamental:
+				object value = ((TargetFundamentalObject) obj).GetObject (target);
+				return FormatObject (target, value, format);
 
 			default:
 				return PrintObject (target, obj);
@@ -445,7 +461,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected void DoFormatArray (TargetAccess target, TargetArrayObject aobj,
-					      StringBuilder sb, int dimension, int rank, int[] indices)
+					      StringBuilder sb, int dimension, int rank,
+					      int[] indices, DisplayFormat format)
 		{
 			sb.Append ("[ ");
 
@@ -461,31 +478,33 @@ namespace Mono.Debugger.Frontend
 
 				new_indices [dimension] = i;
 				if (dimension + 1 < rank)
-					DoFormatArray (target, aobj, sb, dimension + 1, rank, new_indices);
+					DoFormatArray (target, aobj, sb, dimension + 1, rank, new_indices, format);
 				else
-					sb.Append (DoFormatObject (target, aobj.GetElement (target, new_indices), false));
+					sb.Append (DoFormatObject (target, aobj.GetElement (target, new_indices), false, format));
 			}
 
 			sb.Append (" ]");
 		}
 
-		protected string DoFormatArray (TargetAccess target, TargetArrayObject aobj)
+		protected string DoFormatArray (TargetAccess target, TargetArrayObject aobj,
+						DisplayFormat format)
 		{
 			int rank = aobj.Type.Rank;
 			StringBuilder sb = new StringBuilder ();
 
-			DoFormatArray (target, aobj, sb, 0, rank, new int [0]);
+			DoFormatArray (target, aobj, sb, 0, rank, new int [0], format);
 			return sb.ToString ();
 		}
 
-		protected string DoFormatObject (TargetAccess target, TargetObject obj)
+		protected string DoFormatObject (TargetAccess target, TargetObject obj,
+						 DisplayFormat format)
 		{
 			if (obj.IsNull)
 				return "null";
 
 			switch (obj.Kind) {
 			case TargetObjectKind.Array:
-				return DoFormatArray (target, (TargetArrayObject) obj);
+				return DoFormatArray (target, (TargetArrayObject) obj, format);
 
 			case TargetObjectKind.Pointer: {
 				TargetPointerObject pobj = (TargetPointerObject) obj;
@@ -494,12 +513,12 @@ namespace Mono.Debugger.Frontend
 						TargetObject deref = pobj.GetDereferencedObject (target);
 						return String.Format (
 							"&({0}) {1}", deref.TypeName,
-							DoFormatObject (target, deref, true));
+							DoFormatObject (target, deref, true, format));
 					} catch {
-						return PrintObject (target, pobj);
+						return DoFormatObject (target, pobj, true, format);
 					}
 				} else
-					return PrintObject (target, pobj);
+					return DoFormatObject (target, pobj, true, format);
 			}
 
 			case TargetObjectKind.Class:
@@ -514,7 +533,7 @@ namespace Mono.Debugger.Frontend
 						if (fobj == null)
 							item = "null";
 						else
-							item = DoFormatObject (target, fobj, true);
+							item = DoFormatObject (target, fobj, true, format);
 					} catch {
 						item = "<cannot display object>";
 					}
@@ -523,11 +542,16 @@ namespace Mono.Debugger.Frontend
 				return formatter.Format ();
 			}
 
+			case TargetObjectKind.Fundamental: {
+				object value = ((TargetFundamentalObject) obj).GetObject (target);
+				return FormatObject (target, value, format);
+			}
+
 			case TargetObjectKind.Enum: {
 				TargetEnumObject eobj = (TargetEnumObject) obj;
 				TargetObject fobj = eobj.Value;
 
-				return DoFormatObject (target, fobj, true);
+				return DoFormatObject (target, fobj, true, format);
 			}
 
 			default:
@@ -543,7 +567,8 @@ namespace Mono.Debugger.Frontend
 			try {
 				obj = variable.GetObject (frame);
 				if (obj != null)
-					contents = DoFormatObject (frame.TargetAccess, obj, false);
+					contents = DoFormatObject (
+						frame.TargetAccess, obj, false, DisplayFormat.Default);
 				else
 					contents = "<cannot display object>";
 			} catch {
@@ -618,7 +643,8 @@ namespace Mono.Debugger.Frontend
 
 			string contents;
 			if (obj != null)
-				contents = FormatObject (frame.TargetAccess, obj);
+				contents = FormatObject (
+					frame.TargetAccess, obj, DisplayFormat.Default);
 			else
 				contents = "<cannot display object>";
 				
@@ -626,12 +652,21 @@ namespace Mono.Debugger.Frontend
 				"{0} = ({1}) {2}", variable.Name, variable.Type.Name, contents);
 		}
 
-		public override string FormatObject (TargetAccess target, object obj)
+		public override string FormatObject (TargetAccess target, object obj,
+						     DisplayFormat format)
 		{
-			if (obj is long)
+			if (obj is long) {
 				return String.Format ("0x{0:x}", (long) obj);
-			else
-				return obj.ToString ();
+			} else if (obj is string) {
+				return '"' + (string) obj + '"';
+			} else if (obj is TargetType) {
+				return ((TargetType) obj).Name;
+			} else {
+				if (format == DisplayFormat.HexaDecimal)
+					return String.Format ("{0:x}", obj);
+				else
+					return obj.ToString ();
+			}
 		}
 
 		public override string FormatType (TargetAccess target, TargetType type)

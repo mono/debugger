@@ -1537,9 +1537,9 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public string PrintObject (Style style, TargetObject obj)
+		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
-			return style.FormatObject (target_access, obj);
+			return style.FormatObject (target_access, obj, format);
 		}
 
 		[Command]

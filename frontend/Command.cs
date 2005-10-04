@@ -220,15 +220,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class PrintCommand : FrameCommand
 	{
 		Expression expression;
-		Format format = Format.Default;
-
-		protected enum Format {
-			Default = 0,
-			Object,
-			Current,
-			Address,
-			HexaDecimal
-		};
+		DisplayFormat format = DisplayFormat.Default;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -240,22 +232,17 @@ namespace Mono.Debugger.Frontend
 				switch (fstring) {
 				case "o":
 				case "object":
-					format = Format.Object;
-					break;
-
-				case "c":
-				case "current":
-					format = Format.Current;
+					format = DisplayFormat.Object;
 					break;
 
 				case "a":
 				case "address":
-					format = Format.Address;
+					format = DisplayFormat.Address;
 					break;
 
 				case "x":
 				case "hex":
-					format = Format.HexaDecimal;
+					format = DisplayFormat.HexaDecimal;
 					break;
 
 				default:
@@ -294,67 +281,16 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected abstract void Execute (ScriptingContext context,
-						 Expression expression, Format format);
+						 Expression expression, DisplayFormat format);
 	}
 
 	public class PrintExpressionCommand : PrintCommand, IDocumentableCommand
 	{
 		protected override void Execute (ScriptingContext context,
-						 Expression expression, Format format)
+						 Expression expression, DisplayFormat format)
 		{
-			switch (format) {
-			case Format.Default: {
-				object retval = expression.Evaluate (context);
-				context.PrintObject (retval);
-				break;
-			}
-
-			case Format.HexaDecimal: {
-				object retval = expression.Evaluate (context);
-			again:
-				if (retval is long)
-					context.Print (String.Format ("0x{0:x}", (long) retval));
-				else if (retval is ulong)
-					context.Print (String.Format ("0x{0:x}", (ulong) retval));
-				else if (retval is int)
-					context.Print (String.Format ("0x{0:x}", (int) retval));
-				else if (retval is uint)
-					context.Print (String.Format ("0x{0:x}", (uint) retval));
-				else if (retval is TargetFundamentalObject) {
-					TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
-					retval = ((TargetFundamentalObject) retval).GetObject (target);
-					goto again;
-				} else
-					context.PrintObject (retval);
-				break;
-			}
-
-			case Format.Object: {
-				TargetObject obj = expression.EvaluateVariable (context);
-				context.PrintObject (obj);
-				break;
-			}
-
-			case Format.Current: {
-				TargetObject obj = expression.EvaluateVariable (context);
-				TargetClassObject cobj = obj as TargetClassObject;
-				context.PrintObject (cobj);
-				break;
-			}
-
-			case Format.Address: {
-				TargetPointerObject obj = expression.EvaluateVariable (context)
-					as TargetPointerObject;
-				if (obj == null)
-					context.Print ("<cannot take address>");
-				else
-					context.Print (obj.Address);
-				break;
-			}
-
-			default:
-				throw new InvalidOperationException ();
-			}
+			object retval = expression.Evaluate (context);
+			context.PrintObject (retval, format);
 		}
 
 		// IDocumentableCommand
@@ -366,28 +302,10 @@ namespace Mono.Debugger.Frontend
 	public class PrintTypeCommand : PrintCommand, IDocumentableCommand
 	{
 		protected override void Execute (ScriptingContext context,
-						 Expression expression, Format format)
+						 Expression expression, DisplayFormat format)
 		{
-			switch (format) {
-			case Format.Default:
-				TargetType type = expression.EvaluateType (context);
-				context.PrintType (type);
-				break;
-
-			case Format.Object:
-				TargetObject obj = expression.EvaluateVariable (context);
-				context.PrintType (obj.Type);
-				break;
-
-			case Format.Current:
-				obj = expression.EvaluateVariable (context);
-				TargetClassObject cobj = obj as TargetClassObject;
-				context.PrintType (cobj.Type);
-				break;
-
-			default:
-				throw new InvalidOperationException ();
-			}
+			TargetType type = expression.EvaluateType (context);
+			context.PrintType (type);
 		}
 
 		// IDocumentableCommand
