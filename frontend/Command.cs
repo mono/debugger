@@ -245,9 +245,13 @@ namespace Mono.Debugger.Frontend
 					format = DisplayFormat.HexaDecimal;
 					break;
 
+				case "default":
+					format = DisplayFormat.Default;
+					break;
+
 				default:
 					throw new ScriptingException (
-						"Unknown format: `{0}'", format);
+						"Unknown format: `{0}'", fstring);
 				}
 
 				expression = DoParseExpression (context, arg);

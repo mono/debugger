@@ -918,17 +918,65 @@ namespace Mono.Debugger.Frontend
 			interpreter.Print (obj);
 		}
 
+		string MonoObjectToString (TargetObject obj)
+		{
+			TargetClassObject cobj = obj as TargetClassObject;
+			if (cobj == null)
+				return null;
+
+			TargetAccess target = CurrentProcess.Process.TargetAccess;
+
+		again:
+			TargetMethodInfo[] methods = cobj.Type.Methods;
+			foreach (TargetMethodInfo minfo in methods) {
+				if (minfo.Name != "ToString")
+					continue;
+
+				TargetFunctionType ftype = minfo.Type;
+				if (ftype.ParameterTypes.Length != 0)
+					continue;
+				if (ftype.ReturnType != ftype.Language.StringType)
+					continue;
+
+				string exc_message;
+				TargetObject retval = CurrentProcess.RuntimeInvoke (
+					ftype, obj, new TargetObject [0], out exc_message);
+				if ((exc_message != null) || (retval == null))
+					return null;
+
+				object value = ((TargetFundamentalObject) retval).GetObject (target);
+				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
+			}
+
+			cobj = cobj.GetParentObject (target);
+			if (cobj != null)
+				goto again;
+
+			return null;
+		}
+
+		string DoPrintObject (TargetObject obj, DisplayFormat format)
+		{
+			if (format == DisplayFormat.Object) {
+				string formatted = MonoObjectToString (obj);
+				if (formatted != null)
+					return formatted;
+			}
+
+			return CurrentProcess.Process.PrintObject (interpreter.Style, obj, format);
+		}
+
 		public void PrintObject (object obj, DisplayFormat format)
 		{
 			string formatted;
 			try {
 				if (obj is TargetObject)
-					formatted = CurrentProcess.Process.PrintObject (
-						interpreter.Style, (TargetObject) obj, format);
+					formatted = DoPrintObject ((TargetObject) obj, format);
 				else
 					formatted = interpreter.Style.FormatObject (
 						CurrentProcess.Process.TargetAccess, obj, format);
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0}", ex);
 				formatted = "<cannot display object>";
 			}
 			Print (formatted);

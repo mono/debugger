@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public override TargetClassObject GetParentObject (TargetAccess target)
 		{
-			throw new InvalidOperationException ();
+			return null;
 		}
 
 		public override TargetObject GetField (TargetAccess target, int index)

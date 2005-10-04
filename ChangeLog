@@ -1,5 +1,11 @@
 2005-10-05  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.PrintObject): Try calling a MonoObject's
+	"ToString()" method for `DisplayFormat.Object'.
+
+2005-10-05  Martin Baulig  <martin@ximian.com>
+
 	* classes/Style.cs (DisplayFormat): New public enum.
 	(Style.FormatObject): Added `DisplayFormat format' argument.
 
