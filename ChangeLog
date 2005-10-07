@@ -1,3 +1,14 @@
+2005-10-07  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(Command.PrintCommand.format): Default to `DisplayFormat.Object'.
+
+	* languages/Language.cs (Language.ObjectType): New property.
+
+	* backends/SingleSteppingEngine.cs
+	(OperationRuntimeInvoke): Don't call the `GetVirtualMethodFunc' if
+	our instance is a valuetype.
+
 2005-10-05  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ScriptingContext.cs

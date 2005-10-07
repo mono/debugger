@@ -2412,12 +2412,24 @@ namespace Mono.Debugger.Backends
 			this.Debug = false;
 		}
 
+		bool IsClassObject ()
+		{
+			if ((ObjectArgument == null) || !ObjectArgument.Location.HasAddress)
+				return false;
+
+			TargetClassObject cobj = ObjectArgument as TargetClassObject;
+			if (cobj == null)
+				return false;
+
+			return cobj.Type.IsByRef;
+		}
+
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			language = sse.ThreadManager.Debugger.MonoLanguage;
 			method_argument = MethodArgument.GetMethodAddress (sse.TargetAccess);
 
-			if ((ObjectArgument != null) && ObjectArgument.Location.HasAddress) {
+			if (IsClassObject ()) {
 				sse.inferior.CallMethod (
 					language.GetVirtualMethodFunc,
 					ObjectArgument.Location.Address.Address,

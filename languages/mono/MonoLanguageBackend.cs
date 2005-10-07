@@ -895,6 +895,10 @@ namespace Mono.Debugger.Languages.Mono
 		public override TargetClassType DelegateType {
 			get { return builtin_types.DelegateType; }
 		}
+
+		public override TargetClassType ObjectType {
+			get { return builtin_types.ObjectClass; }
+		}
 #endregion
 
 #region ILanguageBackend implementation

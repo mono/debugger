@@ -61,6 +61,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return null; }
 		}
 
+		public override TargetClassType ObjectType {
+			get { return null; }
+		}
+
 		public override string SourceLanguage (StackFrame frame)
 		{
 			return "";

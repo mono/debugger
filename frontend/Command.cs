@@ -220,7 +220,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class PrintCommand : FrameCommand
 	{
 		Expression expression;
-		DisplayFormat format = DisplayFormat.Default;
+		DisplayFormat format = DisplayFormat.Object;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
