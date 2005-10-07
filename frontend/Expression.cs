@@ -1680,9 +1680,8 @@ namespace Mono.Debugger.Frontend
 			if (pexpr != null)
 				return pexpr.EvaluateAddress (context);
 
-			TargetPointerObject obj = expr.EvaluateVariable (context) as
-				TargetPointerObject;
-			if (obj == null)
+			TargetObject obj = expr.EvaluateVariable (context);
+			if ((obj == null) || !obj.HasAddress)
 				throw new ScriptingException (
 					"Cannot take address of expression `{0}'", expr.Name);
 

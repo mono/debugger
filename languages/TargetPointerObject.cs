@@ -21,14 +21,6 @@ namespace Mono.Debugger.Languages
 		// </summary>
 		public abstract TargetObject GetDereferencedObject (TargetAccess target);
 
-		public bool HasAddress {
-			get { return Location.HasAddress; }
-		}
-
-		public TargetAddress Address {
-			get { return Location.Address; }
-		}
-
 		public abstract TargetObject GetArrayElement (TargetAccess target, int index);
 	}
 }

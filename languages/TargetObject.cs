@@ -40,6 +40,19 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
+		public bool HasAddress {
+			get { return Location.HasAddress; }
+		}
+
+		public TargetAddress Address {
+			get {
+				if (!Location.HasAddress)
+					throw new InvalidOperationException ();
+
+				return Location.Address;
+			}
+		}
+
 		internal abstract long GetDynamicSize (TargetAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location);

@@ -1,5 +1,11 @@
 2005-10-07  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetObject.cs
+	(TargetObject.HasAddress): Moved here from TargetPointerObject.
+	(TargetObject.Address): Likewise.
+
+2005-10-07  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(Command.PrintCommand.format): Default to `DisplayFormat.Object'.
 
