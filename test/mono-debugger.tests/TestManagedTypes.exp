@@ -128,7 +128,7 @@ mdb_expect_line "System.String\[,\]"
 mdb_expect_line "51.2"
 mdb_expect_line "Hello World"
 mdb_expect_hit_breakpoint 0 "X.StructType()" $breakpoint $file $bpt_struct_type
-mdb_send_and_expect "print /default a" "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }"
+mdb_send_and_expect "print a" "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }"
 
 mdb_send "break $bpt_class_type"
 set breakpoint [mdb_expect_breakpoint]
@@ -145,9 +145,9 @@ mdb_send "continue"
 mdb_expect_line "B"
 mdb_expect_line "8"
 mdb_expect_hit_breakpoint 0 "X.InheritedClassType()" $breakpoint $file $bpt_inherited_class_type
-mdb_send_and_expect "print /default c" "(C) { a = 8, f = 3.14 }"
-mdb_send_and_expect "print /default b" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
-mdb_send_and_expect "print /default (B) c" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
+mdb_send_and_expect "print c" "(C) { a = 8, f = 3.14 }"
+mdb_send_and_expect "print b" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
+mdb_send_and_expect "print (B) c" "(B) { a = 5, b = 256, c = \"New England Patriots\" }"
 
 mdb_send "break $bpt_complex_struct_type"
 set breakpoint [mdb_expect_breakpoint]
