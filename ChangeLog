@@ -1,5 +1,10 @@
 2005-10-07  Martin Baulig  <martin@ximian.com>
 
+	* test/TestToString.cs: New test.
+	* test/mono-debugger.test/TestToString.exp: New test.
+
+2005-10-07  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetObject.cs
 	(TargetObject.HasAddress): Moved here from TargetPointerObject.
 	(TargetObject.Address): Likewise.
