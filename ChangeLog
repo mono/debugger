@@ -1,3 +1,10 @@
+2005-10-08  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(OperationRuntimeInvoke): If we're invoking a method from
+	System.Object or System.ValueType on a valuetype instance, we need
+	to box it.
+
 2005-10-07  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClassType.cs

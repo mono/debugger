@@ -27,6 +27,8 @@ mdb_send_and_expect "p /default c" "(C) \{ \}"
 mdb_send_and_expect "p /object c" "(C) \{ \"C (5:256:Robbie Williams)\" \}"
 mdb_send_and_expect "p /default bb" "(B) \{ a = 5, b = 256, c = \"Robbie Williams\" \}"
 mdb_send_and_expect "p /object bb" "(B) \{ a = 5, b = 256, c = \"Robbie Williams\" \}"
+mdb_send_and_expect "p hello.GetType ()" "(System.MonoType) { \"Hello\" }"
+mdb_send_and_expect "p hello.ToString ()" "(System.String) \"Albert Einstein\""
 
 mdb_send "continue"
 mdb_expect_line "Process @4 terminated normally."

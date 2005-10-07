@@ -34,6 +34,10 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetField (target, Location, field, obj);
 		}
 
+		internal TargetAddress KlassAddress {
+			get { return type.KlassAddress; }
+		}
+
 		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)

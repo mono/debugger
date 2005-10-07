@@ -2375,17 +2375,22 @@ namespace Mono.Debugger.Backends
 	protected class OperationRuntimeInvoke : OperationCallback
 	{
 		public readonly MonoFunctionType MethodArgument;
-		public readonly TargetObject ObjectArgument;
 		public readonly TargetObject[] ParamObjects;
 		public readonly bool Debug;
 		public readonly CommandResult Result;
 
 		MonoLanguageBackend language;
 		TargetAddress method, method_argument;
+		TargetObject object_arg;
 		bool method_compiled;
+		bool needs_boxing;
 
 		public override bool IsSourceOperation {
 			get { return true; }
+		}
+
+		public TargetObject ObjectArgument {
+			get { return object_arg; }
 		}
 
 		public OperationRuntimeInvoke (TargetFunctionType method_argument,
@@ -2393,7 +2398,7 @@ namespace Mono.Debugger.Backends
 					       TargetObject[] param_objects)
 		{
 			this.MethodArgument = (MonoFunctionType) method_argument;
-			this.ObjectArgument = (TargetObject) object_argument;
+			this.object_arg = object_argument;
 			this.ParamObjects = new TargetObject [param_objects.Length];
 			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
@@ -2424,6 +2429,18 @@ namespace Mono.Debugger.Backends
 			return cobj.Type.IsByRef;
 		}
 
+		bool NeedsBoxing ()
+		{
+			if ((ObjectArgument == null) || ObjectArgument.Type.IsByRef)
+				return false;
+
+			TargetType type = MethodArgument.DeclaringType;
+			if ((type.Name == "System.ValueType") || (type.Name == "System.Object"))
+				return true;
+
+			return false;
+		}
+
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			language = sse.ThreadManager.Debugger.MonoLanguage;
@@ -2434,6 +2451,12 @@ namespace Mono.Debugger.Backends
 					language.GetVirtualMethodFunc,
 					ObjectArgument.Location.Address.Address,
 					method_argument.Address, ID);
+			} else if (NeedsBoxing ()) {
+				needs_boxing = true;
+				sse.inferior.CallMethod (
+					language.GetBoxedObjectFunc,
+					((MonoClassObject) ObjectArgument).KlassAddress.Address,
+					ObjectArgument.Location.Address.Address, ID);
 			} else {
 				method = method_argument;
 				sse.inferior.CallMethod (
@@ -2445,6 +2468,23 @@ namespace Mono.Debugger.Backends
 							   Inferior inferior,
 							   long data1, long data2)
 		{
+			if (needs_boxing) {
+				needs_boxing = false;
+
+				TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
+
+				Report.Debug (DebugFlags.SSE,
+					      "Runtime invoke boxed object: {0}", boxed);
+
+				TargetLocation loc = new AbsoluteTargetLocation (boxed);
+				object_arg = language.ObjectType.GetObject (loc);
+
+				method = method_argument;
+				sse.inferior.CallMethod (
+					language.CompileMethodFunc, method.Address, 0, ID);
+				return false;
+			}
+
 			if (method.IsNull) {
 				method = new TargetAddress (inferior.AddressDomain, data1);
 

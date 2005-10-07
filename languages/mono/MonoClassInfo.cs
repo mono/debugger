@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		protected readonly MonoClassType type;
 		protected readonly int size;
-		protected readonly TargetAddress KlassAddress;
+		internal readonly TargetAddress KlassAddress;
 
 		int[] field_offsets;
 		Hashtable methods;
