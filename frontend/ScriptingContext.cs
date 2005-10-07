@@ -928,10 +928,9 @@ namespace Mono.Debugger.Frontend
 
 		again:
 			TargetClassType ctype = cobj.Type;
-			if (!ctype.IsByRef || (ctype == ctype.Language.ObjectType))
+			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
 				return null;
-
-			TargetMethodInfo[] methods = cobj.Type.Methods;
+			TargetMethodInfo[] methods = ctype.Methods;
 			foreach (TargetMethodInfo minfo in methods) {
 				if (minfo.Name != "ToString")
 					continue;
