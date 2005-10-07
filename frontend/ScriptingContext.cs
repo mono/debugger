@@ -511,8 +511,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public TargetObject RuntimeInvoke (TargetFunctionType func,
-						    TargetObject instance, TargetObject[] args,
-						    out string exc_message)
+						   TargetObject instance, TargetObject[] args,
+						   out string exc_message)
 		{
 			if (process == null)
 				throw new ScriptingException ("{0} not running.", Name);
@@ -927,6 +927,10 @@ namespace Mono.Debugger.Frontend
 			TargetAccess target = CurrentProcess.Process.TargetAccess;
 
 		again:
+			TargetClassType ctype = cobj.Type;
+			if (!ctype.IsByRef || (ctype == ctype.Language.ObjectType))
+				return null;
+
 			TargetMethodInfo[] methods = cobj.Type.Methods;
 			foreach (TargetMethodInfo minfo in methods) {
 				if (minfo.Name != "ToString")
