@@ -1338,9 +1338,9 @@ namespace Mono.Debugger.Frontend
 		protected TargetObject GetField (TargetAccess target, TargetFieldInfo field)
 		{
 			if (field.IsStatic)
-				return Type.GetStaticField (target, field.Index);
+				return Type.GetStaticField (target, field);
 			else
-				return InstanceObject.GetField (target, field.Index);
+				return InstanceObject.GetField (target, field);
 		}
 
 		protected TargetObject GetProperty (ScriptingContext context,
@@ -1425,8 +1425,6 @@ namespace Mono.Debugger.Frontend
 			TargetClassType ctype = stype as TargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
 				stype = ctype.ParentType;
-				if (instance != null)
-					instance = ((TargetClassObject) instance).GetParentObject (target);
 				goto again;
 			}
 
@@ -1510,9 +1508,9 @@ namespace Mono.Debugger.Frontend
 		protected void SetField (TargetAccess target, TargetFieldInfo field, TargetObject obj)
 		{
 			if (field.IsStatic)
-				Type.SetStaticField (target, field.Index, obj);
+				Type.SetStaticField (target, field, obj);
 			else
-				InstanceObject.SetField (target, field.Index, obj);
+				InstanceObject.SetField (target, field, obj);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)

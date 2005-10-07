@@ -100,14 +100,20 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
+		int GetFieldOffset (TargetFieldInfo field)
+		{
+			if (field.Position < type.FirstField)
+				return parent.GetFieldOffset (field);
+
+			return field_offsets [field.Position - type.FirstField];
+		}
+
 		internal TargetObject GetField (TargetAccess target, TargetLocation location,
-						int index)
+						TargetFieldInfo finfo)
 		{
 			initialize (target);
 
-			TargetFieldInfo finfo = type.Fields [index];
-
-			int offset = field_offsets [finfo.Position];
+			int offset = GetFieldOffset (finfo);
 			if (!type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -122,13 +128,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal void SetField (TargetAccess target, TargetLocation location,
-					int index, TargetObject obj)
+					TargetFieldInfo finfo, TargetObject obj)
 		{
 			initialize (target);
 
-			TargetFieldInfo finfo = type.Fields [index];
-
-			int offset = field_offsets [finfo.Position];
+			int offset = GetFieldOffset (finfo);
 			if (!type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -139,18 +143,18 @@ namespace Mono.Debugger.Languages.Mono
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
 
-		internal TargetObject GetStaticField (TargetAccess target, int index)
+		internal TargetObject GetStaticField (TargetAccess target, TargetFieldInfo finfo)
 		{
 			initialize (target);
+
 			TargetAddress data_address = target.CallMethod (
 				debugger_info.ClassGetStaticFieldData, KlassAddress,
 				TargetAddress.Null);
 
-			TargetFieldInfo finfo = type.StaticFields [index];
+			int offset = GetFieldOffset (finfo);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
-			TargetLocation field_loc = location.GetLocationAtOffset (
-				field_offsets [finfo.Position]);
+			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation (target);
@@ -158,18 +162,19 @@ namespace Mono.Debugger.Languages.Mono
 			return finfo.Type.GetObject (field_loc);
 		}
 
-		internal void SetStaticField (TargetAccess target, int index, TargetObject obj)
+		internal void SetStaticField (TargetAccess target, TargetFieldInfo finfo,
+					      TargetObject obj)
 		{
 			initialize (target);
+
+			int offset = GetFieldOffset (finfo);
+
 			TargetAddress data_address = target.CallMethod (
 				debugger_info.ClassGetStaticFieldData, KlassAddress,
 				TargetAddress.Null);
 
-			TargetFieldInfo finfo = type.StaticFields [index];
-
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
-			TargetLocation field_loc = location.GetLocationAtOffset (
-				field_offsets [finfo.Position]);
+			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation (target);

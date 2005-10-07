@@ -392,7 +392,7 @@ namespace Mono.Debugger.Frontend
 				StructFormatter formatter = new StructFormatter (header);
 				TargetFieldInfo[] fields = stype.StaticFields;
 				foreach (TargetFieldInfo field in fields) {
-					TargetObject fobj = stype.GetStaticField (target, field.Index);
+					TargetObject fobj = stype.GetStaticField (target, field);
 					string item;
 					try {
 						if (fobj == null)
@@ -529,7 +529,7 @@ namespace Mono.Debugger.Frontend
 				foreach (TargetFieldInfo field in fields) {
 					string item;
 					try {
-						TargetObject fobj = sobj.GetField (target, field.Index);
+						TargetObject fobj = sobj.GetField (target, field);
 						if (fobj == null)
 							item = "null";
 						else

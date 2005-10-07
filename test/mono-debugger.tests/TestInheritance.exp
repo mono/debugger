@@ -17,7 +17,7 @@ mdb_expect_hit_breakpoint 0 "X.Main()" $breakpoint $file $line_main_2
 mdb_send_and_expect "print d.Test ()" "(System.String) \"Hello World\""
 mdb_send_and_expect "print a.Test ()" "(System.String) \"Hello World\""
 mdb_send_and_expect "print a.ToString ()" "(System.String) \"5\""
-mdb_send_and_expect "print (A) a" "(A) { a = 5, Hello = \"Hello World\" }"
+mdb_send_and_expect "print (A) a" "(A) { \"5\" }"
 mdb_send_and_expect "print (B) a" "ERROR: Cannot cast from A to B."
 mdb_send_and_expect "print d" "(D) { e = 500 }"
 mdb_send_and_expect "print (C) d" "(C) { f = 3.14 }"

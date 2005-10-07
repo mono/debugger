@@ -22,9 +22,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetObject GetStaticField (TargetAccess target, int index);
+		public abstract TargetObject GetStaticField (TargetAccess target,
+							     TargetFieldInfo field);
 
-		public abstract void SetStaticField (TargetAccess target, int index,
+		public abstract void SetStaticField (TargetAccess target, TargetFieldInfo field,
 						     TargetObject obj);
 
 		public abstract TargetPropertyInfo[] Properties {

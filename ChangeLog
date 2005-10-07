@@ -1,5 +1,17 @@
 2005-10-07  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClassType.cs
+	(TargetClassType.GetStaticField): Take a `TargetFieldInfo' instead
+	of an `int'.
+	(TargetClassType.SetStaticField): Likewise.
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject.GetField): Take a `TargetFieldInfo' instead of
+	an `int'.
+	(TargetClassObject.SetField): Likewise.
+
+2005-10-07  Martin Baulig  <martin@ximian.com>
+
 	* test/TestToString.cs: New test.
 	* test/mono-debugger.test/TestToString.exp: New test.
 

@@ -22,7 +22,8 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] static_constructors;
 
 		int num_methods = 0, num_smethods = 0;
-		internal int first_method = 0, first_smethod = 0;
+		int first_method = 0, first_smethod = 0;
+		int num_fields = 0, num_sfields = 0, first_field = 0;
 
 		Cecil.ITypeDefinition type;
 		MonoSymbolFile file;
@@ -75,12 +76,16 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parent_type; }
 		}
 
+		internal int FirstField {
+			get {
+				return first_field;
+			}
+		}
+
 		void get_fields ()
 		{
 			if (fields != null)
 				return;
-
-			int num_fields = 0, num_sfields = 0;
 
 			foreach (Cecil.IFieldDefinition field in type.Fields) {
 				if (field.IsStatic)
@@ -92,7 +97,13 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
-			int pos = 0, spos = 0, i = 0;
+			if (parent_type != null) {
+				parent_type.get_fields ();
+				first_field = parent_type.first_field + 
+					parent_type.num_fields + parent_type.num_sfields;
+			}
+
+			int pos = 0, spos = 0, i = first_field;
 			foreach (Cecil.IFieldDefinition field in type.Fields) {
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
@@ -121,17 +132,17 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetObject GetStaticField (TargetAccess target, int index)
+		public override TargetObject GetStaticField (TargetAccess target, TargetFieldInfo field)
 		{
 			MonoClassInfo info = GetTypeInfo ();
-			return info.GetStaticField (target, index);
+			return info.GetStaticField (target, field);
 		}
 
-		public override void SetStaticField (TargetAccess target, int index,
+		public override void SetStaticField (TargetAccess target, TargetFieldInfo field,
 						     TargetObject obj)
 		{
 			MonoClassInfo info = GetTypeInfo ();
-			info.SetStaticField (target, index, obj);
+			info.SetStaticField (target, field, obj);
 		}
 
 		public int CountMethods {

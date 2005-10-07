@@ -22,15 +22,16 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		[Command]
-		public override TargetObject GetField (TargetAccess target, int index)
+		public override TargetObject GetField (TargetAccess target, TargetFieldInfo field)
 		{
-			return type.GetField (target, Location, index);
+			return type.GetField (target, Location, field);
 		}
 
 		[Command]
-		public override void SetField (TargetAccess target, int index, TargetObject obj)
+		public override void SetField (TargetAccess target, TargetFieldInfo field,
+					       TargetObject obj)
 		{
-			type.SetField (target, Location, index, obj);
+			type.SetField (target, Location, field, obj);
 		}
 
 		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
