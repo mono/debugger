@@ -30,6 +30,7 @@ typedef struct
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	long call_address;
 	long exc_address;
+	gboolean debug;
 	guint64 callback_argument;
 } RuntimeInvokeData;
 
@@ -204,10 +205,16 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
 		g_ptr_array_remove (arch->rti_stack, rdata);
-		g_free (rdata);
 
 		x86_arch_get_registers (handle);
 
+		if (rdata->debug) {
+			*retval = 0;
+			g_free (rdata);
+			return STOP_ACTION_BREAKPOINT_HIT;
+		}
+
+		g_free (rdata);
 		return STOP_ACTION_CALLBACK;
 	}
 
@@ -652,15 +659,16 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 			ptr [i] = param_data [i];
 	}
 
-	*((guint64 *) code) = new_rsp + static_size;
+	*((guint64 *) code) = new_rsp + static_size - 1;
 	*((guint64 *) (code+8)) = callback_argument;
 
 	rdata = g_new0 (RuntimeInvokeData, 1);
 	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
 	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
-	rdata->call_address = new_rsp + static_size;
+	rdata->call_address = new_rsp + static_size - 1;
 	rdata->exc_address = new_rsp + 16;
 	rdata->callback_argument = callback_argument;
+	rdata->debug = debug;
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);

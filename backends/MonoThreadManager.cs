@@ -159,7 +159,6 @@ namespace Mono.Debugger.Backends
 			thread_hash.Remove (tid);
 
 			inferior.Continue ();
-			thread_manager.KillThread (thread.Engine);
 		}
 
 		internal bool HandleChildEvent (Inferior inferior,

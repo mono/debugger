@@ -1,3 +1,17 @@
+2005-10-10  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86_64-arch.c
+	(x86_arch_child_stopped): Send a `CHILD_HIT_BREAKPOINT' event if
+	we completed a debugging runtime-invoke.
+
+	* backends/server/i386-arch.c (x86_arch_child_stopped): Likewise.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.thread_abort): Don't kill the thread.
+
+	* frontend/Expression.cs
+	(RegisterExpression): Derive from PointerExpression.
+
 2005-10-08  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs

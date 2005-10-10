@@ -2207,7 +2207,8 @@ namespace Mono.Debugger.Backends
 				return EventResult.Completed;
 			Report.Debug (DebugFlags.EventLoop, "{0} received {1} at {2} in {3}",
 				      sse, cevent, inferior.CurrentFrame, this);
-			if (cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) ||
+			    (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK))
 				return EventResult.Completed;
 			Execute (sse);
 			return EventResult.Running;

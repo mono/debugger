@@ -32,6 +32,7 @@ typedef struct
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	long call_address;
 	long exc_address;
+	gboolean debug;
 	guint64 callback_argument;
 } RuntimeInvokeData;
 
@@ -261,6 +262,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	rdata->call_address = new_esp + static_size;
 	rdata->exc_address = new_esp + static_size + (num_params + 1) * 4;
 	rdata->callback_argument = callback_argument;
+	rdata->debug = debug;
 
 	call_disp = (int) invoke_method - new_esp;
 
@@ -409,10 +411,16 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
 		g_ptr_array_remove (arch->rti_stack, rdata);
-		g_free (rdata);
 
 		x86_arch_get_registers (handle);
 
+		if (rdata->debug) {
+			*retval = 0;
+			g_free (rdata);
+			return STOP_ACTION_BREAKPOINT_HIT;
+		}
+
+		g_free (rdata);
 		return STOP_ACTION_CALLBACK;
 	}
 

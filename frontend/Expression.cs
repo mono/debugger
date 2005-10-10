@@ -1242,7 +1242,7 @@ namespace Mono.Debugger.Frontend
 		public abstract TargetAddress EvaluateAddress (ScriptingContext context);
 	}
 
-	public class RegisterExpression : Expression
+	public class RegisterExpression : PointerExpression
 	{
 		string name;
 		int register = -1;
@@ -1279,6 +1279,12 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Can't access register `{0}' selected stack frame.");
 			}
+		}
+
+		public override TargetAddress EvaluateAddress (ScriptingContext context)
+		{
+			TargetPointerObject pobj = (TargetPointerObject) EvaluateVariable (context);
+			return pobj.Address;
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject tobj)
