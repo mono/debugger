@@ -75,7 +75,7 @@ namespace Mono.Debugger.Architecture
 				TargetAddress start = new TargetAddress (
 					target.GlobalAddressDomain, initial);
 
-				if ((address < start) || (address > start + range)) {
+				if ((address < start) || (address >= start + range)) {
 					reader.Position = end_pos;
 					continue;
 				}
