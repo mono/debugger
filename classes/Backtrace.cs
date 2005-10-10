@@ -105,12 +105,19 @@ namespace Mono.Debugger
 							IArchitecture arch)
 		{
 			IMethod method = last_frame.Method;
-			if (method != null)
-				return method.UnwindStack (
-					last_frame.SimpleFrame, memory, arch);
+			SimpleStackFrame new_frame = null;
+			if (method != null) {
+				try {
+					new_frame = method.UnwindStack (
+						last_frame.SimpleFrame, memory, arch);
+				} catch (TargetException) {
+				}
+
+				if (new_frame != null)
+					return new_frame;
+			}
 
 			foreach (Module module in last_frame.Process.Debugger.Modules) {
-				SimpleStackFrame new_frame = null;
 				try {
 					new_frame = module.UnwindStack (last_frame.SimpleFrame, memory);
 				} catch {
