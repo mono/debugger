@@ -357,7 +357,7 @@ namespace Mono.Debugger.Backends
 					reached_main = true;
 
 					StackFrame ret_frame = arch.UnwindStack (
-						current_frame, inferior, null);
+						current_frame, inferior, null, 0);
 
 					if (ret_frame != null)
 						main_method_retaddr = ret_frame.TargetAddress;
@@ -1362,7 +1362,7 @@ namespace Mono.Debugger.Backends
 			current_backtrace = new Backtrace (
 				process, arch, current_frame, main_method_retaddr, max_frames);
 
-			current_backtrace.GetBacktrace (target_access, arch);
+			current_backtrace.GetBacktrace (target_access, arch, TargetAddress.Null);
 
 			return current_backtrace;
 		}

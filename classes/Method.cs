@@ -139,12 +139,9 @@ namespace Mono.Debugger
 			else
 				prologue_size = (int) (EndAddress - StartAddress);
 			int offset = (int) (frame.TargetAddress - StartAddress);
-			prologue_size = System.Math.Min (prologue_size, offset);
-			prologue_size = System.Math.Min (prologue_size, arch.MaxPrologueSize);
 
 			byte[] prologue = memory.ReadBuffer (StartAddress, prologue_size);
-
-			return arch.UnwindStack (frame, memory, prologue);
+			return arch.UnwindStack (frame, memory, prologue, offset);
 		}
 
 		//

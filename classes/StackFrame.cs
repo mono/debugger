@@ -351,6 +351,32 @@ namespace Mono.Debugger
 			}
 		}
 
+		public StackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
+		{
+			StackFrame new_frame = null;
+			if (method != null) {
+				try {
+					new_frame = method.UnwindStack (this, memory, arch);
+				} catch (TargetException) {
+				}
+
+				if (new_frame != null)
+					return new_frame;
+			}
+
+			foreach (Module module in process.Debugger.Modules) {
+				try {
+					new_frame = module.UnwindStack (this, memory);
+				} catch {
+					continue;
+				}
+				if (new_frame != null)
+					return new_frame;
+			}
+
+			return arch.UnwindStack (this, memory, null, 0);
+		}
+
 		public override string ToString ()
 		{
 			StringBuilder sb = new StringBuilder ();

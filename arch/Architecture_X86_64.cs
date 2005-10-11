@@ -391,7 +391,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
-					  int pos)
+					  int pos, int offset)
 		{
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (old_regs);
@@ -418,7 +418,7 @@ namespace Mono.Debugger.Backends
 
 			rbp -= addr_size;
 
-			int length = code.Length;
+			int length = System.Math.Min (code.Length, offset);
 			while (pos < length) {
 				byte opcode = code [pos++];
 
@@ -501,7 +501,8 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
 		}
 
-		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory, byte[] code)
+		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
+					  byte[] code, int offset)
 		{
 			int length = code.Length;
 			int pos = 0;
@@ -513,29 +514,74 @@ namespace Mono.Debugger.Backends
 			       (code [pos] == 0x90) || (code [pos] == 0xcc))
 				pos++;
 
-			if ((pos+5 < length) && (code [pos] == 0x55) && (code [pos+1] == 0x48) &&
-			    (((code [pos+2] == 0x8b) && (code [pos+3] == 0xec)) ||
-			     ((code [pos+2] == 0x89) && (code [pos+3] == 0xe5)))) {
-				pos += 4;
-				return unwind_method (frame, memory, code, pos);
+			if (pos+5 >= length) {
+				// unknown prologue
+				return null;
 			}
 
-			//
-			// Try smart unwinding
-			//
+			if (pos >= offset) {
+				Registers old_regs = frame.Registers;
+				Registers regs = new Registers (old_regs);
 
-			Console.WriteLine ("TRY SMART UNWIND: {0} {1} {2}",
-					   frame.TargetAddress, frame.StackPointer,
-					   frame.FrameAddress);
+				TargetAddress new_rip = memory.ReadGlobalAddress (frame.StackPointer);
+				regs [(int) X86_64_Register.RIP].SetValue (frame.StackPointer, new_rip);
 
-			return null;
+				TargetAddress new_rsp = frame.StackPointer + memory.TargetAddressSize;
+				TargetAddress new_rbp = frame.FrameAddress;
+
+				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
+
+				return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
+			}
+
+			// push %ebp
+			if (code [pos++] != 0x55) {
+				// unknown prologue
+				return null;
+			}
+
+			if (pos >= offset) {
+				Registers old_regs = frame.Registers;
+				Registers regs = new Registers (old_regs);
+
+				int addr_size = memory.TargetAddressSize;
+				TargetAddress new_rbp = memory.ReadGlobalAddress (frame.StackPointer);
+				regs [(int) X86_64_Register.RBP].SetValue (frame.StackPointer, new_rbp);
+
+				TargetAddress new_rsp = frame.StackPointer + addr_size;
+				TargetAddress new_rip = memory.ReadGlobalAddress (new_rsp);
+				regs [(int) X86_64_Register.RIP].SetValue (new_rsp, new_rip);
+				new_rsp -= addr_size;
+
+				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
+
+				return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
+			}
+
+			if (code [pos++] != 0x48) {
+				// unknown prologue
+				return null;
+			}
+
+			// mov %ebp, %esp
+			if (((code [pos] != 0x8b) || (code [pos+1] != 0xec)) &&
+			    ((code [pos] != 0x89) || (code [pos+1] != 0xe5))) {
+				// unknown prologue
+				return null;
+			}
+
+			pos += 2;
+			if (pos >= offset)
+				return null;
+
+			return unwind_method (frame, memory, code, pos, offset);
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
-							  byte[] code)
+							  byte[] code, int offset)
 		{
 			if ((code != null) && (code.Length > 4))
-				return read_prologue (frame, memory, code);
+				return read_prologue (frame, memory, code, offset);
 
 			TargetAddress rbp = frame.FrameAddress;
 
@@ -555,21 +601,6 @@ namespace Mono.Debugger.Backends
 			rbp -= addr_size;
 
 			return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
-		}
-
-		internal override StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory)
-		{
-			TargetAddress rip = memory.ReadGlobalAddress (last_frame.StackPointer);
-			TargetAddress rsp = last_frame.StackPointer;
-			TargetAddress rbp = last_frame.FrameAddress;
-
-			Registers regs = new Registers (this);
-			regs [(int) X86_64_Register.RIP].SetValue (rip);
-			regs [(int) X86_64_Register.RSP].SetValue (rsp);
-			regs [(int) X86_64_Register.RBP].SetValue (rbp);
-
-			return CreateFrame (last_frame, rip, rsp, rbp, regs);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, ITargetMemoryAccess memory)

@@ -364,7 +364,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
-					  int pos)
+					  int pos, int offset)
 		{
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (old_regs);
@@ -387,7 +387,7 @@ namespace Mono.Debugger.Backends
 
 			ebp -= addr_size;
 
-			int length = code.Length;
+			int length = System.Math.Min (code.Length, offset);
 			while (pos < length) {
 				byte opcode = code [pos++];
 
@@ -428,7 +428,8 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
 		}
 
-		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory, byte[] code)
+		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
+					  byte[] code, int offset)
 		{
 			int length = code.Length;
 			int pos = 0;
@@ -440,22 +441,60 @@ namespace Mono.Debugger.Backends
 			       (code [pos] == 0x90) || (code [pos] == 0xcc))
 				pos++;
 
-			if ((pos+4 < length) && (code [pos] == 0x55) &&
-			    (((code [pos+1] == 0x8b) && (code [pos+2] == 0xec)) ||
-			     ((code [pos+1] == 0x89) && (code [pos+2] == 0xe5)))) {
-				pos += 3;
-				return unwind_method (frame, memory, code, pos);
+			if (pos+4 >= length) {
+				// unknown prologue
+				return null;
 			}
 
-			//
-			// Try smart unwinding
-			//
+			if (pos >= offset) {
+				Registers old_regs = frame.Registers;
+				Registers regs = new Registers (old_regs);
 
-			Console.WriteLine ("TRY SMART UNWIND: {0} {1} {2}",
-					   frame.TargetAddress, frame.StackPointer,
-					   frame.FrameAddress);
+				TargetAddress new_eip = memory.ReadGlobalAddress (frame.StackPointer);
+				regs [(int) I386Register.EIP].SetValue (frame.StackPointer, new_eip);
 
-			return null;
+				TargetAddress new_esp = frame.StackPointer + memory.TargetAddressSize;
+				TargetAddress new_ebp = frame.FrameAddress;
+
+				regs [(int) I386Register.ESP].SetValue (new_esp);
+
+				return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
+			}
+
+			// push %ebp
+			if (code [pos++] != 0x55)
+				return null;
+
+			if (pos >= offset) {
+				Registers old_regs = frame.Registers;
+				Registers regs = new Registers (old_regs);
+
+				int addr_size = memory.TargetAddressSize;
+				TargetAddress new_ebp = memory.ReadGlobalAddress (frame.StackPointer);
+				regs [(int) I386Register.EBP].SetValue (frame.StackPointer, new_ebp);
+
+				TargetAddress new_esp = frame.StackPointer + addr_size;
+				TargetAddress new_eip = memory.ReadGlobalAddress (new_esp);
+				regs [(int) I386Register.EIP].SetValue (new_esp, new_eip);
+				new_esp -= addr_size;
+
+				regs [(int) I386Register.ESP].SetValue (new_esp);
+
+				return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
+			}
+
+			// mov %ebp, %esp
+			if (((code [pos] != 0x8b) || (code [pos+1] != 0xec)) &&
+			    ((code [pos] != 0x89) || (code [pos+1] != 0xe5))) {
+				// unknown prologue
+				return null;
+			}
+
+			pos += 2;
+			if (pos >= offset)
+				return null;
+
+			return unwind_method (frame, memory, code, pos, offset);
 		}
 
 		Registers copy_regs (Registers old_regs)
@@ -572,10 +611,10 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
-							  byte[] code)
+							  byte[] code, int offset)
 		{
 			if ((code != null) && (code.Length > 3))
-				return read_prologue (frame, memory, code);
+				return read_prologue (frame, memory, code, offset);
 
 			TargetAddress ebp = frame.FrameAddress;
 
@@ -599,21 +638,6 @@ namespace Mono.Debugger.Backends
 			ebp -= addr_size;
 
 			return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
-		}
-
-		internal override StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory)
-		{
-			TargetAddress eip = memory.ReadGlobalAddress (last_frame.StackPointer);
-			TargetAddress esp = last_frame.StackPointer;
-			TargetAddress ebp = last_frame.FrameAddress;
-
-			Registers regs = new Registers (this);
-			regs [(int) I386Register.EIP].SetValue (eip);
-			regs [(int) I386Register.ESP].SetValue (esp);
-			regs [(int) I386Register.EBP].SetValue (ebp);
-
-			return CreateFrame (last_frame, eip, esp, ebp, regs);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,

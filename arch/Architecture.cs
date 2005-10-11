@@ -109,10 +109,8 @@ namespace Mono.Debugger
 		}
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory, byte[] code);
-
-		internal abstract StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory);
+							  ITargetMemoryAccess memory,
+							  byte[] code, int offset);
 
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
 							       ITargetMemoryAccess memory);

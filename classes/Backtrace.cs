@@ -46,25 +46,16 @@ namespace Mono.Debugger
 
 		public event ObjectInvalidHandler BacktraceInvalidEvent;
 
-		public void GetBacktrace (TargetAccess target, Architecture arch)
+		public void GetBacktrace (TargetAccess target, Architecture arch,
+					  TargetAddress until)
 		{
 			while (TryUnwind (target, arch)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
+
+				if (!until.IsNull && (last_frame.StackPointer > until))
+					break;
 			}
-		}
-
-		public void GetBacktrace (TargetAccess target, Architecture arch,
-					  TargetAddress stack)
-		{
-			StackFrame new_frame = arch.UnwindStack (last_frame, target.TargetMemoryAccess);
-			if (new_frame == null)
-				return;
-
-			frames.Add (new_frame);
-			last_frame = new_frame;
-
-			GetBacktrace (target, arch);
 		}
 
 		public bool TryUnwind (TargetAccess target, Architecture arch)
@@ -74,7 +65,7 @@ namespace Mono.Debugger
 
 			StackFrame new_frame = null;
 			try {
-				new_frame = UnwindStack (target.TargetMemoryAccess, arch);
+				new_frame = last_frame.UnwindStack (target.TargetMemoryAccess, arch);
 			} catch (TargetException) {
 			}
 
@@ -89,33 +80,6 @@ namespace Mono.Debugger
 			frames.Add (new_frame);
 			last_frame = new_frame;
 			return true;
-		}
-
-		StackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
-		{
-			Method method = last_frame.Method;
-			StackFrame new_frame = null;
-			if (method != null) {
-				try {
-					new_frame = method.UnwindStack (last_frame, memory, arch);
-				} catch (TargetException) {
-				}
-
-				if (new_frame != null)
-					return new_frame;
-			}
-
-			foreach (Module module in last_frame.Process.Debugger.Modules) {
-				try {
-					new_frame = module.UnwindStack (last_frame, memory);
-				} catch {
-					continue;
-				}
-				if (new_frame != null)
-					return new_frame;
-			}
-
-			return arch.UnwindStack (last_frame, memory);
 		}
 
 		//
