@@ -120,9 +120,9 @@ namespace Mono.Debugger
 			this.wrapper_type = wrapper_type;
 		}
 
-		public virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-							     ITargetMemoryAccess memory,
-							     Architecture arch)
+		internal virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
+							       ITargetMemoryAccess memory,
+							       Architecture arch)
 		{
 			if (!IsLoaded)
 				return null;

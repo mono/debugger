@@ -164,7 +164,7 @@ namespace Mono.Debugger
 
 
 	[Serializable]
-	public class SimpleStackFrame
+	internal class SimpleStackFrame
 	{
 		public readonly TargetAddress Address;
 		public readonly TargetAddress StackPointer;
@@ -207,8 +207,8 @@ namespace Mono.Debugger
 		Language language;
 		Symbol name;
 
-		public StackFrame (Process process, TargetAccess target,
-				   SimpleStackFrame simple, Symbol name)
+		internal StackFrame (Process process, TargetAccess target,
+				     SimpleStackFrame simple, Symbol name)
 		{
 			this.process = process;
 			this.target = target;
@@ -218,9 +218,9 @@ namespace Mono.Debugger
 			language = process.NativeLanguage;
 		}
 
-		public StackFrame (Process process, TargetAccess target,
-				   SimpleStackFrame simple, Method method,
-				   SourceAddress source)
+		internal StackFrame (Process process, TargetAccess target,
+				     SimpleStackFrame simple, Method method,
+				     SourceAddress source)
 		{
 			this.process = process;
 			this.target = target;
@@ -288,7 +288,7 @@ namespace Mono.Debugger
 			return new StackFrame (process, target, simple, name);
 		}
 
-		public SimpleStackFrame SimpleFrame {
+		internal SimpleStackFrame SimpleFrame {
 			get {
 				return simple;
 			}
