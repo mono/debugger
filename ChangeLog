@@ -1,5 +1,9 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* arch/Architecture_PowerPC.cs: Removed.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* arch/*.cs: Removed the `Mono.Debugger.Architecture' namespace;
 	use `Mono.Debugger.Backends' instead.
 
