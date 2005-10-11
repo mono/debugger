@@ -615,5 +615,11 @@ namespace Mono.Debugger
 
 			return new SimpleStackFrame (eip, esp, ebp, regs, 0);
 		}
+
+		public SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
+							  SimpleStackFrame frame)
+		{
+			return null;
+		}
 	}
 }

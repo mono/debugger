@@ -98,6 +98,9 @@ namespace Mono.Debugger
 		{
 			StringBuilder sb = new StringBuilder ();
 
+			if (data == null)
+				return "[]";
+
 			sb.Append ("\n" + TargetAddress.FormatAddress (0) + "   ");
 
 			for (int i = 0; i < data.Length; i++) {

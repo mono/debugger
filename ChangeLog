@@ -1,3 +1,11 @@
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/IArchitecture.cs
+	(IArchitecture.TrySpecialUnwind): New method.
+
+	* arch/Architecture_X86_64.cs
+	(Architecture_X86_64.TrySpecialUnwind): Support sigreturn trampolines.	
+
 2005-10-10  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86_64-arch.c

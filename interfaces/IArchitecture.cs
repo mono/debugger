@@ -110,5 +110,7 @@ namespace Mono.Debugger
 
 		SimpleStackFrame UnwindStack (ITargetMemoryAccess memory, TargetAddress stack,
 					      TargetAddress frame_address);
+
+		SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory, SimpleStackFrame frame);
 	}
 }

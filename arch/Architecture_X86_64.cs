@@ -569,5 +569,72 @@ namespace Mono.Debugger
 
 			return new SimpleStackFrame (rip, rsp, rbp, regs, 0);
 		}
+
+		SimpleStackFrame try_unwind_sigreturn (ITargetMemoryAccess memory,
+						       SimpleStackFrame frame)
+		{
+			byte[] data = memory.ReadMemory (frame.Address, 9).Contents;
+
+			/*
+			 * Check for signal return trampolines:
+			 *
+			 *   mov __NR_rt_sigreturn, %eax
+			 *   syscall
+			 */
+			if ((data [0] != 0x48) || (data [1] != 0xc7) ||
+			    (data [2] != 0xc0) || (data [3] != 0x0f) ||
+			    (data [4] != 0x00) || (data [5] != 0x00) ||
+			    (data [6] != 0x00) || (data [7] != 0x0f) ||
+			    (data [8] != 0x05))
+				return null;
+
+			TargetAddress stack = frame.StackPointer;
+			/* See `struct sigcontext' in <asm/sigcontext.h> */
+			int[] regoffsets = {
+				(int) X86_64_Register.R8,  (int) X86_64_Register.R9,
+				(int) X86_64_Register.R10, (int) X86_64_Register.R11,
+				(int) X86_64_Register.R12, (int) X86_64_Register.R13,
+				(int) X86_64_Register.R14, (int) X86_64_Register.R15,
+				(int) X86_64_Register.RDI, (int) X86_64_Register.RSI,
+				(int) X86_64_Register.RBP, (int) X86_64_Register.RBX,
+				(int) X86_64_Register.RDX, (int) X86_64_Register.RAX,
+				(int) X86_64_Register.RCX, (int) X86_64_Register.RSP,
+				(int) X86_64_Register.RIP, (int) X86_64_Register.EFLAGS
+			};
+
+			Registers regs = new Registers (this);
+
+			int offset = 0x28;
+			/* The stack contains the `struct ucontext' from <asm/ucontext.h>; the
+			 * `struct sigcontext' starts at offset 0x28 in it. */
+			foreach (int regoffset in regoffsets) {
+				TargetAddress new_value = memory.ReadGlobalAddress (stack + offset);
+				regs [regoffset].SetValue (new_value);
+				offset += 8;
+			}
+
+			long err = memory.ReadLongInteger (stack + offset + 8);
+			long trapno = memory.ReadLongInteger (stack + offset + 16);
+
+			TargetAddress rip = new TargetAddress (
+				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+			TargetAddress rsp = new TargetAddress (
+				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+			TargetAddress rbp = new TargetAddress (
+				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+
+			return new SimpleStackFrame (rip, rsp, rbp, regs, frame.Level + 1);
+		}
+
+		public SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
+							  SimpleStackFrame frame)
+		{
+			SimpleStackFrame new_frame;
+			new_frame = try_unwind_sigreturn (memory, frame);
+			if (new_frame != null)
+				return new_frame;
+
+			return null;
+		}
 	}
 }

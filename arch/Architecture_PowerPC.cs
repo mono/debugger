@@ -219,5 +219,11 @@ namespace Mono.Debugger
 		{
 			throw new NotImplementedException ();
 		}
+
+		public SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
+							  SimpleStackFrame frame)
+		{
+			return null;
+		}
 	}
 }

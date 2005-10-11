@@ -970,17 +970,23 @@ namespace Mono.Debugger.Architecture
 			if ((frame.Address < StartAddress) || (frame.Address > EndAddress))
 				return null;
 
+			SimpleStackFrame new_frame;
+			try {
+				new_frame = arch.TrySpecialUnwind (memory, frame);
+				if (new_frame != null)
+					return new_frame;
+			} catch {
+			}
+
 			try {
 				if (frame_reader != null) {
-					SimpleStackFrame new_frame = frame_reader.UnwindStack (
-						frame, memory, arch);
+					new_frame = frame_reader.UnwindStack (frame, memory, arch);
 					if (new_frame != null)
 						return new_frame;
 				}
 
 				if (eh_frame_reader != null) {
-					SimpleStackFrame new_frame = eh_frame_reader.UnwindStack (
-						frame, memory, arch);
+					new_frame = eh_frame_reader.UnwindStack (frame, memory, arch);
 					if (new_frame != null)
 						return new_frame;
 				}
