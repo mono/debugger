@@ -20,7 +20,7 @@ namespace Mono.Debugger
 		bool symtab_update_in_progress;
 		bool module_update_in_progress;
 
-		public SymbolTableManager ()
+		internal SymbolTableManager ()
 		{
 			symtab_reload_event = new AutoResetEvent (false);
 			symtabs_loaded_event = new ManualResetEvent (true);
@@ -36,7 +36,7 @@ namespace Mono.Debugger
 		//   the symbol tables in the background and emit the SymbolTableChangedEvent
 		//   when done.
 		// </summary>
-		public void SetModules (ICollection modules)
+		internal void SetModules (ICollection modules)
 		{
 			lock (this) {
 				new_modules = modules;
@@ -52,7 +52,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   Whether an update is currently in progress.
 		// </summary>
-		public bool SymbolTableUpdateInProgress {
+		internal bool SymbolTableUpdateInProgress {
 			get {
 				lock (this) {
 					return symtab_update_in_progress;
@@ -63,33 +63,10 @@ namespace Mono.Debugger
 		// <summary>
 		//   Whether an update is currently in progress.
 		// </summary>
-		public bool ModuleUpdateInProgress {
+		internal bool ModuleUpdateInProgress {
 			get {
 				lock (this) {
 					return module_update_in_progress;
-				}
-			}
-		}
-
-		public delegate void SymbolTableHandler (object sender, ISymbolTable symbol_table);
-		public delegate void ModuleHandler (object sender, Module[] modules);
-
-		// <summary>
-		//   This event is emitted each time the symbol tables have changed.
-		//   The symbol tables won't change while this handler is running.
-		// </summary>
-		public event SymbolTableHandler SymbolTableChangedEvent;
-
-		// <summary>
-		//   The current symbol tables.  This property may change at any time, so
-		//   you should use the SymbolTableChangedEvent to get a notification.
-		// </summary>
-		public ISymbolTable SymbolTable {
-			get {
-				if (symtab_thread != null)
-					symtabs_loaded_event.WaitOne ();
-				lock (this) {
-					return current_symtab;
 				}
 			}
 		}
@@ -101,11 +78,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal delegate void ModuleHandler (object sender, Module[] modules);
+
 		// <summary>
 		//   This event is emitted each time the modules have changed.
 		//   The modules won't change while this handler is running.
 		// </summary>
-		public event ModuleHandler ModulesChangedEvent;
+		internal event ModuleHandler ModulesChangedEvent;
 
 		// <summary>
 		//   The current modules.  This property may change at any time, so you
@@ -123,7 +102,11 @@ namespace Mono.Debugger
 
 		public Method Lookup (TargetAddress address)
 		{
-			return SymbolTable.Lookup (address);
+			if (symtab_thread != null)
+				symtabs_loaded_event.WaitOne ();
+			lock (this) {
+				return current_symtab.Lookup (address);
+			}
 		}
 
 		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
@@ -141,14 +124,6 @@ namespace Mono.Debugger
 				}
 
 				return null;
-			}
-		}
-
-		protected virtual void OnSymbolTableChanged ()
-		{
-			lock (this) {
-				if (SymbolTableChangedEvent != null)
-					SymbolTableChangedEvent (this, current_symtab);
 			}
 		}
 
@@ -234,7 +209,6 @@ namespace Mono.Debugger
 					// the `SymbolTable' accessor.
 					symtabs_loaded_event.Set ();
 					symtab_update_in_progress = false;
-					OnSymbolTableChanged ();
 				}
 
 				lock (this) {

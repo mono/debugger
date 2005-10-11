@@ -1,5 +1,11 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/SymbolTableManager.cs
+	(SymbolTableManager.SymbolTable): Removed.
+	(SymbolTableManager): Make some API entry points `internal'.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ISymbolTable.cs (ISimpleSymbolTable): Removed.
 
 	* arch/Disassembler.cs (Disassembler.SymbolTable): Removed.
