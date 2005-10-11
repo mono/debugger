@@ -124,17 +124,16 @@ namespace Mono.Debugger
 			if (address.IsNull)
 				return null;
 
-			SimpleStackFrame simple = new SimpleStackFrame (
-				address, stack, frame_pointer, regs, last_frame.Level + 1);
-
 			Method method = backend.SymbolTableManager.Lookup (address);
 			if (method != null)
 				return new StackFrame (
-					last_frame.Process, last_frame.TargetAccess, simple, method);
+					last_frame.Process, last_frame.TargetAccess, address,
+					stack, frame_pointer, regs, last_frame.Level + 1, method);
 
 			Symbol name = backend.SymbolTableManager.SimpleLookup (address, false);
 			return new StackFrame (
-				last_frame.Process, last_frame.TargetAccess, simple, name);
+				last_frame.Process, last_frame.TargetAccess, address, stack,
+				frame_pointer, regs, last_frame.Level + 1, name);
 		}
 	}
 }

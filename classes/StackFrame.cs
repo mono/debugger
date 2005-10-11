@@ -162,119 +162,73 @@ namespace Mono.Debugger
 		}
 	}
 
-
-	[Serializable]
-	internal class SimpleStackFrame
-	{
-		public readonly TargetAddress Address;
-		public readonly TargetAddress StackPointer;
-		public readonly TargetAddress FrameAddress;
-		public readonly Registers Registers;
-		public readonly int Level;
-
-		public SimpleStackFrame (TargetAddress address, TargetAddress stack,
-					 TargetAddress frame, Registers regs, int level)
-		{
-			this.Address = address;
-			this.StackPointer = stack;
-			this.FrameAddress = frame;
-			this.Registers = regs;
-			this.Level = level;
-		}
-
-		internal SimpleStackFrame (Inferior.StackFrame iframe, Registers regs,
-					   int level)
-			: this (iframe.Address, iframe.StackPointer, iframe.FrameAddress,
-				regs, level)
-		{ }
-
-		public override string ToString ()
-		{
-			return String.Format ("SimpleStackFrame ({0}:{1}:{2}:{3})",
-					      Level, Address, StackPointer, FrameAddress);
-		}
-	}
-
 	[Serializable]
 	public sealed class StackFrame : MarshalByRefObject, IDisposable
 	{
+		protected readonly TargetAddress address;
+		protected readonly TargetAddress stack_pointer;
+		protected readonly TargetAddress frame_address;
+		protected readonly Registers registers;
+		protected readonly int level;
+
 		Method method;
 		Process process;
 		TargetAccess target;
-		SimpleStackFrame simple;
 		SourceAddress source;
 		bool has_source;
 		AddressDomain address_domain;
-		Language language;
 		Symbol name;
 
 		internal StackFrame (Process process, TargetAccess target,
-				     SimpleStackFrame simple)
+				     TargetAddress address, TargetAddress stack_pointer,
+				     TargetAddress frame_address, Registers registers,
+				     int level)
 		{
 			this.process = process;
 			this.target = target;
-			this.simple = simple;
+			this.address = address;
+			this.stack_pointer = stack_pointer;
+			this.frame_address = frame_address;
+			this.registers = registers;
+			this.level = level;
 		}
 
 		internal StackFrame (Process process, TargetAccess target,
-				     SimpleStackFrame simple, Symbol name)
-			: this (process, target, simple)
+				     TargetAddress address, TargetAddress stack_pointer,
+				     TargetAddress frame_address, Registers registers,
+				     int level, Symbol name)
+			: this (process, target, address, stack_pointer, frame_address,
+				registers, level)
 		{
 			this.name = name;
-			this.language = process.NativeLanguage;
 		}
 
 		internal StackFrame (Process process, TargetAccess target,
-				     SimpleStackFrame simple, Method method)
-			: this (process, target, simple)
+				     TargetAddress address, TargetAddress stack_pointer,
+				     TargetAddress frame_address, Registers registers,
+				     int level, Method method)
+			: this (process, target, address, stack_pointer, frame_address,
+				registers, level)
 		{
 			this.method = method;
 			this.name = new Symbol (method.Name, method.StartAddress, 0);
-			this.language = method.Module.Language;
 		}
 
 
 		internal StackFrame (Process process, TargetAccess target,
-				     SimpleStackFrame simple, Method method,
-				     SourceAddress source)
-			: this (process, target, simple, method)
+				     TargetAddress address, TargetAddress stack_pointer,
+				     TargetAddress frame_address, Registers registers,
+				     int level, Method method, SourceAddress source)
+			: this (process, target, address, stack_pointer, frame_address,
+				registers, level, method)
 		{
 			this.source = source;
 			this.has_source = true;
 		}
 
-		private static StackFrame CreateFrame (Process process, TargetAccess target,
-							SimpleStackFrame simple)
-		{
-			if (simple.Address.IsNull)
-				return new StackFrame (process, target, simple);
-
-			Method method = null;
-			try {
-				method = process.Lookup (simple.Address);
-			} catch {
-			}
-			if (method != null)
-				return new StackFrame (process, target, simple, method);
-
-			Symbol name;
-			try {
-				name = process.SimpleLookup (simple.Address, false);
-			} catch {
-				name = null;
-			}
-			return new StackFrame (process, target, simple, name);
-		}
-
-		internal SimpleStackFrame SimpleFrame {
-			get {
-				return simple;
-			}
-		}
-
 		public int Level {
 			get {
-				return simple.Level;
+				return level;
 			}
 		}
 
@@ -289,8 +243,8 @@ namespace Mono.Debugger
 				check_disposed ();
 				if (has_source)
 					return source;
-				if (method.HasSource)
-					source = method.Source.Lookup (simple.Address);
+				if ((method != null) && method.HasSource)
+					source = method.Source.Lookup (address);
 				has_source = true;
 				return source;
 			}
@@ -299,21 +253,21 @@ namespace Mono.Debugger
 		public TargetAddress TargetAddress {
 			get {
 				check_disposed ();
-				return simple.Address;
+				return address;
 			}
 		}
 
 		public TargetAddress StackPointer {
 			get {
 				check_disposed ();
-				return simple.StackPointer;
+				return stack_pointer;
 			}
 		}
 
 		public TargetAddress FrameAddress {
 			get {
 				check_disposed ();
-				return simple.FrameAddress;
+				return frame_address;
 			}
 		}
 
@@ -343,7 +297,7 @@ namespace Mono.Debugger
 		public Registers Registers {
 			get {
 				check_disposed ();
-				return simple.Registers;
+				return registers;
 			}
 		}
 
@@ -390,7 +344,10 @@ namespace Mono.Debugger
 		public Language Language {
 			get {
 				check_disposed ();
-				return language;
+				if (method != null)
+					return method.Module.Language;
+				else
+					return process.NativeLanguage;
 			}
 		}
 
@@ -398,9 +355,8 @@ namespace Mono.Debugger
 		{
 			StringBuilder sb = new StringBuilder ();
 
-			sb.Append (String.Format ("#{0}: ", simple.Level));
+			sb.Append (String.Format ("#{0}: ", level));
 
-			TargetAddress address = simple.Address;
 			if (method != null) {
 				sb.Append (String.Format ("{0} in {1}", address, method.Name));
 				if (method.IsLoaded) {
@@ -415,7 +371,7 @@ namespace Mono.Debugger
 			else
 				sb.Append (String.Format ("{0}", address));
 
-			if (source != null)
+			if (SourceAddress != null)
 				sb.Append (String.Format (" at {0}", source.Name));
 
 			return sb.ToString ();

@@ -614,9 +614,6 @@ namespace Mono.Debugger.Backends
 				offset += 8;
 			}
 
-			long err = memory.ReadLongInteger (stack + offset + 8);
-			long trapno = memory.ReadLongInteger (stack + offset + 16);
-
 			TargetAddress rip = new TargetAddress (
 				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress rsp = new TargetAddress (
@@ -625,10 +622,10 @@ namespace Mono.Debugger.Backends
 				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
-			SimpleStackFrame simple = new SimpleStackFrame (
-				rip, rsp, rbp, regs, frame.Level + 1);
 
-			return new StackFrame (frame.Process, frame.TargetAccess, simple, name);
+			return new StackFrame (
+				frame.Process, frame.TargetAccess, rip, rsp, rbp, regs,
+				frame.Level + 1, name);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame frame,

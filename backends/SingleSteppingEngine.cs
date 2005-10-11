@@ -786,21 +786,15 @@ namespace Mono.Debugger.Backends
 			return current_operation.HandleException (this, stack, exc);
 		}
 
-		SimpleStackFrame get_simple_frame ()
-		{
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-
-			registers = inferior.GetRegisters ();
-			return new SimpleStackFrame (iframe, registers, 0);
-		}
-
 		// <summary>
 		//   Compute the StackFrame for target address @address.
 		// </summary>
 		StackFrame get_frame ()
 		{
-			SimpleStackFrame simple = get_simple_frame ();
-			TargetAddress address = simple.Address;
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			registers = inferior.GetRegisters ();
+
+			TargetAddress address = iframe.Address;
 
 			// If we have a current_method and the address is still inside
 			// that method, we don't need to do a method lookup.
@@ -813,7 +807,8 @@ namespace Mono.Debugger.Backends
 			frames_invalid ();
 
 			current_frame = new StackFrame (
-				process, target_access, simple, current_method);
+				process, target_access, iframe.Address, iframe.StackPointer,
+				iframe.FrameAddress, registers, 0, current_method);
 
 			return current_frame;
 		}
@@ -874,10 +869,9 @@ namespace Mono.Debugger.Backends
 						return new_operation;
 				}
 
-				SimpleStackFrame simple = new SimpleStackFrame (
-					iframe, registers, 0);
 				current_frame = new StackFrame (
-					process, target_access, simple, current_method, source);
+					process, target_access, iframe.Address, iframe.StackPointer,
+					iframe.FrameAddress, registers, 0, current_method, source);
 			} else {
 				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
@@ -886,11 +880,11 @@ namespace Mono.Debugger.Backends
 						return new_operation;
 				}
 
-				SimpleStackFrame simple = new SimpleStackFrame (iframe, registers, 0);
-
 				if (current_method != null)
 					current_frame = new StackFrame (
-						process, target_access, simple, current_method);
+						process, target_access, iframe.Address,
+						iframe.StackPointer, iframe.FrameAddress,
+						registers, 0, current_method);
 				else {
 					Symbol name;
 					try {
@@ -899,7 +893,9 @@ namespace Mono.Debugger.Backends
 						name = null;
 					}
 					current_frame = new StackFrame (
-						process, target_access, simple, name);
+						process, target_access, iframe.Address,
+						iframe.StackPointer, iframe.FrameAddress,
+						registers, 0, name);
 				}
 			}
 
@@ -1127,7 +1123,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress start = frame.TargetAddress - offset;
 			TargetAddress end = frame.TargetAddress + range;
 
-			return new StepFrame (start, end, frame.SimpleFrame, language, StepMode.StepFrame);
+			return new StepFrame (start, end, frame, language, StepMode.StepFrame);
 		}
 
 		// <summary>
@@ -2002,7 +1998,7 @@ namespace Mono.Debugger.Backends
 			if ((StepFrame == null) || (StepFrame.StackFrame == null))
 				return true;
 
-			SimpleStackFrame oframe = StepFrame.StackFrame;
+			StackFrame oframe = StepFrame.StackFrame;
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} handling exception: {1} {2} - {3} {4} - {5}", sse,
@@ -2206,7 +2202,7 @@ namespace Mono.Debugger.Backends
 
 				step_frame = new StepFrame (
 					frame.Method.StartAddress, frame.Method.EndAddress,
-					frame.SimpleFrame, null, StepMode.Finish);
+					frame, null, StepMode.Finish);
 			} else {
 				Inferior.StackFrame frame = sse.inferior.GetCurrentFrame ();
 				until = frame.StackPointer;
