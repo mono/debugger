@@ -1,5 +1,14 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/IArchitecture.cs (IArchitecture): Replaced this
+	interfaces with the abstract class `Architecture'.
+
+	* arch/Architecture.cs (Architecture): New public abstract class;
+	replaces the `IArchitecture' interface.  Make a few API entry
+	points `internal' instead of `public'.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* arch/Architecture_PowerPC.cs: Removed.
 
 2005-10-11  Martin Baulig  <martin@ximian.com>

@@ -36,7 +36,7 @@ namespace Mono.Debugger
 
 	public interface ITargetMemoryInfo : ITargetInfo
 	{
-		IArchitecture Architecture {
+		Architecture Architecture {
 			get;
 		}
 

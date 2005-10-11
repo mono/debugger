@@ -20,7 +20,7 @@ namespace Mono.Debugger.Backends
 		protected ITargetMemoryInfo info;
 		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
-		protected IArchitecture arch;
+		protected Architecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
@@ -470,7 +470,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get {
 				return arch;
 			}

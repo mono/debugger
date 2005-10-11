@@ -34,7 +34,7 @@ namespace Mono.Debugger.Backends
 
 		public SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 						     ITargetMemoryAccess target,
-						     IArchitecture arch)
+						     Architecture arch)
 		{
 			if (frame.Address.IsNull)
 				return null;
@@ -322,7 +322,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			void SetRegisters (Registers regs, ITargetMemoryAccess target,
-					   IArchitecture arch, Column[] columns)
+					   Architecture arch, Column[] columns)
 			{
 				long cfa_addr = GetRegisterValue (regs, 1, columns [0]);
 				TargetAddress cfa = new TargetAddress (
@@ -335,7 +335,7 @@ namespace Mono.Debugger.Backends
 
 			public SimpleStackFrame Unwind (SimpleStackFrame frame,
 							ITargetMemoryAccess target,
-							IArchitecture arch)
+							Architecture arch)
 			{
 				Registers old_regs = frame.Registers;
 
@@ -393,7 +393,7 @@ namespace Mono.Debugger.Backends
 				get { return next; }
 			}
 
-			public IArchitecture Architecture {
+			public Architecture Architecture {
 				get { return frame.bfd.Architecture; }
 			}
 

@@ -5,12 +5,12 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
-	public interface IArchitecture
+	public abstract class Architecture : MarshalByRefObject
 	{
 		// <summary>
 		//   The names of all registers.
 		// </summary>
-		string[] RegisterNames {
+		public abstract string[] RegisterNames {
 			get;
 		}
 
@@ -18,21 +18,21 @@ namespace Mono.Debugger
 		//   Indices of the "important" registers, sorted in a way that's suitable
 		//   to display them to the user.
 		// </summary>
-		int[] RegisterIndices {
+		public abstract int[] RegisterIndices {
 			get;
 		}
 
 		// <summary>
 		//   Indices of all registers.
 		// </summary>
-		int[] AllRegisterIndices {
+		public abstract int[] AllRegisterIndices {
 			get;
 		}
 
 		// <summary>
 		// Size (in bytes) of each register.
 		// </summary>
-		int[] RegisterSizes {
+		public abstract int[] RegisterSizes {
 			get;
 		}
 
@@ -41,34 +41,28 @@ namespace Mono.Debugger
 		// the jit code generator and the register indices
 		// used in the above arrays.
 		// </summary>
-		int[] RegisterMap {
+		internal abstract int[] RegisterMap {
 			get;
 		}
 
-		int[] DwarfFrameRegisterMap {
+		internal abstract int[] DwarfFrameRegisterMap {
 			get;
 		}
 
-		// <summary>
-		// The length of the
-		// AllRegisterIndices/RegisterNames/RegisterSizes
-		// arrays.
-		// XXX why not just let people do
-		// "RegisterNames.Length"?
-		// </summary>
-		int CountRegisters {
+		internal abstract int CountRegisters {
 			get;
 		}
 
-		string PrintRegister (Register register);
+		public abstract string PrintRegister (Register register);
 
-		string PrintRegisters (StackFrame frame);
+		public abstract string PrintRegisters (StackFrame frame);
 
 		// <summary>
 		//   Returns whether the instruction at target address @address is a `ret'
 		//   instruction.
 		// </summary>
-		bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address);
+		internal abstract bool IsRetInstruction (ITargetMemoryAccess memory,
+							 TargetAddress address);
 
 		// <summary>
 		//   Check whether the instruction at target address @address is a `call'
@@ -78,8 +72,9 @@ namespace Mono.Debugger
 		//   instructions.  This can be used to set a breakpoint immediately after
 		//   the function.
 		// </summary>
-		TargetAddress GetCallTarget (ITargetMemoryAccess target, TargetAddress address,
-					     out int insn_size);
+		internal abstract TargetAddress GetCallTarget (ITargetMemoryAccess target,
+							       TargetAddress address,
+							       out int insn_size);
 
 		// <summary>
 		//   Check whether the instruction at target address @address is a `jump'
@@ -89,28 +84,32 @@ namespace Mono.Debugger
 		//   instructions.  This can be used to set a breakpoint immediately after
 		//   the jump.
 		// </summary>
-		TargetAddress GetJumpTarget (ITargetMemoryAccess target, TargetAddress address,
-					     out int insn_size);
+		internal abstract TargetAddress GetJumpTarget (ITargetMemoryAccess target,
+							       TargetAddress address,
+							       out int insn_size);
 
 		// <summary>
 		//   Check whether the instruction at target address @address is a trampoline method.
 		//   If it's a trampoline, return the address of the corresponding method's
 		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
 		// </summary>
-		TargetAddress GetTrampoline (ITargetMemoryAccess target, TargetAddress address,
-					     TargetAddress generic_trampoline_address);
+		internal abstract TargetAddress GetTrampoline (ITargetMemoryAccess target,
+							       TargetAddress address,
+							       TargetAddress generic_trampoline_address);
 
-		int MaxPrologueSize {
+		internal abstract int MaxPrologueSize {
 			get;
 		}
 
-		SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-					      SimpleStackFrame frame, Symbol name,
-					      byte[] code);
+		internal abstract SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+								SimpleStackFrame frame, Symbol name,
+								byte[] code);
 
-		SimpleStackFrame UnwindStack (ITargetMemoryAccess memory, TargetAddress stack,
-					      TargetAddress frame_address);
+		internal abstract SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+								TargetAddress stack,
+								TargetAddress frame_address);
 
-		SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory, SimpleStackFrame frame);
+		internal abstract SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
+								     SimpleStackFrame frame);
 	}
 }

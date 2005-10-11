@@ -31,7 +31,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 20; }
 		}
 
-		public VariableInfo (IArchitecture arch, TargetBinaryReader reader)
+		public VariableInfo (Architecture arch, TargetBinaryReader reader)
 		{
 			Index = reader.ReadLeb128 ();
 			Offset = reader.ReadSLeb128 ();
@@ -127,7 +127,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public MethodAddress (C.MethodEntry entry, TargetBinaryReader reader,
-				      AddressDomain domain, IArchitecture arch)
+				      AddressDomain domain, Architecture arch)
 		{
 			// here we read the MonoDebugMethodAddress structure
 			// as written out in mono_debug_add_method.
@@ -314,7 +314,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return this; }
 		}
 
-		internal IArchitecture Architecture {
+		internal Architecture Architecture {
 			get { return TargetInfo.Architecture; }
 		}
 

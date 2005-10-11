@@ -55,7 +55,7 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal class TargetMemoryInfo : TargetInfo, ITargetMemoryInfo
 	{
-		IArchitecture arch;
+		Architecture arch;
 		AddressDomain address_domain;
 		AddressDomain global_address_domain;
 
@@ -69,7 +69,7 @@ namespace Mono.Debugger.Backends
 			this.address_domain = domain;
 		}
 
-		internal void Initialize (IArchitecture arch)
+		internal void Initialize (Architecture arch)
 		{
 			this.arch = arch;
 		}
@@ -86,7 +86,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get {
 				return arch;
 			}
@@ -163,7 +163,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get {
 				return info.Architecture;
 			}

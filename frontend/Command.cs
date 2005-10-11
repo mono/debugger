@@ -1247,7 +1247,7 @@ namespace Mono.Debugger.Frontend
 			{
 				FrameHandle frame = ResolveFrame (context);
 
-				IArchitecture arch = ResolveProcess (context).Process.Architecture;
+				Architecture arch = ResolveProcess (context).Process.Architecture;
 				context.Print (arch.PrintRegisters (frame.Frame));
 			}
 		}

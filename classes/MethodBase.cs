@@ -95,7 +95,7 @@ namespace Mono.Debugger
 
 		public virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
 							     ITargetMemoryAccess memory,
-							     IArchitecture arch)
+							     Architecture arch)
 		{
 			if (!IsLoaded)
 				return null;

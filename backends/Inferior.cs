@@ -42,7 +42,7 @@ namespace Mono.Debugger.Backends
 
 		TargetInfo target_info;
 		TargetMemoryInfo target_memory_info;
-		IArchitecture arch;
+		Architecture arch;
 
 		bool has_signals;
 		SignalInfo signal_info;
@@ -1021,7 +1021,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get {
 				check_disposed ();
 				return arch;

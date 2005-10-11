@@ -108,7 +108,7 @@ namespace Mono.Debugger
 		Register[] regs;
 		bool from_current_frame;
 
-		public Registers (IArchitecture arch)
+		public Registers (Architecture arch)
 		{
 			regs = new Register [arch.CountRegisters];
 			for (int i = 0; i < regs.Length; i++)
@@ -116,7 +116,7 @@ namespace Mono.Debugger
 					this, i, arch.RegisterSizes [i], false, 0);
 		}
 
-		public Registers (IArchitecture arch, long[] values)
+		public Registers (Architecture arch, long[] values)
 		{
 			regs = new Register [arch.CountRegisters];
 			if (regs.Length != values.Length)

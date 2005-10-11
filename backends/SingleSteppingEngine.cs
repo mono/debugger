@@ -609,7 +609,7 @@ namespace Mono.Debugger.Backends
 			get { return inferior; }
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get { return arch; }
 		}
 
@@ -1604,7 +1604,7 @@ namespace Mono.Debugger.Backends
 		Process process;
 		Inferior inferior;
 		TargetAccess target_access;
-		IArchitecture arch;
+		Architecture arch;
 		IDisassembler disassembler;
 		ProcessStart start;
 		ISymbolTable current_symtab;

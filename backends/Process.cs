@@ -126,7 +126,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get {
 				check_engine ();
 				return target_memory_info.Architecture;

@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using Mono.Debugger.Backends;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	// Keep in sync with DebuggerI386Registers in backends/server/i386-arch.h.
 	internal enum I386Register
@@ -29,14 +29,17 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent stuff for the i386.
 	// </summary>
-	internal class Architecture_I386 : MarshalByRefObject, IArchitecture
+	internal class Architecture_I386 : Architecture
 	{
-		public bool IsRetInstruction (ITargetMemoryAccess memory, TargetAddress address)
+		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
+							 TargetAddress address)
 		{
 			return memory.ReadByte (address) == 0xc3;
 		}
 
-		public TargetAddress GetCallTarget (ITargetMemoryAccess target, TargetAddress address, out int insn_size)
+		internal override TargetAddress GetCallTarget (ITargetMemoryAccess target,
+							       TargetAddress address,
+							       out int insn_size)
 		{
 			if (address.Address == 0xffffe002) {
 				insn_size = 0;
@@ -129,8 +132,9 @@ namespace Mono.Debugger
 				return vtable_addr;
 		}
 
-		public TargetAddress GetJumpTarget (ITargetMemoryAccess target, TargetAddress address,
-						    out int insn_size)
+		internal override TargetAddress GetJumpTarget (ITargetMemoryAccess target,
+							       TargetAddress address,
+							       out int insn_size)
 		{
 			TargetBinaryReader reader = target.ReadMemory (address, 10).GetReader ();
 
@@ -153,9 +157,9 @@ namespace Mono.Debugger
 			return TargetAddress.Null;
 		}
 
-		public TargetAddress GetTrampoline (ITargetMemoryAccess target,
-						    TargetAddress location,
-						    TargetAddress trampoline_address)
+		internal override TargetAddress GetTrampoline (ITargetMemoryAccess target,
+							       TargetAddress location,
+							       TargetAddress trampoline_address)
 		{
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
@@ -180,43 +184,43 @@ namespace Mono.Debugger
 			return new TargetAddress (target.GlobalAddressDomain, method_info);
 		}
 
-		public string[] RegisterNames {
+		public override string[] RegisterNames {
 			get {
 				return registers;
 			}
 		}
 
-		public int[] RegisterIndices {
+		public override int[] RegisterIndices {
 			get {
 				return important_regs;
 			}
 		}
 
-		public int[] AllRegisterIndices {
+		public override int[] AllRegisterIndices {
 			get {
 				return all_regs;
 			}
 		}
 
-		public int[] RegisterSizes {
+		public override int[] RegisterSizes {
 			get {
 				return reg_sizes;
 			}
 		}
 
-		public int[] RegisterMap {
+		internal override int[] RegisterMap {
 			get {
 				return register_map;
 			}
 		}
 
-		public int[] DwarfFrameRegisterMap {
+		internal override int[] DwarfFrameRegisterMap {
 			get {
 				return dwarf_frame_register_map;
 			}
 		}
 
-		public int CountRegisters {
+		internal override int CountRegisters {
 			get {
 				return (int) I386Register.COUNT;
 			}
@@ -270,7 +274,7 @@ namespace Mono.Debugger
 
 		int[] reg_sizes = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 
-		public string PrintRegister (Register register)
+		public override string PrintRegister (Register register)
 		{
 			if (!register.Valid)
 				return "XXXXXXXX";
@@ -333,7 +337,7 @@ namespace Mono.Debugger
 			return saddr;
 		}
 
-		public string PrintRegisters (StackFrame frame)
+		public override string PrintRegisters (StackFrame frame)
 		{
 			Registers registers = frame.Registers;
 			return String.Format (
@@ -351,7 +355,7 @@ namespace Mono.Debugger
 				PrintRegister (registers [(int) I386Register.EFLAGS]));
 		}
 
-		public int MaxPrologueSize {
+		internal override int MaxPrologueSize {
 			get { return 50; }
 		}
 
@@ -569,9 +573,9 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-						     SimpleStackFrame frame, Symbol name,
-						     byte[] code)
+		internal override SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+								SimpleStackFrame frame, Symbol name,
+								byte[] code)
 		{
 			if ((code != null) && (code.Length > 3))
 				return read_prologue (frame, memory, code);
@@ -601,8 +605,9 @@ namespace Mono.Debugger
 				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
 		}
 
-		public SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-						     TargetAddress stack, TargetAddress frame)
+		internal override SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
+								TargetAddress stack,
+								TargetAddress frame)
 		{
 			TargetAddress eip = memory.ReadGlobalAddress (stack);
 			TargetAddress esp = stack;
@@ -616,8 +621,8 @@ namespace Mono.Debugger
 			return new SimpleStackFrame (eip, esp, ebp, regs, 0);
 		}
 
-		public SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
-							  SimpleStackFrame frame)
+		internal override SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
+								     SimpleStackFrame frame)
 		{
 			return null;
 		}

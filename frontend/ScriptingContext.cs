@@ -391,7 +391,7 @@ namespace Mono.Debugger.Frontend
 		void initialize ()
 		{
 			registers = new Hashtable ();
-			IArchitecture arch = process.Architecture;
+			Architecture arch = process.Architecture;
 
 			string[] reg_names = arch.RegisterNames;
 			int[] reg_indices = arch.AllRegisterIndices;
@@ -545,7 +545,7 @@ namespace Mono.Debugger.Frontend
 			process.Continue (true);
 		}
 
-		public IArchitecture Architecture {
+		public Architecture Architecture {
 			get {
 				if (process.Architecture == null)
 					throw new ScriptingException ("Unknown architecture");
