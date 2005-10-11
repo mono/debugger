@@ -551,6 +551,11 @@ namespace Mono.Debugger.Backends
 			return inferior.Debugger.SymbolTableManager.Lookup (address);
 		}
 
+		protected Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			return inferior.Debugger.SymbolTableManager.SimpleLookup (address, exact_match);
+		}
+
 #region public properties
 		internal TargetAccess TargetAccess {
 			get { return target_access; }
@@ -806,7 +811,7 @@ namespace Mono.Debugger.Backends
 			// If some clown requested a backtrace while doing the symbol lookup ....
 			frames_invalid ();
 
-			current_frame = StackFrame.CreateFrame (
+			current_frame = new StackFrame (
 				process, target_access, simple, current_method);
 
 			return current_frame;
@@ -870,7 +875,7 @@ namespace Mono.Debugger.Backends
 
 				SimpleStackFrame simple = new SimpleStackFrame (
 					iframe, registers, 0);
-				current_frame = StackFrame.CreateFrame (
+				current_frame = new StackFrame (
 					process, target_access, simple, current_method, source);
 			} else {
 				if (!same_method && (current_method != null)) {
@@ -880,10 +885,21 @@ namespace Mono.Debugger.Backends
 						return new_operation;
 				}
 
-				SimpleStackFrame simple = new SimpleStackFrame (
-					iframe, registers, 0);
-				current_frame = StackFrame.CreateFrame (
-					process, target_access, simple);
+				SimpleStackFrame simple = new SimpleStackFrame (iframe, registers, 0);
+
+				if (current_method != null)
+					current_frame = new StackFrame (
+						process, target_access, simple, current_method);
+				else {
+					Symbol name;
+					try {
+						name = SimpleLookup (address, false);
+					} catch {
+						name = null;
+					}
+					current_frame = new StackFrame (
+						process, target_access, simple, name);
+				}
 			}
 
 			return null;

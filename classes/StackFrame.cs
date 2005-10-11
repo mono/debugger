@@ -203,73 +203,59 @@ namespace Mono.Debugger
 		TargetAccess target;
 		SimpleStackFrame simple;
 		SourceAddress source;
+		bool has_source;
 		AddressDomain address_domain;
 		Language language;
 		Symbol name;
 
 		internal StackFrame (Process process, TargetAccess target,
-				     SimpleStackFrame simple, Symbol name)
+				     SimpleStackFrame simple)
 		{
 			this.process = process;
 			this.target = target;
 			this.simple = simple;
-			this.name = name;
-
-			language = process.NativeLanguage;
 		}
+
+		internal StackFrame (Process process, TargetAccess target,
+				     SimpleStackFrame simple, Symbol name)
+			: this (process, target, simple)
+		{
+			this.name = name;
+			this.language = process.NativeLanguage;
+		}
+
+		internal StackFrame (Process process, TargetAccess target,
+				     SimpleStackFrame simple, Method method)
+			: this (process, target, simple)
+		{
+			this.method = method;
+			this.name = new Symbol (method.Name, method.StartAddress, 0);
+			this.language = method.Module.Language;
+		}
+
 
 		internal StackFrame (Process process, TargetAccess target,
 				     SimpleStackFrame simple, Method method,
 				     SourceAddress source)
+			: this (process, target, simple, method)
 		{
-			this.process = process;
-			this.target = target;
-			this.simple = simple;
-			this.method = method;
 			this.source = source;
-
-			if (method != null) {
-				name = new Symbol (method.Name, method.StartAddress, 0);
-				language = method.Module.Language;
-			} else {
-				name = null;
-				language = process.NativeLanguage;
-			}
+			this.has_source = true;
 		}
 
-		internal static StackFrame CreateFrame (Process process, TargetAccess target,
-							SimpleStackFrame simple, Method method)
-		{
-			SourceAddress source = null;
-			if ((method != null) && method.HasSource)
-				source = method.Source.Lookup (simple.Address);
-			return CreateFrame (process, target, simple, method, source);
-		}
-
-		internal static StackFrame CreateFrame (Process process, TargetAccess target,
-							SimpleStackFrame simple,
-							Method method, SourceAddress source)
-		{
-			return new StackFrame (process, target, simple, method, source);
-		}
-
-		internal static StackFrame CreateFrame (Process process, TargetAccess target,
+		private static StackFrame CreateFrame (Process process, TargetAccess target,
 							SimpleStackFrame simple)
 		{
 			if (simple.Address.IsNull)
-				return new StackFrame (process, target, simple, null, null);
+				return new StackFrame (process, target, simple);
 
 			Method method = null;
 			try {
 				method = process.Lookup (simple.Address);
 			} catch {
 			}
-			if (method != null) {
-				SourceAddress source = null;
-				if (method.HasSource)
-					source = method.Source.Lookup (simple.Address);
-				return new StackFrame (process, target, simple, method, source);
-			}
+			if (method != null)
+				return new StackFrame (process, target, simple, method);
 
 			Symbol name;
 			try {
@@ -301,6 +287,11 @@ namespace Mono.Debugger
 		public SourceAddress SourceAddress {
 			get {
 				check_disposed ();
+				if (has_source)
+					return source;
+				if (method.HasSource)
+					source = method.Source.Lookup (simple.Address);
+				has_source = true;
 				return source;
 			}
 		}

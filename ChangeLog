@@ -1,5 +1,10 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs
+	(StackFrame.SourceAddress): Create this lazily.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/SymbolTableManager.cs
 	(SymbolTableManager.SymbolTable): Removed.
 	(SymbolTableManager): Make some API entry points `internal'.
