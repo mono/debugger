@@ -274,7 +274,7 @@ namespace Mono.Debugger
 		//   unnecessarily compute this several times if more than one client
 		//   accesses this property.
 		// </summary>
-		public IMethod CurrentMethod {
+		public Method CurrentMethod {
 			get {
 				check_engine ();
 				return engine.CurrentMethod;
@@ -512,13 +512,13 @@ namespace Mono.Debugger
 			return engine.GetInstructionSize (address);
 		}
 
-		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
+		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			check_engine ();
 			return engine.DisassembleInstruction (method, address);
 		}
 
-		public AssemblerMethod DisassembleMethod (IMethod method)
+		public AssemblerMethod DisassembleMethod (Method method)
 		{
 			check_engine ();
 			return engine.DisassembleMethod (method);

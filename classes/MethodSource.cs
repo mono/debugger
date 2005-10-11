@@ -12,7 +12,7 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 
-		protected MethodSource (IMethod method, SourceFile file)
+		protected MethodSource (Method method, SourceFile file)
 		{
 			this.file = file;
 			this.start = method.StartAddress;

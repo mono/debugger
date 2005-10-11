@@ -6,6 +6,33 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
+	public enum WrapperType
+	{
+		None = 0,
+		DelegateInvoke,
+		DelegateBeginInvoke,
+		DelegateEndInvoke,
+		RuntimeInvoke,
+		NativeToManaged,
+		ManagedToNative,
+		RemotingInvoke,
+		RemotingInvokeWithCheck,
+		XDomainInvoke,
+		XDomainDispatch,
+		Ldfld,
+		Stfld,
+		LdfldRemote,
+		StfldRemote,
+		Synchronized,
+		DynamicMethod,
+		IsInst,
+		CastClass,
+		ProxyIsInst,
+		StelemRef,
+		UnBox,
+		Unknown
+	}
+
 	public struct LineEntry : IComparable {
 		public readonly TargetAddress Address;
 		public readonly int Line;
@@ -34,7 +61,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class MethodBase : MarshalByRefObject, IMethod, ISymbolLookup, IComparable
+	public abstract class Method : MarshalByRefObject, ISymbolLookup, IComparable
 	{
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
@@ -45,8 +72,8 @@ namespace Mono.Debugger
 		string image_file;
 		string name;
 
-		protected MethodBase (string name, string image_file, Module module,
-				      TargetAddress start, TargetAddress end)
+		protected Method (string name, string image_file, Module module,
+				  TargetAddress start, TargetAddress end)
 			: this (name, image_file, module)
 		{
 			this.start = start;
@@ -56,14 +83,14 @@ namespace Mono.Debugger
 			this.is_loaded = true;
 		}
 
-		protected MethodBase (string name, string image_file, Module module)
+		protected Method (string name, string image_file, Module module)
 		{
 			this.name = name;
 			this.image_file = image_file;
 			this.module = module;
 		}
 
-		protected MethodBase (IMethod method)
+		protected Method (Method method)
 			: this (method.Name, method.ImageFile, method.Module,
 				method.StartAddress, method.EndAddress)
 		{ }
@@ -123,7 +150,7 @@ namespace Mono.Debugger
 		}
 
 		//
-		// IMethod
+		// Method
 		//
 
 		public string Name {
@@ -217,7 +244,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public static bool IsInSameMethod (IMethod method, TargetAddress address)
+		public static bool IsInSameMethod (Method method, TargetAddress address)
                 {
 			if (address.IsNull || !method.IsLoaded)
 				return false;
@@ -270,7 +297,7 @@ namespace Mono.Debugger
 		// ISourceLookup
 		//
 
-		IMethod ISymbolLookup.Lookup (TargetAddress address)
+		Method ISymbolLookup.Lookup (TargetAddress address)
 		{
 			if (!is_loaded)
 				return null;
@@ -283,7 +310,7 @@ namespace Mono.Debugger
 
 		public int CompareTo (object obj)
 		{
-			IMethod method = (IMethod) obj;
+			Method method = (Method) obj;
 
 			TargetAddress address;
 			try {

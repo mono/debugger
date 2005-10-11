@@ -78,7 +78,7 @@ namespace Mono.Debugger.Backends
 		//   This is invoked after compiling a trampoline - it returns whether or
 		//   not we should enter that trampoline.
 		// </summary>
-		internal delegate bool TrampolineHandler (IMethod method);
+		internal delegate bool TrampolineHandler (Method method);
 
 		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
 		{
@@ -559,7 +559,7 @@ namespace Mono.Debugger.Backends
 			current_symtab = symbol_table;
 		}
 
-		public IMethod Lookup (TargetAddress address)
+		public Method Lookup (TargetAddress address)
 		{
 			inferior.Debugger.UpdateSymbolTable (inferior);
 
@@ -633,7 +633,7 @@ namespace Mono.Debugger.Backends
 			get { return current_frame; }
 		}
 
-		public IMethod CurrentMethod {
+		public Method CurrentMethod {
 			get { return current_method; }
 		}
 
@@ -848,7 +848,7 @@ namespace Mono.Debugger.Backends
 			// If we have a current_method and the address is still inside
 			// that method, we don't need to do a method lookup.
 			if ((current_method == null) ||
-			    (!MethodBase.IsInSameMethod (current_method, address))) {
+			    (!Method.IsInSameMethod (current_method, address))) {
 				current_method = Lookup (address);
 			}
 
@@ -892,7 +892,7 @@ namespace Mono.Debugger.Backends
 
 			// Only do a method lookup if we actually need it.
 			if ((current_method != null) &&
-			    MethodBase.IsInSameMethod (current_method, address))
+			    Method.IsInSameMethod (current_method, address))
 				same_method = true;
 			else
 				current_method = Lookup (address);
@@ -946,7 +946,7 @@ namespace Mono.Debugger.Backends
 		//   that we don't stop somewhere inside a method's prologue code or
 		//   between two source lines.
 		// </summary>
-		Operation check_method_operation (TargetAddress address, IMethod method,
+		Operation check_method_operation (TargetAddress address, Method method,
 						  SourceAddress source, Operation operation)
 		{
 			// Do nothing if this is not a source stepping operation.
@@ -1091,7 +1091,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (compile.IsNull) {
-				IMethod method = null;
+				Method method = null;
 				if (current_symtab != null) {
 					method = Lookup (trampoline);
 				}
@@ -1108,7 +1108,7 @@ namespace Mono.Debugger.Backends
 			return;
 		}
 
-		protected static bool MethodHasSource (IMethod method)
+		protected static bool MethodHasSource (Method method)
 		{
 			if (method == null)
 				return false;
@@ -1471,7 +1471,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
+		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			lock (disassembler) {
 				return disassembler.DisassembleInstruction (method, address);
@@ -1479,7 +1479,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public AssemblerMethod DisassembleMethod (IMethod method)
+		public AssemblerMethod DisassembleMethod (Method method)
 		{
 			lock (disassembler) {
 				return disassembler.DisassembleMethod (method);
@@ -1591,7 +1591,7 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-		protected IMethod current_method;
+		protected Method current_method;
 		protected StackFrame current_frame;
 		protected Backtrace current_backtrace;
 		protected Registers registers;
@@ -1632,13 +1632,13 @@ namespace Mono.Debugger.Backends
 #region Nested SSE classes
 		internal sealed class StackData
 		{
-			public readonly IMethod Method;
+			public readonly Method Method;
 			public readonly TargetAddress Address;
 			public readonly StackFrame Frame;
 			public readonly Backtrace Backtrace;
 			public readonly Registers Registers;
 
-			public StackData (IMethod method, TargetAddress address,
+			public StackData (Method method, TargetAddress address,
 					  StackFrame frame, Backtrace backtrace,
 					  Registers registers)
 			{
@@ -1822,7 +1822,7 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			IMethod method = sse.Lookup (sse.inferior.CurrentFrame);
+			Method method = sse.Lookup (sse.inferior.CurrentFrame);
 
 			if (method == null) {
 				sse.inferior.Step ();
@@ -1950,7 +1950,7 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		protected abstract bool TrampolineHandler (IMethod method);
+		protected abstract bool TrampolineHandler (Method method);
 	}
 
 	protected class OperationStep : OperationStepBase
@@ -2053,7 +2053,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		protected override bool TrampolineHandler (IMethod method)
+		protected override bool TrampolineHandler (Method method)
 		{
 			if (method == null)
 				return false;
@@ -2129,7 +2129,7 @@ namespace Mono.Debugger.Backends
 			 * If it can't be found in the symbol tables, assume it's a system function
 			 * and step over it.
 			 */
-			IMethod method = sse.Lookup (call);
+			Method method = sse.Lookup (call);
 
 			/*
 			 * If this is a PInvoke/icall wrapper, check whether we want to step into
@@ -2288,7 +2288,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		protected override bool TrampolineHandler (IMethod method)
+		protected override bool TrampolineHandler (Method method)
 		{
 			return false;
 		}
@@ -2676,7 +2676,7 @@ namespace Mono.Debugger.Backends
 			RestoreStack (sse);
 			completed = true;
 
-			IMethod method = sse.Lookup (address);
+			Method method = sse.Lookup (address);
 			Report.Debug (DebugFlags.SSE,
 				      "{0} compiled method: {1} {2} {3} {4} {5}",
 				      sse, address, method,
@@ -2797,9 +2797,9 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationWrapper : OperationStepBase
 	{
-		IMethod method;
+		Method method;
 
-		public OperationWrapper (IMethod method)
+		public OperationWrapper (Method method)
 		{
 			this.method = method;
 		}
@@ -2835,7 +2835,7 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		protected override bool TrampolineHandler (IMethod method)
+		protected override bool TrampolineHandler (Method method)
 		{
 			if (method == null)
 				return false;

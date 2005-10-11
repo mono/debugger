@@ -429,7 +429,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (exact_match && (offset != 0))
 					continue;
 
-				IMethod method = range.GetMethod ();
+				Method method = range.GetMethod ();
 				return new Symbol (
 					method.Name, range.StartAddress, (int) offset);
 			}
@@ -530,7 +530,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_hash = new Hashtable ();
 
-		IMethod ISymbolFile.GetMethod (long handle)
+		Method ISymbolFile.GetMethod (long handle)
 		{
 			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
 			if (entry == null)
@@ -624,7 +624,7 @@ namespace Mono.Debugger.Languages.Mono
 			Dispose (false);
 		}
 
-		protected class MonoMethod : MethodBase
+		protected class MonoMethod : Method
 		{
 			MonoSymbolFile file;
 			SourceMethod info;
@@ -913,11 +913,11 @@ namespace Mono.Debugger.Languages.Mono
 			JitLineNumberEntry[] line_numbers;
 			C.MethodEntry method;
 			SourceMethod source_method;
-			IMethod imethod;
+			Method imethod;
 			SourceFileFactory factory;
 			Hashtable namespaces;
 
-			public MonoMethodSource (SourceFileFactory factory, IMethod imethod,
+			public MonoMethodSource (SourceFileFactory factory, Method imethod,
 						 SourceMethod source_method, C.MethodEntry method,
 						 JitLineNumberEntry[] line_numbers)
 				: base (imethod, source_method.SourceFile)
@@ -1032,7 +1032,7 @@ namespace Mono.Debugger.Languages.Mono
 				return new MethodRangeEntry (file, index, start, end, wrapper, contents);
 			}
 
-			internal IMethod GetMethod ()
+			internal Method GetMethod ()
 			{
 				return File.GetMonoMethod (Index, contents);
 			}
@@ -1128,7 +1128,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected class WrapperMethod : MethodBase
+		protected class WrapperMethod : Method
 		{
 			public readonly WrapperEntry Entry;
 

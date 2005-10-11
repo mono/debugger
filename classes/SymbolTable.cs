@@ -102,16 +102,16 @@ namespace Mono.Debugger
 
 		protected abstract ArrayList GetMethods ();
 
-		public IMethod[] Methods {
+		public Method[] Methods {
 			get {
 				if (!HasMethods)
 					throw new InvalidOperationException ();
 
 				ArrayList methods = ensure_methods ();
 				if (methods == null)
-					return new IMethod [0];
+					return new Method [0];
 
-				IMethod[] retval = new IMethod [methods.Count];
+				Method[] retval = new Method [methods.Count];
 				methods.CopyTo (retval, 0);
 				return retval;
 			}
@@ -163,7 +163,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public virtual IMethod Lookup (TargetAddress address)
+		public virtual Method Lookup (TargetAddress address)
 		{
 			if (IsContinuous && ((address < start_address) || (address >= end_address)))
 				return null;
@@ -189,7 +189,7 @@ namespace Mono.Debugger
 			if (methods == null)
 				return null;
 
-			foreach (IMethod method in methods) {
+			foreach (Method method in methods) {
 				if (!method.IsLoaded)
 					continue;
 
@@ -204,7 +204,7 @@ namespace Mono.Debugger
 
 		public virtual Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			IMethod method = Lookup (address);
+			Method method = Lookup (address);
 			if ((method == null) || !method.IsLoaded)
 				return null;
 

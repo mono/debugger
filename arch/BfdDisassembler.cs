@@ -64,7 +64,7 @@ namespace Mono.Debugger.Backends
 
 		StringBuilder sb;
 		Exception memory_exception;
-		IMethod current_method;
+		Method current_method;
 		void output_func (string output)
 		{
 			if (sb != null)
@@ -134,7 +134,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public AssemblerMethod DisassembleMethod (IMethod method)
+		public AssemblerMethod DisassembleMethod (Method method)
 		{
 			lock (this) {
 				ArrayList list = new ArrayList ();
@@ -157,7 +157,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public AssemblerLine DisassembleInstruction (IMethod method, TargetAddress address)
+		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			lock (this) {
 				memory_exception = null;

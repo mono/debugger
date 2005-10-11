@@ -454,7 +454,7 @@ namespace Mono.Debugger.Frontend
 		int count = -1;
 		FrameHandle frame;
 		TargetAddress address;
-		IMethod method;
+		Method method;
 		Expression expression;
 
 		public bool Method {

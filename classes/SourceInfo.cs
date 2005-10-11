@@ -145,12 +145,12 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   May only be used while the method is loaded and return's the IMethod.
+		//   May only be used while the method is loaded and return's the Method.
 		//
 		//   Throws:
 		//     InvalidOperationException - IsLoaded is false.
 		// </summary>
-		public IMethod Method {
+		public Method Method {
 			get {
 				if (!IsLoaded)
 					throw new InvalidOperationException ();
@@ -190,7 +190,7 @@ namespace Mono.Debugger
 					      StartRow, EndRow, IsLoaded);
 		}
 
-		IMethod method;
+		Method method;
 		Module module;
 		SourceFile source;
 		string name;

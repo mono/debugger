@@ -104,7 +104,7 @@ namespace Mono.Debugger
 		protected SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
 							Architecture arch)
 		{
-			IMethod method = last_frame.Method;
+			Method method = last_frame.Method;
 			SimpleStackFrame new_frame = null;
 			if (method != null) {
 				try {

@@ -247,7 +247,7 @@ namespace Mono.Debugger.Frontend
 						}
 
 						foreach (ISymbolRange range in module.SymbolTable.SymbolRanges) {
-							IMethod method = range.SymbolLookup.Lookup (range.StartAddress);
+							Method method = range.SymbolLookup.Lookup (range.StartAddress);
 							if (method != null) {
 								if (method.Name.StartsWith (text)) {
 									method_list.Add (method.Name);

@@ -5,7 +5,7 @@ namespace Mono.Debugger
 {
 	public interface ISymbolLookup
 	{
-		IMethod Lookup (TargetAddress address);
+		Method Lookup (TargetAddress address);
 	}
 
 	public interface ISourceLookup
@@ -96,7 +96,7 @@ namespace Mono.Debugger
 		//   Get a list of all methods in this symbol table.  May only be used if
 		//   `HasMethods' is true.
 		// </summary>
-		IMethod[] Methods {
+		Method[] Methods {
 			get;
 		}
 

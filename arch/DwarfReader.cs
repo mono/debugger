@@ -227,7 +227,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		IMethod ISymbolFile.GetMethod (long handle)
+		Method ISymbolFile.GetMethod (long handle)
 		{
 			DwarfTargetMethod method = (DwarfTargetMethod) method_hash [handle];
 			if ((method == null) || !method.CheckLoaded ())
@@ -311,7 +311,7 @@ namespace Mono.Debugger.Backends
 			ArrayList compile_units;
 			bool initialized;
 
-			public IMethod Lookup (TargetAddress address)
+			public Method Lookup (TargetAddress address)
 			{
 				build_symtabs ();
 				return symtabs.Lookup (address);
@@ -2192,7 +2192,7 @@ namespace Mono.Debugger.Backends
 					return 0;
 			}
 
-			public IMethod Method {
+			public Method Method {
 				get {
 					if (method == null)
 						throw new InvalidOperationException ();
@@ -2301,7 +2301,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected class DwarfTargetMethod : MethodBase
+		protected class DwarfTargetMethod : Method
 		{
 			LineNumberEngine engine;
 			DieSubprogram subprog;

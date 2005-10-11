@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.Mono
 		bool has_liveness_info, is_byref;
 
 		public MonoVariable (Debugger backend, string name, TargetType type,
-				     bool is_local, bool is_byref, IMethod method,
+				     bool is_local, bool is_byref, Method method,
 				     VariableInfo info, int start_scope_offset,
 				     int end_scope_offset)
 			: this (backend, name, type, is_local, is_byref, method, info)
@@ -43,7 +43,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public MonoVariable (Debugger backend, string name, TargetType type,
-				     bool is_local, bool is_byref, IMethod method,
+				     bool is_local, bool is_byref, Method method,
 				     VariableInfo info)
 		{
 			this.backend = backend;

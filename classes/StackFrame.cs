@@ -198,7 +198,7 @@ namespace Mono.Debugger
 	[Serializable]
 	public sealed class StackFrame : MarshalByRefObject, IDisposable
 	{
-		IMethod method;
+		Method method;
 		Process process;
 		TargetAccess target;
 		SimpleStackFrame simple;
@@ -219,7 +219,7 @@ namespace Mono.Debugger
 		}
 
 		public StackFrame (Process process, TargetAccess target,
-				   SimpleStackFrame simple, IMethod method,
+				   SimpleStackFrame simple, Method method,
 				   SourceAddress source)
 		{
 			this.process = process;
@@ -239,7 +239,7 @@ namespace Mono.Debugger
 
 		internal static StackFrame CreateFrame (Process process, TargetAccess target,
 							SimpleStackFrame simple,
-							IMethod method)
+							Method method)
 		{
 			SourceAddress source = null;
 			if ((method != null) && method.HasSource)
@@ -249,7 +249,7 @@ namespace Mono.Debugger
 
 		internal static StackFrame CreateFrame (Process process, TargetAccess target,
 							SimpleStackFrame simple,
-							IMethod method, SourceAddress source)
+							Method method, SourceAddress source)
 		{
 			return new StackFrame (process, target, simple, method, source);
 		}
@@ -262,7 +262,7 @@ namespace Mono.Debugger
 			if (simple.Address.IsNull)
 				return new StackFrame (process, target, simple, null, null);
 
-			IMethod method = null;
+			Method method = null;
 			if (symtab != null) {
 				try {
 					method = symtab.Lookup (simple.Address);
@@ -369,7 +369,7 @@ namespace Mono.Debugger
 			return Registers [index].Value;
 		}
 
-		public IMethod Method {
+		public Method Method {
 			get {
 				check_disposed ();
 				return method;

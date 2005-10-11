@@ -1,5 +1,15 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/MethodBase.cs: Renamed to Method.cs.
+	(MethodBase): Renamed to `Method'.
+
+	* classes/Method.cs (Method): This abstract base class now
+	replaces the `IMethod' interface.
+
+	* interfaces/IMethod.cs: Removed.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IArchitecture.cs (IArchitecture): Replaced this
 	interfaces with the abstract class `Architecture'.
 

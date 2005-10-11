@@ -89,7 +89,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public IMethod[] Methods {
+		public Method[] Methods {
 			get {
 				ArrayList methods = new ArrayList ();
 
@@ -100,19 +100,19 @@ namespace Mono.Debugger
 					methods.AddRange (symtab.Methods);
 				}
 
-				IMethod[] retval = new IMethod [methods.Count];
+				Method[] retval = new Method [methods.Count];
 				methods.CopyTo (retval, 0);
 				return retval;
 			}
 		}
 
-		public IMethod Lookup (TargetAddress address)
+		public Method Lookup (TargetAddress address)
 		{
 			foreach (ISymbolTable symtab in symtabs) {
 				if (!symtab.IsLoaded)
 					continue;
 
-				IMethod method = symtab.Lookup (address);
+				Method method = symtab.Lookup (address);
 
 				if (method != null)
 					return method;

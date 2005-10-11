@@ -472,7 +472,7 @@ namespace Mono.Debugger.Frontend
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			frame = context.CurrentFrame;
-			IMethod method = frame.Frame.Method;
+			Method method = frame.Frame.Method;
 			if (method == null)
 				throw new ScriptingException (
 					"Keyword `this' not allowed: no current method.");
@@ -681,7 +681,7 @@ namespace Mono.Debugger.Frontend
 		MemberExpression LookupMember (ScriptingContext context, FrameHandle frame,
 					       string full_name)
 		{
-			IMethod method = frame.Frame.Method;
+			Method method = frame.Frame.Method;
 			if ((method == null) || (method.DeclaringType == null))
 				return null;
 

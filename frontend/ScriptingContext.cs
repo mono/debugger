@@ -45,7 +45,7 @@ namespace Mono.Debugger.Frontend
 			if (location == null)
 				return false;
 
-			IMethod method = frame.Method;
+			Method method = frame.Method;
 			if ((method == null) || !method.HasSource || (method.Source == null))
 				return false;
 
@@ -76,7 +76,7 @@ namespace Mono.Debugger.Frontend
 
 		public AssemblerLine Disassemble (TargetAccess target, TargetAddress address)
 		{
-			IMethod method = frame.Method;
+			Method method = frame.Method;
 			if ((method == null) || !method.IsLoaded)
 				return target.DisassembleInstruction (null, address);
 			else if ((address < method.StartAddress) || (address >= method.EndAddress))
@@ -87,7 +87,7 @@ namespace Mono.Debugger.Frontend
 
 		public void DisassembleMethod (ScriptingContext context, TargetAccess target)
 		{
-			IMethod method = frame.Method;
+			Method method = frame.Method;
 
 			if ((method == null) || !method.IsLoaded)
 				throw new ScriptingException ("Selected stack frame has no method.");
@@ -848,7 +848,7 @@ namespace Mono.Debugger.Frontend
 
 		public string[] GetNamespaces (FrameHandle frame)
 		{
-			IMethod method = frame.Frame.Method;
+			Method method = frame.Frame.Method;
 			if ((method == null) || !method.HasSource)
 				return null;
 
