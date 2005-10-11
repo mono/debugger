@@ -217,7 +217,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public abstract TargetAddress SimpleLookup (string name);
+		public abstract Symbol SimpleLookup (TargetAddress address, bool exact_match);
 
 		// <summary>
 		//   Returns the module's ISymbolTable which can be used to find a method
@@ -227,10 +227,6 @@ namespace Mono.Debugger
 		//     InvalidOperationException - if @SymbolsLoaded was false
 		// </summary>
 		public abstract ISymbolTable SymbolTable {
-			get;
-		}
-
-		public abstract ISimpleSymbolTable SimpleSymbolTable {
 			get;
 		}
 

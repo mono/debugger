@@ -2179,14 +2179,8 @@ namespace Mono.Debugger.Frontend
 
 			TargetAddress address = pexpr.EvaluateAddress (context);
 			ProcessHandle process = new_context.CurrentProcess;
-			ISimpleSymbolTable symtab = process.Process.SimpleSymbolTable;
-			if (symtab == null) {
-				context.Print (
-					"Cannot lookup address {0}: no symbol table loaded");
-				return;
-			}
 
-			Symbol symbol = symtab.SimpleLookup (address, false);
+			Symbol symbol = process.Process.SimpleLookup (address, false);
 			if (symbol == null)
 				context.Print ("No method contains address {0}.", address);
 			else

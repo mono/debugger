@@ -30,7 +30,7 @@ namespace Mono.Debugger.Backends
 		Hashtable load_handlers;
 		Hashtable symbols;
 		ArrayList simple_symbols;
-		ISimpleSymbolTable simple_symtab;
+		BfdSymbolTable simple_symtab;
 		DwarfReader dwarf;
 		DwarfFrameReader frame_reader, eh_frame_reader;
 		bool dwarf_loaded;
@@ -235,7 +235,7 @@ namespace Mono.Debugger.Backends
 					"Symbol file {0} has unknown target architecture {1}",
 					filename, target);
 
-			entry_point = SimpleLookup ("main");
+			entry_point = this ["main"];
 
 			backend.ModuleManager.AddModule (this);
 
@@ -525,12 +525,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override ISimpleSymbolTable SimpleSymbolTable {
-			get {
-				return simple_symtab;
-			}
-		}
-
 		public override Language Language {
 			get {
 				return container.NativeLanguage;
@@ -569,9 +563,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override TargetAddress SimpleLookup (string name)
+		public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			return this [name];
+			if (simple_symtab != null)
+				return simple_symtab.SimpleLookup (address, exact_match);
+
+			return null;
 		}
 
 		public TargetAddress EntryPoint {
@@ -658,13 +655,14 @@ namespace Mono.Debugger.Backends
 			base.OnModuleChangedEvent ();
 		}
 
-		public BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
+		internal BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
 		{
 			IntPtr dis = disassembler (bfd);
 
 			IntPtr info = bfd_glue_init_disassembler (bfd);
 
-			return new BfdDisassembler (memory, dis, info);
+			return new BfdDisassembler (
+				backend.SymbolTableManager, memory, dis, info);
 		}
 
 		public TargetAddress this [string name] {
@@ -1083,7 +1081,7 @@ namespace Mono.Debugger.Backends
 		// The BFD symbol table.
 		//
 
-		private class BfdSymbolTable : ISimpleSymbolTable
+		private class BfdSymbolTable
 		{
 			Bfd bfd;
 			Symbol[] list;

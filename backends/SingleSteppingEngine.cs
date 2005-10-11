@@ -136,13 +136,6 @@ namespace Mono.Debugger.Backends
 			arch = inferior.Architecture;
 			disassembler = inferior.Disassembler;
 
-			disassembler.SymbolTable = inferior.Debugger.SymbolTableManager.SimpleSymbolTable;
-			current_simple_symtab = inferior.Debugger.SymbolTableManager.SimpleSymbolTable;
-			current_symtab = inferior.Debugger.SymbolTableManager.SymbolTable;
-
-			inferior.Debugger.SymbolTableManager.SymbolTableChangedEvent +=
-				new SymbolTableManager.SymbolTableHandler (update_symtabs);
-
 			exception_handlers = new Hashtable ();
 		}
 
@@ -551,56 +544,14 @@ namespace Mono.Debugger.Backends
 			operation.Execute (this);
 		}
 
-		void update_symtabs (object sender, ISymbolTable symbol_table,
-				     ISimpleSymbolTable simple_symtab)
-		{
-			disassembler.SymbolTable = simple_symtab;
-			current_simple_symtab = simple_symtab;
-			current_symtab = symbol_table;
-		}
-
-		public Method Lookup (TargetAddress address)
+		protected Method Lookup (TargetAddress address)
 		{
 			inferior.Debugger.UpdateSymbolTable (inferior);
 
-			if (current_symtab == null)
-				return null;
-
-			return current_symtab.Lookup (address);
-		}
-
-		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
-		{
-			if (current_simple_symtab == null)
-				return null;
-
-			return current_simple_symtab.SimpleLookup (address, exact_match);
+			return inferior.Debugger.SymbolTableManager.Lookup (address);
 		}
 
 #region public properties
-		public ISimpleSymbolTable SimpleSymbolTable {
-			get {
-				check_inferior ();
-				lock (disassembler) {
-					return disassembler.SymbolTable;
-				}
-			}
-
-			set {
-				check_inferior ();
-				lock (disassembler) {
-					disassembler.SymbolTable = value;
-				}
-			}
-		}
-
-		public ISymbolTable SymbolTable {
-			get {
-				check_inferior ();
-				return current_symtab;
-			}
-		}
-
 		internal TargetAccess TargetAccess {
 			get { return target_access; }
 		}
@@ -932,8 +883,7 @@ namespace Mono.Debugger.Backends
 				SimpleStackFrame simple = new SimpleStackFrame (
 					iframe, registers, 0);
 				current_frame = StackFrame.CreateFrame (
-					process, target_access, simple, current_symtab,
-					current_simple_symtab);
+					process, target_access, simple);
 			}
 
 			return null;
@@ -1092,9 +1042,7 @@ namespace Mono.Debugger.Backends
 
 			if (compile.IsNull) {
 				Method method = null;
-				if (current_symtab != null) {
-					method = Lookup (trampoline);
-				}
+				method = Lookup (trampoline);
 				if (!MethodHasSource (method)) {
 					do_next_native ();
 					return;
@@ -1401,8 +1349,7 @@ namespace Mono.Debugger.Backends
 			current_backtrace = new Backtrace (
 				process, arch, current_frame, main_method_retaddr, max_frames);
 
-			current_backtrace.GetBacktrace (
-				target_access, arch, current_symtab, current_simple_symtab);
+			current_backtrace.GetBacktrace (target_access, arch);
 
 			return current_backtrace;
 		}
@@ -1607,8 +1554,6 @@ namespace Mono.Debugger.Backends
 		Architecture arch;
 		Disassembler disassembler;
 		ProcessStart start;
-		ISymbolTable current_symtab;
-		ISimpleSymbolTable current_simple_symtab;
 		Hashtable exception_handlers;
 		bool engine_stopped;
 		ManualResetEvent engine_stopped_event;

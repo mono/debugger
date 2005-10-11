@@ -238,8 +238,7 @@ namespace Mono.Debugger
 		}
 
 		internal static StackFrame CreateFrame (Process process, TargetAccess target,
-							SimpleStackFrame simple,
-							Method method)
+							SimpleStackFrame simple, Method method)
 		{
 			SourceAddress source = null;
 			if ((method != null) && method.HasSource)
@@ -255,19 +254,15 @@ namespace Mono.Debugger
 		}
 
 		internal static StackFrame CreateFrame (Process process, TargetAccess target,
-							SimpleStackFrame simple,
-							ISymbolTable symtab,
-							ISimpleSymbolTable simple_symtab)
+							SimpleStackFrame simple)
 		{
 			if (simple.Address.IsNull)
 				return new StackFrame (process, target, simple, null, null);
 
 			Method method = null;
-			if (symtab != null) {
-				try {
-					method = symtab.Lookup (simple.Address);
-				} catch {
-				}
+			try {
+				method = process.Lookup (simple.Address);
+			} catch {
 			}
 			if (method != null) {
 				SourceAddress source = null;
@@ -276,12 +271,9 @@ namespace Mono.Debugger
 				return new StackFrame (process, target, simple, method, source);
 			}
 
-			if (simple_symtab == null)
-				return new StackFrame (process, target, simple, null, null);
-
 			Symbol name;
 			try {
-				name = simple_symtab.SimpleLookup (simple.Address, false);
+				name = process.SimpleLookup (simple.Address, false);
 			} catch {
 				name = null;
 			}

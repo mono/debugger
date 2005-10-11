@@ -145,13 +145,4 @@ namespace Mono.Debugger
 				return Name;
 		}
 	}
-
-	// <summary>
-	//   This is used to resolve addresses to function names in backtraces.  Sometimes this
-	//   simple symbol table is also available if the module has no debugging info.
-	// </summary>
-	public interface ISimpleSymbolTable
-	{
-		Symbol SimpleLookup (TargetAddress address, bool exact_match);
-	}
 }

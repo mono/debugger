@@ -46,17 +46,15 @@ namespace Mono.Debugger
 
 		public event ObjectInvalidHandler BacktraceInvalidEvent;
 
-		public void GetBacktrace (TargetAccess target, Architecture arch,
-					  ISymbolTable symtab, ISimpleSymbolTable simple)
+		public void GetBacktrace (TargetAccess target, Architecture arch)
 		{
-			while (TryUnwind (target, arch, symtab, simple)) {
+			while (TryUnwind (target, arch)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
 		}
 
 		public void GetBacktrace (TargetAccess target, Architecture arch,
-					  ISymbolTable symtab, ISimpleSymbolTable simple,
 					  TargetAddress stack)
 		{
 			SimpleStackFrame new_frame = arch.UnwindStack (
@@ -65,16 +63,15 @@ namespace Mono.Debugger
 				return;
 
 			StackFrame frame = StackFrame.CreateFrame (
-				last_frame.Process, target, new_frame, symtab, simple);
+				last_frame.Process, target, new_frame);
 
 			frames.Add (frame);
 			last_frame = frame;
 
-			GetBacktrace (target, arch, symtab, simple);
+			GetBacktrace (target, arch);
 		}
 
-		public bool TryUnwind (TargetAccess target, Architecture arch,
-				       ISymbolTable symtab, ISimpleSymbolTable simple_symtab)
+		public bool TryUnwind (TargetAccess target, Architecture arch)
 		{
 			if (finished)
 				return false;
@@ -94,7 +91,7 @@ namespace Mono.Debugger
 				return false;
 
 			StackFrame frame = StackFrame.CreateFrame (
-				last_frame.Process, target, new_frame, symtab, simple_symtab);
+				last_frame.Process, target, new_frame);
 
 			frames.Add (frame);
 			last_frame = frame;

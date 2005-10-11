@@ -29,6 +29,8 @@ namespace Mono.Debugger
 			this.manager = engine.ThreadManager;
 			this.backend = manager.Debugger;
 
+			this.symtab_manager = backend.SymbolTableManager;
+
 			this.pid = engine.PID;
 			this.tid = engine.TID;
 
@@ -45,6 +47,7 @@ namespace Mono.Debugger
 		Debugger backend;
 		ThreadManager manager;
 		DebuggerManager debugger_manager;
+		SymbolTableManager symtab_manager;
 		ManualResetEvent operation_completed_event;
 		TargetState target_state = TargetState.NO_TARGET;
 		ITargetInfo target_info;
@@ -237,8 +240,7 @@ namespace Mono.Debugger
 			Backtrace bt = new Backtrace (
 				this, engine.Architecture, CurrentFrame);
 			bt.GetBacktrace (
-				target_access, engine.Architecture, engine.SymbolTable,
-				SimpleSymbolTable, stack_pointer);
+				target_access, engine.Architecture, stack_pointer);
 			return bt;
 		}
 
@@ -260,10 +262,16 @@ namespace Mono.Debugger
 			return engine.GetMemoryMaps ();
 		}
 
-		protected Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		public Method Lookup (TargetAddress address)
 		{
 			check_engine ();
-			return engine.SimpleLookup (address, exact_match);
+			return symtab_manager.Lookup (address);
+		}
+
+		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			check_engine ();
+			return symtab_manager.SimpleLookup (address, exact_match);
 		}
 
 		// <summary>
@@ -481,13 +489,6 @@ namespace Mono.Debugger
 			check_disposed ();
 			if (engine != null)
 				engine.RemoveEventHandler (index);
-		}
-
-		public ISimpleSymbolTable SimpleSymbolTable {
-			get {
-				check_engine ();
-				return engine.SimpleSymbolTable;
-			}
 		}
 
 		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)

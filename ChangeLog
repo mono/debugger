@@ -1,5 +1,25 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ISymbolTable.cs (ISimpleSymbolTable): Removed.
+
+	* arch/Disassembler.cs (Disassembler.SymbolTable): Removed.
+
+	* classes/SimpleSymbolTableCollection.cs: Removed.
+
+	* classes/Module.cs (Module.SimpleSymbolTable): Removed.
+	(Module.SimpleLookup): New public abstract method.
+
+	* classes/SymbolTableManager.cs
+	(SymbolTableManager.Lookup): New public method.
+	(SymbolTableManager.SimpleLookup): New public method.
+	(SymbolTableManager.SimpleSymbolTable): Removed.
+
+	* backends/Process.cs
+	(Process.SimpleLookup): Made this public.
+	(Process.Lookup): New public method.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* arch/Disassembler.cs
 	(Disassembler): New internal abstract class; replaces the
 	`IDisassembler' interface.

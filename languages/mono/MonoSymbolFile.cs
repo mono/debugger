@@ -198,7 +198,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoSymbolFile : Module, ISymbolFile, ISimpleSymbolTable, IDisposable
+	internal class MonoSymbolFile : Module, ISymbolFile, IDisposable
 	{
 		internal readonly int Index;
 		internal readonly Cecil.IAssemblyDefinition Assembly;
@@ -330,10 +330,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return File != null; }
 		}
 
-		public override ISimpleSymbolTable SimpleSymbolTable {
-			get { return this; }
-		}
-
 		internal void AddRangeEntry (ITargetMemoryReader reader, byte[] contents)
 		{
 			MethodRangeEntry range = MethodRangeEntry.Create (this, reader, contents);
@@ -414,12 +410,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetAddress SimpleLookup (string name)
-		{
-			return TargetAddress.Null;
-		}
-
-		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			foreach (MethodRangeEntry range in ranges) {
 				if ((address < range.StartAddress) || (address > range.EndAddress))

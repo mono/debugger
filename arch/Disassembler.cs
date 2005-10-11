@@ -21,12 +21,5 @@ namespace Mono.Debugger
 		// </summary>
 		public abstract AssemblerLine DisassembleInstruction (Method method,
 								      TargetAddress address);
-
-		// <summary>
-		//   The symbol table the disassembler uses to display symbols.
-		// </summary>
-		internal abstract ISimpleSymbolTable SymbolTable {
-			get; set;
-		}
 	}
 }

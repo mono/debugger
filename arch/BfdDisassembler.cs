@@ -15,7 +15,7 @@ namespace Mono.Debugger.Backends
 		IntPtr info;
 
 		ITargetMemoryAccess memory;
-		ISimpleSymbolTable symbol_table;
+		SymbolTableManager symtab_manager;
 
 		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
@@ -30,11 +30,13 @@ namespace Mono.Debugger.Backends
 		OutputHandler output_handler;
 		PrintAddressHandler print_handler;
 
-		internal BfdDisassembler (ITargetMemoryAccess memory, IntPtr dis, IntPtr info)
+		internal BfdDisassembler (SymbolTableManager symtab_manager,
+					  ITargetMemoryAccess memory, IntPtr dis, IntPtr info)
 		{
 			this.dis = dis;
 			this.info = info;
 			this.memory = memory;
+			this.symtab_manager = symtab_manager;
 
 			read_handler = new ReadMemoryHandler (read_memory_func);
 			output_handler = new OutputHandler (output_func);
@@ -78,11 +80,6 @@ namespace Mono.Debugger.Backends
 
 		void print_address_func (long address)
 		{
-			if (symbol_table == null) {
-				output_func (address);
-				return;
-			}
-
 			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
 
 			if (current_method != null) {
@@ -98,22 +95,12 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			Symbol name = symbol_table.SimpleLookup (maddress, false);
+			Symbol name = symtab_manager.SimpleLookup (maddress, false);
 
 			if (name == null)
 				output_func (address);
 			else
 				output_func (String.Format ("0x{0:x}:{1}", address, name.ToString ()));
-		}
-
-		internal override ISimpleSymbolTable SymbolTable {
-			get {
-				return symbol_table;
-			}
-
-			set {
-				symbol_table = value;
-			}
 		}
 
 		public override int GetInstructionSize (TargetAddress location)
@@ -178,8 +165,7 @@ namespace Mono.Debugger.Backends
 				}
 
 				Symbol label = null;
-				if (SymbolTable != null)
-					label = SymbolTable.SimpleLookup (address, true);
+				label = symtab_manager.SimpleLookup (address, true);
 
 				string label_name = null;
 				if (label != null)
