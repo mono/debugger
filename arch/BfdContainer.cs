@@ -4,12 +4,10 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger;
-using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Native;
 
-namespace Mono.Debugger.Architecture
+namespace Mono.Debugger.Backends
 {
 	internal class BfdContainer : MarshalByRefObject, IDisposable
 	{

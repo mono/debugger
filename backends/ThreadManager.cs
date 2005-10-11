@@ -11,11 +11,9 @@ using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Messaging;
 
-using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
-using Mono.Debugger.Architecture;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	internal class ThreadManager : MarshalByRefObject
 	{

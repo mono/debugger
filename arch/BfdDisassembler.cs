@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Architecture
+namespace Mono.Debugger.Backends
 {
 	internal class BfdDisassembler : IDisassembler, IDisposable
 	{

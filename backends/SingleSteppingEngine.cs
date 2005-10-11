@@ -12,10 +12,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Runtime.Remoting.Messaging;
 
-using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
-using Mono.Debugger.Architecture;
 using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Backends

@@ -5,9 +5,8 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
-using Mono.Debugger;
+
 using Mono.Debugger.Backends;
-using Mono.Debugger.Architecture;
 
 namespace Mono.Debugger.Languages.Mono
 {

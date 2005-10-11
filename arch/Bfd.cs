@@ -5,10 +5,9 @@ using System.Collections;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Architecture
+namespace Mono.Debugger.Backends
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  

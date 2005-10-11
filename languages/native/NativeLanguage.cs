@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Architecture;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {

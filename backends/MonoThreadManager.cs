@@ -10,9 +10,6 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger;
-using Mono.Debugger.Architecture;
-
 namespace Mono.Debugger.Backends
 {
 

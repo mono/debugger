@@ -1,5 +1,10 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* arch/*.cs: Removed the `Mono.Debugger.Architecture' namespace;
+	use `Mono.Debugger.Backends' instead.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/IArchitecture.cs
 	(IArchitecture.TrySpecialUnwind): New method.
 
