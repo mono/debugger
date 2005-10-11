@@ -356,10 +356,11 @@ namespace Mono.Debugger.Backends
 					arch = inferior.Architecture;
 					reached_main = true;
 
-					SimpleStackFrame ret_frame = arch.UnwindStack (
-						inferior, get_simple_frame (), null, null);
+					StackFrame ret_frame = arch.UnwindStack (
+						current_frame, inferior, null);
+
 					if (ret_frame != null)
-						main_method_retaddr = ret_frame.Address;
+						main_method_retaddr = ret_frame.TargetAddress;
 
 					manager.ReachedMain ();
 				}

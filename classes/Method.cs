@@ -120,15 +120,14 @@ namespace Mono.Debugger
 			this.wrapper_type = wrapper_type;
 		}
 
-		internal virtual SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-							       ITargetMemoryAccess memory,
-							       Architecture arch)
+		internal StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+						 Architecture arch)
 		{
 			if (!IsLoaded)
 				return null;
 
 			try {
-				SimpleStackFrame new_frame = Module.UnwindStack (frame, memory);
+				StackFrame new_frame = Module.UnwindStack (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
@@ -139,14 +138,13 @@ namespace Mono.Debugger
 				prologue_size = (int) (MethodStartAddress - StartAddress);
 			else
 				prologue_size = (int) (EndAddress - StartAddress);
-			int offset = (int) (frame.Address - StartAddress);
+			int offset = (int) (frame.TargetAddress - StartAddress);
 			prologue_size = System.Math.Min (prologue_size, offset);
 			prologue_size = System.Math.Min (prologue_size, arch.MaxPrologueSize);
 
 			byte[] prologue = memory.ReadBuffer (StartAddress, prologue_size);
 
-			Symbol name = new Symbol (Name, StartAddress, offset);
-			return arch.UnwindStack (memory, frame, name, prologue);
+			return arch.UnwindStack (frame, memory, prologue);
 		}
 
 		//

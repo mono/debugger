@@ -250,8 +250,8 @@ namespace Mono.Debugger
 								   MethodLoadedHandler handler,
 								   object user_data);
 
-		internal abstract SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-								ITargetMemoryAccess memory);
+		internal abstract StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory);
 
 		public override string ToString ()
 		{

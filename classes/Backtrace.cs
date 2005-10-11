@@ -57,16 +57,12 @@ namespace Mono.Debugger
 		public void GetBacktrace (TargetAccess target, Architecture arch,
 					  TargetAddress stack)
 		{
-			SimpleStackFrame new_frame = arch.UnwindStack (
-				target.TargetMemoryAccess, stack, last_frame.FrameAddress);
+			StackFrame new_frame = arch.UnwindStack (last_frame, target.TargetMemoryAccess);
 			if (new_frame == null)
 				return;
 
-			StackFrame frame = StackFrame.CreateFrame (
-				last_frame.Process, target, new_frame);
-
-			frames.Add (frame);
-			last_frame = frame;
+			frames.Add (new_frame);
+			last_frame = new_frame;
 
 			GetBacktrace (target, arch);
 		}
@@ -76,7 +72,7 @@ namespace Mono.Debugger
 			if (finished)
 				return false;
 
-			SimpleStackFrame new_frame = null;
+			StackFrame new_frame = null;
 			try {
 				new_frame = UnwindStack (target.TargetMemoryAccess, arch);
 			} catch (TargetException) {
@@ -87,25 +83,21 @@ namespace Mono.Debugger
 				return false;
 			}
 
-			if (!until.IsNull && (new_frame.Address == until))
+			if (!until.IsNull && (new_frame.TargetAddress == until))
 				return false;
 
-			StackFrame frame = StackFrame.CreateFrame (
-				last_frame.Process, target, new_frame);
-
-			frames.Add (frame);
-			last_frame = frame;
+			frames.Add (new_frame);
+			last_frame = new_frame;
 			return true;
 		}
 
-		SimpleStackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
+		StackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
 		{
 			Method method = last_frame.Method;
-			SimpleStackFrame new_frame = null;
+			StackFrame new_frame = null;
 			if (method != null) {
 				try {
-					new_frame = method.UnwindStack (
-						last_frame.SimpleFrame, memory, arch);
+					new_frame = method.UnwindStack (last_frame, memory, arch);
 				} catch (TargetException) {
 				}
 
@@ -115,7 +107,7 @@ namespace Mono.Debugger
 
 			foreach (Module module in last_frame.Process.Debugger.Modules) {
 				try {
-					new_frame = module.UnwindStack (last_frame.SimpleFrame, memory);
+					new_frame = module.UnwindStack (last_frame, memory);
 				} catch {
 					continue;
 				}
@@ -123,8 +115,7 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			return arch.UnwindStack (
-				memory, last_frame.SimpleFrame, last_frame.Name, null);
+			return arch.UnwindStack (last_frame, memory);
 		}
 
 		//

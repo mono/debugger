@@ -32,14 +32,13 @@ namespace Mono.Debugger.Backends
 			return cie_list;
 		}
 
-		public SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-						     ITargetMemoryAccess target,
-						     Architecture arch)
+		public StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess target,
+					       Architecture arch)
 		{
-			if (frame.Address.IsNull)
+			if (frame.TargetAddress.IsNull)
 				return null;
 
-			TargetAddress address = frame.Address;
+			TargetAddress address = frame.TargetAddress;
 
 			DwarfBinaryReader reader = new DwarfBinaryReader (bfd, blob, false);
 
@@ -333,9 +332,8 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			public SimpleStackFrame Unwind (SimpleStackFrame frame,
-							ITargetMemoryAccess target,
-							Architecture arch)
+			public StackFrame Unwind (StackFrame frame, ITargetMemoryAccess target,
+						  Architecture arch)
 			{
 				Registers old_regs = frame.Registers;
 
@@ -360,8 +358,7 @@ namespace Mono.Debugger.Backends
 					frame_addr = new TargetAddress (
 						target.GlobalAddressDomain, ebp.Value);
 
-				return new SimpleStackFrame (
-					address, stack, frame_addr, regs, frame.Level + 1);
+				return arch.CreateFrame (frame, address, stack, frame_addr, regs);
 			}
 		}
 

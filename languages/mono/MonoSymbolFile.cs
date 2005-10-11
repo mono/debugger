@@ -583,8 +583,8 @@ namespace Mono.Debugger.Languages.Mono
 			return method.RegisterLoadHandler (process, handler, user_data);
 		}
 
-		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-								ITargetMemoryAccess memory)
+		internal override StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory)
 		{
 			return null;
 		}

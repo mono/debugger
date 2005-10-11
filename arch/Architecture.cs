@@ -7,6 +7,13 @@ namespace Mono.Debugger
 	// </summary>
 	public abstract class Architecture : MarshalByRefObject
 	{
+		protected readonly Debugger backend;
+
+		protected Architecture (Debugger backend)
+		{
+			this.backend = backend;
+		}
+
 		// <summary>
 		//   The names of all registers.
 		// </summary>
@@ -101,15 +108,33 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-								SimpleStackFrame frame, Symbol name,
-								byte[] code);
+		internal abstract StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory, byte[] code);
 
-		internal abstract SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-								TargetAddress stack,
-								TargetAddress frame_address);
+		internal abstract StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory);
 
-		internal abstract SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
-								     SimpleStackFrame frame);
+		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
+							       ITargetMemoryAccess memory);
+
+		internal StackFrame CreateFrame (StackFrame last_frame, TargetAddress address,
+						 TargetAddress stack, TargetAddress frame_pointer,
+						 Registers regs)
+		{
+			if (address.IsNull)
+				return null;
+
+			SimpleStackFrame simple = new SimpleStackFrame (
+				address, stack, frame_pointer, regs, last_frame.Level + 1);
+
+			Method method = backend.SymbolTableManager.Lookup (address);
+			if (method != null)
+				return new StackFrame (
+					last_frame.Process, last_frame.TargetAccess, simple, method);
+
+			Symbol name = backend.SymbolTableManager.SimpleLookup (address, false);
+			return new StackFrame (
+				last_frame.Process, last_frame.TargetAccess, simple, name);
+		}
 	}
 }

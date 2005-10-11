@@ -1,5 +1,10 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* arch/Architecture.cs: The stack unwinding methods now operate on
+	`StackFrame's instead of `SimpleStackFrame's.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs
 	(StackFrame.SourceAddress): Create this lazily.
 

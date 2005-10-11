@@ -31,6 +31,10 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_I386 : Architecture
 	{
+		internal Architecture_I386 (Debugger backend)
+			: base (backend)
+		{ }
+
 		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
 							 TargetAddress address)
 		{
@@ -359,9 +363,8 @@ namespace Mono.Debugger.Backends
 			get { return 50; }
 		}
 
-		SimpleStackFrame unwind_method (SimpleStackFrame frame,
-						ITargetMemoryAccess memory, byte[] code,
-						int pos)
+		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
+					  int pos)
 		{
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (old_regs);
@@ -422,12 +425,10 @@ namespace Mono.Debugger.Backends
 				ebp -= addr_size;
 			}
 
-			return new SimpleStackFrame (
-				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
+			return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
 		}
 
-		SimpleStackFrame read_prologue (SimpleStackFrame frame,
-						ITargetMemoryAccess memory, byte[] code)
+		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory, byte[] code)
 		{
 			int length = code.Length;
 			int pos = 0;
@@ -451,7 +452,7 @@ namespace Mono.Debugger.Backends
 			//
 
 			Console.WriteLine ("TRY SMART UNWIND: {0} {1} {2}",
-					   frame.Address, frame.StackPointer,
+					   frame.TargetAddress, frame.StackPointer,
 					   frame.FrameAddress);
 
 			return null;
@@ -467,10 +468,10 @@ namespace Mono.Debugger.Backends
 			return regs;
 		}
 
-		SimpleStackFrame try_pthread_cond_timedwait (ITargetMemoryAccess memory,
-							     SimpleStackFrame frame,
-							     Symbol name)
+		StackFrame try_pthread_cond_timedwait (StackFrame frame, ITargetMemoryAccess memory)
 		{
+			Symbol name = frame.Name;
+
 			/*
 			 * This is a hack for pthread_cond_timedwait() on Red Hat 9.
 			 */
@@ -492,14 +493,14 @@ namespace Mono.Debugger.Backends
 			if (data != 0x1c246c8b)
 				return null;
 
-			data = (uint) memory.ReadInteger (frame.Address);
+			data = (uint) memory.ReadInteger (frame.TargetAddress);
 			if (data != 0x8910eb83)
 				return null;
 
-			data = (uint) memory.ReadInteger (frame.Address + 0x7b);
+			data = (uint) memory.ReadInteger (frame.TargetAddress + 0x7b);
 			if (data != 0x852cc483)
 				return null;
-			data = (uint) memory.ReadInteger (frame.Address + 0x7f);
+			data = (uint) memory.ReadInteger (frame.TargetAddress + 0x7f);
 			if (data != 0xc6440fc0)
 				return null;
 
@@ -522,16 +523,15 @@ namespace Mono.Debugger.Backends
 			esp += 0x40;
 			regs [(int)I386Register.ESP].SetValue (esp.Address);
 
-			return new SimpleStackFrame (eip, esp, ebp, regs, frame.Level + 1);
+			return CreateFrame (frame, eip, esp, ebp, regs);
 		}
 
-		SimpleStackFrame try_syscall_trampoline (ITargetMemoryAccess memory,
-							 SimpleStackFrame frame, Symbol name)
+		StackFrame try_syscall_trampoline (StackFrame frame, ITargetMemoryAccess memory)
 		{
 			/*
 			 * This is a hack for system call trampolines on NPTL-enabled glibc's.
 			 */
-			if (frame.Address.Address != 0xffffe002)
+			if (frame.TargetAddress.Address != 0xffffe002)
 				return null;
 
 			Registers old_regs = frame.Registers;
@@ -546,16 +546,14 @@ namespace Mono.Debugger.Backends
 			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
 			regs [(int)I386Register.EBP].SetValue (new_ebp);
 
-			return new SimpleStackFrame (
-				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
+			return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
 		}
 
-		SimpleStackFrame do_hacks (ITargetMemoryAccess memory,
-					   SimpleStackFrame frame, Symbol name)
+		StackFrame do_hacks (StackFrame frame, ITargetMemoryAccess memory)
 		{
-			SimpleStackFrame new_frame;
+			StackFrame new_frame;
 			try {
-				new_frame = try_pthread_cond_timedwait (memory, frame, name);
+				new_frame = try_pthread_cond_timedwait (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
@@ -563,7 +561,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			try {
-				new_frame = try_syscall_trampoline (memory, frame, name);
+				new_frame = try_syscall_trampoline (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
@@ -573,16 +571,15 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		internal override SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-								SimpleStackFrame frame, Symbol name,
-								byte[] code)
+		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+							  byte[] code)
 		{
 			if ((code != null) && (code.Length > 3))
 				return read_prologue (frame, memory, code);
 
 			TargetAddress ebp = frame.FrameAddress;
 
-			SimpleStackFrame new_frame = do_hacks (memory, frame, name);
+			StackFrame new_frame = do_hacks (frame, memory);
 			if (new_frame != null)
 				return new_frame;
 
@@ -601,28 +598,26 @@ namespace Mono.Debugger.Backends
 
 			ebp -= addr_size;
 
-			return new SimpleStackFrame (
-				new_eip, new_esp, new_ebp, regs, frame.Level + 1);
+			return CreateFrame (frame, new_eip, new_esp, new_ebp, regs);
 		}
 
-		internal override SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-								TargetAddress stack,
-								TargetAddress frame)
+		internal override StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory)
 		{
-			TargetAddress eip = memory.ReadGlobalAddress (stack);
-			TargetAddress esp = stack;
-			TargetAddress ebp = frame;
+			TargetAddress eip = memory.ReadGlobalAddress (last_frame.StackPointer);
+			TargetAddress esp = last_frame.StackPointer;
+			TargetAddress ebp = last_frame.FrameAddress;
 
 			Registers regs = new Registers (this);
 			regs [(int) I386Register.EIP].SetValue (eip);
 			regs [(int) I386Register.ESP].SetValue (esp);
 			regs [(int) I386Register.EBP].SetValue (ebp);
 
-			return new SimpleStackFrame (eip, esp, ebp, regs, 0);
+			return CreateFrame (last_frame, eip, esp, ebp, regs);
 		}
 
-		internal override SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
-								     SimpleStackFrame frame)
+		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,
+							       ITargetMemoryAccess memory)
 		{
 			return null;
 		}

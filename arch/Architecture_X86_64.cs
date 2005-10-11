@@ -42,6 +42,10 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_X86_64 : Architecture
 	{
+		internal Architecture_X86_64 (Debugger backend)
+			: base (backend)
+		{ }
+
 		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
 							 TargetAddress address)
 		{
@@ -386,9 +390,8 @@ namespace Mono.Debugger.Backends
 			get { return 50; }
 		}
 
-		SimpleStackFrame unwind_method (SimpleStackFrame frame,
-						ITargetMemoryAccess memory, byte[] code,
-						int pos)
+		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
+					  int pos)
 		{
 			Registers old_regs = frame.Registers;
 			Registers regs = new Registers (old_regs);
@@ -495,12 +498,10 @@ namespace Mono.Debugger.Backends
 				rbp -= addr_size;
 			}
 
-			return new SimpleStackFrame (
-				new_rip, new_rsp, new_rbp, regs, frame.Level + 1);
+			return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
 		}
 
-		SimpleStackFrame read_prologue (SimpleStackFrame frame,
-						ITargetMemoryAccess memory, byte[] code)
+		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory, byte[] code)
 		{
 			int length = code.Length;
 			int pos = 0;
@@ -524,15 +525,14 @@ namespace Mono.Debugger.Backends
 			//
 
 			Console.WriteLine ("TRY SMART UNWIND: {0} {1} {2}",
-					   frame.Address, frame.StackPointer,
+					   frame.TargetAddress, frame.StackPointer,
 					   frame.FrameAddress);
 
 			return null;
 		}
 
-		internal override SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-								SimpleStackFrame frame, Symbol name,
-								byte[] code)
+		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+							  byte[] code)
 		{
 			if ((code != null) && (code.Length > 4))
 				return read_prologue (frame, memory, code);
@@ -554,29 +554,27 @@ namespace Mono.Debugger.Backends
 
 			rbp -= addr_size;
 
-			return new SimpleStackFrame (
-				new_rip, new_rsp, new_rbp, regs, frame.Level + 1);
+			return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
 		}
 
-		internal override SimpleStackFrame UnwindStack (ITargetMemoryAccess memory,
-								TargetAddress stack, TargetAddress frame)
+		internal override StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory)
 		{
-			TargetAddress rip = memory.ReadGlobalAddress (stack);
-			TargetAddress rsp = stack;
-			TargetAddress rbp = frame;
+			TargetAddress rip = memory.ReadGlobalAddress (last_frame.StackPointer);
+			TargetAddress rsp = last_frame.StackPointer;
+			TargetAddress rbp = last_frame.FrameAddress;
 
 			Registers regs = new Registers (this);
 			regs [(int) X86_64_Register.RIP].SetValue (rip);
 			regs [(int) X86_64_Register.RSP].SetValue (rsp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp);
 
-			return new SimpleStackFrame (rip, rsp, rbp, regs, 0);
+			return CreateFrame (last_frame, rip, rsp, rbp, regs);
 		}
 
-		SimpleStackFrame try_unwind_sigreturn (ITargetMemoryAccess memory,
-						       SimpleStackFrame frame)
+		StackFrame try_unwind_sigreturn (StackFrame frame, ITargetMemoryAccess memory)
 		{
-			byte[] data = memory.ReadMemory (frame.Address, 9).Contents;
+			byte[] data = memory.ReadMemory (frame.TargetAddress, 9).Contents;
 
 			/*
 			 * Check for signal return trampolines:
@@ -626,14 +624,17 @@ namespace Mono.Debugger.Backends
 			TargetAddress rbp = new TargetAddress (
 				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
-			return new SimpleStackFrame (rip, rsp, rbp, regs, frame.Level + 1);
+			Symbol name = new Symbol ("<signal handler>", rip, 0);
+			SimpleStackFrame simple = new SimpleStackFrame (
+				rip, rsp, rbp, regs, frame.Level + 1);
+
+			return new StackFrame (frame.Process, frame.TargetAccess, simple, name);
 		}
 
-		internal override SimpleStackFrame TrySpecialUnwind (ITargetMemoryAccess memory,
-								     SimpleStackFrame frame)
+		internal override StackFrame TrySpecialUnwind (StackFrame frame,
+							       ITargetMemoryAccess memory)
 		{
-			SimpleStackFrame new_frame;
-			new_frame = try_unwind_sigreturn (memory, frame);
+			StackFrame new_frame = try_unwind_sigreturn (frame, memory);
 			if (new_frame != null)
 				return new_frame;
 

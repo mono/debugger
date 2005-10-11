@@ -199,9 +199,9 @@ namespace Mono.Debugger.Backends
 			target = bfd_glue_get_target_name (bfd);
 			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
 				if (target == "elf32-i386")
-					arch = new Architecture_I386 ();
+					arch = new Architecture_I386 (backend);
 				else
-					arch = new Architecture_X86_64 ();
+					arch = new Architecture_X86_64 (backend);
 
 				InternalSection text = GetSectionByName (".text", true);
 
@@ -961,15 +961,15 @@ namespace Mono.Debugger.Backends
 			return memory.ReadGlobalAddress (got_start + 2 * memory.TargetAddressSize);
 		}
 
-		internal override SimpleStackFrame UnwindStack (SimpleStackFrame frame,
-								ITargetMemoryAccess memory)
+		internal override StackFrame UnwindStack (StackFrame frame,
+							  ITargetMemoryAccess memory)
 		{
-			if ((frame.Address < StartAddress) || (frame.Address > EndAddress))
+			if ((frame.TargetAddress < StartAddress) || (frame.TargetAddress > EndAddress))
 				return null;
 
-			SimpleStackFrame new_frame;
+			StackFrame new_frame;
 			try {
-				new_frame = arch.TrySpecialUnwind (memory, frame);
+				new_frame = arch.TrySpecialUnwind (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
