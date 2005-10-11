@@ -9,7 +9,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Backends
 {
-	internal class BfdDisassembler : IDisassembler, IDisposable
+	internal class BfdDisassembler : Disassembler, IDisposable
 	{
 		IntPtr dis;
 		IntPtr info;
@@ -106,11 +106,7 @@ namespace Mono.Debugger.Backends
 				output_func (String.Format ("0x{0:x}:{1}", address, name.ToString ()));
 		}
 
-		//
-		// IDisassembler
-		//
-
-		public ISimpleSymbolTable SymbolTable {
+		internal override ISimpleSymbolTable SymbolTable {
 			get {
 				return symbol_table;
 			}
@@ -120,7 +116,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int GetInstructionSize (TargetAddress location)
+		public override int GetInstructionSize (TargetAddress location)
 		{
 			memory_exception = null;
 
@@ -134,7 +130,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public AssemblerMethod DisassembleMethod (Method method)
+		public override AssemblerMethod DisassembleMethod (Method method)
 		{
 			lock (this) {
 				ArrayList list = new ArrayList ();
@@ -157,7 +153,8 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
+		public override AssemblerLine DisassembleInstruction (Method method,
+								      TargetAddress address)
 		{
 			lock (this) {
 				memory_exception = null;

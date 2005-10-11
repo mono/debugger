@@ -1605,7 +1605,7 @@ namespace Mono.Debugger.Backends
 		Inferior inferior;
 		TargetAccess target_access;
 		Architecture arch;
-		IDisassembler disassembler;
+		Disassembler disassembler;
 		ProcessStart start;
 		ISymbolTable current_symtab;
 		ISimpleSymbolTable current_simple_symtab;

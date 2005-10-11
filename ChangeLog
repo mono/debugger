@@ -1,5 +1,13 @@
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
+	* arch/Disassembler.cs
+	(Disassembler): New internal abstract class; replaces the
+	`IDisassembler' interface.
+
+	* interfaces/IDisassembler.cs: Removed.
+
+2005-10-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs
 	(SimpleStackFrame): Make this `internal', not `public'.
 

@@ -1014,7 +1014,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public IDisassembler Disassembler {
+		public Disassembler Disassembler {
 			get {
 				check_disposed ();
 				return bfd_disassembler;
