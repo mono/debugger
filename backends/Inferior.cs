@@ -21,7 +21,6 @@ namespace Mono.Debugger.Backends
 		protected IntPtr server_handle;
 		protected Bfd bfd;
 		protected BfdDisassembler bfd_disassembler;
-		protected AddressDomain address_domain;
 		protected ThreadManager thread_manager;
 
 		protected readonly ProcessStart start;
@@ -31,7 +30,7 @@ namespace Mono.Debugger.Backends
 		protected readonly Debugger backend;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
-		protected readonly AddressDomain global_address_domain;
+		protected readonly AddressDomain address_domain;
 		protected readonly bool native;
 
 		protected ChildOutputHandler stdout_handler;
@@ -216,7 +215,7 @@ namespace Mono.Debugger.Backends
 		protected Inferior (ThreadManager thread_manager, Debugger backend,
 				    ProcessStart start, BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
-				    AddressDomain global_address_domain)
+				    AddressDomain address_domain)
 		{
 			this.thread_manager = thread_manager;
 			this.backend = backend;
@@ -225,7 +224,7 @@ namespace Mono.Debugger.Backends
 			this.bfd_container = backend.BfdContainer;
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
-			this.global_address_domain = global_address_domain;
+			this.address_domain = address_domain;
 
 			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
@@ -245,7 +244,7 @@ namespace Mono.Debugger.Backends
 		public Inferior CreateThread ()
 		{
 			return new Inferior (thread_manager, backend, start, breakpoint_manager,
-					     error_handler, global_address_domain);
+					     error_handler, address_domain);
 		}
 
 		[DllImport("libglib-2.0-0.dll")]
@@ -504,8 +503,6 @@ namespace Mono.Debugger.Backends
 				g_free (data);
 			}
 
-			address_domain = new AddressDomain (String.Format ("ptrace ({0})", child_pid));
-
 			int target_int_size, target_long_size, target_addr_size, is_bigendian;
 			check_error (mono_debugger_server_get_target_info
 				(out target_int_size, out target_long_size,
@@ -515,7 +512,7 @@ namespace Mono.Debugger.Backends
 						      target_addr_size, is_bigendian != 0);
 			target_memory_info = new TargetMemoryInfo (target_int_size, target_long_size,
 								   target_addr_size, is_bigendian != 0,
-								   global_address_domain, address_domain);
+								   address_domain);
 
 			try {
 				bfd = bfd_container.AddFile (
@@ -612,17 +609,8 @@ namespace Mono.Debugger.Backends
 		//
 
 		public AddressDomain AddressDomain {
-			get { 
-				if (address_domain == null)
-					throw new TargetException (TargetError.NoTarget);
-
-				return address_domain;
-			}
-		}
-
-		public AddressDomain GlobalAddressDomain {
 			get {
-				return global_address_domain;
+				return address_domain;
 			}
 		}
 
@@ -716,30 +704,6 @@ namespace Mono.Debugger.Backends
 
 			case 8:
 				res = new TargetAddress (AddressDomain, ReadLongInteger (address));
-				break;
-
-			default:
-				throw new TargetMemoryException (
-					"Unknown target address size " + TargetAddressSize);
-			}
-
-			if (res.Address == 0)
-				return TargetAddress.Null;
-			else
-				return res;
-		}
-
-		public TargetAddress ReadGlobalAddress (TargetAddress address)
-		{
-			check_disposed ();
-			TargetAddress res;
-			switch (TargetAddressSize) {
-			case 4:
-				res = new TargetAddress (GlobalAddressDomain, (uint) ReadInteger (address));
-				break;
-
-			case 8:
-				res = new TargetAddress (GlobalAddressDomain, ReadLongInteger (address));
 				break;
 
 			default:
@@ -997,7 +961,7 @@ namespace Mono.Debugger.Backends
 		public TargetAddress CurrentFrame {
 			get {
 				ServerStackFrame frame = get_current_frame ();
-				return new TargetAddress (GlobalAddressDomain, frame.Address);
+				return new TargetAddress (AddressDomain, frame.Address);
 			}
 		}
 
@@ -1084,7 +1048,7 @@ namespace Mono.Debugger.Backends
 
 			internal StackFrame (ITargetMemoryInfo info, ServerStackFrame frame)
 			{
-				this.address = new TargetAddress (info.GlobalAddressDomain, frame.Address);
+				this.address = new TargetAddress (info.AddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);
 				this.frame = new TargetAddress (info.AddressDomain, frame.FrameAddress);
 			}
@@ -1186,8 +1150,8 @@ namespace Mono.Debugger.Backends
 						flags |= TargetMemoryFlags.ReadOnly;
 
 					TargetMemoryArea area = new TargetMemoryArea (
-						new TargetAddress (GlobalAddressDomain, start),
-						new TargetAddress (GlobalAddressDomain, end),
+						new TargetAddress (AddressDomain, start),
+						new TargetAddress (AddressDomain, end),
 						flags, name);
 					list.Add (area);
 				} while (true);

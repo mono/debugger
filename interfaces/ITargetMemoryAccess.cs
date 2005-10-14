@@ -43,10 +43,6 @@ namespace Mono.Debugger
 		AddressDomain AddressDomain {
 			get;
 		}
-
-		AddressDomain GlobalAddressDomain {
-			get;
-		}
 	}
 
 	public interface ITargetMemoryReader : ITargetMemoryInfo
@@ -98,8 +94,6 @@ namespace Mono.Debugger
 		//   Read an address from the target's address space at address @address.
 		// </summary>
 		TargetAddress ReadAddress ();
-
-		TargetAddress ReadGlobalAddress ();
 	}
 
 	public interface ITargetMemoryAccess : ITargetMemoryInfo
@@ -115,8 +109,6 @@ namespace Mono.Debugger
 		long ReadLongInteger (TargetAddress address);
 
 		TargetAddress ReadAddress (TargetAddress address);
-
-		TargetAddress ReadGlobalAddress (TargetAddress address);
 
 		string ReadString (TargetAddress address);
 

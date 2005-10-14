@@ -1477,12 +1477,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public TargetAddress ReadGlobalAddress (TargetAddress address)
-		{
-			return inferior.ReadGlobalAddress (address);
-		}
-
-		[Command]
 		public string ReadString (TargetAddress address)
 		{
 			return inferior.ReadString (address);
@@ -2626,7 +2620,7 @@ namespace Mono.Debugger.Backends
 							   long data1, long data2)
 		{
 			TargetAddress address = new TargetAddress (
-				inferior.GlobalAddressDomain, data1);
+				inferior.AddressDomain, data1);
 
 			Report.Debug (DebugFlags.SSE, "{0} done compiling method: {1}",
 				      sse, address);

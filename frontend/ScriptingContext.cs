@@ -128,7 +128,7 @@ namespace Mono.Debugger.Frontend
 		public TargetObject GetRegister (int index)
 		{
 			TargetAddress address = new TargetAddress (
-				frame.AddressDomain, frame.GetRegister (index));
+				interpreter.AddressDomain, frame.GetRegister (index));
 			return frame.Language.CreatePointer (frame, address);
 		}
 
@@ -748,8 +748,6 @@ namespace Mono.Debugger.Frontend
 		ArrayList method_search_results;
 		Hashtable method_search_hash;
 
-		static AddressDomain address_domain = new AddressDomain ("scripting");
-
 		bool is_interactive;
 		bool is_synchronous;
 
@@ -878,13 +876,7 @@ namespace Mono.Debugger.Frontend
 
 		public AddressDomain AddressDomain {
 			get {
-				return address_domain;
-			}
-		}
-
-		public AddressDomain GlobalAddressDomain {
-			get {
-				return interpreter.GlobalAddressDomain;
+				return interpreter.AddressDomain;
 			}
 		}
 

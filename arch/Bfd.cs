@@ -207,11 +207,11 @@ namespace Mono.Debugger.Backends
 
 				if (!base_address.IsNull)
 					start_address = new TargetAddress (
-						info.GlobalAddressDomain,
+						info.AddressDomain,
 						base_address.Address + text.vma);
 				else
 					start_address = new TargetAddress (
-						info.GlobalAddressDomain, text.vma);
+						info.AddressDomain, text.vma);
 				end_address = start_address + text.size;
 
 				read_bfd_symbols ();
@@ -223,11 +223,11 @@ namespace Mono.Debugger.Backends
 				InternalSection got_section = GetSectionByName (".got", false);
 				if ((plt_section != null) && (got_section != null)) {
 					plt_start = new TargetAddress (
-						memory.GlobalAddressDomain, base_address.Address + plt_section.vma);
+						memory.AddressDomain, base_address.Address + plt_section.vma);
 					plt_end = plt_start + plt_section.size;
 
 					got_start = new TargetAddress (
-						memory.GlobalAddressDomain, base_address.Address + got_section.vma);
+						memory.AddressDomain, base_address.Address + got_section.vma);
 					has_got = true;
 				}
 			} else
@@ -260,7 +260,7 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				TargetAddress relocated = new TargetAddress (
-					info.GlobalAddressDomain,
+					info.AddressDomain,
 					base_address.Address + address);
 				if (is_function != 0)
 					symbols.Add (name, relocated);
@@ -286,7 +286,7 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				TargetAddress relocated = new TargetAddress (
-					info.GlobalAddressDomain,
+					info.AddressDomain,
 					base_address.Address + address);
 				simple_symbols.Add (new Symbol (name, relocated, 0));
 			}
@@ -335,7 +335,7 @@ namespace Mono.Debugger.Backends
 				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
 				if (base_ptr == 0)
 					return false;
-				debug_base = new TargetAddress (inferior.GlobalAddressDomain, base_ptr);
+				debug_base = new TargetAddress (inferior.AddressDomain, base_ptr);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
@@ -440,9 +440,9 @@ namespace Mono.Debugger.Backends
 					InternalSection text = GetSectionByName (".text", true);
 
 					base_address = new TargetAddress (
-						memory.GlobalAddressDomain, text.vma);
+						memory.AddressDomain, text.vma);
 					end_address = new TargetAddress (
-						memory.GlobalAddressDomain, text.vma + text.size);
+						memory.AddressDomain, text.vma + text.size);
 #endif
 				}
 			}
@@ -480,10 +480,10 @@ namespace Mono.Debugger.Backends
 		{
 			if (BaseAddress.IsNull)
 				return new TargetAddress (
-					info.GlobalAddressDomain, address);
+					info.AddressDomain, address);
 			else
 				return new TargetAddress (
-					info.GlobalAddressDomain, BaseAddress.Address + address);
+					info.AddressDomain, BaseAddress.Address + address);
 		}
 
 		public ITargetInfo TargetInfo {
@@ -724,7 +724,7 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				TargetAddress start = new TargetAddress (
-					info.GlobalAddressDomain, section.vma);
+					info.AddressDomain, section.vma);
 				TargetAddress end = start + section.size;
 
 				TargetMemoryFlags flags = 0;
@@ -950,7 +950,7 @@ namespace Mono.Debugger.Backends
 				return TargetAddress.Null;
 			}
 
-			TargetAddress method = memory.ReadGlobalAddress (jmp_target);
+			TargetAddress method = memory.ReadAddress (jmp_target);
 
 			if (method != address + 6) {
 				is_start = false;
@@ -958,7 +958,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			is_start = true;
-			return memory.ReadGlobalAddress (got_start + 2 * memory.TargetAddressSize);
+			return memory.ReadAddress (got_start + 2 * memory.TargetAddressSize);
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame,

@@ -109,12 +109,12 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public AddressDomain GlobalAddressDomain {
+		public AddressDomain AddressDomain {
 			get {
 				if (main_process == null)
 					throw new ScriptingException ("No target.");
 
-				return main_process.Process.TargetMemoryInfo.GlobalAddressDomain;
+				return main_process.Process.TargetMemoryInfo.AddressDomain;
 			}
 		}
 

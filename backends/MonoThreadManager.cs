@@ -54,8 +54,8 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress Initialize (SingleSteppingEngine sse, Inferior inferior)
 		{
-			main_function = inferior.ReadGlobalAddress (info + 8);
-			notification_address = inferior.ReadGlobalAddress (
+			main_function = inferior.ReadAddress (info + 8);
+			notification_address = inferior.ReadAddress (
 				info + 8 + inferior.TargetAddressSize);
 
 			mono_debugger_server_set_notification (notification_address.Address);
@@ -75,10 +75,10 @@ namespace Mono.Debugger.Backends
 			reader.ReadInteger ();
 			thread_size = reader.ReadInteger ();
 
-			main_function = reader.ReadGlobalAddress ();
-			notification_address = reader.ReadGlobalAddress ();
+			main_function = reader.ReadAddress ();
+			notification_address = reader.ReadAddress ();
 
-			main_thread = reader.ReadGlobalAddress ();
+			main_thread = reader.ReadAddress ();
 			reader.ReadInteger (); /* main_tid */
 
 			thread_created (inferior, main_thread, true);
@@ -137,7 +137,7 @@ namespace Mono.Debugger.Backends
 			reader.ReadAddress ();
 			int tid = reader.BinaryReader.ReadInt32 ();
 			reader.BinaryReader.ReadInt32 ();
-			TargetAddress func = reader.ReadGlobalAddress ();
+			TargetAddress func = reader.ReadAddress ();
 			TargetAddress start_stack = reader.ReadAddress ();
 
 			ThreadData thread = (ThreadData) thread_hash [tid];
@@ -181,7 +181,7 @@ namespace Mono.Debugger.Backends
 
 				case NotificationType.ThreadCreated: {
 					TargetAddress data = new TargetAddress (
-						inferior.GlobalAddressDomain, cevent.Data1);
+						inferior.AddressDomain, cevent.Data1);
 
 					thread_created (inferior, data, false);
 					break;
@@ -226,7 +226,7 @@ namespace Mono.Debugger.Backends
 
 				default: {
 					TargetAddress data = new TargetAddress (
-						inferior.GlobalAddressDomain, cevent.Data1);
+						inferior.AddressDomain, cevent.Data1);
 
 					csharp_language.Notification (
 						inferior, type, data, cevent.Data2);

@@ -459,11 +459,11 @@ namespace Mono.Debugger.Languages.Mono
 				address, language.BuiltinTypes.KlassSize);
 			TargetReader reader = new TargetReader (blob, target.TargetMemoryInfo);
 
-			TargetAddress image = reader.ReadGlobalAddress ();
+			TargetAddress image = reader.ReadAddress ();
 			MonoSymbolFile file = language.GetImage (image);
 
-			reader.ReadGlobalAddress ();
-			TargetAddress element_class = reader.ReadGlobalAddress ();
+			reader.ReadAddress ();
+			TargetAddress element_class = reader.ReadAddress ();
 
 			if (file == null)
 				return null;
@@ -472,15 +472,15 @@ namespace Mono.Debugger.Languages.Mono
 			uint token = reader.BinaryReader.ReadUInt32 ();
 
 			reader.Offset = language.BuiltinTypes.KlassByValArgOffset;
-			TargetAddress byval_data_addr = reader.ReadGlobalAddress ();
+			TargetAddress byval_data_addr = reader.ReadAddress ();
 			reader.Offset += 2;
 			int type = reader.ReadByte ();
 
 			reader.Offset = language.BuiltinTypes.KlassGenericClassOffset;
-			TargetAddress generic_class = reader.ReadGlobalAddress ();
+			TargetAddress generic_class = reader.ReadAddress ();
 
 			reader.Offset = language.BuiltinTypes.KlassGenericContainerOffset;
-			TargetAddress generic_container = reader.ReadGlobalAddress ();
+			TargetAddress generic_container = reader.ReadAddress ();
 
 			if (!generic_class.IsNull || !generic_container.IsNull)
 				return null;
@@ -514,7 +514,7 @@ namespace Mono.Debugger.Languages.Mono
 				TargetReader array_reader = new TargetReader (
 					array_data, target.TargetMemoryInfo);
 
-				array_reader.ReadGlobalAddress ();
+				array_reader.ReadAddress ();
 				int rank = array_reader.ReadByte ();
 
 				return new MonoArrayType (eklass, rank);

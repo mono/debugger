@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 			// twice the class.
 			TargetAddress address;
 			address = target.TargetMemoryAccess.ReadAddress (Location.Address);
-			address = target.TargetMemoryAccess.ReadGlobalAddress (address);
+			address = target.TargetMemoryAccess.ReadAddress (address);
 
 			return Type.File.MonoLanguage.GetClass (target, address);
 		}

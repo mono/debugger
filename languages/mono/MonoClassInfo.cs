@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			size = info.ReadLeb128 ();
 			KlassAddress = new TargetAddress (
-				type.File.GlobalAddressDomain, info.ReadAddress ());
+				type.File.AddressDomain, info.ReadAddress ());
 
 			type.File.MonoLanguage.AddClass (KlassAddress, type);
 
@@ -85,7 +85,7 @@ namespace Mono.Debugger.Languages.Mono
 			methods = new Hashtable ();
 			TargetReader reader = new TargetReader (blob.Contents, target.TargetMemoryInfo);
 			for (int i = 0; i < method_count; i++) {
-				TargetAddress address = reader.ReadGlobalAddress ();
+				TargetAddress address = reader.ReadAddress ();
 
 				TargetBlob method_blob = target.TargetMemoryAccess.ReadMemory (
 					address + 4, 4);

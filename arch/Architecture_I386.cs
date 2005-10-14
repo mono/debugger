@@ -127,11 +127,11 @@ namespace Mono.Debugger.Backends
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
-			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr);
+			TargetAddress vtable_addr = new TargetAddress (target.AddressDomain, addr);
 			vtable_addr += disp;
 
 			if (dereference_addr)
-				return target.ReadGlobalAddress (vtable_addr);
+				return target.ReadAddress (vtable_addr);
 			else
 				return vtable_addr;
 		}
@@ -185,7 +185,7 @@ namespace Mono.Debugger.Backends
 			if (location + call_disp + 10 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (target.GlobalAddressDomain, method_info);
+			return new TargetAddress (target.AddressDomain, method_info);
 		}
 
 		public override string[] RegisterNames {
@@ -376,7 +376,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
 			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
 
-			TargetAddress new_eip = memory.ReadGlobalAddress (ebp + addr_size);
+			TargetAddress new_eip = memory.ReadAddress (ebp + addr_size);
 			regs [(int) I386Register.EIP].SetValue (ebp + addr_size, new_eip);
 
 			TargetAddress new_esp = ebp + 2 * addr_size;
@@ -450,7 +450,7 @@ namespace Mono.Debugger.Backends
 				Registers old_regs = frame.Registers;
 				Registers regs = new Registers (old_regs);
 
-				TargetAddress new_eip = memory.ReadGlobalAddress (frame.StackPointer);
+				TargetAddress new_eip = memory.ReadAddress (frame.StackPointer);
 				regs [(int) I386Register.EIP].SetValue (frame.StackPointer, new_eip);
 
 				TargetAddress new_esp = frame.StackPointer + memory.TargetAddressSize;
@@ -470,11 +470,11 @@ namespace Mono.Debugger.Backends
 				Registers regs = new Registers (old_regs);
 
 				int addr_size = memory.TargetAddressSize;
-				TargetAddress new_ebp = memory.ReadGlobalAddress (frame.StackPointer);
+				TargetAddress new_ebp = memory.ReadAddress (frame.StackPointer);
 				regs [(int) I386Register.EBP].SetValue (frame.StackPointer, new_ebp);
 
 				TargetAddress new_esp = frame.StackPointer + addr_size;
-				TargetAddress new_eip = memory.ReadGlobalAddress (new_esp);
+				TargetAddress new_eip = memory.ReadAddress (new_esp);
 				regs [(int) I386Register.EIP].SetValue (new_esp, new_eip);
 				new_esp -= addr_size;
 
@@ -551,7 +551,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress esi = memory.ReadAddress (esp + 0x30);
 			TargetAddress edi = memory.ReadAddress (esp + 0x34);
 			TargetAddress ebp = memory.ReadAddress (esp + 0x38);
-			TargetAddress eip = memory.ReadGlobalAddress (esp + 0x3c);
+			TargetAddress eip = memory.ReadAddress (esp + 0x3c);
 
 			regs [(int)I386Register.EBX].SetValue (esp + 0x2c, ebx);
 			regs [(int)I386Register.ESI].SetValue (esp + 0x30, esi);
@@ -578,7 +578,7 @@ namespace Mono.Debugger.Backends
 
 			TargetAddress esp = frame.StackPointer;
 
-			TargetAddress new_eip = memory.ReadGlobalAddress (esp);
+			TargetAddress new_eip = memory.ReadAddress (esp);
 			TargetAddress new_esp = esp + 4;
 			TargetAddress new_ebp = frame.FrameAddress;
 
@@ -629,7 +629,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
 			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
 
-			TargetAddress new_eip = memory.ReadGlobalAddress (ebp + addr_size);
+			TargetAddress new_eip = memory.ReadAddress (ebp + addr_size);
 			regs [(int) I386Register.EIP].SetValue (ebp + addr_size, new_eip);
 
 			TargetAddress new_esp = ebp + 2 * addr_size;

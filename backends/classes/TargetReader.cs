@@ -57,15 +57,13 @@ namespace Mono.Debugger.Backends
 	{
 		Architecture arch;
 		AddressDomain address_domain;
-		AddressDomain global_address_domain;
 
 		internal TargetMemoryInfo (int target_int_size, int target_long_size,
 					   int target_address_size, bool is_bigendian,
-					   AddressDomain global_domain, AddressDomain domain)
+					   AddressDomain domain)
 			: base (target_int_size, target_long_size, target_address_size,
 				is_bigendian)
 		{
-			this.global_address_domain = global_domain;
 			this.address_domain = domain;
 		}
 
@@ -77,12 +75,6 @@ namespace Mono.Debugger.Backends
 		public AddressDomain AddressDomain {
 			get {
 				return address_domain;
-			}
-		}
-
-		public AddressDomain GlobalAddressDomain {
-			get {
-				return global_address_domain;
 			}
 		}
 
@@ -175,12 +167,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public AddressDomain GlobalAddressDomain {
-			get {
-				return info.GlobalAddressDomain;
-			}
-		}
-
 		public byte ReadByte ()
 		{
 			return reader.ReadByte ();
@@ -221,16 +207,6 @@ namespace Mono.Debugger.Backends
 				return TargetAddress.Null;
 			else
 				return new TargetAddress (info.AddressDomain, address);
-		}
-
-		public TargetAddress ReadGlobalAddress ()
-		{
-			long address = do_read_address ();
-
-			if (address == 0)
-				return TargetAddress.Null;
-			else
-				return new TargetAddress (info.GlobalAddressDomain, address);
 		}
 
 		public override string ToString ()

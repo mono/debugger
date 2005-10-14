@@ -69,7 +69,7 @@ namespace Mono.Debugger.Backends
 				long range = ReadEncodedValue (reader, cie.Encoding & 0x0f);
 
 				TargetAddress start = new TargetAddress (
-					target.GlobalAddressDomain, initial);
+					target.AddressDomain, initial);
 
 				if ((address < start) || (address >= start + range)) {
 					reader.Position = end_pos;
@@ -325,7 +325,7 @@ namespace Mono.Debugger.Backends
 			{
 				long cfa_addr = GetRegisterValue (regs, 1, columns [0]);
 				TargetAddress cfa = new TargetAddress (
-					target.GlobalAddressDomain, cfa_addr);
+					target.AddressDomain, cfa_addr);
 
 				for (int i = 1; i < columns.Length; i++) {
 					GetValue (target, regs, cfa, i+2, columns [i]);
@@ -349,14 +349,14 @@ namespace Mono.Debugger.Backends
 					return null;
 
 				TargetAddress address = new TargetAddress (
-						target.GlobalAddressDomain, eip.Value);
+						target.AddressDomain, eip.Value);
 				TargetAddress stack = new TargetAddress (
 						target.AddressDomain, esp.Value);
 
 				TargetAddress frame_addr = TargetAddress.Null;
 				if (ebp.Valid)
 					frame_addr = new TargetAddress (
-						target.GlobalAddressDomain, ebp.Value);
+						target.AddressDomain, ebp.Value);
 
 				return arch.CreateFrame (frame, address, stack, frame_addr, regs);
 			}

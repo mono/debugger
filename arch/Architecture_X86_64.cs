@@ -169,11 +169,11 @@ namespace Mono.Debugger.Backends
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
-			TargetAddress vtable_addr = new TargetAddress (target.GlobalAddressDomain, addr);
+			TargetAddress vtable_addr = new TargetAddress (target.AddressDomain, addr);
 			vtable_addr += disp;
 
 			if (dereference_addr)
-				return target.ReadGlobalAddress (vtable_addr);
+				return target.ReadAddress (vtable_addr);
 			else
 				return vtable_addr;
 		}
@@ -230,7 +230,7 @@ namespace Mono.Debugger.Backends
 			if (location + call_disp + 19 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (target.GlobalAddressDomain, method_info);
+			return new TargetAddress (target.AddressDomain, method_info);
 		}
 
 		public override string[] RegisterNames {
@@ -472,7 +472,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
 
-			TargetAddress new_rip = memory.ReadGlobalAddress (rbp + addr_size);
+			TargetAddress new_rip = memory.ReadAddress (rbp + addr_size);
 			regs [(int) X86_64_Register.RIP].SetValue (rbp + addr_size, new_rip);
 
 			TargetAddress new_rsp = rbp + 2 * addr_size;
@@ -584,7 +584,7 @@ namespace Mono.Debugger.Backends
 			if (pos >= offset) {
 				Registers regs = copy_registers (frame.Registers);
 
-				TargetAddress new_rip = memory.ReadGlobalAddress (frame.StackPointer);
+				TargetAddress new_rip = memory.ReadAddress (frame.StackPointer);
 				regs [(int) X86_64_Register.RIP].SetValue (frame.StackPointer, new_rip);
 
 				TargetAddress new_rsp = frame.StackPointer + memory.TargetAddressSize;
@@ -605,11 +605,11 @@ namespace Mono.Debugger.Backends
 				Registers regs = copy_registers (frame.Registers);
 
 				int addr_size = memory.TargetAddressSize;
-				TargetAddress new_rbp = memory.ReadGlobalAddress (frame.StackPointer);
+				TargetAddress new_rbp = memory.ReadAddress (frame.StackPointer);
 				regs [(int) X86_64_Register.RBP].SetValue (frame.StackPointer, new_rbp);
 
 				TargetAddress new_rsp = frame.StackPointer + addr_size;
-				TargetAddress new_rip = memory.ReadGlobalAddress (new_rsp);
+				TargetAddress new_rip = memory.ReadAddress (new_rsp);
 				regs [(int) X86_64_Register.RIP].SetValue (new_rsp, new_rip);
 				new_rsp -= addr_size;
 
@@ -652,7 +652,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
 
-			TargetAddress new_rip = memory.ReadGlobalAddress (rbp + addr_size);
+			TargetAddress new_rip = memory.ReadAddress (rbp + addr_size);
 			regs [(int) X86_64_Register.RIP].SetValue (rbp + addr_size, new_rip);
 
 			TargetAddress new_rsp = rbp + 2 * addr_size;
@@ -700,17 +700,17 @@ namespace Mono.Debugger.Backends
 			/* The stack contains the `struct ucontext' from <asm/ucontext.h>; the
 			 * `struct sigcontext' starts at offset 0x28 in it. */
 			foreach (int regoffset in regoffsets) {
-				TargetAddress new_value = memory.ReadGlobalAddress (stack + offset);
+				TargetAddress new_value = memory.ReadAddress (stack + offset);
 				regs [regoffset].SetValue (new_value);
 				offset += 8;
 			}
 
 			TargetAddress rip = new TargetAddress (
-				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress rsp = new TargetAddress (
-				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress rbp = new TargetAddress (
-				memory.GlobalAddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 

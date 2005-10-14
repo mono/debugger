@@ -672,12 +672,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		AddressDomain ITargetMemoryInfo.GlobalAddressDomain {
-			get {
-				return target_memory_info.GlobalAddressDomain;
-			}
-		}
-
 		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
 		{
 			check_engine ();
@@ -700,12 +694,6 @@ namespace Mono.Debugger
 		{
 			check_engine ();
 			return engine.ReadAddress (address);
-		}
-
-		TargetAddress ITargetMemoryAccess.ReadGlobalAddress (TargetAddress address)
-		{
-			check_engine ();
-			return engine.ReadGlobalAddress (address);
 		}
 
 		string ITargetMemoryAccess.ReadString (TargetAddress address)

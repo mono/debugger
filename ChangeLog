@@ -1,3 +1,13 @@
+2005-10-14  Martin Baulig  <martin@ximian.com>
+
+	Only use a single AddressDomain per process.
+
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryInfo.GlobalAddressDomain): Removed; use
+	`AddressDomain' instead.
+	(ITargetMemoryAccess.ReadGlobalAddress): Removed; use
+	`ReadAddress' instead.
+
 2005-10-11  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs (SimpleStackFrame): Removed.

@@ -207,7 +207,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
 		internal readonly ThreadManager ThreadManager;
-		internal readonly AddressDomain GlobalAddressDomain;
+		internal readonly AddressDomain AddressDomain;
 		internal readonly ITargetMemoryInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
 		protected readonly Debugger backend;
@@ -235,7 +235,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.backend = backend;
 
 			ThreadManager = backend.ThreadManager;
-			GlobalAddressDomain = memory.GlobalAddressDomain;
+			AddressDomain = memory.AddressDomain;
 
 			address_size = TargetInfo.TargetAddressSize;
 			int_size = TargetInfo.TargetIntegerSize;
@@ -251,7 +251,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress image_file_addr = memory.ReadAddress (address);
 			address += address_size;
 			ImageFile = memory.ReadString (image_file_addr);
-			MonoImage = memory.ReadGlobalAddress (address);
+			MonoImage = memory.ReadAddress (address);
 			address += address_size;
 
 			Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
@@ -568,7 +568,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (!method.IsLoaded) {
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
-				method.Load (reader, GlobalAddressDomain);
+				method.Load (reader, AddressDomain);
 			}
 
 			return method;
@@ -1016,9 +1016,9 @@ namespace Mono.Debugger.Languages.Mono
 				int index = reader.BinaryReader.ReadInt32 ();
 				int size = reader.BinaryReader.ReadInt32 ();
 				reader.BinaryReader.ReadInt32 (); /* dummy */
-				TargetAddress start = reader.ReadGlobalAddress ();
+				TargetAddress start = reader.ReadAddress ();
 				TargetAddress end = start + size;
-				TargetAddress wrapper = reader.ReadGlobalAddress ();
+				TargetAddress wrapper = reader.ReadAddress ();
 
 				return new MethodRangeEntry (file, index, start, end, wrapper, contents);
 			}
@@ -1073,8 +1073,8 @@ namespace Mono.Debugger.Languages.Mono
 							   ITargetMemoryReader reader, byte[] contents)
 			{
 				int size = reader.BinaryReader.ReadInt32 ();
-				TargetAddress wrapper = reader.ReadGlobalAddress ();
-				TargetAddress code = reader.ReadGlobalAddress ();
+				TargetAddress wrapper = reader.ReadAddress ();
+				TargetAddress code = reader.ReadAddress ();
 
 				TargetAddress name_address = reader.ReadAddress ();
 				TargetAddress cil_address = reader.ReadAddress ();
@@ -1286,7 +1286,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				Token = reader.BinaryReader.ReadLeb128 ();
 				InstanceSize = reader.BinaryReader.ReadLeb128 ();
-				KlassAddress = reader.ReadGlobalAddress ();
+				KlassAddress = reader.ReadAddress ();
 			}
 
 			public TargetBinaryReader Contents {

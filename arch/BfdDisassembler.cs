@@ -80,7 +80,7 @@ namespace Mono.Debugger.Backends
 
 		void print_address_func (long address)
 		{
-			TargetAddress maddress = new TargetAddress (memory.GlobalAddressDomain, address);
+			TargetAddress maddress = new TargetAddress (memory.AddressDomain, address);
 
 			if (current_method != null) {
 				try {
@@ -148,7 +148,7 @@ namespace Mono.Debugger.Backends
 				sb = new StringBuilder ();
 
 				address = new TargetAddress (
-					memory.GlobalAddressDomain, address.Address);
+					memory.AddressDomain, address.Address);
 
 				string insn;
 				int insn_size;

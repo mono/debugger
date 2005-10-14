@@ -338,7 +338,7 @@ namespace Mono.Debugger.Frontend
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
-			return new TargetAddress (context.GlobalAddressDomain, Value);
+			return new TargetAddress (context.AddressDomain, Value);
 		}
 
 		protected override object DoEvaluate (ScriptingContext context)
@@ -1619,7 +1619,7 @@ namespace Mono.Debugger.Frontend
 			if (obj is int)
 				obj = (long) (int) obj;
 			if (obj is long)
-				return new TargetAddress (context.GlobalAddressDomain, (long) obj);
+				return new TargetAddress (context.AddressDomain, (long) obj);
 
 			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj == null)

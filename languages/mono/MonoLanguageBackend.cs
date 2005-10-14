@@ -43,19 +43,19 @@ namespace Mono.Debugger.Languages.Mono
 
 			SymbolTableSize         = reader.ReadInteger ();
 			HeapSize                = reader.ReadInteger ();
-			MonoTrampolineCode      = reader.ReadGlobalAddress ();
-			SymbolTable             = reader.ReadGlobalAddress ();
-			CompileMethod           = reader.ReadGlobalAddress ();
-			GetVirtualMethod        = reader.ReadGlobalAddress ();
-			GetBoxedObjectMethod    = reader.ReadGlobalAddress ();
-			InsertBreakpoint        = reader.ReadGlobalAddress ();
-			RemoveBreakpoint        = reader.ReadGlobalAddress ();
-			RuntimeInvoke           = reader.ReadGlobalAddress ();
-			CreateString            = reader.ReadGlobalAddress ();
-			ClassGetStaticFieldData = reader.ReadGlobalAddress ();
-			LookupClass             = reader.ReadGlobalAddress ();
-			LookupType              = reader.ReadGlobalAddress ();
-			LookupAssembly          = reader.ReadGlobalAddress ();
+			MonoTrampolineCode      = reader.ReadAddress ();
+			SymbolTable             = reader.ReadAddress ();
+			CompileMethod           = reader.ReadAddress ();
+			GetVirtualMethod        = reader.ReadAddress ();
+			GetBoxedObjectMethod    = reader.ReadAddress ();
+			InsertBreakpoint        = reader.ReadAddress ();
+			RemoveBreakpoint        = reader.ReadAddress ();
+			RuntimeInvoke           = reader.ReadAddress ();
+			CreateString            = reader.ReadAddress ();
+			ClassGetStaticFieldData = reader.ReadAddress ();
+			LookupClass             = reader.ReadAddress ();
+			LookupType              = reader.ReadAddress ();
+			LookupAssembly          = reader.ReadAddress ();
 			Heap                    = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
@@ -125,7 +125,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int defaults_size = reader.ReadInt32 ();
 			TargetAddress defaults_address = new TargetAddress (
-				memory.GlobalAddressDomain, reader.ReadAddress ());
+				memory.AddressDomain, reader.ReadAddress ());
 
 			TypeSize = reader.ReadInt32 ();
 			ArrayTypeSize = reader.ReadInt32 ();
@@ -146,89 +146,89 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.ReadAddress ();
 
 			MonoLanguageBackend language = corlib.MonoLanguage;
-			TargetAddress klass = mono_defaults.ReadGlobalAddress ();
+			TargetAddress klass = mono_defaults.ReadAddress ();
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
 			Cecil.ITypeDefinition object_type = corlib.Module.Types ["System.Object"];
 			ObjectType = new MonoObjectType (corlib, object_type, object_size);
 			ObjectClass = new MonoClassType (corlib, object_type);
 			language.AddCoreType (ObjectClass, object_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition byte_type = corlib.Module.Types ["System.Byte"];
 			ByteType = new TargetFundamentalType (language, byte_type.FullName, FundamentalKind.Byte, 1);
 			language.AddCoreType (ByteType, byte_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition void_type = corlib.Module.Types ["System.Void"];
 			VoidType = new MonoOpaqueType (corlib, void_type);
 			language.AddCoreType (VoidType, void_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition bool_type = corlib.Module.Types ["System.Boolean"];
 			BooleanType = new TargetFundamentalType (language, bool_type.FullName, FundamentalKind.Boolean, 1);
 			language.AddCoreType (BooleanType, bool_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition sbyte_type = corlib.Module.Types ["System.SByte"];
 			SByteType = new TargetFundamentalType (language, sbyte_type.FullName, FundamentalKind.SByte, 1);
 			language.AddCoreType (SByteType, sbyte_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition short_type = corlib.Module.Types ["System.Int16"];
 			Int16Type = new TargetFundamentalType (language, short_type.FullName, FundamentalKind.Int16, 2);
 			language.AddCoreType (Int16Type, short_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition ushort_type = corlib.Module.Types ["System.UInt16"];
 			UInt16Type = new TargetFundamentalType (language, ushort_type.FullName, FundamentalKind.UInt16, 2);
 			language.AddCoreType (UInt16Type, ushort_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition int_type = corlib.Module.Types ["System.Int32"];
 			Int32Type = new TargetFundamentalType (language, int_type.FullName, FundamentalKind.Int32, 4);
 			language.AddCoreType (Int32Type, int_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition uint_type = corlib.Module.Types ["System.UInt32"];
 			UInt32Type = new TargetFundamentalType (language, uint_type.FullName, FundamentalKind.UInt32, 4);
 			language.AddCoreType (UInt32Type, uint_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition intptr_type = corlib.Module.Types ["System.IntPtr"];
 			IntType = new TargetFundamentalType (language, intptr_type.FullName, FundamentalKind.IntPtr, 4);
 			language.AddCoreType (IntType, intptr_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition uintptr_type = corlib.Module.Types ["System.UIntPtr"];
 			UIntType = new TargetFundamentalType (language, uintptr_type.FullName, FundamentalKind.Object, 4);
 			language.AddCoreType (UIntType, uintptr_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition long_type = corlib.Module.Types ["System.Int64"];
 			Int64Type = new TargetFundamentalType (language, long_type.FullName, FundamentalKind.Int64, 8);
 			language.AddCoreType (Int64Type, long_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition ulong_type = corlib.Module.Types ["System.UInt64"];
 			UInt64Type = new TargetFundamentalType (language, ulong_type.FullName, FundamentalKind.UInt64, 8);
 			language.AddCoreType (UInt64Type, ulong_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition float_type = corlib.Module.Types ["System.Single"];
 			SingleType = new TargetFundamentalType (language, float_type.FullName, FundamentalKind.Single, 4);
 			language.AddCoreType (SingleType, float_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition double_type = corlib.Module.Types ["System.Double"];
 			DoubleType = new TargetFundamentalType (language, double_type.FullName, FundamentalKind.Double, 8);
 			language.AddCoreType (DoubleType, double_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition char_type = corlib.Module.Types ["System.Char"];
 			CharType = new TargetFundamentalType (language, char_type.FullName, FundamentalKind.Char, 2);
 			language.AddCoreType (CharType, char_type, klass);
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition string_type = corlib.Module.Types ["System.String"];
 			StringType = new MonoStringType (
 				corlib, string_type.FullName, object_size, object_size + 4);
@@ -237,7 +237,7 @@ namespace Mono.Debugger.Languages.Mono
 			// Skip a whole bunch of clases we don't care about
 			mono_defaults.Offset += 2 * corlib.TargetInfo.TargetAddressSize;
 
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition delegate_type = corlib.Module.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			language.AddCoreType (DelegateType, delegate_type, klass);
@@ -246,7 +246,7 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.Offset += 7 * corlib.TargetInfo.TargetAddressSize;
 
 			// and get to the Exception class
-			klass = mono_defaults.ReadGlobalAddress ();
+			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition exception_type = corlib.Module.Types ["System.Exception"];
 			ExceptionType = new MonoClassType (corlib, exception_type);
 			language.AddCoreType (ExceptionType, exception_type, klass);
@@ -475,13 +475,13 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
-			trampolines [0] = memory.ReadGlobalAddress (address);
+			trampolines [0] = memory.ReadAddress (address);
 			address += memory.TargetAddressSize;
-			trampolines [1] = memory.ReadGlobalAddress (address);
+			trampolines [1] = memory.ReadAddress (address);
 			address += memory.TargetAddressSize;
-			trampolines [2] = memory.ReadGlobalAddress (address);
+			trampolines [2] = memory.ReadAddress (address);
 			address += 2 * memory.TargetAddressSize;
-			trampolines [3] = memory.ReadGlobalAddress (address);
+			trampolines [3] = memory.ReadAddress (address);
 		}
 
 #region symbol table management
@@ -538,15 +538,15 @@ namespace Mono.Debugger.Languages.Mono
 					"Debugger symbol table has size {0}, but " +
 					"expected {1}.", total_size, info.SymbolTableSize);
 
-			TargetAddress corlib_address = header.ReadGlobalAddress ();
-			TargetAddress metadata_info = header.ReadGlobalAddress ();
+			TargetAddress corlib_address = header.ReadAddress ();
+			TargetAddress metadata_info = header.ReadAddress ();
 
 			TargetAddress symfiles_address = header.ReadAddress ();
 			int num_symbol_files = header.ReadInteger ();
 
 			symfiles_address += last_num_symbol_files * memory.TargetAddressSize;
 			for (int i = last_num_symbol_files; i < num_symbol_files; i++) {
-				TargetAddress address = memory.ReadGlobalAddress (symfiles_address);
+				TargetAddress address = memory.ReadAddress (symfiles_address);
 				symfiles_address += memory.TargetAddressSize;
 
 				try {
@@ -945,8 +945,8 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			int token = memory.ReadInteger (trampoline + 4);
-			TargetAddress klass = memory.ReadGlobalAddress (trampoline + 8);
-			TargetAddress image = memory.ReadGlobalAddress (klass);
+			TargetAddress klass = memory.ReadAddress (trampoline + 8);
+			TargetAddress image = memory.ReadAddress (klass);
 
 			foreach (MonoSymbolFile file in symbol_files) {
 				if (file.MonoImage != image)
