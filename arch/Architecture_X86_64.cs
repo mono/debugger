@@ -350,15 +350,58 @@ namespace Mono.Debugger.Backends
 		public override string PrintRegister (Register register)
 		{
 			if (!register.Valid)
-				return "XXXXXXXX";
+				return "XXXXXXXXXXXXXXXX";
 
-			return String.Format ("{0:x}", register.Value);
+			switch ((X86_64_Register) register.Index) {
+			case X86_64_Register.EFLAGS: {
+				ArrayList flags = new ArrayList ();
+				long value = register.Value;
+				if ((value & (1 << 0)) != 0)
+					flags.Add ("CF");
+				if ((value & (1 << 2)) != 0)
+					flags.Add ("PF");
+				if ((value & (1 << 4)) != 0)
+					flags.Add ("AF");
+				if ((value & (1 << 6)) != 0)
+					flags.Add ("ZF");
+				if ((value & (1 << 7)) != 0)
+					flags.Add ("SF");
+				if ((value & (1 << 8)) != 0)
+					flags.Add ("TF");
+				if ((value & (1 << 9)) != 0)
+					flags.Add ("IF");
+				if ((value & (1 << 10)) != 0)
+					flags.Add ("DF");
+				if ((value & (1 << 11)) != 0)
+					flags.Add ("OF");
+				if ((value & (1 << 14)) != 0)
+					flags.Add ("NT");
+				if ((value & (1 << 16)) != 0)
+					flags.Add ("RF");
+				if ((value & (1 << 17)) != 0)
+					flags.Add ("VM");
+				if ((value & (1 << 18)) != 0)
+					flags.Add ("AC");
+				if ((value & (1 << 19)) != 0)
+					flags.Add ("VIF");
+				if ((value & (1 << 20)) != 0)
+					flags.Add ("VIP");
+				if ((value & (1 << 21)) != 0)
+					flags.Add ("ID");
+				string[] fstrings = new string [flags.Count];
+				flags.CopyTo (fstrings, 0);
+				return String.Join (" ", fstrings);
+			}
+
+			default:
+				return String.Format ("{0:x}", register.Value);
+			}
 		}
 
 		string format (Register register)
 		{
 			if (!register.Valid)
-				return "XXXXXXXX";
+				return "XXXXXXXXXXXXXXXX";
 
 			int bits = 16;
 			string saddr = register.Value.ToString ("x");
@@ -373,7 +416,9 @@ namespace Mono.Debugger.Backends
 			return String.Format (
 				"RAX={0}  RBX={1}  RCX={2}  RDX={3}\n" +
 				"RSI={4}  RDI={5}  RBP={6}  RSP={7}\n" +
-				"RIP={8}  EFLAGS={9}\n",
+				"R8 ={8}  R9 ={9}  R10={10}  R11={11}\n" +
+				"R12={12}  R13={13}  R14={14}  R15={15}\n" +
+				"RIP={16}  EFLAGS={17}\n",
 				format (registers [(int) X86_64_Register.RAX]),
 				format (registers [(int) X86_64_Register.RBX]),
 				format (registers [(int) X86_64_Register.RCX]),
@@ -382,6 +427,14 @@ namespace Mono.Debugger.Backends
 				format (registers [(int) X86_64_Register.RDI]),
 				format (registers [(int) X86_64_Register.RBP]),
 				format (registers [(int) X86_64_Register.RSP]),
+				format (registers [(int) X86_64_Register.R8]),
+				format (registers [(int) X86_64_Register.R9]),
+				format (registers [(int) X86_64_Register.R10]),
+				format (registers [(int) X86_64_Register.R11]),
+				format (registers [(int) X86_64_Register.R12]),
+				format (registers [(int) X86_64_Register.R13]),
+				format (registers [(int) X86_64_Register.R14]),
+				format (registers [(int) X86_64_Register.R15]),
 				format (registers [(int) X86_64_Register.RIP]),
 				PrintRegister (registers [(int) X86_64_Register.EFLAGS]));
 		}
@@ -390,11 +443,27 @@ namespace Mono.Debugger.Backends
 			get { return 50; }
 		}
 
+		Registers copy_registers (Registers old_regs)
+		{
+			Registers regs = new Registers (old_regs);
+
+			// According to the AMD64 ABI, rbp, rbx and r12-r15 are preserved
+			// across function calls.
+			regs [(int) X86_64_Register.RBX].Valid = true;
+			regs [(int) X86_64_Register.RBP].Valid = true;
+			regs [(int) X86_64_Register.R12].Valid = true;
+			regs [(int) X86_64_Register.R13].Valid = true;
+			regs [(int) X86_64_Register.R14].Valid = true;
+			regs [(int) X86_64_Register.R15].Valid = true;
+
+			return regs;
+		}
+
 		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
 					  int pos, int offset)
 		{
 			Registers old_regs = frame.Registers;
-			Registers regs = new Registers (old_regs);
+			Registers regs = copy_registers (old_regs);
 
 			TargetAddress rbp = new TargetAddress (
 				memory.AddressDomain, old_regs [(int) X86_64_Register.RBP]);
@@ -408,13 +477,6 @@ namespace Mono.Debugger.Backends
 
 			TargetAddress new_rsp = rbp + 2 * addr_size;
 			regs [(int) X86_64_Register.RSP].SetValue (rbp, new_rsp);
-
-			regs [(int) X86_64_Register.RSI].Valid = true;
-			regs [(int) X86_64_Register.RDI].Valid = true;
-			regs [(int) X86_64_Register.R12].Valid = true;
-			regs [(int) X86_64_Register.R13].Valid = true;
-			regs [(int) X86_64_Register.R14].Valid = true;
-			regs [(int) X86_64_Register.R15].Valid = true;
 
 			rbp -= addr_size;
 
@@ -520,8 +582,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (pos >= offset) {
-				Registers old_regs = frame.Registers;
-				Registers regs = new Registers (old_regs);
+				Registers regs = copy_registers (frame.Registers);
 
 				TargetAddress new_rip = memory.ReadGlobalAddress (frame.StackPointer);
 				regs [(int) X86_64_Register.RIP].SetValue (frame.StackPointer, new_rip);
@@ -541,8 +602,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (pos >= offset) {
-				Registers old_regs = frame.Registers;
-				Registers regs = new Registers (old_regs);
+				Registers regs = copy_registers (frame.Registers);
 
 				int addr_size = memory.TargetAddressSize;
 				TargetAddress new_rbp = memory.ReadGlobalAddress (frame.StackPointer);
@@ -587,7 +647,7 @@ namespace Mono.Debugger.Backends
 
 			int addr_size = memory.TargetAddressSize;
 
-			Registers regs = new Registers (this);
+			Registers regs = copy_registers (frame.Registers);
 
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
@@ -634,7 +694,7 @@ namespace Mono.Debugger.Backends
 				(int) X86_64_Register.RIP, (int) X86_64_Register.EFLAGS
 			};
 
-			Registers regs = new Registers (this);
+			Registers regs = copy_registers (frame.Registers);
 
 			int offset = 0x28;
 			/* The stack contains the `struct ucontext' from <asm/ucontext.h>; the

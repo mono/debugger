@@ -1409,12 +1409,12 @@ namespace Mono.Debugger.Frontend
 		public ShowCommand ()
 		{
 			RegisterSubcommand ("processes", typeof (ShowProcessesCommand));
-			//			RegisterSubcommand ("procs", typeof (ShowProcessesCommand));
+			RegisterSubcommand ("procs", typeof (ShowProcessesCommand));
 			RegisterSubcommand ("registers", typeof (ShowRegistersCommand));
-			//			RegisterSubcommand ("regs", typeof (ShowRegistersCommand));
+			RegisterSubcommand ("regs", typeof (ShowRegistersCommand));
 			RegisterSubcommand ("locals", typeof (ShowLocalsCommand));
 			RegisterSubcommand ("parameters", typeof (ShowParametersCommand));
-			//			RegisterSubcommand ("params", typeof (ShowParamsCommand));
+			RegisterSubcommand ("params", typeof (ShowParametersCommand));
 			RegisterSubcommand ("breakpoints", typeof (ShowBreakpointsCommand));
 			RegisterSubcommand ("modules", typeof (ShowModulesCommand));
 			RegisterSubcommand ("threadgroups", typeof (ShowThreadGroupsCommand));
