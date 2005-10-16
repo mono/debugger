@@ -61,8 +61,6 @@ namespace Mono.Debugger.Languages
 
 		public abstract TargetObject CreateNullObject (TargetAccess target,
 							       TargetType type);
-
-		public abstract TargetAddress AllocateMemory (TargetAccess target, int size);
 	}
 }
 

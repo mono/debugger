@@ -34,8 +34,6 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress LookupType;
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
-		public readonly TargetAddress Heap;
-		public readonly int HeapSize;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
@@ -43,7 +41,8 @@ namespace Mono.Debugger.Languages.Mono
 			reader.Offset = 16;
 
 			SymbolTableSize         = reader.ReadInteger ();
-			HeapSize                = reader.ReadInteger ();
+
+			reader.Offset = 24;
 			MonoTrampolineCode      = reader.ReadAddress ();
 			SymbolTable             = reader.ReadAddress ();
 			CompileMethod           = reader.ReadAddress ();
@@ -58,7 +57,6 @@ namespace Mono.Debugger.Languages.Mono
 			LookupType              = reader.ReadAddress ();
 			LookupAssembly          = reader.ReadAddress ();
 			RunFinally              = reader.ReadAddress ();
-			Heap                    = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
@@ -279,7 +277,6 @@ namespace Mono.Debugger.Languages.Mono
 		TargetAddress[] trampolines;
 		bool initialized;
 		DebuggerMutex mutex;
-		Heap heap;
 
 		public MonoLanguageBackend (Debugger backend)
 		{
@@ -428,11 +425,6 @@ namespace Mono.Debugger.Languages.Mono
 			return (MonoSymbolFile) image_hash [address];
 		}
 
-		public override TargetAddress AllocateMemory (TargetAccess target, int size)
-		{
-			return heap.Allocate (target, size);
-		}
-
 		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
 		{
 			TargetAddress symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
@@ -463,8 +455,6 @@ namespace Mono.Debugger.Languages.Mono
 			info = new MonoDebuggerInfo (table);
 
 			init_trampolines (memory);
-
-			heap = new Heap ((ITargetInfo) memory, info.Heap, info.HeapSize);
 
 			symbol_files = new ArrayList ();
 			image_hash = new Hashtable ();

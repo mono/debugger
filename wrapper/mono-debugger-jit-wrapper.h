@@ -19,7 +19,7 @@ struct _MonoDebuggerInfo {
 	guint32 version;
 	guint32 total_size;
 	guint32 symbol_table_size;
-	guint32 heap_size;
+	guint32 dummy;
 	guint8 ***mono_trampoline_code;
 	MonoSymbolTable **symbol_table;
 	guint64 (*compile_method) (guint64 method_argument);
@@ -34,7 +34,6 @@ struct _MonoDebuggerInfo {
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
-	gpointer heap;
 };
 
 /*

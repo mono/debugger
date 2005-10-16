@@ -1,5 +1,19 @@
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/classes/ClientSuppliedTargetLocation.cs
+	(ClientSuppliedTargetLocation): New internal class.
+
+	* languages/TargetFundamentalType.cs
+	(TargetFundamentalType.CreateInstance): Use the new
+	`ClientSuppliedTargetLocation' as the object's location rather
+	than using the heap.
+
+	* languages/Language.cs (Language.AllocateMemory): Removed.
+
+	* languages/mono/Heap.cs: Removed.
+
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationAbortInvocation): New operation to abort a runtime
 	invoke; this unwinds the stack and calls all `finally' handlers.

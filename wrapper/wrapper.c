@@ -12,9 +12,6 @@
 static gpointer main_started_cond;
 static gpointer main_ready_cond;
 
-#define HEAP_SIZE 1048576
-static char mono_debugger_heap [HEAP_SIZE];
-
 static MonoMethod *debugger_main_method;
 
 static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
@@ -39,7 +36,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	MONO_DEBUGGER_VERSION,
 	sizeof (MonoDebuggerInfo),
 	sizeof (MonoSymbolTable),
-	HEAP_SIZE,
+	0,
 	mono_trampoline_code,
 	&mono_symbol_table,
 	&debugger_compile_method,
@@ -53,8 +50,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_lookup_class,
 	&debugger_lookup_type,
 	&debugger_lookup_assembly,
-	&debugger_run_finally,
-	mono_debugger_heap
+	&debugger_run_finally
 };
 
 MonoDebuggerManager MONO_DEBUGGER__manager = {

@@ -98,11 +98,6 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
-		public override TargetAddress AllocateMemory (TargetAccess target, int size)
-		{
-			throw new NotSupportedException ();
-		}
-
 		public override TargetObject CreateNullObject (TargetAccess target, TargetType type)
 		{
 			throw new NotSupportedException ();
