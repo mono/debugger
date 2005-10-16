@@ -1346,17 +1346,8 @@ namespace Mono.Debugger.Backends
 				method, argument.Address, result));
 		}
 
-		[Command]
-		public CommandResult Return (bool run_finally)
+		protected void return_finished (StackFrame parent_frame)
 		{
-			GetBacktrace (-1);
-			if (current_backtrace == null)
-				throw new TargetException (TargetError.NoStack);
-
-			StackFrame parent_frame = current_backtrace.Frames [1];
-			if (parent_frame == null)
-				return null;
-
 			StackFrame rti_frame = null;
 			if (callback_stack.Count > 0)
 				rti_frame = (StackFrame) callback_stack.Peek ();
@@ -1369,16 +1360,26 @@ namespace Mono.Debugger.Backends
 			    (parent_frame.StackPointer >= rti_frame.StackPointer)) {
 				inferior.AbortInvoke ();
 				callback_stack.Pop ();
-				frame_changed (inferior.CurrentFrame, null);
-				TargetEventArgs args = new TargetEventArgs (
-					TargetEventType.TargetStopped, 0, current_frame);
-				manager.Debugger.SendTargetEvent (this, args);
-				return null;
+				return;
 			}
+
+			inferior.SetRegisters (parent_frame.Registers);
+		}
+
+		[Command]
+		public CommandResult Return (bool run_finally)
+		{
+			GetBacktrace (-1);
+			if (current_backtrace == null)
+				throw new TargetException (TargetError.NoStack);
+
+			StackFrame parent_frame = current_backtrace.Frames [1];
+			if (parent_frame == null)
+				return null;
 
 			MonoLanguageBackend language = CurrentFrame.Language as MonoLanguageBackend;
 			if ((language == null) || !run_finally) {
-				inferior.SetRegisters (parent_frame.Registers);
+				return_finished (parent_frame);
 				frame_changed (inferior.CurrentFrame, null);
 				TargetEventArgs args = new TargetEventArgs (
 					TargetEventType.TargetStopped, 0, current_frame);
@@ -2912,7 +2913,7 @@ namespace Mono.Debugger.Backends
 							   long data1, long data2)
 		{
 			DiscardStack (sse);
-			inferior.SetRegisters (ParentFrame.Registers);
+			sse.return_finished (ParentFrame);
 			return true;
 		}
 	}

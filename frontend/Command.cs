@@ -2219,9 +2219,16 @@ namespace Mono.Debugger.Frontend
 
 	public class ReturnCommand : ProcessCommand
 	{
+		bool unconfirmed;
+
+		public bool Yes {
+			get { return unconfirmed; }
+			set { unconfirmed = value; }
+		}
+
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (context.HasBackend && context.Interpreter.IsInteractive) {
+			if (context.Interpreter.IsInteractive && !unconfirmed) {
 				if (context.Interpreter.Query ("Make the current stack frame return?")) {
 					return true;
 				} else {

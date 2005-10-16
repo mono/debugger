@@ -1,5 +1,10 @@
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
+	* test/TestAbort.cs, test/mono-debugger.test/TestAbort.exp: New
+	test for the stack unwinding and `return'.
+
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.c
 	(mono_debugger_server_abort_invoke): New public method.
 

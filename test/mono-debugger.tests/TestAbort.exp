@@ -1,0 +1,58 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set line_main 33
+set line_hello 13
+set line_hello_2 20
+set line_hello_3 22
+
+set file $srcdir/TestAbort.cs
+
+mdb_start "TestAbort.exe"
+mdb_expect_frame 0 "X.Main()" $file $line_main
+
+mdb_send "call Hello ()"
+mdb_expect_stopped 0 "X.Hello()" $file $line_hello
+mdb_send "bt"
+mdb_expect_backtrace_frame 0 "X.Hello()" $file $line_hello
+mdb_expect_backtrace_frame 0 "<method `X.Hello()' called from mdb>" "" 0
+mdb_expect_backtrace_frame 0 "X.Main()" $file $line_main
+mdb_expect_prompt
+
+mdb_send "continue"
+mdb_expect_line "Hello World"
+mdb_expect_stopped 0 "X.Main()" $file $line_main
+
+mdb_send "call Hello ()"
+mdb_expect_stopped 0 "X.Hello()" $file $line_hello
+mdb_send "return -yes"
+mdb_expect_stopped 0 "X.Main()" $file $line_main
+
+mdb_send "call Hello (8)"
+mdb_expect_stopped 0 "X.Hello(System.Int32)" $file $line_hello_2
+mdb_send "return -yes"
+mdb_expect_stopped 0 "X.Main()" $file $line_main
+
+mdb_send "call Hello (9)"
+mdb_expect_stopped 0 "X.Hello(System.Int32)" $file $line_hello_2
+mdb_send "step"
+mdb_expect_stopped 0 "X.Hello(System.Int32)" $file $line_hello_3
+mdb_send "return -yes"
+mdb_expect_line "Done: 9 18 1"
+mdb_expect_stopped 0 "X.Main()" $file $line_main
+
+mdb_send "bt"
+mdb_expect_backtrace_frame 0 "X.Main()" $file $line_main
+mdb_expect_prompt
+
+mdb_send "continue"
+mdb_expect_line "Hello World"
+mdb_expect_line "Done: 5 10 2"
+mdb_expect_line "2"
+
+mdb_expect_line "Process @4 terminated normally."
+mdb_expect_prompt
+mdb_send "quit"
+

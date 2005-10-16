@@ -89,6 +89,26 @@ proc mdb_send {command} {
 }
 
 proc mdb_test_frame {frame index func file line} {
+    if {"$file" == ""} {
+	if {![regexp "^\#(\[0-9\]+): 0x\[0-9A-Fa-f\]+ in (.*)" "$frame" match real_index real_func]} {
+	    fail "Received unknown stack frame `$frame'"
+	    return -1
+	}
+
+	if {$real_index != $index} {
+	    fail "Debugger in frame $real_index, but expected $index"
+	    return
+	}
+	regsub "\[\+\]0x\[0-9A-Fa-f\]+$" $real_func "" real_func
+	if {$real_func != $func} {
+	    fail "Debugger stopped in func $real_func, but expected $func"
+	    return
+	}
+
+	pass "Debugger stopped in \#$index: $func"
+	return
+    }
+
     if {![regexp "^\#(\[0-9\]+): 0x\[0-9A-Fa-f\]+ in (.*) at (.*):(\[0-9\]+)$" "$frame" match real_index real_func real_file real_line]} {
 	fail "Received unknown stack frame `$frame'"
 	return -1
@@ -133,6 +153,25 @@ proc mdb_expect_frame {index func file line} {
 	}
     }
     mdb_expect_prompt
+    return
+}
+
+proc mdb_expect_backtrace_frame {index func file line} {
+    global process
+
+    expect {
+	-re {^(\(\*\))?[ ]*([^\n\r]+)[\n\r]+} {
+	    mdb_test_frame $expect_out(2,string) $index $func $file $line
+	}
+	-re {^ERROR:([^\n\r]+)} {
+	    set message $expect_out(1,string)
+	    fail "Cannot get current stack frame: $message"
+	}
+	timeout {
+	    perror "(timeout) Mono Debugger not responding to `frame' command."
+	    return
+	}
+    }
     return
 }
 
