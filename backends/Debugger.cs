@@ -279,6 +279,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal bool IsManagedApplication {
+			get { return mono_language != null; }
+		}
+
 		public EventHandle InsertBreakpoint (Process process, Breakpoint bpt,
 						     SourceLocation location)
 		{

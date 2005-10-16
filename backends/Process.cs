@@ -632,6 +632,19 @@ namespace Mono.Debugger
 			operation_completed_event.WaitOne ();
 		}
 
+		public void AbortInvocation ()
+		{
+			CommandResult result = new CommandResult ();
+
+			lock (this) {
+				check_engine ();
+				engine.AbortInvocation (result);
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
+		}
+
 		public bool HasTarget {
 			get { return engine != null; }
 		}

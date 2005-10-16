@@ -1,5 +1,12 @@
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(OperationAbortInvocation): New operation to abort a runtime
+	invoke; this unwinds the stack and calls all `finally' handlers.
+	(SingleSteppingEngine.AbortInvocation): New function.
+
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs (StackFrame.ctor): Don't take a `level'
 	argument; we compute this automatically when adding the frame to
 	the Backtrace.

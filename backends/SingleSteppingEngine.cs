@@ -1377,8 +1377,7 @@ namespace Mono.Debugger.Backends
 			if (parent_frame == null)
 				return null;
 
-			MonoLanguageBackend language = CurrentFrame.Language as MonoLanguageBackend;
-			if ((language == null) || !run_finally) {
+			if (!manager.Debugger.IsManagedApplication || !run_finally) {
 				return_finished (parent_frame);
 				frame_changed (inferior.CurrentFrame, null);
 				TargetEventArgs args = new TargetEventArgs (
@@ -1389,8 +1388,27 @@ namespace Mono.Debugger.Backends
 
 			CommandResult result = new CommandResult ();
 			StartOperation ();
+			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
 			ProcessOperation (new OperationReturn (language, parent_frame, result));
 			return result;
+		}
+
+		[Command]
+		public void AbortInvocation (CommandResult result)
+		{
+			GetBacktrace (-1);
+			if (current_backtrace == null)
+				throw new TargetException (TargetError.NoStack);
+
+			if ((callback_stack.Count == 0) || !manager.Debugger.IsManagedApplication)
+				throw new InvalidOperationException ();
+
+			StackFrame rti_frame = (StackFrame) callback_stack.Peek ();
+			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
+
+			StartOperation ();
+			ProcessOperation (new OperationAbortInvocation (
+				language, current_backtrace, rti_frame, result));
 		}
 
 		[Command]
@@ -2915,6 +2933,47 @@ namespace Mono.Debugger.Backends
 			DiscardStack (sse);
 			sse.return_finished (ParentFrame);
 			return true;
+		}
+	}
+
+	protected class OperationAbortInvocation : OperationCallback
+	{
+		public readonly MonoLanguageBackend Language;
+		public readonly Backtrace Backtrace;
+		public readonly StackFrame RuntimeInvokeFrame;
+		public readonly CommandResult Result;
+		int level = 0;
+
+		public OperationAbortInvocation (MonoLanguageBackend language, Backtrace backtrace,
+						 StackFrame rti_frame, CommandResult result)
+		{
+			this.Language = language;
+			this.Backtrace = backtrace;
+			this.RuntimeInvokeFrame = rti_frame;
+			this.Result = result;
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{
+			sse.inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
+		}
+
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
+		{
+			StackFrame parent_frame = Backtrace.Frames [++level];
+
+			if (parent_frame.StackPointer >= RuntimeInvokeFrame.StackPointer) {
+				inferior.AbortInvoke ();
+				sse.callback_stack.Pop ();
+				DiscardStack (sse);
+				return true;
+			}
+
+			inferior.SetRegisters (parent_frame.Registers);
+			inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
+			return false;
 		}
 	}
 #endregion

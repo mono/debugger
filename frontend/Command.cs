@@ -2220,10 +2220,16 @@ namespace Mono.Debugger.Frontend
 	public class ReturnCommand : ProcessCommand
 	{
 		bool unconfirmed;
+		bool invocation;
 
 		public bool Yes {
 			get { return unconfirmed; }
 			set { unconfirmed = value; }
+		}
+
+		public bool Invocation {
+			get { return invocation; }
+			set { invocation = value; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -2243,7 +2249,10 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
-			process.Process.Return (true);
+			if (Invocation)
+				process.Process.AbortInvocation ();
+			else
+				process.Process.Return (true);
 		}
 
 		// IDocumentableCommand
