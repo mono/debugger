@@ -856,7 +856,7 @@ namespace Mono.Debugger.Backends
 
 				update_current_frame (new StackFrame (
 					process, target_access, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, 0, current_method, source));
+					iframe.FrameAddress, registers, current_method, source));
 			} else {
 				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
@@ -869,7 +869,7 @@ namespace Mono.Debugger.Backends
 					update_current_frame (new StackFrame (
 						process, target_access, iframe.Address,
 						iframe.StackPointer, iframe.FrameAddress,
-						registers, 0, current_method));
+						registers, current_method));
 				else {
 					Symbol name;
 					try {
@@ -880,7 +880,7 @@ namespace Mono.Debugger.Backends
 					update_current_frame (new StackFrame (
 						process, target_access, iframe.Address,
 						iframe.StackPointer, iframe.FrameAddress,
-						registers, 0, name));
+						registers, name));
 				}
 			}
 
@@ -2387,7 +2387,7 @@ namespace Mono.Debugger.Backends
 			StackFrame rti_frame = new StackFrame (
 				sse.process, sse.target_access, iframe.Address,
 				iframe.StackPointer, iframe.FrameAddress,
-				registers, 0, new Symbol (name, iframe.Address, 0));
+				registers, new Symbol (name, iframe.Address, 0));
 
 			sse.push_runtime_invoke (rti_frame);
 			rti_frame.ParentFrame = stack_data.Frame;

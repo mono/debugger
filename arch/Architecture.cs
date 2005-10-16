@@ -126,12 +126,12 @@ namespace Mono.Debugger
 			if (method != null)
 				return new StackFrame (
 					last_frame.Process, last_frame.TargetAccess, address,
-					stack, frame_pointer, regs, last_frame.Level + 1, method);
+					stack, frame_pointer, regs, method);
 
 			Symbol name = backend.SymbolTableManager.SimpleLookup (address, false);
 			return new StackFrame (
 				last_frame.Process, last_frame.TargetAccess, address, stack,
-				frame_pointer, regs, last_frame.Level + 1, name);
+				frame_pointer, regs, name);
 		}
 	}
 }

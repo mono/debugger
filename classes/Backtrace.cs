@@ -19,6 +19,10 @@ namespace Mono.Debugger
 			frames.Add (first_frame);
 		}
 
+		public int Count {
+			get { return frames.Count; }
+		}
+
 		public StackFrame[] Frames {
 			get {
 				StackFrame[] retval = new StackFrame [frames.Count];
@@ -57,6 +61,7 @@ namespace Mono.Debugger
 
 		internal void AddFrame (StackFrame new_frame)
 		{
+			new_frame.SetLevel (frames.Count);
 			frames.Add (new_frame);
 			last_frame = new_frame;
 		}

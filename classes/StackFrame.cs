@@ -164,8 +164,8 @@ namespace Mono.Debugger
 		protected readonly TargetAddress stack_pointer;
 		protected readonly TargetAddress frame_address;
 		protected readonly Registers registers;
-		protected readonly int level;
 
+		int level;
 		Method method;
 		Process process;
 		TargetAccess target;
@@ -176,8 +176,7 @@ namespace Mono.Debugger
 
 		internal StackFrame (Process process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
-				     TargetAddress frame_address, Registers registers,
-				     int level)
+				     TargetAddress frame_address, Registers registers)
 		{
 			this.process = process;
 			this.target = target;
@@ -185,15 +184,14 @@ namespace Mono.Debugger
 			this.stack_pointer = stack_pointer;
 			this.frame_address = frame_address;
 			this.registers = registers;
-			this.level = level;
 		}
 
 		internal StackFrame (Process process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
-				     int level, Symbol name)
+				     Symbol name)
 			: this (process, target, address, stack_pointer, frame_address,
-				registers, level)
+				registers)
 		{
 			this.name = name;
 		}
@@ -201,9 +199,9 @@ namespace Mono.Debugger
 		internal StackFrame (Process process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
-				     int level, Method method)
+				     Method method)
 			: this (process, target, address, stack_pointer, frame_address,
-				registers, level)
+				registers)
 		{
 			this.method = method;
 			this.name = new Symbol (method.Name, method.StartAddress, 0);
@@ -213,9 +211,9 @@ namespace Mono.Debugger
 		internal StackFrame (Process process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
-				     int level, Method method, SourceAddress source)
+				     Method method, SourceAddress source)
 			: this (process, target, address, stack_pointer, frame_address,
-				registers, level, method)
+				registers, method)
 		{
 			this.source = source;
 			this.has_source = true;
@@ -223,6 +221,11 @@ namespace Mono.Debugger
 
 		public int Level {
 			get { return level; }
+		}
+
+		internal void SetLevel (int new_level)
+		{
+			level = new_level;
 		}
 
 		public SourceAddress SourceAddress {

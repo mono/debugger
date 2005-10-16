@@ -1,5 +1,11 @@
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (StackFrame.ctor): Don't take a `level'
+	argument; we compute this automatically when adding the frame to
+	the Backtrace.
+
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
 	* test/TestAbort.cs, test/mono-debugger.test/TestAbort.exp: New
 	test for the stack unwinding and `return'.
 
