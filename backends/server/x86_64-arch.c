@@ -199,7 +199,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		*callback_arg = rdata->callback_argument;
 		*retval = INFERIOR_REG_RAX (arch->current_regs);
 
-		if (server_ptrace_peek_word (handle, rdata->exc_address, retval2) != COMMAND_ERROR_NONE)
+		if (rdata->exc_address &&
+		    (server_ptrace_peek_word (handle, rdata->exc_address, retval2) != COMMAND_ERROR_NONE))
 			g_error (G_STRLOC ": Can't get exc object");
 
 		g_free (rdata->saved_regs);
@@ -613,6 +614,65 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
 	INFERIOR_REG_RSI (arch->current_regs) = new_rsp + static_size;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
+}
+
+static ServerCommandError
+server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
+			     guint64 method_argument, guint64 callback_argument)
+{
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	RuntimeInvokeData *rdata;
+	long new_rsp;
+
+	int size = 113;
+	guint8 *code = g_malloc0 (size);
+
+	if (arch->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - size;
+
+	*((guint64 *) code) = new_rsp + size - 1;
+	*((guint64 *) (code+8)) = INFERIOR_REG_RAX (arch->current_regs);
+	*((guint64 *) (code+16)) = INFERIOR_REG_RBX (arch->current_regs);
+	*((guint64 *) (code+24)) = INFERIOR_REG_RCX (arch->current_regs);
+	*((guint64 *) (code+32)) = INFERIOR_REG_RDX (arch->current_regs);
+	*((guint64 *) (code+40)) = INFERIOR_REG_RBP (arch->current_regs);
+	*((guint64 *) (code+48)) = INFERIOR_REG_RSP (arch->current_regs);
+	*((guint64 *) (code+56)) = INFERIOR_REG_RSI (arch->current_regs);
+	*((guint64 *) (code+64)) = INFERIOR_REG_RDI (arch->current_regs);
+	*((guint64 *) (code+72)) = INFERIOR_REG_RIP (arch->current_regs);
+	*((guint64 *) (code+80)) = INFERIOR_REG_R12 (arch->current_regs);
+	*((guint64 *) (code+88)) = INFERIOR_REG_R13 (arch->current_regs);
+	*((guint64 *) (code+96)) = INFERIOR_REG_R14 (arch->current_regs);
+	*((guint64 *) (code+104)) = INFERIOR_REG_R15 (arch->current_regs);
+	*((guint8 *) (code+112)) = 0xcc;
+
+	rdata = g_new0 (RuntimeInvokeData, 1);
+	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
+	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
+	rdata->call_address = new_rsp + size - 1;
+	rdata->exc_address = 0;
+	rdata->callback_argument = callback_argument;
+
+	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	g_free (code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_RIP (arch->current_regs) = method_address;
+	INFERIOR_REG_RDI (arch->current_regs) = new_rsp + 8;
+	INFERIOR_REG_RSI (arch->current_regs) = method_argument;
+	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
+
+	g_ptr_array_add (arch->rti_stack, rdata);
 
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)

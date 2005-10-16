@@ -144,12 +144,9 @@ namespace Mono.Debugger
 
 		internal long[] Values {
 			get {
-				if (!from_current_frame)
-					throw new InvalidOperationException ();
-
 				long[] retval = new long [regs.Length];
 				for (int i = 0; i < regs.Length; i++)
-					retval [i] = regs [i].Value;
+					retval [i] = regs [i].GetValue ();
 
 				return retval;
 			}

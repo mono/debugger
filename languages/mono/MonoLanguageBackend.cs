@@ -33,6 +33,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress LookupClass;
 		public readonly TargetAddress LookupType;
 		public readonly TargetAddress LookupAssembly;
+		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress Heap;
 		public readonly int HeapSize;
 
@@ -56,6 +57,7 @@ namespace Mono.Debugger.Languages.Mono
 			LookupClass             = reader.ReadAddress ();
 			LookupType              = reader.ReadAddress ();
 			LookupAssembly          = reader.ReadAddress ();
+			RunFinally              = reader.ReadAddress ();
 			Heap                    = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
@@ -934,6 +936,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetAddress GetBoxedObjectFunc {
 			get { return info.GetBoxedObjectMethod; }
+		}
+
+		public TargetAddress RunFinallyFunc {
+			get { return info.RunFinally; }
 		}
 
 		public SourceMethod GetTrampoline (ITargetMemoryAccess memory,

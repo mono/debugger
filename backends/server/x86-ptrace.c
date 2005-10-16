@@ -441,6 +441,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_write_memory,
 	server_ptrace_call_method,
 	server_ptrace_call_method_1,
+	server_ptrace_call_method_2,
 	server_ptrace_call_method_invoke,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_insert_hw_breakpoint,

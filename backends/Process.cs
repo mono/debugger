@@ -563,6 +563,24 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress argument)
+		{
+			CommandResult result = new CommandResult ();
+
+			lock (this) {
+				check_engine ();
+				engine.CallMethod (method, argument, result);
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
+		}
+
 		public void RuntimeInvoke (TargetFunctionType method_argument,
 					   TargetObject object_argument,
 					   TargetObject[] param_objects)
@@ -607,6 +625,21 @@ namespace Mono.Debugger
 				check_engine ();
 				return engine.Invoke (func, data);
 			}
+		}
+
+		public void Return (bool run_finally)
+		{
+			CommandResult result;
+
+			lock (this) {
+				check_engine ();
+				result = engine.Return (run_finally);
+				if (result == null)
+					return;
+				operation_completed_event.Reset ();
+			}
+
+			operation_completed_event.WaitOne ();
 		}
 
 		public bool HasTarget {

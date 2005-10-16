@@ -2261,4 +2261,32 @@ namespace Mono.Debugger.Frontend
 		public string Description { get { return "Start background server."; } }
 		public string Documentation { get { return ""; } }
 	}
+
+	public class ReturnCommand : ProcessCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (context.HasBackend && context.Interpreter.IsInteractive) {
+				if (context.Interpreter.Query ("Make the current stack frame return?")) {
+					return true;
+				} else {
+					Console.WriteLine ("Not confirmed.");
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			ProcessHandle process = ResolveProcess (context);
+			process.Process.Return (true);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Make the current stack frame return."; } }
+		public string Documentation { get { return ""; } }
+	}
 }

@@ -33,6 +33,7 @@ struct _MonoDebuggerInfo {
 	guint64 (*lookup_class) (guint64 image_argument, guint64 token_arg);
 	guint64 (*lookup_type) (guint64 dummy_argument, const gchar *string_argument);
 	guint64 (*lookup_assembly) (guint64 dummy_argument, const gchar *string_argument);
+	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
 	gpointer heap;
 };
 
@@ -96,6 +97,7 @@ void mono_debugger_init_icalls (void);
 extern MonoDebuggerManager MONO_DEBUGGER__manager;
 
 extern void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
+extern void mono_debugger_run_finally (void *start_ctx);
 
 G_END_DECLS
 

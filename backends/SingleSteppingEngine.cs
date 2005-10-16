@@ -1352,6 +1352,41 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
+		public void CallMethod (TargetAddress method, TargetAddress argument,
+					CommandResult result)
+		{
+			StartOperation ();
+			ProcessOperation (new OperationCallMethod (
+				method, argument.Address, result));
+		}
+
+		[Command]
+		public CommandResult Return (bool run_finally)
+		{
+			if (current_frame == null)
+				throw new TargetException (TargetError.NoStack);
+
+			StackFrame parent_frame = current_frame.UnwindStack (inferior, arch);
+			if (parent_frame == null)
+				return null;
+
+			MonoLanguageBackend language = CurrentFrame.Language as MonoLanguageBackend;
+			if ((language == null) || !run_finally) {
+				inferior.SetRegisters (parent_frame.Registers);
+				frame_changed (inferior.CurrentFrame, null);
+				TargetEventArgs args = new TargetEventArgs (
+					TargetEventType.TargetStopped, 0, current_frame);
+				manager.Debugger.SendTargetEvent (this, args);
+				return null;
+			}
+
+			CommandResult result = new CommandResult ();
+			StartOperation ();
+			ProcessOperation (new OperationReturn (language, parent_frame, result));
+			return result;
+		}
+
+		[Command]
 		public Backtrace GetBacktrace (int max_frames)
 		{
 			inferior.Debugger.UpdateSymbolTable (inferior);
@@ -1505,7 +1540,6 @@ namespace Mono.Debugger.Backends
 		{
 			return func (target_access, data);
 		}
-
 #endregion
 
 #region IDisposable implementation
@@ -2272,6 +2306,7 @@ namespace Mono.Debugger.Backends
 			if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
 				Report.Debug (DebugFlags.SSE, "{0} aborting callback {1} at {2}: {3}",
 					      sse, this, inferior.CurrentFrame, cevent);
+				goto out_frame_changed;
 				RestoreStack (sse);
 				return EventResult.CompletedCallback;
 			}
@@ -2320,6 +2355,11 @@ namespace Mono.Debugger.Backends
 		{
 			if (stack_data != null)
 				sse.restore_stack (stack_data);
+		}
+
+		protected void DeleteStack ()
+		{
+			stack_data = null;
 		}
 	}
 
@@ -2560,9 +2600,22 @@ namespace Mono.Debugger.Backends
 			this.Result = result;
 		}
 
+		public OperationCallMethod (TargetAddress method, long argument,
+					    CommandResult result)
+		{
+			this.Type = CallMethodType.Long;
+			this.Method = method;
+			this.Argument1 = argument;
+			this.Result = result;
+		}
+
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			switch (Type) {
+			case CallMethodType.Long:
+				sse.inferior.CallMethod (Method, Argument1, ID);
+				break;
+
 			case CallMethodType.LongLong:
 				sse.inferior.CallMethod (Method, Argument1, Argument2, ID);
 				break;
@@ -2798,6 +2851,35 @@ namespace Mono.Debugger.Backends
 			return SingleSteppingEngine.MethodHasSource (method);
 		}
 	}
+
+	protected class OperationReturn : OperationCallback
+	{
+		public readonly MonoLanguageBackend Language;
+		public readonly StackFrame ParentFrame;
+		public readonly CommandResult Result;
+
+		public OperationReturn (MonoLanguageBackend language, StackFrame parent_frame,
+					CommandResult result)
+		{
+			this.Language = language;
+			this.ParentFrame = parent_frame;
+			this.Result = result;
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{
+			sse.inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
+		}
+
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
+		{
+			DeleteStack ();
+			inferior.SetRegisters (ParentFrame.Registers);
+			return true;
+		}
+	}
 #endregion
 	}
 
@@ -2839,6 +2921,7 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal enum CallMethodType
 	{
+		Long,
 		LongLong,
 		LongString
 	}

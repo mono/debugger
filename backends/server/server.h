@@ -202,6 +202,11 @@ struct InferiorVTable {
 						       const gchar      *string_argument,
 						       guint64           callback_argument);
 
+	ServerCommandError    (* call_method_2)       (ServerHandle     *handle,
+						       guint64           method,
+						       guint64           method_argument,
+						       guint64           callback_argument);
+
 	ServerCommandError    (* call_method_invoke)  (ServerHandle     *handle,
 						       guint64           invoke_method,
 						       guint64           method_argument,
@@ -393,6 +398,12 @@ mono_debugger_server_call_method_1        (ServerHandle       *handle,
 					   guint64             method_address,
 					   guint64             method_argument,
 					   const gchar        *string_argument,
+					   guint64             callback_argument);
+
+ServerCommandError
+mono_debugger_server_call_method_2        (ServerHandle       *handle,
+					   guint64             method_address,
+					   guint64             method_argument,
 					   guint64             callback_argument);
 
 ServerCommandError

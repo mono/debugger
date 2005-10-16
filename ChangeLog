@@ -1,3 +1,24 @@
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
+	Added the `return' command to make the current stack frame return.
+
+	* wrapper/mono-debugger-jit-wrapper.h
+	(MonoDebuggerInfo): Added `run_finally'.
+
+	* backends/server/server.c
+	(mono_debugger_server_call_method_2): New public method; invoke a
+	function which takes a `MonoContext *' (private mini data structure)
+	argument; we use this to call mono_debugger_run_finally().
+
+	* backends/SingleSteppingEngine.cs
+	(OperationReturn): New operation; run the current frame's
+	`finally' handlers.
+	(SingleSteppingEngine.Return): New public method; make the current
+	stack frame return.
+
+	* frontend/Command.cs (ReturnCommand): Added a `return' command to
+	make the current stack frame return.
+
 2005-10-14  Martin Baulig  <martin@ximian.com>
 
 	Only use a single AddressDomain per process.

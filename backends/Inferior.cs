@@ -106,6 +106,9 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, long method_argument, long callback_argument);
+
+		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
 
 		[DllImport("monodebuggerserver")]
@@ -283,6 +286,19 @@ namespace Mono.Debugger.Backends
 				check_error (mono_debugger_server_call_method_1 (
 					server_handle, method.Address, arg1,
 					arg2, callback_arg));
+			} catch {
+				change_target_state (old_state);
+			}
+		}
+
+		public void CallMethod (TargetAddress method, long arg1, long callback_arg)
+		{
+			check_disposed ();
+
+			TargetState old_state = change_target_state (TargetState.RUNNING);
+			try {
+				check_error (mono_debugger_server_call_method_2 (
+					server_handle, method.Address, arg1, callback_arg));
 			} catch {
 				change_target_state (old_state);
 			}

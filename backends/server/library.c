@@ -194,6 +194,17 @@ mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address
 }
 
 ServerCommandError
+mono_debugger_server_call_method_2 (ServerHandle *handle, guint64 method_address,
+				    guint64 method_argument, guint64 callback_argument)
+{
+	if (!global_vtable->call_method_1)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->call_method_2) (
+		handle, method_address, method_argument, callback_argument);
+}
+
+ServerCommandError
 mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 					 guint64 method_argument, guint32 num_params,
 					 guint32 blob_size, guint64 *param_data,

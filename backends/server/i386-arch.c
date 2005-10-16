@@ -217,6 +217,13 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 }
 
 static ServerCommandError
+server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
+			     guint64 method_argument, guint64 callback_argument)
+{
+	return COMMAND_ERROR_NOT_IMPLEMENTED;
+}
+
+static ServerCommandError
 server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 				  guint64 method_argument, guint32 num_params,
 				  guint32 blob_size, guint64 *param_data,
