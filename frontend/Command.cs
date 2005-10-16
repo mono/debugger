@@ -2194,51 +2194,6 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class UnwindCommand : ProcessCommand, IDocumentableCommand
-	{
-		Expression expression;
-		PointerExpression pexpr;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			expression = ParseExpression (context);
-			if (expression == null)
-				return false;
-
-			expression = expression.Resolve (context);
-			if (expression == null)
-				return false;
-
-			pexpr = expression as PointerExpression;
-			if (pexpr == null)
-				throw new ScriptingException (
-					"Expression `{0}' is not a pointer.",
-					expression.Name);
-
-			return true;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			ScriptingContext new_context = context.GetExpressionContext ();
-			if (Process > 0)
-				new_context.CurrentProcess = ResolveProcess (new_context);
-
-			TargetAddress address = pexpr.EvaluateAddress (context);
-			ProcessHandle process = new_context.CurrentProcess;
-
-			Backtrace backtrace = process.Process.UnwindStack (address);
-			StackFrame[] frames = backtrace.Frames;
-			for (int i = 0; i < frames.Length; i++)
-				context.Print ("{0} {1}", "   ", frames [i]);
-		}
-
-		  // IDocumentableCommand
-		  public CommandFamily Family { get { return CommandFamily.Internal; } }
-		  public string Description { get { return "Unwind the stack to a given address."; } }
-		  public string Documentation { get { return ""; } }
-	}
-
 	public class ServerCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool DoResolve (ScriptingContext context)

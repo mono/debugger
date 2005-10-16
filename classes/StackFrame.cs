@@ -8,8 +8,6 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	public delegate void ObjectInvalidHandler (object obj);
-
 	[Serializable]
 	public sealed class Register
 	{
@@ -160,7 +158,7 @@ namespace Mono.Debugger
 	}
 
 	[Serializable]
-	public sealed class StackFrame : MarshalByRefObject, IDisposable
+	public sealed class StackFrame : MarshalByRefObject
 	{
 		protected readonly TargetAddress address;
 		protected readonly TargetAddress stack_pointer;
@@ -172,8 +170,8 @@ namespace Mono.Debugger
 		Process process;
 		TargetAccess target;
 		SourceAddress source;
+		StackFrame parent_frame;
 		bool has_source;
-		AddressDomain address_domain;
 		Symbol name;
 
 		internal StackFrame (Process process, TargetAccess target,
@@ -224,20 +222,11 @@ namespace Mono.Debugger
 		}
 
 		public int Level {
-			get {
-				return level;
-			}
-		}
-
-		public bool IsValid {
-			get {
-				return !disposed;
-			}
+			get { return level; }
 		}
 
 		public SourceAddress SourceAddress {
 			get {
-				check_disposed ();
 				if (has_source)
 					return source;
 				if ((method != null) && method.HasSource)
@@ -248,54 +237,27 @@ namespace Mono.Debugger
 		}
 
 		public TargetAddress TargetAddress {
-			get {
-				check_disposed ();
-				return address;
-			}
+			get { return address; }
 		}
 
 		public TargetAddress StackPointer {
-			get {
-				check_disposed ();
-				return stack_pointer;
-			}
+			get { return stack_pointer; }
 		}
 
 		public TargetAddress FrameAddress {
-			get {
-				check_disposed ();
-				return frame_address;
-			}
-		}
-
-		public AddressDomain AddressDomain {
-			get {
-				if (address_domain == null)
-					address_domain = new AddressDomain ("frame");
-
-				return address_domain;
-			}
+			get { return frame_address; }
 		}
 
 		public Process Process {
-			get {
-				check_disposed ();
-				return process;
-			}
+			get { return process; }
 		}
 
 		public TargetAccess TargetAccess {
-			get {
-				check_disposed ();
-				return target;
-			}
+			get { return target; }
 		}
 
 		public Registers Registers {
-			get {
-				check_disposed ();
-				return registers;
-			}
+			get { return registers; }
 		}
 
 		public long GetRegister (int index)
@@ -304,22 +266,15 @@ namespace Mono.Debugger
 		}
 
 		public Method Method {
-			get {
-				check_disposed ();
-				return method;
-			}
+			get { return method; }
 		}
 
 		public Symbol Name {
-			get {
-				check_disposed ();
-				return name;
-			}
+			get { return name; }
 		}
 
 		public TargetVariable[] Locals {
 			get {
-				check_disposed ();
 				ArrayList list = new ArrayList ();
 				foreach (TargetVariable local in Method.Locals) {
 					if (local.IsAlive (TargetAddress))
@@ -336,11 +291,8 @@ namespace Mono.Debugger
 			Registers [index].WriteRegister (process.TargetAccess, value);
 		}
 
-		public event ObjectInvalidHandler FrameInvalidEvent;
-
 		public Language Language {
 			get {
-				check_disposed ();
 				if (method != null)
 					return method.Module.Language;
 				else
@@ -348,8 +300,16 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal StackFrame ParentFrame {
+			get { return parent_frame; }
+			set { parent_frame = value; }
+		}
+
 		public StackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
 		{
+			if (parent_frame != null)
+				return parent_frame;
+
 			StackFrame new_frame = null;
 			if (method != null) {
 				try {
@@ -399,50 +359,5 @@ namespace Mono.Debugger
 
 			return sb.ToString ();
 		}
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		private void check_disposed ()
-		{
-			if (disposed) {
-				Console.WriteLine ("StackFrame already disposed: {0}{1}", this, Environment.StackTrace);
-				// throw new ObjectDisposedException ("StackFrame");
-			}
-		}
-
-		protected void Dispose (bool disposing)
-		{
-			if (!this.disposed) {
-				if (disposing) {
-					if (FrameInvalidEvent != null)
-						FrameInvalidEvent (this);
-
-					if (address_domain != null)
-						address_domain.Dispose ();
-
-					method = null;
-					source = null;
-				}
-				
-				this.disposed = true;
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~StackFrame ()
-		{
-			Dispose (false);
-		}
-
 	}
 }

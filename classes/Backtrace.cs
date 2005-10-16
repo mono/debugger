@@ -6,31 +6,14 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public class Backtrace : MarshalByRefObject, IDisposable
+	public class Backtrace : MarshalByRefObject
 	{
-		protected StackFrame last_frame;
-		protected ITargetMemoryAccess target;
-		protected Architecture arch;
-		protected TargetAddress until;
-		protected int max_frames;
-		protected bool finished;
-
+		StackFrame last_frame;
 		ArrayList frames;
 
-		public Backtrace (ITargetMemoryAccess target, Architecture arch,
-				  StackFrame first_frame)
-			: this (target, arch, first_frame, TargetAddress.Null, -1)
-		{ }
-
-		public Backtrace (ITargetMemoryAccess target, Architecture arch,
-				  StackFrame first_frame, TargetAddress until,
-				  int max_frames)
+		public Backtrace (StackFrame first_frame)
 		{
-			this.target = target;
-			this.arch = arch;
 			this.last_frame = first_frame;
-			this.until = until;
-			this.max_frames = max_frames;
 
 			frames = new ArrayList ();
 			frames.Add (first_frame);
@@ -44,83 +27,38 @@ namespace Mono.Debugger
 			}
 		}
 
-		public event ObjectInvalidHandler BacktraceInvalidEvent;
-
 		public void GetBacktrace (TargetAccess target, Architecture arch,
-					  TargetAddress until)
+					  TargetAddress until, int max_frames)
 		{
-			while (TryUnwind (target, arch)) {
+			while (TryUnwind (target, arch, until)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
-					break;
-
-				if (!until.IsNull && (last_frame.StackPointer > until))
 					break;
 			}
 		}
 
-		public bool TryUnwind (TargetAccess target, Architecture arch)
+		public bool TryUnwind (TargetAccess target, Architecture arch,
+				       TargetAddress until)
 		{
-			if (finished)
-				return false;
-
 			StackFrame new_frame = null;
 			try {
 				new_frame = last_frame.UnwindStack (target.TargetMemoryAccess, arch);
 			} catch (TargetException) {
 			}
 
-			if (new_frame == null) {
-				finished = true;
-				return false;
-			}
-
-			if (!until.IsNull && (new_frame.TargetAddress == until))
+			if (new_frame == null)
 				return false;
 
-			frames.Add (new_frame);
-			last_frame = new_frame;
+			if (!until.IsNull && (new_frame.StackPointer >= until))
+				return false;
+
+			AddFrame (new_frame);
 			return true;
 		}
 
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		private void check_disposed ()
+		internal void AddFrame (StackFrame new_frame)
 		{
-			if (disposed)
-				throw new ObjectDisposedException ("Backtrace");
+			frames.Add (new_frame);
+			last_frame = new_frame;
 		}
-
-		protected virtual void Dispose (bool disposing)
-		{
-			if (!this.disposed) {
-				if (disposing) {
-					if (BacktraceInvalidEvent != null)
-						BacktraceInvalidEvent (this);
-					if (frames != null) {
-						foreach (StackFrame frame in frames)
-							frame.Dispose ();
-					}
-				}
-				
-				this.disposed = true;
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~Backtrace ()
-		{
-			Dispose (false);
-		}
-
 	}
 }

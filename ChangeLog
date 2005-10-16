@@ -1,5 +1,14 @@
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs (StackFrame): Don't implement IDisposable.
+	(StackFrame.FrameInvalidEvent): Removed.
+	(ObjectInvalidHandler): Removed.
+
+	* classes/Backtrace.cs (Backtrace): Don't implement IDisposable.
+	(Backtrace.BacktraceInvalidEvent): Removed.
+
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
 	Added the `return' command to make the current stack frame return.
 
 	* wrapper/mono-debugger-jit-wrapper.h

@@ -120,7 +120,6 @@ namespace Mono.Debugger.Frontend
 			e.RegisterAlias   ("r", typeof (RunCommand));
 			e.RegisterCommand ("about", typeof (AboutCommand));
 			e.RegisterCommand ("lookup", typeof (LookupCommand));
-			e.RegisterCommand ("unwind", typeof (UnwindCommand));
 			e.RegisterCommand ("server", typeof (ServerCommand));
 			e.RegisterCommand ("return", typeof (ReturnCommand));
 
