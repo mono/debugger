@@ -37,6 +37,7 @@ typedef enum {
 	MESSAGE_CHILD_STOPPED,
 	MESSAGE_CHILD_SIGNALED,
 	MESSAGE_CHILD_CALLBACK,
+	MESSAGE_CHILD_CALLBACK_COMPLETED,
 	MESSAGE_CHILD_HIT_BREAKPOINT,
 	MESSAGE_CHILD_MEMORY_CHANGED,
 	MESSAGE_CHILD_CREATED_THREAD,
@@ -217,6 +218,8 @@ struct InferiorVTable {
 						       gconstpointer     blob_data,
 						       guint64           callback_argument,
 						       gboolean          debug);
+
+	ServerCommandError    (* abort_invoke)        (ServerHandle     *handle);
 
 	/*
 	 * Insert a breakpoint at address `address' in the target's address space.
@@ -417,6 +420,9 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   gconstpointer       blob_data,
 					   guint64             callback_argument,
 					   gboolean            debug);
+
+ServerCommandError
+mono_debugger_server_abort_invoke        (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,

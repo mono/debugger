@@ -197,7 +197,7 @@ ServerCommandError
 mono_debugger_server_call_method_2 (ServerHandle *handle, guint64 method_address,
 				    guint64 method_argument, guint64 callback_argument)
 {
-	if (!global_vtable->call_method_1)
+	if (!global_vtable->call_method_2)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->call_method_2) (
@@ -217,6 +217,15 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 	return (* global_vtable->call_method_invoke) (
 		handle, invoke_method, method_argument, num_params, blob_size,
 		param_data, offset_data, blob_data, callback_argument, debug);
+}
+
+ServerCommandError
+mono_debugger_server_abort_invoke (ServerHandle *handle)
+{
+	if (!global_vtable->abort_invoke)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->abort_invoke) (handle);
 }
 
 ServerCommandError

@@ -137,6 +137,7 @@ namespace Mono.Debugger.Backends
 			disassembler = inferior.Disassembler;
 
 			exception_handlers = new Hashtable ();
+			callback_stack = new Stack ();
 		}
 
 #region child event processing
@@ -344,6 +345,15 @@ namespace Mono.Debugger.Backends
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
 				exiting = true;	
 				break;
+
+			case Inferior.ChildEventType.CHILD_CALLBACK_COMPLETED:
+				callback_stack.Pop ();
+
+				frame_changed (inferior.CurrentFrame, null);
+				result = new TargetEventArgs (
+					TargetEventType.TargetStopped, 0,
+					current_frame);
+				break;
 			}
 
 		send_result:
@@ -359,8 +369,10 @@ namespace Mono.Debugger.Backends
 					StackFrame ret_frame = arch.UnwindStack (
 						current_frame, inferior, null, 0);
 
-					if (ret_frame != null)
+					if (ret_frame != null) {
+						main_method_stackptr = ret_frame.StackPointer;
 						main_method_retaddr = ret_frame.TargetAddress;
+					}
 
 					manager.ReachedMain ();
 				}
@@ -787,33 +799,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		// <summary>
-		//   Compute the StackFrame for target address @address.
-		// </summary>
-		StackFrame get_frame ()
-		{
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-			registers = inferior.GetRegisters ();
-
-			TargetAddress address = iframe.Address;
-
-			// If we have a current_method and the address is still inside
-			// that method, we don't need to do a method lookup.
-			if ((current_method == null) ||
-			    (!Method.IsInSameMethod (current_method, address))) {
-				current_method = Lookup (address);
-			}
-
-			// If some clown requested a backtrace while doing the symbol lookup ....
-			frames_invalid ();
-
-			current_frame = new StackFrame (
-				process, target_access, iframe.Address, iframe.StackPointer,
-				iframe.FrameAddress, registers, 0, current_method);
-
-			return current_frame;
-		}
-
-		// <summary>
 		//   Check whether @address is inside @frame.
 		// </summary>
 		bool is_in_step_frame (StepFrame frame, TargetAddress address)
@@ -869,9 +854,9 @@ namespace Mono.Debugger.Backends
 						return new_operation;
 				}
 
-				current_frame = new StackFrame (
+				update_current_frame (new StackFrame (
 					process, target_access, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, 0, current_method, source);
+					iframe.FrameAddress, registers, 0, current_method, source));
 			} else {
 				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
@@ -881,10 +866,10 @@ namespace Mono.Debugger.Backends
 				}
 
 				if (current_method != null)
-					current_frame = new StackFrame (
+					update_current_frame (new StackFrame (
 						process, target_access, iframe.Address,
 						iframe.StackPointer, iframe.FrameAddress,
-						registers, 0, current_method);
+						registers, 0, current_method));
 				else {
 					Symbol name;
 					try {
@@ -892,10 +877,10 @@ namespace Mono.Debugger.Backends
 					} catch {
 						name = null;
 					}
-					current_frame = new StackFrame (
+					update_current_frame (new StackFrame (
 						process, target_access, iframe.Address,
 						iframe.StackPointer, iframe.FrameAddress,
-						registers, 0, name);
+						registers, 0, name));
 				}
 			}
 
@@ -945,17 +930,15 @@ namespace Mono.Debugger.Backends
 
 		void frames_invalid ()
 		{
-			if (current_frame != null) {
-				current_frame.Dispose ();
-				current_frame = null;
-			}
-
-			if (current_backtrace != null) {
-				current_backtrace.Dispose ();
-				current_backtrace = null;
-			}
-
+			current_frame = null;
+			current_backtrace = null;
 			registers = null;
+		}
+
+		void update_current_frame (StackFrame new_frame)
+		{
+			current_frame = new_frame;
+			current_backtrace = new Backtrace (current_frame);
 		}
 
 		int temp_breakpoint_id = 0;
@@ -1166,17 +1149,20 @@ namespace Mono.Debugger.Backends
 			}
 
 			current_method = stack.Method;
-			if ((current_frame != null) && (current_frame != stack.Frame)) {
-				current_frame.Dispose ();
-				if (current_backtrace != null)
-					current_backtrace.Dispose ();
-			}
-
 			current_frame = stack.Frame;
 			current_backtrace = stack.Backtrace;
 			registers = stack.Registers;
 			Report.Debug (DebugFlags.SSE,
 				      "{0} restored stack: {1}", this, current_frame);
+		}
+
+		void discard_stack (StackData stack)
+		{
+		}
+
+		void push_runtime_invoke (StackFrame rti_frame)
+		{
+			callback_stack.Push (rti_frame);
 		}
 
 		// <summary>
@@ -1363,12 +1349,32 @@ namespace Mono.Debugger.Backends
 		[Command]
 		public CommandResult Return (bool run_finally)
 		{
-			if (current_frame == null)
+			GetBacktrace (-1);
+			if (current_backtrace == null)
 				throw new TargetException (TargetError.NoStack);
 
-			StackFrame parent_frame = current_frame.UnwindStack (inferior, arch);
+			StackFrame parent_frame = current_backtrace.Frames [1];
 			if (parent_frame == null)
 				return null;
+
+			StackFrame rti_frame = null;
+			if (callback_stack.Count > 0)
+				rti_frame = (StackFrame) callback_stack.Peek ();
+
+			/*
+			 * Check whether we're crossing a runtime-invoke boundary and
+			 * abort the invocation if neccessary.
+			 */
+			if ((rti_frame != null) &&
+			    (parent_frame.StackPointer >= rti_frame.StackPointer)) {
+				inferior.AbortInvoke ();
+				callback_stack.Pop ();
+				frame_changed (inferior.CurrentFrame, null);
+				TargetEventArgs args = new TargetEventArgs (
+					TargetEventType.TargetStopped, 0, current_frame);
+				manager.Debugger.SendTargetEvent (this, args);
+				return null;
+			}
 
 			MonoLanguageBackend language = CurrentFrame.Language as MonoLanguageBackend;
 			if ((language == null) || !run_finally) {
@@ -1394,10 +1400,18 @@ namespace Mono.Debugger.Backends
 			if (current_frame == null)
 				throw new TargetException (TargetError.NoStack);
 
-			current_backtrace = new Backtrace (
-				process, arch, current_frame, main_method_retaddr, max_frames);
+			TargetAddress until = main_method_stackptr;
 
-			current_backtrace.GetBacktrace (target_access, arch, TargetAddress.Null);
+			current_backtrace = new Backtrace (current_frame);
+
+			foreach (StackFrame rti_frame in callback_stack) {
+				current_backtrace.GetBacktrace (
+					target_access, arch, rti_frame.StackPointer, max_frames);
+
+				current_backtrace.AddFrame (rti_frame);
+			}
+
+			current_backtrace.GetBacktrace (target_access, arch, until, max_frames);
 
 			return current_backtrace;
 		}
@@ -1596,6 +1610,7 @@ namespace Mono.Debugger.Backends
 		Disassembler disassembler;
 		ProcessStart start;
 		Hashtable exception_handlers;
+		Stack callback_stack;
 		bool engine_stopped;
 		ManualResetEvent engine_stopped_event;
 		bool stop_requested;
@@ -1612,11 +1627,12 @@ namespace Mono.Debugger.Backends
 
 		internal TargetAddress EndStackAddress;
 
+		TargetAddress main_method_stackptr = TargetAddress.Null;
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 		TargetState target_state = TargetState.NO_TARGET;
 
 #region Nested SSE classes
-		internal sealed class StackData
+		internal sealed class StackData : MarshalByRefObject
 		{
 			public readonly Method Method;
 			public readonly TargetAddress Address;
@@ -2306,13 +2322,12 @@ namespace Mono.Debugger.Backends
 			if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
 				Report.Debug (DebugFlags.SSE, "{0} aborting callback {1} at {2}: {3}",
 					      sse, this, inferior.CurrentFrame, cevent);
-				goto out_frame_changed;
 				RestoreStack (sse);
 				return EventResult.CompletedCallback;
 			}
 
 			if (ID != cevent.Argument) {
-				Abort ();
+				Abort (sse);
 				goto out_frame_changed;
 			}
 
@@ -2339,27 +2354,42 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		public void Abort ()
+		public void Abort (SingleSteppingEngine sse)
 		{
-			if (stack_data == null)
-				return;
-
-			if (stack_data.Frame != null)
-				stack_data.Frame.Dispose ();
-
-			if (stack_data.Backtrace != null)
-				stack_data.Backtrace.Dispose ();
+			if (stack_data != null)
+				sse.discard_stack (stack_data);
+			stack_data = null;
 		}
 
 		protected void RestoreStack (SingleSteppingEngine sse)
 		{
 			if (stack_data != null)
 				sse.restore_stack (stack_data);
+			stack_data = null;
 		}
 
-		protected void DeleteStack ()
+		protected void DiscardStack (SingleSteppingEngine sse)
 		{
+			if (stack_data != null)
+				sse.discard_stack (stack_data);
 			stack_data = null;
+		}
+
+		protected void PushRuntimeInvoke (SingleSteppingEngine sse, Inferior inferior,
+						  TargetFunctionType method)
+		{
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			Registers registers = inferior.GetRegisters ();
+
+			string name = String.Format ("<method `{0}' called from mdb>", method.Name);
+
+			StackFrame rti_frame = new StackFrame (
+				sse.process, sse.target_access, iframe.Address,
+				iframe.StackPointer, iframe.FrameAddress,
+				registers, 0, new Symbol (name, iframe.Address, 0));
+
+			sse.push_runtime_invoke (rti_frame);
+			rti_frame.ParentFrame = stack_data.Frame;
 		}
 	}
 
@@ -2371,7 +2401,7 @@ namespace Mono.Debugger.Backends
 		public readonly CommandResult Result;
 
 		MonoLanguageBackend language;
-		TargetAddress method, method_argument;
+		TargetAddress method, method_argument, invoke;
 		TargetObject object_arg;
 		bool method_compiled;
 		bool needs_boxing;
@@ -2465,7 +2495,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
 
 				Report.Debug (DebugFlags.SSE,
-					      "Runtime invoke boxed object: {0}", boxed);
+					      "{0} runtime invoke boxed object: {1}", sse, boxed);
 
 				TargetLocation loc = new AbsoluteTargetLocation (boxed);
 				object_arg = language.ObjectType.GetObject (loc);
@@ -2487,14 +2517,12 @@ namespace Mono.Debugger.Backends
 			if (!method_compiled) {
 				method_compiled = true;
 
-				TargetAddress invoke = new TargetAddress (
-					inferior.AddressDomain, data1);
+				invoke = new TargetAddress (inferior.AddressDomain, data1);
 
 				Report.Debug (DebugFlags.SSE,
-					      "Runtime invoke: {0}", invoke);
+					      "{0} runtime invoke: {1}", sse, invoke);
 
-				if (Debug)
-					sse.insert_temporary_breakpoint (invoke);
+				sse.insert_temporary_breakpoint (invoke);
 
 				inferior.RuntimeInvoke (
 					sse.target_access, language.RuntimeInvokeFunc,
@@ -2503,8 +2531,8 @@ namespace Mono.Debugger.Backends
 			}
 
 			Report.Debug (DebugFlags.SSE,
-				      "Runtime invoke done: {0:x} {1:x}",
-				      data1, data2);
+				      "{0} runtime invoke done: {1:x} {2:x}",
+				      sse, data1, data2);
 
 			RuntimeInvokeResult result = new RuntimeInvokeResult ();
 			if (data2 != 0) {
@@ -2548,9 +2576,17 @@ namespace Mono.Debugger.Backends
 				}
 			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 				   (cevent.Argument == 0)) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} stopped at {1} during runtime-invoke",
-					      sse, inferior.CurrentFrame);
+				if (inferior.CurrentFrame == invoke) {
+					Report.Debug (DebugFlags.SSE,
+						      "{0} stopped at invoke method {1}",
+						      sse, invoke);
+
+					PushRuntimeInvoke (sse, inferior, MethodArgument);
+				} else {
+					Report.Debug (DebugFlags.SSE,
+						      "{0} stopped at {1} during runtime-invoke",
+						      sse, inferior.CurrentFrame);
+				}
 
 				args = null;
 				if (Debug)
@@ -2875,7 +2911,7 @@ namespace Mono.Debugger.Backends
 							   Inferior inferior,
 							   long data1, long data2)
 		{
-			DeleteStack ();
+			DiscardStack (sse);
 			inferior.SetRegisters (ParentFrame.Registers);
 			return true;
 		}

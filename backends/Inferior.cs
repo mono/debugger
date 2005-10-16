@@ -109,6 +109,9 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, long method_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_abort_invoke (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
 
 		[DllImport("monodebuggerserver")]
@@ -163,6 +166,7 @@ namespace Mono.Debugger.Backends
 			CHILD_STOPPED,
 			CHILD_SIGNALED,
 			CHILD_CALLBACK,
+			CHILD_CALLBACK_COMPLETED,
 			CHILD_HIT_BREAKPOINT,
 			CHILD_MEMORY_CHANGED,
 			CHILD_CREATED_THREAD,
@@ -370,6 +374,11 @@ namespace Mono.Debugger.Backends
 				Marshal.FreeHGlobal (param_data);
 				Marshal.FreeHGlobal (offset_data);
 			}
+		}
+
+		public void AbortInvoke ()
+		{
+			check_error (mono_debugger_server_abort_invoke (server_handle));
 		}
 
 		public int InsertBreakpoint (TargetAddress address)

@@ -790,3 +790,10 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 
 	return COMMAND_ERROR_NONE;	
 }
+
+
+static ServerCommandError
+server_ptrace_abort_invoke (ServerHandle *handle)
+{
+	return COMMAND_ERROR_NOT_IMPLEMENTED;
+}

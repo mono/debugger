@@ -234,16 +234,6 @@ namespace Mono.Debugger
 			return GetBacktrace (-1);
 		}
 
-		public Backtrace UnwindStack (TargetAddress stack_pointer)
-		{
-			check_engine ();
-			Backtrace bt = new Backtrace (
-				this, engine.Architecture, CurrentFrame);
-			bt.GetBacktrace (
-				target_access, engine.Architecture, stack_pointer);
-			return bt;
-		}
-
 		public Registers GetRegisters ()
 		{
 			check_engine ();

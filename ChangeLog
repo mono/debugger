@@ -1,5 +1,24 @@
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/server.c
+	(mono_debugger_server_abort_invoke): New public method.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Return): Check whether we're crossing a
+	runtime invoke boundary and abort the invocation if neccessary.
+	(SingleSteppingEngine.ProcessChildEvent): We now receive a
+	`CHILD_CALLBACK_COMPLETED' event when completing a debugging
+	runtime invoke.
+
+	* backends/Inferior.cs
+	(Inferior.ChildEventType): Added `CHILD_CALLBACK_COMPLETED'.
+
+	* backends/server/x86_64-arch.c
+	(x86_arch_child_stopped): Send `STOP_ACTION_CALLBACK_COMPLETED' if
+	we completed a debugging runtime invoke.
+
+2005-10-16  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs (StackFrame): Don't implement IDisposable.
 	(StackFrame.FrameInvalidEvent): Removed.
 	(ObjectInvalidHandler): Removed.

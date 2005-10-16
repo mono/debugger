@@ -222,6 +222,12 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			*data2 = retval2;
 			return MESSAGE_CHILD_CALLBACK;
 
+		case STOP_ACTION_CALLBACK_COMPLETED:
+			*arg = callback_arg;
+			*data1 = retval;
+			*data2 = retval2;
+			return MESSAGE_CHILD_CALLBACK_COMPLETED;
+
 		case STOP_ACTION_NOTIFICATION:
 			*arg = callback_arg;
 			*data1 = retval;
@@ -443,6 +449,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_call_method_1,
 	server_ptrace_call_method_2,
 	server_ptrace_call_method_invoke,
+	server_ptrace_abort_invoke,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_insert_hw_breakpoint,
 	server_ptrace_remove_breakpoint,

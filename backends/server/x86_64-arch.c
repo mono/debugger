@@ -212,7 +212,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		if (rdata->debug) {
 			*retval = 0;
 			g_free (rdata);
-			return STOP_ACTION_BREAKPOINT_HIT;
+			return STOP_ACTION_CALLBACK_COMPLETED;
 		}
 
 		g_free (rdata);
@@ -749,4 +749,29 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 		return result;
 
 	return server_ptrace_continue (handle);
+}
+
+static ServerCommandError
+server_ptrace_abort_invoke (ServerHandle *handle)
+{
+	RuntimeInvokeData *rdata;
+
+	rdata = get_runtime_invoke_data (handle->arch);
+	if (!rdata)
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+
+	if (_server_ptrace_set_registers (handle->inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+	if (_server_ptrace_set_fp_registers (handle->inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
+
+	g_free (rdata->saved_regs);
+	g_free (rdata->saved_fpregs);
+	g_ptr_array_remove (handle->arch->rti_stack, rdata);
+
+	x86_arch_get_registers (handle);
+	g_free (rdata);
+
+	return COMMAND_ERROR_NONE;
 }
