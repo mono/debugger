@@ -647,13 +647,10 @@ namespace Mono.Debugger.Frontend
 			if (!var.CanWrite)
 				return false;
 
-			if (var.Type != obj.Type)
-				throw new ScriptingException (
-					"Type mismatch: cannot assign expression of type " +
-					"`{0}' to variable `{1}', which is of type `{2}'.",
-					obj.TypeName, Name, var.Type.Name);
+			TargetObject new_obj = Convert.ImplicitConversionRequired (
+				context, obj, var.Type);
 
-			var.SetObject (context.CurrentFrame.Frame, obj);
+			var.SetObject (context.CurrentFrame.Frame, new_obj);
 			return true;
 		}
 	}
