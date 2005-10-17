@@ -1,5 +1,17 @@
 2005-10-17  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(MethodGroupExpression.ctor): Take a `TargetFunctionType[]' array
+	instead of an `ArrayList'.
+	(PropertyGroupExpression): Removed.
+	(InvocationExpression.DoResolve): Do overload resolution here.
+	(InvocationExpression.DoResolveType): Override this.
+	(InvocationExpression.Invoke): Return `void'.
+	(ArrayAccessExpression.DoResolveVariable, DoAssign): Use an
+	`InvocationExpression' to invoke indexers.
+
+2005-10-17  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs (Convert): New public static class.
 	(Convert.ImplicitConversion): New public method.
 	(Convert.ImplicitConversionExists): Likewise.

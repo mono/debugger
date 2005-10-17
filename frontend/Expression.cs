@@ -460,6 +460,36 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public class ArgumentExpression : Expression
+	{
+		TargetObject obj;
+
+		public ArgumentExpression (TargetObject obj)
+		{
+			this.obj = obj;
+			resolved = true;
+		}
+
+		public override string Name {
+			get { return obj.ToString(); }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			return this;
+		}
+
+		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		{
+			return obj;
+		}
+
+		public override string ToString ()
+		{
+			return Name;
+		}
+	}
+
 	public class ThisExpression : Expression
 	{
 		public override string Name {
@@ -913,12 +943,12 @@ namespace Mono.Debugger.Frontend
 		protected readonly TargetClassType stype;
 		protected readonly TargetClassObject instance;
 		protected readonly string name;
-		protected readonly ArrayList methods;
+		protected readonly TargetFunctionType[] methods;
 		protected readonly bool is_instance, is_static;
 
 		public MethodGroupExpression (TargetClassType stype, TargetClassObject instance,
-					      string name, ArrayList methods, bool is_instance,
-					      bool is_static)
+					      string name, TargetFunctionType[] methods,
+					      bool is_instance, bool is_static)
 		{
 			this.stype = stype;
 			this.instance = instance;
@@ -964,8 +994,8 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			if (types == null) {
-				if (methods.Count == 1)
-					return ((TargetMethodInfo) methods [0]).Type;
+				if (methods.Length == 1)
+					return (TargetFunctionType) methods [0];
 
                                 throw new ScriptingException (
                                         "Ambiguous method `{0}'; need to use full name", Name);
@@ -980,10 +1010,10 @@ namespace Mono.Debugger.Frontend
 				return func;
 
 			ArrayList list = new ArrayList ();
-			foreach (TargetMethodInfo method in methods) {
-				if (method.Type.Source == null)
+			foreach (TargetFunctionType method in methods) {
+				if (method.Source == null)
 					continue;
-				list.Add (method.Type.Source);
+				list.Add (method.Source);
 			}
 			if (list.Count == 0)
 				return null;
@@ -997,11 +1027,11 @@ namespace Mono.Debugger.Frontend
 		{
 			ArrayList candidates = new ArrayList ();
 
-			foreach (TargetMethodInfo method in methods) {
-				if (method.Type.ParameterTypes.Length != argtypes.Length)
+			foreach (TargetFunctionType method in methods) {
+				if (method.ParameterTypes.Length != argtypes.Length)
 					continue;
 
-				candidates.Add (method.Type);
+				candidates.Add (method);
 			}
 
 			TargetFunctionType candidate;
@@ -1069,111 +1099,6 @@ namespace Mono.Debugger.Frontend
 					return null;
 
 				match = method;
-			}
-
-			return match;
-		}
-	}
-
-	public class PropertyGroupExpression : Expression
-	{
-		TargetClassType stype;
-		TargetClassObject instance;
-		Language language;
-		string name;
-		ArrayList props;
-
-		public PropertyGroupExpression (TargetClassType stype, string name,
-						TargetClassObject instance,
-						Language language, ArrayList props)
-		{
-			this.stype = stype;
-			this.instance = instance;
-			this.language = language;
-			this.name = name;
-			this.props = props;
-			resolved = true;
-		}
-
-		public override string Name {
-			get { return stype.Name + "." + name; }
-		}
-
-		public bool IsStatic {
-			get { return instance == null; }
-		}
-
-		protected override Expression DoResolve (ScriptingContext context)
-		{
-			return this;
-		}
-
-		protected TargetPropertyInfo OverloadResolve (ScriptingContext context,
-							       bool getter,
-							       TargetType[] types)
-		{
-			ArrayList candidates = new ArrayList ();
-
-			foreach (TargetPropertyInfo prop in props) {
-				if ((types != null) &&
-				    (prop.Getter.ParameterTypes.Length != types.Length))
-					continue;
-
-				candidates.Add (prop);
-			}
-
-			if (candidates.Count == 1)
-				return (TargetPropertyInfo) candidates [0];
-
-			if (candidates.Count == 0)
-				throw new ScriptingException (
-					"No overload of property `{0}' has {1} indices.",
-					Name, types.Length);
-
-			if (types == null)
-				throw new ScriptingException (
-					"Ambiguous property `{0}'; need to use " +
-					"full name", Name);
-
-			TargetPropertyInfo match = OverloadResolve (
-				context, language, stype, types, candidates);
-
-			if (match == null)
-				throw new ScriptingException (
-					"Ambiguous property `{0}'; need to use " +
-					"full name", Name);
-
-			return match;
-		}
-
-		public static TargetPropertyInfo OverloadResolve (ScriptingContext context,
-								  Language language,
-								  TargetClassType stype,
-								  TargetType[] types,
-								  ArrayList candidates)
-		{
-			TargetPropertyInfo match = null;
-			foreach (TargetPropertyInfo prop in candidates) {
-
-				if (prop.Getter.ParameterTypes.Length != types.Length)
-					continue;
-
-				bool ok = true;
-				for (int i = 0; i < types.Length; i++) {
-					if (prop.Getter.ParameterTypes [i] != types [i]) {
-						ok = false;
-						break;
-					}
-				}
-
-				if (!ok)
-					continue;
-
-				// We need to find exactly one match
-				if (match != null)
-					return null;
-
-				match = prop;
 			}
 
 			return match;
@@ -1417,12 +1342,12 @@ namespace Mono.Debugger.Frontend
 
 			if (name == ".ctor") {
 				foreach (TargetMethodInfo method in stype.Constructors) {
-					methods.Add (method);
+					methods.Add (method.Type);
 					is_instance = true;
 				}
 			} else if (name == ".cctor") {
 				foreach (TargetMethodInfo method in stype.StaticConstructors) {
-					methods.Add (method);
+					methods.Add (method.Type);
 					is_static = true;
 				}
 			} else {
@@ -1431,7 +1356,7 @@ namespace Mono.Debugger.Frontend
 						if (method.Name != name)
 							continue;
 
-						methods.Add (method);
+						methods.Add (method.Type);
 						is_instance = true;
 					}
 				}
@@ -1441,15 +1366,18 @@ namespace Mono.Debugger.Frontend
 						if (method.Name != name)
 							continue;
 
-						methods.Add (method);
+						methods.Add (method.Type);
 						is_static = true;
 					}
 				}
 			}
 
-			if (methods.Count > 0)
+			if (methods.Count > 0) {
+				TargetFunctionType[] funcs = new TargetFunctionType [methods.Count];
+				methods.CopyTo (funcs, 0);
 				return new MethodGroupExpression (
-					stype, instance, name, methods, is_instance, is_static);
+					stype, instance, name, funcs, is_instance, is_static);
+			}
 
 			TargetClassType ctype = stype as TargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
@@ -1823,43 +1751,29 @@ namespace Mono.Debugger.Frontend
 			// indexers
 			TargetClassObject sobj = obj as TargetClassObject;
 			if (sobj != null) {
-				StackFrame frame = context.CurrentFrame.Frame;
-				TargetPropertyInfo prop_info;
-				ArrayList candidates = new ArrayList ();
+				ArrayList props = new ArrayList ();
+				foreach (TargetPropertyInfo prop in sobj.Type.Properties) {
+					if (!prop.CanRead)
+						continue;
 
-				candidates.AddRange (sobj.Type.Properties);
-
-				TargetType[] indextypes = new TargetType [indices.Length];
-				TargetObject[] indexargs = new TargetObject [indices.Length];
-				for (int i = 0; i < indices.Length; i++) {
-					indextypes [i] = indices [i].EvaluateType (context);
-					if (indextypes [i] == null)
-						return null;
-					indexargs [i] = indices [i].EvaluateVariable (context);
-					if (indexargs [i] == null)
-						return null;
+					props.Add (prop.Getter);
 				}
 
-				prop_info = PropertyGroupExpression.OverloadResolve (
-					context, frame.Language, sobj.Type, indextypes, candidates);
-
-				if (prop_info == null)
-				 	throw new ScriptingException ("Could not find matching indexer.");
-
-				if (!prop_info.CanRead)
+				if (props.Count == 0)
 					throw new ScriptingException (
 						"Indexer `{0}' doesn't have a getter.", expr.Name);
 
-				string exc_message;
-				TargetObject res = context.CurrentProcess.RuntimeInvoke (
-					prop_info.Getter, sobj, indexargs, out exc_message);
+				TargetFunctionType[] funcs = new TargetFunctionType [props.Count];
+				props.CopyTo (funcs, 0);
 
-				if (exc_message != null)
-					throw new ScriptingException (
-						"Invocation of `{0}' raised an exception: {1}",
-						expr, exc_message);
+				MethodGroupExpression mg = new MethodGroupExpression (
+					sobj.Type, sobj, expr.Name + ".this", funcs, true, false);
 
-				return res;
+				InvocationExpression invocation = new InvocationExpression (
+					mg, indices);
+				invocation.Resolve (context);
+
+				return invocation.EvaluateVariable (context);
 			}
 
 			throw new ScriptingException (
@@ -1901,44 +1815,33 @@ namespace Mono.Debugger.Frontend
 			// indexers
 			TargetClassObject sobj = obj as TargetClassObject;
 			if (sobj != null) {
-				StackFrame frame = context.CurrentFrame.Frame;
-				TargetPropertyInfo prop_info;
-				ArrayList candidates = new ArrayList ();
+				ArrayList props = new ArrayList ();
+				foreach (TargetPropertyInfo prop in sobj.Type.Properties) {
+					if (!prop.CanWrite)
+						continue;
 
-				candidates.AddRange (sobj.Type.Properties);
-
-				TargetType[] indextypes = new TargetType [indices.Length];
-				TargetObject[] indexargs = new TargetObject [indices.Length + 1];
-				for (int i = 0; i < indices.Length; i++) {
-					indextypes [i] = indices [i].EvaluateType (context);
-					if (indextypes [i] == null)
-						return false;
-					indexargs [i] = indices [i].EvaluateVariable (context);
-					if (indexargs [i] == null)
-						return false;
+					props.Add (prop.Setter);
 				}
 
-				indexargs [indices.Length] = right;
-
-				prop_info = PropertyGroupExpression.OverloadResolve (
-					context, frame.Language, sobj.Type, indextypes, candidates);
-
-				if (prop_info == null)
-				 	throw new ScriptingException ("Could not find matching indexer.");
-
-				if (!prop_info.CanWrite)
+				if (props.Count == 0)
 					throw new ScriptingException (
 						"Indexer `{0}' doesn't have a setter.", expr.Name);
 
-				string exc_message;
-				context.CurrentProcess.RuntimeInvoke (
-					prop_info.Setter, sobj, indexargs, out exc_message);
+				TargetFunctionType[] funcs = new TargetFunctionType [props.Count];
+				props.CopyTo (funcs, 0);
 
-				if (exc_message != null)
-					throw new ScriptingException (
-						"Invocation of `{0}' raised an exception: {1}",
-						expr, exc_message);
+				MethodGroupExpression mg = new MethodGroupExpression (
+					sobj.Type, sobj, expr.Name + "[]", funcs, true, false);
 
+				Expression[] indexargs = new Expression [indices.Length + 1];
+				indices.CopyTo (indexargs, 0);
+				indexargs [indices.Length] = new ArgumentExpression (right);
+
+				InvocationExpression invocation = new InvocationExpression (
+					mg, indexargs);
+				invocation.Resolve (context);
+
+				invocation.Invoke (context, false);
 				return true;
 			}
 			
@@ -2333,6 +2236,9 @@ namespace Mono.Debugger.Frontend
 		MethodGroupExpression mg;
 		string name;
 
+		TargetType[] argtypes;
+		TargetFunctionType method;
+
 		public InvocationExpression (Expression method_expr, Expression[] arguments)
 		{
 			this.method_expr = method_expr;
@@ -2357,10 +2263,10 @@ namespace Mono.Debugger.Frontend
 			if (CastExpression.TryCast (context, sobj, delegate_type) == null)
 				return null;
 
-			TargetMemberInfo invoke = null;
-			foreach (TargetMemberInfo member in sobj.Type.Methods) {
-				if (member.Name == "Invoke") {
-					invoke = member;
+			TargetFunctionType invoke = null;
+			foreach (TargetMethodInfo method in sobj.Type.Methods) {
+				if (method.Name == "Invoke") {
+					invoke = method.Type;
 					break;
 				}
 			}
@@ -2368,11 +2274,10 @@ namespace Mono.Debugger.Frontend
 			if (invoke == null)
 				return null;
 
-			ArrayList list = new ArrayList ();
-			list.Add (invoke);
+			TargetFunctionType[] methods = new TargetFunctionType[] { invoke };
 
 			MethodGroupExpression mg = new MethodGroupExpression (
-				sobj.Type, sobj, "Invoke", list, true, false);
+				sobj.Type, sobj, "Invoke", methods, true, false);
 			return mg;
 		}
 
@@ -2390,13 +2295,36 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Expression `{0}' is not a method.", Name);
 
+			argtypes = new TargetType [arguments.Length];
+
+			for (int i = 0; i < arguments.Length; i++) {
+				arguments [i] = arguments [i].Resolve (context);
+				if (arguments [i] == null)
+					return null;
+
+				argtypes [i] = arguments [i].EvaluateType (context);
+			}
+
+			method = mg.OverloadResolve (context, argtypes);
+
 			resolved = true;
 			return this;
 		}
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			return Invoke (context, false);
+			TargetObject retval = DoInvoke (context, false);
+
+			if (!method.HasReturnValue)
+				throw new ScriptingException (
+					"Method `{0}' doesn't return a value.", Name);
+
+			return retval;
+		}
+
+		protected override TargetType DoEvaluateType (ScriptingContext context)
+		{
+			return method.ReturnType;
 		}
 
 		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
@@ -2406,54 +2334,46 @@ namespace Mono.Debugger.Frontend
 			return method_expr.EvaluateMethod (context, type, types);
 		}
 
-		public TargetObject Invoke (ScriptingContext context, bool debug)
+		protected TargetObject DoInvoke (ScriptingContext context, bool debug)
 		{
 			TargetObject[] args = new TargetObject [arguments.Length];
-			TargetType[] argtypes = new TargetType [arguments.Length];
 
-			for (int i = 0; i < arguments.Length; i++) {
-				Expression arg = arguments [i].Resolve (context);
-				if (arg == null)
-					return null;
-
-				args [i] = arg.EvaluateVariable (context);
-				argtypes [i] = args [i].Type;
-			}
-
-			TargetFunctionType func = mg.OverloadResolve (context, argtypes);
+			for (int i = 0; i < arguments.Length; i++)
+				args [i] = arguments [i].EvaluateVariable (context);
 
 			TargetObject[] objs = new TargetObject [args.Length];
 			for (int i = 0; i < args.Length; i++) {
 				objs [i] = Convert.ImplicitConversionRequired (
-					context, args [i], func.ParameterTypes [i]);
+					context, args [i], method.ParameterTypes [i]);
 			}
 
 			TargetObject instance = mg.InstanceObject;
 
 			try {
 				if (debug) {
-					context.CurrentProcess.RuntimeInvoke (func, instance, objs);
+					context.CurrentProcess.RuntimeInvoke (method, instance, objs);
 					return null;
 				}
 
 				string exc_message;
 				TargetObject retval = context.CurrentProcess.RuntimeInvoke (
-					func, mg.InstanceObject, objs, out exc_message);
+					method, mg.InstanceObject, objs, out exc_message);
 
 				if (exc_message != null)
 					throw new ScriptingException (
 						"Invocation of `{0}' raised an exception: {1}",
 						Name, exc_message);
 
-				if (!func.HasReturnValue)
-					throw new ScriptingException (
-						"Method `{0}' doesn't return a value.", Name);
-
 				return retval;
 			} catch (TargetException ex) {
 				throw new ScriptingException (
 					"Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
 			}
+		}
+
+		public void Invoke (ScriptingContext context, bool debug)
+		{
+			DoInvoke (context, debug);
 		}
 	}
 
@@ -2498,10 +2418,10 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			return Invoke (context, false);
+			return Invoke (context);
 		}
 
-		public TargetObject Invoke (ScriptingContext context, bool debug)
+		public TargetObject Invoke (ScriptingContext context)
 		{
 			TargetClassType stype = type_expr.EvaluateType (context) as TargetClassType;
 			if (stype == null)
@@ -2509,15 +2429,18 @@ namespace Mono.Debugger.Frontend
 					"Type `{0}' is not a struct or class.",
 					type_expr.Name);
 
-			ArrayList candidates = new ArrayList (stype.Constructors);
+			TargetMethodInfo[] ctors = stype.Constructors;
+			TargetFunctionType[] funcs = new TargetFunctionType [ctors.Length];
+			for (int i = 0; i < ctors.Length; i++)
+				funcs [i] = ctors [i].Type;
 
 			MethodGroupExpression mg = new MethodGroupExpression (
-				stype, null, ".ctor", candidates, false, true);
+				stype, null, ".ctor", funcs, false, true);
 
 			InvocationExpression invocation = new InvocationExpression (mg, arguments);
 			invocation.Resolve (context);
 
-			return invocation.Invoke (context, debug);
+			return invocation.EvaluateVariable (context);
 		}
 	}
 

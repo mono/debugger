@@ -25,7 +25,7 @@ mdb_expect_prompt
 mdb_send_and_expect "p x\[0\]" "(System.String) \"Test\""
 
 mdb_send "set x\[0,\"Berlin\"] = \"Trier\""
-mdb_expect_line "ERROR: Indexer `x' doesn't have a setter."
+mdb_expect_line "ERROR: No overload of method `X.x\[\]' has 3 arguments."
 mdb_expect_prompt
 
 mdb_send "continue"
