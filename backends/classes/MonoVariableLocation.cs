@@ -114,7 +114,16 @@ namespace Mono.Debugger.Languages
 		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
 		{
 			if (is_regoffset) {
-				target.TargetMemoryAccess.WriteAddress (address, new_address);
+				TargetAddress the_addr;
+				if (is_byref)
+					the_addr = new TargetAddress (
+						target.TargetMemoryInfo.AddressDomain,
+						register.Value + regoffset);
+				else
+					the_addr = address;
+
+				target.TargetMemoryAccess.WriteAddress (the_addr, new_address);
+				update (target);
 			} else {
 				register.WriteRegister (target, new_address.Address);
 				update (target);

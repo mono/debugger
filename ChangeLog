@@ -1,5 +1,10 @@
 2005-10-17  Martin Baulig  <martin@ximian.com>
 
+	* backends/classes/MonoVariableLocation.cs
+	(MonoVariableLocation.WriteAddress): Correctly handle `is_byref'.
+
+2005-10-17  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs (VariableAccessExpression.DoAssign): Call
 	`Convert.ImplicitConversionRequired' on the object to convert it
 	to the correct type.

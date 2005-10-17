@@ -98,6 +98,12 @@ namespace Mono.Debugger
 				return addr_on_stack;
 			}
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Register ({0}:{1}:{2:x})",
+					      Index, Valid, GetValue ());
+		}
 	}
 
 	[Serializable]
