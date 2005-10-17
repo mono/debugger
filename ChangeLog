@@ -1,3 +1,22 @@
+2005-10-17  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Expression.cs (Convert): New public static class.
+	(Convert.ImplicitConversion): New public method.
+	(Convert.ImplicitConversionExists): Likewise.
+	(Convert.ImplicitConversionRequired): Likewise.
+	(MethodGroupExpression.IsApplicable): New method to check whether
+	a method is actually applicable.
+	(MethodGroupExpression.OverloadResolve): Also check whether the
+	method is applicable if there is just one single method; take a
+	`TargetType[]' array instead of an `Expression[]' array as
+	argument.
+	(MethodGroupExpression.OverloadResolve): Make the overloaded
+	version taking an `ArrayList candidates' private.
+	(InvocationExpression.Invoke): Implicitly convert the arguments to
+	the actual parameter types.
+	(NewExpression.Invoke): Create an InvocationExpression to avoid
+	some code duplication.
+
 2005-10-16  Martin Baulig  <martin@ximian.com>
 
 	* backends/classes/ClientSuppliedTargetLocation.cs

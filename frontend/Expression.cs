@@ -957,13 +957,25 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
-									 LocationType type,
-									 Expression[] types)
+									LocationType type,
+									Expression[] types)
 		{
 			if (type != LocationType.Method)
 				return null;
 
-			TargetFunctionType func = OverloadResolve (context, types);
+			if (types == null) {
+				if (methods.Count == 1)
+					return ((TargetMethodInfo) methods [0]).Type;
+
+                                throw new ScriptingException (
+                                        "Ambiguous method `{0}'; need to use full name", Name);
+			}
+
+			TargetType[] argtypes = new TargetType [types.Length];
+			for (int i = 0; i < types.Length; i++)
+				argtypes [i] = types [i].EvaluateType (context);
+
+			TargetFunctionType func = OverloadResolve (context, argtypes);
 			if (func != null)
 				return func;
 
@@ -981,64 +993,75 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public TargetFunctionType OverloadResolve (ScriptingContext context,
-							    Expression[] types)
+							   TargetType[] argtypes)
 		{
 			ArrayList candidates = new ArrayList ();
 
 			foreach (TargetMethodInfo method in methods) {
-				if ((types != null) &&
-				    (method.Type.ParameterTypes.Length != types.Length))
+				if (method.Type.ParameterTypes.Length != argtypes.Length)
 					continue;
 
 				candidates.Add (method.Type);
 			}
 
-			if (candidates.Count == 1)
-				return (TargetFunctionType) candidates [0];
+			TargetFunctionType candidate;
+			if (candidates.Count == 1) {
+				candidate = (TargetFunctionType) candidates [0];
+				string error;
+				if (IsApplicable (context, candidate, argtypes, out error))
+					return candidate;
+
+				throw new ScriptingException (
+					"The best overload of method `{0}' has some invalid " +
+					"arguments:\n{1}", Name, error);
+			}
 
 			if (candidates.Count == 0)
 				throw new ScriptingException (
 					"No overload of method `{0}' has {1} arguments.",
-					Name, types.Length);
+					Name, argtypes.Length);
 
-			if (types == null)
+			candidate = OverloadResolve (context, argtypes, candidates);
+
+			if (candidate == null)
 				throw new ScriptingException (
 					"Ambiguous method `{0}'; need to use " +
 					"full name", Name);
 
-			TargetFunctionType match = OverloadResolve (
-				context, stype, types, candidates);
-
-			if (match == null)
-				throw new ScriptingException (
-					"Ambiguous method `{0}'; need to use " +
-					"full name", Name);
-
-			return match;
+			return candidate;
 		}
 
-		public static TargetFunctionType OverloadResolve (ScriptingContext context,
-								   TargetClassType stype,
-								   Expression[] types,
-								   ArrayList candidates)
+		public static bool IsApplicable (ScriptingContext context, TargetFunctionType method,
+						 TargetType[] types, out string error)
 		{
-			// We do a very simple overload resolution here
-			TargetType[] argtypes = new TargetType [types.Length];
-			for (int i = 0; i < types.Length; i++)
-				argtypes [i] = types [i].EvaluateType (context);
+			for (int i = 0; i < types.Length; i++) {
+				TargetType param_type = method.ParameterTypes [i];
 
+				if (param_type == types [i])
+					continue;
+
+				if (Convert.ImplicitConversionExists (context, types [i], param_type))
+					continue;
+
+				error = String.Format (
+					"Argument {0}: Cannot implicitly convert `{1}' to `{2}'",
+					i, types [i].Name, param_type.Name);
+				return false;
+			}
+
+			error = null;
+			return true;
+		}
+
+		static TargetFunctionType OverloadResolve (ScriptingContext context,
+							   TargetType[] argtypes,
+							   ArrayList candidates)
+		{
 			// Ok, no we need to find an exact match.
 			TargetFunctionType match = null;
 			foreach (TargetFunctionType method in candidates) {
-				bool ok = true;
-				for (int i = 0; i < types.Length; i++) {
-					if (method.ParameterTypes [i] != argtypes [i]) {
-						ok = false;
-						break;
-					}
-				}
-
-				if (!ok)
+				string error;
+				if (!IsApplicable (context, method, argtypes, out error))
 					continue;
 
 				// We need to find exactly one match
@@ -1297,7 +1320,7 @@ namespace Mono.Debugger.Frontend
 
 			FrameHandle frame = context.CurrentFrame;
 			object obj = fobj.GetObject (frame.Frame.TargetAccess);
-			long value = Convert.ToInt64 (obj);
+			long value = System.Convert.ToInt64 (obj);
 			register = frame.FindRegister (name);
 			frame.SetRegister (register, value);
 			return true;
@@ -2044,6 +2067,197 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public static class Convert
+	{
+		static bool ImplicitFundamentalConversionExists (FundamentalKind skind,
+								 FundamentalKind tkind)
+		{
+			//
+			// See Convert.ImplicitStandardConversionExists in MCS.
+			//
+			switch (skind) {
+			case FundamentalKind.SByte:
+				if ((tkind == FundamentalKind.Int16) ||
+				    (tkind == FundamentalKind.Int32) ||
+				    (tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.Byte:
+				if ((tkind == FundamentalKind.Int16) ||
+				    (tkind == FundamentalKind.UInt16) ||
+				    (tkind == FundamentalKind.Int32) ||
+				    (tkind == FundamentalKind.UInt32) ||
+				    (tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.UInt64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.Int16:
+				if ((tkind == FundamentalKind.Int32) ||
+				    (tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.UInt16:
+				if ((tkind == FundamentalKind.Int32) ||
+				    (tkind == FundamentalKind.UInt32) ||
+				    (tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.UInt64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.Int32:
+				if ((tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.UInt32:
+				if ((tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.UInt64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.Int64:
+			case FundamentalKind.UInt64:
+				if ((tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.Char:
+				if ((tkind == FundamentalKind.UInt16) ||
+				    (tkind == FundamentalKind.Int32) ||
+				    (tkind == FundamentalKind.UInt32) ||
+				    (tkind == FundamentalKind.Int64) ||
+				    (tkind == FundamentalKind.UInt64) ||
+				    (tkind == FundamentalKind.Single) ||
+				    (tkind == FundamentalKind.Double))
+					return true;
+				break;
+
+			case FundamentalKind.Single:
+				if (tkind == FundamentalKind.Double)
+					return true;
+				break;
+
+			default:
+				break;
+			}
+
+			return false;
+		}
+
+		static bool ImplicitFundamentalConversionExists (ScriptingContext context,
+								 TargetFundamentalType source,
+								 TargetFundamentalType target)
+		{
+			return ImplicitFundamentalConversionExists (
+				source.FundamentalKind, target.FundamentalKind);
+		}
+
+		static object ImplicitFundamentalConversion (object value, FundamentalKind tkind)
+		{
+			switch (tkind) {
+			case FundamentalKind.Char:
+				return System.Convert.ToChar (value);
+			case FundamentalKind.SByte:
+				return System.Convert.ToSByte (value);
+			case FundamentalKind.Byte:
+				return System.Convert.ToByte (value);
+			case FundamentalKind.Int16:
+				return System.Convert.ToInt16 (value);
+			case FundamentalKind.UInt16:
+				return System.Convert.ToUInt16 (value);
+			case FundamentalKind.Int32:
+				return System.Convert.ToInt32 (value);
+			case FundamentalKind.UInt32:
+				return System.Convert.ToUInt32 (value);
+			case FundamentalKind.Int64:
+				return System.Convert.ToInt64 (value);
+			case FundamentalKind.UInt64:
+				return System.Convert.ToUInt64 (value);
+			case FundamentalKind.Single:
+				return System.Convert.ToSingle (value);
+			case FundamentalKind.Double:
+				return System.Convert.ToDouble (value);
+			default:
+				return null;
+			}
+		}
+
+		static TargetObject ImplicitFundamentalConversion (ScriptingContext context,
+								   TargetFundamentalObject obj,
+								   TargetFundamentalType type)
+		{
+			FundamentalKind skind = obj.Type.FundamentalKind;
+			FundamentalKind tkind = type.FundamentalKind;
+
+			if (!ImplicitFundamentalConversionExists (skind, tkind))
+				return null;
+
+			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			object value = obj.GetObject (target);
+
+			object new_value = ImplicitFundamentalConversion (value, tkind);
+			if (new_value == null)
+				return null;
+
+			return type.Language.CreateInstance (target, new_value);
+		}
+
+		public static bool ImplicitConversionExists (ScriptingContext context,
+							     TargetType source, TargetType target)
+		{
+			if (source.Equals (target))
+				return true;
+
+			if ((source is TargetFundamentalType) && (target is TargetFundamentalType))
+				return ImplicitFundamentalConversionExists (
+					context, (TargetFundamentalType) source,
+					(TargetFundamentalType) target);
+
+			return false;
+		}
+
+		public static TargetObject ImplicitConversion (ScriptingContext context,
+							       TargetObject obj, TargetType type)
+		{
+			if (obj.Type.Equals (type))
+				return obj;
+
+			if ((obj is TargetFundamentalObject) && (type is TargetFundamentalType))
+				return ImplicitFundamentalConversion (
+					context, (TargetFundamentalObject) obj,
+					(TargetFundamentalType) type);
+
+			return null;
+		}
+
+		public static TargetObject ImplicitConversionRequired (ScriptingContext context,
+								       TargetObject obj, TargetType type)
+		{
+			TargetObject new_obj = ImplicitConversion (context, obj, type);
+			if (new_obj != null)
+				return new_obj;
+
+			throw new ScriptingException (
+				"Cannot implicitly convert `{0}' to `{1}'", obj.Type.Name, type.Name);
+		}
+	}
+
 	public class ConditionalExpression : Expression
 	{
 		Expression test;
@@ -2194,18 +2408,25 @@ namespace Mono.Debugger.Frontend
 
 		public TargetObject Invoke (ScriptingContext context, bool debug)
 		{
-			Expression[] args = new Expression [arguments.Length];
+			TargetObject[] args = new TargetObject [arguments.Length];
+			TargetType[] argtypes = new TargetType [arguments.Length];
+
 			for (int i = 0; i < arguments.Length; i++) {
-				args [i] = arguments [i].Resolve (context);
-				if (args [i] == null)
+				Expression arg = arguments [i].Resolve (context);
+				if (arg == null)
 					return null;
+
+				args [i] = arg.EvaluateVariable (context);
+				argtypes [i] = args [i].Type;
 			}
 
-			TargetFunctionType func = mg.OverloadResolve (context, args);
+			TargetFunctionType func = mg.OverloadResolve (context, argtypes);
 
 			TargetObject[] objs = new TargetObject [args.Length];
-			for (int i = 0; i < args.Length; i++)
-				objs [i] = args [i].EvaluateVariable (context);
+			for (int i = 0; i < args.Length; i++) {
+				objs [i] = Convert.ImplicitConversionRequired (
+					context, args [i], func.ParameterTypes [i]);
+			}
 
 			TargetObject instance = mg.InstanceObject;
 
@@ -2282,46 +2503,21 @@ namespace Mono.Debugger.Frontend
 
 		public TargetObject Invoke (ScriptingContext context, bool debug)
 		{
-			TargetClassType stype = type_expr.EvaluateType (context)
-				as TargetClassType;
+			TargetClassType stype = type_expr.EvaluateType (context) as TargetClassType;
 			if (stype == null)
 				throw new ScriptingException (
 					"Type `{0}' is not a struct or class.",
 					type_expr.Name);
 
-			ArrayList candidates = new ArrayList ();
-			candidates.AddRange (stype.Constructors);
+			ArrayList candidates = new ArrayList (stype.Constructors);
 
-			TargetFunctionType ctor;
-			if (candidates.Count == 0)
-				throw new ScriptingException (
-					"Type `{0}' has no public constructor.",
-					type_expr.Name);
-			else if (candidates.Count == 1)
-				ctor = ((TargetMethodInfo) candidates [0]).Type;
-			else
-				ctor = MethodGroupExpression.OverloadResolve (
-					context, stype, arguments, candidates);
+			MethodGroupExpression mg = new MethodGroupExpression (
+				stype, null, ".ctor", candidates, false, true);
 
-			if (ctor == null)
-				throw new ScriptingException (
-					"Type `{0}' has no constructor which is applicable " +
-					"for your list of arguments.", type_expr.Name);
+			InvocationExpression invocation = new InvocationExpression (mg, arguments);
+			invocation.Resolve (context);
 
-			TargetObject[] args = new TargetObject [arguments.Length];
-			for (int i = 0; i < arguments.Length; i++)
-				args [i] = arguments [i].EvaluateVariable (context);
-
-			string exc_message;
-			TargetObject res = context.CurrentProcess.RuntimeInvoke (
-				ctor, null, args, out exc_message);
-
-			if (exc_message != null)
-				throw new ScriptingException (
-					"Invocation of type `{0}'s constructor raised an " +
-					"exception: {1}", type_expr.Name, exc_message);
-
-			return res;
+			return invocation.Invoke (context, debug);
 		}
 	}
 
