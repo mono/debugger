@@ -23,6 +23,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetClassObject GetCurrentObject (TargetAccess target)
 		{
+			if (!type.Type.IsByRef)
+				return null;
+
 			return type.GetCurrentObject (target, Location);
 		}
 

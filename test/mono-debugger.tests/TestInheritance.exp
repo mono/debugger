@@ -45,6 +45,7 @@ mdb_send_and_expect "print d.a" "(System.Int32) 8"
 mdb_send_and_expect "print c.Virtual ()" "(System.Int32) 2"
 mdb_send_and_expect "print hello.Test ()" "(System.String) \"Hello\""
 mdb_send_and_expect "print world.Test ()" "(System.String) \"World\""
+mdb_send_and_expect "print ((D) c)" "(D) { e = 500 }"
 mdb_send "break $bpt_hello"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"
