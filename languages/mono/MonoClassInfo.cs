@@ -211,6 +211,21 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 
 			return new MonoClassObject (parent, location);
-		}				
+		}
+
+		internal MonoClassObject GetCurrentObject (TargetAccess target, TargetLocation location)
+		{
+			initialize (target);
+
+			// location.Address resolves to the address of the MonoObject,
+			// dereferencing it once gives us the vtable, dereferencing it
+			// twice the class.
+			TargetAddress address;
+			address = target.TargetMemoryAccess.ReadAddress (location.Address);
+			address = target.TargetMemoryAccess.ReadAddress (address);
+
+			TargetType current = type.File.MonoLanguage.GetClass (target, address);
+			return (MonoClassObject) current.GetObject (location);
+		}
 	}
 }

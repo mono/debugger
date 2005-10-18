@@ -1904,11 +1904,10 @@ namespace Mono.Debugger.Frontend
 		static TargetClassObject TryCurrentCast (ScriptingContext context,
 							 TargetAccess target,
 							 TargetClassObject source,
-							 TargetClassType source_type,
 							 TargetClassType target_type)
 		{
-			TargetClassObject current = source;
-			if (current.Type == source_type)
+			TargetClassObject current = source.GetCurrentObject (target);
+			if (current == null)
 				return null;
 
 			return TryParentCast (context, target, current, current.Type, target_type);
@@ -1931,7 +1930,7 @@ namespace Mono.Debugger.Frontend
 			if (result != null)
 				return result;
 
-			return TryCurrentCast (context, target, sobj, sobj.Type, target_type);
+			return TryCurrentCast (context, target, sobj, target_type);
 		}
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)

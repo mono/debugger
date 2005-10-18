@@ -21,6 +21,11 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetParentObject (target, Location);
 		}
 
+		public override TargetClassObject GetCurrentObject (TargetAccess target)
+		{
+			return type.GetCurrentObject (target, Location);
+		}
+
 		[Command]
 		public override TargetObject GetField (TargetAccess target, TargetFieldInfo field)
 		{

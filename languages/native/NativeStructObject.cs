@@ -17,6 +17,11 @@ namespace Mono.Debugger.Languages.Native
 			return null;
 		}
 
+		public override TargetClassObject GetCurrentObject (TargetAccess target)
+		{
+			return null;
+		}
+
 		public override TargetObject GetField (TargetAccess target, TargetFieldInfo field)
 		{
 			return type.GetField (target, Location, (NativeFieldInfo) field);
