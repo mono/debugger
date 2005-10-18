@@ -3,7 +3,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectType : TargetPointerType
+	internal class MonoObjectType : TargetObjectType
 	{
 		MonoSymbolFile file;
 
@@ -17,22 +17,8 @@ namespace Mono.Debugger.Languages.Mono
 			get { return file; }
 		}
 
-		public override bool IsTypesafe {
-			get { return true; }
-		}
-
-		public override bool HasStaticType {
-			get { return false; }
-		}
-
-		public override bool IsArray {
-			get { return false; }
-		}
-
-		public override TargetType StaticType {
-			get {
-				throw new InvalidOperationException ();
-			}
+		public override TargetClassType ClassType {
+			get { return file.MonoLanguage.ObjectType; }
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)

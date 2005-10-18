@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoObjectObject : TargetPointerObject
+	internal class MonoObjectObject : TargetObjectObject
 	{
 		public new readonly MonoObjectType Type;
 
@@ -10,6 +10,11 @@ namespace Mono.Debugger.Languages.Mono
 			: base (type, location)
 		{
 			this.Type = type;
+		}
+
+		public override TargetClassObject GetClassObject (TargetAccess target)
+		{
+			return (TargetClassObject) Type.ClassType.GetObject (Location);
 		}
 
 		public override TargetType GetCurrentType (TargetAccess target)
@@ -39,26 +44,6 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation new_location = Location.GetLocationAtOffset (offset);
 			TargetObject obj = current_type.GetObject (new_location);
 			return obj;
-		}
-
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
-						       TargetLocation location,
-						       out TargetLocation dynamic_location)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override TargetObject GetArrayElement (TargetAccess target, int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override string Print (TargetAccess target)
-		{
-			if (HasAddress)
-				return String.Format ("MonoObject ({0})", Address);
-			else
-				return String.Format ("MonoObject ({0})", Location);
 		}
 	}
 }

@@ -1,0 +1,37 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set line_main 39
+set line_main_2 44
+
+set file $srcdir/TestObject.cs
+
+mdb_start "TestObject.exe"
+mdb_expect_frame 0 "X.Main()" $file $line_main
+mdb_send "break $line_main_2"
+set bpt_main_2 [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_hit_breakpoint 0 "X.Main()" $bpt_main_2 $file $line_main_2
+
+mdb_send_and_expect "p obj" "(object) &(Bar) { Data = 81 }"
+mdb_send_and_expect "p boxed" "(object) &(Hello) { Data = 305419896 }"
+mdb_send_and_expect "p /x boxed" "(object) &(Hello) { Data = 0x12345678 }"
+mdb_send_and_expect "p obj.ToString ()" "(System.String) \"Bar\""
+mdb_send_and_expect "p obj.GetType ()" "(System.MonoType) { \"Bar\" }"
+mdb_send_and_expect "p boxed.GetType()" "(System.MonoType) { \"Hello\" }"
+mdb_send_and_expect "p boxed.ToString ()" "(System.String) \"0x12345678\""
+mdb_send_and_expect "p value" "(System.ValueType) { }"
+mdb_send_and_expect "p value.GetType ()" "(System.MonoType) { \"Hello\" }"
+mdb_send_and_expect "p value.ToString ()" "(System.String) \"0x12345678\""
+
+mdb_send "continue"
+mdb_expect_line "Bar"
+mdb_expect_line "Bar"
+mdb_expect_line "0x12345678"
+mdb_expect_line "0x12345678"
+mdb_expect_line "Process @4 terminated normally."
+mdb_expect_prompt
+mdb_send "quit"
+

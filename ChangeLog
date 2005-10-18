@@ -1,5 +1,26 @@
 2005-10-18  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetObjectType.cs
+	(TargetObjectType): New public abstract class.
+
+	* languages/TargetObjectObject.cs
+	(TargetObjectObject): New public abstract class.
+
+	* languages/TargetObjectKind.cs
+	(TargetObjectKind): Added `TargetObjectKind.Object'.
+
+	* languages/mono/MonoObjectType.cs
+	(MonoObjectType): Derive from `TargetObjectType'.
+
+	* languages/mono/MonoObjectObject.cs
+	(MonoObjectObject): Derive from `TargetObjectObject'.
+
+	* frontend/Expression.cs
+	(Convert.ToClassType): New public static method.
+	(Convert.ToClassObject): Likewise.
+
+2005-10-18  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClassObject.cs
 	(TargetClassObject.GetCurrentObject): New public abstract method.
 

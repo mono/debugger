@@ -425,7 +425,12 @@ namespace Mono.Debugger.Frontend
 						 bool recursed, DisplayFormat format)
 		{
 			try {
-				if (recursed)
+				if (format == DisplayFormat.Address) {
+					if (obj.HasAddress)
+						return obj.Address.ToString ();
+					else
+						return "<cannot get address>";
+				} else if (recursed)
 					return DoFormatObjectRecursed (target, obj, format);
 				else
 					return DoFormatObject (target, obj, format);
@@ -442,12 +447,6 @@ namespace Mono.Debugger.Frontend
 				return "null";
 
 			switch (obj.Kind) {
-			case TargetObjectKind.Class:
-			case TargetObjectKind.Struct:
-			case TargetObjectKind.Array:
-				return String.Format (
-					"({0}) {1}", obj.TypeName, PrintObject (target, obj));
-
 			case TargetObjectKind.Enum:
 				return DoFormatObject (target, obj, format);
 
@@ -519,6 +518,18 @@ namespace Mono.Debugger.Frontend
 					}
 				} else
 					return DoFormatObject (target, pobj, true, format);
+			}
+
+			case TargetObjectKind.Object: {
+				TargetObjectObject oobj = (TargetObjectObject) obj;
+				try {
+					TargetObject deref = oobj.GetDereferencedObject (target);
+					return String.Format (
+						"&({0}) {1}", deref.TypeName,
+						DoFormatObject (target, deref, false, format));
+				} catch {
+					return DoFormatObject (target, oobj, true, format);
+				}
 			}
 
 			case TargetObjectKind.Class:

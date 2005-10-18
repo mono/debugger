@@ -39,6 +39,10 @@ namespace Mono.Debugger.Frontend
 			get { return frame; }
 		}
 
+		public TargetAccess TargetAccess {
+			get { return frame.TargetAccess; }
+		}
+
 		public bool PrintSource (ScriptingContext context)
 		{
 			SourceAddress location = frame.SourceAddress;

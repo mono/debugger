@@ -2422,8 +2422,9 @@ namespace Mono.Debugger.Backends
 		MonoLanguageBackend language;
 		TargetAddress method, method_argument, invoke;
 		TargetObject object_arg;
-		bool method_compiled;
+		bool method_invoked;
 		bool needs_boxing;
+		bool boxed_object;
 
 		public override bool IsSourceOperation {
 			get { return true; }
@@ -2510,6 +2511,7 @@ namespace Mono.Debugger.Backends
 		{
 			if (needs_boxing) {
 				needs_boxing = false;
+				boxed_object = true;
 
 				TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
 
@@ -2533,8 +2535,8 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			if (!method_compiled) {
-				method_compiled = true;
+			if (!method_invoked) {
+				method_invoked = true;
 
 				invoke = new TargetAddress (inferior.AddressDomain, data1);
 

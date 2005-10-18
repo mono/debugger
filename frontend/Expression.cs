@@ -547,7 +547,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetClassObject cobj = (TargetClassObject) base.DoEvaluateVariable (context);
 			return cobj.GetParentObject (target);
 		}
@@ -814,15 +814,12 @@ namespace Mono.Debugger.Frontend
 		{
 			MemberExpression member;
 
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
 
 			Expression lexpr = left.TryResolve (context);
 			if (lexpr is TypeExpression) {
-				TargetClassType stype = lexpr.EvaluateType (context)
-					as TargetClassType;
-				if (stype == null)
-					throw new ScriptingException (
-						"`{0}' is not a struct or class", lexpr.Name);
+				TargetClassType stype = Convert.ToClassType (
+					lexpr.EvaluateType (context));
 
 				member = StructAccessExpression.FindMember (
 					target, stype, null, name, true, true);
@@ -840,8 +837,8 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (lexpr != null) {
-				TargetClassObject sobj = lexpr.EvaluateVariable (context)
-					as TargetClassObject;
+				TargetClassObject sobj = Convert.ToClassObject (
+					target, lexpr.EvaluateVariable (context));
 				if (sobj == null)
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", left.Name);
@@ -864,11 +861,8 @@ namespace Mono.Debugger.Frontend
 
 			Expression ltype = left.TryResolveType (context);
 			if (ltype != null) {
-				TargetClassType stype = ltype.EvaluateType (context)
-					as TargetClassType;
-				if (stype == null)
-					throw new ScriptingException (
-						"`{0}' is not a struct or class", ltype.Name);
+				TargetClassType stype = Convert.ToClassType (
+					ltype.EvaluateType (context));
 
 				member = StructAccessExpression.FindMember (
 					target, stype, null, name, true, true);
@@ -1536,7 +1530,7 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetObject obj = expr.EvaluateVariable (context);
 
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj != null) {
 				TargetObject result;
@@ -1712,7 +1706,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
@@ -1746,7 +1740,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			// indexers
-			TargetClassObject sobj = obj as TargetClassObject;
+			TargetClassObject sobj = Convert.ToClassObject (target, obj);
 			if (sobj != null) {
 				ArrayList props = new ArrayList ();
 				foreach (TargetPropertyInfo prop in sobj.Type.Properties) {
@@ -1791,7 +1785,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject right)
 		{
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetObject obj = expr.EvaluateVariable (context);
 
 			// array[int]
@@ -1810,7 +1804,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			// indexers
-			TargetClassObject sobj = obj as TargetClassObject;
+			TargetClassObject sobj = Convert.ToClassObject (target, obj);
 			if (sobj != null) {
 				ArrayList props = new ArrayList ();
 				foreach (TargetPropertyInfo prop in sobj.Type.Properties) {
@@ -1919,11 +1913,11 @@ namespace Mono.Debugger.Frontend
 			if (source.Type == target_type)
 				return source;
 
-			TargetClassObject sobj = source as TargetClassObject;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
+
+			TargetClassObject sobj = Convert.ToClassObject (target, source);
 			if (sobj == null)
 				return null;
-
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
 
 			TargetClassObject result;
 			result = TryParentCast (context, target, sobj, sobj.Type, target_type);
@@ -1935,14 +1929,10 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
 		{
-			TargetClassType type = target.EvaluateType (context)
-				as TargetClassType;
-			if (type == null)
-				throw new ScriptingException (
-					"Type {0} is not a class type.", target.Name);
+			TargetClassType type = Convert.ToClassType (target.EvaluateType (context));
 
-			TargetClassObject source = expr.EvaluateVariable (context)
-				as TargetClassObject;
+			TargetClassObject source = Convert.ToClassObject (
+				context.CurrentFrame.TargetAccess, expr.EvaluateVariable (context));
 			if (source == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
@@ -2107,7 +2097,7 @@ namespace Mono.Debugger.Frontend
 			if (!ImplicitFundamentalConversionExists (skind, tkind))
 				return null;
 
-			TargetAccess target = context.CurrentFrame.Frame.TargetAccess;
+			TargetAccess target = context.CurrentFrame.TargetAccess;
 			object value = obj.GetObject (target);
 
 			object new_value = ImplicitFundamentalConversion (value, tkind);
@@ -2154,6 +2144,36 @@ namespace Mono.Debugger.Frontend
 
 			throw new ScriptingException (
 				"Cannot implicitly convert `{0}' to `{1}'", obj.Type.Name, type.Name);
+		}
+
+		public static TargetClassType ToClassType (TargetType type)
+		{
+			TargetClassType ctype = type as TargetClassType;
+			if (ctype != null)
+				return ctype;
+
+			TargetObjectType otype = type as TargetObjectType;
+			if (otype != null) {
+				ctype = otype.ClassType;
+				if (ctype != null)
+					return ctype;
+			}
+
+			throw new ScriptingException (
+				"Type `{0}' is not a struct or class.", type.Name);
+		}
+
+		public static TargetClassObject ToClassObject (TargetAccess target, TargetObject obj)
+		{
+			TargetClassObject cobj = obj as TargetClassObject;
+			if (cobj != null)
+				return cobj;
+
+			TargetObjectObject oobj = obj as TargetObjectObject;
+			if (oobj != null)
+				return oobj.GetClassObject (target);
+
+			return null;
 		}
 	}
 
@@ -2250,8 +2270,8 @@ namespace Mono.Debugger.Frontend
 		public static MethodGroupExpression ResolveDelegate (ScriptingContext context,
 								     Expression expr)
 		{
-			TargetClassObject sobj = expr.EvaluateVariable (context)
-				as TargetClassObject;
+			TargetClassObject sobj = Convert.ToClassObject (
+				context.CurrentFrame.TargetAccess, expr.EvaluateVariable (context));
 			if (sobj == null)
 				return null;
 
@@ -2419,11 +2439,8 @@ namespace Mono.Debugger.Frontend
 
 		public TargetObject Invoke (ScriptingContext context)
 		{
-			TargetClassType stype = type_expr.EvaluateType (context) as TargetClassType;
-			if (stype == null)
-				throw new ScriptingException (
-					"Type `{0}' is not a struct or class.",
-					type_expr.Name);
+			TargetClassType stype = Convert.ToClassType (
+				type_expr.EvaluateType (context));
 
 			TargetMethodInfo[] ctors = stype.Constructors;
 			TargetFunctionType[] funcs = new TargetFunctionType [ctors.Length];

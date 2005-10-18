@@ -9,6 +9,7 @@ namespace Mono.Debugger.Languages
 		Struct,
 		Class,
 		Pointer,
+		Object,
 		Function,
 		Alias
 	}
