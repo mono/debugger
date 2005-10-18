@@ -1,3 +1,8 @@
+2005-10-18  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86_64-arch.c, i386-arch.c: Save and restore
+	`inferior->last_signal' across invocations.
+
 2005-10-17  Martin Baulig  <martin@ximian.com>
 
 	* backends/classes/MonoVariableLocation.cs

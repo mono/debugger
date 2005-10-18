@@ -21,6 +21,7 @@ struct ArchInfo
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
+	int saved_signal;
 	GPtrArray *rti_stack;
 };
 
@@ -28,6 +29,7 @@ typedef struct
 {
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
+	int saved_signal;
 	long call_address;
 	long exc_address;
 	gboolean debug;
@@ -203,6 +205,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		    (server_ptrace_peek_word (handle, rdata->exc_address, retval2) != COMMAND_ERROR_NONE))
 			g_error (G_STRLOC ": Can't get exc object");
 
+		inferior->last_signal = rdata->saved_signal;
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
 		g_ptr_array_remove (arch->rti_stack, rdata);
@@ -248,11 +251,13 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	*retval = INFERIOR_REG_RAX (arch->current_regs);
 	*retval2 = 0;
 
+	inferior->last_signal = arch->saved_signal;
 	g_free (arch->saved_regs);
 	g_free (arch->saved_fpregs);
 
 	arch->saved_regs = NULL;
 	arch->saved_fpregs = NULL;
+	arch->saved_signal = 0;
 	arch->call_address = 0;
 	arch->callback_argument = 0;
 
@@ -553,6 +558,8 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	arch->call_address = new_rsp + 16;
 	arch->callback_argument = callback_argument;
+	arch->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	if (result != COMMAND_ERROR_NONE)
@@ -605,6 +612,8 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	arch->call_address = new_rsp + 16;
 	arch->callback_argument = callback_argument;
+	arch->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	if (result != COMMAND_ERROR_NONE)
@@ -661,6 +670,8 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	rdata->call_address = new_rsp + size - 1;
 	rdata->exc_address = 0;
 	rdata->callback_argument = callback_argument;
+	rdata->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);
@@ -729,6 +740,8 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	rdata->exc_address = new_rsp + 16;
 	rdata->callback_argument = callback_argument;
 	rdata->debug = debug;
+	rdata->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);
@@ -766,6 +779,7 @@ server_ptrace_abort_invoke (ServerHandle *handle)
 	if (_server_ptrace_set_fp_registers (handle->inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
+	handle->inferior->last_signal = rdata->saved_signal;
 	g_free (rdata->saved_regs);
 	g_free (rdata->saved_fpregs);
 	g_ptr_array_remove (handle->arch->rti_stack, rdata);

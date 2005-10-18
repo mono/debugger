@@ -21,6 +21,7 @@ struct ArchInfo
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
+	int saved_signal;
 	GPtrArray *rti_stack;
 	unsigned dr_control, dr_status;
 	int dr_regs [DR_NADDR];
@@ -30,6 +31,7 @@ typedef struct
 {
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
+	int saved_signal;
 	long call_address;
 	long exc_address;
 	gboolean debug;
@@ -141,6 +143,8 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	arch->call_address = new_esp + 26;
 	arch->callback_argument = callback_argument;
+	arch->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	call_disp = (int) method_address - new_esp;
 
@@ -195,6 +199,8 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	arch->call_address = new_esp + 21;
 	arch->callback_argument = callback_argument;
+	arch->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	call_disp = (int) method_address - new_esp;
 
@@ -270,6 +276,8 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	rdata->exc_address = new_esp + static_size + (num_params + 1) * 4;
 	rdata->callback_argument = callback_argument;
 	rdata->debug = debug;
+	rdata->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
 
 	call_disp = (int) invoke_method - new_esp;
 
@@ -415,6 +423,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		*retval2 = (guint32) exc_object;
 
+		inferior->last_signal = rdata->saved_signal;
 		g_free (rdata->saved_regs);
 		g_free (rdata->saved_fpregs);
 		g_ptr_array_remove (arch->rti_stack, rdata);
@@ -460,13 +469,16 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
 	*retval2 = (guint32) INFERIOR_REG_EDX (arch->current_regs);
 
+	inferior->last_signal = arch->saved_signal;
 	g_free (arch->saved_regs);
 	g_free (arch->saved_fpregs);
 
 	arch->saved_regs = NULL;
 	arch->saved_fpregs = NULL;
+	arch->saved_signal = 0;
 	arch->call_address = 0;
 	arch->callback_argument = 0;
+	arch->saved_signal = 0;
 
 	x86_arch_get_registers (handle);
 
