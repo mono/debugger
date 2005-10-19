@@ -190,6 +190,25 @@ namespace Mono.Debugger.Languages.Mono
 			return (TargetAddress) methods [token];
 		}
 
+		internal TargetAddress GetVirtualMethod (TargetAccess target, int token,
+							 ref TargetClassObject instance)
+		{
+			TargetAddress method = GetMethodAddress (target, token);
+			TargetAddress vmethod = target.CallMethod (
+				debugger_info.GetVirtualMethod, instance.Location.Address, method);
+
+			TargetAddress klass = target.TargetMemoryAccess.ReadAddress (vmethod + 8);
+			TargetType class_type = type.File.MonoLanguage.GetClass (target, klass);
+
+			if (!class_type.IsByRef) {
+				TargetLocation new_loc = instance.Location.GetLocationAtOffset (
+					2 * target.TargetMemoryInfo.TargetAddressSize);
+				instance = (TargetClassObject) class_type.GetObject (new_loc);
+			}
+
+			return vmethod;
+		}
+
 		public MonoClassType Type {
 			get { return type; }
 		}
@@ -209,6 +228,14 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (parent == null)
 				throw new InvalidOperationException ();
+
+			if (!type.IsByRef && parent.Type.IsByRef) {
+				TargetAddress boxed = target.CallMethod (
+					debugger_info.GetBoxedObjectMethod,
+					KlassAddress, location.Address);
+				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
+				return new MonoClassObject (parent, new_loc);
+			}
 
 			return new MonoClassObject (parent, location);
 		}

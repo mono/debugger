@@ -18,7 +18,7 @@ mdb_send "call Hello ()"
 mdb_expect_stopped 0 "X.Hello()" $file $line_hello
 mdb_send "bt"
 mdb_expect_backtrace_frame 0 "X.Hello()" $file $line_hello
-mdb_expect_backtrace_frame 1 "<method `X.Hello()' called from mdb>" "" 0
+mdb_expect_backtrace_frame 1 "<method called from mdb>" "" 0
 mdb_expect_backtrace_frame 2 "X.Main()" $file $line_main
 mdb_expect_prompt
 
@@ -57,7 +57,7 @@ mdb_expect_stopped 0 "X.Hello()" $file $line_hello
 mdb_send "bt"
 mdb_expect_backtrace_frame 0 "X.Hello()" $file $line_hello
 mdb_expect_backtrace_frame 1 "X.Hello(System.Int32)" $file $line_hello_4
-mdb_expect_backtrace_frame 2 "<method `X.Hello(System.Int32)' called from mdb>" "" 0
+mdb_expect_backtrace_frame 2 "<method called from mdb>" "" 0
 mdb_expect_backtrace_frame 3 "X.Main()" $file $line_main
 mdb_expect_prompt
 

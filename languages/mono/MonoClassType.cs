@@ -49,7 +49,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool IsByRef {
-			get { return !type.IsValueType && (Name != "System.ValueType"); }
+			get { return !type.IsValueType; }
 		}
 
 		public override bool HasFixedSize {

@@ -1,3 +1,23 @@
+2005-10-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.GetMethodAddress): New public method.
+	(TargetFunctionType.GetVirtualMethod): New public method.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.RuntimeInvoke): Take a `TargetAddress'
+	instead of a `TargetFunctionType'.
+	(OperationRuntimeInvoke): Don't compute the virtual method and
+	also don't box the instance here; our caller is now responsible
+	for doing that.
+
+	* backends/Process.cs (Process.RuntimeInvoke): Take a
+	`TargetAddress' instead of a `TargetFunctionType'.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.RuntimeInvoke): Compute the virtual method and
+	box/unbox the instance object here.
+
 2005-10-18  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetObjectType.cs

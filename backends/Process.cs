@@ -571,7 +571,7 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public void RuntimeInvoke (TargetFunctionType method_argument,
+		public void RuntimeInvoke (TargetAddress method_argument,
 					   TargetObject object_argument,
 					   TargetObject[] param_objects)
 		{
@@ -584,7 +584,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public TargetObject RuntimeInvoke (TargetFunctionType method_argument,
+		public TargetObject RuntimeInvoke (TargetAddress method_argument,
 						   TargetObject object_argument,
 						   TargetObject[] param_objects,
 						   out string exc_message)

@@ -1299,7 +1299,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (TargetFunctionType method_argument,
+		public void RuntimeInvoke (TargetAddress method_argument,
 					   TargetObject object_argument,
 					   TargetObject[] param_objects)
 		{
@@ -1309,7 +1309,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (TargetFunctionType method_argument,
+		public void RuntimeInvoke (TargetAddress method_argument,
 					   TargetObject object_argument,
 					   TargetObject[] param_objects,
 					   CommandResult result)
@@ -2394,18 +2394,16 @@ namespace Mono.Debugger.Backends
 			stack_data = null;
 		}
 
-		protected void PushRuntimeInvoke (SingleSteppingEngine sse, Inferior inferior,
-						  TargetFunctionType method)
+		protected void PushRuntimeInvoke (SingleSteppingEngine sse, Inferior inferior)
 		{
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
 
-			string name = String.Format ("<method `{0}' called from mdb>", method.Name);
+			Symbol name = new Symbol ("<method called from mdb>", iframe.Address, 0);
 
 			StackFrame rti_frame = new StackFrame (
 				sse.process, sse.target_access, iframe.Address,
-				iframe.StackPointer, iframe.FrameAddress,
-				registers, new Symbol (name, iframe.Address, 0));
+				iframe.StackPointer, iframe.FrameAddress, registers, name);
 
 			sse.push_runtime_invoke (rti_frame);
 			rti_frame.ParentFrame = stack_data.Frame;
@@ -2414,17 +2412,15 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : OperationCallback
 	{
-		public readonly MonoFunctionType MethodArgument;
+		public readonly TargetAddress MethodArgument;
 		public readonly TargetObject[] ParamObjects;
 		public readonly bool Debug;
 		public readonly CommandResult Result;
 
 		MonoLanguageBackend language;
-		TargetAddress method, method_argument, invoke;
+		TargetAddress invoke;
 		TargetObject object_arg;
 		bool method_invoked;
-		bool needs_boxing;
-		bool boxed_object;
 
 		public override bool IsSourceOperation {
 			get { return true; }
@@ -2434,21 +2430,18 @@ namespace Mono.Debugger.Backends
 			get { return object_arg; }
 		}
 
-		public OperationRuntimeInvoke (TargetFunctionType method_argument,
+		public OperationRuntimeInvoke (TargetAddress method_argument,
 					       TargetObject object_argument,
 					       TargetObject[] param_objects)
 		{
-			this.MethodArgument = (MonoFunctionType) method_argument;
+			this.MethodArgument = method_argument;
 			this.object_arg = object_argument;
 			this.ParamObjects = new TargetObject [param_objects.Length];
 			param_objects.CopyTo (this.ParamObjects, 0);
 			this.Debug = true;
-
-			this.method = TargetAddress.Null;
-			this.method_argument = TargetAddress.Null;
 		}
 
-		public OperationRuntimeInvoke (TargetFunctionType method_argument,
+		public OperationRuntimeInvoke (TargetAddress method_argument,
 					       TargetObject object_argument,
 					       TargetObject[] param_objects,
 					       CommandResult result)
@@ -2458,83 +2451,17 @@ namespace Mono.Debugger.Backends
 			this.Debug = false;
 		}
 
-		bool IsClassObject ()
-		{
-			if ((ObjectArgument == null) || !ObjectArgument.Location.HasAddress)
-				return false;
-
-			TargetClassObject cobj = ObjectArgument as TargetClassObject;
-			if (cobj == null)
-				return false;
-
-			return cobj.Type.IsByRef;
-		}
-
-		bool NeedsBoxing ()
-		{
-			if ((ObjectArgument == null) || ObjectArgument.Type.IsByRef)
-				return false;
-
-			TargetType type = MethodArgument.DeclaringType;
-			if ((type.Name == "System.ValueType") || (type.Name == "System.Object"))
-				return true;
-
-			return false;
-		}
-
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			language = sse.ThreadManager.Debugger.MonoLanguage;
-			method_argument = MethodArgument.GetMethodAddress (sse.TargetAccess);
-
-			if (IsClassObject ()) {
-				sse.inferior.CallMethod (
-					language.GetVirtualMethodFunc,
-					ObjectArgument.Location.Address.Address,
-					method_argument.Address, ID);
-			} else if (NeedsBoxing ()) {
-				needs_boxing = true;
-				sse.inferior.CallMethod (
-					language.GetBoxedObjectFunc,
-					((MonoClassObject) ObjectArgument).KlassAddress.Address,
-					ObjectArgument.Location.Address.Address, ID);
-			} else {
-				method = method_argument;
-				sse.inferior.CallMethod (
-					language.CompileMethodFunc, method.Address, 0, ID);
-			}
+			sse.inferior.CallMethod (
+				language.CompileMethodFunc, MethodArgument.Address, 0, ID);
 		}
 
 		protected override bool CallbackCompleted (SingleSteppingEngine sse,
 							   Inferior inferior,
 							   long data1, long data2)
 		{
-			if (needs_boxing) {
-				needs_boxing = false;
-				boxed_object = true;
-
-				TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} runtime invoke boxed object: {1}", sse, boxed);
-
-				TargetLocation loc = new AbsoluteTargetLocation (boxed);
-				object_arg = language.ObjectType.GetObject (loc);
-
-				method = method_argument;
-				sse.inferior.CallMethod (
-					language.CompileMethodFunc, method.Address, 0, ID);
-				return false;
-			}
-
-			if (method.IsNull) {
-				method = new TargetAddress (inferior.AddressDomain, data1);
-
-				inferior.CallMethod (language.CompileMethodFunc,
-						     method.Address, 0, ID);
-				return false;
-			}
-
 			if (!method_invoked) {
 				method_invoked = true;
 
@@ -2547,7 +2474,7 @@ namespace Mono.Debugger.Backends
 
 				inferior.RuntimeInvoke (
 					sse.target_access, language.RuntimeInvokeFunc,
-					method, ObjectArgument, ParamObjects, ID, Debug);
+					MethodArgument, ObjectArgument, ParamObjects, ID, Debug);
 				return false;
 			}
 
@@ -2602,7 +2529,7 @@ namespace Mono.Debugger.Backends
 						      "{0} stopped at invoke method {1}",
 						      sse, invoke);
 
-					PushRuntimeInvoke (sse, inferior, MethodArgument);
+					PushRuntimeInvoke (sse, inferior);
 				} else {
 					Report.Debug (DebugFlags.SSE,
 						      "{0} stopped at {1} during runtime-invoke",

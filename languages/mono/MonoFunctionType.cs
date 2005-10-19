@@ -87,17 +87,23 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass.File.TargetInfo.TargetAddressSize; }
 		}
 
-		public TargetAddress GetMethodAddress (TargetAccess target)
+		public override TargetAddress GetMethodAddress (TargetAccess target)
 		{
-			try {
-				MonoClassInfo info = klass.GetTypeInfo ();
-				if (info == null)
-					throw new LocationInvalidException ();
+			MonoClassInfo info = klass.GetTypeInfo ();
+			if (info == null)
+				throw new LocationInvalidException ();
 
-				return info.GetMethodAddress (target, Token);
-			} catch (TargetException ex) {
-				throw new LocationInvalidException (ex);
-			}
+			return info.GetMethodAddress (target, Token);
+		}
+
+		public override TargetAddress GetVirtualMethod (TargetAccess target,
+								ref TargetClassObject instance)
+		{
+			MonoClassInfo info = klass.GetTypeInfo ();
+			if (info == null)
+				throw new LocationInvalidException ();
+
+			return info.GetVirtualMethod (target, Token, ref instance);
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)

@@ -2363,7 +2363,7 @@ namespace Mono.Debugger.Frontend
 					context, args [i], method.ParameterTypes [i]);
 			}
 
-			TargetObject instance = mg.InstanceObject;
+			TargetClassObject instance = mg.InstanceObject;
 
 			try {
 				if (debug) {
