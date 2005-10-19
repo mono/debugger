@@ -184,8 +184,10 @@ namespace Mono.Debugger
 				}
 			}
 
-			if (operation_completed)
-				operation_completed_event.Set ();
+			lock (this) {
+				if (operation_completed)
+					operation_completed_event.Set ();
+			}
 		}
 
 		// <summary>
