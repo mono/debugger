@@ -1165,6 +1165,11 @@ namespace Mono.Debugger.Backends
 			callback_stack.Push (rti_frame);
 		}
 
+		void pop_runtime_invoke ()
+		{
+			callback_stack.Pop ();
+		}
+
 		// <summary>
 		//   Interrupt any currently running stepping operation, but don't send
 		//   any notifications to the caller.  The currently running operation is
@@ -2421,6 +2426,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress invoke;
 		TargetObject object_arg;
 		bool method_invoked;
+		bool pushed_rti_frame;
 
 		public override bool IsSourceOperation {
 			get { return true; }
@@ -2482,6 +2488,11 @@ namespace Mono.Debugger.Backends
 				      "{0} runtime invoke done: {1:x} {2:x}",
 				      sse, data1, data2);
 
+			if (pushed_rti_frame) {
+				sse.pop_runtime_invoke ();
+				pushed_rti_frame = false;
+			}
+
 			RuntimeInvokeResult result = new RuntimeInvokeResult ();
 			if (data2 != 0) {
 				TargetAddress exc_address = new TargetAddress (
@@ -2530,6 +2541,7 @@ namespace Mono.Debugger.Backends
 						      sse, invoke);
 
 					PushRuntimeInvoke (sse, inferior);
+					pushed_rti_frame = true;
 				} else {
 					Report.Debug (DebugFlags.SSE,
 						      "{0} stopped at {1} during runtime-invoke",
