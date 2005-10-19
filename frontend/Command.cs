@@ -1819,6 +1819,7 @@ namespace Mono.Debugger.Frontend
 				resolved = base.DoResolve (context);
 			} catch (ScriptingException ex) {
 				context.Error (ex);
+				return false;
 			}
 
 			if (!resolved)
