@@ -1,3 +1,19 @@
+2005-10-20  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Style.cs
+	(StyleNative.DoFormatObject): Added support for enums.
+
+	* languages/TargetEnumType.cs
+	(TargetEnumType.IsFlagsEnum): New public property.
+
+	* languages/TargetMember.cs
+	(TargetMemberInfo): Make this a MarshalByRefObject.
+	(TargetFieldInfo.ConstValue): New public property; replaces
+	GetConstValue().
+	(TargetFieldInfo.GetConstValue): Removed.
+
+	* test/mono-debugger.tests/TestEnum.exp: Added enum test.
+
 2005-10-19  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetFunctionType.cs

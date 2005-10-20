@@ -17,18 +17,12 @@ namespace Mono.Debugger.Languages.Mono
 			FieldInfo = finfo;
 		}
 
-		public override TargetObject GetConstValue (TargetAccess target) 
-		{
-			// this is definitely swayed toward enums,
-			// where we know we can get the const value
-			// from a null instance (i.e. it's a static
-			// field.  we need to take into account
-			// finfo.IsStatic, though.
-			if (FieldInfo.HasConstant) {
-				object value = FieldInfo.Constant;
-				return Type.Language.CreateInstance (target, value);
-			} else {
-				throw new InvalidOperationException ();
+		public override object ConstValue {
+			get {
+				if (FieldInfo.HasConstant)
+					return FieldInfo.Constant;
+				else
+					throw new InvalidOperationException ();
 			}
 		}
 	}

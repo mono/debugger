@@ -12,6 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoSymbolFile file;
 		Cecil.ITypeDefinition type;
+		bool is_flags;
 
 		public MonoEnumType (MonoSymbolFile file, Cecil.ITypeDefinition type)
 			: base (file.MonoLanguage)
@@ -49,6 +50,13 @@ namespace Mono.Debugger.Languages.Mono
 			if (fields != null)
 				return;
 
+			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
+				if (cattr.Constructor.DeclaringType.FullName == "System.FlagsAttribute") {
+					is_flags = true;
+					break;
+				}
+			}
+
 			int num_fields = 0, num_sfields = 0;
 
 			foreach (Cecil.IFieldDefinition field in type.Fields) {
@@ -78,6 +86,13 @@ namespace Mono.Debugger.Languages.Mono
 			}
 			if (pos > 1)
 				throw new InternalError ("Mono enum type has more than one instance field.");
+		}
+
+		public override bool IsFlagsEnum {
+			get {
+				get_fields ();
+				return is_flags;
+			}
 		}
 
 		public override TargetFieldInfo Value {

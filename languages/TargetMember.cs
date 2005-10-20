@@ -3,7 +3,7 @@ using System;
 namespace Mono.Debugger.Languages
 {
 	[Serializable]
-	public abstract class TargetMemberInfo
+	public abstract class TargetMemberInfo : MarshalByRefObject
 	{
 		public readonly TargetType Type;
 		public readonly string Name;
@@ -43,7 +43,9 @@ namespace Mono.Debugger.Languages
 			this.HasConstValue = has_const_value;
 		}
 
-		public abstract TargetObject GetConstValue (TargetAccess target);
+		public abstract object ConstValue {
+			get;
+		}
 
 		protected override string MyToString ()
 		{

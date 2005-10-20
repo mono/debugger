@@ -54,6 +54,12 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override bool IsFlagsEnum {
+			get {
+				return false;
+			}
+		}
+
 		public override TargetFieldInfo Value {
 			get {
 				return value;

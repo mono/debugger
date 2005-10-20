@@ -1,0 +1,34 @@
+#!/usr/bin/expect -f
+#
+
+source $srcdir/mdb.exp
+
+set line_main 50
+set line_main_2 54
+
+set file $srcdir/TestEnum.cs
+
+mdb_start "TestEnum.exe"
+mdb_expect_frame 0 "X.Main()" $file $line_main
+mdb_send "break $line_main_2"
+set bpt_main_2 [mdb_expect_breakpoint]
+mdb_send "continue"
+mdb_expect_hit_breakpoint 0 "X.Main()" $bpt_main_2 $file $line_main_2
+
+mdb_send_and_expect "p /x irish_pub_thursday" "(Pub) \{ Music = 0x0, Drinks = 0x301f \}"
+mdb_send_and_expect "p irish_pub_thursday.Music" "(Music) Irish"
+mdb_send_and_expect "p irish_pub_thursday.Drinks" "(Drinks) Tequila | Coffee | NonAlcoholic | Whine | Water | Beer | Rum | Alcoholic | Juice | Vodka | All | Tea"
+
+mdb_send_and_expect "p /x lunch_break" "(Pub) \{ Music = 0x2, Drinks = 0x1005 \}"
+mdb_send_and_expect "p lunch_break" "(Pub) \{ Music = RockPop, Drinks = Coffee | Water \}"
+mdb_send_and_expect "p /x dinner" "(Pub) \{ Music = 0x1, Drinks = 0x100a \}"
+mdb_send_and_expect "p dinner" "(Pub) \{ Music = Country, Drinks = Juice | Tea \}"
+
+mdb_send "continue"
+mdb_expect_line "Pub"
+mdb_expect_line "Pub"
+mdb_expect_line "Pub"
+mdb_expect_line "Process @4 terminated normally."
+mdb_expect_prompt
+mdb_send "quit"
+

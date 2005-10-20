@@ -6,6 +6,10 @@ namespace Mono.Debugger.Languages
 			: base (language, TargetObjectKind.Enum)
 		{ }
 
+		public abstract bool IsFlagsEnum {
+			get;
+		}
+
 		public abstract TargetFieldInfo Value {
 			get;
 		}

@@ -151,11 +151,8 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetFieldInfo fi = member as TargetFieldInfo;
 			string value = "";
-			if (fi.HasConstValue) {
-				TargetObject cv = fi.GetConstValue (target);
-				if (cv != null)
-					value = String.Format (" = {0}", cv.Print(target));
-			}
+			if (fi.HasConstValue)
+				value = String.Format (" = {0}", fi.ConstValue);
 			return String.Format ("{0}   {1}{2}", prefix, member.Name, value);
 		}
 
@@ -495,6 +492,54 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
+		protected string DoFormatEnum (TargetAccess target, TargetEnumObject eobj,
+					       DisplayFormat format)
+		{
+			TargetFundamentalObject fobj = eobj.Value as TargetFundamentalObject;
+
+			if ((format == DisplayFormat.HexaDecimal) || (fobj == null))
+				return DoFormatObject (target, eobj.Value, true, format);
+
+			object value = fobj.GetObject (target);
+
+			if (!eobj.Type.IsFlagsEnum) {
+				foreach (TargetFieldInfo field in eobj.Type.Members) {
+					if (field.ConstValue.Equals (value))
+						return field.Name;
+				}
+			} else if (value is ulong) {
+				StringBuilder sb = null;
+				ulong the_value = (ulong) value;
+				foreach (TargetFieldInfo field in eobj.Type.Members) {
+					ulong fvalue = System.Convert.ToUInt64 (field.ConstValue);
+					if ((the_value & fvalue) != fvalue)
+						continue;
+					if (sb == null)
+						sb = new StringBuilder (field.Name);
+					else
+						sb.Append (" | " + field.Name);
+				}
+				if (sb != null)
+					return sb.ToString ();
+			} else {
+				StringBuilder sb = null;
+				long the_value = System.Convert.ToInt64 (value);
+				foreach (TargetFieldInfo field in eobj.Type.Members) {
+					long fvalue = System.Convert.ToInt64 (field.ConstValue);
+					if ((the_value & fvalue) != fvalue)
+						continue;
+					if (sb == null)
+						sb = new StringBuilder (field.Name);
+					else
+						sb.Append (" | " + field.Name);
+				}
+				if (sb != null)
+					return sb.ToString ();
+			}
+
+			return DoFormatObject (target, fobj, true, format);
+		}
+
 		protected string DoFormatObject (TargetAccess target, TargetObject obj,
 						 DisplayFormat format)
 		{
@@ -558,12 +603,8 @@ namespace Mono.Debugger.Frontend
 				return FormatObject (target, value, format);
 			}
 
-			case TargetObjectKind.Enum: {
-				TargetEnumObject eobj = (TargetEnumObject) obj;
-				TargetObject fobj = eobj.Value;
-
-				return DoFormatObject (target, fobj, true, format);
-			}
+			case TargetObjectKind.Enum:
+				return DoFormatEnum (target, (TargetEnumObject) obj, format);
 
 			default:
 				return PrintObject (target, obj);

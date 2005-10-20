@@ -29,9 +29,10 @@ namespace Mono.Debugger.Languages.Native
 			this.const_value = const_value;
 		}
 
-		public override TargetObject GetConstValue (TargetAccess target)
-		{
-			return null;
+		public override object ConstValue {
+			get {
+				throw new InvalidOperationException ();
+			}
 		}
 
 		public int BitOffset {
