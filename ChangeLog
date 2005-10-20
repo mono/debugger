@@ -1,5 +1,13 @@
 2005-10-20  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(Convert.ImplicitConversion(Exists)): Add support for implicit
+	reference conversions from a type to its parent.
+
+	* test/mono-debugger.tests/TestInheritance.exp: Added testcase.
+
+2005-10-20  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Style.cs
 	(StyleNative.DoFormatObject): Added support for enums.
 

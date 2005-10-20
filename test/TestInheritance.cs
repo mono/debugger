@@ -73,6 +73,11 @@ public class B
 			return Boston;
 		}
 	}
+
+	public int Test (B b)
+	{
+		return a * b.a;
+	}
 }
 
 public class C : B

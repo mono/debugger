@@ -3,9 +3,9 @@
 
 source $srcdir/mdb.exp
 
-set line_main 140
-set line_main_2 152
-set bpt_hello 90
+set line_main 145
+set line_main_2 157
+set bpt_hello 95
 
 set file $srcdir/TestInheritance.cs
 mdb_start "TestInheritance.exe"
@@ -46,6 +46,7 @@ mdb_send_and_expect "print c.Virtual ()" "(System.Int32) 2"
 mdb_send_and_expect "print hello.Test ()" "(System.String) \"Hello\""
 mdb_send_and_expect "print world.Test ()" "(System.String) \"World\""
 mdb_send_and_expect "print ((D) c)" "(D) { e = 500 }"
+mdb_send_and_expect "print c.Test (c)" "(System.Int32) 64"
 mdb_send "break $bpt_hello"
 set breakpoint [mdb_expect_breakpoint]
 mdb_send "continue"

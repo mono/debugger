@@ -2107,6 +2107,33 @@ namespace Mono.Debugger.Frontend
 			return type.Language.CreateInstance (target, new_value);
 		}
 
+		static bool ImplicitReferenceConversionExists (ScriptingContext context,
+							       TargetClassType source,
+							       TargetClassType target)
+		{
+			if (source == target)
+				return true;
+
+			if (!source.HasParent)
+				return false;
+
+			return ImplicitReferenceConversionExists (
+				context, source.ParentType, target);
+		}
+
+		static TargetObject ImplicitReferenceConversion (ScriptingContext context,
+								 TargetClassObject obj,
+								 TargetClassType type)
+		{
+			if (obj.Type == type)
+				return obj;
+
+			if (!obj.Type.HasParent)
+				return null;
+
+			return obj.GetParentObject (context.CurrentFrame.TargetAccess);
+		}
+
 		public static bool ImplicitConversionExists (ScriptingContext context,
 							     TargetType source, TargetType target)
 		{
@@ -2117,6 +2144,11 @@ namespace Mono.Debugger.Frontend
 				return ImplicitFundamentalConversionExists (
 					context, (TargetFundamentalType) source,
 					(TargetFundamentalType) target);
+
+			if ((source is TargetClassType) && (target is TargetClassType))
+				return ImplicitReferenceConversionExists (
+					context, (TargetClassType) source,
+					(TargetClassType) target);
 
 			return false;
 		}
@@ -2131,6 +2163,11 @@ namespace Mono.Debugger.Frontend
 				return ImplicitFundamentalConversion (
 					context, (TargetFundamentalObject) obj,
 					(TargetFundamentalType) type);
+
+			if ((obj is TargetClassObject) && (type is TargetClassType))
+				return ImplicitReferenceConversion (
+					context, (TargetClassObject) obj,
+					(TargetClassType) type);
 
 			return null;
 		}
