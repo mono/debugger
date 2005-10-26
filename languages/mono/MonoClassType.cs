@@ -76,6 +76,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parent_type; }
 		}
 
+		internal int Token {
+			get { return (int) (type.MetadataToken.TokenType + type.MetadataToken.RID); }
+		}
+
 		internal int FirstField {
 			get {
 				return first_field;
@@ -377,26 +381,24 @@ namespace Mono.Debugger.Languages.Mono
 				TargetError.LocationInvalid, "Can't find class `{0}'", Name);
 		}
 
-		public override bool ResolveClass (TargetAccess target)
+		internal bool ResolveClass ()
 		{
 			if (type_info != null)
 				return true;
 
 			if (parent_type != null) {
-				if (!parent_type.ResolveClass (target))
+				if (!parent_type.ResolveClass ())
 					return false;
 			}
 
 			type_info = DoGetTypeInfo ();
-			if (type_info != null)
-				return true;
+			return type_info != null;
+		}
 
-			int token = (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
-			TargetAddress klass = file.MonoLanguage.LookupClass (
-				target, file.MonoImage, token);
-
+		internal MonoClassInfo ClassResolved (TargetAccess target, TargetAddress klass)
+		{
 			type_info = new MonoClassInfo (this, target, klass);
-			return true;
+			return type_info;
 		}
 
 		protected MonoClassInfo DoGetTypeInfo ()

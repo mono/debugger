@@ -573,30 +573,32 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public void RuntimeInvoke (TargetAddress method_argument,
-					   TargetObject object_argument,
-					   TargetObject[] param_objects)
+		public void RuntimeInvoke (TargetFunctionType function,
+					   TargetClassObject object_argument,
+					   TargetObject[] param_objects,
+					   bool is_virtual)
 		{
 			lock (this) {
 				check_engine ();
 				engine.RuntimeInvoke (
-					method_argument, object_argument, param_objects);
+					function, object_argument, param_objects, is_virtual, null);
 				operation_completed_event.Reset ();
 				target_state = TargetState.RUNNING;
 			}
 		}
 
-		public TargetObject RuntimeInvoke (TargetAddress method_argument,
-						   TargetObject object_argument,
+		public TargetObject RuntimeInvoke (TargetFunctionType function,
+						   TargetClassObject object_argument,
 						   TargetObject[] param_objects,
-						   out string exc_message)
+						   bool is_virtual, out string exc_message)
 		{
 			CommandResult result = new CommandResult ();
 
 			lock (this) {
 				check_engine ();
 				engine.RuntimeInvoke (
-					method_argument, object_argument, param_objects, result);
+					function, object_argument, param_objects,
+					is_virtual, result);
 				operation_completed_event.Reset ();
 			}
 

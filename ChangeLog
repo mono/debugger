@@ -1,3 +1,19 @@
+2005-10-26  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClassType.cs
+	(TargetClassType.ResolveClass): Removed.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.GetVirtualMethod): Removed.
+
+	* backends/Process.cs
+	(Process.RuntimeInvoke): Take a `TargetFunctionType' instead of a
+	`TargetAddress' and added `bool is_virtual' argument.
+
+	* backends/SingleSteppingEngine.cs
+	(OperationRuntimeInvoke): Cleaned this up; box the instance and
+	compute the (virtual) method address here.
+
 2005-10-20  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs

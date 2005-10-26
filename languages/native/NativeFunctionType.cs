@@ -86,11 +86,5 @@ namespace Mono.Debugger.Languages.Native
 		{
 			throw new NotSupportedException ();
 		}
-
-		public override TargetAddress GetVirtualMethod (TargetAccess target,
-								ref TargetClassObject instance)
-		{
-			throw new NotSupportedException ();
-		}
 	}
 }

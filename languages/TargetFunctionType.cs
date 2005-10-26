@@ -35,8 +35,5 @@ namespace Mono.Debugger.Languages
 		}
 
 		public abstract TargetAddress GetMethodAddress (TargetAccess target);
-
-		public abstract TargetAddress GetVirtualMethod (TargetAccess target,
-								ref TargetClassObject instance);
 	}
 }

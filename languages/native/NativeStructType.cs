@@ -188,11 +188,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override bool ResolveClass (TargetAccess target)
-		{
-			return true;
-		}
-
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			return new NativeStructObject (this, location);

@@ -548,9 +548,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 
-			if (!func.DeclaringType.ResolveClass (thread.Process.TargetAccess))
-				throw new ScriptingException ("Could not insert breakpoint.");
-
 			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
 				thread.Process, breakpoint, func);
 			if (handle == null)

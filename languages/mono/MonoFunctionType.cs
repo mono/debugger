@@ -68,6 +68,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass; }
 		}
 
+		internal MonoClassType MonoClass {
+			get { return klass; }
+		}
+
 		public override SourceMethod Source {
 			get {
 				int token = MonoDebuggerSupport.GetMethodToken (method_info);
@@ -94,16 +98,6 @@ namespace Mono.Debugger.Languages.Mono
 				throw new LocationInvalidException ();
 
 			return info.GetMethodAddress (target, Token);
-		}
-
-		public override TargetAddress GetVirtualMethod (TargetAccess target,
-								ref TargetClassObject instance)
-		{
-			MonoClassInfo info = klass.GetTypeInfo ();
-			if (info == null)
-				throw new LocationInvalidException ();
-
-			return info.GetVirtualMethod (target, Token, ref instance);
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)

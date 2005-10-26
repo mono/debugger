@@ -62,7 +62,5 @@ namespace Mono.Debugger.Languages
 
 		public abstract  TargetMemberInfo FindMember (string name, bool search_static,
 							      bool search_instance);
-
-		public abstract bool ResolveClass (TargetAccess target);
 	}
 }

@@ -1304,24 +1304,14 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void RuntimeInvoke (TargetAddress method_argument,
-					   TargetObject object_argument,
-					   TargetObject[] param_objects)
-		{
-			StartOperation ();
-			ProcessOperation (new OperationRuntimeInvoke (
-				method_argument, object_argument, param_objects));
-		}
-
-		[Command]
-		public void RuntimeInvoke (TargetAddress method_argument,
-					   TargetObject object_argument,
+		public void RuntimeInvoke (TargetFunctionType function,
+					   TargetClassObject object_argument,
 					   TargetObject[] param_objects,
-					   CommandResult result)
+					   bool is_virtual, CommandResult result)
 		{
 			StartOperation ();
 			ProcessOperation (new OperationRuntimeInvoke (
-				method_argument, object_argument, param_objects, result));
+				function, object_argument, param_objects, is_virtual, result));
 		}
 
 		[Command]
@@ -2417,103 +2407,241 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : OperationCallback
 	{
-		public readonly TargetAddress MethodArgument;
+		public readonly MonoFunctionType Function;
 		public readonly TargetObject[] ParamObjects;
+		public readonly bool IsVirtual;
 		public readonly bool Debug;
 		public readonly CommandResult Result;
 
 		MonoLanguageBackend language;
+		TargetAddress method;
 		TargetAddress invoke;
-		TargetObject object_arg;
-		bool method_invoked;
+		TargetClassObject instance;
 		bool pushed_rti_frame;
+		Stage stage;
+
+		protected enum Stage {
+			Uninitialized,
+			ResolvedClass,
+			BoxingInstance,
+			HasMethodAddress,
+			GettingVirtualMethod,
+			HasVirtualMethod,
+			CompilingMethod,
+			CompiledMethod,
+			InvokedMethod
+		}
 
 		public override bool IsSourceOperation {
 			get { return true; }
 		}
 
-		public TargetObject ObjectArgument {
-			get { return object_arg; }
-		}
-
-		public OperationRuntimeInvoke (TargetAddress method_argument,
-					       TargetObject object_argument,
-					       TargetObject[] param_objects)
+		public OperationRuntimeInvoke (TargetFunctionType function,
+					       TargetClassObject instance, TargetObject[] param_objects,
+					       bool is_virtual, CommandResult result)
 		{
-			this.MethodArgument = method_argument;
-			this.object_arg = object_argument;
-			this.ParamObjects = new TargetObject [param_objects.Length];
-			param_objects.CopyTo (this.ParamObjects, 0);
-			this.Debug = true;
-		}
-
-		public OperationRuntimeInvoke (TargetAddress method_argument,
-					       TargetObject object_argument,
-					       TargetObject[] param_objects,
-					       CommandResult result)
-			: this (method_argument, object_argument, param_objects)
-		{
+			this.Function = (MonoFunctionType) function;
+			this.instance = instance;
+			this.ParamObjects = param_objects;
 			this.Result = result;
-			this.Debug = false;
+			this.IsVirtual = is_virtual;
+			this.Debug = result == null;
+			this.method = TargetAddress.Null;
+			this.stage = Stage.Uninitialized;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			language = sse.ThreadManager.Debugger.MonoLanguage;
+
+			if (!Function.MonoClass.ResolveClass ()) {
+				TargetAddress image = Function.MonoClass.File.MonoImage;
+				int token = Function.MonoClass.Token;
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
+
+				sse.inferior.CallMethod (
+					language.LookupClassFunc, image.Address, token, ID);
+				return;
+			}
+
+			stage = Stage.ResolvedClass;
+			do_execute (sse);
+		}
+
+		void do_execute (SingleSteppingEngine sse)
+		{
+			switch (stage) {
+			case Stage.ResolvedClass:
+				if (!get_method_address (sse))
+					return;
+				goto case Stage.HasMethodAddress;
+
+			case Stage.HasMethodAddress:
+				if (!get_virtual_method (sse))
+					return;
+				goto case Stage.HasVirtualMethod;
+
+			case Stage.HasVirtualMethod: {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} rti compiling method: {1}", sse, method);
+
+				stage = Stage.CompilingMethod;
+				sse.inferior.CallMethod (
+					language.CompileMethodFunc, method.Address, 0, ID);
+				return;
+			}
+
+			case Stage.CompiledMethod: {
+				sse.insert_temporary_breakpoint (invoke);
+
+				sse.inferior.RuntimeInvoke (
+					sse.target_access, language.RuntimeInvokeFunc,
+					method, instance, ParamObjects, ID, Debug);
+
+				stage = Stage.InvokedMethod;
+				return;
+			}
+
+			default:
+				throw new InternalError ();
+			}
+		}
+
+		bool get_method_address (SingleSteppingEngine sse)
+		{
+			method = Function.GetMethodAddress (sse.TargetAccess);
+
+			if ((instance == null) || instance.Type.IsByRef)
+				return true;
+
+			TargetType decl = Function.DeclaringType;
+			if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
+				return true;
+
+			if (!instance.Type.IsByRef && instance.Type.ParentType.IsByRef) {
+				TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
+				stage = Stage.BoxingInstance;
+				sse.inferior.CallMethod (
+					language.GetBoxedObjectFunc, klass.Address,
+					instance.Location.Address.Address, ID);
+				return false;
+			}
+
+			return true;
+		}
+
+		bool get_virtual_method (SingleSteppingEngine sse)
+		{
+			if (!IsVirtual || (instance == null) || !instance.HasAddress ||
+			    !instance.Type.IsByRef)
+				return true;
+
+			stage = Stage.GettingVirtualMethod;
 			sse.inferior.CallMethod (
-				language.CompileMethodFunc, MethodArgument.Address, 0, ID);
+				language.GetVirtualMethodFunc, instance.Location.Address.Address,
+				method.Address, ID);
+			return false;
 		}
 
 		protected override bool CallbackCompleted (SingleSteppingEngine sse,
 							   Inferior inferior,
 							   long data1, long data2)
 		{
-			if (!method_invoked) {
-				method_invoked = true;
-
-				invoke = new TargetAddress (inferior.AddressDomain, data1);
+			switch (stage) {
+			case Stage.Uninitialized: {
+				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
 
 				Report.Debug (DebugFlags.SSE,
-					      "{0} runtime invoke: {1}", sse, invoke);
+					      "{0} rti resolved class: {1}", sse, klass);
 
-				sse.insert_temporary_breakpoint (invoke);
-
-				inferior.RuntimeInvoke (
-					sse.target_access, language.RuntimeInvokeFunc,
-					MethodArgument, ObjectArgument, ParamObjects, ID, Debug);
+				Function.MonoClass.ClassResolved (sse.target_access, klass);
+				stage = Stage.ResolvedClass;
+				do_execute (sse);
 				return false;
 			}
 
-			Report.Debug (DebugFlags.SSE,
-				      "{0} runtime invoke done: {1:x} {2:x}",
-				      sse, data1, data2);
+			case Stage.BoxingInstance: {
+				TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
 
-			if (pushed_rti_frame) {
-				sse.pop_runtime_invoke ();
-				pushed_rti_frame = false;
+				Report.Debug (DebugFlags.SSE,
+					      "{0} rti boxed object: {1}", sse, boxed);
+
+				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
+				instance = (MonoClassObject) instance.Type.ParentType.GetObject (new_loc);
+				stage = Stage.HasMethodAddress;
+				do_execute (sse);
+				return false;
 			}
 
-			RuntimeInvokeResult result = new RuntimeInvokeResult ();
-			if (data2 != 0) {
-				TargetAddress exc_address = new TargetAddress (
-					inferior.AddressDomain, data2);
-				TargetFundamentalObject exc_obj = (TargetFundamentalObject)
-					language.CreateObject (sse.target_access, exc_address);
+			case Stage.GettingVirtualMethod: {
+				method = new TargetAddress (inferior.AddressDomain, data1);
 
-				result.ExceptionMessage = (string) exc_obj.GetObject (sse.target_access);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} rti got virtual method: {1}", sse, method);
+
+				TargetAddress klass = inferior.ReadAddress (method + 8);
+				TargetType class_type = language.GetClass (sse.target_access, klass);
+
+				if (!class_type.IsByRef) {
+					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
+						2 * inferior.TargetMemoryInfo.TargetAddressSize);
+					instance = (TargetClassObject) class_type.GetObject (new_loc);
+				}
+
+				stage = Stage.HasVirtualMethod;
+				do_execute (sse);
+				return false;
 			}
 
-			if (data1 != 0) {
-				TargetAddress retval_address = new TargetAddress (
-					inferior.AddressDomain, data1);
+			case Stage.CompilingMethod: {
+				invoke = new TargetAddress (inferior.AddressDomain, data1);
 
-				result.ReturnObject = language.CreateObject (
-					sse.target_access, retval_address);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} rti compiled method: {1}", sse, invoke);
+
+				stage = Stage.CompiledMethod;
+				do_execute (sse);
+				return false;
 			}
 
-			Result.Result = result;
+			case Stage.InvokedMethod: {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} rti done: {1:x} {2:x}",
+					      sse, data1, data2);
 
-			return true;
+				if (pushed_rti_frame) {
+					sse.pop_runtime_invoke ();
+					pushed_rti_frame = false;
+				}
+
+				RuntimeInvokeResult result = new RuntimeInvokeResult ();
+				if (data2 != 0) {
+					TargetAddress exc_address = new TargetAddress (
+						inferior.AddressDomain, data2);
+					TargetFundamentalObject exc_obj = (TargetFundamentalObject)
+						language.CreateObject (sse.target_access, exc_address);
+
+					result.ExceptionMessage = (string) exc_obj.GetObject (
+						sse.target_access);
+				}
+
+				if (data1 != 0) {
+					TargetAddress retval_address = new TargetAddress (
+						inferior.AddressDomain, data1);
+
+					result.ReturnObject = language.CreateObject (
+						sse.target_access, retval_address);
+				}
+
+				Result.Result = result;
+				return true;
+			}
+
+			default:
+				throw new InternalError ();
+			}
 		}
 
 		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,

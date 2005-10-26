@@ -35,12 +35,20 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 			this.KlassAddress = klass_address;
 
-			int offset = type.File.MonoLanguage.BuiltinTypes.KlassInstanceSizeOffset;
+			MonoLanguageBackend mono = type.File.MonoLanguage;
+
+			int offset = mono.BuiltinTypes.KlassInstanceSizeOffset;
 			size = target.TargetMemoryAccess.ReadInteger (klass_address + offset);
 
 			type.File.MonoLanguage.AddClass (KlassAddress, type);
 
-			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
+			debugger_info = mono.MonoDebuggerInfo;
+
+			if (type.ParentType != null) {
+				TargetAddress parent_klass = target.TargetMemoryAccess.ReadAddress (
+					klass_address + mono.BuiltinTypes.KlassParentOffset);
+				type.MonoParentType.ClassResolved (target, parent_klass);
+			}
 
 			do_initialize (target, null);
 		}
@@ -57,7 +65,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (type.ParentType != null) {
 				parent = type.MonoParentType.GetTypeInfo ();
-				parent.initialize (target);
+				parent.do_initialize (target, data);
 			}
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
@@ -188,25 +196,6 @@ namespace Mono.Debugger.Languages.Mono
 			if (!methods.Contains (token))
 				throw new InternalError ();
 			return (TargetAddress) methods [token];
-		}
-
-		internal TargetAddress GetVirtualMethod (TargetAccess target, int token,
-							 ref TargetClassObject instance)
-		{
-			TargetAddress method = GetMethodAddress (target, token);
-			TargetAddress vmethod = target.CallMethod (
-				debugger_info.GetVirtualMethod, instance.Location.Address, method);
-
-			TargetAddress klass = target.TargetMemoryAccess.ReadAddress (vmethod + 8);
-			TargetType class_type = type.File.MonoLanguage.GetClass (target, klass);
-
-			if (!class_type.IsByRef) {
-				TargetLocation new_loc = instance.Location.GetLocationAtOffset (
-					2 * target.TargetMemoryInfo.TargetAddressSize);
-				instance = (TargetClassObject) class_type.GetObject (new_loc);
-			}
-
-			return vmethod;
 		}
 
 		public MonoClassType Type {

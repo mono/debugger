@@ -516,15 +516,6 @@ namespace Mono.Debugger.Frontend
 			return method;
 		}
 
-		TargetAddress GetVirtualMethod (TargetFunctionType func,
-						ref TargetClassObject instance)
-		{
-			if ((instance == null) || !instance.HasAddress || !instance.Type.IsByRef)
-				return GetMethodAddress (func, ref instance);
-
-			return func.GetVirtualMethod (process.TargetAccess, ref instance);
-		}
-
 		public void RuntimeInvoke (TargetFunctionType func,
 					   TargetClassObject instance, TargetObject[] args)
 		{
@@ -532,11 +523,8 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
-			if (!func.DeclaringType.ResolveClass (process.TargetAccess))
-				throw new ScriptingException ("{0} can't be resolved.", Name);
 
-			TargetAddress method = GetVirtualMethod (func, ref instance);
-			process.RuntimeInvoke (method, instance, args);
+			process.RuntimeInvoke (func, instance, args, true);
 
 			if (interpreter.IsSynchronous)
 				interpreter.DebuggerManager.Wait (process);
@@ -551,11 +539,8 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("{0} not running.", Name);
 			else if (!process.CanRun)
 				throw new ScriptingException ("{0} cannot be executed.", Name);
-			if (!func.DeclaringType.ResolveClass (process.TargetAccess))
-				throw new ScriptingException ("{0} can't be resolved.", Name);
 
-			TargetAddress method = GetVirtualMethod (func, ref instance);
-			return process.RuntimeInvoke (method, instance, args, out exc_message);
+			return process.RuntimeInvoke (func, instance, args, true, out exc_message);
 		}
 
 		public void Stop ()

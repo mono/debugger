@@ -104,6 +104,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int ArrayTypeSize;
 		public readonly int KlassSize;
 		public readonly int KlassInstanceSizeOffset;
+		public readonly int KlassParentOffset;
 		public readonly int KlassTokenOffset;
 		public readonly int KlassFieldOffset;
 		public readonly int KlassMethodsOffset;
@@ -131,6 +132,7 @@ namespace Mono.Debugger.Languages.Mono
 			ArrayTypeSize = reader.ReadInt32 ();
 			KlassSize = reader.ReadInt32 ();
 			KlassInstanceSizeOffset = reader.ReadInt32 ();
+			KlassParentOffset = reader.ReadInt32 ();
 			KlassTokenOffset = reader.ReadInt32 ();
 			KlassFieldOffset = reader.ReadInt32 ();
 			KlassMethodsOffset = reader.ReadInt32 ();
@@ -765,14 +767,6 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		public TargetAddress LookupClass (TargetAccess target, TargetAddress image,
-						  int token)
-		{
-			TargetAddress arg = new TargetAddress (
-				target.TargetMemoryInfo.AddressDomain, token);
-			return target.CallMethod (info.LookupClass, image, arg);
-		}
-
 		TargetFundamentalType GetFundamentalType (Type type)
 		{
 			switch (Type.GetTypeCode (type)) {
@@ -926,6 +920,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetAddress GetBoxedObjectFunc {
 			get { return info.GetBoxedObjectMethod; }
+		}
+
+		public TargetAddress LookupClassFunc {
+			get { return info.LookupClass; }
 		}
 
 		public TargetAddress RunFinallyFunc {
