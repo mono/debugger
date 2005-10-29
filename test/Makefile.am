@@ -8,7 +8,7 @@ noinst_SCRIPTS = \
 	TestManagedTypes.exe TestAssembly.exe TestNamespace.exe TestModule.dll \
 	MultiThread.exe TestInvocation.exe TestInheritance.exe Simple.exe TestException.exe \
 	TestRestart.exe TestDelegate.exe TestNull.exe TestIndexer.exe TestByRef.exe \
-	TestToString.exe
+	TestToString.exe TestEnum.exe TestObject.exe TestProperty.exe
 
 noinst_LTLIBRARIES=libfoo.la
 
@@ -17,7 +17,8 @@ noinst_PROGRAMS = testnativetypes module
 EXTRA_DIST = \
 	TestManagedTypes.cs TestAssembly.cs TestNamespace.cs TestModule.cs \
 	MultiThread.cs TestInvocation.cs TestInheritance.cs Simple.cs TestException.cs mdb.exp \
-	TestRestart.cs TestDelegate.cs TestNull.cs TestIndexer.exe TestByRef.exe TestToString.exe
+	TestRestart.cs TestDelegate.cs TestNull.cs TestIndexer.cs TestByRef.cs TestToString.cs \
+	TestEnum.cs TestObject.cs TestProperty.cs
 
 RUNTESTFLAGS = --ignore "MultiThread.exp module.exp start-restart.exp TestModule.exp TestAssembly.exp"
 
