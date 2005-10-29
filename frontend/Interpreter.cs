@@ -406,7 +406,7 @@ namespace Mono.Debugger.Frontend
 
 		public void DeleteEvent (ProcessHandle process, IEventHandle handle)
 		{
-			handle.Remove (process.Process);
+			handle.Remove (process.TargetAccess);
 			events.Remove (handle.Breakpoint.Index);
 		}
 
@@ -534,7 +534,7 @@ namespace Mono.Debugger.Frontend
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
 			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
-				thread.Process, breakpoint, location);
+				thread.TargetAccess, breakpoint, location);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
@@ -549,7 +549,7 @@ namespace Mono.Debugger.Frontend
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 
 			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
-				thread.Process, breakpoint, func);
+				thread.TargetAccess, breakpoint, func);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
@@ -564,7 +564,7 @@ namespace Mono.Debugger.Frontend
 			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);
 
 			CatchpointHandle handle = CatchpointHandle.Create (
-				thread.Process, breakpoint);
+				thread.TargetAccess, breakpoint);
 
 			if (handle == null)
 				throw new ScriptingException ("Could not add catch point.");

@@ -283,16 +283,16 @@ namespace Mono.Debugger
 			get { return mono_language != null; }
 		}
 
-		public EventHandle InsertBreakpoint (Process process, Breakpoint bpt,
+		public EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
 						     SourceLocation location)
 		{
-			return new BreakpointHandle (process, bpt, location);
+			return new BreakpointHandle (target, bpt, location);
 		}
 
-		public EventHandle InsertBreakpoint (Process process, Breakpoint bpt,
+		public EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
 						     TargetFunctionType func)
 		{
-			return new BreakpointHandle (process, bpt, func);
+			return new BreakpointHandle (target, bpt, func);
 		}
 
 		//

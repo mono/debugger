@@ -13,7 +13,7 @@ namespace Mono.Debugger
 		int breakpoint_id = -1;
 		IDisposable load_handler;
 
-		internal BreakpointHandle (Process process, Breakpoint breakpoint,
+		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
 					   SourceLocation location)
 			: base (breakpoint)
 		{
@@ -21,16 +21,16 @@ namespace Mono.Debugger
 
 			if (location.Method.IsLoaded)
 				address = location.GetAddress ();
-			EnableBreakpoint (process);
+			EnableBreakpoint (target);
 		}
 
-		internal BreakpointHandle (Process process, Breakpoint breakpoint,
+		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
 					   TargetFunctionType func)
 			: base (breakpoint)
 		{
 			this.function = func;
 
-			EnableBreakpoint (process);
+			EnableBreakpoint (target);
 		}
 
 		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)
@@ -43,59 +43,57 @@ namespace Mono.Debugger
 			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}
 
-		public override void Enable (Process process)
+		public override void Enable (TargetAccess target)
 		{
 			lock (this) {
-				EnableBreakpoint (process);
+				EnableBreakpoint (target);
 			}
 		}
 
-		public override void Disable (Process process)
+		public override void Disable (TargetAccess target)
 		{
 			lock (this) {
-				DisableBreakpoint (process);
+				DisableBreakpoint (target);
 			}
 		}
 
-		public override void Remove (Process process)
+		public override void Remove (TargetAccess target)
 		{
 			if (load_handler != null) {
 				load_handler.Dispose ();
 				load_handler = null;
 			}
-			Disable (process);
+			Disable (target);
 		}
 
-		void EnableBreakpoint (Process process)
+		void EnableBreakpoint (TargetAccess target)
 		{
 			lock (this) {
 				if ((load_handler != null) || (breakpoint_id > 0))
 					return;
 
 				if (!address.IsNull)
-					breakpoint_id = process.InsertBreakpoint (
-						breakpoint, address);
+					breakpoint_id = target.InsertBreakpoint (breakpoint, address);
 				else if (function != null)
-					breakpoint_id = process.InsertBreakpoint (
-						breakpoint, function);
+					breakpoint_id = target.InsertBreakpoint (breakpoint, function);
 				else if (location.Method.IsDynamic) {
 					// A dynamic method is a method which may emit a
 					// callback when it's loaded.  We register this
 					// callback here and do the actual insertion when
 					// the method is loaded.
 					load_handler = location.Module.RegisterLoadHandler (
-						process, location.Method,
+						target, location.Method,
 						new MethodLoadedHandler (method_loaded),
 						null);
 				}
 			}
 		}
 
-		void DisableBreakpoint (Process process)
+		void DisableBreakpoint (TargetAccess target)
 		{
 			lock (this) {
 				if (breakpoint_id > 0)
-					process.RemoveBreakpoint (breakpoint_id);
+					target.RemoveBreakpoint (breakpoint_id);
 
 				if (load_handler != null)
 					load_handler.Dispose ();

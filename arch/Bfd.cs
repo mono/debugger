@@ -1002,7 +1002,7 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		internal override IDisposable RegisterLoadHandler (Process process,
+		internal override IDisposable RegisterLoadHandler (TargetAccess target,
 								   SourceMethod method,
 								   MethodLoadedHandler handler,
 								   object user_data)

@@ -574,13 +574,13 @@ namespace Mono.Debugger.Languages.Mono
 			return method;
 		}
 
-		internal override IDisposable RegisterLoadHandler (Process process,
+		internal override IDisposable RegisterLoadHandler (TargetAccess target,
 								   SourceMethod source,
 								   MethodLoadedHandler handler,
 								   object user_data)
 		{
 			MonoMethod method = GetMonoMethod ((int) source.Handle);
-			return method.RegisterLoadHandler (process, handler, user_data);
+			return method.RegisterLoadHandler (target, handler, user_data);
 		}
 
 		internal override StackFrame UnwindStack (StackFrame last_frame,
@@ -809,7 +809,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 #region load handlers for unjitted methods
-			public IDisposable RegisterLoadHandler (Process process,
+			public IDisposable RegisterLoadHandler (TargetAccess target,
 								MethodLoadedHandler handler,
 								object user_data)
 			{
@@ -829,7 +829,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (load_handlers == null) {
 					/* only insert the load handler breakpoint once */
 					file.MonoLanguage.InsertBreakpoint (
-						process, full_name,
+						target, full_name,
 						new BreakpointHandler (breakpoint_hit),
 						null);
 				 

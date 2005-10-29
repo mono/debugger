@@ -14,16 +14,16 @@ namespace Mono.Debugger
 			this.breakpoint = breakpoint;
 		}
 
-		public static EventHandle InsertBreakpoint (Process process, Breakpoint bpt,
+		public static EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
 							    SourceLocation location)
 		{
-			return new BreakpointHandle (process, bpt, location);
+			return new BreakpointHandle (target, bpt, location);
 		}
 
-		public static EventHandle InsertBreakpoint (Process process, Breakpoint bpt,
+		public static EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
 							    TargetFunctionType func)
 		{
-			return new BreakpointHandle (process, bpt, func);
+			return new BreakpointHandle (target, bpt, func);
 		}
 
 #region IEventHandle
@@ -35,11 +35,11 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract void Enable (Process process);
+		public abstract void Enable (TargetAccess target);
 
-		public abstract void Disable (Process process);
+		public abstract void Disable (TargetAccess target);
 
-		public abstract void Remove (Process process);
+		public abstract void Remove (TargetAccess target);
 #endregion
 	}
 }

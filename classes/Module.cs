@@ -245,7 +245,7 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
-		internal abstract IDisposable RegisterLoadHandler (Process process,
+		internal abstract IDisposable RegisterLoadHandler (TargetAccess target,
 								   SourceMethod method,
 								   MethodLoadedHandler handler,
 								   object user_data);

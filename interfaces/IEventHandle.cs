@@ -22,13 +22,13 @@ namespace Mono.Debugger
 		bool IsEnabled { get; }
 
 		// Enable the event in the given process
-		void Enable (Process process);
+		void Enable (TargetAccess target);
 
 		// Disable the event in the given process
-		void Disable (Process process);
+		void Disable (TargetAccess target);
 
 		// Remove the event from the given process (also
 		// disables it)
-		void Remove (Process process);
+		void Remove (TargetAccess target);
 	}
 }

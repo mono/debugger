@@ -1558,12 +1558,12 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Enable (context.CurrentProcess.Process);
+				handle.Enable (context.CurrentProcess.TargetAccess);
 			}
 			else {
 				// enable all breakpoints
 				foreach (IEventHandle h in context.Interpreter.Events)
-					h.Enable (context.CurrentProcess.Process);
+					h.Enable (context.CurrentProcess.TargetAccess);
 			}
 		}
 
@@ -1578,12 +1578,12 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Disable (context.CurrentProcess.Process);
+				handle.Disable (context.CurrentProcess.TargetAccess);
 			}
 			else {
 				// enable all breakpoints
 				foreach (IEventHandle h in context.Interpreter.Events)
-					h.Disable (context.CurrentProcess.Process);
+					h.Disable (context.CurrentProcess.TargetAccess);
 			}
 		}
 

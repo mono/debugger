@@ -708,10 +708,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable breakpoints = new Hashtable ();
 
-		internal int InsertBreakpoint (Process process, string method_name,
+		internal int InsertBreakpoint (TargetAccess target, string method_name,
 					       BreakpointHandler handler, object user_data)
 		{
-			TargetAddress retval = process.CallMethod (info.InsertBreakpoint, 0, method_name);
+			TargetAddress retval = target.CallMethod (info.InsertBreakpoint, 0, method_name);
 
 			int index = (int) retval.Address;
 

@@ -1,5 +1,23 @@
 2005-10-29  Martin Baulig  <martin@ximian.com>
 
+	Avoid using the `Process' in the server; instead use the
+	`TargetAccess' to avoid unneccessary remoting round-trips.
+
+	* backends/Process.cs (Process.CallMethod): Removed.
+
+	* backends/TargetAccess.cs
+	(ServerTargetAccess.CallMethod): Implemented.
+	(TargetAccess.InsertBreakpoint): New internal method.
+	(TargetAccess.RemoveBreakpoint): New internal method.
+	(TargetAccess.AddEventHandler): New internal method.
+	(TargetAccess.RemoveEventHandler): New internal method.
+
+	* classes/BreakpointHandle.cs
+	(BreakpointHandle): Operate on `TargetAccess' and not on
+	`Process'.	
+
+2005-10-29  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(CommandResult): Make this abstract.
 	(SimpleCommandResult): New internal class.

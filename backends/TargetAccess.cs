@@ -51,6 +51,16 @@ namespace Mono.Debugger
 		internal abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
 							    string string_argument);
 
+		internal abstract int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
+
+		internal abstract int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func);
+
+		internal abstract void RemoveBreakpoint (int index);
+
+		internal abstract int AddEventHandler (EventType type, Breakpoint breakpoint);
+
+		internal abstract void RemoveEventHandler (int index);
+
 		internal abstract object Invoke (TargetAccessDelegate func, object data);
 
 		public abstract AssemblerLine DisassembleInstruction (Method method,
@@ -116,6 +126,31 @@ namespace Mono.Debugger.Backends
 			get { return process.TargetMemoryInfo; }
 		}
 
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override void RemoveBreakpoint (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override int AddEventHandler (EventType type, Breakpoint breakpoint)
+		{
+			return process.AddEventHandler (type, breakpoint);
+		}
+
+		internal override void RemoveEventHandler (int index)
+		{
+			process.RemoveEventHandler (index);
+		}
+
 		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2)
 		{
@@ -178,17 +213,85 @@ namespace Mono.Debugger.Backends
 		{
 			if (sse.ThreadManager.InBackgroundThread)
 				throw new InvalidOperationException ();
-			else
-				return sse.Process.CallMethod (method, arg1, arg2);
+
+			CommandResult result = (CommandResult) sse.ThreadManager.SendCommand (
+				sse, delegate (TargetAccess target, object user_data) {
+					return sse.CallMethod (method, arg1, arg2);
+				}, null);
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
 		}
 
-		internal override TargetAddress CallMethod (TargetAddress method, long method_argument,
-							    string string_argument)
+		internal override TargetAddress CallMethod (TargetAddress method, long method_arg,
+							    string string_arg)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
 				throw new InvalidOperationException ();
-			else
-				return sse.Process.CallMethod (method, method_argument, string_argument);
+
+			CommandResult result = (CommandResult) sse.ThreadManager.SendCommand (
+				sse, delegate (TargetAccess target, object user_data) {
+					return sse.CallMethod (method, method_arg, string_arg);
+				}, null);
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
+		}
+
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		{
+			return (int) Invoke (delegate (TargetAccess target, object user_data) {
+				return sse.InsertBreakpoint (breakpoint, address);
+				}, null);
+		}
+
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
+		{
+			if (sse.ThreadManager.InBackgroundThread)
+				throw new InvalidOperationException ();
+
+			CommandResult result = (CommandResult) sse.ThreadManager.SendCommand (
+				sse, delegate (TargetAccess target, object user_data) {
+					return sse.InsertBreakpoint (breakpoint, func);
+				}, null);
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (int) result.Result;
+		}
+
+		internal override void RemoveBreakpoint (int index)
+		{
+			Invoke (delegate (TargetAccess target, object user_data) {
+				sse.RemoveBreakpoint (index);
+				return null;
+				}, null);
+		}
+
+		internal override int AddEventHandler (EventType type, Breakpoint breakpoint)
+		{
+			return (int) Invoke (delegate (TargetAccess target, object user_data) {
+				return sse.AddEventHandler (type, breakpoint);
+				}, null);
+		}
+
+		internal override void RemoveEventHandler (int index)
+		{
+			Invoke (delegate (TargetAccess target, object user_data) {
+				sse.RemoveEventHandler (index);
+				return null;
+			}, null);
 		}
 
 		internal override object Invoke (TargetAccessDelegate func, object data)

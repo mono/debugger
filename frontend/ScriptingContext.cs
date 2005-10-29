@@ -382,6 +382,10 @@ namespace Mono.Debugger.Frontend
 			get { return process; }
 		}
 
+		public TargetAccess TargetAccess {
+			get { return process.TargetAccess; }
+		}
+
 		public ThreadGroup ThreadGroup {
 			get { return tgroup; }
 		}

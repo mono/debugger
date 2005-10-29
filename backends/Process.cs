@@ -480,59 +480,6 @@ namespace Mono.Debugger
 			return engine.DisassembleMethod (method);
 		}
 
-		public TargetAddress CallMethod (TargetAddress method, long method_argument,
-						 string string_argument)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, method_argument, string_argument);
-			}
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (TargetAddress) result.Result;
-		}
-
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-						 TargetAddress arg2)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, arg1, arg2);
-			}
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (TargetAddress) result.Result;
-		}
-
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress argument)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, argument);
-			}
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (TargetAddress) result.Result;
-		}
-
 		public void RuntimeInvoke (TargetFunctionType function,
 					   TargetClassObject object_argument,
 					   TargetObject[] param_objects,

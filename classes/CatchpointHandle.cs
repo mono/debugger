@@ -9,16 +9,16 @@ namespace Mono.Debugger
 		Breakpoint breakpoint;
 		int event_id;
 
-		private CatchpointHandle (Process process, Breakpoint breakpoint)
+		private CatchpointHandle (TargetAccess target, Breakpoint breakpoint)
 		{
 			this.breakpoint = breakpoint;
 
-			Enable (process);
+			Enable (target);
 		}
 
-		public static CatchpointHandle Create (Process process, Breakpoint breakpoint)
+		public static CatchpointHandle Create (TargetAccess target, Breakpoint breakpoint)
 		{
-			return new CatchpointHandle (process, breakpoint);
+			return new CatchpointHandle (target, breakpoint);
 		}
 
 #region IEventHandle
@@ -30,41 +30,41 @@ namespace Mono.Debugger
 			get { return (event_id > 0); }
 		}
 
-		public void Enable (Process process)
+		public void Enable (TargetAccess target)
 		{
 			lock (this) {
-				EnableCatchpoint (process);
+				EnableCatchpoint (target);
 			}
 		}
 
-		public void Disable (Process process)
+		public void Disable (TargetAccess target)
 		{
 			lock (this) {
-				DisableCatchpoint (process);
+				DisableCatchpoint (target);
 			}
 		}
 
-		public void Remove (Process process)
+		public void Remove (TargetAccess target)
 		{
-			Disable (process);
+			Disable (target);
 		}
 #endregion
 
-		void EnableCatchpoint (Process process)
+		void EnableCatchpoint (TargetAccess target)
 		{
 			lock (this) {
 				if (event_id > 0)
 					return;
 
-				event_id = process.AddEventHandler (EventType.CatchException, breakpoint);
+				event_id = target.AddEventHandler (EventType.CatchException, breakpoint);
 			}
 		}
 
-		void DisableCatchpoint (Process process)
+		void DisableCatchpoint (TargetAccess target)
 		{
 			lock (this) {
 				if (event_id > 0)
-					process.RemoveEventHandler (event_id);
+					target.RemoveEventHandler (event_id);
 
 				event_id = -1;
 			}
