@@ -505,6 +505,7 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case ChildEventType.CHILD_CALLBACK:
+			case ChildEventType.CHILD_CALLBACK_COMPLETED:
 			case ChildEventType.CHILD_STOPPED:
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
 				change_target_state (TargetState.STOPPED);

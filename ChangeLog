@@ -1,3 +1,18 @@
+2005-10-29  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(CommandResult): Make this abstract.
+	(SimpleCommandResult): New internal class.
+	(Operation.Result): New public readonly field.
+	(SingleSteppingEngine.operation_completed): Don't call
+	`process.SendTargetEvent()' anymore; our `current_operation' now
+	contains a `CommandResult' which has the completed event.
+
+	* backends/Process.cs (Process.State): Return the SSE's state.
+	(Process.SendTargetEvent): Removed.
+	(Process): When calling methods on the SSE, don't wait on the
+	`operation_completed_event' directly; use the `CommandResult'.
+
 2005-10-26  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClassType.cs

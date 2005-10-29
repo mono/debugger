@@ -49,7 +49,6 @@ namespace Mono.Debugger
 		DebuggerManager debugger_manager;
 		SymbolTableManager symtab_manager;
 		ManualResetEvent operation_completed_event;
-		TargetState target_state = TargetState.NO_TARGET;
 		ITargetInfo target_info;
 		ITargetMemoryInfo target_memory_info;
 		TargetAccess target_access;
@@ -98,7 +97,10 @@ namespace Mono.Debugger
 		// </summary>
 		public TargetState State {
 			get {
-				return target_state;
+				if (engine == null)
+					return TargetState.NO_TARGET;
+				else
+					return engine.State;
 			}
 		}
 
@@ -158,36 +160,6 @@ namespace Mono.Debugger
 		{
 			if (engine == null)
 				throw new TargetException (TargetError.NoTarget);
-		}
-
-		[OneWay]
-		internal void SendTargetEvent (TargetEventArgs args, bool operation_completed)
-		{
-			Report.Debug (DebugFlags.EventLoop,
-				      "{0} ({1}) sending target event {2} ({3})",
-				      this, engine, args, operation_completed);
-
-			if (args != null) {
-				switch (args.Type) {
-				case TargetEventType.TargetRunning:
-					target_state = TargetState.RUNNING;
-					break;
-
-				case TargetEventType.TargetSignaled:
-				case TargetEventType.TargetExited:
-					target_state = TargetState.EXITED;
-					break;
-
-				default:
-					target_state = TargetState.STOPPED;
-					break;
-				}
-			}
-
-			lock (this) {
-				if (operation_completed)
-					operation_completed_event.Set ();
-			}
 		}
 
 		// <summary>
@@ -288,9 +260,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.StepInstruction ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.StepInstruction (new StepCommandResult (this));
 			}
 		}
 
@@ -301,9 +272,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.StepNativeInstruction ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.StepNativeInstruction (new StepCommandResult (this));
 			}
 		}
 
@@ -314,9 +284,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.NextInstruction ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.NextInstruction (new StepCommandResult (this));
 			}
 		}
 
@@ -327,9 +296,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.StepLine ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.StepLine (new StepCommandResult (this));
 			}
 		}
 
@@ -340,9 +308,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.NextLine ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.NextLine (new StepCommandResult (this));
 			}
 		}
 
@@ -353,9 +320,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.Finish ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.Finish (new StepCommandResult (this));
 			}
 		}
 
@@ -366,9 +332,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.FinishNative ();
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.FinishNative (new StepCommandResult (this));
 			}
 		}
 
@@ -391,9 +356,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_engine ();
-				engine.Continue (until, in_background);
 				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				engine.Continue (until, in_background, new StepCommandResult (this));
 			}
 		}
 
@@ -447,15 +411,14 @@ namespace Mono.Debugger
 		// </summary>
 		public int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
 		{
-			CommandResult result = new CommandResult ();
+			CommandResult result;
 
 			lock (this) {
 				check_engine ();
-				engine.InsertBreakpoint (breakpoint, func, result);
-				operation_completed_event.Reset ();
+				result = engine.InsertBreakpoint (breakpoint, func);
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 
 			return (int) result.Result;
 		}
@@ -520,15 +483,14 @@ namespace Mono.Debugger
 		public TargetAddress CallMethod (TargetAddress method, long method_argument,
 						 string string_argument)
 		{
-			CommandResult result = new CommandResult ();
+			CommandResult result;
 
 			lock (this) {
 				check_engine ();
-				engine.CallMethod (method, method_argument, string_argument, result);
-				operation_completed_event.Reset ();
+				result = engine.CallMethod (method, method_argument, string_argument);
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 
 			if (result.Result == null)
 				throw new TargetException (TargetError.UnknownError);
@@ -539,15 +501,14 @@ namespace Mono.Debugger
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 						 TargetAddress arg2)
 		{
-			CommandResult result = new CommandResult ();
+			CommandResult result;
 
 			lock (this) {
 				check_engine ();
-				engine.CallMethod (method, arg1, arg2, result);
-				operation_completed_event.Reset ();
+				result = engine.CallMethod (method, arg1, arg2);
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 
 			if (result.Result == null)
 				throw new TargetException (TargetError.UnknownError);
@@ -557,15 +518,14 @@ namespace Mono.Debugger
 
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress argument)
 		{
-			CommandResult result = new CommandResult ();
+			CommandResult result;
 
 			lock (this) {
 				check_engine ();
-				engine.CallMethod (method, argument, result);
-				operation_completed_event.Reset ();
+				result = engine.CallMethod (method, argument);
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 
 			if (result.Result == null)
 				throw new TargetException (TargetError.UnknownError);
@@ -578,13 +538,15 @@ namespace Mono.Debugger
 					   TargetObject[] param_objects,
 					   bool is_virtual)
 		{
+			CommandResult result;
+
 			lock (this) {
 				check_engine ();
-				engine.RuntimeInvoke (
-					function, object_argument, param_objects, is_virtual, null);
-				operation_completed_event.Reset ();
-				target_state = TargetState.RUNNING;
+				result = engine.RuntimeInvoke (
+					function, object_argument, param_objects, is_virtual, true);
 			}
+
+			result.Wait ();
 		}
 
 		public TargetObject RuntimeInvoke (TargetFunctionType function,
@@ -592,17 +554,15 @@ namespace Mono.Debugger
 						   TargetObject[] param_objects,
 						   bool is_virtual, out string exc_message)
 		{
-			CommandResult result = new CommandResult ();
+			CommandResult result;
 
 			lock (this) {
 				check_engine ();
-				engine.RuntimeInvoke (
-					function, object_argument, param_objects,
-					is_virtual, result);
-				operation_completed_event.Reset ();
+				result = engine.RuntimeInvoke (
+					function, object_argument, param_objects, is_virtual, false);
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 
 			RuntimeInvokeResult res = (RuntimeInvokeResult) result.Result;
 			if (res == null) {
@@ -630,23 +590,21 @@ namespace Mono.Debugger
 				result = engine.Return (run_finally);
 				if (result == null)
 					return;
-				operation_completed_event.Reset ();
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 		}
 
 		public void AbortInvocation ()
 		{
-			CommandResult result = new CommandResult ();
+			CommandResult result;
 
 			lock (this) {
 				check_engine ();
-				engine.AbortInvocation (result);
-				operation_completed_event.Reset ();
+				result = engine.AbortInvocation ();
 			}
 
-			operation_completed_event.WaitOne ();
+			result.Wait ();
 		}
 
 		public bool HasTarget {
@@ -788,6 +746,30 @@ namespace Mono.Debugger
 			write_memory (address, writer.Contents);
 		}
 #endregion
+
+		internal class StepCommandResult : CommandResult
+		{
+			Process process;
+
+			public StepCommandResult (Process process)
+			{
+				this.process = process;
+			}
+
+			public override WaitHandle CompletedEvent {
+				get { return process.WaitHandle; }
+			}
+
+			public override void Completed ()
+			{
+				bool already_done = process.operation_completed_event.WaitOne (0, false);
+				Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
+					      process, already_done);
+				if (already_done)
+					Console.WriteLine ("FUCK");
+				process.operation_completed_event.Set ();
+			}
+		}
 
 #region IDisposable implementation
 		private bool disposed = false;

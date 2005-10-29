@@ -360,7 +360,6 @@ namespace Mono.Debugger.Backends
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
 				// Ok, inform the user that we stopped.
-				step_operation_finished ();
 				operation_completed (result);
 				if (is_main && !reached_main && !exiting) {
 					arch = inferior.Architecture;
@@ -400,7 +399,6 @@ namespace Mono.Debugger.Backends
 					goto send_result;
 
 				if (!send_result) {
-					step_operation_finished ();
 					operation_completed (null);
 					return;
 				}
@@ -450,7 +448,6 @@ namespace Mono.Debugger.Backends
 				pending_bpt = arg;
 			else if (current_operation != null)
 				pending_bpt = current_operation.PendingBreakpoint;
-			step_operation_finished ();
 			if (pending_bpt >= 0) {
 				Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (pending_bpt);
 				if (bpt != null) {
@@ -471,25 +468,31 @@ namespace Mono.Debugger.Backends
 			lock (this) {
 				engine_stopped = true;
 				engine_stopped_event.Set ();
+				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}",
+					      this, current_operation);
 				if (result != null)
 					manager.Debugger.SendTargetEvent (this, result);
-				process.SendTargetEvent (result, true);
+				if (current_operation != null) {
+					Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
+						      this, current_operation.Result);
+					current_operation.Result.Completed ();
+					current_operation = null;
+				}
 			}
 		}
 
 		internal void Start (TargetAddress func, bool is_main)
 		{
+			CommandResult result = new Process.StepCommandResult (process);
+
 			if (is_main) {
 				if (!func.IsNull)
 					insert_temporary_breakpoint (func);
-				current_operation = new OperationInitialize ();
+				current_operation = new OperationInitialize (result);
 				this.is_main = true;
 				do_continue ();
 			} else {
-				TargetEventArgs args = new TargetEventArgs (TargetEventType.TargetRunning);
-				manager.Debugger.SendTargetEvent (this, args);
-				process.SendTargetEvent (args, false);
-				current_operation = new OperationRun (TargetAddress.Null, true);
+				current_operation = new OperationRun (TargetAddress.Null, true, result);
 				do_continue ();
 			}
 		}
@@ -540,7 +543,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void ProcessOperation (Operation operation)
+		CommandResult ProcessOperation (Operation operation)
 		{
 			stop_requested = false;
 
@@ -549,6 +552,7 @@ namespace Mono.Debugger.Backends
 
 			current_operation = operation;
 			operation.Execute (this);
+			return operation.Result;
 		}
 
 		void PushOperation (Operation operation)
@@ -608,6 +612,15 @@ namespace Mono.Debugger.Backends
 
 		public TargetAddress CurrentFrameAddress {
 			get { return inferior.CurrentFrame; }
+		}
+
+		public TargetState State {
+			get {
+				if (inferior == null)
+					return TargetState.NO_TARGET;
+				else
+					return inferior.State;
+			}
 		}
 #endregion
 
@@ -677,7 +690,6 @@ namespace Mono.Debugger.Backends
 					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.FrameChanged, current_frame);
-					step_operation_finished ();
 					operation_completed (args);
 				}
 
@@ -902,7 +914,7 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			if (method.WrapperType != WrapperType.None)
-				return new OperationWrapper (method);
+				return new OperationWrapper (method, operation.Result);
 
 			ILanguageBackend language = method.Module.LanguageBackend;
 			if (source == null)
@@ -915,14 +927,14 @@ namespace Mono.Debugger.Backends
 				// next source line.
 				return new OperationStep (new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
-					null, language, StepMode.Finish));
+					null, language, StepMode.Finish), operation.Result);
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
 				// method's actual code).
 				return new OperationStep (new StepFrame (
 					method.StartAddress, method.MethodStartAddress, null,
-					null, StepMode.Finish));
+					null, StepMode.Finish), operation.Result);
 			}
 
 			return null;
@@ -1015,11 +1027,6 @@ namespace Mono.Debugger.Backends
 			inferior.Step ();
 		}
 
-		void step_operation_finished ()
-		{
-			current_operation = null;
-		}
-
 		void do_trampoline (ILanguageBackend language, TargetAddress trampoline,
 				    TrampolineHandler handler, bool is_start)
 		{
@@ -1031,7 +1038,7 @@ namespace Mono.Debugger.Backends
 
 			if (is_start) {
 				Console.WriteLine ("DO TRAMPOLINE: {0}", trampoline);
-				PushOperation (new OperationFinish (true));
+				PushOperation (new OperationFinish (true, null));
 				// do_continue (trampoline);
 				return;
 			}
@@ -1247,98 +1254,96 @@ namespace Mono.Debugger.Backends
 #region SSE Commands
 
 		[Command]
-		public void StepInstruction ()
+		public void StepInstruction (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.SingleInstruction));
+			ProcessOperation (new OperationStep (StepMode.SingleInstruction, result));
 		}
 
 		[Command]
-		public void StepNativeInstruction ()
+		public void StepNativeInstruction (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.NativeInstruction));
+			ProcessOperation (new OperationStep (StepMode.NativeInstruction, result));
 		}
 
 		[Command]
-		public void NextInstruction ()
+		public void NextInstruction (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.NextInstruction));
+			ProcessOperation (new OperationStep (StepMode.NextInstruction, result));
 		}
 
 		[Command]
-		public void StepLine ()
+		public void StepLine (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.SourceLine));
+			ProcessOperation (new OperationStep (StepMode.SourceLine, result));
 		}
 
 		[Command]
-		public void NextLine ()
+		public void NextLine (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.NextLine));
+			ProcessOperation (new OperationStep (StepMode.NextLine, result));
 		}
 
 		[Command]
-		public void Finish ()
+		public void Finish (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationFinish (false));
+			ProcessOperation (new OperationFinish (false, result));
 		}
 
 		[Command]
-		public void FinishNative ()
+		public void FinishNative (CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationFinish (true));
+			ProcessOperation (new OperationFinish (true, result));
 		}
 
 		[Command]
-		public void Continue (TargetAddress until, bool in_background)
-
+		public void Continue (TargetAddress until, bool in_background, CommandResult result)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationRun (until, in_background));
+			ProcessOperation (new OperationRun (until, in_background, result));
 		}
 
 		[Command]
-		public void RuntimeInvoke (TargetFunctionType function,
-					   TargetClassObject object_argument,
-					   TargetObject[] param_objects,
-					   bool is_virtual, CommandResult result)
+		public CommandResult RuntimeInvoke (TargetFunctionType function,
+						    TargetClassObject object_argument,
+						    TargetObject[] param_objects,
+						    bool is_virtual, bool debug)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationRuntimeInvoke (
-				function, object_argument, param_objects, is_virtual, result));
+			return ProcessOperation (new OperationRuntimeInvoke (
+				function, object_argument, param_objects, is_virtual, debug));
 		}
 
 		[Command]
-		public void CallMethod (TargetAddress method, long method_argument,
-					string string_argument, CommandResult result)
+		public CommandResult CallMethod (TargetAddress method, long method_argument,
+						 string string_argument)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationCallMethod (
-				method, method_argument, string_argument, result));
+			return ProcessOperation (new OperationCallMethod (
+				method, method_argument, string_argument));
 		}
 
 		[Command]
-		public void CallMethod (TargetAddress method, TargetAddress arg1,
-					TargetAddress arg2, CommandResult result)
+		public CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
+						 TargetAddress arg2)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationCallMethod (
-				method, arg1.Address, arg2.Address, result));
+			return ProcessOperation (new OperationCallMethod (
+				method, arg1.Address, arg2.Address));
 		}
 
 		[Command]
-		public void CallMethod (TargetAddress method, TargetAddress argument,
-					CommandResult result)
+		public CommandResult CallMethod (TargetAddress method, TargetAddress argument)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationCallMethod (
-				method, argument.Address, result));
+			return ProcessOperation (new OperationCallMethod (
+				method, argument.Address));
 		}
 
 		protected void return_finished (StackFrame parent_frame)
@@ -1381,15 +1386,13 @@ namespace Mono.Debugger.Backends
 				return null;
 			}
 
-			CommandResult result = new CommandResult ();
 			StartOperation ();
 			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
-			ProcessOperation (new OperationReturn (language, parent_frame, result));
-			return result;
+			return ProcessOperation (new OperationReturn (language, parent_frame));
 		}
 
 		[Command]
-		public void AbortInvocation (CommandResult result)
+		public CommandResult AbortInvocation ()
 		{
 			GetBacktrace (-1);
 			if (current_backtrace == null)
@@ -1402,8 +1405,8 @@ namespace Mono.Debugger.Backends
 			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
 
 			StartOperation ();
-			ProcessOperation (new OperationAbortInvocation (
-				language, current_backtrace, rti_frame, result));
+			return ProcessOperation (new OperationAbortInvocation (
+				language, current_backtrace, rti_frame));
 		}
 
 		[Command]
@@ -1461,11 +1464,10 @@ namespace Mono.Debugger.Backends
 		}
 
 		[Command]
-		public void InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func,
-					      CommandResult result)
+		public CommandResult InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
 		{
 			StartOperation ();
-			ProcessOperation (new OperationInsertBreakpoint (breakpoint, func, result));
+			return ProcessOperation (new OperationInsertBreakpoint (breakpoint, func));
 		}
 
 		[Command]
@@ -1643,7 +1645,6 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress main_method_stackptr = TargetAddress.Null;
 		TargetAddress main_method_retaddr = TargetAddress.Null;
-		TargetState target_state = TargetState.NO_TARGET;
 
 #region Nested SSE classes
 		internal sealed class StackData : MarshalByRefObject
@@ -1681,8 +1682,17 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		public readonly CommandResult Result;
 		public TargetAddress StartFrame;
 		public int PendingBreakpoint = -1;
+
+		protected Operation (CommandResult result)
+		{
+			if (result != null)
+				this.Result = result;
+			else
+				this.Result = new SimpleCommandResult ();
+		}
 
 		public virtual void Execute (SingleSteppingEngine sse)
 		{
@@ -1777,6 +1787,10 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationInitialize : Operation
 	{
+		public OperationInitialize (CommandResult result)
+			: base (result)
+		{ }
+
 		public override bool IsSourceOperation {
 			get { return true; }
 		}
@@ -1810,6 +1824,7 @@ namespace Mono.Debugger.Backends
 
 		public OperationStepOverBreakpoint (int index, TargetAddress trampoline,
 						    TargetAddress until)
+			: base (null)
 		{
 			this.Index = index;
 			this.trampoline = trampoline;
@@ -1926,6 +1941,10 @@ namespace Mono.Debugger.Backends
 
 	protected abstract class OperationStepBase : Operation
 	{
+		protected OperationStepBase (CommandResult result)
+			: base (result)
+		{ }
+
 		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
 							       Inferior inferior,
 							       Inferior.ChildEvent cevent,
@@ -1974,12 +1993,14 @@ namespace Mono.Debugger.Backends
 		public StepMode StepMode;
 		public StepFrame StepFrame;
 
-		public OperationStep (StepMode mode)
+		public OperationStep (StepMode mode, CommandResult result)
+			: base (result)
 		{
 			this.StepMode = mode;
 		}
 
-		public OperationStep (StepFrame frame)
+		public OperationStep (StepFrame frame, CommandResult result)
+			: base (result)
 		{
 			this.StepFrame = frame;
 			this.StepMode = frame.Mode;
@@ -2189,7 +2210,8 @@ namespace Mono.Debugger.Backends
 		TargetAddress until;
 		bool in_background;
 
-		public OperationRun (TargetAddress until, bool in_background)
+		public OperationRun (TargetAddress until, bool in_background, CommandResult result)
+			: base (result)
 		{
 			this.until = until;
 			this.in_background = in_background;
@@ -2239,7 +2261,8 @@ namespace Mono.Debugger.Backends
 	{
 		public readonly bool Native;
 
-		public OperationFinish (bool native)
+		public OperationFinish (bool native, CommandResult result)
+			: base (result)
 		{
 			this.Native = native;
 		}
@@ -2316,6 +2339,10 @@ namespace Mono.Debugger.Backends
 		StackData stack_data;
 
 		static int next_id = 0;
+
+		protected OperationCallback ()
+			: base (null)
+		{ }
 
 		public override void Execute (SingleSteppingEngine sse)
 		{
@@ -2411,7 +2438,6 @@ namespace Mono.Debugger.Backends
 		public readonly TargetObject[] ParamObjects;
 		public readonly bool IsVirtual;
 		public readonly bool Debug;
-		public readonly CommandResult Result;
 
 		MonoLanguageBackend language;
 		TargetAddress method;
@@ -2438,14 +2464,13 @@ namespace Mono.Debugger.Backends
 
 		public OperationRuntimeInvoke (TargetFunctionType function,
 					       TargetClassObject instance, TargetObject[] param_objects,
-					       bool is_virtual, CommandResult result)
+					       bool is_virtual, bool debug)
 		{
 			this.Function = (MonoFunctionType) function;
 			this.instance = instance;
 			this.ParamObjects = param_objects;
-			this.Result = result;
 			this.IsVirtual = is_virtual;
-			this.Debug = result == null;
+			this.Debug = debug;
 			this.method = TargetAddress.Null;
 			this.stage = Stage.Uninitialized;
 		}
@@ -2636,6 +2661,7 @@ namespace Mono.Debugger.Backends
 				}
 
 				Result.Result = result;
+				Result.Completed ();
 				return true;
 			}
 
@@ -2702,35 +2728,28 @@ namespace Mono.Debugger.Backends
 		public readonly long Argument1;
 		public readonly long Argument2;
 		public readonly string StringArgument;
-		public readonly CommandResult Result;
 
-		public OperationCallMethod (TargetAddress method, long arg, string sarg,
-					    CommandResult result)
+		public OperationCallMethod (TargetAddress method, long arg, string sarg)
 		{
 			this.Type = CallMethodType.LongString;
 			this.Method = method;
 			this.Argument1 = arg;
 			this.StringArgument = sarg;
-			this.Result = result;
 		}
 
-		public OperationCallMethod (TargetAddress method, long arg1, long arg2,
-					    CommandResult result)
+		public OperationCallMethod (TargetAddress method, long arg1, long arg2)
 		{
 			this.Type = CallMethodType.LongLong;
 			this.Method = method;
 			this.Argument1 = arg1;
 			this.Argument2 = arg2;
-			this.Result = result;
 		}
 
-		public OperationCallMethod (TargetAddress method, long argument,
-					    CommandResult result)
+		public OperationCallMethod (TargetAddress method, long argument)
 		{
 			this.Type = CallMethodType.Long;
 			this.Method = method;
 			this.Argument1 = argument;
-			this.Result = result;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
@@ -2761,6 +2780,7 @@ namespace Mono.Debugger.Backends
 				data1 &= 0xffffffffL;
 
 			Result.Result = new TargetAddress (inferior.AddressDomain, data1);
+			Result.Completed ();
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} call method done: {1:x} {2:x}",
@@ -2843,17 +2863,14 @@ namespace Mono.Debugger.Backends
 	{
 		public readonly Breakpoint Breakpoint;
 		public readonly MonoFunctionType Function;
-		public readonly CommandResult Result;
 
 		MonoLanguageBackend language;
 		TargetAddress method, address;
 
-		public OperationInsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func,
-						  CommandResult result)
+		public OperationInsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
 		{
 			this.Breakpoint = breakpoint;
 			this.Function = (MonoFunctionType) func;
-			this.Result = result;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
@@ -2877,6 +2894,7 @@ namespace Mono.Debugger.Backends
 				inferior, Breakpoint, address);
 
 			Result.Result = index;
+			Result.Completed ();
 			return true;
 		}
 	}
@@ -2888,6 +2906,7 @@ namespace Mono.Debugger.Backends
 		bool unhandled;
 
 		public OperationException (TargetAddress ip, TargetAddress exc, bool unhandled)
+			: base (null)
 		{
 			this.ip = ip;
 			this.exc = exc;
@@ -2928,7 +2947,8 @@ namespace Mono.Debugger.Backends
 	{
 		Method method;
 
-		public OperationWrapper (Method method)
+		public OperationWrapper (Method method, CommandResult result)
+			: base (result)
 		{
 			this.method = method;
 		}
@@ -2980,14 +3000,11 @@ namespace Mono.Debugger.Backends
 	{
 		public readonly MonoLanguageBackend Language;
 		public readonly StackFrame ParentFrame;
-		public readonly CommandResult Result;
 
-		public OperationReturn (MonoLanguageBackend language, StackFrame parent_frame,
-					CommandResult result)
+		public OperationReturn (MonoLanguageBackend language, StackFrame parent_frame)
 		{
 			this.Language = language;
 			this.ParentFrame = parent_frame;
-			this.Result = result;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
@@ -3010,16 +3027,14 @@ namespace Mono.Debugger.Backends
 		public readonly MonoLanguageBackend Language;
 		public readonly Backtrace Backtrace;
 		public readonly StackFrame RuntimeInvokeFrame;
-		public readonly CommandResult Result;
 		int level = 0;
 
 		public OperationAbortInvocation (MonoLanguageBackend language, Backtrace backtrace,
-						 StackFrame rti_frame, CommandResult result)
+						 StackFrame rti_frame)
 		{
 			this.Language = language;
 			this.Backtrace = backtrace;
 			this.RuntimeInvokeFrame = rti_frame;
-			this.Result = result;
 		}
 
 		protected override void DoExecute (SingleSteppingEngine sse)
@@ -3098,8 +3113,33 @@ namespace Mono.Debugger.Backends
 		public string ExceptionMessage;
 	}
 
-	internal sealed class CommandResult : MarshalByRefObject
+	internal abstract class CommandResult : MarshalByRefObject
 	{
 		public object Result;
+
+		public abstract WaitHandle CompletedEvent {
+			get;
+		}
+
+		public abstract void Completed ();
+
+		public void Wait ()
+		{
+			CompletedEvent.WaitOne ();
+		}
+	}
+
+	internal class SimpleCommandResult : CommandResult
+	{
+		ManualResetEvent completed_event = new ManualResetEvent (false);
+
+		public override WaitHandle CompletedEvent {
+			get { return completed_event; }
+		}
+
+		public override void Completed ()
+		{
+			completed_event.Set ();
+		}
 	}
 }
