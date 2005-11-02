@@ -4,6 +4,8 @@ using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Remoting;
+
 namespace Mono.Debugger
 {
 	[Flags]
@@ -24,19 +26,28 @@ namespace Mono.Debugger
 		Remoting		= 4096
 	}
 
-	public class Report
+	public static class Report
 	{
-		public static int CurrentDebugFlags = 0;
-
-		static StreamWriter writer;
-
-		static Report ()
+		[Conditional("DEBUG")]
+		public static void Debug (DebugFlags category, object argument)
 		{
-			initialize ();
+			Debug (category, "{0}", argument);
 		}
 
 		[Conditional("DEBUG")]
-		static void initialize ()
+		public static void Debug (DebugFlags category, string message, params object[] args)
+		{
+			string formatted = String.Format (message, args);
+			DebuggerContext.ReportWriter.Debug (category, formatted);
+		}
+	}
+
+	public class ReportWriter : MarshalByRefObject
+	{
+		int flags;
+		StreamWriter writer;
+
+		public ReportWriter ()
 		{
 			string file = Environment.GetEnvironmentVariable ("MDB_DEBUG_OUTPUT");
 			if (file != null)
@@ -48,7 +59,7 @@ namespace Mono.Debugger
 			string var = Environment.GetEnvironmentVariable ("MDB_DEBUG_FLAGS");
 			if (var != null) {
 				try {
-					CurrentDebugFlags = Int32.Parse (var);
+					flags = Int32.Parse (var);
 				} catch {
 					Console.WriteLine (
 						"Invalid `MDB_DEBUG_FLAGS' environment " +
@@ -57,19 +68,23 @@ namespace Mono.Debugger
 			}
 		}
 
-		[Conditional("DEBUG")]
-		public static void Debug (DebugFlags category, object argument)
+		public ReportWriter (string file, DebugFlags flags)
 		{
-			Debug (category, "{0}", argument);
+			this.flags = (int) flags;
+
+			if (file != null)
+				writer = new StreamWriter (file, true);
+			else
+				writer = new StreamWriter (Console.OpenStandardError ());
+			writer.AutoFlush = true;
 		}
 
-		[Conditional("DEBUG")]
-		public static void Debug (DebugFlags category, string message, params object[] args)
+		public void Debug (DebugFlags category, string message)
 		{
-			if (((int) category & (int) CurrentDebugFlags) == 0)
+			if (((int) category & (int) flags) == 0)
 				return;
 
-			writer.WriteLine (message, args);
+			writer.WriteLine (message);
 		}
 	}
 }

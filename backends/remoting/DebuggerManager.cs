@@ -9,14 +9,20 @@ namespace Mono.Debugger.Remoting
 	public class DebuggerManager : MarshalByRefObject
 	{
 		public readonly Guid Guid = Guid.NewGuid ();
+		public readonly ReportWriter ReportWriter;
 
 		static int next_id = 0;
 		private Hashtable clients = Hashtable.Synchronized (new Hashtable ());
 		private Hashtable threads = Hashtable.Synchronized (new Hashtable ());
 		private ManualResetEvent interrupt_event = new ManualResetEvent (false);
 
-		public DebuggerManager ()
+		public DebuggerManager (DebuggerOptions options)
 		{
+			if (options.HasDebugFlags)
+				ReportWriter = new ReportWriter (options.DebugOutput, options.DebugFlags);
+			else
+				ReportWriter = new ReportWriter ();
+
 			DebuggerContext.CreateClientContext (this);
 		}
 
@@ -45,6 +51,9 @@ namespace Mono.Debugger.Remoting
 
 		public void Wait (Process process)
 		{
+			if (process == null)
+				return;
+
 			WaitHandle[] handles = new WaitHandle [2];
 			handles [0] = interrupt_event;
 			handles [1] = process.WaitHandle;

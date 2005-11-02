@@ -49,6 +49,7 @@ namespace Mono.Debugger.Remoting
 			if (path == null)
 				path = "";
 
+#if FIXME
 			connection = Connect (host, path);
 			object[] url = { new UrlAttribute (connection.URL) };
 			object[] args = { manager, this };
@@ -60,6 +61,15 @@ namespace Mono.Debugger.Remoting
 			lease = (ILease) server.GetLifetimeService ();
 			sponsor = new Sponsor ();
 			lease.Register (sponsor);
+#else
+			object[] args = { manager, this };
+			AppDomain domain = AppDomain.CreateDomain ("mdb");
+			server = (DebuggerServer) domain.CreateInstanceAndUnwrap (
+				"Mono.Debugger", "Mono.Debugger.Remoting.DebuggerServer",
+				false, 0, null, args, null, null, null);
+
+			backend = server;
+#endif
 		}
 
 		public int ID {

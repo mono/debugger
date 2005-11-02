@@ -382,26 +382,6 @@ namespace Mono.Debugger.Backends
 			get { return Thread.CurrentThread == inferior_thread; }
 		}
 
-		internal IMessage SendCommand (IMethodCallMessage message, IMessageSink sink)
-		{
-			Command command = new Command (message, sink);
-
-			if (!engine_event.WaitOne (WaitTimeout, false)) {
-				return new ReturnMessage (
-					new TargetException (TargetError.NotStopped), message);
-			}
-
-			event_queue.Lock ();
-			engine_event.Reset ();
-
-			current_command = command;
-
-			event_queue.Signal ();
-			event_queue.Unlock ();
-
-			return null;
-		}
-
 		internal object SendCommand (SingleSteppingEngine sse, TargetAccessDelegate target,
 					     object user_data)
 		{
@@ -451,7 +431,8 @@ namespace Mono.Debugger.Backends
 			SingleSteppingEngine event_engine;
 			Command command;
 
-			Report.Debug (DebugFlags.Wait, "ThreadManager woke up");
+			Report.Debug (DebugFlags.Wait, "ThreadManager woke up: {0} {1:x} {2}",
+				      current_event, current_event_status, current_command);
 
 			event_engine = current_event;
 			status = current_event_status;
@@ -464,7 +445,13 @@ namespace Mono.Debugger.Backends
 
 			if (event_engine != null) {
 				try {
+					Report.Debug (DebugFlags.Wait,
+						      "ThreadManager {0} process event: {1}",
+						      DebuggerWaitHandle.CurrentThread, event_engine);
 					event_engine.ProcessEvent (status);
+					Report.Debug (DebugFlags.Wait,
+						      "ThreadManager {0} process event done: {1}",
+						      DebuggerWaitHandle.CurrentThread, event_engine);
 				} catch (ThreadAbortException) {
 					;
 				} catch (Exception e) {
@@ -661,7 +648,7 @@ namespace Mono.Debugger.Backends
 				for (int i = 0; i < threads.Length; i++) {
 					if (main_process == threads[i].Process)
 						main_in_threads = true;
-					threads [i].Dispose ();
+					threads [i].Process.Dispose ();
 				}
 
 				if (main_process != null && !main_in_threads)
@@ -671,7 +658,7 @@ namespace Mono.Debugger.Backends
 					breakpoint_manager.Dispose ();
 
 				if (the_engine != null)
-					the_engine.Dispose ();
+					the_engine.Process.Dispose ();
 			}
 		}
 

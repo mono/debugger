@@ -36,6 +36,8 @@ namespace Mono.Debugger
 		{
 			this.manager = manager;
 
+			DebuggerContext.CreateServerContext (this);
+
 			module_manager = new ModuleManager ();
 
 			source_factory = new SourceFileFactory ();

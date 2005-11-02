@@ -17,6 +17,8 @@ mdb_expect_line "EXCEPTION: System.InvalidOperationException"
 mdb_expect_hit_breakpoint 0 "X.Main()" $breakpoint $file 19
 mdb_send "print x.Test()"
 mdb_expect_line "ERROR: Invocation of `x.Test ()' raised an exception: System.InvalidOperationException: Operation is not valid due to the current state of the object"
+mdb_expect_line "in \[0x00005\] (at $file:8) X:Test ()"
+mdb_expect_prompt
 mdb_send "continue"
 mdb_expect_line "Done"
 mdb_expect_line "Process @4 terminated normally."

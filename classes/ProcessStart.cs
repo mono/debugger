@@ -36,7 +36,9 @@ namespace Mono.Debugger
 	  
 		/* the value of the -debug-flags: command line
 		 * argument */
-		public int DebugFlags = 0;
+		public bool HasDebugFlags = false;
+		public DebugFlags DebugFlags = DebugFlags.None;
+		public string DebugOutput = null;
 
 		/* true if -f/-fullname is specified on the command
 		 * line */
@@ -112,9 +114,6 @@ namespace Mono.Debugger
 				options = new DebuggerOptions ();
 			else
 				options = the_options;
-
-			if (options.DebugFlags != 0)
-				Report.CurrentDebugFlags = options.DebugFlags;
 
 			if ((argv == null) || (argv.Length == 0))
 				throw new ArgumentException ();

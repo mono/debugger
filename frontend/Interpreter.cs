@@ -18,8 +18,8 @@ namespace Mono.Debugger.Frontend
 {
 	public abstract class Interpreter : MarshalByRefObject
 	{
-		DebuggerManager manager;
-		DebuggerOptions options;
+		protected readonly DebuggerManager manager;
+		protected readonly DebuggerOptions options;
 
 		ScriptingContext context;
 
@@ -54,7 +54,7 @@ namespace Mono.Debugger.Frontend
 			this.is_interactive = is_interactive;
 			this.options = options;
 
-			manager = new DebuggerManager ();
+			manager = new DebuggerManager (options);
 
 			procs = new Hashtable ();
 			events = new Hashtable ();
@@ -230,8 +230,6 @@ namespace Mono.Debugger.Frontend
 				command_output.WriteLine (true, "ERROR: " + message);
 			else
 				command_output.WriteLine (true, message);
-			if (!IsInteractive)
-				Abort ();
 		}
 
 		public void Error (string format, params object[] args)

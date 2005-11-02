@@ -40,9 +40,6 @@ namespace Mono.Debugger.Frontend
 
 			if (is_interactive) {
 				prompt = options.Prompt;
-				if (!options.IsScript) {
-					GnuReadLine.EnableCompletion (new CompletionDelegate (engine.Completer.CompletionHandler));
-				}
 				if (options.InEmacs)
 					Style = GetStyle("emacs");
 			}
@@ -52,10 +49,6 @@ namespace Mono.Debugger.Frontend
 
 			command_thread = new Thread (new ThreadStart (command_thread_main));
 			command_thread.IsBackground = true;
-			command_thread.Start ();
-
-			if (options.StartTarget)
-				Start ();
 		}
 
 		DebuggerEngine SetupEngine ()
@@ -157,6 +150,11 @@ namespace Mono.Debugger.Frontend
 
 		public void RunMainLoop ()
 		{
+			command_thread.Start ();
+
+			if (options.StartTarget)
+				Start ();
+
 			main_thread.Start ();
 			main_thread.Join ();
 		}
@@ -223,6 +221,27 @@ namespace Mono.Debugger.Frontend
 			return args[++i];
 		}
 
+		static bool ParseDebugFlags (DebuggerOptions options, string value)
+		{
+			if (value == null)
+				return false;
+
+			int pos = value.IndexOf (':');
+			if (pos > 0) {
+				string filename = value.Substring (0, pos);
+				value = value.Substring (pos + 1);
+				
+				options.DebugOutput = filename;
+			}
+			try {
+				options.DebugFlags = (DebugFlags) Int32.Parse (value);
+			} catch {
+				return false;
+			}
+			options.HasDebugFlags = true;
+			return true;
+		}
+
 		static bool ParseOption (DebuggerOptions debug_options,
 					 string option,
 					 ref string [] args,
@@ -260,11 +279,10 @@ namespace Mono.Debugger.Frontend
 
 			case "-debug-flags":
 				value = GetValue (ref args, ref i, ms_value);
-				if (value == null) {
+				if (!ParseDebugFlags (debug_options, value)) {
 					Usage ();
 					Environment.Exit (1);
 				}
-				debug_options.DebugFlags = Int32.Parse (value);
 				return true;
 
 			case "-jit-optimizations":
@@ -440,9 +458,6 @@ namespace Mono.Debugger.Frontend
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
 			DebuggerOptions options = ParseCommandLine (args);
-
-			if (options.DebugFlags != 0)
-				Report.CurrentDebugFlags = options.DebugFlags;
 
 			Console.WriteLine ("Mono Debugger");
 

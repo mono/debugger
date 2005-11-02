@@ -239,8 +239,6 @@ namespace Mono.Debugger.Frontend
 				interpreter.Style.TargetStopped (
 					interpreter.GlobalContext, this, insn);
 
-				if (!interpreter.IsInteractive)
-					interpreter.Abort ();
 				break;
 			}
 
@@ -264,8 +262,6 @@ namespace Mono.Debugger.Frontend
 				interpreter.Style.TargetStopped (
 					interpreter.GlobalContext, this, insn);
 
-				if (!interpreter.IsInteractive)
-					interpreter.Abort ();
 				break;
 			}
 
@@ -300,8 +296,6 @@ namespace Mono.Debugger.Frontend
 				interpreter.Style.UnhandledException (
 					interpreter.GlobalContext, this, insn, exc_object);
 
-				if (!interpreter.IsInteractive)
-					interpreter.Abort ();
 				break;
 			}
 		}

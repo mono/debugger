@@ -37,8 +37,6 @@ namespace Mono.Debugger.Remoting
 			: base (manager)
 		{
 			this.client = client;
-
-			DebuggerContext.CreateServerContext (this);
 		}
 
 		protected override void DebuggerExited ()

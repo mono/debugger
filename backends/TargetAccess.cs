@@ -11,6 +11,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public delegate object TargetAccessDelegate (TargetAccess target, object user_data);
 
 	[Serializable]

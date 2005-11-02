@@ -30,6 +30,10 @@ namespace Mono.Debugger.Remoting
 			get { return CurrentContext.ThreadManager; }
 		}
 
+		public static ReportWriter ReportWriter {
+			get { return CurrentContext.ReportWriter; }
+		}
+
 		public static TargetAccess GetTargetAccess (int id)
 		{
 			return CurrentContext.GetTargetAccess (id);
@@ -41,20 +45,30 @@ namespace Mono.Debugger.Remoting
 				get;
 			}
 
+			public abstract ReportWriter ReportWriter {
+				get;
+			}
+
 			public abstract TargetAccess GetTargetAccess (int id);
 		}
 
-		private  sealed class DebuggerClientContext : DebuggerContextBase
+		private sealed class DebuggerClientContext : DebuggerContextBase
 		{
 			DebuggerManager manager;
+			ReportWriter report;
 
 			public DebuggerClientContext (DebuggerManager manager)
 			{
 				this.manager = manager;
+				this.report = manager.ReportWriter;
 			}
 
 			internal override ThreadManager ThreadManager {
 				get { throw new InvalidOperationException (); }
+			}
+
+			public override ReportWriter ReportWriter {
+				get { return report; }
 			}
 
 			public override TargetAccess GetTargetAccess (int id)
@@ -67,14 +81,20 @@ namespace Mono.Debugger.Remoting
 		private sealed class DebuggerServerContext : DebuggerContextBase
 		{
 			Debugger backend;
+			ReportWriter report;
 
 			public DebuggerServerContext (Debugger backend)
 			{
 				this.backend = backend;
+				this.report = backend.DebuggerManager.ReportWriter;
 			}
 
 			internal override ThreadManager ThreadManager {
 				get { return backend.ThreadManager; }
+			}
+
+			public override ReportWriter ReportWriter {
+				get { return report; }
 			}
 
 			public override TargetAccess GetTargetAccess (int id)

@@ -33,9 +33,6 @@ namespace Mono.Debugger
 
 		protected void Debug (string format, params object[] args)
 		{
-			if (((int) DebugFlags & (int) Report.CurrentDebugFlags) == 0)
-				return;
-
 			Report.Debug (DebugFlags, format, args);
 		}
 	}

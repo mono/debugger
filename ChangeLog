@@ -1,3 +1,27 @@
+2005-11-02  Martin Baulig  <martin@ximian.com>
+
+	* classes/Report.cs
+	(Report): Make this a static class and remove everything except
+	the `Debug' method.
+	(ReportWriter): New public `MarshalByRefObject' class.
+
+	* backends/remoting/DebuggerContext.cs
+	(DebuggerContext.ReportWriter): New public property; share one
+	`ReportWriter' instance between client and server so we can
+	redirect debugging output to a file.
+
+	* frontend/Main.cs (Main.ParseOption): The `-debug-flags' command
+	line argument now takes an optional filename.
+
+2005-11-02  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(CommandAttribute): Removed.
+	(SingleSteppingEngine.SendCommand): New private method; call
+	`manager.SendCommand' unless we're in the engine thread.
+	(SingleSteppingEngine): Use `SendCommand' with an anonymous method
+	everywhere instead of the [Command] attribute.
+
 2005-10-29  Martin Baulig  <martin@ximian.com>
 
 	Avoid using the `Process' in the server; instead use the
