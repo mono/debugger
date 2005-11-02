@@ -941,11 +941,10 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Args == null && (context.Interpreter.Options.File == null
-					     || context.Interpreter.Options.File == "")) {
-				Console.WriteLine ("No executable file specified.\n" +
-						   "Use the `file' command.");
-				return false;
+			if ((context.Interpreter.Options.File == null) ||
+			    (context.Interpreter.Options.File == "")) {
+				throw new ScriptingException (
+					"No executable file specified.\nUse the `file' command.");
 			}
 
 			if (context.HasBackend && context.Interpreter.IsInteractive) {
