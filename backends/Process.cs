@@ -709,11 +709,6 @@ namespace Mono.Debugger
 
 			public override void Completed ()
 			{
-				bool already_done = process.operation_completed_event.WaitOne (0, false);
-				Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
-					      process, already_done);
-				if (already_done)
-					Console.WriteLine ("FUCK");
 				process.operation_completed_event.Set ();
 			}
 		}
@@ -733,6 +728,8 @@ namespace Mono.Debugger
 				engine.Dispose ();
 				engine = null;
 
+				operation_completed_event.Set ();
+
 				debugger_manager.ProcessExited (ID);
 			}
 		}
@@ -743,12 +740,7 @@ namespace Mono.Debugger
 			if (disposed)
 				return;
 
-			lock (this) {
-				if (disposed)
-					return;
-
-				disposed = true;
-			}
+			disposed = true;
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {

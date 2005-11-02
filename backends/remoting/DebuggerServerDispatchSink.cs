@@ -68,22 +68,7 @@ namespace Mono.Debugger.Remoting
 			sinkStack.Push (this, null);
 
 			IMethodCallMessage message = (IMethodCallMessage) requestMsg;
-			bool is_command = message.MethodBase.IsDefined (typeof (CommandAttribute), false);
-
-			Report.Debug (DebugFlags.Remoting, "Dispatch {0} {1}",
-				      message.MethodBase.DeclaringType, message.MethodBase);
-
 			DebuggerServerResponseSink sink = new DebuggerServerResponseSink (sinkStack);
-
-			if (is_command) {
-				responseMsg = DebuggerContext.ThreadManager.SendCommand (message, sink);
-				if (responseMsg != null) {
-					Report.Debug (DebugFlags.Remoting, "Dispatch completed {0}",
-						      responseMsg);
-					return ServerProcessing.Complete;
-				} else
-					return ServerProcessing.Async;
-			}
 
 			if (RemotingServices.IsOneWay (message.MethodBase))
 				proc = ServerProcessing.OneWay;

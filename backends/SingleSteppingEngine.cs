@@ -58,9 +58,6 @@ namespace Mono.Debugger.Backends
 //   busy, the step command will return false to signal this error.
 // </summary>
 
-	public class CommandAttribute : Attribute
-	{ }
-
 	// <summary>
 	//   The ThreadManager creates one SingleSteppingEngine instance for each thread
 	//   in the target.
@@ -541,6 +538,23 @@ namespace Mono.Debugger.Backends
 				engine_stopped = false;
 				engine_stopped_event.Reset ();
 			}
+		}
+
+		object SendCommand (TargetAccessDelegate target)
+		{
+			if (ThreadManager.InBackgroundThread)
+				return target (target_access, null);
+			else
+				return manager.SendCommand (this, target, null);
+		}
+
+		CommandResult StartOperation (Operation operation)
+		{
+			StartOperation ();
+
+			return (CommandResult) SendCommand (delegate {
+				return ProcessOperation (operation);
+			});
 		}
 
 		CommandResult ProcessOperation (Operation operation)
@@ -1253,96 +1267,72 @@ namespace Mono.Debugger.Backends
 
 #region SSE Commands
 
-		[Command]
 		public void StepInstruction (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.SingleInstruction, result));
+			StartOperation (new OperationStep (StepMode.SingleInstruction, result));
 		}
 
-		[Command]
 		public void StepNativeInstruction (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.NativeInstruction, result));
+			StartOperation (new OperationStep (StepMode.NativeInstruction, result));
 		}
 
-		[Command]
 		public void NextInstruction (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.NextInstruction, result));
+			StartOperation (new OperationStep (StepMode.NextInstruction, result));
 		}
 
-		[Command]
 		public void StepLine (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.SourceLine, result));
+			StartOperation (new OperationStep (StepMode.SourceLine, result));
 		}
 
-		[Command]
 		public void NextLine (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationStep (StepMode.NextLine, result));
+			StartOperation (new OperationStep (StepMode.NextLine, result));
 		}
 
-		[Command]
 		public void Finish (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationFinish (false, result));
+			StartOperation (new OperationFinish (false, result));
 		}
 
-		[Command]
 		public void FinishNative (CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationFinish (true, result));
+			StartOperation (new OperationFinish (true, result));
 		}
 
-		[Command]
 		public void Continue (TargetAddress until, bool in_background, CommandResult result)
 		{
-			StartOperation ();
-			ProcessOperation (new OperationRun (until, in_background, result));
+			StartOperation (new OperationRun (until, in_background, result));
 		}
 
-		[Command]
 		public CommandResult RuntimeInvoke (TargetFunctionType function,
 						    TargetClassObject object_argument,
 						    TargetObject[] param_objects,
 						    bool is_virtual, bool debug)
 		{
-			StartOperation ();
-			return ProcessOperation (new OperationRuntimeInvoke (
+			return StartOperation (new OperationRuntimeInvoke (
 				function, object_argument, param_objects, is_virtual, debug));
 		}
 
-		[Command]
 		public CommandResult CallMethod (TargetAddress method, long method_argument,
 						 string string_argument)
 		{
-			StartOperation ();
-			return ProcessOperation (new OperationCallMethod (
+			return StartOperation (new OperationCallMethod (
 				method, method_argument, string_argument));
 		}
 
-		[Command]
 		public CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
 						 TargetAddress arg2)
 		{
-			StartOperation ();
-			return ProcessOperation (new OperationCallMethod (
+			return StartOperation (new OperationCallMethod (
 				method, arg1.Address, arg2.Address));
 		}
 
-		[Command]
 		public CommandResult CallMethod (TargetAddress method, TargetAddress argument)
 		{
-			StartOperation ();
-			return ProcessOperation (new OperationCallMethod (
+			return StartOperation (new OperationCallMethod (
 				method, argument.Address));
 		}
 
@@ -1366,111 +1356,115 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (parent_frame.Registers);
 		}
 
-		[Command]
 		public CommandResult Return (bool run_finally)
 		{
-			GetBacktrace (-1);
-			if (current_backtrace == null)
-				throw new TargetException (TargetError.NoStack);
+			return (CommandResult) SendCommand (delegate {
+				GetBacktrace (-1);
+				if (current_backtrace == null)
+					throw new TargetException (TargetError.NoStack);
 
-			StackFrame parent_frame = current_backtrace.Frames [1];
-			if (parent_frame == null)
-				return null;
+				StackFrame parent_frame = current_backtrace.Frames [1];
+				if (parent_frame == null)
+					return null;
 
-			if (!manager.Debugger.IsManagedApplication || !run_finally) {
-				return_finished (parent_frame);
-				frame_changed (inferior.CurrentFrame, null);
-				TargetEventArgs args = new TargetEventArgs (
-					TargetEventType.TargetStopped, 0, current_frame);
-				manager.Debugger.SendTargetEvent (this, args);
-				return null;
-			}
+				if (!manager.Debugger.IsManagedApplication || !run_finally) {
+					return_finished (parent_frame);
+					frame_changed (inferior.CurrentFrame, null);
+					TargetEventArgs args = new TargetEventArgs (
+						TargetEventType.TargetStopped, 0, current_frame);
+					manager.Debugger.SendTargetEvent (this, args);
+					return null;
+				}
 
-			StartOperation ();
-			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
-			return ProcessOperation (new OperationReturn (language, parent_frame));
+				MonoLanguageBackend language = manager.Debugger.MonoLanguage;
+				return StartOperation (new OperationReturn (language, parent_frame));
+			});
 		}
 
-		[Command]
 		public CommandResult AbortInvocation ()
 		{
-			GetBacktrace (-1);
-			if (current_backtrace == null)
-				throw new TargetException (TargetError.NoStack);
+			return (CommandResult) SendCommand (delegate {
+				GetBacktrace (-1);
+				if (current_backtrace == null)
+					throw new TargetException (TargetError.NoStack);
 
-			if ((callback_stack.Count == 0) || !manager.Debugger.IsManagedApplication)
-				throw new InvalidOperationException ();
+				if ((callback_stack.Count == 0) || !manager.Debugger.IsManagedApplication)
+					throw new InvalidOperationException ();
 
-			StackFrame rti_frame = (StackFrame) callback_stack.Peek ();
-			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
+				StackFrame rti_frame = (StackFrame) callback_stack.Peek ();
+				MonoLanguageBackend language = manager.Debugger.MonoLanguage;
 
-			StartOperation ();
-			return ProcessOperation (new OperationAbortInvocation (
-				language, current_backtrace, rti_frame));
+				return StartOperation (new OperationAbortInvocation (
+							       language, current_backtrace, rti_frame));
+			});
 		}
 
-		[Command]
 		public Backtrace GetBacktrace (int max_frames)
 		{
-			inferior.Debugger.UpdateSymbolTable (inferior);
+			return (Backtrace) SendCommand (delegate {
+				inferior.Debugger.UpdateSymbolTable (inferior);
 
-			if (current_frame == null)
-				throw new TargetException (TargetError.NoStack);
+				if (current_frame == null)
+					throw new TargetException (TargetError.NoStack);
 
-			TargetAddress until = main_method_stackptr;
+				TargetAddress until = main_method_stackptr;
 
-			current_backtrace = new Backtrace (current_frame);
+				current_backtrace = new Backtrace (current_frame);
 
-			foreach (StackFrame rti_frame in callback_stack) {
-				current_backtrace.GetBacktrace (
-					target_access, arch, rti_frame.StackPointer, max_frames);
+				foreach (StackFrame rti_frame in callback_stack) {
+					current_backtrace.GetBacktrace (
+						target_access, arch, rti_frame.StackPointer, max_frames);
 
-				current_backtrace.AddFrame (rti_frame);
-			}
+					current_backtrace.AddFrame (rti_frame);
+				}
 
-			current_backtrace.GetBacktrace (target_access, arch, until, max_frames);
+				current_backtrace.GetBacktrace (target_access, arch, until, max_frames);
 
-			return current_backtrace;
+				return current_backtrace;
+			});
 		}
 
-		[Command]
 		public Registers GetRegisters ()
 		{
-			registers = inferior.GetRegisters ();
-			return registers;
+			return (Registers) SendCommand (delegate {
+				registers = inferior.GetRegisters ();
+				return registers;
+			});
 		}
 
-		[Command]
 		public void SetRegisters (Registers registers)
 		{
 			if (!registers.FromCurrentFrame)
 				throw new InvalidOperationException ();
 
 			this.registers = registers;
-			inferior.SetRegisters (registers);
+			SendCommand (delegate {
+				inferior.SetRegisters (registers);
+				return registers;
+			});
 		}
 
-		[Command]
 		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
-			return manager.BreakpointManager.InsertBreakpoint (
-				inferior, breakpoint, address);
+			return (int) SendCommand (delegate {
+				return manager.BreakpointManager.InsertBreakpoint (
+					inferior, breakpoint, address);
+			});
 		}
 
-		[Command]
 		public void RemoveBreakpoint (int index)
 		{
-			manager.BreakpointManager.RemoveBreakpoint (inferior, index);
+			SendCommand (delegate {
+				manager.BreakpointManager.RemoveBreakpoint (inferior, index);
+				return null;
+			});
 		}
 
-		[Command]
 		public CommandResult InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
 		{
-			StartOperation ();
-			return ProcessOperation (new OperationInsertBreakpoint (breakpoint, func));
+			return StartOperation (new OperationInsertBreakpoint (breakpoint, func));
 		}
 
-		[Command]
 		public int AddEventHandler (EventType type, Breakpoint breakpoint)
 		{
 			if (type != EventType.CatchException)
@@ -1481,94 +1475,101 @@ namespace Mono.Debugger.Backends
 			return id;
 		}
 
-		[Command]
 		public void RemoveEventHandler (int index)
 		{
 			exception_handlers.Remove (index);
 		}
 
-		[Command]
 		public int GetInstructionSize (TargetAddress address)
 		{
-			lock (disassembler) {
+			return (int) SendCommand (delegate {
 				return disassembler.GetInstructionSize (address);
-			}
+			});
 		}
 
-		[Command]
 		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
-			lock (disassembler) {
+			return (AssemblerLine) SendCommand (delegate {
 				return disassembler.DisassembleInstruction (method, address);
-			}
+			});
 		}
 
-		[Command]
 		public AssemblerMethod DisassembleMethod (Method method)
 		{
-			lock (disassembler) {
+			return (AssemblerMethod) SendCommand (delegate {
 				return disassembler.DisassembleMethod (method);
-			}
+			});
 		}
 
-		[Command]
 		public byte[] ReadMemory (TargetAddress address, int size)
 		{
-			return inferior.ReadBuffer (address, size);
+			return (byte[]) SendCommand (delegate {
+				return inferior.ReadBuffer (address, size);
+			});
 		}
 
-		[Command]
 		public byte ReadByte (TargetAddress address)
 		{
-			return inferior.ReadByte (address);
+			return (byte) SendCommand (delegate {
+				return inferior.ReadByte (address);
+			});
 		}
 
-		[Command]
 		public int ReadInteger (TargetAddress address)
 		{
-			return inferior.ReadInteger (address);
+			return (int) SendCommand (delegate {
+				return inferior.ReadInteger (address);
+			});
 		}
 
-		[Command]
 		public long ReadLongInteger (TargetAddress address)
 		{
-			return inferior.ReadLongInteger (address);
+			return (long) SendCommand (delegate {
+				return inferior.ReadLongInteger (address);
+			});
 		}
 
-		[Command]
 		public TargetAddress ReadAddress (TargetAddress address)
 		{
-			return inferior.ReadAddress (address);
+			return (TargetAddress) SendCommand (delegate {
+				return inferior.ReadAddress (address);
+			});
 		}
 
-		[Command]
 		public string ReadString (TargetAddress address)
 		{
-			return inferior.ReadString (address);
+			return (string) SendCommand (delegate {
+				return inferior.ReadString (address);
+			});
 		}
 
-		[Command]
 		public void WriteMemory (TargetAddress address, byte[] buffer)
 		{
-			inferior.WriteBuffer (address, buffer);
+			SendCommand (delegate {
+				inferior.WriteBuffer (address, buffer);
+				return null;
+			});
 		}
 
-		[Command]
 		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
-			return style.FormatObject (target_access, obj, format);
+			return (string) SendCommand (delegate {
+				return style.FormatObject (target_access, obj, format);
+			});
 		}
 
-		[Command]
 		public string PrintType (Style style, TargetType type)
 		{
-			return style.FormatType (target_access, type);
+			return (string) SendCommand (delegate {
+				return style.FormatType (target_access, type);
+			});
 		}
 
-		[Command]
 		public object Invoke (TargetAccessDelegate func, object data)
 		{
-			return func (target_access, data);
+			return SendCommand (delegate {
+				return func (target_access, data);
+			});
 		}
 #endregion
 
@@ -1590,12 +1591,10 @@ namespace Mono.Debugger.Backends
 		{
 			// Check to see if Dispose has already been called.
 			// If this is a call to Dispose, dispose all managed resources.
-			if (disposing) {
+			if (disposing && !disposed) {
 				if (inferior != null)
 					inferior.Dispose ();
 				inferior = null;
-
-				process.Dispose ();;
 			}
 
 			disposed = true;
@@ -2661,7 +2660,6 @@ namespace Mono.Debugger.Backends
 				}
 
 				Result.Result = result;
-				Result.Completed ();
 				return true;
 			}
 
@@ -2779,13 +2777,12 @@ namespace Mono.Debugger.Backends
 			if (inferior.TargetAddressSize == 4)
 				data1 &= 0xffffffffL;
 
-			Result.Result = new TargetAddress (inferior.AddressDomain, data1);
-			Result.Completed ();
-
 			Report.Debug (DebugFlags.SSE,
-				      "{0} call method done: {1:x} {2:x}",
-				      sse, data1, data2);
+				      "{0} call method done: {1:x} {2:x} {3}",
+				      sse, data1, data2, Result);
 				
+			Result.Result = new TargetAddress (inferior.AddressDomain, data1);
+
 			return true;
 		}
 	}
@@ -2894,7 +2891,6 @@ namespace Mono.Debugger.Backends
 				inferior, Breakpoint, address);
 
 			Result.Result = index;
-			Result.Completed ();
 			return true;
 		}
 	}
