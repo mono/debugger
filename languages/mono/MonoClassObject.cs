@@ -29,13 +29,11 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetCurrentObject (target, Location);
 		}
 
-		[Command]
 		public override TargetObject GetField (TargetAccess target, TargetFieldInfo field)
 		{
 			return type.GetField (target, Location, field);
 		}
 
-		[Command]
 		public override void SetField (TargetAccess target, TargetFieldInfo field,
 					       TargetObject obj)
 		{

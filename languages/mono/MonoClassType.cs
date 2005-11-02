@@ -419,7 +419,6 @@ namespace Mono.Debugger.Languages.Mono
 			return info.GetObject (location);
 		}
 
-		[Command]
 		public override TargetMemberInfo FindMember (string name, bool search_static,
 							     bool search_instance)
 		{
