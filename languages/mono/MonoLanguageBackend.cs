@@ -258,8 +258,8 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoLanguageBackend : Language, ILanguageBackend
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 52;
-		public const int  MaxDynamicVersion = 52;
+		public const int  MinDynamicVersion = 53;
+		public const int  MaxDynamicVersion = 53;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		ArrayList symbol_files;
