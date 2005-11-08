@@ -70,9 +70,9 @@ namespace Mono.Debugger.Languages.Native
 			return "";
 		}
 
-		public override TargetType LookupType (StackFrame frame, string name)
+		public override TargetType LookupType (string name)
 		{
-			return bfd_container.LookupType (frame, name);
+			return bfd_container.LookupType (name);
 		}
 
 		public override bool CanCreateInstance (Type type)

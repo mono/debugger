@@ -1,5 +1,14 @@
 2005-11-08  Martin Baulig  <martin@ximian.com>
 
+	* languages/Language.cs
+	(Language.LookupType): Removed the `StackFrame' argument.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.LookupMonoType): Use `LookupType' to lookup a
+	`Cecil.ITypeReference'.	
+
+2005-11-08  Martin Baulig  <martin@ximian.com>
+
 	* backends/Inferior.cs
 	(Inferior.CreateThread): Copy all the data to the new Inferior, so
 	we don't need to call SetupInferior() on it.

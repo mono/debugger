@@ -292,7 +292,7 @@ namespace Mono.Debugger.Backends
 				type_hash.Add (name, type);
 		}
 
-		public TargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (string name)
 		{
 			DieType type = (DieType) type_hash [name];
 			if (type == null)

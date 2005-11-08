@@ -994,10 +994,10 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		public TargetType LookupType (StackFrame frame, string name)
+		public TargetType LookupType (string name)
 		{
 			if (dwarf != null)
-				return dwarf.LookupType (frame, name);
+				return dwarf.LookupType (name);
 
 			return null;
 		}

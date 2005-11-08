@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages
 
 		public abstract string SourceLanguage (StackFrame frame);
 
-		public abstract TargetType LookupType (StackFrame frame, string name);
+		public abstract TargetType LookupType (string name);
 
 		public abstract bool CanCreateInstance (Type type);
 

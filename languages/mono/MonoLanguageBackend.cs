@@ -353,18 +353,6 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoPointerType (element_type);
 			}
 
-			if (type.Scope == null) {
-				Console.WriteLine ("Cannot find type `{0}'", type);
-				return null;
-			}
-
-			file = (MonoSymbolFile) assembly_by_name [type.Scope.Name];
-			if (file == null) {
-				Console.WriteLine ("Type `{0}' from unknown assembly `{1}'",
-						   type, type.Scope.Name);
-				return null;
-			}
-
 			int rank = 0;
 
 			string full_name = type.FullName;
@@ -382,15 +370,7 @@ namespace Mono.Debugger.Languages.Mono
 				rank = dim.Length - 1;
 			}
 
-			typedef = file.Module.Types [full_name];
-
-			if (typedef == null) {
-				Console.WriteLine ("Can't find type `{0}' in assembly `{1}'",
-						   type.FullName, type.Scope.Name);
-				return null;
-			}
-
-			TargetType mono_type = file.LookupMonoType (typedef);
+			TargetType mono_type = LookupType (full_name);
 			if (mono_type == null)
 				return null;
 
@@ -549,7 +529,7 @@ namespace Mono.Debugger.Languages.Mono
 					image_hash.Add (symfile.MonoImage, symfile);
 					symbol_files.Add (symfile);
 					assembly_hash.Add (symfile.Assembly, symfile);
-					assembly_by_name.Add (symfile.Assembly.Name.Name, symfile);
+					assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
 
 					if (address != corlib_address)
 						continue;
@@ -729,7 +709,7 @@ namespace Mono.Debugger.Languages.Mono
 			return "";
 		}
 
-		public override TargetType LookupType (StackFrame frame, string name)
+		public override TargetType LookupType (string name)
 		{
 			switch (name) {
 			case "short":   name = "System.Int16";   break;

@@ -775,7 +775,7 @@ namespace Mono.Debugger.Frontend
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
-			TargetType type = frame.Language.LookupType (frame.Frame, name);
+			TargetType type = frame.Language.LookupType (name);
 			if (type != null)
 				return new TypeExpression (type);
 
@@ -785,7 +785,7 @@ namespace Mono.Debugger.Frontend
 
 			foreach (string ns in namespaces) {
 				string full_name = MakeFQN (ns, name);
-				type = frame.Language.LookupType (frame.Frame, full_name);
+				type = frame.Language.LookupType (full_name);
 				if (type != null)
 					return new TypeExpression (type);
 			}
@@ -901,10 +901,10 @@ namespace Mono.Debugger.Frontend
 
 			Expression ltype = left.TryResolveType (context);
 			if (ltype == null)
-				the_type = frame.Language.LookupType (frame, Name);
+				the_type = frame.Language.LookupType (Name);
 			else {
 				string nested = ltype.Name + "+" + name;
-				the_type = frame.Language.LookupType (frame, nested);
+				the_type = frame.Language.LookupType (nested);
 			}
 
 			if (the_type == null)
