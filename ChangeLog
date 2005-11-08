@@ -1,3 +1,12 @@
+2005-11-08  Martin Baulig  <martin@ximian.com>
+
+	* backends/Inferior.cs
+	(Inferior.CreateThread): Copy all the data to the new Inferior, so
+	we don't need to call SetupInferior() on it.
+	(Inferior.Attach): Don't call SetupInferior().
+	(Inferior.Dispose): Don't dispose the `Bfd' as it's owned by the
+	BfdContainer and will be disposed by the `Debugger' backend.
+
 2005-11-02  Martin Baulig  <martin@ximian.com>
 
 	* classes/Report.cs

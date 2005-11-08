@@ -1147,14 +1147,9 @@ namespace Mono.Debugger.Backends
 		{
 			// Check to see if Dispose has already been called.
 			if (!this.disposed) {
-				// If this is a call to Dispose,
-				// dispose all managed resources.
-				if (disposing) {
-				}
-				
-				// Release unmanaged resources
 				this.disposed = true;
 
+				// Release unmanaged resources
 				lock (this) {
 					bfd_close (bfd);
 					bfd = IntPtr.Zero;

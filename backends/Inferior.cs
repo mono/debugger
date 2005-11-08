@@ -242,16 +242,28 @@ namespace Mono.Debugger.Backends
 						       ProcessStart start)
 		{
 			return new Inferior (
-				thread_manager,
-				thread_manager.Debugger, start,
+				thread_manager, thread_manager.Debugger, start,
 				thread_manager.BreakpointManager, null,
 				thread_manager.AddressDomain);
 		}
 
 		public Inferior CreateThread ()
 		{
-			return new Inferior (thread_manager, backend, start, breakpoint_manager,
-					     error_handler, address_domain);
+			Inferior inferior = new Inferior (
+				thread_manager, backend, start, breakpoint_manager,
+				error_handler, address_domain);
+
+			inferior.signal_info = signal_info;
+			inferior.has_signals = has_signals;
+
+			inferior.target_info = target_info;
+			inferior.target_memory_info = target_memory_info;
+			inferior.bfd = bfd;
+
+			inferior.arch = inferior.bfd.Architecture;
+			inferior.bfd_disassembler = inferior.bfd.GetDisassembler (inferior);
+
+			return inferior;
 		}
 
 		[DllImport("libglib-2.0-0.dll")]
@@ -486,7 +498,6 @@ namespace Mono.Debugger.Backends
 			check_error (mono_debugger_server_attach (server_handle, pid, out tid));
 			this.child_pid = pid;
 
-			SetupInferior ();
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
@@ -1257,15 +1268,13 @@ namespace Mono.Debugger.Backends
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					bfd_container.CloseBfd (bfd);
 					if (bfd_disassembler != null)
 						bfd_disassembler.Dispose ();
-					// Do stuff here
 				}
 				
-				// Release unmanaged resources
 				this.disposed = true;
 
+				// Release unmanaged resources
 				lock (this) {
 					if (server_handle != IntPtr.Zero) {
 						mono_debugger_server_finalize (server_handle);
