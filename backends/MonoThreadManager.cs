@@ -148,6 +148,14 @@ namespace Mono.Debugger.Backends
 				thread.Engine.Start (func, false);
 		}
 
+		internal void KillThread (int tid)
+		{
+			Report.Debug (DebugFlags.Threads, "Aborting thread {0:x}", tid);
+
+			ThreadData thread = (ThreadData) thread_hash [tid];
+			thread_hash.Remove (tid);
+		}
+
 		void thread_abort (Inferior inferior, int tid)
 		{
 			Report.Debug (DebugFlags.Threads, "Aborting thread {0:x}", tid);

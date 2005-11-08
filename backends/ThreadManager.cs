@@ -282,6 +282,8 @@ namespace Mono.Debugger.Backends
 			thread_hash.Remove (engine.PID);
 			engine_hash.Remove (engine.ID);
 			engine.Process.Kill ();
+			if (mono_manager != null)
+				mono_manager.KillThread (engine.TID);
 			backend.OnThreadExitedEvent (engine.Process);
 		}
 
