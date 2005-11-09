@@ -465,6 +465,9 @@ namespace Mono.Debugger.Backends
 			Registers old_regs = frame.Registers;
 			Registers regs = copy_registers (old_regs);
 
+			if (!old_regs [(int) X86_64_Register.RBP].Valid)
+				return null;
+
 			TargetAddress rbp = new TargetAddress (
 				memory.AddressDomain, old_regs [(int) X86_64_Register.RBP]);
 
