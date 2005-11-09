@@ -82,6 +82,10 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
+		public override bool IsLoaded {
+			get { return true; }
+		}
+
 		public override TargetAddress GetMethodAddress (TargetAccess target)
 		{
 			throw new NotSupportedException ();

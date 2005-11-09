@@ -10,6 +10,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract Module Module {
+			get;
+		}
+
 		public abstract TargetClassType ParentType {
 			get;
 		}

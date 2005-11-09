@@ -30,6 +30,9 @@ namespace Mono.Debugger
 		{
 			this.function = func;
 
+			if (function.IsLoaded)
+				address = function.GetMethodAddress (target);
+
 			EnableBreakpoint (target);
 		}
 
@@ -74,9 +77,11 @@ namespace Mono.Debugger
 
 				if (!address.IsNull)
 					breakpoint_id = target.InsertBreakpoint (breakpoint, address);
-				else if (function != null)
-					breakpoint_id = target.InsertBreakpoint (breakpoint, function);
-				else if (location.Method.IsDynamic) {
+				else if (function != null) {
+					load_handler = function.DeclaringType.Module.RegisterLoadHandler (
+						target, function.Source,
+						new MethodLoadedHandler (method_loaded), null);
+				} else if (location.Method.IsDynamic) {
 					// A dynamic method is a method which may emit a
 					// callback when it's loaded.  We register this
 					// callback here and do the actual insertion when

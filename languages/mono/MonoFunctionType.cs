@@ -91,6 +91,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass.File.TargetInfo.TargetAddressSize; }
 		}
 
+		public override bool IsLoaded {
+			get { return klass.ResolveClass (); }
+		}
+
 		public override TargetAddress GetMethodAddress (TargetAccess target)
 		{
 			MonoClassInfo info = klass.GetTypeInfo ();

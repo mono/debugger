@@ -76,6 +76,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parent_type; }
 		}
 
+		public override Module Module {
+			get { return file; }
+		}
+
 		internal int Token {
 			get { return (int) (type.MetadataToken.TokenType + type.MetadataToken.RID); }
 		}

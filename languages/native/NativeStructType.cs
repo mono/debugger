@@ -93,6 +93,10 @@ namespace Mono.Debugger.Languages.Native
 			get { throw new InvalidOperationException (); }
 		}
 
+		public override Module Module {
+			get { throw new NotImplementedException (); }
+		}
+
 		internal void SetFields (NativeFieldInfo[] fields)
 		{
 			this.fields = fields;

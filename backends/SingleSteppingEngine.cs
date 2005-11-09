@@ -357,7 +357,7 @@ namespace Mono.Debugger.Backends
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
 				// Ok, inform the user that we stopped.
-				operation_completed (result);
+				OperationCompleted (result);
 				if (is_main && !reached_main && !exiting) {
 					arch = inferior.Architecture;
 					reached_main = true;
@@ -396,7 +396,7 @@ namespace Mono.Debugger.Backends
 					goto send_result;
 
 				if (!send_result) {
-					operation_completed (null);
+					OperationCompleted (null);
 					return;
 				}
 			}
@@ -460,7 +460,7 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-		void operation_completed (TargetEventArgs result)
+		void OperationCompleted (TargetEventArgs result)
 		{
 			lock (this) {
 				engine_stopped = true;
@@ -565,14 +565,26 @@ namespace Mono.Debugger.Backends
 				      "{0} starting {1}", this, operation);
 
 			current_operation = operation;
-			operation.Execute (this);
+			ExecuteOperation (operation);
 			return operation.Result;
 		}
 
 		void PushOperation (Operation operation)
 		{
 			current_operation.PushOperation (this, operation);
-			operation.Execute (this);
+			ExecuteOperation (operation);
+		}
+
+		void ExecuteOperation (Operation operation)
+		{
+			try {
+				operation.Execute (this);
+			} catch (Exception ex) {
+				Report.Debug (DebugFlags.SSE, "{0} caught exception while " +
+					      "processing operation {1}: {2}", this, operation, ex);
+				operation.Result.Result = ex;
+				OperationCompleted (null);
+			}
 		}
 
 		protected Method Lookup (TargetAddress address)
@@ -662,7 +674,7 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				if (!engine_stopped)
-					operation_completed (
+					OperationCompleted (
 						new TargetEventArgs (TargetEventType.TargetExited, 0));
 			}
 
@@ -704,7 +716,7 @@ namespace Mono.Debugger.Backends
 					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.FrameChanged, current_frame);
-					operation_completed (args);
+					OperationCompleted (args);
 				}
 
 				try {
@@ -3122,6 +3134,8 @@ namespace Mono.Debugger.Backends
 		public void Wait ()
 		{
 			CompletedEvent.WaitOne ();
+			if (Result is Exception)
+				throw (Exception) Result;
 		}
 	}
 

@@ -1,3 +1,21 @@
+2005-11-09  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClassType.cs
+	(TargetClassType.Module): New public abstract property.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.IsLoaded): New public abstract property.
+
+	* classes/BreakpointHandle.cs
+	(BreakpointHandle.EnableBreakpoint): When inserting a breakpoint
+	on a function, first check whether that function is loaded and use
+	a load handler if not.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ExecuteOperation): New private method; use
+	this in ProcessOperation() and PushOperation() rather than calling
+	`operation.Execute (this)' directly; catch exceptions here.
+
 2005-11-08  Martin Baulig  <martin@ximian.com>
 
 	* languages/Language.cs
