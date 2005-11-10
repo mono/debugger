@@ -23,6 +23,8 @@ static InferiorVTable *global_vtable = &i386_ptrace_inferior;
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 {
+	// Refuse to run as root.
+	g_assert ((getuid () != 0) && (geteuid () != 0));
 	return global_vtable->initialize (breakpoint_manager);
 }
 

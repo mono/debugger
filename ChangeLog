@@ -1,3 +1,8 @@
+2005-11-10  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/library.c
+	(mono_debugger_server_initialize): Refuse to run as root.
+
 2005-11-09  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClassType.cs
