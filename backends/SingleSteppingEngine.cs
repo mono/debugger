@@ -762,10 +762,11 @@ namespace Mono.Debugger.Backends
 			if (bpt == null)
 				return false;
 
-			if (!bpt.CheckBreakpointHit (target_access, inferior.CurrentFrame))
-				return false;
+			bool remain_stopped;
+			if (bpt.BreakpointHandler (inferior, out remain_stopped))
+				return remain_stopped;
 
-			return true;
+			return bpt.CheckBreakpointHit (target_access, inferior.CurrentFrame);
 		}
 
 		bool step_over_breakpoint (TargetAddress trampoline, TargetAddress until, bool current)
@@ -1064,8 +1065,8 @@ namespace Mono.Debugger.Backends
 
 			if (is_start) {
 				Console.WriteLine ("DO TRAMPOLINE: {0}", trampoline);
-				PushOperation (new OperationFinish (true, null));
-				// do_continue (trampoline);
+				// PushOperation (new OperationFinish (true, null));
+				do_continue (trampoline);
 				return;
 			}
 
@@ -2371,7 +2372,11 @@ namespace Mono.Debugger.Backends
 				      "callback {3}", sse, cevent, inferior.CurrentFrame, this);
 
 			args = null;
-			if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument == 0)) {
+				sse.do_continue ();
+				return EventResult.Running;
+			} else if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
 				Report.Debug (DebugFlags.SSE, "{0} aborting callback {1} at {2}: {3}",
 					      sse, this, inferior.CurrentFrame, cevent);
 				RestoreStack (sse);

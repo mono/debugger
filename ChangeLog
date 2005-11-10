@@ -1,5 +1,27 @@
 2005-11-10  Martin Baulig  <martin@ximian.com>
 
+	* arch/Architecture.cs
+	(Architecture.Hack_ReturnNull): You don't wanna use this function.
+
+	* arch/BfdContainer.cs: Some minor API cleanups; make sure to set
+	the newly created Bfd's `MainBfd'.
+
+	* classes/Breakpoint.cs
+	(Breakpoint.BreakpointHandler): New internal function.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.child_breakpoint): Call the new
+	`bpt.BreakpointHandler()' method before CheckBreakpointHit().
+
+	* arch/Bfd.cs
+	(Bfd.DynlinkBreakpoint): New private class; we use this for the
+	dynlink breakpoints.
+	(Bfd.module_loaded): Added big big hack for gnome-vfs: intercept
+	any calls to `__nptl_setxid()' via the new `SetXidBreakpoint' and
+	make it return 0.
+
+2005-11-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/library.c
 	(mono_debugger_server_initialize): Refuse to run as root.
 

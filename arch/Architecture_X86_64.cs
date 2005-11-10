@@ -730,5 +730,20 @@ namespace Mono.Debugger.Backends
 
 			return null;
 		}
+
+		internal override void Hack_ReturnNull (Inferior inferior)
+		{
+			Registers regs = inferior.GetRegisters ();
+			TargetAddress rsp = new TargetAddress (
+				inferior.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+			TargetAddress rip = inferior.ReadAddress (rsp);
+			rsp += inferior.TargetAddressSize;
+
+			regs [(int) X86_64_Register.RIP].SetValue (rip);
+			regs [(int) X86_64_Register.RSP].SetValue (rsp);
+			regs [(int) X86_64_Register.RAX].SetValue (TargetAddress.Null);
+
+			inferior.SetRegisters (regs);
+		}
 	}
 }

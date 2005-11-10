@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
@@ -133,5 +134,11 @@ namespace Mono.Debugger
 				last_frame.Process, last_frame.TargetAccess, address, stack,
 				frame_pointer, regs, name);
 		}
+
+		//
+		// This is a horrible hack - don't use !
+		//
+		//
+		internal abstract void Hack_ReturnNull (Inferior inferior);
 	}
 }

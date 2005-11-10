@@ -14,6 +14,7 @@ namespace Mono.Debugger.Backends
 		Hashtable bfd_hash;
 		Debugger backend;
 		NativeLanguage language;
+		Bfd main_bfd;
 
 		public BfdContainer (Debugger backend)
 		{
@@ -36,32 +37,22 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void SetupInferior (ITargetInfo info)
+		internal void SetupInferior (ITargetInfo info, Bfd main_bfd)
 		{
+			this.main_bfd = main_bfd;
 			language = new NativeLanguage (this, info);
 		}
 
 		public Bfd AddFile (ITargetMemoryAccess memory, string filename,
-				    bool step_into, bool is_main, bool is_loaded)
-		{
-			return AddFile (
-				memory, filename, step_into, TargetAddress.Null,
-				null, is_main, is_loaded);
-		}
-
-		public Bfd AddFile (ITargetMemoryAccess memory, string filename, bool step_into,
-				    TargetAddress base_address, Bfd core_bfd, bool is_main,
-				    bool is_loaded)
+				    TargetAddress base_address, bool step_info, bool is_loaded)
 		{
 			check_disposed ();
 			Bfd bfd = (Bfd) bfd_hash [filename];
 			if (bfd != null)
 				return bfd;
 
-			bfd = new Bfd (this, memory, memory, filename, false,
-				       base_address, is_main, is_loaded);
-			bfd.StepInto = step_into;
-			bfd.CoreFileBfd = core_bfd;
+			bfd = new Bfd (this, memory, filename, main_bfd, base_address,
+				       step_info, is_loaded);
 
 			bfd_hash.Add (filename, bfd);
 

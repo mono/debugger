@@ -171,7 +171,7 @@ namespace Mono.Debugger.Backends
 							 "but main is at {1}", inferior.CurrentFrame, main_method);
 
 			backend.ReachedMain ();
-			inferior.UpdateModules ();
+			inferior.InitializeModules ();
 		}
 
 		internal void ReachedMain ()

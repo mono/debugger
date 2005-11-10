@@ -483,8 +483,6 @@ namespace Mono.Debugger.Backends
 
 			SetupInferior ();
 
-			bfd_container.SetupInferior (this);
-
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
@@ -553,8 +551,8 @@ namespace Mono.Debugger.Backends
 
 			try {
 				bfd = bfd_container.AddFile (
-					this, start.TargetApplication,
-					start.LoadNativeSymbolTable, true, true);
+					this, start.TargetApplication, TargetAddress.Null,
+					start.LoadNativeSymbolTable, true);
 			} catch (Exception e) {
 				if (error_handler != null)
 					error_handler (this, String.Format (
@@ -565,13 +563,15 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
+			bfd_container.SetupInferior (this, bfd);
+
 			arch = bfd.Architecture;
 			target_memory_info.Initialize (arch);
 
 			bfd_disassembler = bfd.GetDisassembler (this);
 		}
 
-		public void UpdateModules ()
+		public void InitializeModules ()
 		{
 			bfd.UpdateSharedLibraryInfo (this);
 		}

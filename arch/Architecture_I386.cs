@@ -645,5 +645,20 @@ namespace Mono.Debugger.Backends
 		{
 			return null;
 		}
+
+		internal override void Hack_ReturnNull (Inferior inferior)
+		{
+			Registers regs = inferior.GetRegisters ();
+			TargetAddress esp = new TargetAddress (
+				inferior.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+			TargetAddress eip = inferior.ReadAddress (esp);
+			esp += inferior.TargetAddressSize;
+
+			regs [(int) I386Register.EIP].SetValue (eip);
+			regs [(int) I386Register.ESP].SetValue (esp);
+			regs [(int) I386Register.EAX].SetValue (TargetAddress.Null);
+
+			inferior.SetRegisters (regs);
+		}
 	}
 }

@@ -269,7 +269,7 @@ namespace Mono.Debugger
 						filename);
 
 			if (!mono_language.TryFindImage (process, filename))
-				bfd_container.AddFile (process, filename, true, false, false);
+				bfd_container.AddFile (process, filename, TargetAddress.Null, true, false);
 		}
 
 		internal MonoLanguageBackend MonoLanguage {

@@ -25,7 +25,6 @@ namespace Mono.Debugger.Backends
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		TargetAddress entry_point = TargetAddress.Null;
-		bool is_main_module;
 		bool is_loaded;
 		Hashtable load_handlers;
 		Hashtable symbols;
@@ -166,16 +165,16 @@ namespace Mono.Debugger.Backends
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, ITargetMemoryAccess memory,
-			    ITargetMemoryInfo info, string filename, bool core_file,
-			    TargetAddress base_address, bool is_main_module, bool is_loaded)
+		public Bfd (BfdContainer container, ITargetMemoryInfo info, string filename,
+			    Bfd main_bfd, TargetAddress base_address, bool step_into, bool is_loaded)
 		{
 			this.container = container;
 			this.info = info;
 			this.filename = filename;
 			this.base_address = base_address;
 			this.backend = container.Debugger;
-			this.is_main_module = is_main_module;
+			this.main_bfd = main_bfd;
+			this.StepInto = step_into;
 			this.is_loaded = is_loaded;
 
 			load_handlers = new Hashtable ();
@@ -183,15 +182,6 @@ namespace Mono.Debugger.Backends
 			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
-
-			if (core_file) {
-				if (!bfd_glue_check_format_core (bfd))
-					throw new SymbolTableException ("Not a core file: {0}", filename);
-
-				is_coredump = true;
-
-				return;
-			}
 
 			if (!bfd_glue_check_format_object (bfd))
 				throw new SymbolTableException ("Not an object file: {0}", filename);
@@ -223,11 +213,13 @@ namespace Mono.Debugger.Backends
 				InternalSection got_section = GetSectionByName (".got", false);
 				if ((plt_section != null) && (got_section != null)) {
 					plt_start = new TargetAddress (
-						memory.AddressDomain, base_address.Address + plt_section.vma);
+						info.AddressDomain,
+						base_address.Address + plt_section.vma);
 					plt_end = plt_start + plt_section.size;
 
 					got_start = new TargetAddress (
-						memory.AddressDomain, base_address.Address + got_section.vma);
+						info.AddressDomain,
+						base_address.Address + got_section.vma);
 					has_got = true;
 				}
 			} else
@@ -260,13 +252,13 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				TargetAddress relocated = new TargetAddress (
-					info.AddressDomain,
-					base_address.Address + address);
+					info.AddressDomain, base_address.Address + address);
 				if (is_function != 0)
 					symbols.Add (name, relocated);
-				else if (is_main_module && name.StartsWith ("MONO_DEBUGGER__"))
+				else if ((main_bfd == null) && name.StartsWith ("MONO_DEBUGGER__"))
 					symbols.Add (name, relocated);
-				else if (name.StartsWith ("__pthread_"))
+				else if (name.StartsWith ("__pthread_") ||
+					 (name == "__libc_pthread_functions"))
 					symbols.Add (name, relocated);
 
 				simple_symbols.Add (new Symbol (name, relocated, 0));
@@ -301,13 +293,12 @@ namespace Mono.Debugger.Backends
 			return simple_symbols;
 		}
 
-		bool dynlink_handler (Breakpoint bpt, TargetAccess target, TargetAddress address)
+		bool dynlink_handler (Inferior inferior)
 		{
-			ITargetMemoryAccess memory = target.TargetMemoryAccess;
-			if (memory.ReadInteger (rdebug_state_addr) != 0)
+			if (inferior.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			do_update_shlib_info (memory);
+			do_update_shlib_info (inferior);
 			return false;
 		}
 
@@ -357,12 +348,8 @@ namespace Mono.Debugger.Backends
 			if (reader.ReadLongInteger () != 0)
 				return false;
 
-			SimpleBreakpoint breakpoint = new SimpleBreakpoint (
-				"dynlink", null,
-				new BreakpointCheckHandler (dynlink_handler));
-
 			inferior.BreakpointManager.InsertBreakpoint (
-				inferior, breakpoint, dynlink_breakpoint);
+				inferior, new DynlinkBreakpoint (this), dynlink_breakpoint);
 
 			has_shlib_info = true;
 			return true;
@@ -381,8 +368,10 @@ namespace Mono.Debugger.Backends
 			do_update_shlib_info (inferior);
 		}
 
-		void do_update_shlib_info (ITargetMemoryAccess target)
+		void do_update_shlib_info (Inferior inferior)
 		{
+			ITargetMemoryAccess target = inferior;
+
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
@@ -418,13 +407,12 @@ namespace Mono.Debugger.Backends
 				Bfd bfd = container [name];
 				if (bfd != null) {
 					if (!bfd.IsLoaded)
-						bfd.module_loaded (target, l_addr);
+						bfd.module_loaded (inferior, l_addr);
 					continue;
 				}
 
-				bfd = container.AddFile (
-					target, name, StepInto, l_addr, null, false, true);
-				bfd.module_loaded (target, l_addr);
+				bfd = container.AddFile (target, name, l_addr, StepInto, true);
+				bfd.module_loaded (inferior, l_addr);
 			}
 		}
 
@@ -457,10 +445,6 @@ namespace Mono.Debugger.Backends
 		public Bfd MainBfd {
 			get {
 				return main_bfd;
-			}
-
-			set {
-				main_bfd = value;
 			}
 		}
 
@@ -852,7 +836,7 @@ namespace Mono.Debugger.Backends
 
 		public override bool IsLoaded {
 			get {
-				return is_main_module || is_loaded || !base_address.IsNull;
+				return (main_bfd == null) || is_loaded || !base_address.IsNull;
 			}
 		}
 
@@ -1019,9 +1003,28 @@ namespace Mono.Debugger.Backends
 			load_handlers.Remove (data);
 		}
 
-		void module_loaded (ITargetMemoryAccess target, TargetAddress address)
+		void module_loaded (Inferior inferior, TargetAddress address)
 		{
 			this.base_address = address;
+
+			if (symbols.Contains ("__libc_pthread_functions")) {
+				TargetAddress vtable = (TargetAddress)
+					symbols ["__libc_pthread_functions"];
+
+				/*
+				 * Big big hack to allow debugging gnome-vfs:
+				 * We intercept any calls to __nptl_setxid() and make it
+				 * return 0.  This is safe to do since we do not allow
+				 * debugging setuid programs or running as root, so setxid()
+				 * will always be a no-op anyways.
+				 */
+
+				TargetAddress nptl_setxid = inferior.ReadAddress (
+					vtable + 51 * info.TargetAddressSize);
+
+				inferior.BreakpointManager.InsertBreakpoint (
+					inferior, new SetXidBreakpoint (this), nptl_setxid);
+			}
 
 			if (dwarf != null) {
 				dwarf.ModuleLoaded ();
@@ -1031,7 +1034,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			foreach (LoadHandlerData data in load_handlers.Keys)
-				data.Handler (target, data.Method, data.UserData);
+				data.Handler (inferior, data.Method, data.UserData);
 		}
 
 		protected sealed class LoadHandlerData : IDisposable
@@ -1134,6 +1137,46 @@ namespace Mono.Debugger.Backends
 				}
 
 				return null;
+			}
+		}
+
+		[Serializable]
+		protected class SetXidBreakpoint : Breakpoint
+		{
+			protected readonly Bfd bfd;
+
+			public SetXidBreakpoint (Bfd bfd)
+				: base ("setxid", null)
+			{
+				this.bfd = bfd;
+			}
+
+			internal override bool BreakpointHandler (Inferior inferior,
+								  out bool remain_stopped)
+			{
+				bfd.arch.Hack_ReturnNull (inferior);
+				remain_stopped = false;
+				return true;
+			}
+		}
+
+		[Serializable]
+		protected class DynlinkBreakpoint : Breakpoint
+		{
+			protected readonly Bfd bfd;
+
+			public DynlinkBreakpoint (Bfd bfd)
+				: base ("dynlink", null)
+			{
+				this.bfd = bfd;
+			}
+
+			internal override bool BreakpointHandler (Inferior inferior,
+								  out bool remain_stopped)
+			{
+				bfd.dynlink_handler (inferior);
+				remain_stopped = false;
+				return true;
 			}
 		}
 

@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
@@ -57,6 +58,19 @@ namespace Mono.Debugger
 					return true;
 			}
 
+			return false;
+		}
+
+		// <summary>
+		//   Internal breakpoint handler.
+		// </summary>
+		// <remarks>
+		//   The return value specifies whether we already dealt with the breakpoint; so you
+		//   normally make it return `true' when overriding.
+		// </remarks>
+		internal virtual bool BreakpointHandler (Inferior inferior, out bool remain_stopped)
+		{
+			remain_stopped = false;
 			return false;
 		}
 

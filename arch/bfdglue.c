@@ -77,7 +77,8 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 		*address = symbol->section->vma + symbol->value;
 	} else if (flags == (BSF_OBJECT | BSF_LOCAL)) {
 		if (strncmp (symbol->name, "__pthread_", 10) &&
-		    strncmp (symbol->name, "MONO_DEBUGGER_", 14))
+		    strncmp (symbol->name, "MONO_DEBUGGER_", 14) &&
+		    strcmp (symbol->name, "__libc_pthread_functions"))
 			return NULL;
 
 		*is_function = 0;
