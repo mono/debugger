@@ -30,6 +30,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public Module Module {
+			get { return DeclaringType.Module; }
+		}
+
 		public abstract TargetClassType DeclaringType {
 			get;
 		}

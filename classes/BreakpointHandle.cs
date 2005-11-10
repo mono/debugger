@@ -21,7 +21,7 @@ namespace Mono.Debugger
 
 			if (location.Method.IsLoaded)
 				address = location.GetAddress ();
-			EnableBreakpoint (target);
+			Enable (target);
 		}
 
 		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
@@ -30,10 +30,7 @@ namespace Mono.Debugger
 		{
 			this.function = func;
 
-			if (function.IsLoaded)
-				address = function.GetMethodAddress (target);
-
-			EnableBreakpoint (target);
+			Enable (target);
 		}
 
 		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)
@@ -71,41 +68,39 @@ namespace Mono.Debugger
 
 		void EnableBreakpoint (TargetAccess target)
 		{
-			lock (this) {
-				if ((load_handler != null) || (breakpoint_id > 0))
-					return;
+			if ((load_handler != null) || (breakpoint_id > 0))
+				return;
 
-				if (!address.IsNull)
-					breakpoint_id = target.InsertBreakpoint (breakpoint, address);
-				else if (function != null) {
-					load_handler = function.DeclaringType.Module.RegisterLoadHandler (
+			if (!address.IsNull)
+				breakpoint_id = target.InsertBreakpoint (breakpoint, address);
+			else if (function != null) {
+				if (function.IsLoaded)
+					breakpoint_id = target.InsertBreakpoint (breakpoint, function);
+				else
+					load_handler = function.Module.RegisterLoadHandler (
 						target, function.Source,
 						new MethodLoadedHandler (method_loaded), null);
-				} else if (location.Method.IsDynamic) {
-					// A dynamic method is a method which may emit a
-					// callback when it's loaded.  We register this
-					// callback here and do the actual insertion when
-					// the method is loaded.
-					load_handler = location.Module.RegisterLoadHandler (
-						target, location.Method,
-						new MethodLoadedHandler (method_loaded),
-						null);
-				}
+			} else if (location.Method.IsDynamic) {
+				// A dynamic method is a method which may emit a
+				// callback when it's loaded.  We register this
+				// callback here and do the actual insertion when
+				// the method is loaded.
+				load_handler = location.Module.RegisterLoadHandler (
+					target, location.Method,
+					new MethodLoadedHandler (method_loaded), null);
 			}
 		}
 
 		void DisableBreakpoint (TargetAccess target)
 		{
-			lock (this) {
-				if (breakpoint_id > 0)
-					target.RemoveBreakpoint (breakpoint_id);
+			if (breakpoint_id > 0)
+				target.RemoveBreakpoint (breakpoint_id);
 
-				if (load_handler != null)
-					load_handler.Dispose ();
+			if (load_handler != null)
+				load_handler.Dispose ();
 
-				load_handler = null;
-				breakpoint_id = -1;
-			}
+			load_handler = null;
+			breakpoint_id = -1;
 		}
 
 		public SourceLocation SourceLocation {

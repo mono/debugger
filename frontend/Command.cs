@@ -1864,8 +1864,7 @@ namespace Mono.Debugger.Frontend
 			} else if (func != null) {
 				int index = context.Interpreter.InsertBreakpoint (
 					process, tgroup, func);
-				context.Print ("Breakpoint {0} at {1}.{2}", index,
-					       func.DeclaringType.Name, func.Name);
+				context.Print ("Breakpoint {0} at {1}", index, func.Name);
 			} else {
 				throw new ScriptingException ("Cannot insert breakpoint.");
 			}
