@@ -1,5 +1,17 @@
 2005-11-11  Martin Baulig  <martin@ximian.com>
 
+	* languages/native/NativeEnumObject.cs: Removed.
+	* languages/mono/MonoEnumObject.cs: Removed.
+
+	* languages/TargetEnumObject.cs
+	(TargetEnumObject): Don't make this class abstract.
+	(TargetEnumObject.Value): Implement this here.
+
+	* languages/TargetEnumType.cs
+	(TargetEnumType.GetValue): New internal method.
+
+2005-11-11  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs
 	(DwarfTargetVariable.GetLocation): Implemented a few more opcodes.
 

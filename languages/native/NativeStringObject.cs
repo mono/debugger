@@ -59,7 +59,7 @@ namespace Mono.Debugger.Languages.Native
 
 					char ch = (char) buffer [i];
 					if (Char.IsLetterOrDigit (ch) || Char.IsPunctuation (ch) ||
-					    Char.IsWhiteSpace (ch))
+					    Char.IsWhiteSpace (ch) || (ch == '<') || (ch == '>'))
 						char_buffer [pos++] = ch;
 					else if (ch == '\\') {
 						char_buffer [pos++] = '\\';
