@@ -71,7 +71,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress start = new TargetAddress (
 					target.AddressDomain, initial);
 
-				if ((address < start) || (address >= start + range)) {
+				if ((address < start) || (address > start + range)) {
 					reader.Position = end_pos;
 					continue;
 				}
@@ -337,7 +337,7 @@ namespace Mono.Debugger.Backends
 			{
 				Registers old_regs = frame.Registers;
 
-				Registers regs = new Registers (old_regs);
+				Registers regs = arch.CopyRegisters (old_regs);
 
 				SetRegisters (regs, target, arch, columns);
 

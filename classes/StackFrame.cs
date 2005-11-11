@@ -11,6 +11,7 @@ namespace Mono.Debugger
 	[Serializable]
 	public sealed class Register
 	{
+		public readonly string Name;
 		public readonly int Index;
 		public readonly int Size;
 		TargetAddress addr_on_stack;
@@ -18,10 +19,11 @@ namespace Mono.Debugger
 		bool valid;
 		long value;
 
-		public Register (Registers registers, int index, int size,
+		public Register (Registers registers, string name, int index, int size,
 				 bool valid, long value)
 		{
 			this.registers = registers;
+			this.Name = name;
 			this.Index = index;
 			this.Size = size;
 			this.valid = valid;
@@ -117,7 +119,8 @@ namespace Mono.Debugger
 			regs = new Register [arch.CountRegisters];
 			for (int i = 0; i < regs.Length; i++)
 				regs [i] = new Register (
-					this, i, arch.RegisterSizes [i], false, 0);
+					this, arch.RegisterNames [i], i,
+					arch.RegisterSizes [i], false, 0);
 		}
 
 		public Registers (Architecture arch, long[] values)
@@ -127,7 +130,8 @@ namespace Mono.Debugger
 				throw new ArgumentException ();
 			for (int i = 0; i < regs.Length; i++)
 				regs [i] = new Register (
-					this, i, arch.RegisterSizes [i], true, values [i]);
+					this, arch.RegisterNames [i], i,
+					arch.RegisterSizes [i], true, values [i]);
 			from_current_frame = true;
 		}
 
@@ -136,8 +140,8 @@ namespace Mono.Debugger
 			regs = new Register [old_regs.regs.Length];
 			for (int i = 0; i < regs.Length; i++)
 				regs [i] = new Register (
-					this, i, old_regs [i].Size, false,
-					old_regs [i].GetValue ());
+					this, old_regs [i].Name, i, old_regs [i].Size,
+					false, old_regs [i].GetValue ());
 		}
 
 		public Register this [int index] {

@@ -134,11 +134,11 @@ namespace Mono.Debugger.Languages
 		{
 			int regindex = register.Index;
 			if (regoffset > 0)
-				return String.Format ("%{0}+0x{1:x}", register.Index, regoffset);
+				return String.Format ("%{0}+0x{1:x}", register.Name, regoffset);
 			else if (regoffset < 0)
-				return String.Format ("%{0}-0x{1:x}", register.Index, -regoffset);
+				return String.Format ("%{0}-0x{1:x}", register.Name, -regoffset);
 			else
-				return String.Format ("%{0}", register.Index);
+				return String.Format ("%{0}", register.Name);
 		}
 
 		protected override string MyToString ()

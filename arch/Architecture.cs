@@ -109,6 +109,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		internal abstract Registers CopyRegisters (Registers regs);
+
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
 							  ITargetMemoryAccess memory,
 							  byte[] code, int offset);

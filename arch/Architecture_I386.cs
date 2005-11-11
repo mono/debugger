@@ -497,13 +497,15 @@ namespace Mono.Debugger.Backends
 			return unwind_method (frame, memory, code, pos, offset);
 		}
 
-		Registers copy_regs (Registers old_regs)
+		internal override Registers CopyRegisters (Registers old_regs)
 		{
-			Registers regs = new Registers (this);
-			for (int i = 0; i < CountRegisters; i++) {
-				long old = old_regs [i].GetValue ();
-				regs [i].SetValue (old);
-			}
+			Registers regs = new Registers (old_regs);
+
+			regs [(int) I386Register.EBP].Valid = true;
+			regs [(int) I386Register.EBX].Valid = true;
+			regs [(int) I386Register.ESI].Valid = true;
+			regs [(int) I386Register.EDI].Valid = true;
+
 			return regs;
 		}
 
@@ -574,7 +576,7 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			Registers old_regs = frame.Registers;
-			Registers regs = copy_regs (old_regs);
+			Registers regs = CopyRegisters (old_regs);
 
 			TargetAddress esp = frame.StackPointer;
 

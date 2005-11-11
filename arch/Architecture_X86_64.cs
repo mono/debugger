@@ -341,7 +341,7 @@ namespace Mono.Debugger.Backends
 
 		string[] registers = { "r15", "r14", "r13", "r12", "rbp", "rbx", "r11", "r10",
 				       "r9", "r8", "rax", "rcx", "rdx", "rsi", "rdi", "orig_rax",
-				       "rip", "cs", "eflags", "rsp", "fs_base", "gs_base",
+				       "rip", "cs", "eflags", "rsp", "ss", "fs_base", "gs_base",
 				       "ds", "es", "gs" };
 
 		int[] reg_sizes = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
@@ -443,7 +443,7 @@ namespace Mono.Debugger.Backends
 			get { return 50; }
 		}
 
-		Registers copy_registers (Registers old_regs)
+		internal override Registers CopyRegisters (Registers old_regs)
 		{
 			Registers regs = new Registers (old_regs);
 
@@ -463,7 +463,7 @@ namespace Mono.Debugger.Backends
 					  int pos, int offset)
 		{
 			Registers old_regs = frame.Registers;
-			Registers regs = copy_registers (old_regs);
+			Registers regs = CopyRegisters (old_regs);
 
 			if (!old_regs [(int) X86_64_Register.RBP].Valid)
 				return null;
@@ -585,7 +585,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (pos >= offset) {
-				Registers regs = copy_registers (frame.Registers);
+				Registers regs = CopyRegisters (frame.Registers);
 
 				TargetAddress new_rip = memory.ReadAddress (frame.StackPointer);
 				regs [(int) X86_64_Register.RIP].SetValue (frame.StackPointer, new_rip);
@@ -605,7 +605,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if (pos >= offset) {
-				Registers regs = copy_registers (frame.Registers);
+				Registers regs = CopyRegisters (frame.Registers);
 
 				int addr_size = memory.TargetAddressSize;
 				TargetAddress new_rbp = memory.ReadAddress (frame.StackPointer);
@@ -650,7 +650,7 @@ namespace Mono.Debugger.Backends
 
 			int addr_size = memory.TargetAddressSize;
 
-			Registers regs = copy_registers (frame.Registers);
+			Registers regs = CopyRegisters (frame.Registers);
 
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
@@ -697,7 +697,7 @@ namespace Mono.Debugger.Backends
 				(int) X86_64_Register.RIP, (int) X86_64_Register.EFLAGS
 			};
 
-			Registers regs = copy_registers (frame.Registers);
+			Registers regs = CopyRegisters (frame.Registers);
 
 			int offset = 0x28;
 			/* The stack contains the `struct ucontext' from <asm/ucontext.h>; the
