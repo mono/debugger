@@ -23,11 +23,11 @@ namespace Mono.Debugger.Languages.Native
 			this.element_values = element_values;
 
 			members = new NativeFieldInfo [element_names.Length];
-			int i;
-			for (i = 0; i < element_names.Length; i ++) {
-				members[i] = new NativeFieldInfo (
-					this, element_names[i], i, true, element_values[i]);
-			}
+			for (int i = 0; i < element_names.Length; i++)
+				members [i] = new NativeFieldInfo (
+					this, element_names [i], i, true, element_values [i]);
+
+			value = new NativeFieldInfo (language.IntegerType, "__value", 0, 0);
 		}
 
 		public override string Name {
@@ -76,11 +76,6 @@ namespace Mono.Debugger.Languages.Native
 			get {
 				return false;
 			}
-		}
-
-		internal override TargetObject GetObject (TargetLocation location)
-		{
-			return new NativeEnumObject (this, location);
 		}
 	}
 }

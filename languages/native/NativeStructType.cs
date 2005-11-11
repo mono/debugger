@@ -31,7 +31,10 @@ namespace Mono.Debugger.Languages.Native
 
 		public override object ConstValue {
 			get {
-				throw new InvalidOperationException ();
+				if (!HasConstValue)
+					throw new InvalidOperationException ();
+
+				return const_value;
 			}
 		}
 

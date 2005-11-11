@@ -1,3 +1,5 @@
+using System;
+
 namespace Mono.Debugger.Languages
 {
 	public abstract class TargetEnumType : TargetType
@@ -16,6 +18,16 @@ namespace Mono.Debugger.Languages
 
 		public abstract TargetFieldInfo[] Members {
 			get;
+		}
+
+		internal TargetObject GetValue (TargetLocation location)
+		{
+			return Value.Type.GetObject (location);
+		}
+
+		internal override TargetObject GetObject (TargetLocation location)
+		{
+			return new TargetEnumObject (this, location);
 		}
 	}
 }

@@ -108,15 +108,5 @@ namespace Mono.Debugger.Languages.Mono
 				return static_fields;
 			}
 		}
-
-		public TargetObject GetValue (TargetLocation location)
-		{
-			return Value.Type.GetObject (location);
-		}
-
-		internal override TargetObject GetObject (TargetLocation location)
-		{
-			return new MonoEnumObject (this, location);
-		}
 	}
 }
