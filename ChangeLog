@@ -1,6 +1,22 @@
 2005-11-11  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs
+	(Expression.EvaluateVariable): Renamed to `EvaluateObject'.
+	(Expression.DoEvaluateVariable): Renamed to `DoEvaluateObject'.
+
+2005-11-11  Martin Baulig  <martin@ximian.com>
+
+	* arch/Architecture.cs
+	(Architecture.CopyRegisters): New internal abstract method.
+
+	* arch/DwarfFrameReader.cs: Use `arch.CopyRegisters()' to copy the
+	registers; preserve callee saved registers.
+
+	* classes/StackFrame.cs (Register.Name): New public field.
+
+2005-11-11  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Expression.cs
 	(Expression.EvaluateLocation): Renamed to `EvaluateSource'.
 	(Expression.DoEvaluateLocation): Renamed to `DoEvaluateSource'.
 

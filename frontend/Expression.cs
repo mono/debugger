@@ -29,7 +29,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual TargetType DoEvaluateType (ScriptingContext context)
 		{
-			return EvaluateVariable (context).Type;
+			return EvaluateObject (context).Type;
 		}
 
 		public TargetType EvaluateType (ScriptingContext context)
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual object DoEvaluate (ScriptingContext context)
 		{
-			return DoEvaluateVariable (context);
+			return DoEvaluateObject (context);
 		}
 
 		public object Evaluate (ScriptingContext context)
@@ -75,12 +75,12 @@ namespace Mono.Debugger.Frontend
 			return result;
 		}
 
-		protected virtual TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected virtual TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			return null;
 		}
 
-		public TargetObject EvaluateVariable (ScriptingContext context)
+		public TargetObject EvaluateObject (ScriptingContext context)
 		{
 			if (!resolved)
 				throw new InvalidOperationException (
@@ -90,7 +90,7 @@ namespace Mono.Debugger.Frontend
 						GetType ()));
 
 			try {
-				TargetObject retval = DoEvaluateVariable (context);
+				TargetObject retval = DoEvaluateObject (context);
 				if (retval == null)
 					throw new ScriptingException (
 						"Expression `{0}' is not a variable", Name);
@@ -326,7 +326,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
@@ -376,7 +376,7 @@ namespace Mono.Debugger.Frontend
 			return val;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
@@ -416,7 +416,7 @@ namespace Mono.Debugger.Frontend
 			return val;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 			if ((frame.Language == null) ||
@@ -449,7 +449,7 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -479,7 +479,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			return obj;
 		}
@@ -517,7 +517,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			return (TargetObject) frame.GetVariable (var);
 		}
@@ -545,10 +545,10 @@ namespace Mono.Debugger.Frontend
 			return expr;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			TargetAccess target = context.CurrentFrame.TargetAccess;
-			TargetClassObject cobj = (TargetClassObject) base.DoEvaluateVariable (context);
+			TargetClassObject cobj = (TargetClassObject) base.DoEvaluateObject (context);
 			return cobj.GetParentObject (target);
 		}
 	}
@@ -571,7 +571,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			return exc;
 		}
@@ -637,7 +637,7 @@ namespace Mono.Debugger.Frontend
 			return var.Type;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			return context.CurrentFrame.GetVariable (var);
 		}
@@ -838,7 +838,7 @@ namespace Mono.Debugger.Frontend
 
 			if (lexpr != null) {
 				TargetClassObject sobj = Convert.ToClassObject (
-					target, lexpr.EvaluateVariable (context));
+					target, lexpr.EvaluateObject (context));
 				if (sobj == null)
 					throw new ScriptingException (
 						"`{0}' is not a struct or class", left.Name);
@@ -971,7 +971,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			throw new ScriptingException ("Expression `{0}' is a method, not a " +
 						      "field or property.", Name);
@@ -1208,7 +1208,7 @@ namespace Mono.Debugger.Frontend
 			return frame.GetRegisterType (register);
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 			register = frame.FindRegister (name);
@@ -1222,7 +1222,7 @@ namespace Mono.Debugger.Frontend
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
-			TargetPointerObject pobj = (TargetPointerObject) EvaluateVariable (context);
+			TargetPointerObject pobj = (TargetPointerObject) EvaluateObject (context);
 			return pobj.Address;
 		}
 
@@ -1379,7 +1379,7 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame.Frame;
 
@@ -1526,9 +1526,9 @@ namespace Mono.Debugger.Frontend
 				"Expression `{0}' is not a pointer.", expr.Name);
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			TargetObject obj = expr.EvaluateVariable (context);
+			TargetObject obj = expr.EvaluateObject (context);
 
 			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetPointerObject pobj = obj as TargetPointerObject;
@@ -1611,7 +1611,7 @@ namespace Mono.Debugger.Frontend
 			return frame.Language.PointerType;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
 
@@ -1626,7 +1626,7 @@ namespace Mono.Debugger.Frontend
 			if (pexpr != null)
 				return pexpr.EvaluateAddress (context);
 
-			TargetObject obj = expr.EvaluateVariable (context);
+			TargetObject obj = expr.EvaluateObject (context);
 			if ((obj == null) || !obj.HasAddress)
 				throw new ScriptingException (
 					"Cannot take address of expression `{0}'", expr.Name);
@@ -1704,10 +1704,10 @@ namespace Mono.Debugger.Frontend
 			return int_indices;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			TargetAccess target = context.CurrentFrame.TargetAccess;
-			TargetObject obj = expr.EvaluateVariable (context);
+			TargetObject obj = expr.EvaluateObject (context);
 
 			// array[int]
 			TargetArrayObject aobj = obj as TargetArrayObject;
@@ -1764,7 +1764,7 @@ namespace Mono.Debugger.Frontend
 					mg, indices);
 				invocation.Resolve (context);
 
-				return invocation.EvaluateVariable (context);
+				return invocation.EvaluateObject (context);
 			}
 
 			throw new ScriptingException (
@@ -1786,7 +1786,7 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoAssign (ScriptingContext context, TargetObject right)
 		{
 			TargetAccess target = context.CurrentFrame.TargetAccess;
-			TargetObject obj = expr.EvaluateVariable (context);
+			TargetObject obj = expr.EvaluateObject (context);
 
 			// array[int]
 			TargetArrayObject aobj = obj as TargetArrayObject;
@@ -1927,12 +1927,12 @@ namespace Mono.Debugger.Frontend
 			return TryCurrentCast (context, target, sobj, target_type);
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			TargetClassType type = Convert.ToClassType (target.EvaluateType (context));
 
 			TargetClassObject source = Convert.ToClassObject (
-				context.CurrentFrame.TargetAccess, expr.EvaluateVariable (context));
+				context.CurrentFrame.TargetAccess, expr.EvaluateObject (context));
 			if (source == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
@@ -1948,7 +1948,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetType DoEvaluateType (ScriptingContext context)
 		{
-			TargetObject obj = EvaluateVariable (context);
+			TargetObject obj = EvaluateObject (context);
 			if (obj == null)
 				return null;
 
@@ -2265,7 +2265,7 @@ namespace Mono.Debugger.Frontend
 			return cond ? true_expr.Evaluate (context) : false_expr.Evaluate (context);
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			bool cond;
 
@@ -2278,7 +2278,7 @@ namespace Mono.Debugger.Frontend
 					this.test, e);
 			}
 
-			return cond ? true_expr.EvaluateVariable (context) : false_expr.EvaluateVariable (context);
+			return cond ? true_expr.EvaluateObject (context) : false_expr.EvaluateObject (context);
 		}
 	}
 
@@ -2308,7 +2308,7 @@ namespace Mono.Debugger.Frontend
 								     Expression expr)
 		{
 			TargetClassObject sobj = Convert.ToClassObject (
-				context.CurrentFrame.TargetAccess, expr.EvaluateVariable (context));
+				context.CurrentFrame.TargetAccess, expr.EvaluateObject (context));
 			if (sobj == null)
 				return null;
 
@@ -2364,7 +2364,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			TargetObject retval = DoInvoke (context, false);
 
@@ -2392,7 +2392,7 @@ namespace Mono.Debugger.Frontend
 			TargetObject[] args = new TargetObject [arguments.Length];
 
 			for (int i = 0; i < arguments.Length; i++)
-				args [i] = arguments [i].EvaluateVariable (context);
+				args [i] = arguments [i].EvaluateObject (context);
 
 			TargetObject[] objs = new TargetObject [args.Length];
 			for (int i = 0; i < args.Length; i++) {
@@ -2469,7 +2469,7 @@ namespace Mono.Debugger.Frontend
 			return type_expr.EvaluateType (context);
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			return Invoke (context);
 		}
@@ -2490,7 +2490,7 @@ namespace Mono.Debugger.Frontend
 			InvocationExpression invocation = new InvocationExpression (mg, arguments);
 			invocation.Resolve (context);
 
-			return invocation.EvaluateVariable (context);
+			return invocation.EvaluateObject (context);
 		}
 	}
 
@@ -2525,7 +2525,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateVariable (ScriptingContext context)
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			TargetObject obj;
 			if (right is NullExpression) {
@@ -2533,7 +2533,7 @@ namespace Mono.Debugger.Frontend
 				TargetType ltype = left.EvaluateType (context);
 				obj = frame.Language.CreateNullObject (frame.TargetAccess, ltype);
 			} else
-				obj = right.EvaluateVariable (context);
+				obj = right.EvaluateObject (context);
 
 			left.Assign (context, obj);
 			return obj;
