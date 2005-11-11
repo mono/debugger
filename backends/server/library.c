@@ -23,8 +23,11 @@ static InferiorVTable *global_vtable = &i386_ptrace_inferior;
 ServerHandle *
 mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
 {
-	// Refuse to run as root.
-	g_assert ((getuid () != 0) && (geteuid () != 0));
+	if ((getuid () == 0) || (geteuid () == 0)) {
+		g_message ("WARNING: Running mdb as root may be a problem because setuid() and\n"
+			   "seteuid() do nothing.\n"
+			   "See http://primates.ximian.com/~martin/blog/entry_150.html for details.");
+	}
 	return global_vtable->initialize (breakpoint_manager);
 }
 

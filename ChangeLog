@@ -1,5 +1,12 @@
 2005-11-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c
+	(mono_debugger_server_initialize): Print a warning that running
+	mdb as root may be a security risk; see
+	http://primates.ximian.com/~martin/blog/entry_150.html for details.
+
+2005-11-11  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs
 	(Expression.EvaluateVariable): Renamed to `EvaluateObject'.
 	(Expression.DoEvaluateVariable): Renamed to `DoEvaluateObject'.
