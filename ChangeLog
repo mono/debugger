@@ -1,3 +1,9 @@
+2005-11-11  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Expression.cs
+	(Expression.EvaluateLocation): Renamed to `EvaluateSource'.
+	(Expression.DoEvaluateLocation): Renamed to `DoEvaluateSource'.
+
 2005-11-10  Martin Baulig  <martin@ximian.com>
 
 	* arch/Architecture.cs

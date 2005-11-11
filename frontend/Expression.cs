@@ -103,8 +103,8 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected virtual SourceLocation DoEvaluateLocation (ScriptingContext context,
-								     LocationType type, Expression[] types)
+		protected virtual SourceLocation DoEvaluateSource (ScriptingContext context,
+								   LocationType type, Expression[] types)
 		{
 			TargetFunctionType func = DoEvaluateMethod (context, type, types);
 			if (func == null)
@@ -117,8 +117,8 @@ namespace Mono.Debugger.Frontend
 			return new SourceLocation (source);
 		}
 
-		public SourceLocation EvaluateLocation (ScriptingContext context, LocationType type,
-							Expression [] types)
+		public SourceLocation EvaluateSource (ScriptingContext context, LocationType type,
+						      Expression [] types)
 		{
 			if (!resolved)
 				throw new InvalidOperationException (
@@ -127,7 +127,7 @@ namespace Mono.Debugger.Frontend
 						"unresolved expression `{0}'", Name));
 
 			try {
-				SourceLocation location = DoEvaluateLocation (context, type, types);
+				SourceLocation location = DoEvaluateSource (context, type, types);
 				if (location == null)
 					throw new ScriptingException (
 						"Expression `{0}' is not a method", Name);
@@ -675,8 +675,8 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override SourceLocation DoEvaluateLocation (ScriptingContext context,
-								      LocationType type, Expression[] types)
+		protected override SourceLocation DoEvaluateSource (ScriptingContext context,
+								    LocationType type, Expression[] types)
 		{
 			if (types != null)
 				return null;
