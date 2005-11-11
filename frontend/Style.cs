@@ -431,8 +431,7 @@ namespace Mono.Debugger.Frontend
 					return DoFormatObjectRecursed (target, obj, format);
 				else
 					return DoFormatObject (target, obj, format);
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0}", ex);
+			} catch {
 				return "<cannot display object>";
 			}
 		}

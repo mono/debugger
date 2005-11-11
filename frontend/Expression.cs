@@ -1248,7 +1248,7 @@ namespace Mono.Debugger.Frontend
 				return frame.GetRegister (register);
 			} catch {
 				throw new ScriptingException (
-					"Can't access register `{0}' selected stack frame.");
+					"Can't access register `{0}' selected stack frame.", name);
 			}
 		}
 

@@ -987,8 +987,7 @@ namespace Mono.Debugger.Frontend
 				else
 					formatted = interpreter.Style.FormatObject (
 						CurrentProcess.Process.TargetAccess, obj, format);
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0}", ex);
+			} catch {
 				formatted = "<cannot display object>";
 			}
 			Print (formatted);
