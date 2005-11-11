@@ -96,7 +96,6 @@ namespace Mono.Debugger.Backends
 		protected string filename;
 		bool is64bit;
 		byte address_size;
-		int frame_register;
 
 		ObjectCache debug_info_reader;
 		ObjectCache debug_abbrev_reader;
@@ -123,14 +122,6 @@ namespace Mono.Debugger.Backends
 			this.filename = bfd.FileName;
 			this.factory = factory;
 			this.target_info = bfd.TargetInfo;
-
-			if (bfd.Target == "elf32-i386")
-				frame_register = (int) I386Register.EBP;
-			else if (bfd.Target == "elf64-x86-64")
-				frame_register = (int) X86_64_Register.RBP;
-			else
-				throw new DwarfException (
-					bfd, "Unknown architecture: {0}", bfd.Target);
 
 			debug_info_reader = create_reader (".debug_info");
 
@@ -2576,21 +2567,23 @@ namespace Mono.Debugger.Backends
 				int reg, off;
 
 				if ((opcode >= 0x70) && (opcode <= 0x8f)) { // DW_OP_breg0
-					reg = opcode - 0x70;
+					reg = opcode - 0x70 + 3;
 					off = locreader.ReadSLeb128 ();
 				} else if (opcode == 0x90) { // DW_OP_regx
-					reg = locreader.ReadLeb128 ();
+					reg = locreader.ReadLeb128 () + 3;
 					off = 0;
 				} else if (opcode == 0x91) { // DW_OP_fbreg
-					reg = dwarf.frame_register;
+					reg = 3;
 					off = locreader.ReadSLeb128 ();
 				} else if (opcode == 0x92) { // DW_OP_bregx
-					reg = locreader.ReadLeb128 ();
+					reg = locreader.ReadLeb128 () + 3;
 					off = locreader.ReadSLeb128 ();
 				} else {
 					Console.WriteLine ("UNKNOWN OPCODE: {0:x}", opcode);
 					return null;
 				}
+
+				reg = dwarf.bfd.Architecture.DwarfFrameRegisterMap [reg];
 
 				MonoVariableLocation loc = new MonoVariableLocation (
 					frame.TargetAccess, true, frame.Registers [reg],
