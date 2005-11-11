@@ -2526,16 +2526,16 @@ namespace Mono.Debugger.Backends
 			DwarfReader dwarf;
 			string name;
 			TargetType type;
-			TargetBinaryReader location;
+			TargetBinaryReader locreader;
 			int offset;
 
 			public DwarfTargetVariable (DwarfReader dwarf, string name, TargetType type,
-						    TargetBinaryReader location)
+						    TargetBinaryReader locreader)
 			{
 				this.dwarf = dwarf;
 				this.name = name;
 				this.type = type;
-				this.location = location;
+				this.locreader = locreader;
 			}
 
 			public DwarfTargetVariable (DwarfReader dwarf, string name, TargetType type,
@@ -2567,29 +2567,39 @@ namespace Mono.Debugger.Backends
 
 			public TargetLocation GetLocation (StackFrame frame)
 			{
-				int off;
+				if (locreader == null)
+					return null;
 
-				if (location != null) {
-					location.Position = 0;
-					switch (location.ReadByte ()) {
-					case 0x91: // DW_OP_fbreg
-						off = location.ReadSLeb128 ();
+				locreader.Position = 0;
+				byte opcode = locreader.ReadByte ();
 
-						if (!location.IsEof)
-							return null;
+				int reg, off;
 
-						break;
-					default:
-						return null;
-					}
+				if ((opcode >= 0x70) && (opcode <= 0x8f)) { // DW_OP_breg0
+					reg = opcode - 0x70;
+					off = locreader.ReadSLeb128 ();
+				} else if (opcode == 0x90) { // DW_OP_regx
+					reg = locreader.ReadLeb128 ();
+					off = 0;
+				} else if (opcode == 0x91) { // DW_OP_fbreg
+					reg = dwarf.frame_register;
+					off = locreader.ReadSLeb128 ();
+				} else if (opcode == 0x92) { // DW_OP_bregx
+					reg = locreader.ReadLeb128 ();
+					off = locreader.ReadSLeb128 ();
+				} else {
+					Console.WriteLine ("UNKNOWN OPCODE: {0:x}", opcode);
+					return null;
 				}
-				else {
-					off = offset;
-				}
 
-				Register reg = frame.Registers [dwarf.frame_register];
-				return new MonoVariableLocation (
-					frame.TargetAccess, true, reg, off, type.IsByRef);
+				MonoVariableLocation loc = new MonoVariableLocation (
+					frame.TargetAccess, true, frame.Registers [reg],
+					off + offset, type.IsByRef);
+
+				if (!locreader.IsEof)
+					return null;
+
+				return loc;
 			}
 
 			public override TargetObject GetObject (StackFrame frame)
@@ -2599,6 +2609,15 @@ namespace Mono.Debugger.Backends
 					return null;
 
 				return type.GetObject (location);
+			}
+
+			public override string PrintLocation (StackFrame frame)
+			{
+				TargetLocation location = GetLocation (frame);
+				if (location == null)
+					return null;
+
+				return location.Print ();
 			}
 
 			public override bool CanWrite {

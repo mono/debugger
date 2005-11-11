@@ -1,5 +1,16 @@
 2005-11-11  Martin Baulig  <martin@ximian.com>
 
+	* arch/DwarfReader.cs
+	(DwarfTargetVariable.GetLocation): Implemented a few more opcodes.
+
+	* languages/TargetVariable.cs
+	(TargetVariable.PrintLocation): New public abstract method.
+
+	* frontend/Command.cs
+	(ShowLocationCommand): Added `show location' command.
+
+2005-11-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/library.c
 	(mono_debugger_server_initialize): Print a warning that running
 	mdb as root may be a security risk; see

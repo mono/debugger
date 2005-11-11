@@ -11,6 +11,7 @@ namespace Mono.Debugger.Languages
 	{
 		bool is_byref;
 		bool is_regoffset;
+		bool is_valid;
 		Register register;
 		long regoffset;
 
@@ -32,8 +33,10 @@ namespace Mono.Debugger.Languages
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
 			// register and return it.
-			if (!register.Valid)
-				throw new LocationInvalidException ();
+			if (!register.Valid) {
+				is_valid = false;
+				return;
+			}
 
 			long contents = register.Value;
 
@@ -45,6 +48,7 @@ namespace Mono.Debugger.Languages
 
 			if (is_byref && is_regoffset)
 				address = target.TargetMemoryAccess.ReadAddress (address);
+			is_valid = true;
 		}
 
 		public override bool HasAddress {
@@ -52,11 +56,19 @@ namespace Mono.Debugger.Languages
 		}
 
 		public override TargetAddress Address {
-			get { return address; }
+			get {
+				if (!is_valid)
+					throw new LocationInvalidException ();
+
+				return address;
+			}
 		}
 
 		internal override TargetBlob ReadMemory (TargetAccess target, int size)
 		{
+			if (!is_valid)
+				throw new LocationInvalidException ();
+
 			if (HasAddress)
 				return base.ReadMemory (target, size);
 
@@ -80,6 +92,9 @@ namespace Mono.Debugger.Languages
 
 		internal override void WriteBuffer (TargetAccess target, byte[] data)
 		{
+			if (!is_valid)
+				throw new LocationInvalidException ();
+
 			if (HasAddress) {
 				base.WriteBuffer (target, data);
 				return;
@@ -113,6 +128,9 @@ namespace Mono.Debugger.Languages
 
 		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
 		{
+			if (!is_valid)
+				throw new LocationInvalidException ();
+
 			if (is_regoffset) {
 				TargetAddress the_addr;
 				if (is_byref)
@@ -132,7 +150,6 @@ namespace Mono.Debugger.Languages
 
 		public override string Print ()
 		{
-			int regindex = register.Index;
 			if (regoffset > 0)
 				return String.Format ("%{0}+0x{1:x}", register.Name, regoffset);
 			else if (regoffset < 0)

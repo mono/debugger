@@ -75,9 +75,41 @@ namespace Mono.Debugger.Frontend
 			return result;
 		}
 
-		protected virtual TargetObject DoEvaluateObject (ScriptingContext context)
+		protected virtual TargetVariable DoEvaluateVariable (ScriptingContext context)
 		{
 			return null;
+		}
+
+		public TargetVariable EvaluateVariable (ScriptingContext context)
+		{
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}' ({1})", Name,
+						GetType ()));
+
+			try {
+				TargetVariable retval = DoEvaluateVariable (context);
+				if (retval == null)
+					throw new ScriptingException (
+						"Expression `{0}' is not a variable", Name);
+
+				return retval;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException (
+					"Location of variable `{0}' is invalid: {1}",
+					Name, ex.Message);
+			}
+		}
+
+		protected virtual TargetObject DoEvaluateObject (ScriptingContext context)
+		{
+			TargetVariable var = DoEvaluateVariable (context);
+			if (var == null)
+				return null;
+
+			return var.GetObject (context.CurrentFrame.Frame);
 		}
 
 		public TargetObject EvaluateObject (ScriptingContext context)
@@ -517,9 +549,9 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected override TargetObject DoEvaluateObject (ScriptingContext context)
+		protected override TargetVariable DoEvaluateVariable (ScriptingContext context)
 		{
-			return (TargetObject) frame.GetVariable (var);
+			return var;
 		}
 	}
 
@@ -637,9 +669,9 @@ namespace Mono.Debugger.Frontend
 			return var.Type;
 		}
 
-		protected override TargetObject DoEvaluateObject (ScriptingContext context)
+		protected override TargetVariable DoEvaluateVariable (ScriptingContext context)
 		{
-			return context.CurrentFrame.GetVariable (var);
+			return var;
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)

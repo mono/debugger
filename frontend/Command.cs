@@ -1403,6 +1403,41 @@ namespace Mono.Debugger.Frontend
 					       context.Interpreter.Style.Name);
 			}
 		}
+
+		private class ShowLocationCommand : FrameCommand
+		{
+			Expression expression;
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if ((Args == null) || (Args.Count != 1)) {
+					context.Print ("Invalid arguments: expression expected");
+					return false;
+				}
+
+				expression = ParseExpression (context);
+				if (expression == null)
+					return false;
+
+				expression = expression.Resolve (context);
+				return expression != null;
+			}
+
+			protected override void DoExecute (ScriptingContext context)
+			{
+				StackFrame frame = ResolveFrame (context).Frame;
+
+				TargetVariable var = expression.EvaluateVariable (context);
+
+				string location = var.PrintLocation (frame);
+				if (location != null)
+					context.Print ("{0} is a variable of type {1} stored at {2}",
+						       var.Name, var.Type.Name, location);
+				else
+					context.Print ("{0} is a variable of type {1}",
+						       var.Name, var.Type.Name);
+			}
+		}
 #endregion
 
 		public ShowCommand ()
@@ -1422,6 +1457,7 @@ namespace Mono.Debugger.Frontend
 			RegisterSubcommand ("frame", typeof (ShowFrameCommand));
 			RegisterSubcommand ("lang", typeof (ShowLangCommand));
 			RegisterSubcommand ("style", typeof (ShowStyleCommand));
+			RegisterSubcommand ("location", typeof (ShowLocationCommand));
 		}
 
 		// IDocumentableCommand

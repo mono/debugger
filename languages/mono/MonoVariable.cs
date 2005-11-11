@@ -101,6 +101,15 @@ namespace Mono.Debugger.Languages.Mono
 			return (address >= start_liveness) && (address <= end_liveness);
 		}
 
+		public override string PrintLocation (StackFrame frame)
+		{
+			TargetLocation location = GetLocation (frame);
+			if (location == null)
+				return null;
+
+			return location.Print ();
+		}
+
 		public override TargetObject GetObject (StackFrame frame)
 		{
 			TargetLocation location = GetLocation (frame);

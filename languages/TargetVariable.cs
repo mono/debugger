@@ -35,6 +35,8 @@ namespace Mono.Debugger.Languages
 		// </remarks>
 		public abstract TargetObject GetObject (StackFrame frame);
 
+		public abstract string PrintLocation (StackFrame frame);
+
 		public abstract bool CanWrite {
 			get;
 		}
