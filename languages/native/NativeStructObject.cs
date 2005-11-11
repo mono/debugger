@@ -39,6 +39,14 @@ namespace Mono.Debugger.Languages.Native
 		{
 			throw new InvalidOperationException ();
 		}
+
+		public override string Print (TargetAccess target)
+		{
+			if (Location.HasAddress)
+				return String.Format ("{0}", Location.Address);
+			else
+				return String.Format ("{0}", Location);
+		}
 	}
 }
 

@@ -97,5 +97,13 @@ namespace Mono.Debugger.Languages.Mono
 			dynamic_location = location.GetLocationAtOffset (Type.Size);
 			return element_size * GetLength (target);
 		}
+
+		public override string Print (TargetAccess target)
+		{
+			if (Location.HasAddress)
+				return String.Format ("{0}", Location.Address);
+			else
+				return String.Format ("{0}", Location);
+		}
 	}
 }
