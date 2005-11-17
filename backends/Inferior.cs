@@ -202,6 +202,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		[StructLayout(LayoutKind.Sequential)]
 		private struct SignalInfo
 		{
 			public int SIGKILL;

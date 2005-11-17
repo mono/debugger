@@ -50,6 +50,7 @@ namespace Mono.Debugger.Backends
 			ReadOnly = 4
 		};
 
+		[StructLayout(LayoutKind.Sequential)]
 		internal class InternalSection
 		{
 			public readonly int index;
