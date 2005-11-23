@@ -111,11 +111,16 @@ namespace Mono.Debugger
 		//   The method has just been loaded, lookup the breakpoint
 		//   address and actually insert it.
 		// </summary>
-		void method_loaded (ITargetMemoryAccess target, SourceMethod method, object data)
+		void method_loaded (ITargetMemoryAccess target, SourceMethod method,
+				    object data)
 		{
 			load_handler = null;
 
-			address = location.GetAddress ();
+			if (location != null)
+				address = location.GetAddress ();
+			else
+				address = method.Method.StartAddress;
+
 			if (address.IsNull)
 				return;
 

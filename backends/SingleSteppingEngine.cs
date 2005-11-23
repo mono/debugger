@@ -954,7 +954,7 @@ namespace Mono.Debugger.Backends
 				// next source line.
 				return new OperationStep (new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
-					null, language, StepMode.Finish), operation.Result);
+					null, language, StepMode.SourceLine), operation.Result);
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
@@ -2037,7 +2037,8 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case StepMode.SourceLine:
-				StepFrame = sse.CreateStepFrame ();
+				if (StepFrame == null)
+					StepFrame = sse.CreateStepFrame ();
 				if (StepFrame == null)
 					sse.do_step_native ();
 				else
