@@ -1,3 +1,7 @@
+2005-11-28  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-arch.c: Make i386 support work again.
+
 2005-11-11  Martin Baulig  <martin@ximian.com>
 
 	* languages/native/NativeEnumObject.cs: Removed.

@@ -226,7 +226,57 @@ static ServerCommandError
 server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 			     guint64 method_argument, guint64 callback_argument)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	RuntimeInvokeData *rdata;
+	long new_esp;
+
+	int size = 57;
+	guint8 *code = g_malloc0 (size);
+
+	if (arch->saved_regs)
+		return COMMAND_ERROR_RECURSIVE_CALL;
+
+	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
+
+	*((guint32 *) code) = new_esp + size - 1;
+	*((guint64 *) (code+4)) = new_esp + 20;
+	*((guint64 *) (code+12)) = method_argument;
+	*((guint32 *) (code+20)) = INFERIOR_REG_EAX (arch->current_regs);
+	*((guint32 *) (code+24)) = INFERIOR_REG_EBX (arch->current_regs);
+	*((guint32 *) (code+28)) = INFERIOR_REG_ECX (arch->current_regs);
+	*((guint32 *) (code+32)) = INFERIOR_REG_EDX (arch->current_regs);
+	*((guint32 *) (code+36)) = INFERIOR_REG_EBP (arch->current_regs);
+	*((guint32 *) (code+40)) = INFERIOR_REG_ESP (arch->current_regs);
+	*((guint32 *) (code+44)) = INFERIOR_REG_ESI (arch->current_regs);
+	*((guint32 *) (code+48)) = INFERIOR_REG_EDI (arch->current_regs);
+	*((guint32 *) (code+52)) = INFERIOR_REG_EIP (arch->current_regs);
+	*((guint8 *) (code+56)) = 0xcc;
+
+	rdata = g_new0 (RuntimeInvokeData, 1);
+	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
+	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
+	rdata->call_address = new_esp + size;
+	rdata->exc_address = 0;
+	rdata->callback_argument = callback_argument;
+	rdata->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
+
+	server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	g_free (code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_EIP (arch->current_regs) = method_address;
+	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
+
+	g_ptr_array_add (arch->rti_stack, rdata);
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
 }
 
 static ServerCommandError
@@ -418,7 +468,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		*callback_arg = rdata->callback_argument;
 		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
 
-		if (server_ptrace_peek_word (handle, rdata->exc_address, &exc_object) != COMMAND_ERROR_NONE)
+		if (rdata->exc_address &&
+		    (server_ptrace_peek_word (handle, rdata->exc_address, &exc_object) != COMMAND_ERROR_NONE))
 			g_error (G_STRLOC ": Can't get exc object");
 
 		*retval2 = (guint32) exc_object;
@@ -433,7 +484,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		if (rdata->debug) {
 			*retval = 0;
 			g_free (rdata);
-			return STOP_ACTION_BREAKPOINT_HIT;
+			return STOP_ACTION_CALLBACK_COMPLETED;
 		}
 
 		g_free (rdata);
@@ -478,7 +529,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	arch->saved_signal = 0;
 	arch->call_address = 0;
 	arch->callback_argument = 0;
-	arch->saved_signal = 0;
 
 	x86_arch_get_registers (handle);
 
@@ -807,5 +857,25 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 static ServerCommandError
 server_ptrace_abort_invoke (ServerHandle *handle)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	RuntimeInvokeData *rdata;
+
+	rdata = get_runtime_invoke_data (handle->arch);
+	if (!rdata)
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+
+	if (_server_ptrace_set_registers (handle->inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+	if (_server_ptrace_set_fp_registers (handle->inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
+		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
+
+	handle->inferior->last_signal = rdata->saved_signal;
+	g_free (rdata->saved_regs);
+	g_free (rdata->saved_fpregs);
+	g_ptr_array_remove (handle->arch->rti_stack, rdata);
+
+	x86_arch_get_registers (handle);
+	g_free (rdata);
+
+	return COMMAND_ERROR_NONE;
 }
