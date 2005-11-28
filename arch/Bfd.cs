@@ -1023,8 +1023,9 @@ namespace Mono.Debugger.Backends
 				TargetAddress nptl_setxid = inferior.ReadAddress (
 					vtable + 51 * info.TargetAddressSize);
 
-				inferior.BreakpointManager.InsertBreakpoint (
-					inferior, new SetXidBreakpoint (this), nptl_setxid);
+				if (!nptl_setxid.IsNull)
+					inferior.BreakpointManager.InsertBreakpoint (
+						inferior, new SetXidBreakpoint (this), nptl_setxid);
 			}
 
 			if (dwarf != null) {
