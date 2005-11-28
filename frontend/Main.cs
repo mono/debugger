@@ -28,12 +28,9 @@ namespace Mono.Debugger.Frontend
 			mono_debugger_server_static_init ();
 		}
 
-		internal CommandLineInterpreter (DebuggerTextWriter command_out,
-						 DebuggerTextWriter inferior_out,
-						 bool is_synchronous, bool is_interactive,
+		internal CommandLineInterpreter (bool is_synchronous, bool is_interactive,
 						 DebuggerOptions options)
-			: base (command_out, inferior_out, is_synchronous, is_interactive,
-				options)
+			: base (is_synchronous, is_interactive, options)
 		{
 			engine = SetupEngine ();
 			parser = new LineParser (engine);
@@ -453,8 +450,6 @@ namespace Mono.Debugger.Frontend
 
 		public static void Main (string[] args)
 		{
-			ConsoleTextWriter writer = new ConsoleTextWriter ();
-
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
 			DebuggerOptions options = ParseCommandLine (args);
@@ -462,7 +457,7 @@ namespace Mono.Debugger.Frontend
 			Console.WriteLine ("Mono Debugger");
 
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (
-				writer, writer, true, is_terminal, options);
+				true, is_terminal, options);
 
 			try {
 				interpreter.RunMainLoop ();

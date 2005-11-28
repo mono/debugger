@@ -40,16 +40,29 @@ namespace Mono.Debugger
 			string formatted = String.Format (message, args);
 			DebuggerContext.ReportWriter.Debug (category, formatted);
 		}
+
+		public static void Print (string message, params object[] args)
+		{
+			string formatted = String.Format (message, args);
+			DebuggerContext.ReportWriter.Print (formatted);
+		}
+
+		public static void Error (string message, params object[] args)
+		{
+			string formatted = String.Format (message, args);
+			DebuggerContext.ReportWriter.Error (formatted);
+		}
 	}
 
 	public class ReportWriter : MarshalByRefObject
 	{
 		int flags;
+		string file;
 		StreamWriter writer;
 
 		public ReportWriter ()
 		{
-			string file = Environment.GetEnvironmentVariable ("MDB_DEBUG_OUTPUT");
+			file = Environment.GetEnvironmentVariable ("MDB_DEBUG_OUTPUT");
 			if (file != null)
 				writer = new StreamWriter (file, true);
 			else
@@ -70,6 +83,7 @@ namespace Mono.Debugger
 
 		public ReportWriter (string file, DebugFlags flags)
 		{
+			this.file = file;
 			this.flags = (int) flags;
 
 			if (file != null)
@@ -85,6 +99,22 @@ namespace Mono.Debugger
 				return;
 
 			writer.WriteLine (message);
+		}
+
+		public void Print (string message)
+		{
+			// Console.WriteLine ("PRINT: {0} |{1}|", file, message);
+			Console.Write (message);
+			if (file != null)
+				writer.Write (message);
+		}
+
+		public void Error (string message)
+		{
+			// Console.WriteLine ("ERROR: {0} |{1}|", file, message);
+			Console.Write (message);
+			if (file != null)
+				writer.Write (message);
 		}
 	}
 }

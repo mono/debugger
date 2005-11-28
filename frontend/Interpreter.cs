@@ -34,8 +34,6 @@ namespace Mono.Debugger.Frontend
 		Hashtable parser_names_by_language;
 		string current_parser_name;
 
-		DebuggerTextWriter command_output;
-		DebuggerTextWriter inferior_output;
 		bool is_synchronous;
 		bool is_interactive;
 		bool initialized;
@@ -43,13 +41,9 @@ namespace Mono.Debugger.Frontend
 
 		AutoResetEvent start_event;
 
-		internal Interpreter (DebuggerTextWriter command_out,
-				      DebuggerTextWriter inferior_out,
-				      bool is_synchronous, bool is_interactive,
+		internal Interpreter (bool is_synchronous, bool is_interactive,
 				      DebuggerOptions options)
 		{
-			this.command_output = command_out;
-			this.inferior_output = inferior_out;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 			this.options = options;
@@ -227,9 +221,9 @@ namespace Mono.Debugger.Frontend
 		public void Error (string message)
 		{
 			if (IsScript)
-				command_output.WriteLine (true, "ERROR: " + message);
+				Report.Error ("{0}\n", message);
 			else
-				command_output.WriteLine (true, message);
+				Report.Error ("{0}\n", message);
 		}
 
 		public void Error (string format, params object[] args)
@@ -249,12 +243,13 @@ namespace Mono.Debugger.Frontend
 
 		public void Print (string message)
 		{
-			command_output.WriteLine (false, message);
+			Report.Print ("{0}\n", message);
 		}
 
 		public void Print (string format, params object[] args)
 		{
-			Print (String.Format (format, args));
+			Report.Print (format, args);
+			Report.Print ("\n");
 		}
 
 		public void Print (object obj)
@@ -262,15 +257,10 @@ namespace Mono.Debugger.Frontend
 			Print (obj.ToString ());
 		}
 
-		public void PrintInferior (bool is_stderr, string line)
-		{
-			inferior_output.Write (is_stderr, line);
-		}
-
 		public bool Query (string prompt) {
 
-			command_output.Write (false, prompt);
-			command_output.Write (false, " (y or n) ");
+			Report.Print (prompt);
+			Report.Print (" (y or n) ");
 	    
 			int c = Console.Read ();
 			Console.Read (); /* consume the \n */
@@ -619,7 +609,10 @@ namespace Mono.Debugger.Frontend
 
 			public void target_output (bool is_stderr, string line)
 			{
-				interpreter.PrintInferior (is_stderr, line);
+				if (is_stderr)
+					Report.Error (line);
+				else
+					Report.Print (line);
 			}
 		}
 

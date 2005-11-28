@@ -1,5 +1,13 @@
 2005-11-28  Martin Baulig  <martin@ximian.com>
 
+	* classes/Report.cs (Report.Print): New public method.
+	(Report.Error): New public method.
+
+	* frontend/Interpreter.cs: Use Report.Print() and Report.Error()
+	to print things.
+
+2005-11-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-arch.c: Make i386 support work again.
 
 2005-11-11  Martin Baulig  <martin@ximian.com>
