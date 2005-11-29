@@ -691,7 +691,16 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 
 	mono_debugger_breakpoint_manager_lock ();
 	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
-	if (breakpoint && !breakpoint->info.is_hardware_bpt) {
+	if (breakpoint) {
+		/*
+		 * You cannot have a hardware breakpoint and a normal breakpoint on the same
+		 * instruction.
+		 */
+		if (breakpoint->info.is_hardware_bpt) {
+			mono_debugger_breakpoint_manager_unlock ();
+			return COMMAND_ERROR_DR_OCCUPIED;
+		}
+
 		breakpoint->info.refcount++;
 		goto done;
 	}
@@ -770,6 +779,13 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 	X86BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
+	mono_debugger_breakpoint_manager_lock ();
+	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	if (breakpoint) {
+		breakpoint->info.refcount++;
+		goto done;
+	}
+
 	result = find_free_hw_register (handle, idx);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -790,6 +806,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 	}
 
 	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
+ done:
 	*bhandle = breakpoint->info.id;
 	mono_debugger_breakpoint_manager_unlock ();
 

@@ -1,3 +1,11 @@
+2005-11-29  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/i386-arch.c
+	(server_ptrace_insert_breakpoint): You cannot have a hardware
+	breakpoint and a normal breakpoint on the same address.
+	(server_ptrace_insert_hw_breakpoint): Check whether we already
+	have a breakpoint on the requested instruction.
+
 2005-11-28  Martin Baulig  <martin@ximian.com>
 
 	* classes/Report.cs (Report.Print): New public method.

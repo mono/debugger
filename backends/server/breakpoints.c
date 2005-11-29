@@ -50,8 +50,7 @@ mono_debugger_breakpoint_manager_insert (BreakpointManager *bpm, BreakpointInfo 
 {
 	g_ptr_array_add (bpm->breakpoints, breakpoint);
 	g_hash_table_insert (bpm->breakpoint_hash, GSIZE_TO_POINTER (breakpoint->id), breakpoint);
-	if (!breakpoint->is_hardware_bpt)
-		g_hash_table_insert (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (breakpoint->address), breakpoint);
+	g_hash_table_insert (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (breakpoint->address), breakpoint);
 }
 
 BreakpointInfo *
@@ -79,8 +78,7 @@ mono_debugger_breakpoint_manager_remove (BreakpointManager *bpm, BreakpointInfo 
 		return;
 
 	g_hash_table_remove (bpm->breakpoint_hash, GSIZE_TO_POINTER (breakpoint->id));
-	if (!breakpoint->is_hardware_bpt)
-		g_hash_table_remove (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (breakpoint->address));
+	g_hash_table_remove (bpm->breakpoint_by_addr, GSIZE_TO_POINTER (breakpoint->address));
 	g_ptr_array_remove_fast (bpm->breakpoints, breakpoint);
 	g_free (breakpoint);
 }
