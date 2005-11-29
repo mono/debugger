@@ -23,6 +23,7 @@ namespace Martin.Baulig
 		{
 			World (trier.PortaNigra);
 			World (trier.CityCenter);
+			Console.WriteLine ("Irish Pub");
 			World (Trier.RomanBaths);
 		}
 

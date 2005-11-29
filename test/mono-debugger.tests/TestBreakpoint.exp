@@ -6,11 +6,11 @@ source $srcdir/mdb.exp
 set line_world 19
 set line_test 24
 set line_test_2 25
-set line_test_3 26
-set line_porta_nigra 73
-set line_roman_baths 85
-set line_main 96
-set line_main_2 98
+set line_test_3 27
+set line_porta_nigra 74
+set line_roman_baths 86
+set line_main 97
+set line_main_2 99
 set file $srcdir/TestBreakpoint.cs
 
 set porta_nigra_url "http://de.wikipedia.org/wiki/Bild:Porta_Nigra_Trier.jpg"
@@ -55,6 +55,11 @@ mdb_expect_hit_breakpoint 0 "Martin.Baulig.Hello.Test()" $bpt_2 $file $line_test
 # We are stopped on a breakpoint and use "next" to step over it
 mdb_send "next"
 mdb_expect_line $city_center_url
+mdb_expect_stopped 0 "Martin.Baulig.Hello.Test()" $file [expr $line_test_3 - 1]
+# If you remove the `Console.WriteLine ("Irish Pub")', the "next" operation will complete
+# _at_ the instruction where the next breakpoint is, but it won't actually hit it.
+mdb_send "continue"
+mdb_expect_line "Irish Pub"
 mdb_expect_hit_breakpoint 0 "Martin.Baulig.Hello.Test()" $bpt_3 $file $line_test_3
 # We are stopped on a breakpoint and use "step" to step over it
 mdb_send "step"
