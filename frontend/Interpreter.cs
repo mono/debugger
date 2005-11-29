@@ -221,9 +221,9 @@ namespace Mono.Debugger.Frontend
 		public void Error (string message)
 		{
 			if (IsScript)
-				Report.Error ("{0}\n", message);
+				Report.Error ("ERROR: {0}\n", message);
 			else
-				Report.Error ("{0}\n", message);
+				Report.Error ("ERROR: {0}\n", message);
 		}
 
 		public void Error (string format, params object[] args)
