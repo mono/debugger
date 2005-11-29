@@ -1855,12 +1855,12 @@ namespace Mono.Debugger.Backends
 			has_thread_lock = true;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} until {2}/{3} ({4})",
-				      sse, Index, trampoline, until, sse.current_method);
+				      "{0} stepping over breakpoint {1} at {5} until {2}/{3} ({4})",
+				      sse, Index, trampoline, until, sse.current_method,
+				      sse.inferior.CurrentFrame);
 
 			if (!trampoline.IsNull) {
 				until = TargetAddress.Null;
-				sse.insert_temporary_breakpoint (trampoline);
 				sse.inferior.Continue ();
 				return;
 			}
@@ -2126,6 +2126,7 @@ namespace Mono.Debugger.Backends
 			bool in_frame = sse.is_in_step_frame (StepFrame, current_frame);
 			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} ({3}in frame)",
 				      sse, current_frame, StepFrame, !in_frame ? "not " : "");
+
 			if (!first && !in_frame)
 				return true;
 
@@ -2853,8 +2854,8 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} entering trampoline: {1}",
-				      sse, address);
+			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
+				      sse, inferior.CurrentFrame, address);
 
 			sse.do_continue (address, address);
 			return false;
