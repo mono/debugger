@@ -1861,6 +1861,7 @@ namespace Mono.Debugger.Backends
 
 			if (!trampoline.IsNull) {
 				until = TargetAddress.Null;
+				sse.insert_temporary_breakpoint (trampoline);
 				sse.inferior.Continue ();
 				return;
 			}
