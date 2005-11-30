@@ -206,7 +206,7 @@ namespace Mono.Debugger.Frontend
 			set { frame = value; }
 		}
 
-		protected virtual FrameHandle ResolveFrame (ScriptingContext context)
+		protected virtual StackFrame ResolveFrame (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
 			context.ResetCurrentSourceCode ();
@@ -383,8 +383,8 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			FrameHandle frame = ResolveFrame (context);
-			TargetAccess target = frame.Frame.TargetAccess;
+			StackFrame frame = ResolveFrame (context);
+			TargetAccess target = frame.TargetAccess;
 
 			if (!Repeating) {
 				PointerExpression pexp = expression as PointerExpression;
@@ -434,12 +434,12 @@ namespace Mono.Debugger.Frontend
 
 			if (index >= 0)
 				process.CurrentFrameIndex = index;
-			FrameHandle frame = process.CurrentFrame;
+			StackFrame frame = process.CurrentFrame;
 
 			if (context.Interpreter.IsScript)
 				context.Print (frame);
 			else
-				context.Interpreter.Style.PrintFrame (context, frame.Frame);
+				context.Interpreter.Style.PrintFrame (context, frame);
 		}
 
 		// IDocumentableCommand
@@ -452,7 +452,7 @@ namespace Mono.Debugger.Frontend
 	{
 		bool do_method;
 		int count = -1;
-		FrameHandle frame;
+		StackFrame frame;
 		TargetAddress address;
 		Method method;
 		Expression expression;
@@ -489,8 +489,8 @@ namespace Mono.Debugger.Frontend
 			if (count < 0)
 				count = 10;
 
-			address = frame.Frame.TargetAddress;
-			method = frame.Frame.Method;
+			address = frame.TargetAddress;
+			method = frame.Method;
 			return true;
 		}
 	
@@ -499,13 +499,13 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			if (do_method) {
-				Method method = frame.Frame.Method;
+				Method method = frame.Method;
 
 				if ((method == null) || !method.IsLoaded)
 					throw new ScriptingException (
 						"Selected stack frame has no method.");
 
-				AssemblerMethod asm = frame.Frame.TargetAccess.DisassembleMethod (method);
+				AssemblerMethod asm = frame.TargetAccess.DisassembleMethod (method);
 				foreach (AssemblerLine insn in asm.Lines)
 					context.PrintInstruction (insn);
 				return;
@@ -854,10 +854,10 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			int current_idx = process.CurrentFrameIndex;
-			BacktraceHandle backtrace = process.GetBacktrace (max_frames);
+			Backtrace backtrace = process.GetBacktrace (max_frames);
 			context.ResetCurrentSourceCode ();
 
-			for (int i = 0; i < backtrace.Length; i++) {
+			for (int i = 0; i < backtrace.Count; i++) {
 				string prefix = i == current_idx ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, backtrace [i]);
 			}
@@ -898,7 +898,7 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex += increment;
-			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame.Frame);
+			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
 		}
 
 		// IDocumentableCommand
@@ -936,7 +936,7 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex -= decrement;
-			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame.Frame);
+			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
 		}
 
 		// IDocumentableCommand
@@ -1252,10 +1252,10 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				FrameHandle frame = ResolveFrame (context);
+				StackFrame frame = ResolveFrame (context);
 
 				Architecture arch = ResolveProcess (context).Process.Architecture;
-				context.Print (arch.PrintRegisters (frame.Frame));
+				context.Print (arch.PrintRegisters (frame));
 			}
 		}
 
@@ -1263,7 +1263,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				StackFrame frame = ResolveFrame (context).Frame;
+				StackFrame frame = ResolveFrame (context);
 
 				if (frame.Method == null)
 					throw new ScriptingException (
@@ -1281,7 +1281,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				StackFrame frame = ResolveFrame (context).Frame;
+				StackFrame frame = ResolveFrame (context);
 
 				if (frame.Method == null)
 					throw new ScriptingException (
@@ -1393,7 +1393,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				StackFrame frame = ResolveFrame (context).Frame;
+				StackFrame frame = ResolveFrame (context);
 
 				context.Print ("Stack level {0}, stack pointer at {1}, " +
 					       "frame pointer at {2}.", frame.Level,
@@ -1405,7 +1405,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				StackFrame frame = ResolveFrame (context).Frame;
+				StackFrame frame = ResolveFrame (context);
 
 				// if lang == auto, we should print out what it currently is, ala gdb's
 				// The current source language is "auto; currently c".
@@ -1449,7 +1449,7 @@ namespace Mono.Debugger.Frontend
 
 			protected override void DoExecute (ScriptingContext context)
 			{
-				StackFrame frame = ResolveFrame (context).Frame;
+				StackFrame frame = ResolveFrame (context);
 
 				TargetVariable var = expression.EvaluateVariable (context);
 
@@ -1954,7 +1954,7 @@ namespace Mono.Debugger.Frontend
 	public class CatchCommand : FrameCommand, IDocumentableCommand
 	{
 		string group;
-		FrameHandle frame;
+		StackFrame frame;
 		ThreadGroup tgroup;
 		TargetClassType type;
 
@@ -1982,8 +1982,8 @@ namespace Mono.Debugger.Frontend
 		{
 			frame = ResolveFrame (context);
 
-			Language language = frame.Frame.Language;
-			if (frame.Frame.Language == null)
+			Language language = frame.Language;
+			if (frame.Language == null)
 				throw new ScriptingException ("Current frame doesn't have a language.");
 
 			TargetType exception_type = language.ExceptionType;

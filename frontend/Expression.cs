@@ -109,7 +109,7 @@ namespace Mono.Debugger.Frontend
 			if (var == null)
 				return null;
 
-			return var.GetObject (context.CurrentFrame.Frame);
+			return var.GetObject (context.CurrentFrame);
 		}
 
 		public TargetObject EvaluateObject (ScriptingContext context)
@@ -360,7 +360,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
+			StackFrame frame = context.CurrentFrame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (val.GetType ()))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
@@ -410,7 +410,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
+			StackFrame frame = context.CurrentFrame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (typeof (string)))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
@@ -450,7 +450,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
+			StackFrame frame = context.CurrentFrame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (typeof (bool)))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
@@ -528,13 +528,13 @@ namespace Mono.Debugger.Frontend
 			get { return "this"; }
 		}
 
-		protected FrameHandle frame;
+		protected StackFrame frame;
 		protected TargetVariable var;
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			frame = context.CurrentFrame;
-			Method method = frame.Frame.Method;
+			Method method = frame.Method;
 			if (method == null)
 				throw new ScriptingException (
 					"Keyword `this' not allowed: no current method.");
@@ -595,7 +595,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			exc = context.CurrentFrame.Frame.ExceptionObject;
+			exc = context.CurrentFrame.ExceptionObject;
 			if (exc == null)
 				throw new ScriptingException ("No current exception.");
 
@@ -682,7 +682,7 @@ namespace Mono.Debugger.Frontend
 			TargetObject new_obj = Convert.ImplicitConversionRequired (
 				context, obj, var.Type);
 
-			var.SetObject (context.CurrentFrame.Frame, new_obj);
+			var.SetObject (context.CurrentFrame, new_obj);
 			return true;
 		}
 	}
@@ -737,18 +737,18 @@ namespace Mono.Debugger.Frontend
                         return String.Concat (nsn, ".", name);
                 }
 
-		MemberExpression LookupMember (ScriptingContext context, FrameHandle frame,
+		MemberExpression LookupMember (ScriptingContext context, StackFrame frame,
 					       string full_name)
 		{
-			Method method = frame.Frame.Method;
+			Method method = frame.Method;
 			if ((method == null) || (method.DeclaringType == null))
 				return null;
 
 			TargetClassObject instance = null;
 			if (method.HasThis)
-				instance = (TargetClassObject) method.This.GetObject (frame.Frame);
+				instance = (TargetClassObject) method.This.GetObject (frame);
 
-			TargetAccess target = frame.Frame.TargetAccess;
+			TargetAccess target = frame.TargetAccess;
 			MemberExpression member = StructAccessExpression.FindMember (
 				target, method.DeclaringType, instance, full_name, true, true);
 			if (member == null)
@@ -762,7 +762,7 @@ namespace Mono.Debugger.Frontend
 			return member;
 		}
 
-		Expression Lookup (ScriptingContext context, FrameHandle frame)
+		Expression Lookup (ScriptingContext context, StackFrame frame)
 		{
 			string[] namespaces = context.GetNamespaces (frame);
 			if (namespaces == null)
@@ -780,9 +780,9 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
-			if (frame.Frame.Method != null) {
-				TargetVariable var = frame.Frame.Method.GetVariableByName (name);
+			StackFrame frame = context.CurrentFrame;
+			if (frame.Method != null) {
+				TargetVariable var = frame.Method.GetVariableByName (name);
 				if (var != null)
 					return new VariableAccessExpression (var);
 			}
@@ -929,7 +929,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
+			StackFrame frame = context.CurrentFrame;
 
 			TargetType the_type;
 
@@ -1242,13 +1242,13 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
+			StackFrame frame = context.CurrentFrame;
 			register = context.CurrentProcess.GetRegisterIndex (name);
 			try {
-				long value = frame.Frame.GetRegister (register);
+				long value = frame.GetRegister (register);
 				TargetAddress address = new TargetAddress (
 					context.AddressDomain, value);
-				return context.CurrentLanguage.CreatePointer (frame.Frame, address);
+				return context.CurrentLanguage.CreatePointer (frame, address);
 			} catch {
 				throw new ScriptingException (
 					"Can't access register `{0}' selected stack frame.", name);
@@ -1269,11 +1269,11 @@ namespace Mono.Debugger.Frontend
 					"Cannot store non-fundamental object `{0}' in " +
 					" a registers", tobj);
 
-			FrameHandle frame = context.CurrentFrame;
-			object obj = fobj.GetObject (frame.Frame.TargetAccess);
+			StackFrame frame = context.CurrentFrame;
+			object obj = fobj.GetObject (frame.TargetAccess);
 			long value = System.Convert.ToInt64 (obj);
 			register = context.CurrentProcess.GetRegisterIndex (name);
-			frame.Frame.SetRegister (register, value);
+			frame.SetRegister (register, value);
 			return true;
 		}
 	}
@@ -1416,7 +1416,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
+			StackFrame frame = context.CurrentFrame;
 
 			if (!Member.IsStatic && (InstanceObject == null))
 				throw new ScriptingException (
@@ -1499,7 +1499,7 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			if (Member is TargetFieldInfo) {
-				StackFrame frame = context.CurrentFrame.Frame;
+				StackFrame frame = context.CurrentFrame;
 
 				if (Member.Type != obj.Type)
 					throw new ScriptingException (
@@ -1646,7 +1646,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame.Frame;
+			StackFrame frame = context.CurrentFrame;
 
 			TargetAddress address = EvaluateAddress (context);
 
@@ -2562,7 +2562,7 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetObject obj;
 			if (right is NullExpression) {
-				StackFrame frame = context.CurrentFrame.Frame;
+				StackFrame frame = context.CurrentFrame;
 				TargetType ltype = left.EvaluateType (context);
 				obj = frame.Language.CreateNullObject (frame.TargetAccess, ltype);
 			} else

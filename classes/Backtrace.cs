@@ -31,6 +31,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public StackFrame this [int number] {
+			get { return (StackFrame) frames [number]; }
+		}
+
 		public void GetBacktrace (TargetAccess target, Architecture arch,
 					  TargetAddress until, int max_frames)
 		{

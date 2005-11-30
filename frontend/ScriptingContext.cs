@@ -15,62 +15,6 @@ namespace Mono.Debugger.Frontend
 {
 	public delegate void ProcessExitedHandler (ProcessHandle handle);
 
-	[Serializable]
-	public class FrameHandle
-	{
-		Interpreter interpreter;
-		ProcessHandle process;
-		StackFrame frame;
-
-		public FrameHandle (Interpreter interpreter, ProcessHandle process,
-				    StackFrame frame)
-		{
-			this.interpreter = interpreter;
-			this.process = process;
-			this.frame = frame;
-		}
-
-		public StackFrame Frame {
-			get { return frame; }
-		}
-
-		public TargetAccess TargetAccess {
-			get { return frame.TargetAccess; }
-		}
-
-		public override string ToString ()
-		{
-			return frame.ToString ();
-		}
-	}
-
-	[Serializable]
-	public class BacktraceHandle
-	{
-		FrameHandle[] frames;
-
-		public BacktraceHandle (Interpreter interpreter, ProcessHandle process,
-					Backtrace backtrace)
-		{
-			StackFrame[] bt_frames = backtrace.Frames;
-			if (bt_frames != null) {
-				frames = new FrameHandle [bt_frames.Length];
-				for (int i = 0; i < frames.Length; i++)
-					frames [i] = new FrameHandle (
-						interpreter, process, bt_frames [i]);
-			} else
-				frames = new FrameHandle [0];
-		}
-
-		public int Length {
-			get { return frames.Length; }
-		}
-
-		public FrameHandle this [int number] {
-			get { return frames [number]; }
-		}
-	}
-
 	public class ProcessHandle : MarshalByRefObject
 	{
 		DebuggerClient client;
@@ -101,10 +45,10 @@ namespace Mono.Debugger.Frontend
 			if (process.HasTarget) {
 				if (!process.IsDaemon) {
 					StackFrame frame = process.CurrentFrame;
-					current_frame = new FrameHandle (interpreter, this, frame);
+					current_frame = frame;
 					interpreter.Print ("{0} stopped at {1}.", Name, frame);
 					interpreter.Style.PrintFrame (
-						interpreter.GlobalContext, current_frame.Frame);
+						interpreter.GlobalContext, current_frame);
 				}
 			}
 		}
@@ -146,8 +90,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		int current_frame_idx = -1;
-		FrameHandle current_frame = null;
-		BacktraceHandle current_backtrace = null;
+		StackFrame current_frame = null;
+		Backtrace current_backtrace = null;
 
 		protected void ProcessExited ()
 		{
@@ -157,9 +101,9 @@ namespace Mono.Debugger.Frontend
 				ProcessExitedEvent (this);
 		}
 
-		internal void TargetEvent (TargetEventArgs args, FrameHandle new_frame)
+		internal void TargetEvent (TargetEventArgs args)
 		{
-			current_frame = new_frame;
+			current_frame = args.Frame;
 
 			current_frame_idx = -1;
 			current_backtrace = null;
@@ -310,7 +254,7 @@ namespace Mono.Debugger.Frontend
 
 			set {
 				GetBacktrace (-1);
-				if ((value < 0) || (value >= current_backtrace.Length))
+				if ((value < 0) || (value >= current_backtrace.Count))
 					throw new ScriptingException ("No such frame.");
 
 				current_frame_idx = value;
@@ -318,7 +262,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public BacktraceHandle GetBacktrace (int max_frames)
+		public Backtrace GetBacktrace (int max_frames)
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
@@ -328,8 +272,7 @@ namespace Mono.Debugger.Frontend
 			if ((max_frames == -1) && (current_backtrace != null))
 				return current_backtrace;
 
-			current_backtrace = new BacktraceHandle (
-				interpreter, this, process.GetBacktrace (max_frames));
+			current_backtrace = process.GetBacktrace (max_frames);
 
 			if (current_backtrace == null)
 				throw new ScriptingException ("No stack.");
@@ -337,13 +280,13 @@ namespace Mono.Debugger.Frontend
 			return current_backtrace;
 		}
 
-		public FrameHandle CurrentFrame {
+		public StackFrame CurrentFrame {
 			get {
 				return GetFrame (current_frame_idx);
 			}
 		}
 
-		public FrameHandle GetFrame (int number)
+		public StackFrame GetFrame (int number)
 		{
 			if (State == TargetState.NO_TARGET)
 				throw new ScriptingException ("No stack.");
@@ -352,14 +295,13 @@ namespace Mono.Debugger.Frontend
 
 			if (number == -1) {
 				if (current_frame == null)
-					current_frame = new FrameHandle (
-						interpreter, this, process.CurrentFrame);
+					current_frame = process.CurrentFrame;
 
 				return current_frame;
 			}
 
 			GetBacktrace (-1);
-			if (number >= current_backtrace.Length)
+			if (number >= current_backtrace.Count)
 				throw new ScriptingException ("No such frame: {0}", number);
 
 			return current_backtrace [number];
@@ -533,7 +475,7 @@ namespace Mono.Debugger.Frontend
 			set { current_process = value; }
 		}
 
-		public FrameHandle CurrentFrame {
+		public StackFrame CurrentFrame {
 			get {
 				return CurrentProcess.GetFrame (current_frame_idx);
 			}
@@ -551,7 +493,7 @@ namespace Mono.Debugger.Frontend
 
 		public Language CurrentLanguage {
 			get {
-				StackFrame frame = CurrentFrame.Frame;
+				StackFrame frame = CurrentFrame;
 				if (frame.Language == null)
 					throw new ScriptingException (
 						"Stack frame has no source language.");
@@ -560,9 +502,9 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public string[] GetNamespaces (FrameHandle frame)
+		public string[] GetNamespaces (StackFrame frame)
 		{
-			Method method = frame.Frame.Method;
+			Method method = frame.Method;
 			if ((method == null) || !method.HasSource)
 				return null;
 
@@ -580,7 +522,7 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation CurrentLocation {
 			get {
-				StackFrame frame = CurrentFrame.Frame;
+				StackFrame frame = CurrentFrame;
 				if ((frame.SourceAddress == null) ||
 				    (frame.SourceAddress.Location == null))
 					throw new ScriptingException (

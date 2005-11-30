@@ -1,5 +1,10 @@
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ScriptingContext.cs (FrameHandle): Removed.
+	(BacktraceHandle): Removed.
+
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs
 	(StackFrame.ExceptionObject): New public property.
 

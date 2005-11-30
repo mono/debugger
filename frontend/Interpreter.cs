@@ -144,7 +144,7 @@ namespace Mono.Debugger.Frontend
 			get {
 				if (current_parser_name == "auto") {
 					try {
-						string l = (string)parser_names_by_language [context.CurrentFrame.Frame.Language.Name];
+						string l = (string)parser_names_by_language [context.CurrentLanguage.Name];
 						return String.Format ("auto, currently set to {0}", l);
 					}
 					catch { }
@@ -160,7 +160,7 @@ namespace Mono.Debugger.Frontend
 
 			if (current_parser_name == "auto") {
 				/* determine the language parser by the current stack frame */
-				parser_type = (Type)parsers_by_name [parser_names_by_language [context.CurrentFrame.Frame.Language.Name]];
+				parser_type = (Type)parsers_by_name [parser_names_by_language [context.CurrentLanguage.Name]];
 			}
 			else {
 				/* use the user specified language */
@@ -630,12 +630,8 @@ namespace Mono.Debugger.Frontend
 			{
 				ProcessHandle proc = (ProcessHandle) interpreter.procs [target.ID];
 
-				FrameHandle frame = null;
-				if (args.Frame != null)
-					frame = new FrameHandle (interpreter, proc, args.Frame);
-
 				interpreter.Style.TargetEvent (target, args);
-				proc.TargetEvent (args, frame);
+				proc.TargetEvent (args);
 			}
 		}
 	}
