@@ -1,5 +1,10 @@
 2005-11-30  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Style.cs: Merge `StyleMono' and `StyleNative' into a
+	new `StyleCLI'.
+
+2005-11-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs (Process.DebuggerOutput): Removed.
 	* backends/Process.cs (Process.DebuggerError): Removed.
 

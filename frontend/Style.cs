@@ -8,33 +8,7 @@ using Mono.Debugger.Languages;
 namespace Mono.Debugger.Frontend
 {
 	[Serializable]
-	public class StyleMono : StyleNative
-	{
-		public StyleMono (Interpreter interpreter)
-			: base (interpreter)
-		{ }
-
-		public override string Name {
-			get {
-				return "mono";
-			}
-		}
-
-		public override void Reset ()
-		{
-			IsNative = false;
-		}
-
-		public override void UnhandledException (ScriptingContext context,
-							 FrameHandle frame, AssemblerLine insn,
-							 TargetObject exc)
-		{
-			base.UnhandledException (context, frame, insn, exc);
-		}
-	}
-
-	[Serializable]
-	public class StyleEmacs : StyleMono
+	public class StyleEmacs : StyleCLI
 	{
 		public StyleEmacs (Interpreter interpreter)
 			: base (interpreter)
@@ -59,9 +33,9 @@ namespace Mono.Debugger.Frontend
 	}
 
 	[Serializable]
-	public class StyleNative : StyleBase
+	public class StyleCLI : StyleBase
 	{
-		public StyleNative (Interpreter interpreter)
+		public StyleCLI (Interpreter interpreter)
 			: base (interpreter)
 		{ }
 

@@ -54,11 +54,10 @@ namespace Mono.Debugger.Frontend
 			events = new Hashtable ();
 
 			styles = new Hashtable ();
-			styles.Add ("mono", new StyleMono (this));
-			styles.Add ("native", new StyleNative (this));
+			styles.Add ("cli", new StyleCLI (this));
 			styles.Add ("martin", new StyleMartin (this));
 			styles.Add ("emacs", new StyleEmacs (this));
-			current_style = (StyleBase) styles ["mono"];
+			current_style = (StyleBase) styles ["cli"];
 
 			parsers_by_name = new Hashtable ();
 			parsers_by_name.Add ("c#", typeof (CSharp.ExpressionParser));
