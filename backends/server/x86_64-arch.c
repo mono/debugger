@@ -23,6 +23,8 @@ struct ArchInfo
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	int saved_signal;
 	GPtrArray *rti_stack;
+	unsigned dr_control, dr_status;
+	int dr_regs [DR_NADDR];
 };
 
 typedef struct
@@ -173,6 +175,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
 	RuntimeInvokeData *rdata;
+	int i;
 
 	x86_arch_get_registers (handle);
 
@@ -182,6 +185,15 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
 
 		return STOP_ACTION_NOTIFICATION;
+	}
+
+	for (i = 0; i < DR_NADDR; i++) {
+		if (X86_DR_WATCH_HIT (arch, i)) {
+			_server_ptrace_set_dr (inferior, DR_STATUS, 0);
+			arch->dr_status = 0;
+			*retval = arch->dr_regs [i];
+			return STOP_ACTION_BREAKPOINT_HIT;
+		}
 	}
 
 	if (check_breakpoint (handle, INFERIOR_REG_RIP (arch->current_regs) - 1, retval)) {
@@ -354,6 +366,8 @@ static ServerCommandError
 do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
+	ArchInfo *arch = handle->arch;
+	InferiorHandle *inferior = handle->inferior;
 	char bopcode = 0xcc;
 	guint64 address;
 
@@ -363,7 +377,22 @@ do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 	address = (guint64) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
-		return COMMAND_ERROR_NOT_IMPLEMENTED;
+		X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
+		X86_DR_LOCAL_ENABLE (arch, breakpoint->dr_index);
+
+		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, address);
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC);
+			return result;
+		}
+
+		result = _server_ptrace_set_dr (inferior, DR_CONTROL, arch->dr_control);
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC);
+			return result;
+		}
+
+		arch->dr_regs [breakpoint->dr_index] = breakpoint->info.id;
 	} else {
 		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
@@ -383,6 +412,8 @@ static ServerCommandError
 do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
+	ArchInfo *arch = handle->arch;
+	InferiorHandle *inferior = handle->inferior;
 	guint64 address;
 
 	if (!breakpoint->info.enabled)
@@ -391,7 +422,21 @@ do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 	address = (guint64) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
-		return COMMAND_ERROR_NOT_IMPLEMENTED;
+		X86_DR_DISABLE (arch, breakpoint->dr_index);
+
+		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, 0L);
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC ": %d", result);
+			return result;
+		}
+
+		result = _server_ptrace_set_dr (inferior, DR_CONTROL, arch->dr_control);
+		if (result != COMMAND_ERROR_NONE) {
+			g_warning (G_STRLOC ": %d", result);
+			return result;
+		}
+
+		arch->dr_regs [breakpoint->dr_index] = 0;
 	} else {
 		result = server_ptrace_write_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
@@ -411,7 +456,16 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 
 	mono_debugger_breakpoint_manager_lock ();
 	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
-	if (breakpoint && !breakpoint->info.is_hardware_bpt) {
+	if (breakpoint) {
+		/*
+		 * You cannot have a hardware breakpoint and a normal breakpoint on the same
+		 * instruction.
+		 */
+		if (breakpoint->info.is_hardware_bpt) {
+			mono_debugger_breakpoint_manager_unlock ();
+			return COMMAND_ERROR_DR_OCCUPIED;
+		}
+
 		breakpoint->info.refcount++;
 		goto done;
 	}
@@ -469,10 +523,59 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 }
 
 static ServerCommandError
+find_free_hw_register (ServerHandle *handle, guint32 *idx)
+{
+	int i;
+
+	for (i = 0; i < DR_NADDR; i++) {
+		if (!handle->arch->dr_regs [i]) {
+			*idx = i;
+			return COMMAND_ERROR_NONE;
+		}
+	}
+
+	return COMMAND_ERROR_DR_OCCUPIED;
+}
+
+static ServerCommandError
 server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 				    guint64 address, guint32 *bhandle)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	X86BreakpointInfo *breakpoint;
+	ServerCommandError result;
+
+	mono_debugger_breakpoint_manager_lock ();
+	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	if (breakpoint) {
+		breakpoint->info.refcount++;
+		goto done;
+	}
+
+	result = find_free_hw_register (handle, idx);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	mono_debugger_breakpoint_manager_lock ();
+	breakpoint = g_new0 (X86BreakpointInfo, 1);
+	breakpoint->info.address = address;
+	breakpoint->info.refcount = 1;
+	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
+	breakpoint->info.is_hardware_bpt = TRUE;
+	breakpoint->dr_index = *idx;
+
+	result = do_enable (handle, breakpoint);
+	if (result != COMMAND_ERROR_NONE) {
+		mono_debugger_breakpoint_manager_unlock ();
+		g_free (breakpoint);
+		return result;
+	}
+
+	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
+ done:
+	*bhandle = breakpoint->info.id;
+	mono_debugger_breakpoint_manager_unlock ();
+
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError

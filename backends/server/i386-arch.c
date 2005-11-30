@@ -435,7 +435,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	}
 
 	for (i = 0; i < DR_NADDR; i++) {
-		if (I386_DR_WATCH_HIT (arch, i)) {
+		if (X86_DR_WATCH_HIT (arch, i)) {
 			_server_ptrace_set_dr (inferior, DR_STATUS, 0);
 			arch->dr_status = 0;
 			*retval = arch->dr_regs [i];
@@ -606,8 +606,8 @@ do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 	address = (guint32) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
-		I386_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
-		I386_DR_LOCAL_ENABLE (arch, breakpoint->dr_index);
+		X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
+		X86_DR_LOCAL_ENABLE (arch, breakpoint->dr_index);
 
 		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, address);
 		if (result != COMMAND_ERROR_NONE) {
@@ -651,7 +651,7 @@ do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 	address = (guint32) breakpoint->info.address;
 
 	if (breakpoint->dr_index >= 0) {
-		I386_DR_DISABLE (arch, breakpoint->dr_index);
+		X86_DR_DISABLE (arch, breakpoint->dr_index);
 
 		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, 0L);
 		if (result != COMMAND_ERROR_NONE) {

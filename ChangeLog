@@ -1,5 +1,12 @@
 2005-11-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-arch.h: Move the hardware breakpoint stuff
+	to x86-ptrace.h and rename the `I386_DR_*' macros to `X86_DR_*'.
+
+	* backends/server/x86_64-arch.c: Implement hardware breakpoints.
+
+2005-11-30  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Style.cs: Merge `StyleMono' and `StyleNative' into a
 	new `StyleCLI'.
 
