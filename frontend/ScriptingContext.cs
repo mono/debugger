@@ -43,46 +43,6 @@ namespace Mono.Debugger.Frontend
 			get { return frame.TargetAccess; }
 		}
 
-		public int[] RegisterIndices {
-			get { return process.Architecture.RegisterIndices; }
-		}
-
-		public string[] RegisterNames {
-			get { return process.Architecture.RegisterNames; }
-		}
-
-		public Registers GetRegisters ()
-		{
-			Registers registers = frame.Registers;
-			if (registers == null)
-				throw new ScriptingException (
-					"Cannot get registers of selected stack frame.");
-
-			return registers;
-		}
-
-		public int FindRegister (string name)
-		{
-			return process.GetRegisterIndex (name);
-		}
-
-		public TargetType GetRegisterType (int index)
-		{
-			return frame.Language.PointerType;
-		}
-
-		public TargetObject GetRegister (int index)
-		{
-			TargetAddress address = new TargetAddress (
-				interpreter.AddressDomain, frame.GetRegister (index));
-			return frame.Language.CreatePointer (frame, address);
-		}
-
-		public void SetRegister (int index, long value)
-		{
-			frame.SetRegister (index, value);
-		}
-
 		public void ShowParameters (ScriptingContext context)
 		{
 			if (frame.Method == null)

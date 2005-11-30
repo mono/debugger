@@ -1,6 +1,11 @@
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ScriptingContext.cs
+	(FrameHandle): Removed all the register stuff.
+
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
+	* frontend/ScriptingContext.cs
 	(FrameHandle.Disassemble): Removed.
 	(FrameHandle.DisassembleMethod): Removed.
 	(FrameHandle.Language): Removed.

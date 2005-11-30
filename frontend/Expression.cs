@@ -1235,17 +1235,18 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetType DoEvaluateType (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
-			register = frame.FindRegister (name);
-			return frame.GetRegisterType (register);
+			return context.CurrentLanguage.PointerType;
 		}
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
-			register = frame.FindRegister (name);
+			register = context.CurrentProcess.GetRegisterIndex (name);
 			try {
-				return frame.GetRegister (register);
+				long value = frame.Frame.GetRegister (register);
+				TargetAddress address = new TargetAddress (
+					context.AddressDomain, value);
+				return context.CurrentLanguage.CreatePointer (frame.Frame, address);
 			} catch {
 				throw new ScriptingException (
 					"Can't access register `{0}' selected stack frame.", name);
@@ -1269,8 +1270,8 @@ namespace Mono.Debugger.Frontend
 			FrameHandle frame = context.CurrentFrame;
 			object obj = fobj.GetObject (frame.Frame.TargetAccess);
 			long value = System.Convert.ToInt64 (obj);
-			register = frame.FindRegister (name);
-			frame.SetRegister (register, value);
+			register = context.CurrentProcess.GetRegisterIndex (name);
+			frame.Frame.SetRegister (register, value);
 			return true;
 		}
 	}
