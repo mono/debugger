@@ -43,25 +43,6 @@ namespace Mono.Debugger.Frontend
 			get { return frame.TargetAccess; }
 		}
 
-		public bool PrintSource (ScriptingContext context)
-		{
-			SourceAddress location = frame.SourceAddress;
-			if (location == null)
-				return false;
-
-			Method method = frame.Method;
-			if ((method == null) || !method.HasSource || (method.Source == null))
-				return false;
-
-			MethodSource source = method.Source;
-			if (source.SourceBuffer == null)
-				return false;
-
-			string line = source.SourceBuffer.Contents [location.Row - 1];
-			context.Print (String.Format ("{0,4} {1}", location.Row, line));
-			return true;
-		}
-
 		public void Disassemble (ScriptingContext context, TargetAccess target)
 		{
 			AssemblerLine line = Disassemble (target);
@@ -237,7 +218,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				interpreter.Style.TargetStopped (
-					interpreter.GlobalContext, this, insn);
+					interpreter.GlobalContext, frame, insn);
 
 				break;
 			}
@@ -260,7 +241,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				interpreter.Style.TargetStopped (
-					interpreter.GlobalContext, this, insn);
+					interpreter.GlobalContext, frame, insn);
 
 				break;
 			}
@@ -294,7 +275,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				interpreter.Style.UnhandledException (
-					interpreter.GlobalContext, this, insn, exc_object);
+					interpreter.GlobalContext, frame, insn, exc_object);
 
 				break;
 			}
@@ -366,7 +347,7 @@ namespace Mono.Debugger.Frontend
 					current_frame = new FrameHandle (interpreter, this, frame);
 					interpreter.Print ("{0} stopped at {1}.", Name, frame);
 					interpreter.Style.PrintFrame (
-						interpreter.GlobalContext, current_frame);
+						interpreter.GlobalContext, current_frame.Frame);
 				}
 			}
 		}

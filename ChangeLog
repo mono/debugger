@@ -1,5 +1,13 @@
 2005-11-30  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Style.cs (StyleMartin): Removed.
+	(StyleBase.PrintFrame): Take a `StackFrame' instead of a
+	`FrameHandle'.
+	(StyleBase.TargetStopped): Likewise.
+	(StyleBase.UnhandledException): Likewise.
+
+2005-11-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-arch.h: Move the hardware breakpoint stuff
 	to x86-ptrace.h and rename the `I386_DR_*' macros to `X86_DR_*'.
 

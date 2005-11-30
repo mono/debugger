@@ -439,7 +439,7 @@ namespace Mono.Debugger.Frontend
 			if (context.Interpreter.IsScript)
 				context.Print (frame);
 			else
-				context.Interpreter.Style.PrintFrame (context, frame);
+				context.Interpreter.Style.PrintFrame (context, frame.Frame);
 		}
 
 		// IDocumentableCommand
@@ -890,7 +890,7 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex += increment;
-			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
+			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame.Frame);
 		}
 
 		// IDocumentableCommand
@@ -928,7 +928,7 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			process.CurrentFrameIndex -= decrement;
-			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
+			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame.Frame);
 		}
 
 		// IDocumentableCommand

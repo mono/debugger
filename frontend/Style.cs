@@ -20,15 +20,16 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public override void TargetStopped (ScriptingContext context, FrameHandle frame,
+		public override void TargetStopped (ScriptingContext context, StackFrame frame,
 						    AssemblerLine current_insn)
 		{
 			if (frame == null)
 				return;
 
-			StackFrame stack_frame = frame.Frame;
-			if (stack_frame != null && stack_frame.SourceAddress != null)
-				Console.WriteLine ("\x1A\x1A{0}:{1}:beg:{2}", stack_frame.SourceAddress.Name, "55" /* XXX */, "0x80594d8" /* XXX */);
+			if (frame != null && frame.SourceAddress != null)
+				Console.WriteLine ("\x1A\x1A{0}:{1}:beg:{2}",
+						   frame.SourceAddress.Name, "55" /* XXX */,
+						   "0x80594d8" /* XXX */);
 		}
 	}
 
@@ -57,21 +58,29 @@ namespace Mono.Debugger.Frontend
 			IsNative = false;
 		}
 
-		public override void PrintFrame (ScriptingContext context, FrameHandle frame)
+		public override void PrintFrame (ScriptingContext context, StackFrame frame)
 		{
 			context.Print (frame);
 			bool native = false;
-			if (!frame.PrintSource (context))
+			if (!PrintSource (context, frame))
 				native = true;
-			if (native)
-				frame.Disassemble (context, frame.Frame.TargetAccess);
+			if (native) {
+				AssemblerLine insn = frame.TargetAccess.DisassembleInstruction (
+					frame.Method, frame.TargetAddress);
+
+				if (insn != null)
+					context.PrintInstruction (insn);
+				else
+					context.Error ("Cannot disassemble instruction at address {0}.",
+						       frame.TargetAddress);
+			}
 		}
 
-		public override void TargetStopped (ScriptingContext context, FrameHandle frame,
+		public override void TargetStopped (ScriptingContext context, StackFrame frame,
 						    AssemblerLine current_insn)
 		{
 			if (frame != null) {
-				if (!frame.PrintSource (context))
+				if (!PrintSource (context, frame))
 					native = true;
 			}
 			if (native && (current_insn != null))
@@ -79,10 +88,29 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public override void UnhandledException (ScriptingContext context,
-							 FrameHandle frame, AssemblerLine insn,
+							 StackFrame frame, AssemblerLine insn,
 							 TargetObject exc)
 		{
 			TargetStopped (context, frame, insn);
+		}
+
+		protected bool PrintSource (ScriptingContext context, StackFrame frame)
+		{
+			SourceAddress location = frame.SourceAddress;
+			if (location == null)
+				return false;
+
+			Method method = frame.Method;
+			if ((method == null) || !method.HasSource || (method.Source == null))
+				return false;
+
+			MethodSource source = method.Source;
+			if (source.SourceBuffer == null)
+				return false;
+
+			string line = source.SourceBuffer.Contents [location.Row - 1];
+			context.Print (String.Format ("{0,4} {1}", location.Row, line));
+			return true;
 		}
 
 		public override string FormatObject (TargetAccess target, object obj,
@@ -610,155 +638,6 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-
-	///
-	/// Ignore this `user interface' - I need it to debug the debugger.
-	///
-
-	[Serializable]
-	public class StyleMartin : StyleBase
-	{
-		public StyleMartin (Interpreter interpreter)
-			: base (interpreter)
-		{ }
-
-		public override string Name {
-			get { return "martin"; }
-		}
-
-		public override bool IsNative {
-			get { return true; }
-			set { ; }
-		}
-
-		public override void Reset ()
-		{ }
-
-		public override void TargetStopped (ScriptingContext context, FrameHandle frame,
-						    AssemblerLine current_insn)
-		{
-			if (current_insn != null)
-				context.PrintInstruction (current_insn);
-
-			if (frame != null)
-				frame.PrintSource (context);
-		}
-
-		public override void UnhandledException (ScriptingContext context,
-							 FrameHandle frame, AssemblerLine insn,
-							 TargetObject exc)
-		{
-			TargetStopped (context, frame, insn);
-		}
-
-		public override void PrintFrame (ScriptingContext context, FrameHandle frame)
-		{
-			context.Print (frame);
-			frame.Disassemble (context, frame.Frame.TargetAccess);
-			frame.PrintSource (context);
-		}
-
-		public override string PrintVariable (TargetVariable variable, StackFrame frame)
-		{
-			TargetObject obj = null;
-			try {
-				obj = variable.GetObject (frame);
-			} catch {
-			}
-
-			string contents;
-			if (obj != null)
-				contents = FormatObject (
-					frame.TargetAccess, obj, DisplayFormat.Default);
-			else
-				contents = "<cannot display object>";
-				
-			return String.Format (
-				"{0} = ({1}) {2}", variable.Name, variable.Type.Name, contents);
-		}
-
-		public override string FormatObject (TargetAccess target, object obj,
-						     DisplayFormat format)
-		{
-			if (obj is long) {
-				return String.Format ("0x{0:x}", (long) obj);
-			} else if (obj is string) {
-				return '"' + (string) obj + '"';
-			} else if (obj is TargetType) {
-				return ((TargetType) obj).Name;
-			} else {
-				if (format == DisplayFormat.HexaDecimal)
-					return String.Format ("{0:x}", obj);
-				else
-					return obj.ToString ();
-			}
-		}
-
-		public override string FormatType (TargetAccess target, TargetType type)
-		{
-			return type.ToString ();
-		}
-
-		void print (StringBuilder sb, string format, params object[] args)
-		{
-			sb.Append (String.Format (format + "\n", args));
-		}
-
-		public override string ShowVariableType (TargetType type, string name)
-		{
-			StringBuilder sb = new StringBuilder ();
-			TargetArrayType array = type as TargetArrayType;
-			if (array != null)
-				print (sb, "{0} is an array of {1}", name, array.ElementType);
-
-			TargetClassType tclass = type as TargetClassType;
-			TargetClassType tstruct = type as TargetClassType;
-			if (tclass != null) {
-				if (tclass.HasParent)
-					print (sb, "{0} is a class of type {1} which inherits from {2}",
-					       name, tclass.Name, tclass.ParentType);
-				else
-					print (sb, "{0} is a class of type {1}", name, tclass.Name);
-			} else if (tstruct != null)
-				print (sb, "{0} is a value type of type {1}", name, tstruct.Name);
-
-			if (tstruct != null) {
-				foreach (TargetFieldInfo field in tstruct.Fields)
-					print (sb, "  It has a field `{0}' of type {1}",
-					       field.Name, field.Type.Name);
-				foreach (TargetFieldInfo field in tstruct.StaticFields)
-					print (sb, "  It has a static field `{0}' of type {1}",
-					       field.Name, field.Type.Name);
-				foreach (TargetPropertyInfo property in tstruct.Properties)
-					print (sb, "  It has a property `{0}' of type {1}",
-					       property.Name, property.Type.Name);
-				foreach (TargetMethodInfo method in tstruct.Methods) {
-					if (method.Type.HasReturnValue)
-						print (sb, "  It has a method: {0} {1}",
-						       method.Type.ReturnType.Name, method.FullName);
-					else
-						print (sb, "  It has a method: void {0}",
-						       method.FullName);
-				}
-				foreach (TargetMethodInfo method in tstruct.StaticMethods) {
-					if (method.Type.HasReturnValue)
-						print (sb, "  It has a static method: {0} {1}",
-						       method.Type.ReturnType.Name, method.FullName);
-					else
-						print (sb, "  It has a static method: void {0}",
-						       method.FullName);
-				}
-				foreach (TargetMethodInfo method in tstruct.Constructors) {
-					print (sb, "  It has a constructor: {0}", method.FullName);
-				}
-				return sb.ToString ();
-			}
-
-			print (sb, "{0} is a {1}", name, type);
-			return sb.ToString ();
-		}
-	}
-
 	[Serializable]
 	public abstract class StyleBase : Style
 	{
@@ -775,12 +654,12 @@ namespace Mono.Debugger.Frontend
 
 		public abstract void Reset ();
 
-		public abstract void PrintFrame (ScriptingContext context, FrameHandle frame);
+		public abstract void PrintFrame (ScriptingContext context, StackFrame frame);
 
-		public abstract void TargetStopped (ScriptingContext context, FrameHandle frame,
+		public abstract void TargetStopped (ScriptingContext context, StackFrame frame,
 						    AssemblerLine current_insn);
 
-		public abstract void UnhandledException (ScriptingContext context, FrameHandle frame,
+		public abstract void UnhandledException (ScriptingContext context, StackFrame frame,
 							 AssemblerLine current_insn, TargetObject exc);
 	}
 }

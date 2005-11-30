@@ -55,7 +55,6 @@ namespace Mono.Debugger.Frontend
 
 			styles = new Hashtable ();
 			styles.Add ("cli", new StyleCLI (this));
-			styles.Add ("martin", new StyleMartin (this));
 			styles.Add ("emacs", new StyleEmacs (this));
 			current_style = (StyleBase) styles ["cli"];
 
