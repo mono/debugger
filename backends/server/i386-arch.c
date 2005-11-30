@@ -292,17 +292,16 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	long new_esp, call_disp;
 	int i;
 
-	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
-					0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
-					0x00, 0x00, 0x00, 0x00, 0xe8, 0x00, 0x00, 0x00,
-					0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0x5a, 0x8d,
-					0x92, 0x00, 0x00, 0x00, 0x00, 0x8b, 0x12, 0x31,
-					0xdb, 0x31, 0xc9, 0xcc };
+	static guint8 static_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0xcc };
 	int static_size = sizeof (static_code);
 	int size = static_size + (num_params + 3) * 4 + blob_size;
 	guint8 *code = g_malloc0 (size);
 	guint32 *ptr = (guint32 *) (code + static_size + blob_size);
 	guint64 blob_start;
+
 	memcpy (code, static_code, static_size);
 	memcpy (code + static_size, blob_data, blob_size);
 
@@ -319,35 +318,30 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 			ptr [i] = param_data [i];
 	}
 
+	*((guint32 *) code) = new_esp + static_size - 1;
+	*((guint32 *) (code+4)) = method_argument;
+	*((guint32 *) (code+8)) = ptr [0];
+	*((guint32 *) (code+12)) = new_esp + static_size + blob_size + 4;
+	*((guint32 *) (code+16)) = new_esp + 20;
+
 	rdata = g_new0 (RuntimeInvokeData, 1);
 	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
 	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
 	rdata->call_address = new_esp + static_size;
-	rdata->exc_address = new_esp + static_size + (num_params + 1) * 4;
+	rdata->exc_address = new_esp + 20;
 	rdata->callback_argument = callback_argument;
 	rdata->debug = debug;
 	rdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
-
-	call_disp = (int) invoke_method - new_esp;
-
-	if (debug) {
-		*code = 0x68;
-		*((guint32 *) (code+1)) = 0;
-	} else
-		*((guint32 *) (code+1)) = new_esp + static_size + (num_params + 1) * 4;
-	*((guint32 *) (code+6)) = new_esp + static_size + blob_size + 4;
-	*((guint32 *) (code+11)) = ptr [0];
-	*((guint32 *) (code+16)) = method_argument;
-	*((guint32 *) (code+21)) = call_disp - 25;
-	*((guint32 *) (code+33)) = 14 + (num_params + 1) * 4;
 
 	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
+	INFERIOR_REG_EIP (arch->current_regs) = invoke_method;
+	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
+
 	g_ptr_array_add (arch->rti_stack, rdata);
 
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
