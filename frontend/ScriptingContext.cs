@@ -21,7 +21,6 @@ namespace Mono.Debugger.Frontend
 		Interpreter interpreter;
 		ProcessHandle process;
 		StackFrame frame;
-		TargetObject current_exception;
 
 		public FrameHandle (Interpreter interpreter, ProcessHandle process,
 				    StackFrame frame)
@@ -31,22 +30,12 @@ namespace Mono.Debugger.Frontend
 			this.frame = frame;
 		}
 
-		public ProcessHandle Process {
-			get { return process; }
-		}
-
 		public StackFrame Frame {
 			get { return frame; }
 		}
 
 		public TargetAccess TargetAccess {
 			get { return frame.TargetAccess; }
-		}
-
-		public TargetObject ExceptionObject {
-			get {
-				return current_exception;
-			}
 		}
 
 		public override string ToString ()

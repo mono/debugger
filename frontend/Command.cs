@@ -2011,7 +2011,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
-				frame.Frame.Language, frame.Process, tgroup, type);
+				context.CurrentLanguage, context.CurrentProcess, tgroup, type);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 		}
 
