@@ -730,13 +730,26 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class ContinueCommand : ProcessCommand, IDocumentableCommand
+	public abstract class SteppingCommand : ProcessCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
-			process.Step (WhichStepCommand.Continue);
 			context.ResetCurrentSourceCode ();
+			DoStep (context, process.Process);
+			if (context.Interpreter.IsSynchronous)
+				context.Interpreter.DebuggerManager.Wait (process.Process);
+
+		}
+
+		protected abstract void DoStep (ScriptingContext context, Process process);
+	}
+
+	public class ContinueCommand : SteppingCommand, IDocumentableCommand
+	{
+		protected override void DoStep (ScriptingContext context, Process process)
+		{
+			process.Continue ();
 		}
 
 		// IDocumentableCommand
@@ -745,13 +758,12 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class StepCommand : ProcessCommand, IDocumentableCommand
+	public class StepCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override void DoStep (ScriptingContext context, Process process)
 		{
-			ProcessHandle process = ResolveProcess (context);
-			process.Step (WhichStepCommand.Step);
-			context.ResetCurrentSourceCode ();
+			context.Interpreter.Style.IsNative = false;
+			process.StepLine ();
 		}
 
 		// IDocumentableCommand
@@ -760,13 +772,12 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class NextCommand : ProcessCommand, IDocumentableCommand
+	public class NextCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override void DoStep (ScriptingContext context, Process process)
 		{
-			ProcessHandle process = ResolveProcess (context);
-			process.Step (WhichStepCommand.Next);
-			context.ResetCurrentSourceCode ();
+			context.Interpreter.Style.IsNative = false;
+			process.NextLine ();
 		}
 
 		// IDocumentableCommand
@@ -775,7 +786,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class StepInstructionCommand : ProcessCommand, IDocumentableCommand
+	public class StepInstructionCommand : SteppingCommand, IDocumentableCommand
 	{
 		bool native;
 
@@ -784,14 +795,13 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override void DoStep (ScriptingContext context, Process process)
 		{
-			ProcessHandle process = ResolveProcess (context);
+			context.Interpreter.Style.IsNative = true;
 			if (Native)
-				process.Step (WhichStepCommand.StepNativeInstruction);
+				process.StepNativeInstruction ();
 			else
-				process.Step (WhichStepCommand.StepInstruction);
-			context.ResetCurrentSourceCode ();
+				process.StepInstruction ();
 		}
 
 		// IDocumentableCommand
@@ -800,13 +810,12 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class NextInstructionCommand : ProcessCommand, IDocumentableCommand
+	public class NextInstructionCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override void DoStep (ScriptingContext context, Process process)
 		{
-			ProcessHandle process = ResolveProcess (context);
-			process.Step (WhichStepCommand.NextInstruction);
-			context.ResetCurrentSourceCode ();
+			context.Interpreter.Style.IsNative = true;
+			process.NextInstruction ();
 		}
 
 		// IDocumentableCommand
@@ -815,7 +824,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return "Steps one machine instruction, but steps over method calls."; } }
 	}
 
-	public class FinishCommand : ProcessCommand, IDocumentableCommand
+	public class FinishCommand : SteppingCommand, IDocumentableCommand
 	{
 		bool native;
 
@@ -824,14 +833,12 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override void DoStep (ScriptingContext context, Process process)
 		{
-			ProcessHandle process = ResolveProcess (context);
 			if (Native)
-				process.Step (WhichStepCommand.FinishNative);
+				process.FinishNative ();
 			else
-				process.Step (WhichStepCommand.Finish);
-			context.ResetCurrentSourceCode ();
+				process.Finish ();
 		}
 
 		// IDocumentableCommand

@@ -130,51 +130,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void Step (WhichStepCommand which)
-		{
-			if (process == null)
-				throw new ScriptingException ("{0} not running.", Name);
-			else if (!process.CanRun)
-				throw new ScriptingException ("{0} cannot be executed.", Name);
-
-			switch (which) {
-			case WhichStepCommand.Continue:
-				process.Continue ();
-				break;
-			case WhichStepCommand.Step:
-				interpreter.Style.IsNative = false;
-				process.StepLine ();
-				break;
-			case WhichStepCommand.Next:
-				interpreter.Style.IsNative = false;
-				process.NextLine ();
-				break;
-			case WhichStepCommand.StepInstruction:
-				interpreter.Style.IsNative = true;
-				process.StepInstruction ();
-				break;
-			case WhichStepCommand.StepNativeInstruction:
-				interpreter.Style.IsNative = true;
-				process.StepNativeInstruction ();
-				break;
-			case WhichStepCommand.NextInstruction:
-				interpreter.Style.IsNative = true;
-				process.NextInstruction ();
-				break;
-			case WhichStepCommand.Finish:
-				process.Finish ();
-				break;
-			case WhichStepCommand.FinishNative:
-				process.FinishNative ();
-				break;
-			default:
-				throw new Exception ();
-			}
-
-			if (interpreter.IsSynchronous)
-				interpreter.DebuggerManager.Wait (process);
-		}
-
 		public void RuntimeInvoke (TargetFunctionType func,
 					   TargetClassObject instance, TargetObject[] args)
 		{
@@ -371,18 +326,6 @@ namespace Mono.Debugger.Frontend
 		UnIgnore,
 		Step,
 		DontStep
-	}
-
-	public enum WhichStepCommand
-	{
-		Continue,
-		Step,
-		Next,
-		StepInstruction,
-		StepNativeInstruction,
-		NextInstruction,
-		Finish,
-		FinishNative
 	}
 
 	public class ScriptingContext : MarshalByRefObject

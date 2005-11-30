@@ -1,5 +1,13 @@
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(Command.SteppingCommand): New public abstract class; use this for
+	all stepping commands.
+
+	* frontend/ScriptingContext.cs (ProcessHandle.Step): Removed.
+
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
 	* frontend/ScriptingContext.cs (FrameHandle): Removed.
 	(BacktraceHandle): Removed.
 
