@@ -1379,6 +1379,12 @@ namespace Mono.Debugger.Backends
 			{
 				return new Attribute (dwarf, offset, attr, form);
 			}
+
+			public override string ToString ()
+			{
+				return String.Format ("AttributeEntry ({0}:{1})", DwarfAttribute,
+						      DwarfForm);
+			}
 		}
 
 		protected class Attribute
@@ -2516,7 +2522,7 @@ namespace Mono.Debugger.Backends
 		{
 			DwarfReader dwarf;
 			string name;
-			TargetType type;
+			readonly TargetType type;
 			TargetBinaryReader locreader;
 			int offset;
 
@@ -2638,7 +2644,7 @@ namespace Mono.Debugger.Backends
 		protected abstract class DieType : Die
 		{
 			string name;
-			long offset;
+			protected long offset;
 			bool resolved, ok, type_created;
 			protected readonly Language language;
 			TargetType type;
@@ -2864,15 +2870,20 @@ namespace Mono.Debugger.Backends
 
 			protected override TargetType CreateType ()
 			{
-				reference = GetReference (type_offset);
-				if (reference == null) {
-					Console.WriteLine (
-						"UNKNOWN POINTER: {0}",
-						comp_unit.RealStartOffset + type_offset);
-					return null;
-				}
+				TargetType ref_type;
+				if (type_offset == 0)
+					ref_type = language.VoidType;
+				else {
+					reference = GetReference (type_offset);
+					if (reference == null) {
+						Console.WriteLine (
+							"UNKNOWN POINTER: {0}",
+							comp_unit.RealStartOffset + type_offset);
+						return null;
+					}
 
-				TargetType ref_type = reference.ResolveType ();
+					ref_type = reference.ResolveType ();
+				}
 				if (ref_type == null)
 					return null;
 
