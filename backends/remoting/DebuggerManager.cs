@@ -75,7 +75,7 @@ namespace Mono.Debugger.Remoting
 		{
 			lock (this) {
 				foreach (DebuggerClient client in clients.Values) {
-					client.Debugger.Dispose ();
+					client.DebuggerServer.Dispose ();
 					client.Shutdown ();
 				}
 

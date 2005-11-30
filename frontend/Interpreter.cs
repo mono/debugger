@@ -292,7 +292,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				DebuggerClient client;
 				client = manager.Run (options.RemoteHost, options.RemoteMono);
-				Debugger backend = client.Debugger;
+				Debugger backend = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, backend);
 				new ProcessEventSink (this, backend);
@@ -316,7 +316,7 @@ namespace Mono.Debugger.Frontend
 		{
 			try {
 				DebuggerClient client = manager.Run (null, null);
-				Debugger backend = client.Debugger;
+				Debugger backend = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, backend);
 				new ProcessEventSink (this, backend);

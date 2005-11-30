@@ -124,10 +124,6 @@ namespace Mono.Debugger.Remoting
 			get { return server; }
 		}
 
-		public Debugger Debugger {
-			get { return backend; }
-		}
-
 		static void connection_closed (DebuggerConnection connection)
 		{
 			connections.Remove (connection.URL);

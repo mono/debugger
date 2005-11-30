@@ -44,10 +44,5 @@ namespace Mono.Debugger.Remoting
 			client.Shutdown ();
 			RemotingServices.Disconnect (this);
 		}
-
-		public Debugger Debugger {
-			get { return this; }
-		}
 	}
 }
-
