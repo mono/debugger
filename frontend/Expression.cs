@@ -595,7 +595,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			exc = context.CurrentFrame.ExceptionObject;
+			exc = context.CurrentFrame.Frame.ExceptionObject;
 			if (exc == null)
 				throw new ScriptingException ("No current exception.");
 
@@ -746,7 +746,7 @@ namespace Mono.Debugger.Frontend
 
 			TargetClassObject instance = null;
 			if (method.HasThis)
-				instance = (TargetClassObject) frame.GetVariable (method.This);
+				instance = (TargetClassObject) method.This.GetObject (frame.Frame);
 
 			TargetAccess target = frame.Frame.TargetAccess;
 			MemberExpression member = StructAccessExpression.FindMember (
@@ -781,9 +781,11 @@ namespace Mono.Debugger.Frontend
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			FrameHandle frame = context.CurrentFrame;
-			TargetVariable var = frame.GetVariableInfo (name, false);
-			if (var != null)
-				return new VariableAccessExpression (var);
+			if (frame.Frame.Method != null) {
+				TargetVariable var = frame.Frame.Method.GetVariableByName (name);
+				if (var != null)
+					return new VariableAccessExpression (var);
+			}
 
 			Expression expr = LookupMember (context, frame, name);
 			if (expr != null)

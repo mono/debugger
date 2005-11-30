@@ -1263,9 +1263,17 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				FrameHandle frame = ResolveFrame (context);
+				StackFrame frame = ResolveFrame (context).Frame;
 
-				frame.ShowParameters (context);
+				if (frame.Method == null)
+					throw new ScriptingException (
+						"Selected stack frame has no method.");
+
+				TargetVariable[] param_vars = frame.Method.Parameters;
+				foreach (TargetVariable var in param_vars) {
+					string msg = context.Interpreter.Style.PrintVariable (var, frame);
+					context.Interpreter.Print (msg);
+				}
 			}
 		}
 
@@ -1273,9 +1281,17 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				FrameHandle frame = ResolveFrame (context);
+				StackFrame frame = ResolveFrame (context).Frame;
 
-				frame.ShowLocals (context);
+				if (frame.Method == null)
+					throw new ScriptingException (
+						"Selected stack frame has no method.");
+
+				TargetVariable[] local_vars = frame.Locals;
+				foreach (TargetVariable var in local_vars) {
+					string msg = context.Interpreter.Style.PrintVariable (var, frame);
+					context.Interpreter.Print (msg);
+				}
 			}
 		}
 

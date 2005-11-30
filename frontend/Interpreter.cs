@@ -631,11 +631,10 @@ namespace Mono.Debugger.Frontend
 				ProcessHandle proc = (ProcessHandle) interpreter.procs [target.ID];
 
 				FrameHandle frame = null;
-				if (args.Frame != null) {
+				if (args.Frame != null)
 					frame = new FrameHandle (interpreter, proc, args.Frame);
-					frame.TargetEvent (target, args);
-				}
 
+				interpreter.Style.TargetEvent (target, args);
 				proc.TargetEvent (args, frame);
 			}
 		}

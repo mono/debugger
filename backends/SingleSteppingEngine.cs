@@ -2933,12 +2933,14 @@ namespace Mono.Debugger.Backends
 		{
 			if (unhandled) {
 				sse.frame_changed (inferior.CurrentFrame, null);
+				sse.current_frame.SetExceptionObject (sse.target_access, exc);
 				args = new TargetEventArgs (
 					TargetEventType.UnhandledException,
 					exc, sse.current_frame);
 				return EventResult.Completed;
 			} else {
 				sse.frame_changed (inferior.CurrentFrame, null);
+				sse.current_frame.SetExceptionObject (sse.target_access, exc);
 				args = new TargetEventArgs (
 					TargetEventType.Exception,
 					exc, sse.current_frame);

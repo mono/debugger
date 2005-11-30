@@ -1,5 +1,18 @@
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs
+	(StackFrame.ExceptionObject): New public property.
+
+	* frontend/Style.cs
+	(StyleBase.UnhandledException): Don't take a `TargetObject exc'
+	argument; it's now part of the `StackFrame'.
+	(StyleBase.TargetEvent): New public abstract method.
+
+	* frontend/ScriptingContext.cs
+	(FrameHandle.TargetEvent): Removed; we now use `Style.TargetEvent'.
+
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
 	* frontend/ScriptingContext.cs
 	(FrameHandle): Removed all the register stuff.
 

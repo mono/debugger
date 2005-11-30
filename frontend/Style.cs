@@ -88,8 +88,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public override void UnhandledException (ScriptingContext context,
-							 StackFrame frame, AssemblerLine insn,
-							 TargetObject exc)
+							 StackFrame frame, AssemblerLine insn)
 		{
 			TargetStopped (context, frame, insn);
 		}
@@ -111,6 +110,90 @@ namespace Mono.Debugger.Frontend
 			string line = source.SourceBuffer.Contents [location.Row - 1];
 			context.Print (String.Format ("{0,4} {1}", location.Row, line));
 			return true;
+		}
+
+		public override void TargetEvent (TargetAccess target, TargetEventArgs args)
+		{
+			if (args.Frame != null)
+				TargetEvent (target, args.Frame, args);
+		}
+
+		protected void TargetEvent (TargetAccess target, StackFrame frame,
+					    TargetEventArgs args)
+		{
+			switch (args.Type) {
+			case TargetEventType.TargetStopped: {
+				if ((int) args.Data != 0)
+					interpreter.Print ("{0} received signal {1} at {2}.",
+							   target.Name, (int) args.Data, frame);
+				else if (!interpreter.IsInteractive)
+					break;
+				else
+					interpreter.Print ("{0} stopped at {1}.", target.Name, frame);
+
+				if (interpreter.IsScript)
+					break;
+
+				AssemblerLine insn;
+				try {
+					insn = target.DisassembleInstruction (
+						frame.Method, frame.TargetAddress);
+				} catch {
+					insn = null;
+				}
+
+				interpreter.Style.TargetStopped (
+					interpreter.GlobalContext, frame, insn);
+
+				break;
+			}
+
+			case TargetEventType.TargetHitBreakpoint: {
+				if (!interpreter.IsInteractive)
+					break;
+
+				interpreter.Print ("{0} hit breakpoint {1} at {2}.",
+						   target.Name, (int) args.Data, frame);
+
+				if (interpreter.IsScript)
+					break;
+
+				AssemblerLine insn;
+				try {
+					insn = target.DisassembleInstruction (
+						frame.Method, frame.TargetAddress);
+				} catch {
+					insn = null;
+				}
+
+				interpreter.Style.TargetStopped (
+					interpreter.GlobalContext, frame, insn);
+
+				break;
+			}
+
+			case TargetEventType.Exception:
+			case TargetEventType.UnhandledException:
+				interpreter.Print ("{0} caught {2}exception at {1}.", target.Name, frame,
+						   args.Type == TargetEventType.Exception ?
+						   "" : "unhandled ");
+
+				if (interpreter.IsScript)
+					break;
+
+				AssemblerLine insn;
+				try {
+					insn = target.DisassembleInstruction (
+						frame.Method, frame.TargetAddress);
+				} catch {
+					insn = null;
+				}
+
+				interpreter.Style.UnhandledException (
+					interpreter.GlobalContext, frame, insn);
+
+				break;
+			}
 		}
 
 		public override string FormatObject (TargetAccess target, object obj,
@@ -660,6 +743,8 @@ namespace Mono.Debugger.Frontend
 						    AssemblerLine current_insn);
 
 		public abstract void UnhandledException (ScriptingContext context, StackFrame frame,
-							 AssemblerLine current_insn, TargetObject exc);
+							 AssemblerLine current_insn);
+
+		public abstract void TargetEvent (TargetAccess target, TargetEventArgs args);
 	}
 }

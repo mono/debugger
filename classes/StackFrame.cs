@@ -181,6 +181,7 @@ namespace Mono.Debugger
 		TargetAccess target;
 		SourceAddress source;
 		StackFrame parent_frame;
+		TargetObject exc_object;
 		bool has_source;
 		Symbol name;
 
@@ -316,6 +317,20 @@ namespace Mono.Debugger
 		internal StackFrame ParentFrame {
 			get { return parent_frame; }
 			set { parent_frame = value; }
+		}
+
+		public TargetObject ExceptionObject {
+			get { return exc_object; }
+		}
+
+		internal void SetExceptionObject (TargetAccess target, TargetAddress exc)
+		{
+			try {
+				if (Language != null)
+					exc_object = Language.CreateObject (target, exc);
+			} catch {
+				exc_object = null;
+			}
 		}
 
 		public StackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
