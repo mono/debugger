@@ -608,12 +608,6 @@ namespace Mono.Debugger.Backends
 				TargetOutput (true, line);
 		}
 
-		void debugger_output (string line)
-		{
-			if (DebuggerOutput != null)
-				DebuggerOutput (line);
-		}
-
 		//
 		// ITargetInfo
 		//
@@ -877,8 +871,6 @@ namespace Mono.Debugger.Backends
 		//
 
 		public event TargetOutputHandler TargetOutput;
-		public event DebuggerOutputHandler DebuggerOutput;
-		public event DebuggerErrorHandler DebuggerError;
 		public event StateChangedHandler StateChanged;
 
 		TargetState target_state = TargetState.NO_TARGET;

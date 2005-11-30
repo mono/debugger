@@ -84,8 +84,6 @@ namespace Mono.Debugger.Backends
 			this.start = inferior.ProcessStart;
 
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
-			inferior.DebuggerOutput += new DebuggerOutputHandler (debugger_output_handler);
-			inferior.DebuggerError += new DebuggerErrorHandler (debugger_error_handler);
 
 			PID = inferior.PID;
 
@@ -1261,16 +1259,6 @@ namespace Mono.Debugger.Backends
 		void inferior_output_handler (bool is_stderr, string line)
 		{
 			process.OnInferiorOutput (is_stderr, line);
-		}
-
-		void debugger_output_handler (string line)
-		{
-			process.OnDebuggerOutput (line);
-		}
-
-		void debugger_error_handler (object sender, string message, Exception e)
-		{
-			process.OnDebuggerError (sender, message, e);
 		}
 
 		public override string ToString ()

@@ -65,25 +65,11 @@ namespace Mono.Debugger
 		}
 
 		public event TargetOutputHandler TargetOutput;
-		public event DebuggerOutputHandler DebuggerOutput;
-		public event DebuggerErrorHandler DebuggerError;
 
 		internal void OnInferiorOutput (bool is_stderr, string line)
 		{
 			if (TargetOutput != null)
 				TargetOutput (is_stderr, line);
-		}
-
-		internal void OnDebuggerOutput (string line)
-		{
-			if (DebuggerOutput != null)
-				DebuggerOutput (line);
-		}
-
-		internal void OnDebuggerError (object sender, string message, Exception e)
-		{
-			if (DebuggerError != null)
-				DebuggerError (this, message, e);
 		}
 
 		public override string ToString ()

@@ -343,7 +343,6 @@ namespace Mono.Debugger.Frontend
 		int id;
 
 		Hashtable registers;
-		ProcessEventSink sink;
 
 		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
 				      Process process)
@@ -406,8 +405,6 @@ namespace Mono.Debugger.Frontend
 
 			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
-
-			sink = new ProcessEventSink (this);
 		}
 
 		int current_frame_idx = -1;
@@ -494,24 +491,6 @@ namespace Mono.Debugger.Frontend
 
 			if (interpreter.IsSynchronous)
 				interpreter.DebuggerManager.Wait (process);
-		}
-
-		TargetAddress GetMethodAddress (TargetFunctionType func,
-						ref TargetClassObject instance)
-		{
-			TargetAddress method = func.GetMethodAddress (process.TargetAccess);
-
-			if ((instance == null) || instance.Type.IsByRef)
-				return method;
-
-			TargetType decl = func.DeclaringType;
-			if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
-				return method;
-
-			// box the instance
-			instance = instance.GetParentObject (process.TargetAccess);
-
-			return method;
 		}
 
 		public void RuntimeInvoke (TargetFunctionType func,
@@ -686,35 +665,6 @@ namespace Mono.Debugger.Frontend
 				return String.Format ("Daemon process @{0}: {1} {2}", id, process.PID, State);
 			else
 				return String.Format ("Process @{0}: {1} {2}", id, process.PID, State);
-		}
-
-		[Serializable]
-		private class ProcessEventSink
-		{
-			ProcessHandle process;
-
-			public ProcessEventSink (ProcessHandle process)
-			{
-				this.process = process;
-
-				process.process.DebuggerOutput += new DebuggerOutputHandler (debugger_output);
-				process.process.DebuggerError += new DebuggerErrorHandler (debugger_error);
-			}
-
-			public void debugger_output (string line)
-			{
-				process.interpreter.Print ("DEBUGGER OUTPUT: {0}", line);
-			}
-
-			public void debugger_error (object sender, string message, Exception e)
-			{
-				process.interpreter.Print ("DEBUGGER ERROR: {0}\n{1}", message, e);
-			}
-
-			public void process_exited ()
-			{
-				process.ProcessExited ();
-			}
 		}
 	}
 

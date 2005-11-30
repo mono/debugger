@@ -1,5 +1,10 @@
 2005-11-30  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs (Process.DebuggerOutput): Removed.
+	* backends/Process.cs (Process.DebuggerError): Removed.
+
+2005-11-30  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-arch.c
 	(server_ptrace_call_method_invoke): Make this work again.
 
