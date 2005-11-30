@@ -806,18 +806,18 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
-			TargetType type = frame.Language.LookupType (name);
+			Language language = context.CurrentLanguage;
+			TargetType type = language.LookupType (name);
 			if (type != null)
 				return new TypeExpression (type);
 
-			string[] namespaces = context.GetNamespaces (frame);
+			string[] namespaces = context.GetNamespaces (context.CurrentFrame);
 			if (namespaces == null)
 				return null;
 
 			foreach (string ns in namespaces) {
 				string full_name = MakeFQN (ns, name);
-				type = frame.Language.LookupType (full_name);
+				type = language.LookupType (full_name);
 				if (type != null)
 					return new TypeExpression (type);
 			}
@@ -1633,23 +1633,21 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetType DoEvaluateType (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
-
 			TargetPointerType ptype = expr.EvaluateType (context)
 				as TargetPointerType;
 			if (ptype != null)
 				return ptype;
 
-			return frame.Language.PointerType;
+			return context.CurrentLanguage.PointerType;
 		}
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			FrameHandle frame = context.CurrentFrame;
+			StackFrame frame = context.CurrentFrame.Frame;
 
 			TargetAddress address = EvaluateAddress (context);
 
-			return frame.Language.CreatePointer (frame.Frame, address);
+			return context.CurrentLanguage.CreatePointer (frame, address);
 		}
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)

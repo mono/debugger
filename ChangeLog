@@ -1,3 +1,11 @@
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
+	* frontend/ScriptingContext.cs
+	(FrameHandle.Disassemble): Removed.
+	(FrameHandle.DisassembleMethod): Removed.
+	(FrameHandle.Language): Removed.
+	(ScriptingContext.CurrentLanguage): New public property.
+
 2005-11-30  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Style.cs (StyleMartin): Removed.

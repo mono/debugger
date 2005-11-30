@@ -43,45 +43,6 @@ namespace Mono.Debugger.Frontend
 			get { return frame.TargetAccess; }
 		}
 
-		public void Disassemble (ScriptingContext context, TargetAccess target)
-		{
-			AssemblerLine line = Disassemble (target);
-
-			if (line != null)
-				context.PrintInstruction (line);
-			else
-				context.Error ("Cannot disassemble instruction at address {0}.",
-					       frame.TargetAddress);
-		}
-
-		public AssemblerLine Disassemble (TargetAccess target)
-		{
-			return Disassemble (target, frame.TargetAddress);
-		}
-
-		public AssemblerLine Disassemble (TargetAccess target, TargetAddress address)
-		{
-			Method method = frame.Method;
-			if ((method == null) || !method.IsLoaded)
-				return target.DisassembleInstruction (null, address);
-			else if ((address < method.StartAddress) || (address >= method.EndAddress))
-				return target.DisassembleInstruction (null, address);
-			else
-				return target.DisassembleInstruction (method, address);
-		}
-
-		public void DisassembleMethod (ScriptingContext context, TargetAccess target)
-		{
-			Method method = frame.Method;
-
-			if ((method == null) || !method.IsLoaded)
-				throw new ScriptingException ("Selected stack frame has no method.");
-
-			AssemblerMethod asm = target.DisassembleMethod (method);
-			foreach (AssemblerLine line in asm.Lines)
-				context.PrintInstruction (line);
-		}
-
 		public int[] RegisterIndices {
 			get { return process.Architecture.RegisterIndices; }
 		}
@@ -179,16 +140,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public Language Language {
-			get {
-				if (frame.Language == null)
-					throw new ScriptingException (
-						"Stack frame has no source language.");
-
-				return frame.Language;
-			}
-		}
-
 		public TargetObject ExceptionObject {
 			get {
 				return current_exception;
@@ -212,7 +163,8 @@ namespace Mono.Debugger.Frontend
 
 				AssemblerLine insn;
 				try {
-					insn = Disassemble (target);
+					insn = target.DisassembleInstruction (
+						frame.Method, frame.TargetAddress);
 				} catch {
 					insn = null;
 				}
@@ -235,7 +187,8 @@ namespace Mono.Debugger.Frontend
 
 				AssemblerLine insn;
 				try {
-					insn = Disassemble (target);
+					insn = target.DisassembleInstruction (
+						frame.Method, frame.TargetAddress);
 				} catch {
 					insn = null;
 				}
@@ -269,7 +222,8 @@ namespace Mono.Debugger.Frontend
 
 				AssemblerLine insn;
 				try {
-					insn = Disassemble (target);
+					insn = target.DisassembleInstruction (
+						frame.Method, frame.TargetAddress);
 				} catch {
 					insn = null;
 				}
@@ -789,6 +743,17 @@ namespace Mono.Debugger.Frontend
 
 			set {
 				current_frame_idx = value;
+			}
+		}
+
+		public Language CurrentLanguage {
+			get {
+				StackFrame frame = CurrentFrame.Frame;
+				if (frame.Language == null)
+					throw new ScriptingException (
+						"Stack frame has no source language.");
+
+				return frame.Language;
 			}
 		}
 

@@ -499,7 +499,15 @@ namespace Mono.Debugger.Frontend
 			ProcessHandle process = ResolveProcess (context);
 
 			if (do_method) {
-				frame.DisassembleMethod (context, frame.Frame.TargetAccess);
+				Method method = frame.Frame.Method;
+
+				if ((method == null) || !method.IsLoaded)
+					throw new ScriptingException (
+						"Selected stack frame has no method.");
+
+				AssemblerMethod asm = frame.Frame.TargetAccess.DisassembleMethod (method);
+				foreach (AssemblerLine insn in asm.Lines)
+					context.PrintInstruction (insn);
 				return;
 			}
 
@@ -1958,7 +1966,11 @@ namespace Mono.Debugger.Frontend
 		{
 			frame = ResolveFrame (context);
 
-			TargetType exception_type = frame.Language.ExceptionType;
+			Language language = frame.Frame.Language;
+			if (frame.Frame.Language == null)
+				throw new ScriptingException ("Current frame doesn't have a language.");
+
+			TargetType exception_type = language.ExceptionType;
 			if (exception_type == null)
 				throw new ScriptingException ("Current language doesn't have any exceptions.");
 
@@ -1983,7 +1995,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
-				frame.Language, frame.Process, tgroup, type);
+				frame.Frame.Language, frame.Process, tgroup, type);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 		}
 
