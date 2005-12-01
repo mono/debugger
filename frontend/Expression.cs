@@ -1327,8 +1327,8 @@ namespace Mono.Debugger.Frontend
 						     TargetPropertyInfo prop)
 		{
 			string exc_message;
-			TargetObject res = context.CurrentProcess.RuntimeInvoke (
-				prop.Getter, InstanceObject, new TargetObject [0],
+			TargetObject res = context.CurrentProcess.Process.RuntimeInvoke (
+				prop.Getter, InstanceObject, new TargetObject [0], true,
 				out exc_message);
 
 			if (exc_message != null)
@@ -2437,13 +2437,18 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				if (debug) {
-					context.CurrentProcess.RuntimeInvoke (method, instance, objs);
+					Process process = context.CurrentProcess.Process;
+					process.RuntimeInvoke (method, instance, objs, true);
+
+					if (context.Interpreter.IsSynchronous)
+						context.Interpreter.DebuggerManager.Wait (process);
+
 					return null;
 				}
 
 				string exc_message;
-				TargetObject retval = context.CurrentProcess.RuntimeInvoke (
-					method, mg.InstanceObject, objs, out exc_message);
+				TargetObject retval = context.CurrentProcess.Process.RuntimeInvoke (
+					method, mg.InstanceObject, objs, true, out exc_message);
 
 				if (exc_message != null)
 					throw new ScriptingException (

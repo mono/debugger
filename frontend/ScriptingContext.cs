@@ -130,54 +130,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void RuntimeInvoke (TargetFunctionType func,
-					   TargetClassObject instance, TargetObject[] args)
-		{
-			if (process == null)
-				throw new ScriptingException ("{0} not running.", Name);
-			else if (!process.CanRun)
-				throw new ScriptingException ("{0} cannot be executed.", Name);
-
-			process.RuntimeInvoke (func, instance, args, true);
-
-			if (interpreter.IsSynchronous)
-				interpreter.DebuggerManager.Wait (process);
-		}
-
-		public TargetObject RuntimeInvoke (TargetFunctionType func,
-						   TargetClassObject instance,
-						   TargetObject[] args,
-						   out string exc_message)
-		{
-			if (process == null)
-				throw new ScriptingException ("{0} not running.", Name);
-			else if (!process.CanRun)
-				throw new ScriptingException ("{0} cannot be executed.", Name);
-
-			return process.RuntimeInvoke (func, instance, args, true, out exc_message);
-		}
-
-		public void Stop ()
-		{
-			if (process == null)
-				throw new ScriptingException ("{0} not running.", Name);
-			process.Stop ();
-			if (interpreter.IsSynchronous)
-				interpreter.DebuggerManager.Wait (process);
-		}
-
-		public void Background ()
-		{
-			if (process == null)
-				throw new ScriptingException ("{0} not running.", Name);
-			else if (!process.CanRun)
-				throw new ScriptingException ("{0} cannot be executed.", Name);
-			else if (!process.IsStopped)
-				throw new ScriptingException ("{0} is not stopped.", Name);
-
-			process.Continue (true);
-		}
-
 		public Architecture Architecture {
 			get {
 				if (process.Architecture == null)
@@ -532,8 +484,8 @@ namespace Mono.Debugger.Frontend
 					continue;
 
 				string exc_message;
-				TargetObject retval = CurrentProcess.RuntimeInvoke (
-					ftype, obj, new TargetObject [0], out exc_message);
+				TargetObject retval = CurrentProcess.Process.RuntimeInvoke (
+					ftype, obj, new TargetObject [0], true, out exc_message);
 				if ((exc_message != null) || (retval == null))
 					return null;
 

@@ -702,7 +702,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
-			process.Background ();
+			process.Process.Continue (true);
 		}
 
 		// IDocumentableCommand
@@ -721,7 +721,9 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			ProcessHandle process = ResolveProcess (context);
-			process.Stop ();
+			process.Process.Stop ();
+			if (context.Interpreter.IsSynchronous)
+				context.Interpreter.DebuggerManager.Wait (process.Process);
 		}
 
 		// IDocumentableCommand
