@@ -34,6 +34,9 @@ namespace Mono.Debugger
 			this.pid = engine.PID;
 			this.tid = engine.TID;
 
+			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
+			tgroup.AddThread (ID);
+
 			operation_completed_event = new ManualResetEvent (false);
 
 			this.target_info = engine.TargetInfo;
@@ -43,6 +46,7 @@ namespace Mono.Debugger
 
 		bool is_daemon;
 		int id, pid, tid;
+		ThreadGroup tgroup;
 		SingleSteppingEngine engine;
 		Debugger backend;
 		ThreadManager manager;
@@ -135,6 +139,10 @@ namespace Mono.Debugger
 			get {
 				return is_daemon;
 			}
+		}
+
+		public ThreadGroup ThreadGroup {
+			get { return tgroup; }
 		}
 
 		internal void SetDaemon ()

@@ -1,5 +1,11 @@
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ScriptingContext.cs
+	(ProcessHandle): Removed some more stuff here and get ready to
+	kill it.
+
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(Command.SteppingCommand): New public abstract class; use this for
 	all stepping commands.

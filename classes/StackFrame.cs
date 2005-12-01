@@ -150,6 +150,16 @@ namespace Mono.Debugger
 			}
 		}
 
+		public Register this [string name] {
+			get {
+				foreach (Register reg in regs)
+					if (reg.Name == name)
+						return reg;
+
+				return null;
+			}
+		}
+
 		internal long[] Values {
 			get {
 				long[] retval = new long [regs.Length];
@@ -274,11 +284,6 @@ namespace Mono.Debugger
 			get { return registers; }
 		}
 
-		public long GetRegister (int index)
-		{
-			return Registers [index].Value;
-		}
-
 		public Method Method {
 			get { return method; }
 		}
@@ -298,11 +303,6 @@ namespace Mono.Debugger
 				list.CopyTo (retval, 0);
 				return retval;
 			}
-		}
-
-		public void SetRegister (int index, long value)
-		{
-			Registers [index].WriteRegister (process.TargetAccess, value);
 		}
 
 		public Language Language {

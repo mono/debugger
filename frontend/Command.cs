@@ -197,23 +197,37 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public abstract class FrameCommand : ProcessCommand
+	public abstract class FrameCommand : DebuggerCommand
 	{
 		int frame = -1;
+		int process = -1;
 
 		public int Frame {
 			get { return frame; }
 			set { frame = value; }
 		}
 
+		public int Process {
+			get { return process; }
+			set { process = value; }
+		}
+
 		protected virtual StackFrame ResolveFrame (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
 			context.ResetCurrentSourceCode ();
-			if (frame > 0)
-				return process.GetFrame (frame);
-			else
-				return process.CurrentFrame;
+			if (process > 0) {
+				ProcessHandle proc = context.Interpreter.GetProcess (process);
+				if (frame < 0)
+					return proc.Process.CurrentFrame;
+
+				Backtrace bt = proc.Process.GetBacktrace ();
+				if (frame >= bt.Count)
+					throw new ScriptingException ("No such frame: {0}", frame);
+
+				return bt [frame];
+			}
+
+			return context.GetFrame (frame);
 		}
 	}
 
@@ -275,13 +289,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ScriptingContext new_context = context.GetExpressionContext ();
-			if (Process > 0)
-				new_context.CurrentProcess = ResolveProcess (new_context);
-			ResolveFrame (new_context);
-			new_context.CurrentFrameIndex = Frame;
-
-			Execute (new_context, expression, format);
+			Execute (context, expression, format);
 		}
 
 		protected abstract void Execute (ScriptingContext context,
@@ -342,13 +350,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ScriptingContext new_context = context.GetExpressionContext ();
-			if (Process > 0)
-				new_context.CurrentProcess = ResolveProcess (new_context);
-			ResolveFrame (new_context);
-			new_context.CurrentFrameIndex = Frame;
-
-			invocation.Invoke (new_context, true);
+			invocation.Invoke (context, true);
 		}
 
 		// IDocumentableCommand
@@ -408,33 +410,11 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } } 
 	}
 
-	public class PrintFrameCommand : ProcessCommand, IDocumentableCommand
+	public class PrintFrameCommand : FrameCommand, IDocumentableCommand
 	{
-		int index = -1;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if (Argument == "")
-				return true;
-
-			try {
-				index = (int) UInt32.Parse (Argument);
-			} catch {
-				context.Print ("Frame number expected.");
-				return false;
-			}
-
-			return true;
-		}
-
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
-			context.ResetCurrentSourceCode ();
-
-			if (index >= 0)
-				process.CurrentFrameIndex = index;
-			StackFrame frame = process.CurrentFrame;
+			StackFrame frame = ResolveFrame (context);
 
 			if (context.Interpreter.IsScript)
 				context.Print (frame);
@@ -496,7 +476,7 @@ namespace Mono.Debugger.Frontend
 	
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
+			ProcessHandle process = context.CurrentProcess;
 
 			if (do_method) {
 				Method method = frame.Method;
@@ -862,8 +842,10 @@ namespace Mono.Debugger.Frontend
 		{
 			ProcessHandle process = ResolveProcess (context);
 
-			int current_idx = process.CurrentFrameIndex;
-			Backtrace backtrace = process.GetBacktrace (max_frames);
+			int current_idx = context.CurrentFrameIndex;
+			if (current_idx < 0)
+				current_idx = 0;
+			Backtrace backtrace = process.Process.GetBacktrace (max_frames);
 			context.ResetCurrentSourceCode ();
 
 			for (int i = 0; i < backtrace.Count; i++) {
@@ -904,10 +886,11 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
-
-			process.CurrentFrameIndex += increment;
-			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
+			if (context.CurrentFrameIndex < 0)
+				context.CurrentFrameIndex = increment;
+			else
+				context.CurrentFrameIndex += increment;
+			context.Interpreter.Style.PrintFrame (context, context.CurrentFrame);
 		}
 
 		// IDocumentableCommand
@@ -942,10 +925,12 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
-
-			process.CurrentFrameIndex -= decrement;
-			context.Interpreter.Style.PrintFrame (context, process.CurrentFrame);
+			context.CurrentFrameIndex -= decrement;
+			if (context.CurrentFrameIndex < 0) {
+				context.CurrentFrameIndex = -1;
+				throw new ScriptingException ("Cannot go down any further.");
+			}
+			context.Interpreter.Style.PrintFrame (context, context.CurrentFrame);
 		}
 
 		// IDocumentableCommand
@@ -1263,7 +1248,7 @@ namespace Mono.Debugger.Frontend
 			{
 				StackFrame frame = ResolveFrame (context);
 
-				Architecture arch = ResolveProcess (context).Process.Architecture;
+				Architecture arch = frame.Process.Architecture;
 				context.Print (arch.PrintRegisters (frame));
 			}
 		}
@@ -1901,7 +1886,7 @@ namespace Mono.Debugger.Frontend
 			if (process_id > 0) {
 				process = context.Interpreter.GetProcess (process_id);
 				if (group == null)
-					tgroup = process.ThreadGroup;
+					tgroup = process.Process.ThreadGroup;
 			} else
 				process = context.CurrentProcess;
 
@@ -2057,13 +2042,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ScriptingContext new_context = context.GetExpressionContext ();
-			if (Process > 0)
-				new_context.CurrentProcess = ResolveProcess (new_context);
-			ResolveFrame (new_context);
-			new_context.CurrentFrameIndex = Frame;
-
-			object retval = expression.Evaluate (new_context);
+			object retval = expression.Evaluate (context);
 			switch (mode) {
 			case "object":
 				context.Dump (retval);
@@ -2243,16 +2222,9 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ScriptingContext new_context = context.GetExpressionContext ();
-			if (Process > 0)
-				new_context.CurrentProcess = ResolveProcess (new_context);
-			ResolveFrame (new_context);
-			new_context.CurrentFrameIndex = Frame;
-
 			TargetAddress address = pexpr.EvaluateAddress (context);
-			ProcessHandle process = new_context.CurrentProcess;
 
-			Symbol symbol = process.Process.SimpleLookup (address, false);
+			Symbol symbol = context.CurrentProcess.Process.SimpleLookup (address, false);
 			if (symbol == null)
 				context.Print ("No method contains address {0}.", address);
 			else

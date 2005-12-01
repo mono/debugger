@@ -1243,9 +1243,12 @@ namespace Mono.Debugger.Frontend
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			StackFrame frame = context.CurrentFrame;
-			register = context.CurrentProcess.GetRegisterIndex (name);
+			Register register = frame.Registers [name];
+			if (register == null)
+				throw new ScriptingException ("No such register `{0}'.", name);
+
 			try {
-				long value = frame.GetRegister (register);
+				long value = register.Value;
 				TargetAddress address = new TargetAddress (
 					context.AddressDomain, value);
 				return context.CurrentLanguage.CreatePointer (frame, address);
@@ -1272,8 +1275,12 @@ namespace Mono.Debugger.Frontend
 			StackFrame frame = context.CurrentFrame;
 			object obj = fobj.GetObject (frame.TargetAccess);
 			long value = System.Convert.ToInt64 (obj);
-			register = context.CurrentProcess.GetRegisterIndex (name);
-			frame.SetRegister (register, value);
+
+			Register register = frame.Registers [name];
+			if (register == null)
+				throw new ScriptingException ("No such register `{0}'.", name);
+
+			register.WriteRegister (frame.TargetAccess, value);
 			return true;
 		}
 	}

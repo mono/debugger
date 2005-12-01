@@ -19,12 +19,9 @@ namespace Mono.Debugger.Frontend
 	{
 		DebuggerClient client;
 		Interpreter interpreter;
-		ThreadGroup tgroup;
 		Process process;
 		string name;
 		int id;
-
-		Hashtable registers;
 
 		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
 				      Process process)
@@ -34,8 +31,6 @@ namespace Mono.Debugger.Frontend
 			this.process = process;
 			this.name = process.Name;
 			this.id = process.ID;
-
-			initialize ();
 		}
 
 		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
@@ -45,10 +40,8 @@ namespace Mono.Debugger.Frontend
 			if (process.HasTarget) {
 				if (!process.IsDaemon) {
 					StackFrame frame = process.CurrentFrame;
-					current_frame = frame;
 					interpreter.Print ("{0} stopped at {1}.", Name, frame);
-					interpreter.Style.PrintFrame (
-						interpreter.GlobalContext, current_frame);
+					interpreter.Style.PrintFrame (interpreter.GlobalContext, frame);
 				}
 			}
 		}
@@ -61,37 +54,11 @@ namespace Mono.Debugger.Frontend
 			get { return process.TargetAccess; }
 		}
 
-		public ThreadGroup ThreadGroup {
-			get { return tgroup; }
-		}
-
 		public DebuggerClient DebuggerClient {
 			get { return client; }
 		}
 
 		public event ProcessExitedHandler ProcessExitedEvent;
-
-		void initialize ()
-		{
-			registers = new Hashtable ();
-			Architecture arch = process.Architecture;
-
-			string[] reg_names = arch.RegisterNames;
-			int[] reg_indices = arch.AllRegisterIndices;
-
-			for (int i = 0; i < reg_names.Length; i++) {
-				string register = reg_names [i];
-
-				registers.Add (register, reg_indices [i]);
-			}
-
-			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
-			tgroup.AddThread (ID);
-		}
-
-		int current_frame_idx = -1;
-		StackFrame current_frame = null;
-		Backtrace current_backtrace = null;
 
 		protected void ProcessExited ()
 		{
@@ -103,11 +70,6 @@ namespace Mono.Debugger.Frontend
 
 		internal void TargetEvent (TargetEventArgs args)
 		{
-			current_frame = args.Frame;
-
-			current_frame_idx = -1;
-			current_backtrace = null;
-
 			switch (args.Type) {
 			case TargetEventType.TargetExited:
 				if (!process.IsDaemon) {
@@ -151,69 +113,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public int CurrentFrameIndex {
-			get {
-				if (current_frame_idx == -1)
-					return 0;
-
-				return current_frame_idx;
-			}
-
-			set {
-				GetBacktrace (-1);
-				if ((value < 0) || (value >= current_backtrace.Count))
-					throw new ScriptingException ("No such frame.");
-
-				current_frame_idx = value;
-				current_frame = current_backtrace [current_frame_idx];
-			}
-		}
-
-		public Backtrace GetBacktrace (int max_frames)
-		{
-			if (State == TargetState.NO_TARGET)
-				throw new ScriptingException ("No stack.");
-			else if (!process.IsStopped)
-				throw new ScriptingException ("{0} is not stopped.", Name);
-
-			if ((max_frames == -1) && (current_backtrace != null))
-				return current_backtrace;
-
-			current_backtrace = process.GetBacktrace (max_frames);
-
-			if (current_backtrace == null)
-				throw new ScriptingException ("No stack.");
-
-			return current_backtrace;
-		}
-
-		public StackFrame CurrentFrame {
-			get {
-				return GetFrame (current_frame_idx);
-			}
-		}
-
-		public StackFrame GetFrame (int number)
-		{
-			if (State == TargetState.NO_TARGET)
-				throw new ScriptingException ("No stack.");
-			else if (!process.IsStopped)
-				throw new ScriptingException ("{0} is not stopped.", Name);
-
-			if (number == -1) {
-				if (current_frame == null)
-					current_frame = process.CurrentFrame;
-
-				return current_frame;
-			}
-
-			GetBacktrace (-1);
-			if (number >= current_backtrace.Count)
-				throw new ScriptingException ("No such frame: {0}", number);
-
-			return current_backtrace [number];
-		}
-
 		public TargetState State {
 			get {
 				if (process == null)
@@ -223,14 +122,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public int GetRegisterIndex (string name)
-		{
-			if (!registers.Contains (name))
-				throw new ScriptingException ("No such register: %{0}", name);
-
-			return (int) registers [name];
-		}
-		
 		public void Kill ()
 		{
 			process.Kill ();
@@ -372,8 +263,24 @@ namespace Mono.Debugger.Frontend
 
 		public StackFrame CurrentFrame {
 			get {
-				return CurrentProcess.GetFrame (current_frame_idx);
+				return GetFrame (current_frame_idx);
 			}
+		}
+
+		public StackFrame GetFrame (int number)
+		{
+			Process process = CurrentProcess.Process;
+			if (!process.IsStopped)
+				throw new ScriptingException ("Target is not stopped.");
+
+			if (number == -1)
+				return process.CurrentFrame;
+
+			Backtrace bt = process.GetBacktrace ();
+			if (number >= bt.Count)
+				throw new ScriptingException ("No such frame: {0}", number);
+
+			return bt [number];
 		}
 
 		public int CurrentFrameIndex {
