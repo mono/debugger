@@ -188,7 +188,7 @@ namespace Mono.Debugger.Frontend
 			set { process = value; }
 		}
 
-		protected virtual ProcessHandle ResolveProcess (ScriptingContext context)
+		protected virtual Process ResolveProcess (ScriptingContext context)
 		{
 			if (process > 0)
 				return context.Interpreter.GetProcess (process);
@@ -216,11 +216,11 @@ namespace Mono.Debugger.Frontend
 		{
 			context.ResetCurrentSourceCode ();
 			if (process > 0) {
-				ProcessHandle proc = context.Interpreter.GetProcess (process);
+				Process proc = context.Interpreter.GetProcess (process);
 				if (frame < 0)
-					return proc.Process.CurrentFrame;
+					return proc.CurrentFrame;
 
-				Backtrace bt = proc.Process.GetBacktrace ();
+				Backtrace bt = proc.GetBacktrace ();
 				if (frame >= bt.Count)
 					throw new ScriptingException ("No such frame: {0}", frame);
 
@@ -476,7 +476,7 @@ namespace Mono.Debugger.Frontend
 	
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = context.CurrentProcess;
+			Process process = context.CurrentProcess;
 
 			if (do_method) {
 				Method method = frame.Method;
@@ -511,7 +511,7 @@ namespace Mono.Debugger.Frontend
 					return;
 				}
 
-				line = process.Process.DisassembleInstruction (method, address);
+				line = process.DisassembleInstruction (method, address);
 				if (line == null) {
 					context.Error ("Cannot disassemble instruction at " +
 						       "address {0}.", address);
@@ -657,7 +657,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process;
+			Process process;
 			if (index >= 0)
 				process = context.Interpreter.GetProcess (index);
 			else
@@ -681,8 +681,8 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
-			process.Process.Continue (true);
+			Process process = ResolveProcess (context);
+			process.Continue (true);
 		}
 
 		// IDocumentableCommand
@@ -700,10 +700,10 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
-			process.Process.Stop ();
+			Process process = ResolveProcess (context);
+			process.Stop ();
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.DebuggerManager.Wait (process.Process);
+				context.Interpreter.DebuggerManager.Wait (process);
 		}
 
 		// IDocumentableCommand
@@ -716,11 +716,11 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
+			Process process = ResolveProcess (context);
 			context.ResetCurrentSourceCode ();
-			DoStep (context, process.Process);
+			DoStep (context, process);
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.DebuggerManager.Wait (process.Process);
+				context.Interpreter.DebuggerManager.Wait (process);
 
 		}
 
@@ -840,12 +840,12 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
+			Process process = ResolveProcess (context);
 
 			int current_idx = context.CurrentFrameIndex;
 			if (current_idx < 0)
 				current_idx = 0;
-			Backtrace backtrace = process.Process.GetBacktrace (max_frames);
+			Backtrace backtrace = process.GetBacktrace (max_frames);
 			context.ResetCurrentSourceCode ();
 
 			for (int i = 0; i < backtrace.Count; i++) {
@@ -1231,7 +1231,7 @@ namespace Mono.Debugger.Frontend
 					current_id = context.CurrentProcess.ID;
 
 				bool printed_something = false;
-				foreach (ProcessHandle proc in context.Interpreter.Processes) {
+				foreach (Process proc in context.Interpreter.Processes) {
 					string prefix = proc.ID == current_id ? "(*)" : "   ";
 					context.Print ("{0} {1}", prefix, proc);
 					printed_something = true;
@@ -1528,7 +1528,7 @@ namespace Mono.Debugger.Frontend
 		private class ThreadGroupAddCommand : DebuggerCommand
 		{
 			protected string name;
-			protected ProcessHandle[] threads;
+			protected Process[] threads;
 
 			protected override bool DoResolve (ScriptingContext context)
 			{
@@ -1838,7 +1838,7 @@ namespace Mono.Debugger.Frontend
 		string group;
 		int process_id = -1;
 		TargetFunctionType func;
-		ProcessHandle process;
+		Process process;
 		ThreadGroup tgroup;
 
 		public string Group {
@@ -1886,7 +1886,7 @@ namespace Mono.Debugger.Frontend
 			if (process_id > 0) {
 				process = context.Interpreter.GetProcess (process_id);
 				if (group == null)
-					tgroup = process.Process.ThreadGroup;
+					tgroup = process.ThreadGroup;
 			} else
 				process = context.CurrentProcess;
 
@@ -2070,7 +2070,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.LoadLibrary (context.CurrentProcess.Process, Argument);
+			context.LoadLibrary (context.CurrentProcess, Argument);
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -2224,7 +2224,7 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetAddress address = pexpr.EvaluateAddress (context);
 
-			Symbol symbol = context.CurrentProcess.Process.SimpleLookup (address, false);
+			Symbol symbol = context.CurrentProcess.SimpleLookup (address, false);
 			if (symbol == null)
 				context.Print ("No method contains address {0}.", address);
 			else
@@ -2292,11 +2292,11 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			ProcessHandle process = ResolveProcess (context);
+			Process process = ResolveProcess (context);
 			if (Invocation)
-				process.Process.AbortInvocation ();
+				process.AbortInvocation ();
 			else
-				process.Process.Return (true);
+				process.Return (true);
 		}
 
 		// IDocumentableCommand

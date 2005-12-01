@@ -1,5 +1,9 @@
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ScriptingContext.cs (ProcessHandle): Removed.
+
+2005-12-01  Martin Baulig  <martin@ximian.com>
+
 	* frontend/ScriptingContext.cs
 	(ProcessHandle): Removed some more stuff here and get ready to
 	kill it.

@@ -112,10 +112,31 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public override void TargetEvent (TargetAccess target, TargetEventArgs args)
+		public override void TargetEvent (TargetAccess target, Process process,
+						  TargetEventArgs args)
 		{
 			if (args.Frame != null)
 				TargetEvent (target, args.Frame, args);
+
+			switch (args.Type) {
+			case TargetEventType.TargetExited:
+				if (!process.IsDaemon) {
+					if ((int) args.Data == 0)
+						interpreter.Print ("{0} terminated normally.",
+								   process.Name);
+					else
+						interpreter.Print ("{0} exited with exit code {1}.",
+								   process.Name, (int) args.Data);
+				}
+				break;
+
+			case TargetEventType.TargetSignaled:
+				if (!process.IsDaemon) {
+					interpreter.Print ("{0} died with fatal signal {1}.",
+							   process.Name, (int) args.Data);
+				}
+				break;
+			}
 		}
 
 		protected void TargetEvent (TargetAccess target, StackFrame frame,
@@ -745,6 +766,7 @@ namespace Mono.Debugger.Frontend
 		public abstract void UnhandledException (ScriptingContext context, StackFrame frame,
 							 AssemblerLine current_insn);
 
-		public abstract void TargetEvent (TargetAccess target, TargetEventArgs args);
+		public abstract void TargetEvent (TargetAccess target, Process process,
+						  TargetEventArgs args);
 	}
 }

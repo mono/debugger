@@ -13,139 +13,6 @@ using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	public delegate void ProcessExitedHandler (ProcessHandle handle);
-
-	public class ProcessHandle : MarshalByRefObject
-	{
-		DebuggerClient client;
-		Interpreter interpreter;
-		Process process;
-		string name;
-		int id;
-
-		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
-				      Process process)
-		{
-			this.interpreter = interpreter;
-			this.client = client;
-			this.process = process;
-			this.name = process.Name;
-			this.id = process.ID;
-		}
-
-		public ProcessHandle (Interpreter interpreter, DebuggerClient client,
-				      Process process, int pid)
-			: this (interpreter, client, process)
-		{
-			if (process.HasTarget) {
-				if (!process.IsDaemon) {
-					StackFrame frame = process.CurrentFrame;
-					interpreter.Print ("{0} stopped at {1}.", Name, frame);
-					interpreter.Style.PrintFrame (interpreter.GlobalContext, frame);
-				}
-			}
-		}
-
-		public Process Process {
-			get { return process; }
-		}
-
-		public TargetAccess TargetAccess {
-			get { return process.TargetAccess; }
-		}
-
-		public DebuggerClient DebuggerClient {
-			get { return client; }
-		}
-
-		public event ProcessExitedHandler ProcessExitedEvent;
-
-		protected void ProcessExited ()
-		{
-			process = null;
-
-			if (ProcessExitedEvent != null)
-				ProcessExitedEvent (this);
-		}
-
-		internal void TargetEvent (TargetEventArgs args)
-		{
-			switch (args.Type) {
-			case TargetEventType.TargetExited:
-				if (!process.IsDaemon) {
-					if ((int) args.Data == 0)
-						interpreter.Print ("{0} terminated normally.", Name);
-					else
-						interpreter.Print ("{0} exited with exit code {1}.",
-								   id, (int) args.Data);
-				}
-				ProcessExited ();
-				break;
-
-			case TargetEventType.TargetSignaled:
-				if (!process.IsDaemon) {
-					interpreter.Print ("{0} died with fatal signal {1}.",
-							   id, (int) args.Data);
-				}
-				ProcessExited ();
-				break;
-			}
-		}
-
-		public Architecture Architecture {
-			get {
-				if (process.Architecture == null)
-					throw new ScriptingException ("Unknown architecture");
-
-				return process.Architecture;
-			}
-		}
-
-		public int ID {
-			get {
-				return id;
-			}
-		}
-
-		public bool IsAlive {
-			get {
-				return process != null;
-			}
-		}
-
-		public TargetState State {
-			get {
-				if (process == null)
-					return TargetState.NO_TARGET;
-				else
-					return process.State;
-			}
-		}
-
-		public void Kill ()
-		{
-			process.Kill ();
-			process = null;
-			ProcessExited ();
-		}
-
-		public string Name {
-			get {
-				return name;
-			}
-		}
-
-		public override string ToString ()
-		{
-			if (process == null)
-				return String.Format ("Zombie @{0}", id);
-			else if (process.IsDaemon)
-				return String.Format ("Daemon process @{0}: {1} {2}", id, process.PID, State);
-			else
-				return String.Format ("Process @{0}: {1} {2}", id, process.PID, State);
-		}
-	}
-
 	public class ScriptingException : Exception
 	{
 		public ScriptingException (string format, params object[] args)
@@ -173,7 +40,7 @@ namespace Mono.Debugger.Frontend
 
 	public class ScriptingContext : MarshalByRefObject
 	{
-		ProcessHandle current_process;
+		Process current_process;
 		int current_frame_idx = -1;
 		Interpreter interpreter;
 
@@ -229,7 +96,7 @@ namespace Mono.Debugger.Frontend
 			if (current_process == null)
 				throw new ScriptingException ("No program to debug.");
 
-			Debugger backend = current_process.Process.Debugger;
+			Debugger backend = current_process.Debugger;
 			if (backend == null)
 				throw new ScriptingException ("No program to debug.");
 
@@ -250,9 +117,9 @@ namespace Mono.Debugger.Frontend
 			get { return is_synchronous; }
 		}
 
-		public ProcessHandle CurrentProcess {
+		public Process CurrentProcess {
 			get {
-				if ((current_process == null) || !current_process.IsAlive)
+				if (current_process == null)
 					throw new ScriptingException ("No program to debug.");
 
 				return current_process;
@@ -269,7 +136,7 @@ namespace Mono.Debugger.Frontend
 
 		public StackFrame GetFrame (int number)
 		{
-			Process process = CurrentProcess.Process;
+			Process process = CurrentProcess;
 			if (!process.IsStopped)
 				throw new ScriptingException ("Target is not stopped.");
 
@@ -372,7 +239,7 @@ namespace Mono.Debugger.Frontend
 
 		string MonoObjectToString (TargetClassObject obj)
 		{
-			TargetAccess target = CurrentProcess.Process.TargetAccess;
+			TargetAccess target = CurrentProcess.TargetAccess;
 			TargetClassObject cobj = obj;
 
 		again:
@@ -391,7 +258,7 @@ namespace Mono.Debugger.Frontend
 					continue;
 
 				string exc_message;
-				TargetObject retval = CurrentProcess.Process.RuntimeInvoke (
+				TargetObject retval = CurrentProcess.RuntimeInvoke (
 					ftype, obj, new TargetObject [0], true, out exc_message);
 				if ((exc_message != null) || (retval == null))
 					return null;
@@ -418,7 +285,7 @@ namespace Mono.Debugger.Frontend
 				}
 			}
 
-			return CurrentProcess.Process.PrintObject (interpreter.Style, obj, format);
+			return CurrentProcess.PrintObject (interpreter.Style, obj, format);
 		}
 
 		public void PrintObject (object obj, DisplayFormat format)
@@ -429,7 +296,7 @@ namespace Mono.Debugger.Frontend
 					formatted = DoPrintObject ((TargetObject) obj, format);
 				else
 					formatted = interpreter.Style.FormatObject (
-						CurrentProcess.Process.TargetAccess, obj, format);
+						CurrentProcess.TargetAccess, obj, format);
 			} catch {
 				formatted = "<cannot display object>";
 			}
@@ -440,7 +307,7 @@ namespace Mono.Debugger.Frontend
 		{
 			string formatted;
 			try {
-				formatted = CurrentProcess.Process.PrintType (
+				formatted = CurrentProcess.PrintType (
 					interpreter.Style, type);
 			} catch {
 				formatted = "<cannot display type>";

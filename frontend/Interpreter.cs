@@ -23,7 +23,7 @@ namespace Mono.Debugger.Frontend
 
 		ScriptingContext context;
 
-		ProcessHandle main_process;
+		Process main_process;
 		Hashtable procs;
 		Hashtable events;
 
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Frontend
 				if (main_process == null)
 					throw new ScriptingException ("No target.");
 
-				return main_process.Process.TargetMemoryInfo.AddressDomain;
+				return main_process.TargetMemoryInfo.AddressDomain;
 			}
 		}
 
@@ -202,9 +202,9 @@ namespace Mono.Debugger.Frontend
 			set { exit_code = value; }
 		}
 
-		public ProcessHandle[] Processes {
+		public Process[] Processes {
 			get {
-				ProcessHandle[] retval = new ProcessHandle [procs.Count];
+				Process[] retval = new Process [procs.Count];
 				procs.Values.CopyTo (retval, 0);
 				return retval;
 			}
@@ -294,11 +294,11 @@ namespace Mono.Debugger.Frontend
 				Debugger backend = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, backend);
-				new ProcessEventSink (this, backend);
+				new ProcessEventSink (this, client, backend);
 
 				backend.Run (options, argv);
 				Process process = backend.WaitForApplication ();
-				main_process = (ProcessHandle) procs [process.ID];
+				main_process = process;
 
 				start_event.WaitOne ();
 				context.CurrentProcess = main_process;
@@ -318,7 +318,7 @@ namespace Mono.Debugger.Frontend
 				Debugger backend = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, backend);
-				new ProcessEventSink (this, backend);
+				new ProcessEventSink (this, client, backend);
 
 				backend.Run (null, argv);
 				Process process = backend.WaitForApplication ();
@@ -333,12 +333,12 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void ThreadCreated (ProcessHandle handle)
+		protected void ThreadCreated (Process process)
 		{
-			procs.Add (handle.Process.ID, handle);
+			procs.Add (process.ID, process);
 
 			if (initialized)
-				Print ("New process @{0}", handle.Process.ID);
+				Print ("New process @{0}", process.ID);
 		}
 
 		protected void DebuggerInitialized ()
@@ -390,13 +390,13 @@ namespace Mono.Debugger.Frontend
 			return handle;
 		}
 
-		public void DeleteEvent (ProcessHandle process, IEventHandle handle)
+		public void DeleteEvent (Process process, IEventHandle handle)
 		{
 			handle.Remove (process.TargetAccess);
 			events.Remove (handle.Breakpoint.Index);
 		}
 
-		protected void ProcessExited (DebuggerClient client, ProcessHandle process)
+		protected void ProcessExited (DebuggerClient client, Process process)
 		{
 			procs.Remove (process.ID);
 			if (process == main_process) {
@@ -410,12 +410,13 @@ namespace Mono.Debugger.Frontend
 			if (client != null) {
 				manager.TargetExited (client);
 
-				foreach (ProcessHandle proc in Processes) {
-					if (proc.DebuggerClient == client)
+				foreach (Process proc in Processes) {
+					if (proc.Debugger == client.DebuggerServer)
 						procs.Remove (proc.ID);
 				}
 
-				if ((main_process != null) && (main_process.DebuggerClient == client)) {
+				if ((main_process != null) &&
+				    (main_process.Debugger == client.DebuggerServer)) {
 					main_process = null;
 					context.CurrentProcess = null;
 				}
@@ -429,21 +430,21 @@ namespace Mono.Debugger.Frontend
 			initialized = false;
 		}
 
-		public ProcessHandle GetProcess (int number)
+		public Process GetProcess (int number)
 		{
 			if (number == -1)
 				return context.CurrentProcess;
 
-			foreach (ProcessHandle proc in Processes)
+			foreach (Process proc in Processes)
 				if (proc.ID == number)
 					return proc;
 
 			throw new ScriptingException ("No such process: {0}", number);
 		}
 
-		public ProcessHandle[] GetProcesses (int[] indices)
+		public Process[] GetProcesses (int[] indices)
 		{
-			ProcessHandle[] retval = new ProcessHandle [indices.Length];
+			Process[] retval = new Process [indices.Length];
 
 			for (int i = 0; i < indices.Length; i++)
 				retval [i] = GetProcess (indices [i]);
@@ -498,28 +499,28 @@ namespace Mono.Debugger.Frontend
 			return group;
 		}
 
-		public void AddToThreadGroup (string name, ProcessHandle[] threads)
+		public void AddToThreadGroup (string name, Process[] threads)
 		{
 			ThreadGroup group = GetThreadGroup (name, true);
 
-			foreach (ProcessHandle process in threads)
-				group.AddThread (process.Process.ID);
+			foreach (Process process in threads)
+				group.AddThread (process.ID);
 		}
 
-		public void RemoveFromThreadGroup (string name, ProcessHandle[] threads)
+		public void RemoveFromThreadGroup (string name, Process[] threads)
 		{
 			ThreadGroup group = GetThreadGroup (name, true);
 	
-			foreach (ProcessHandle process in threads)
-				group.RemoveThread (process.Process.ID);
+			foreach (Process process in threads)
+				group.RemoveThread (process.ID);
 		}
 
-		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
+		public int InsertBreakpoint (Process thread, ThreadGroup group,
 					     SourceLocation location)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
-			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
+			EventHandle handle = thread.Debugger.InsertBreakpoint (
 				thread.TargetAccess, breakpoint, location);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
@@ -529,12 +530,12 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public int InsertBreakpoint (ProcessHandle thread, ThreadGroup group,
+		public int InsertBreakpoint (Process thread, ThreadGroup group,
 					     TargetFunctionType func)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 
-			EventHandle handle = thread.Process.Debugger.InsertBreakpoint (
+			EventHandle handle = thread.Debugger.InsertBreakpoint (
 				thread.TargetAccess, breakpoint, func);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
@@ -544,7 +545,7 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public int InsertExceptionCatchPoint (Language language, ProcessHandle thread,
+		public int InsertExceptionCatchPoint (Language language, Process thread,
 						      ThreadGroup group, TargetType exception)
 		{
 			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);
@@ -584,10 +585,8 @@ namespace Mono.Debugger.Frontend
 
 			public void thread_created (Debugger debugger, Process process)
 			{
-				ProcessHandle handle = new ProcessHandle (interpreter, client, process);
-				handle.ProcessExitedEvent += new ProcessExitedHandler (process_exited);
-				handle.Process.TargetOutput += new TargetOutputHandler (target_output);
-				interpreter.ThreadCreated (handle);
+				process.TargetOutput += new TargetOutputHandler (target_output);
+				interpreter.ThreadCreated (process);
 			}
 
 			public void debugger_initialized (Debugger debugger, Process process)
@@ -598,11 +597,6 @@ namespace Mono.Debugger.Frontend
 			public void target_exited ()
 			{
 				interpreter.TargetExited (client);
-			}
-
-			public void process_exited (ProcessHandle process)
-			{
-				interpreter.ProcessExited (client, process);
 			}
 
 			public void target_output (bool is_stderr, string line)
@@ -618,20 +612,24 @@ namespace Mono.Debugger.Frontend
 		protected class ProcessEventSink
 		{
 			Interpreter interpreter;
+			DebuggerClient client;
 
-			public ProcessEventSink (Interpreter interpreter, Debugger debugger)
+			public ProcessEventSink (Interpreter interpreter, DebuggerClient client,
+						 Debugger debugger)
 			{
 				this.interpreter = interpreter;
+				this.client = client;
 
 				debugger.TargetEvent += new TargetEventHandler (target_event);
 			}
 
 			public void target_event (TargetAccess target, TargetEventArgs args)
 			{
-				ProcessHandle proc = (ProcessHandle) interpreter.procs [target.ID];
-
-				interpreter.Style.TargetEvent (target, args);
-				proc.TargetEvent (args);
+				Process process = (Process) interpreter.procs [target.ID];
+				interpreter.Style.TargetEvent (target, process, args);
+				if ((args.Type == TargetEventType.TargetExited) ||
+				    (args.Type == TargetEventType.TargetSignaled))
+					interpreter.ProcessExited (client, process);
 			}
 		}
 	}
