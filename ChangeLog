@@ -1,5 +1,15 @@
 2005-12-03  Martin Baulig  <martin@ximian.com>
 
+	* classes/ProcessStart.cs: Moved to ../backends/ProcessStart.cs;
+	moved the `ProcessStart' class into the `Mono.Debugger.Backends'
+	namespace; moved the `DebuggerOptions' class into the new
+	DebuggerSession.cs.
+
+	* classes/DebuggerSession.cs: New file.
+	(DebuggerOptions): Moved here from ProcessStart.cs.
+
+2005-12-03  Martin Baulig  <martin@ximian.com>
+
 	* classes/ProcessStart.cs
 	(ProcessStart): Make this class internal.
 	(DebuggerOptions): We're now [Serializable] and not a
