@@ -534,15 +534,13 @@ namespace Mono.Debugger.Frontend
 
 		public string GetFullPath (string filename)
 		{
-			Debugger backend = GetDebugger ();
-
 			if (Path.IsPathRooted (filename))
 				return filename;
 
 			string path = GetFullPathByFilename (filename);
 			if (path == null)
 				path = String.Concat (
-					backend.ProcessStart.BaseDirectory, DirectorySeparatorStr,
+					interpreter.Options.WorkingDirectory, DirectorySeparatorStr,
 					filename);
 
 			return path;

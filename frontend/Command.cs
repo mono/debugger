@@ -2238,29 +2238,6 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class ServerCommand : DebuggerCommand, IDocumentableCommand
-	{
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			if (Args == null)
-				throw new ScriptingException ("No executable file specified.");
-
-			return true;
-		}
-
-		protected override void DoExecute (ScriptingContext context)
-		{
-			string[] cmd_args = (string []) Args.ToArray (typeof (string));
-
-			context.Interpreter.StartServer (cmd_args);
-		}
-
-		// IDocumentableCommand
-		public CommandFamily Family { get { return CommandFamily.Running; } }
-		public string Description { get { return "Start background server."; } }
-		public string Documentation { get { return ""; } }
-	}
-
 	public class ReturnCommand : ProcessCommand
 	{
 		bool unconfirmed;

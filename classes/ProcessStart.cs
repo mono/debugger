@@ -6,7 +6,8 @@ using System.Collections.Specialized;
 
 namespace Mono.Debugger
 {
-	public class DebuggerOptions : MarshalByRefObject
+	[Serializable]
+	public class DebuggerOptions
 	{
 		/* The executable file we're debugging */
 		public string File = "";
@@ -34,14 +35,12 @@ namespace Mono.Debugger
 		/* true if we want to start the application immediately */
 		public bool StartTarget = false;
 	  
-		/* the value of the -debug-flags: command line
-		 * argument */
+		/* the value of the -debug-flags: command line argument */
 		public bool HasDebugFlags = false;
 		public DebugFlags DebugFlags = DebugFlags.None;
 		public string DebugOutput = null;
 
-		/* true if -f/-fullname is specified on the command
-		 * line */
+		/* true if -f/-fullname is specified on the command line */
 		public bool InEmacs = false;
 
 		/* non-null if the user specified the -mono-prefix
@@ -52,13 +51,13 @@ namespace Mono.Debugger
 		public string RemoteMono = null;
 	}
 
-	public class ProcessStart : MarshalByRefObject
+	internal sealed class ProcessStart : MarshalByRefObject
 	{
-		public string WorkingDirectory;
-		public string[] UserArguments;
-		public string[] UserEnvironment;
-		public bool IsNative;
-		public bool LoadNativeSymbolTable = true;
+		public readonly string[] UserArguments;
+		public readonly string[] UserEnvironment;
+		public readonly bool IsNative;
+		public readonly bool LoadNativeSymbolTable = true;
+		public readonly string WorkingDirectory;
 
 		string base_dir;
 		string[] argv;
@@ -108,20 +107,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected ProcessStart (DebuggerOptions the_options, string[] argv)
+		internal ProcessStart (DebuggerOptions options)
 		{
-			if (the_options == null)
-				options = new DebuggerOptions ();
-			else
-				options = the_options;
-
-			if ((argv == null) || (argv.Length == 0))
+			if (options == null)
+				throw new ArgumentException ();
+			if ((options.File == null) || (options.File == ""))
 				throw new ArgumentException ();
 
-			this.UserArguments = argv;
+			this.options = options;
+			this.UserArguments = options.InferiorArgs;
 			this.WorkingDirectory = options.WorkingDirectory;
 
-			if (IsMonoAssembly (argv [0])) {
+			if (IsMonoAssembly (UserArguments [0])) {
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
@@ -129,17 +126,19 @@ namespace Mono.Debugger
 					JitWrapper, options.JitOptimizations
 				};
 
-				this.argv = new string [argv.Length + start_argv.Length];
+				this.argv = new string [UserArguments.Length + start_argv.Length];
 				start_argv.CopyTo (this.argv, 0);
-				argv.CopyTo (this.argv, start_argv.Length);
+				UserArguments.CopyTo (this.argv, start_argv.Length);
 			} else {
 				LoadNativeSymbolTable = true;
 				IsNative = true;
 
-				this.argv = argv;
+				this.argv = UserArguments;
 			}
 
-			DoSetup ();
+			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
+
+			SetupEnvironment ();
 		}
 
 		public DebuggerOptions Options {
@@ -187,7 +186,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected virtual void SetupEnvironment ()
+		protected void SetupEnvironment ()
 		{
 			Hashtable hash = new Hashtable ();
 			if (UserEnvironment != null)
@@ -224,11 +223,6 @@ namespace Mono.Debugger
 			list.CopyTo (envp, 0);
 		}
 
-		protected virtual void SetupBaseDirectory ()
-		{
-			if (base_dir == null)
-				base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
-		}
 
 		protected string GetFullPath (string path)
 		{
@@ -243,41 +237,6 @@ namespace Mono.Debugger
 			if (full_path.EndsWith ("/."))
 				full_path = full_path.Substring (0, full_path.Length-2);
 			return full_path;
-		}
-
-		protected virtual string[] SetupArguments ()
-		{
-			if ((argv == null) || (argv.Length < 1))
-				throw new Exception ("Invalid command line arguments");
-			return argv;
-		}
-
-		protected virtual void DoSetup ()
-		{
-			SetupEnvironment ();
-			SetupArguments ();
-			SetupBaseDirectory ();
-		}
-
-		internal static ProcessStart Create (DebuggerOptions options)
-		{
-			if (options.File == null || options.File == "")
-				return null;
-
-			string[] args = new string[1 + (options.InferiorArgs == null ? 0 : options.InferiorArgs.Length)];
-
-			args[0] = options.File;
-			options.InferiorArgs.CopyTo (args, 1);
-
-			return new ProcessStart (options, args);
-		}
-
-		internal static ProcessStart Create (DebuggerOptions options, string[] argv)
-		{
-			if (argv.Length == 0)
-				return null;
-
-			return new ProcessStart (options, argv);
 		}
 
 		protected string print_argv (string[] argv)

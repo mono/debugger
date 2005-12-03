@@ -276,17 +276,8 @@ namespace Mono.Debugger.Frontend
 			if (main_process != null)
 				throw new ScriptingException ("Process already started.");
 
-			string[] argv;
-			if (options.InferiorArgs == null)
-				argv = new string [1];
-			else {
-				argv = new string [options.InferiorArgs.Length + 1];
-				options.InferiorArgs.CopyTo (argv, 1);
-			}
-
-			argv[0] = options.File;
-
-			Console.WriteLine ("Starting program: {0}", String.Join (" ", argv));
+			Console.WriteLine ("Starting program: {0}",
+					   String.Join (" ", options.InferiorArgs));
 
 			try {
 				DebuggerClient client;
@@ -296,35 +287,13 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, client, backend);
 				new ProcessEventSink (this, client, backend);
 
-				backend.Run (options, argv);
+				backend.Run (options);
 				Process process = backend.WaitForApplication ();
 				main_process = process;
 
 				start_event.WaitOne ();
 				context.CurrentProcess = main_process;
 				manager.Wait (process);
-
-				return process;
-			} catch (TargetException e) {
-				Kill ();
-				throw new ScriptingException (e.Message);
-			}
-		}
-
-		public Process StartServer (string[] argv)
-		{
-			try {
-				DebuggerClient client = manager.Run (null, null);
-				Debugger backend = client.DebuggerServer;
-
-				new InterpreterEventSink (this, client, backend);
-				new ProcessEventSink (this, client, backend);
-
-				backend.Run (null, argv);
-				Process process = backend.WaitForApplication ();
-				Print ("Server started: @{0}", process.ID);
-				process.Continue (true);
-				process.Wait ();
 
 				return process;
 			} catch (TargetException e) {

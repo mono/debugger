@@ -73,7 +73,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ProcessStart ProcessStart {
+		internal ProcessStart ProcessStart {
 			get {
 				return start;
 			}
@@ -104,19 +104,18 @@ namespace Mono.Debugger
 		public event ModulesChangedHandler ModulesChangedEvent;
 		public event BreakpointsChangedHandler BreakpointsChangedEvent;
 
-		public ProcessStart Run (DebuggerOptions options, string[] argv)
+		public void Run (DebuggerOptions options)
 		{
 			check_disposed ();
 
 			if (thread_manager.HasTarget)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			start = ProcessStart.Create (options, argv);
+			start = new ProcessStart (options);
 
 			module_manager.Lock ();
 
 			thread_manager.StartApplication (start);
-			return start;
 		}
 
 		public Process WaitForApplication ()

@@ -1,3 +1,10 @@
+2005-12-03  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs
+	(ProcessStart): Make this class internal.
+	(DebuggerOptions): We're now [Serializable] and not a
+	MarshalByRefObject anymore.	
+
 2005-12-01  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ScriptingContext.cs (ProcessHandle): Removed.

@@ -110,7 +110,6 @@ namespace Mono.Debugger.Frontend
 			e.RegisterAlias   ("r", typeof (RunCommand));
 			e.RegisterCommand ("about", typeof (AboutCommand));
 			e.RegisterCommand ("lookup", typeof (LookupCommand));
-			e.RegisterCommand ("server", typeof (ServerCommand));
 			e.RegisterCommand ("return", typeof (ReturnCommand));
 
 			return e;
@@ -366,37 +365,37 @@ namespace Mono.Debugger.Frontend
 			int i;
 			bool parsing_options = true;
 			bool args_follow = false;
-			string[] inferior_args = null;
 
-			for (i = 0; i < args.Length; i ++) {
+			for (i = 0; i < args.Length; i++) {
 				string arg = args[i];
 
 				if (arg == "")
 					continue;
 
-				if (parsing_options) {
+				if (!parsing_options)
+					continue;
 
-					if (arg.StartsWith ("-")) {
-						if (ParseOption (options, arg, ref args, ref i, ref args_follow))
-							continue;
-					}
-					else if (arg.StartsWith ("/")) {
-						string unix_opt = "-" + arg.Substring (1);
-						if (ParseOption (options, unix_opt, ref args, ref i, ref args_follow))
-							continue;
-					}
-
-					options.File = arg;
-					break;
+				if (arg.StartsWith ("-")) {
+					if (ParseOption (options, arg, ref args, ref i, ref args_follow))
+						continue;
+				} else if (arg.StartsWith ("/")) {
+					string unix_opt = "-" + arg.Substring (1);
+					if (ParseOption (options, unix_opt, ref args, ref i, ref args_follow))
+						continue;
 				}
+
+				options.File = arg;
+				break;
 			}
 
 			if (args_follow) {
-				inferior_args = new string [args.Length - i - 1];
-				Array.Copy (args, i + 1, inferior_args, 0, args.Length - i - 1);
+				string[] argv = new string [args.Length - i];
+				Array.Copy (args, i, argv, 0, args.Length - i);
+				options.InferiorArgs = argv;
+			} else {
+				options.InferiorArgs = new string [1];
+				options.InferiorArgs [0] = options.File;
 			}
-
-			options.InferiorArgs = inferior_args;
 
 			return options;
 		}
