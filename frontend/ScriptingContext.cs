@@ -519,7 +519,7 @@ namespace Mono.Debugger.Frontend
 					if (!module.SymbolsLoaded)
 						continue;
 
-					foreach (SourceFile source in module.SymbolFile.Sources) {
+					foreach (SourceFile source in module.Sources) {
 						if (filename.Equals (source.Name))
 							return source.FileName;
 					}
@@ -622,7 +622,7 @@ namespace Mono.Debugger.Frontend
 					if (!module.SymbolsLoaded)
 						continue;
 
-					foreach (SourceFile source in module.SymbolFile.Sources)
+					foreach (SourceFile source in module.Sources)
 						source_hash.Add (source.ID, source);
 				}
 
@@ -711,7 +711,7 @@ namespace Mono.Debugger.Frontend
 
 			Print ("Sources for module {0}:", module.Name);
 
-			foreach (SourceFile source in module.SymbolFile.Sources)
+			foreach (SourceFile source in module.Sources)
 				Print ("{0,4}  {1}", source.ID, source.FileName);
 		}
 

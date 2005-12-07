@@ -1,73 +1,107 @@
 using System;
+using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
+using Mono.Debugger.Languages;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public class CatchpointHandle : IEventHandle
+	public class CatchpointHandle : EventHandle
 	{
-		Breakpoint breakpoint;
-		int event_id;
+		TargetType exception;
+		bool enabled;
 
-		private CatchpointHandle (TargetAccess target, Breakpoint breakpoint)
+		internal CatchpointHandle (TargetAccess target, ThreadGroup group,
+					   TargetType exception)
+			: base (group, exception.Name)
 		{
-			this.breakpoint = breakpoint;
+			this.exception = exception;
 
 			Enable (target);
 		}
 
-		public static CatchpointHandle Create (TargetAccess target, Breakpoint breakpoint)
-		{
-			return new CatchpointHandle (target, breakpoint);
+		public override bool IsEnabled {
+			get { return enabled; }
 		}
 
-#region IEventHandle
-		public Breakpoint Breakpoint {
-			get { return breakpoint; }
-		}
-
-		public bool IsEnabled {
-			get { return (event_id > 0); }
-		}
-
-		public void Enable (TargetAccess target)
+		public override void Enable (TargetAccess target)
 		{
 			lock (this) {
 				EnableCatchpoint (target);
 			}
 		}
 
-		public void Disable (TargetAccess target)
+		public override void Disable (TargetAccess target)
 		{
 			lock (this) {
 				DisableCatchpoint (target);
 			}
 		}
 
-		public void Remove (TargetAccess target)
+		public override void Remove (TargetAccess target)
 		{
 			Disable (target);
 		}
-#endregion
 
 		void EnableCatchpoint (TargetAccess target)
 		{
 			lock (this) {
-				if (event_id > 0)
+				if (enabled)
 					return;
 
-				event_id = target.AddEventHandler (EventType.CatchException, breakpoint);
+				target.AddEventHandler (EventType.CatchException, this);
+				enabled = true;
 			}
 		}
 
 		void DisableCatchpoint (TargetAccess target)
 		{
 			lock (this) {
-				if (event_id > 0)
-					target.RemoveEventHandler (event_id);
+				if (enabled)
+					target.RemoveEventHandler (Index);
 
-				event_id = -1;
+				enabled = false;
 			}
+		}
+
+		bool IsSubclassOf (TargetClassType type, TargetType parent)
+		{
+			while (type != null) {
+				if (type == parent)
+					return true;
+
+				if (!type.HasParent)
+					return false;
+
+				type = type.ParentType;
+			}
+
+			return false;
+		}
+
+		public override bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
+		{
+			TargetClassObject exc = exception.Language.CreateObject (target, address)
+				as TargetClassObject;
+			if (exc == null)
+				return false; // OOOPS
+
+			return IsSubclassOf (exc.Type, exception);
+		}
+
+		protected override void GetSessionData (SerializationInfo info)
+		{
+			base.GetSessionData (info);
+			info.AddValue ("exception", exception.Name);
+		}
+
+		protected override void SetSessionData (SerializationInfo info, DebuggerClient client)
+		{
+			base.SetSessionData (info, client);
+
+			Language language = client.DebuggerServer.MonoLanguage;
+			exception = language.LookupType (info.GetString ("exception"));
 		}
 	}
 }

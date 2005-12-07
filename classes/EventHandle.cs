@@ -1,34 +1,67 @@
 using System;
+using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public abstract class EventHandle : MarshalByRefObject, IEventHandle
+	public enum EventType
 	{
-		protected readonly Breakpoint breakpoint;
+		CatchException
+	}
 
-		protected EventHandle (Breakpoint breakpoint)
+	public abstract class EventHandle : MarshalByRefObject
+	{
+		private ThreadGroup group;
+		private int index;
+		private string name;
+
+		protected static int NextBreakpointIndex = 0;
+
+		protected EventHandle (ThreadGroup group, string name)
 		{
-			this.breakpoint = breakpoint;
+			this.group = group;
+			this.name = name;
+			this.index = ++NextBreakpointIndex;
 		}
 
-		public static EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
-							    SourceLocation location)
-		{
-			return new BreakpointHandle (target, bpt, location);
+		// <summary>
+		//   The breakpoint's name.  This property has no meaning at all for the
+		//   backend, it's just something which can be displayed to the user to
+		//   help him indentify this breakpoint.
+		// </summary>
+		public string Name {
+			get { return name; }
 		}
 
-		public static EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
-							    TargetFunctionType func)
-		{
-			return new BreakpointHandle (target, bpt, func);
+		// <summary>
+		//   An automatically generated unique index for this breakpoint.
+		// </summary>
+		public int Index {
+			get { return index; }
 		}
 
-#region IEventHandle
-		public Breakpoint Breakpoint {
-			get { return breakpoint; }
+		// <summary>
+		//   The ThreadGroup in which this breakpoint "breaks".
+		//   If null, then it breaks in all threads.
+		// </summary>
+		public ThreadGroup ThreadGroup {
+			get { return group; }
+		}
+
+		public bool Breaks (int id)
+		{
+			if ((group == null) || group.IsGlobal)
+				return true;
+
+			foreach (int thread in group.Threads) {
+				if (thread == id)
+					return true;
+			}
+
+			return false;
 		}
 
 		public abstract bool IsEnabled {
@@ -40,6 +73,40 @@ namespace Mono.Debugger
 		public abstract void Disable (TargetAccess target);
 
 		public abstract void Remove (TargetAccess target);
-#endregion
+
+		public abstract bool CheckBreakpointHit (TargetAccess target,
+							 TargetAddress address);
+
+		protected virtual void GetSessionData (SerializationInfo info)
+		{
+			info.AddValue ("group", group);
+			info.AddValue ("name", name);
+		}
+
+		protected virtual void SetSessionData (SerializationInfo info, DebuggerClient client)
+		{
+			index = ++NextBreakpointIndex;
+			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
+			name = info.GetString ("name");
+		}
+
+		protected internal class SessionSurrogate : ISerializationSurrogate
+		{
+			public virtual void GetObjectData (object obj, SerializationInfo info,
+							   StreamingContext context)
+			{
+				EventHandle handle = (EventHandle) obj;
+				handle.GetSessionData (info);
+			}
+
+			public object SetObjectData (object obj, SerializationInfo info,
+						     StreamingContext context,
+						     ISurrogateSelector selector)
+			{
+				EventHandle handle = (EventHandle) obj;
+				handle.SetSessionData (info, (DebuggerClient) context.Context);
+				return handle;
+			}
+		}
 	}
 }

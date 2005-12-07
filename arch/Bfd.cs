@@ -11,10 +11,10 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : Module, ISymbolContainer, ILanguageBackend,
-		IDisposable
+	internal class Bfd : SymbolFile, ISymbolContainer, ILanguageBackend, IDisposable
 	{
 		IntPtr bfd;
+		protected Module module;
 		protected BfdContainer container;
 		protected Debugger backend;
 		protected ITargetMemoryInfo info;
@@ -167,7 +167,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public Bfd (BfdContainer container, ITargetMemoryInfo info, string filename,
-			    Bfd main_bfd, TargetAddress base_address, bool step_into, bool is_loaded)
+			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
 		{
 			this.container = container;
 			this.info = info;
@@ -175,7 +175,6 @@ namespace Mono.Debugger.Backends
 			this.base_address = base_address;
 			this.backend = container.Debugger;
 			this.main_bfd = main_bfd;
-			this.StepInto = step_into;
 			this.is_loaded = is_loaded;
 
 			load_handlers = new Hashtable ();
@@ -230,9 +229,13 @@ namespace Mono.Debugger.Backends
 
 			entry_point = this ["main"];
 
-			backend.ModuleManager.AddModule (this);
-
-			OnModuleChangedEvent ();
+			module = backend.ModuleManager.GetModule (filename);
+			if (module == null) {
+				module = new Module (filename, this);
+				backend.ModuleManager.AddModule (module);
+			} else {
+				module.LoadModule (this);
+			}
 		}
 
 		void read_bfd_symbols ()
@@ -412,7 +415,7 @@ namespace Mono.Debugger.Backends
 					continue;
 				}
 
-				bfd = container.AddFile (target, name, l_addr, StepInto, true);
+				bfd = container.AddFile (target, name, l_addr, module.StepInto, true);
 				bfd.module_loaded (inferior, l_addr);
 			}
 		}
@@ -437,7 +440,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override Debugger Debugger {
+		public Debugger Debugger {
 			get {
 				return backend;
 			}
@@ -477,7 +480,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override string Name {
+		public string Name {
+			get {
+				return filename;
+			}
+		}
+
+		public override string FullName {
 			get {
 				return filename;
 			}
@@ -530,13 +539,37 @@ namespace Mono.Debugger.Backends
 			get { return (dwarf != null); }
 		}
 
-		public override ISymbolFile SymbolFile {
+		public override SourceFile[] Sources {
 			get {
 				if (dwarf != null)
-					return dwarf;
-				else
-					return null;
+					return dwarf.Sources;
+
+				throw new InvalidOperationException ();
 			}
+		}
+
+		public override SourceMethod[] GetMethods (SourceFile file)
+		{
+			if (dwarf != null)
+				return dwarf.GetMethods (file);
+
+			throw new InvalidOperationException ();
+		}
+
+		public override Method GetMethod (long handle)
+		{
+			if (dwarf != null)
+				return dwarf.GetMethod (handle);
+
+			throw new InvalidOperationException ();
+		}
+
+		public override SourceMethod FindMethod (string name)
+		{
+			if (dwarf != null)
+				return dwarf.FindMethod (name);
+
+			return null;
 		}
 
 		public override ISymbolTable SymbolTable {
@@ -598,7 +631,7 @@ namespace Mono.Debugger.Backends
 				return;
 
 			try {
-				dwarf = new DwarfReader (this, this, backend.SourceFileFactory);
+				dwarf = new DwarfReader (this, module, backend.SourceFileFactory);
 			} catch (Exception ex) {
 				Console.WriteLine ("Cannot read DWARF debugging info from " +
 						   "symbol file `{0}': {1}", FileName, ex);
@@ -610,7 +643,7 @@ namespace Mono.Debugger.Backends
 
 			if (dwarf != null) {
 				has_debugging_info = true;
-				OnSymbolsLoadedEvent ();
+				module.OnSymbolsLoadedEvent ();
 			}
 		}
 
@@ -625,19 +658,17 @@ namespace Mono.Debugger.Backends
 			dwarf_loaded = false;
 			if (dwarf != null) {
 				dwarf = null;
-				OnSymbolsUnLoadedEvent ();
+				module.OnSymbolsUnLoadedEvent ();
 			}
 		}
 
-		protected override void OnModuleChangedEvent ()
+		internal override void OnModuleChanged ()
 		{
-			if (LoadSymbols) {
+			if (module.LoadSymbols) {
 				load_dwarf ();
 			} else {
 				unload_dwarf ();
 			}
-
-			base.OnModuleChangedEvent ();
 		}
 
 		internal BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
@@ -825,7 +856,7 @@ namespace Mono.Debugger.Backends
 
 		public Module Module {
 			get {
-				return this;
+				return module;
 			}
 		}
 
@@ -835,7 +866,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override bool IsLoaded {
+		public bool IsLoaded {
 			get {
 				return (main_bfd == null) || is_loaded || !base_address.IsNull;
 			}
@@ -946,8 +977,7 @@ namespace Mono.Debugger.Backends
 			return memory.ReadAddress (got_start + 2 * memory.TargetAddressSize);
 		}
 
-		internal override StackFrame UnwindStack (StackFrame frame,
-							  ITargetMemoryAccess memory)
+		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory)
 		{
 			if ((frame.TargetAddress < StartAddress) || (frame.TargetAddress > EndAddress))
 				return null;
@@ -1032,7 +1062,7 @@ namespace Mono.Debugger.Backends
 				dwarf.ModuleLoaded ();
 
 				has_debugging_info = true;
-				OnSymbolsLoadedEvent ();
+				module.OnSymbolsLoadedEvent ();
 			}
 
 			foreach (LoadHandlerData data in load_handlers.Keys)

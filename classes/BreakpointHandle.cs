@@ -1,21 +1,30 @@
 using System;
+using System.Runtime.Serialization;
 
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public class BreakpointHandle : EventHandle
+	public sealed class BreakpointHandle : EventHandle
 	{
+		Breakpoint breakpoint;
 		SourceLocation location;
 		TargetFunctionType function;
 		TargetAddress address = TargetAddress.Null;
 		int breakpoint_id = -1;
 		IDisposable load_handler;
 
+		private BreakpointHandle (Breakpoint breakpoint)
+			: base (breakpoint.ThreadGroup, breakpoint.Name)
+		{
+			this.breakpoint = breakpoint;
+		}
+
 		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
 					   SourceLocation location)
-			: base (breakpoint)
+			: this (breakpoint)
 		{
 			this.location = location;
 
@@ -26,7 +35,7 @@ namespace Mono.Debugger
 
 		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
 					   TargetFunctionType func)
-			: base (breakpoint)
+			: this (breakpoint)
 		{
 			this.function = func;
 
@@ -34,7 +43,7 @@ namespace Mono.Debugger
 		}
 
 		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)
-			: base (breakpoint)
+			: this (breakpoint)
 		{
 			this.address = address;
 		}
@@ -64,6 +73,11 @@ namespace Mono.Debugger
 				load_handler = null;
 			}
 			Disable (target);
+		}
+
+		public override bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
+		{
+			return breakpoint.CheckBreakpointHit (target, address);
 		}
 
 		void EnableBreakpoint (TargetAccess target)
@@ -129,6 +143,35 @@ namespace Mono.Debugger
 
 		public TargetAddress Address {
 			get { return address; }
+		}
+
+		protected override void GetSessionData (SerializationInfo info)
+		{
+			base.GetSessionData (info);
+			info.AddValue ("breakpoint", breakpoint);
+			if (location != null) {
+				info.AddValue ("type", "location");
+				info.AddValue ("location", location);
+			} else {
+				info.AddValue ("type", "function");
+				info.AddValue ("function", function.Name);
+			}
+		}
+
+		protected override void SetSessionData (SerializationInfo info, DebuggerClient client)
+		{
+			base.SetSessionData (info, client);
+			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
+
+			string type = info.GetString ("type");
+			if (type == "location")
+				location = (SourceLocation) info.GetValue (
+					"location", typeof (SourceLocation));
+			else if (type == "function") {
+				Language language = client.DebuggerServer.MonoLanguage;
+				string funcname = info.GetString ("function");
+				function = (TargetFunctionType) language.LookupType (funcname);
+			}
 		}
 	}
 }

@@ -3,13 +3,64 @@ using System.IO;
 using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
 	public delegate void ModuleEventHandler (Module module);
+
+	internal abstract class SymbolFile : MarshalByRefObject
+	{
+		public abstract string FullName {
+			get;
+		}
+
+		public abstract Language Language {
+			get;
+		}
+
+		internal abstract ILanguageBackend LanguageBackend {
+			get;
+		}
+
+		public abstract bool SymbolsLoaded {
+			get;
+		}
+
+		public abstract bool HasDebuggingInfo {
+			get;
+		}
+
+		public abstract SourceFile[] Sources {
+			get;
+		}
+
+		public abstract SourceMethod[] GetMethods (SourceFile file);
+
+		public abstract Method GetMethod (long handle);
+
+		public abstract SourceMethod FindMethod (string name);
+
+		public abstract Symbol SimpleLookup (TargetAddress address, bool exact_match);
+
+		public abstract ISymbolTable SymbolTable {
+			get;
+		}
+
+		internal abstract IDisposable RegisterLoadHandler (TargetAccess target,
+								   SourceMethod method,
+								   MethodLoadedHandler handler,
+								   object user_data);
+
+		internal abstract StackFrame UnwindStack (StackFrame last_frame,
+							  ITargetMemoryAccess memory);
+
+		internal abstract void OnModuleChanged ();
+	}
 
 	// <summary>
 	//   A module is either a shared library (containing unmanaged code) or a dll
@@ -18,34 +69,59 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public abstract class Module : MarshalByRefObject
+	public class Module : MarshalByRefObject
 	{
+		string name;
+		[NonSerialized]
+		SymbolFile symfile;
 		bool load_symbols;
 		bool step_into;
+		int id;
+		static int next_id;
 
-		internal Module ()
+		internal Module (string name)
 		{
+			this.name = name;
+			this.id = ++next_id;
+
 			load_symbols = true;
 			step_into = true;
 		}
 
-		public abstract Language Language {
-			get;
+		internal Module (string name, SymbolFile symfile)
+			: this (name)
+		{
+			this.symfile = symfile;
 		}
 
-		public abstract Debugger Debugger {
-			get;
+		internal void LoadModule (SymbolFile symfile)
+		{
+			this.symfile = symfile;
+			OnModuleChanged ();
 		}
 
-		internal abstract ILanguageBackend LanguageBackend {
-			get;
+		public Language Language {
+			get { return SymbolFile.Language; }
+		}
+
+		internal ILanguageBackend LanguageBackend {
+			get { return SymbolFile.LanguageBackend; }
+		}
+
+		internal SymbolFile SymbolFile {
+			get {
+				if (symfile != null)
+					return symfile;
+
+				throw new InvalidOperationException ();
+			}
 		}
 
 		// <summary>
 		//   This is the name which should be displayed to the user.
 		// </summary>
-		public abstract string Name {
-			get;
+		public string Name {
+			get { return name; }
 		}
 
 		// <summary>
@@ -55,24 +131,24 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if IsLoaded was false.
 		// </summary>
-		public virtual string FullName {
+		public string FullName {
 			get {
-				return Name;
+				return SymbolFile.FullName;
 			}
 		}
 
 		// <summary>
 		//   Whether the module is currently loaded in memory.
 		// </summary>
-		public virtual bool IsLoaded {
-			get { return true; }
+		public bool IsLoaded {
+			get { return symfile != null; }
 		}
 
 		// <summary>
 		//   Whether the module's symbol tables are currently loaded.
 		// </summary>
-		public abstract bool SymbolsLoaded {
-			get;
+		public bool SymbolsLoaded {
+			get { return IsLoaded && SymbolFile.SymbolsLoaded; }
 		}
 
 		// <summary>
@@ -97,7 +173,7 @@ namespace Mono.Debugger
 					return;
 
 				load_symbols = value;
-				OnModuleChangedEvent ();
+				OnModuleChanged ();
 			}
 		}
 
@@ -123,7 +199,7 @@ namespace Mono.Debugger
 					return;
 
 				step_into = value;
-				OnModuleChangedEvent ();
+				OnModuleChanged ();
 			}
 		}
 
@@ -132,8 +208,8 @@ namespace Mono.Debugger
 		//   Note that this property is initialized when trying to read the debugging
 		//   info for the first time.
 		// </summary>
-		public abstract bool HasDebuggingInfo {
-			get;
+		public bool HasDebuggingInfo {
+			get { return SymbolFile.HasDebuggingInfo; }
 		}
 
 		// <summary>
@@ -147,33 +223,27 @@ namespace Mono.Debugger
 		public event ModuleEventHandler SymbolsUnLoadedEvent;
 
 		// <summary>
-		//   This event is emitted when any other changes are made, such as
-		//   modifying the LoadModules or StepInto properties.
-		// </summary>
-		public event ModuleEventHandler ModuleChangedEvent;
-
-		// <summary>
 		//   This event is emitted when adding or removing a breakpoint or
 		//   enabling/disabling a breakpoint.
 		// </summary>
 		public event ModuleEventHandler BreakpointsChangedEvent;
 
-		protected virtual void OnSymbolsLoadedEvent ()
+		internal void OnSymbolsLoadedEvent ()
 		{
 			if (SymbolsLoadedEvent != null)
 				SymbolsLoadedEvent (this);
 		}
 
-		protected virtual void OnSymbolsUnLoadedEvent ()
+		internal void OnSymbolsUnLoadedEvent ()
 		{
 			if (SymbolsUnLoadedEvent != null)
 				SymbolsUnLoadedEvent (this);
 		}
 
-		protected virtual void OnModuleChangedEvent ()
+		protected void OnModuleChanged ()
 		{
-			if (ModuleChangedEvent != null)
-				ModuleChangedEvent (this);
+			if (symfile != null)
+				symfile.OnModuleChanged ();
 		}
 
 		protected internal virtual void OnBreakpointsChangedEvent ()
@@ -182,19 +252,26 @@ namespace Mono.Debugger
 				BreakpointsChangedEvent (this);
 		}
 
-		public abstract ISymbolFile SymbolFile {
-			get;
+		public SourceFile[] Sources {
+			get { return SymbolFile.Sources; }
+		}
+
+		public SourceMethod[] GetMethods (SourceFile file)
+		{
+			return SymbolFile.GetMethods (file);
+		}
+
+		public Method GetMethod (long handle)
+		{
+			return SymbolFile.GetMethod (handle);
 		}
 
 		// <summary>
 		//   Find method @name, which must be a full method name including the
 		//   signature (System.DateTime.GetUtcOffset(System.DateTime)).
 		// </summary>
-		public virtual SourceMethod FindMethod (string name)
+		public SourceMethod FindMethod (string name)
 		{
-			if (!SymbolsLoaded)
-				return null;
-
 			return SymbolFile.FindMethod (name);
 		}
 
@@ -207,7 +284,7 @@ namespace Mono.Debugger
 			if (!SymbolsLoaded)
 				return null;
 
-			foreach (SourceFile source in SymbolFile.Sources) {
+			foreach (SourceFile source in Sources) {
 				if (source.FileName != source_file)
 					continue;
 
@@ -217,7 +294,10 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public abstract Symbol SimpleLookup (TargetAddress address, bool exact_match);
+		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		{
+			return SymbolFile.SimpleLookup (address, exact_match);
+		}
 
 		// <summary>
 		//   Returns the module's ISymbolTable which can be used to find a method
@@ -226,8 +306,8 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - if @SymbolsLoaded was false
 		// </summary>
-		public abstract ISymbolTable SymbolTable {
-			get;
+		public ISymbolTable SymbolTable {
+			get { return SymbolFile.SymbolTable; }
 		}
 
 		// <summary>
@@ -245,19 +325,56 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
-		internal abstract IDisposable RegisterLoadHandler (TargetAccess target,
-								   SourceMethod method,
-								   MethodLoadedHandler handler,
-								   object user_data);
+		internal IDisposable RegisterLoadHandler (TargetAccess target,
+							  SourceMethod method,
+							  MethodLoadedHandler handler,
+							  object user_data)
+		{
+			return SymbolFile.RegisterLoadHandler (target, method, handler, user_data);
+		}
 
-		internal abstract StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory);
+		internal StackFrame UnwindStack (StackFrame last_frame,
+						 ITargetMemoryAccess memory)
+		{
+			return SymbolFile.UnwindStack (last_frame, memory);
+		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",
-					      GetType (), Name, IsLoaded, SymbolsLoaded, StepInto,
+			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5}:{6})",
+					      GetType (), id, Name, IsLoaded, SymbolsLoaded, StepInto,
 					      LoadSymbols);
+		}
+
+		internal sealed class SessionSurrogate : ISerializationSurrogate
+		{
+			public void GetObjectData (object obj, SerializationInfo info,
+						   StreamingContext context)
+			{
+				Module module = (Module) obj;
+
+				info.AddValue ("type", module.GetType ().Name);
+				info.AddValue ("name", module.Name);
+				info.AddValue ("load-symbols", module.LoadSymbols);
+				info.AddValue ("step-into", module.StepInto);
+			}
+
+			public object SetObjectData (object obj, SerializationInfo info,
+						     StreamingContext context,
+						     ISurrogateSelector selector)
+			{
+				DebuggerClient client = (DebuggerClient) context.Context;
+				ModuleManager manager = client.DebuggerServer.ModuleManager;
+
+				string name = info.GetString ("name");
+				Module module = manager.CreateModule (name);
+
+				module.name = info.GetString ("name");
+				module.load_symbols = info.GetBoolean ("load-symbols");
+				module.step_into = info.GetBoolean ("step-into");
+
+				return module;
+			}
 		}
 	}
 }

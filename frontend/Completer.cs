@@ -238,57 +238,31 @@ namespace Mono.Debugger.Frontend
 				Module[] modules = de.Interpreter.GlobalContext.Modules;
 
 				foreach (Module module in modules) {
-					if (module.SymbolFile == null) {
-						// use the module's symbol table and
-						// symbol ranges to add methods
+					if (!module.SymbolsLoaded || !module.SymbolTable.HasMethods)
+						continue;
 
-						if (!module.SymbolsLoaded || !module.SymbolTable.HasMethods) {
-							continue;
-						}
+					SourceFile[] sources = module.Sources;
+					if (sources == null)
+						continue;
 
-						foreach (ISymbolRange range in module.SymbolTable.SymbolRanges) {
-							Method method = range.SymbolLookup.Lookup (range.StartAddress);
-							if (method != null) {
-								if (method.Name.StartsWith (text)) {
+					foreach (SourceFile sf in sources) {
+						foreach (SourceMethod method in sf.Methods) {
+							if (method.Name.StartsWith (text)) {
+								int parameter_start = method.Name.IndexOf ('(');
+								if (parameter_start != -1)
+									method_list.Add (method.Name.Substring (0, parameter_start));
+								else
 									method_list.Add (method.Name);
-								}
-								if (namespaces != null) {
-									foreach (string n in namespaces) {
-										if (n != "" && method.Name.StartsWith (String.Concat (n, ".", text)))
-											method_list.Add (method.Name.Substring (n.Length + 1));
-									}
-								}
 							}
-						}
-					}
-					else {
-						// use the module's source
-						// files to add methods.
-						// there has to be a more
-						// efficient way to do this...
-						if (module.SymbolFile.Sources == null) {
-							continue;
-						}
-
-						foreach (SourceFile sf in module.SymbolFile.Sources) {
-							foreach (SourceMethod method in sf.Methods) {
-								if (method.Name.StartsWith (text)) {
-									int parameter_start = method.Name.IndexOf ('(');
-									if (parameter_start != -1)
-										method_list.Add (method.Name.Substring (0, parameter_start));
-									else
-										method_list.Add (method.Name);
-								}
-								if (namespaces != null) {
-									foreach (string n in namespaces) {
-										if (n != "" && method.Name.StartsWith (String.Concat (n, ".", text))) {
-											int parameter_start = method.Name.IndexOf ('(');
-											if (parameter_start != -1)
-												method_list.Add (method.Name.Substring (n.Length + 1,
-																	parameter_start - n.Length - 1));
-											else
-												method_list.Add (method.Name.Substring (n.Length + 1));
-										}
+							if (namespaces != null) {
+								foreach (string n in namespaces) {
+									if (n != "" && method.Name.StartsWith (String.Concat (n, ".", text))) {
+										int parameter_start = method.Name.IndexOf ('(');
+										if (parameter_start != -1)
+											method_list.Add (method.Name.Substring (n.Length + 1,
+																parameter_start - n.Length - 1));
+										else
+											method_list.Add (method.Name.Substring (n.Length + 1));
 									}
 								}
 							}

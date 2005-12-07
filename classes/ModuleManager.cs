@@ -13,19 +13,33 @@ namespace Mono.Debugger
 	{
 		Hashtable modules = new Hashtable ();
 
-		public ModuleManager ()
+		internal ModuleManager ()
 		{
+		}
+
+		public Module GetModule (string name)
+		{
+			return (Module) modules [name];
 		}
 
 		public void AddModule (Module module)
 		{
 			modules.Add (module.Name, module);
 
-			module.SymbolsLoadedEvent += new ModuleEventHandler (module_changed);
-			module.SymbolsUnLoadedEvent += new ModuleEventHandler (module_changed);
-			module.BreakpointsChangedEvent += new ModuleEventHandler (breakpoints_changed);
+			new ModuleEventSink (this, module);
 
 			module_changed (module);
+		}
+
+		internal Module CreateModule (string name)
+		{
+			Module module = (Module) modules [name];
+			if (module != null)
+				return module;
+
+			module = new Module (name);
+			modules.Add (name, module);
+			return module;
 		}
 
 		public event ModulesChangedHandler ModulesChanged;
@@ -93,6 +107,31 @@ namespace Mono.Debugger
 
 			if (BreakpointsChanged != null)
 				BreakpointsChanged ();
+		}
+
+		[Serializable]
+		protected class ModuleEventSink
+		{
+			public readonly ModuleManager Manager;
+
+			public ModuleEventSink (ModuleManager manager, Module module)
+			{
+				this.Manager = manager;
+
+				module.SymbolsLoadedEvent += OnModuleChanged;
+				module.SymbolsUnLoadedEvent += OnModuleChanged;
+				module.BreakpointsChangedEvent += OnBreakpointsChanged;
+			}
+
+			public void OnModuleChanged (Module module)
+			{
+				Manager.module_changed (module);
+			}
+
+			public void OnBreakpointsChanged (Module module)
+			{
+				Manager.breakpoints_changed (module);
+			}
 		}
 	}
 }

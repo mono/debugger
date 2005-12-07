@@ -75,7 +75,7 @@ namespace Mono.Debugger.Backends
 		//   This is invoked after compiling a trampoline - it returns whether or
 		//   not we should enter that trampoline.
 		// </summary>
-		internal delegate bool TrampolineHandler (Method method);
+		internal delegate bool TrampolineHandler (SingleSteppingEngine sse, Method method);
 
 		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
 		{
@@ -802,12 +802,12 @@ namespace Mono.Debugger.Backends
 			if (current_operation is OperationRuntimeInvoke)
 				return false;
 
-			foreach (Breakpoint bpt in exception_handlers.Values) {
+			foreach (EventHandle handle in exception_handlers.Values) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",
-					      this, bpt, exc);
+					      this, handle.Name, exc);
 
-				if (!bpt.CheckBreakpointHit (target_access, exc))
+				if (!handle.CheckBreakpointHit (target_access, exc))
 					continue;
 
 				Report.Debug (DebugFlags.SSE,
@@ -1084,7 +1084,7 @@ namespace Mono.Debugger.Backends
 			return;
 		}
 
-		protected static bool MethodHasSource (Method method)
+		protected bool MethodHasSource (Method method)
 		{
 			if (method == null)
 				return false;
@@ -1096,7 +1096,7 @@ namespace Mono.Debugger.Backends
 			if ((source == null) || source.IsDynamic)
 				return false;
 
-			SourceFileFactory factory = method.Module.Debugger.SourceFileFactory;
+			SourceFileFactory factory = manager.Debugger.SourceFileFactory;
 			if (!factory.Exists (source.SourceFile.FileName))
 				return false;
 
@@ -1466,14 +1466,12 @@ namespace Mono.Debugger.Backends
 			return StartOperation (new OperationInsertBreakpoint (breakpoint, func));
 		}
 
-		public int AddEventHandler (EventType type, Breakpoint breakpoint)
+		public void AddEventHandler (EventType type, EventHandle handle)
 		{
 			if (type != EventType.CatchException)
 				throw new InternalError ();
 
-			int id = ++next_exception_handler_id;
-			exception_handlers.Add (id, breakpoint);
-			return id;
+			exception_handlers.Add (handle.Index, handle);
 		}
 
 		public void RemoveEventHandler (int index)
@@ -1636,8 +1634,6 @@ namespace Mono.Debugger.Backends
 		public readonly int ID;
 		public readonly int PID;
 		public readonly int TID;
-
-		static int next_exception_handler_id = 0;
 
 		int stepping_over_breakpoint;
 
@@ -1986,7 +1982,7 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		protected abstract bool TrampolineHandler (Method method);
+		protected abstract bool TrampolineHandler (SingleSteppingEngine sse, Method method);
 	}
 
 	protected class OperationStep : OperationStepBase
@@ -2092,7 +2088,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		protected override bool TrampolineHandler (Method method)
+		protected override bool TrampolineHandler (SingleSteppingEngine sse, Method method)
 		{
 			if (method == null)
 				return false;
@@ -2101,7 +2097,7 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			if (StepMode == StepMode.SourceLine)
-				return SingleSteppingEngine.MethodHasSource (method);
+				return sse.MethodHasSource (method);
 
 			return true;
 		}
@@ -2182,7 +2178,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			if (!SingleSteppingEngine.MethodHasSource (method)) {
+			if (!sse.MethodHasSource (method)) {
 				sse.do_next_native ();
 				return false;
 			}
@@ -2330,7 +2326,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		protected override bool TrampolineHandler (Method method)
+		protected override bool TrampolineHandler (SingleSteppingEngine sse, Method method)
 		{
 			return false;
 		}
@@ -2835,10 +2831,9 @@ namespace Mono.Debugger.Backends
 				      "{0} compiled method: {1} {2} {3} {4} {5}",
 				      sse, address, method,
 				      method != null ? method.Module : null,
-				      SingleSteppingEngine.MethodHasSource (method),
-				      TrampolineHandler);
+				      sse.MethodHasSource (method), TrampolineHandler);
 
-			if ((TrampolineHandler != null) && !TrampolineHandler (method)) {
+			if ((TrampolineHandler != null) && !TrampolineHandler (sse, method)) {
 				sse.do_next_native ();
 				return false;
 			}
@@ -2990,7 +2985,7 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		protected override bool TrampolineHandler (Method method)
+		protected override bool TrampolineHandler (SingleSteppingEngine sse, Method method)
 		{
 			if (method == null)
 				return false;
@@ -2998,7 +2993,7 @@ namespace Mono.Debugger.Backends
 			if (method.WrapperType == WrapperType.DelegateInvoke)
 				return true;
 
-			return SingleSteppingEngine.MethodHasSource (method);
+			return sse.MethodHasSource (method);
 		}
 	}
 

@@ -173,7 +173,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			Cecil.ITypeReference type =
-				(Cecil.ITypeReference) file.Module.LookupByToken (token);
+				(Cecil.ITypeReference) file.ModuleDefinition.LookupByToken (token);
 			if (type == null)
 				return null;
 

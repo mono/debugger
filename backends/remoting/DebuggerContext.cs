@@ -30,6 +30,10 @@ namespace Mono.Debugger.Remoting
 			get { return CurrentContext.ThreadManager; }
 		}
 
+		internal static DebuggerManager DebuggerManager {
+			get { return CurrentContext.DebuggerManager; }
+		}
+
 		public static ReportWriter ReportWriter {
 			get { return CurrentContext.ReportWriter; }
 		}
@@ -42,6 +46,10 @@ namespace Mono.Debugger.Remoting
 		protected abstract class DebuggerContextBase
 		{
 			internal abstract ThreadManager ThreadManager {
+				get;
+			}
+
+			internal abstract DebuggerManager DebuggerManager {
 				get;
 			}
 
@@ -65,6 +73,10 @@ namespace Mono.Debugger.Remoting
 
 			internal override ThreadManager ThreadManager {
 				get { throw new InvalidOperationException (); }
+			}
+
+			internal override DebuggerManager DebuggerManager {
+				get { return manager; }
 			}
 
 			public override ReportWriter ReportWriter {
@@ -91,6 +103,10 @@ namespace Mono.Debugger.Remoting
 
 			internal override ThreadManager ThreadManager {
 				get { return backend.ThreadManager; }
+			}
+
+			internal override DebuggerManager DebuggerManager {
+				get { return backend.DebuggerManager; }
 			}
 
 			public override ReportWriter ReportWriter {

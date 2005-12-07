@@ -73,12 +73,13 @@ proc mdb_expect_prompt { } {
 		incr count
 	    }
 	    timeout {
-		break
+		perror "(timeout) Mono Debugger hanging or not displaying command prompt."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger hanging or not displaying command prompt."
-    return -1
+    exit 1
 }
 
 proc mdb_send {command} {
@@ -149,7 +150,7 @@ proc mdb_expect_frame {index func file line} {
 	}
 	timeout {
 	    perror "(timeout) Mono Debugger not responding to `frame' command."
-	    return
+	    exit 1
 	}
     }
     mdb_expect_prompt
@@ -169,7 +170,7 @@ proc mdb_expect_backtrace_frame {index func file line} {
 	}
 	timeout {
 	    perror "(timeout) Mono Debugger not responding to `frame' command."
-	    return
+	    exit 1
 	}
     }
     return
@@ -205,12 +206,13 @@ proc mdb_expect_stopped {index func file line} {
 		incr count
 	    }
 	    timeout {
-		break
+		perror "(timeout) Mono Debugger not responding to `frame' command."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger not responding to `frame' command."
-    return
+    exit 1
 }
 
 proc mdb_expect_hit_breakpoint {index func bpt_index file line} {
@@ -249,12 +251,13 @@ proc mdb_expect_hit_breakpoint {index func bpt_index file line} {
 		incr count
 	    }
 	    timeout {
-		break
+		perror "(timeout) Mono Debugger not responding to `frame' command."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger not responding to `frame' command."
-    return
+    exit 1
 }
 
 proc mdb_expect_breakpoint {} {
@@ -281,12 +284,13 @@ proc mdb_expect_breakpoint {} {
 		incr count
 	    }
 	    timeout {
-		break
+		perror "(timeout) Mono Debugger is not inserting breakpoint."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger is not inserting breakpoint."
-    return -1
+    exit 1
 }
 
 proc mdb_expect_catchpoint {} {
@@ -313,12 +317,13 @@ proc mdb_expect_catchpoint {} {
 		incr count
 	    }
 	    timeout {
-		break
+		perror "(timeout) Mono Debugger is not inserting catchpoint."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger is not inserting catchpoint."
-    return -1
+    exit 1
 }
 
 proc mdb_expect_exception {index func file line} {
@@ -351,12 +356,13 @@ proc mdb_expect_exception {index func file line} {
 		incr count
 	    }
 	    timeout {
-		break
+		perror "(timeout) Mono Debugger not responding to `frame' command."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger not responding to `frame' command."
-    return
+    exit 1
 }
 
 proc mdb_expect_process {} {
@@ -377,12 +383,13 @@ proc mdb_expect_process {} {
 		fail "Received `$line' when waiting for a new process"
 		incr count
 	    } timeout {
-		break
+		perror "(timeout) Mono Debugger is not responding."
+		exit 1
 	    }
 	}
     }
     perror "(timeout) Mono Debugger is not responding."
-    return -1
+    exit 1
 }
 
 proc mdb_expect_line {text} {

@@ -111,6 +111,8 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("about", typeof (AboutCommand));
 			e.RegisterCommand ("lookup", typeof (LookupCommand));
 			e.RegisterCommand ("return", typeof (ReturnCommand));
+			e.RegisterCommand ("save", typeof (SaveCommand));
+			e.RegisterCommand ("load", typeof (LoadCommand));
 
 			return e;
 		}
@@ -148,7 +150,7 @@ namespace Mono.Debugger.Frontend
 		{
 			command_thread.Start ();
 
-			if (options.StartTarget)
+			if (Options.StartTarget)
 				Start ();
 
 			main_thread.Start ();

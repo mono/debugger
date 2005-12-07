@@ -11,6 +11,8 @@ namespace Mono.Debugger.Remoting
 {
 	public class DebuggerClient : MarshalByRefObject
 	{
+		public const bool IsRemote = true;
+
 		static DebuggerChannel channel;
 		static Hashtable connections = Hashtable.Synchronized (new Hashtable ());
 
@@ -49,27 +51,27 @@ namespace Mono.Debugger.Remoting
 			if (path == null)
 				path = "";
 
-#if FIXME
-			connection = Connect (host, path);
-			object[] url = { new UrlAttribute (connection.URL) };
-			object[] args = { manager, this };
-			server = (DebuggerServer) Activator.CreateInstance (
-				typeof (DebuggerServer), args, url);
+			if (IsRemote) {
+				connection = Connect (host, path);
+				object[] url = { new UrlAttribute (connection.URL) };
+				object[] args = { manager, this };
+				server = (DebuggerServer) Activator.CreateInstance (
+					typeof (DebuggerServer), args, url);
 
-			backend = server;
+				backend = server;
 
-			lease = (ILease) server.GetLifetimeService ();
-			sponsor = new Sponsor ();
-			lease.Register (sponsor);
-#else
-			object[] args = { manager, this };
-			AppDomain domain = AppDomain.CreateDomain ("mdb");
-			server = (DebuggerServer) domain.CreateInstanceAndUnwrap (
-				"Mono.Debugger", "Mono.Debugger.Remoting.DebuggerServer",
-				false, 0, null, args, null, null, null);
+				lease = (ILease) server.GetLifetimeService ();
+				sponsor = new Sponsor ();
+				lease.Register (sponsor);
+			} else {
+				object[] args = { manager, this };
+				AppDomain domain = AppDomain.CreateDomain ("mdb");
+				server = (DebuggerServer) domain.CreateInstanceAndUnwrap (
+					"Mono.Debugger", "Mono.Debugger.Remoting.DebuggerServer",
+					false, 0, null, args, null, null, null);
 
-			backend = server;
-#endif
+				backend = server;
+			}
 		}
 
 		public int ID {
@@ -118,6 +120,10 @@ namespace Mono.Debugger.Remoting
 			connection.ConnectionClosedEvent += new ConnectionHandler (connection_closed);
 			connections.Add (channel_uri, connection);
 			return connection;
+		}
+
+		public DebuggerManager DebuggerManager {
+			get { return manager; }
 		}
 
 		public DebuggerServer DebuggerServer {

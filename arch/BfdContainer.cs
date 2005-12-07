@@ -51,8 +51,7 @@ namespace Mono.Debugger.Backends
 			if (bfd != null)
 				return bfd;
 
-			bfd = new Bfd (this, memory, filename, main_bfd, base_address,
-				       step_info, is_loaded);
+			bfd = new Bfd (this, memory, filename, main_bfd, base_address, is_loaded);
 
 			bfd_hash.Add (filename, bfd);
 

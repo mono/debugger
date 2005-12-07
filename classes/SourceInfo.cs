@@ -12,7 +12,8 @@ namespace Mono.Debugger
 	//   A single source file.  It is used to find a breakpoint's location by method
 	//   name or source file.
 	// </summary>
-	public class SourceFile : MarshalByRefObject
+	[Serializable]
+	public class SourceFile
 	{
 		public string Name {
 			get {
@@ -41,11 +42,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void AddMethod (SourceMethod method)
-		{
-			methods.Add (method);
-		}
-
 		// <summary>
 		//   Returns a list of SourceMethod's which is sorted by source lines.
 		//   It is used when inserting a breakpoint by source line to find the
@@ -53,16 +49,13 @@ namespace Mono.Debugger
 		// </summary>
 		public SourceMethod[] Methods {
 			get {
-				module.SymbolFile.GetMethods (this);
-				SourceMethod[] retval = new SourceMethod [methods.Count];
-				methods.CopyTo (retval, 0);
-				return retval;
+				return module.GetMethods (this);
 			}
 		}
 
 		public SourceLocation FindLine (int line)
 		{
-			module.SymbolFile.GetMethods (this);
+			SourceMethod[] methods = module.GetMethods (this);
 			foreach (SourceMethod method in methods) {
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return new SourceLocation (method, line);
@@ -76,13 +69,11 @@ namespace Mono.Debugger
 			this.id = ++next_id;
 			this.module = module;
 			this.filename = filename;
-			this.methods = new ArrayList ();
 		}
 
 		string filename;
 		Module module;
 		int id;
-		ArrayList methods;
 		static int next_id = 0;
 
 		public override string ToString ()
@@ -98,7 +89,8 @@ namespace Mono.Debugger
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.
 	// </summary>
-	public class SourceMethod : MarshalByRefObject
+	[Serializable]
+	public class SourceMethod
 	{
 		public long Handle {
 			get {
@@ -136,11 +128,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool IsLoaded {
 			get {
-				if (method != null)
-					return true;
-
-				method = module.SymbolFile.GetMethod (handle);
-				return method != null;
+				return module.GetMethod (handle) != null;
 			}
 		}
 
@@ -152,7 +140,8 @@ namespace Mono.Debugger
 		// </summary>
 		public Method Method {
 			get {
-				if (!IsLoaded)
+				Method method = module.GetMethod (handle);
+				if (method == null)
 					throw new InvalidOperationException ();
 
 				return method;
@@ -175,11 +164,12 @@ namespace Mono.Debugger
 
 		public TargetAddress Lookup (int SourceLine)
 		{
-			if (!IsLoaded)
+			Method method = module.GetMethod (handle);
+			if (method == null)
 				throw new InvalidOperationException ();
 
-			if (Method.HasSource)
-				return Method.Source.Lookup (SourceLine);
+			if (method.HasSource)
+				return method.Source.Lookup (SourceLine);
 			else
 				return TargetAddress.Null;
 		}
@@ -190,7 +180,6 @@ namespace Mono.Debugger
 					      StartRow, EndRow, IsLoaded);
 		}
 
-		Method method;
 		Module module;
 		SourceFile source;
 		string name;
@@ -209,8 +198,6 @@ namespace Mono.Debugger
 			this.start_row = start;
 			this.end_row = end;
 			this.is_dynamic = is_dynamic;
-
-			source.AddMethod (this);
 		}
 	}
 }

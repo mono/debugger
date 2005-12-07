@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -17,10 +18,6 @@ namespace Mono.Debugger
 
 		public SimpleBreakpoint (string name, ThreadGroup group)
 			: base (name, group)
-		{ }
-
-		public SimpleBreakpoint (string name)
-			: this (name, ThreadGroup.Global)
 		{ }
 
 		BreakpointCheckHandler check_handler;

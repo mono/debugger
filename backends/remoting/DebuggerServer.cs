@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Reflection;
 using System.Runtime.Remoting;
 using System.Runtime.Remoting.Channels;
@@ -15,6 +16,7 @@ namespace Mono.Debugger.Remoting
 	{
 		static DebuggerChannel channel;
 		DebuggerClient client;
+		DebuggerSession session;
 
 		public static void Run (string url)
 		{
@@ -37,6 +39,21 @@ namespace Mono.Debugger.Remoting
 			: base (manager)
 		{
 			this.client = client;
+			this.session = new DebuggerSession (client);
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
+		}
+
+		public DebuggerSession LoadSession (Stream stream)
+		{
+			try {
+				session = DebuggerSession.Load (client, stream);
+			} catch (Exception ex) {
+				Console.WriteLine ("EX: {0}", ex);
+			}
+			return session;
 		}
 
 		protected override void DebuggerExited ()

@@ -3,6 +3,12 @@ using System.IO;
 using System.Configuration;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+
+using Mono.Debugger.Languages;
+using Mono.Debugger.Backends;
+using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
@@ -49,5 +55,161 @@ namespace Mono.Debugger
 
 		public string RemoteHost = null;
 		public string RemoteMono = null;
+	}
+
+	public class DebuggerSession : MarshalByRefObject
+	{
+		public readonly DebuggerClient Client;
+
+		Hashtable events = Hashtable.Synchronized (new Hashtable ());
+
+		internal DebuggerSession (DebuggerClient client)
+		{
+			this.Client = client;
+		}
+
+		protected DebuggerSession (DebuggerClient client, EventHandle[] event_list)
+			: this (client)
+		{
+			foreach (EventHandle handle in event_list)
+				events.Add (handle.Index, handle);				
+		}
+
+		public EventHandle[] Events {
+			get {
+				EventHandle[] handles = new EventHandle [events.Count];
+				events.Values.CopyTo (handles, 0);
+				return handles;
+			}
+		}
+
+		public EventHandle GetEvent (int index)
+		{
+			return (EventHandle) events [index];
+		}
+
+		public void DeleteEvent (int index)
+		{
+			events.Remove (index);
+		}
+
+		private static SurrogateSelector CreateSurrogateSelector (StreamingContext context)
+		{
+			SurrogateSelector ss = new SurrogateSelector ();
+
+			ss.AddSurrogate (typeof (Module), context,
+					 new Module.SessionSurrogate ());
+			ss.AddSurrogate (typeof (ThreadGroup), context,
+					 new ThreadGroup.SessionSurrogate ());
+			ss.AddSurrogate (typeof (EventHandle), context,
+					 new EventHandle.SessionSurrogate ());
+			ss.AddSurrogate (typeof (BreakpointHandle), context,
+					 new EventHandle.SessionSurrogate ());
+			ss.AddSurrogate (typeof (CatchpointHandle), context,
+					 new EventHandle.SessionSurrogate ());
+
+			return ss;
+		}
+
+		internal static DebuggerSession Load (DebuggerClient client, Stream stream)
+		{
+			StreamingContext context = new StreamingContext (
+				StreamingContextStates.Persistence, client);
+
+			SurrogateSelector ss = CreateSurrogateSelector (context);
+			BinaryFormatter formatter = new BinaryFormatter (ss, context);
+
+			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
+			return info.CreateSession (client);
+		}
+
+		public void Save (Stream stream)
+		{
+			StreamingContext context = new StreamingContext (
+				StreamingContextStates.Persistence, this);
+
+			SurrogateSelector ss = CreateSurrogateSelector (context);
+			BinaryFormatter formatter = new BinaryFormatter (ss, context);
+
+			SessionInfo info = new SessionInfo (this);
+			formatter.Serialize (stream, info);
+		}
+
+		public void InsertBreakpoints (Process thread)
+		{
+			foreach (EventHandle handle in events.Values)
+				handle.Enable (thread.TargetAccess);
+		}
+
+		public EventHandle InsertBreakpoint (TargetAccess target, SourceLocation location,
+						     Breakpoint breakpoint)
+		{
+			EventHandle handle = target.Debugger.InsertBreakpoint (
+				target, breakpoint, location);
+			if (handle == null)
+				return handle;
+
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
+		public EventHandle InsertBreakpoint (TargetAccess target, TargetFunctionType func,
+						     Breakpoint breakpoint)
+		{
+			EventHandle handle = target.Debugger.InsertBreakpoint (
+				target, breakpoint, func);
+			if (handle == null)
+				return handle;
+
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
+		public EventHandle InsertExceptionCatchPoint (TargetAccess target, ThreadGroup group,
+							      TargetType exception)
+		{
+			EventHandle handle = target.Debugger.InsertExceptionCatchPoint (
+				target, group, exception);
+			if (handle == null)
+				return null;
+
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
+		[Serializable]
+		private class SessionInfo : ISerializable, IDeserializationCallback
+		{
+			public readonly Module[] Modules;
+			public readonly EventHandle[] Events;
+
+			public SessionInfo (DebuggerSession session)
+			{
+				this.Modules = session.Client.DebuggerServer.Modules;
+				this.Events = session.Events;
+			}
+
+			public void GetObjectData (SerializationInfo info, StreamingContext context)
+			{
+				info.AddValue ("modules", Modules);
+				info.AddValue ("events", Events);
+			}
+
+			void IDeserializationCallback.OnDeserialization (object obj)
+			{ }
+
+			public DebuggerSession CreateSession (DebuggerClient client)
+			{
+				return new DebuggerSession (client, Events);
+			}
+
+			private SessionInfo (SerializationInfo info, StreamingContext context)
+			{
+				Modules = (Module []) info.GetValue (
+					"modules", typeof (Module []));
+				Events = (EventHandle []) info.GetValue (
+					"events", typeof (EventHandle []));
+			}
+		}
 	}
 }

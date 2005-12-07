@@ -1586,7 +1586,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class EventHandleCommand : DebuggerCommand 
 	{
-		protected IEventHandle handle;
+		protected EventHandle handle;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -1615,7 +1615,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else {
 				// enable all breakpoints
-				foreach (IEventHandle h in context.Interpreter.Events)
+				foreach (EventHandle h in context.Interpreter.Events)
 					h.Enable (context.CurrentProcess.TargetAccess);
 			}
 		}
@@ -1635,7 +1635,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else {
 				// enable all breakpoints
-				foreach (IEventHandle h in context.Interpreter.Events)
+				foreach (EventHandle h in context.Interpreter.Events)
 					h.Disable (context.CurrentProcess.TargetAccess);
 			}
 		}
@@ -1654,7 +1654,7 @@ namespace Mono.Debugger.Frontend
 				context.Interpreter.DeleteEvent (context.CurrentProcess, handle);
 			}
 			else {
-				IEventHandle[] hs = context.Interpreter.Events;
+				EventHandle[] hs = context.Interpreter.Events;
 
 				if (hs.Length == 0)
 					return;
@@ -1663,7 +1663,7 @@ namespace Mono.Debugger.Frontend
 					return;
 
 				// delete all breakpoints
-				foreach (IEventHandle h in context.Interpreter.Events)
+				foreach (EventHandle h in context.Interpreter.Events)
 					context.Interpreter.DeleteEvent (context.CurrentProcess, h);
 			}
 		}
@@ -1907,17 +1907,17 @@ namespace Mono.Debugger.Frontend
 					location = new SourceLocation (method);
 
 					int index = context.Interpreter.InsertBreakpoint (
-						process, tgroup, location);
+						process.TargetAccess, tgroup, location);
 					context.Print ("Breakpoint {0} at {1}", index, location.Name);
 				}
 				return;
 			} else if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
-					process, tgroup, location);
+					process.TargetAccess, tgroup, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
 			} else if (func != null) {
 				int index = context.Interpreter.InsertBreakpoint (
-					process, tgroup, func);
+					process.TargetAccess, tgroup, func);
 				context.Print ("Breakpoint {0} at {1}", index, func.Name);
 			} else {
 				throw new ScriptingException ("Cannot insert breakpoint.");
@@ -2005,7 +2005,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
-				context.CurrentLanguage, context.CurrentProcess, tgroup, type);
+				context.CurrentProcess.TargetAccess, tgroup, type);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 		}
 
@@ -2279,6 +2279,60 @@ namespace Mono.Debugger.Frontend
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Make the current stack frame return."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class SaveCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count != 1)) {
+				context.Error ("Filename argument required");
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			using (FileStream fs = new FileStream ((string) Args [0], FileMode.Create))
+				context.Interpreter.SaveSession (fs);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Support; } }
+		public string Description { get { return "Test."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class LoadCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count != 1)) {
+				context.Error ("Filename argument required");
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			if (context.HasBackend)
+				throw new ScriptingException ("Already have a target.");
+			try {
+				using (FileStream fs = new FileStream ((string) Args [0], FileMode.Open))
+					context.Interpreter.LoadSession (fs);
+			} catch {
+				throw new ScriptingException ("Can't load session from `{0}'", Args [0]);
+			}
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Support; } }
+		public string Description { get { return "Test."; } }
 		public string Documentation { get { return ""; } }
 	}
 }

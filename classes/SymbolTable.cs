@@ -59,7 +59,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class SymbolTable : ISymbolTable
+	public abstract class SymbolTable : MarshalByRefObject, ISymbolTable
 	{
 		protected readonly bool is_continuous;
 		protected readonly TargetAddress start_address;

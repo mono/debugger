@@ -34,7 +34,7 @@ namespace Mono.Debugger
 			this.pid = engine.PID;
 			this.tid = engine.TID;
 
-			tgroup = ThreadGroup.CreateThreadGroup ("@" + ID);
+			tgroup = debugger_manager.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
 
 			operation_completed_event = new ManualResetEvent (false);
@@ -423,10 +423,10 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveEventHandler() to remove
 		//   the event handler.
 		// </summary>
-		public int AddEventHandler (EventType type, Breakpoint breakpoint)
+		public void AddEventHandler (EventType type, EventHandle handle)
 		{
 			check_engine ();
-			return engine.AddEventHandler (type, breakpoint);
+			engine.AddEventHandler (type, handle);
 		}
 
 		// <summary>

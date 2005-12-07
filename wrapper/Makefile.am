@@ -61,15 +61,16 @@ MDB_SERVER_SRCLIST = \
 	$(top_srcdir)/wrapper/Server.cs
 
 LIBRARY_DEPS = \
-	-r:Mono.GetOptions	\
-	-r:Mono.CompilerServices.SymbolWriter	\
-	-r:System.Runtime.Remoting		\
+	-r:Mono.GetOptions				\
+	-r:Mono.CompilerServices.SymbolWriter		\
+	-r:System.Runtime.Remoting			\
+	-r:System.Runtime.Serialization.Formatters.Soap	\
 	-r:./Mono.Debugger.Cecil.dll
 
 MDB_DEPS = \
-	-r:Mono.GetOptions	\
-	-r:Mono.CompilerServices.SymbolWriter	\
-	-r:System.Runtime.Remoting		\
+	-r:Mono.GetOptions				\
+	-r:Mono.CompilerServices.SymbolWriter		\
+	-r:System.Runtime.Remoting			\
 	-r:./Mono.Debugger.dll
 
 MDB_SERVER_DEPS = \

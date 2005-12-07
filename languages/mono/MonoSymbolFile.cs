@@ -198,11 +198,12 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoSymbolFile : Module, ISymbolFile, IDisposable
+	internal class MonoSymbolFile : SymbolFile, IDisposable
 	{
+		internal readonly Module Module;
 		internal readonly int Index;
 		internal readonly Cecil.IAssemblyDefinition Assembly;
-		internal readonly Cecil.IModuleDefinition Module;
+		internal readonly Cecil.IModuleDefinition ModuleDefinition;
 		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
@@ -255,7 +256,7 @@ namespace Mono.Debugger.Languages.Mono
 			address += address_size;
 
 			Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
-			Module = Assembly.MainModule;
+			ModuleDefinition = Assembly.MainModule;
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
 
@@ -270,19 +271,22 @@ namespace Mono.Debugger.Languages.Mono
 
 			name = Assembly.Name.FullName;
 
-			backend.ModuleManager.AddModule (this);
-
-			OnModuleChangedEvent ();
+			Module = backend.ModuleManager.GetModule (name);
+			if (Module == null) {
+				Module = new Module (name, this);
+				backend.ModuleManager.AddModule (Module);
+			} else {
+				Module.LoadModule (this);
+			}
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5})",
-					      GetType (), ImageFile, IsLoaded,
-					      SymbolsLoaded, StepInto, LoadSymbols);
+			return String.Format ("{0} ({1}:{2})",
+					      GetType (), ImageFile, Module);
 		}
 
-		public override Debugger Debugger {
+		public Debugger Debugger {
 			get { return backend; }
 		}
 
@@ -298,7 +302,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return symtab; }
 		}
 
-		public override string Name {
+		public string Name {
+			get { return name; }
+		}
+
+		public override string FullName {
 			get { return name; }
 		}
 
@@ -310,19 +318,15 @@ namespace Mono.Debugger.Languages.Mono
 			get { return MonoLanguage; }
 		}
 
-		public override ISymbolFile SymbolFile {
-			get { return this; }
-		}
-
 		internal Architecture Architecture {
 			get { return TargetInfo.Architecture; }
 		}
 
 		public override bool SymbolsLoaded {
-			get { return LoadSymbols; }
+			get { return Module.LoadSymbols; }
 		}
 
-		public SourceFile[] Sources {
+		public override SourceFile[] Sources {
 			get { return GetSources (); }
 		}
 
@@ -402,7 +406,7 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			foreach (C.SourceFileEntry source in File.Sources) {
-				SourceFile info = new SourceFile (this, source.FileName);
+				SourceFile info = new SourceFile (Module, source.FileName);
 
 				sources.Add (info);
 				source_hash.Add (info, source);
@@ -477,7 +481,7 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
 			Cecil.IMethodDefinition mdef = MonoDebuggerSupport.GetMethod (
-				Module, entry.Token);
+				ModuleDefinition, entry.Token);
 
 			StringBuilder sb = new StringBuilder (mdef.DeclaringType.FullName);
 			sb.Append (".");
@@ -495,7 +499,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			string name = sb.ToString ();
 			SourceMethod method = new SourceMethod (
-				this, file, source.Index, name, source.StartRow,
+				Module, file, source.Index, name, source.StartRow,
 				source.EndRow, true);
 
 			method_index_hash.Add (index, method);
@@ -521,7 +525,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_hash = new Hashtable ();
 
-		Method ISymbolFile.GetMethod (long handle)
+		public override Method GetMethod (long handle)
 		{
 			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
 			if (entry == null)
@@ -530,13 +534,18 @@ namespace Mono.Debugger.Languages.Mono
 			return entry.GetMethod ();
 		}
 
-		void ISymbolFile.GetMethods (SourceFile file)
+		public override SourceMethod[] GetMethods (SourceFile file)
 		{
 			ensure_sources ();
 			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
 
-			foreach (C.MethodSourceEntry entry in source.Methods)
-				GetSourceMethod (file, entry.Index);
+			C.MethodSourceEntry[] entries = source.Methods;
+			SourceMethod[] methods = new SourceMethod [entries.Length];
+
+			for (int i = 0; i < entries.Length; i++)
+				methods [i] = GetSourceMethod (file, entries [i].Index);
+
+			return methods;
 		}
 
 		public override SourceMethod FindMethod (string name)
@@ -555,7 +564,7 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry entry = File.GetMethod (index);
 
 			Cecil.IMethodDefinition mdef = MonoDebuggerSupport.GetMethod (
-				Module, entry.Token);
+				ModuleDefinition, entry.Token);
 
 			mono_method = new MonoMethod (this, method, entry, mdef);
 			method_hash.Add (index, mono_method);
@@ -588,6 +597,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return null;
 		}
+
+		internal override void OnModuleChanged ()
+		{ }
 
 		private bool disposed = false;
 
@@ -634,7 +646,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			public MonoMethod (MonoSymbolFile file, SourceMethod info,
 					   C.MethodEntry method, Cecil.IMethodDefinition mdef)
-				: base (info.Name, file.ImageFile, file)
+				: base (info.Name, file.ImageFile, file.Module)
 			{
 				this.file = file;
 				this.info = info;
@@ -1124,7 +1136,7 @@ namespace Mono.Debugger.Languages.Mono
 			public readonly WrapperEntry Entry;
 
 			public WrapperMethod (WrapperEntry entry)
-				: base (entry.Name, entry.File.ImageFile, entry.File,
+				: base (entry.Name, entry.File.ImageFile, entry.File.Module,
 					entry.StartAddress, entry.EndAddress)
 			{
 				this.Entry = entry;
@@ -1230,7 +1242,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				return new MethodSourceData (
 					1, cil_code.Length, addresses, null, buffer,
-					wrapper.Entry.File);
+					wrapper.Entry.File.Module);
 			}
 
 		}

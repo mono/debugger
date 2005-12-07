@@ -89,7 +89,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class DwarfReader : MarshalByRefObject, ISymbolFile
+	internal class DwarfReader : MarshalByRefObject
 	{
 		protected Bfd bfd;
 		protected Module module;
@@ -218,7 +218,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		Method ISymbolFile.GetMethod (long handle)
+		public Method GetMethod (long handle)
 		{
 			DwarfTargetMethod method = (DwarfTargetMethod) method_hash [handle];
 			if ((method == null) || !method.CheckLoaded ())
@@ -226,15 +226,23 @@ namespace Mono.Debugger.Backends
 			return method;
 		}
 
-		void ISymbolFile.GetMethods (SourceFile file)
+		public SourceMethod[] GetMethods (SourceFile file)
 		{
 			DieCompileUnit die = (DieCompileUnit) source_hash [file];
 
+			ArrayList list = new ArrayList ();
+
 			foreach (Die child in die.Subprograms) {
 				DieSubprogram subprog = child as DieSubprogram;
-				if (subprog == null)
+				if ((subprog == null) || (subprog.SourceMethod == null))
 					continue;
+
+				list.Add (subprog.SourceMethod);
 			}
+
+			SourceMethod[] methods = new SourceMethod [list.Count];
+			list.CopyTo (methods, 0);
+			return methods;
 		}
 
 		public SourceMethod FindMethod (string name)

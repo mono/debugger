@@ -1,5 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Remoting;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -14,9 +16,7 @@ namespace Mono.Debugger
 		//   An automatically generated unique index for this breakpoint.
 		// </summary>
 		public int Index {
-			get {
-				return index;
-			}
+			get { return index; }
 		}
 
 		// <summary>
@@ -25,13 +25,7 @@ namespace Mono.Debugger
 		//   help him indentify this breakpoint.
 		// </summary>
 		public string Name {
-			get {
-				return name;
-			}
-
-			set {
-				name = value;
-			}
+			get { return name; }
 		}
 
 		// <summary>
@@ -39,13 +33,7 @@ namespace Mono.Debugger
 		//   If null, then it breaks in all threads.
 		// </summary>
 		public ThreadGroup ThreadGroup {
-			get {
-				return group;
-			}
-
-			set {
-				group = value;
-			}
+			get { return group; }
 		}
 
 		public bool Breaks (int id)

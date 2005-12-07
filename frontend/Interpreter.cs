@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -19,13 +20,13 @@ namespace Mono.Debugger.Frontend
 	public abstract class Interpreter : MarshalByRefObject
 	{
 		protected readonly DebuggerManager manager;
-		protected readonly DebuggerOptions options;
 
+		DebuggerOptions options;
+		DebuggerSession session;
 		ScriptingContext context;
 
 		Process main_process;
 		Hashtable procs;
-		Hashtable events;
 
 		Hashtable styles;
 		StyleBase current_style;
@@ -51,7 +52,6 @@ namespace Mono.Debugger.Frontend
 			manager = new DebuggerManager (options);
 
 			procs = new Hashtable ();
-			events = new Hashtable ();
 
 			styles = new Hashtable ();
 			styles.Add ("cli", new StyleCLI (this));
@@ -91,6 +91,10 @@ namespace Mono.Debugger.Frontend
 
 		public ScriptingContext GlobalContext {
 			get { return context; }
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
 		}
 
 		public StyleBase Style {
@@ -282,14 +286,57 @@ namespace Mono.Debugger.Frontend
 			try {
 				DebuggerClient client;
 				client = manager.Run (options.RemoteHost, options.RemoteMono);
-				Debugger backend = client.DebuggerServer;
+				DebuggerServer server = client.DebuggerServer;
 
-				new InterpreterEventSink (this, client, backend);
-				new ProcessEventSink (this, client, backend);
+				new InterpreterEventSink (this, client, server);
+				new ProcessEventSink (this, client, server);
 
-				backend.Run (options);
-				Process process = backend.WaitForApplication ();
+				session = server.Session;
+
+				server.Run (options);
+				Process process = server.WaitForApplication ();
 				main_process = process;
+
+				start_event.WaitOne ();
+				context.CurrentProcess = main_process;
+				manager.Wait (process);
+
+				return process;
+			} catch (TargetException e) {
+				Kill ();
+				throw new ScriptingException (e.Message);
+			}
+		}
+
+		public void SaveSession (Stream stream)
+		{
+			BinaryFormatter formatter = new BinaryFormatter ();
+			formatter.Serialize (stream, options);
+			session.Save (stream);
+		}
+
+		public Process LoadSession (Stream stream)
+		{
+			if (main_process != null)
+				throw new ScriptingException ("Process already started.");
+
+			try {
+				DebuggerClient client;
+				BinaryFormatter formatter = new BinaryFormatter ();
+				options = (DebuggerOptions) formatter.Deserialize (stream);
+				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				DebuggerServer server = client.DebuggerServer;
+
+				new InterpreterEventSink (this, client, server);
+				new ProcessEventSink (this, client, server);
+
+				server.Run (options);
+				Process process = server.WaitForApplication ();
+				main_process = process;
+
+				session = server.LoadSession (stream);
+
+				session.InsertBreakpoints (main_process);
 
 				start_event.WaitOne ();
 				context.CurrentProcess = main_process;
@@ -318,51 +365,49 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowBreakpoints ()
 		{
-			if (events.Values.Count == 0) {
+			EventHandle[] events = session.Events;
+			if (events.Length == 0) {
 				Print ("No breakpoints or catchpoints.");
 				return;
 			}
 				       
 			Print ("Breakpoints:");
 			Print ("{0,3} {1,6} {2,3} {3,12}  {4}", "Id", "Type", "En", "ThreadGroup", "What");
-			foreach (IEventHandle handle in events.Values) {
-			  string type;
+			foreach (EventHandle handle in events) {
+				string type;
 
-			  if (handle is CatchpointHandle)
-			    type = "catch";
-			  else
-			    type = "break";
+				if (handle is CatchpointHandle)
+					type = "catch";
+				else
+					type = "break";
 
 				Print ("{0,3} {1,6} {2,3} {3,12}  {4}",
-				       handle.Breakpoint.Index,
-				       type,
+				       handle.Index, type,
 				       handle.IsEnabled ? "y" : "n",
-				       handle.Breakpoint.ThreadGroup.Name, handle.Breakpoint.Name);
+				       handle.ThreadGroup != null ? handle.ThreadGroup.Name : "global",
+				       handle.Name);
 			}
 		}
 
-		public IEventHandle[] Events {
+		public EventHandle[] Events {
 			get {
-				IEventHandle[] ret = new IEventHandle [events.Values.Count];
-				events.Values.CopyTo (ret, 0);
-				return ret;
+				return session.Events;
 			}
 		}
 
-		public IEventHandle GetEvent (int index)
+		public EventHandle GetEvent (int index)
 		{
-			IEventHandle handle = (IEventHandle) events [index];
-
+			EventHandle handle = session.GetEvent (index);
 			if (handle == null)
 				throw new ScriptingException ("No such breakpoint/catchpoint.");
 
 			return handle;
 		}
 
-		public void DeleteEvent (Process process, IEventHandle handle)
+		public void DeleteEvent (Process process, EventHandle handle)
 		{
 			handle.Remove (process.TargetAccess);
-			events.Remove (handle.Breakpoint.Index);
+			session.DeleteEvent (handle.Index);
 		}
 
 		protected void ProcessExited (DebuggerClient client, Process process)
@@ -395,7 +440,6 @@ namespace Mono.Debugger.Frontend
 				main_process = null;
 			}
 
-			events = new Hashtable ();
 			initialized = false;
 		}
 
@@ -423,7 +467,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowThreadGroups ()
 		{
-			foreach (ThreadGroup group in ThreadGroup.ThreadGroups) {
+			foreach (ThreadGroup group in manager.ThreadGroups) {
 				if (group.Name.StartsWith ("@"))
 					continue;
 				StringBuilder ids = new StringBuilder ();
@@ -437,18 +481,18 @@ namespace Mono.Debugger.Frontend
 
 		public void CreateThreadGroup (string name)
 		{
-			if (ThreadGroup.ThreadGroupExists (name))
+			if (manager.ThreadGroupExists (name))
 				throw new ScriptingException ("A thread group with that name already exists.");
 
-			ThreadGroup.CreateThreadGroup (name);
+			manager.CreateThreadGroup (name);
 		}
 
 		public void DeleteThreadGroup (string name)
 		{
-			if (!ThreadGroup.ThreadGroupExists (name))
+			if (!manager.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			ThreadGroup.DeleteThreadGroup (name);
+			manager.DeleteThreadGroup (name);
 		}
 
 		public ThreadGroup GetThreadGroup (string name, bool writable)
@@ -457,10 +501,10 @@ namespace Mono.Debugger.Frontend
 				name = "global";
 			if (name.StartsWith ("@"))
 				throw new ScriptingException ("No such thread group.");
-			if (!ThreadGroup.ThreadGroupExists (name))
+			if (!manager.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			ThreadGroup group = ThreadGroup.CreateThreadGroup (name);
+			ThreadGroup group = manager.CreateThreadGroup (name);
 
 			if (writable && group.IsSystem)
 				throw new ScriptingException ("Cannot modify system-created thread group.");
@@ -484,50 +528,39 @@ namespace Mono.Debugger.Frontend
 				group.RemoveThread (process.ID);
 		}
 
-		public int InsertBreakpoint (Process thread, ThreadGroup group,
+		public int InsertBreakpoint (TargetAccess target, ThreadGroup group,
 					     SourceLocation location)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
-			EventHandle handle = thread.Debugger.InsertBreakpoint (
-				thread.TargetAccess, breakpoint, location);
+			EventHandle handle = session.InsertBreakpoint (target, location, breakpoint);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
-
-			events.Add (breakpoint.Index, handle);
 
 			return breakpoint.Index;
 		}
 
-		public int InsertBreakpoint (Process thread, ThreadGroup group,
+		public int InsertBreakpoint (TargetAccess target, ThreadGroup group,
 					     TargetFunctionType func)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 
-			EventHandle handle = thread.Debugger.InsertBreakpoint (
-				thread.TargetAccess, breakpoint, func);
+			EventHandle handle = session.InsertBreakpoint (target, func, breakpoint);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
-
-			events.Add (breakpoint.Index, handle);
 
 			return breakpoint.Index;
 		}
 
-		public int InsertExceptionCatchPoint (Language language, Process thread,
-						      ThreadGroup group, TargetType exception)
+		public int InsertExceptionCatchPoint (TargetAccess target, ThreadGroup group,
+						      TargetType exception)
 		{
-			Breakpoint breakpoint = new ExceptionCatchPoint (language, exception, group);
-
-			CatchpointHandle handle = CatchpointHandle.Create (
-				thread.TargetAccess, breakpoint);
-
+			EventHandle handle = session.InsertExceptionCatchPoint (
+				target, group, exception);
 			if (handle == null)
 				throw new ScriptingException ("Could not add catch point.");
 
-			events.Add (breakpoint.Index, handle);
-
-			return breakpoint.Index;
+			return handle.Index;
 		}
 
 		public void Kill ()

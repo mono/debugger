@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -7,7 +8,8 @@ namespace Mono.Debugger
 	//   Instances of this class are normally created as the result of a user action
 	//   such as a method lookup.
 	// </summary>
-	public class SourceLocation : MarshalByRefObject
+	[Serializable]
+	public class SourceLocation
 	{
 		Module module;
 		SourceMethod method;
@@ -19,9 +21,7 @@ namespace Mono.Debugger
 		}
 
 		public bool HasSourceFile {
-			get {
-				return method != null;
-			}
+			get { return method != null; }
 		}
 
 		public ISourceBuffer SourceBuffer {

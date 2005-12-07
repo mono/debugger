@@ -125,7 +125,7 @@ namespace Mono.Debugger
 
 		internal void OnInitializedEvent (Process main_process)
 		{
-			ThreadGroup.Main.AddThread (main_process.ID);
+			manager.MainThreadGroup.AddThread (main_process.ID);
 			if (InitializedEvent != null)
 				InitializedEvent (this, main_process);
 		}
@@ -294,6 +294,12 @@ namespace Mono.Debugger
 						     TargetFunctionType func)
 		{
 			return new BreakpointHandle (target, bpt, func);
+		}
+
+		public EventHandle InsertExceptionCatchPoint (TargetAccess target, ThreadGroup group,
+							      TargetType exception)
+		{
+			return new CatchpointHandle (target, group, exception);
 		}
 
 		//

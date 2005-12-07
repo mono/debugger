@@ -34,6 +34,10 @@ namespace Mono.Debugger
 			get { return name; }
 		}
 
+		public abstract Debugger Debugger {
+			get;
+		}
+
 		public abstract ITargetMemoryAccess TargetMemoryAccess {
 			get;
 		}
@@ -58,7 +62,7 @@ namespace Mono.Debugger
 
 		internal abstract void RemoveBreakpoint (int index);
 
-		internal abstract int AddEventHandler (EventType type, Breakpoint breakpoint);
+		internal abstract void AddEventHandler (EventType type, EventHandle handle);
 
 		internal abstract void RemoveEventHandler (int index);
 
@@ -115,6 +119,10 @@ namespace Mono.Debugger.Backends
 			this.process = process;
 		}
 
+		public override Debugger Debugger {
+			get { return process.Debugger; }
+		}
+
 		public override ITargetMemoryAccess TargetMemoryAccess {
 			get { return process.TargetMemoryAccess; }
 		}
@@ -142,9 +150,9 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
-		internal override int AddEventHandler (EventType type, Breakpoint breakpoint)
+		internal override void AddEventHandler (EventType type, EventHandle handle)
 		{
-			return process.AddEventHandler (type, breakpoint);
+			process.AddEventHandler (type, handle);
 		}
 
 		internal override void RemoveEventHandler (int index)
@@ -190,6 +198,10 @@ namespace Mono.Debugger.Backends
 			: base (sse.ID, sse.Name)
 		{
 			this.sse = sse;
+		}
+
+		public override Debugger Debugger {
+			get { return sse.ThreadManager.Debugger; }
 		}
 
 		public override ITargetMemoryAccess TargetMemoryAccess {
@@ -280,10 +292,11 @@ namespace Mono.Debugger.Backends
 				}, null);
 		}
 
-		internal override int AddEventHandler (EventType type, Breakpoint breakpoint)
+		internal override void AddEventHandler (EventType type, EventHandle handle)
 		{
-			return (int) Invoke (delegate (TargetAccess target, object user_data) {
-				return sse.AddEventHandler (type, breakpoint);
+			Invoke (delegate (TargetAccess target, object user_data) {
+				sse.AddEventHandler (type, handle);
+				return null;
 				}, null);
 		}
 

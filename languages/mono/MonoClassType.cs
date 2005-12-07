@@ -77,7 +77,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override Module Module {
-			get { return file; }
+			get { return file.Module; }
 		}
 
 		internal int Token {
@@ -497,7 +497,7 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 
 				token &= 0x00ffffff;
-				tdef = (Cecil.ITypeDefinition) file.Module.LookupByToken (
+				tdef = (Cecil.ITypeDefinition) file.ModuleDefinition.LookupByToken (
 					Cecil.Metadata.TokenType.TypeDef, (int) token);
 
 				if (tdef != null)
