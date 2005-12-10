@@ -82,10 +82,7 @@ namespace Mono.Debugger.Languages.Native
 				offset += size;
 			}
 
-			if (quoted_chars)
-				return String.Concat ("\"", sb.ToString (), "\"");
-			else
-				return String.Concat ("\'", sb.ToString (), "\'");
+			return sb.ToString ();
 		}
 	}
 }

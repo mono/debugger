@@ -6,11 +6,13 @@ namespace Mono.Debugger.Languages
 	{
 		internal readonly TargetLocation Location;
 		protected TargetType type;
+		string type_name;
 
 		internal TargetObject (TargetType type, TargetLocation location)
 		{
 			this.type = type;
 			this.Location = location;
+			this.type_name = type.Name;
 		}
 
 		public TargetType Type {
@@ -21,8 +23,13 @@ namespace Mono.Debugger.Languages
 
 		public string TypeName {
 			get {
-				return type.Name;
+				return type_name;
 			}
+		}
+
+		internal void SetTypeName (string type_name)
+		{
+			this.type_name = type_name;
 		}
 
 		public TargetObjectKind Kind {

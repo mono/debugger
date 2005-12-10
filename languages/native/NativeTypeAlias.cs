@@ -28,7 +28,12 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override int Size {
-			get { return 0; }
+			get {
+				if (target_type != null)
+					return target_type.Size;
+
+				return 0;
+			}
 		}
 
 		public override bool HasFixedSize {
@@ -53,9 +58,17 @@ namespace Mono.Debugger.Languages.Native
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			if (target_type == null)
+				target_type = language.LookupType (target_name);
+
+			if (target_type == null)
 				return null;
 
-			return target_type.GetObject (location);
+			TargetObject obj = target_type.GetObject (location);
+			if (obj == null)
+				return null;
+
+			obj.SetTypeName (Name);
+			return obj;
 		}
 
 		public override string ToString ()

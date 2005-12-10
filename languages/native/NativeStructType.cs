@@ -118,14 +118,19 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override bool IsByRef {
-			get {
-				return false;
-			}
+			get { return false; }
+		}
+
+		public bool IsCompleteType {
+			get { return fields != null; }
 		}
 
 		public override TargetFieldInfo[] Fields {
 			get {
-				return fields;
+				if (fields != null)
+					return fields;
+
+				return new TargetFieldInfo [0];
 			}
 		}
 
