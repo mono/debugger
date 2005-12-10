@@ -39,6 +39,8 @@ namespace Mono.Debugger.Remoting
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
 			DebuggerConnection connection = channel.GetConnection (channel_uri);
+			if (connection == null)
+				throw new RemotingException ("Can't connect to `" + channel_uri + "'.");
 
 			connection.SendAsyncMessage (requestStream, requestHeaders);
 		}
@@ -71,6 +73,8 @@ namespace Mono.Debugger.Remoting
 			requestHeaders [CommonTransportKeys.RequestUri] = request_uri;
 
 			DebuggerConnection connection = channel.GetConnection (channel_uri);
+			if (connection == null)
+				throw new RemotingException ("Can't connect to `" + channel_uri + "'.");
 
 			connection.SendMessage (requestStream, requestHeaders,
 						out responseHeaders, out responseStream);
