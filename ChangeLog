@@ -1,5 +1,17 @@
 2005-12-11  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(TypeExpr): New public abstract base class for `TypeExpression'.
+	(PointerExpression): New public class.
+	(CastExpression.DoEvaluateObject): Allow casting from a pointer
+	expression of from a non-typesafe pointer to a native pointer.
+
+	* frontend/CSharpExpressionParser.jay
+	(variable_or_type_name): Add `NativeTypeName *' syntax for native
+	pointers.	
+
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(Debugger.NativeLanguage): New public property.
 

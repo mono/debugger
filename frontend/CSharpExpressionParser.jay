@@ -252,6 +252,14 @@ expression_list
 	;
 
 variable_or_type_name
+	: variable_or_type_name_0
+	| variable_or_type_name STAR
+	  {
+		$$ = new PointerTypeExpression ((Expression) $1);
+	  }
+	;
+
+variable_or_type_name_0
 	: IDENTIFIER
 	  {
 		$$ = new SimpleNameExpression ((string) $1);

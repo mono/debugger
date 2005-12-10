@@ -609,7 +609,24 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class TypeExpression : Expression
+	public abstract class TypeExpr : Expression
+	{
+		public abstract TargetType Type {
+			get;
+		}
+
+		protected override TargetType DoEvaluateType (ScriptingContext context)
+		{
+			return Type;
+		}
+
+		protected override object DoEvaluate (ScriptingContext context)
+		{
+			return Type;
+		}
+	}
+
+	public class TypeExpression : TypeExpr
 	{
 		TargetType type;
 
@@ -623,6 +640,10 @@ namespace Mono.Debugger.Frontend
 			get { return type.Name; }
 		}
 
+		public override TargetType Type {
+			get { return type; }
+		}
+
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
 			return this;
@@ -631,16 +652,6 @@ namespace Mono.Debugger.Frontend
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return this;
-		}
-
-		protected override TargetType DoEvaluateType (ScriptingContext context)
-		{
-			return type;
-		}
-
-		protected override object DoEvaluate (ScriptingContext context)
-		{
-			return type;
 		}
 	}
 
@@ -828,6 +839,72 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public class PointerTypeExpression : TypeExpr
+	{
+		TargetType underlying_type;
+		TargetType pointer_type;
+		Expression expr;
+
+		public PointerTypeExpression (Expression expr)
+		{
+			this.expr = expr;
+		}
+
+		public override string Name {
+			get { return expr.Name + "*"; }
+		}
+
+		public override TargetType Type {
+			get {
+				if (!resolved)
+					throw new InvalidOperationException ();
+
+				return pointer_type;
+			}
+		}
+
+		protected bool DoResolveBase (ScriptingContext context)
+		{
+			if (expr is SimpleNameExpression) {
+				Debugger debugger = context.CurrentProcess.Debugger;
+				Language native = debugger.NativeLanguage;
+
+				underlying_type = native.LookupType (expr.Name);
+			} else {
+				TypeExpr te = expr.ResolveType (context) as TypeExpr;
+				if (te == null)
+					return false;
+
+				underlying_type = te.Type;
+			}
+
+			if (underlying_type == null)
+				return false;
+
+			pointer_type = underlying_type.Language.CreatePointerType (underlying_type);
+			if (pointer_type == null)
+				throw new ScriptingException ("Can't create of pointer of type `{0}'",
+							      underlying_type.Name);
+
+			resolved = true;
+			return true;
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			if (!DoResolveBase (context))
+				return null;
+			return this;
+		}
+
+		protected override Expression DoResolveType (ScriptingContext context)
+		{
+			if (!DoResolveBase (context))
+				return null;
+			return this;
+		}
+	}
+
 	public class MemberAccessExpression : Expression
 	{
 		Expression left;
@@ -851,9 +928,8 @@ namespace Mono.Debugger.Frontend
 			TargetAccess target = context.CurrentFrame.TargetAccess;
 
 			Expression lexpr = left.TryResolve (context);
-			if (lexpr is TypeExpression) {
-				TargetClassType stype = Convert.ToClassType (
-					lexpr.EvaluateType (context));
+			if (lexpr is TypeExpr) {
+				TargetClassType stype = Convert.ToClassType (((TypeExpr) lexpr).Type);
 
 				member = StructAccessExpression.FindMember (
 					target, stype, null, name, true, true);
@@ -1969,8 +2045,33 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			TargetClassType type = Convert.ToClassType (target.EvaluateType (context));
+			TargetType target_type = target.EvaluateType (context);
 
+			if (target_type is TargetPointerType) {
+				TargetAddress address;
+
+				PointerExpression pexpr = expr as PointerExpression;
+				if (pexpr != null)
+					address = pexpr.EvaluateAddress (context);
+				else {
+					TargetPointerType ptype = expr.EvaluateType (context)
+						as TargetPointerType;
+
+					if ((ptype == null) || ptype.IsTypesafe)
+						throw new ScriptingException (
+							"Cannot cast from {0} to {1}.",
+							ptype.Name, target.Name);
+
+					pexpr = new AddressOfExpression (expr);
+					pexpr.Resolve (context);
+
+					address = pexpr.EvaluateAddress (context);
+				}
+
+				return ((TargetPointerType) target_type).GetObject (address);
+			}
+
+			TargetClassType type = Convert.ToClassType (target_type);
 			TargetClassObject source = Convert.ToClassObject (
 				context.CurrentFrame.TargetAccess, expr.EvaluateObject (context));
 			if (source == null)
