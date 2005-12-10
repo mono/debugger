@@ -91,6 +91,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public Language NativeLanguage {
+			get {
+				return bfd_container.NativeLanguage;
+			}
+		}
+
 		public event DebuggerEventHandler InitializedEvent;
 		public event DebuggerEventHandler MainThreadCreatedEvent;
 		public event DebuggerEventHandler ThreadCreatedEvent;

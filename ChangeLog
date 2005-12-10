@@ -1,5 +1,10 @@
 2005-12-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(Debugger.NativeLanguage): New public property.
+
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoGenericInstanceType.cs: New file.
 	(MonoGenericInstanceType): New public class; derives from
 	`MonoClass'.  We still don't have full generics support, we treat
