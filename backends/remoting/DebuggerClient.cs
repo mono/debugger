@@ -11,6 +11,8 @@ namespace Mono.Debugger.Remoting
 {
 	public class DebuggerClient : MarshalByRefObject
 	{
+		public delegate void EventHandler (DebuggerClient client);
+
 		public const bool IsRemote = true;
 
 		static DebuggerChannel channel;
@@ -53,6 +55,7 @@ namespace Mono.Debugger.Remoting
 
 			if (IsRemote) {
 				connection = Connect (host, path);
+				connection.ConnectionClosedEvent += client_connection_closed;
 				object[] url = { new UrlAttribute (connection.URL) };
 				object[] args = { manager, this };
 				server = (DebuggerServer) Activator.CreateInstance (
@@ -133,6 +136,19 @@ namespace Mono.Debugger.Remoting
 		static void connection_closed (DebuggerConnection connection)
 		{
 			connections.Remove (connection.URL);
+		}
+
+		void client_connection_closed (DebuggerConnection connection)
+		{
+			OnClientShutdown ();
+		}
+
+		public event EventHandler ClientShutdown;
+
+		protected void OnClientShutdown ()
+		{
+			if (ClientShutdown != null)
+				ClientShutdown (this);
 		}
 
 		[OneWay]

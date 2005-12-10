@@ -80,9 +80,14 @@ namespace Mono.Debugger.Frontend
 
 		public void Exit ()
 		{
-			Kill ();
-			DebuggerClient.GlobalShutdown ();
-			Environment.Exit (exit_code);
+			try {
+				Kill ();
+				DebuggerClient.GlobalShutdown ();
+			} catch (Exception ex) {
+				Console.WriteLine (ex);
+			} finally {
+				Environment.Exit (exit_code);
+			}
 		}
 
 		public DebuggerManager DebuggerManager {
@@ -443,6 +448,12 @@ namespace Mono.Debugger.Frontend
 			initialized = false;
 		}
 
+		protected void ClientShutdown (DebuggerClient client)
+		{
+			Print ("Connection to debugger server terminated.");
+			TargetExited (client);
+		}
+
 		public Process GetProcess (int number)
 		{
 			if (number == -1)
@@ -580,9 +591,11 @@ namespace Mono.Debugger.Frontend
 				this.interpreter = interpreter;
 				this.client = client;
 
-				backend.ThreadCreatedEvent += new DebuggerEventHandler (thread_created);
-				backend.TargetExitedEvent += new TargetExitedHandler (target_exited);
-				backend.InitializedEvent += new DebuggerEventHandler (debugger_initialized);
+				backend.ThreadCreatedEvent += thread_created;
+				backend.TargetExitedEvent += target_exited;
+				backend.InitializedEvent += debugger_initialized;
+
+				client.ClientShutdown += client_shutdown;
 			}
 
 			public void thread_created (Debugger debugger, Process process)
@@ -607,6 +620,11 @@ namespace Mono.Debugger.Frontend
 					Report.Error (line);
 				else
 					Report.Print (line);
+			}
+
+			public void client_shutdown (DebuggerClient client)
+			{
+				interpreter.ClientShutdown (client);
 			}
 		}
 
