@@ -126,6 +126,20 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoArrayType (element_type, rank);
 			}
 
+			case 0x15: /* GENERICINST */ {
+				TargetType underlying_type = GetTypeFromSignature (file, reader);
+				if (underlying_type == null)
+					return null;
+
+				int arity = ReadCompressedInteger (reader);
+				TargetType[] type_args = new TargetType [arity];
+				for (int i = 0; i < arity; i++)
+					type_args [i] = GetTypeFromSignature (file, reader);
+
+				return new MonoGenericInstanceType (
+					file, (MonoClassType) underlying_type, type_args);
+			}
+
 			case 0x18:
 				return file.MonoLanguage.BuiltinTypes.IntType;
 			case 0x19:

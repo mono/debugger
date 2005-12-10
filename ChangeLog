@@ -1,5 +1,12 @@
 2005-12-11  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoGenericInstanceType.cs: New file.
+	(MonoGenericInstanceType): New public class; derives from
+	`MonoClass'.  We still don't have full generics support, we treat
+	the generic instance just like a normal class.
+
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetPointerType.cs
 	(TargetPointerType.GetObject): New public method to create a
 	pointer from an address.

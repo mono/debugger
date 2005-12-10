@@ -371,7 +371,7 @@ namespace Mono.Debugger.Languages.Mono
 				else
 					result = new MonoClassType (this, tdef);
 			} else {
-				Console.WriteLine ("UNKNOWN TYPE: {0}", type);
+				Console.WriteLine ("UNKNOWN TYPE: {0} {1}", type, type.GetType ());
 				return null;
 			}
 
