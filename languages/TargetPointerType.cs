@@ -50,5 +50,7 @@ namespace Mono.Debugger.Languages
 		public abstract TargetType StaticType {
 			get;
 		}
+
+		public abstract TargetPointerObject GetObject (TargetAddress address);
 	}
 }

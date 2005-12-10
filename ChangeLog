@@ -1,5 +1,11 @@
 2005-12-11  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetPointerType.cs
+	(TargetPointerType.GetObject): New public method to create a
+	pointer from an address.
+
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
 	* languages/Language.cs
 	(Language.CreatePointerType): New public method.
 
