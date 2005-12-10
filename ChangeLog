@@ -1,3 +1,24 @@
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs: Improved the type support.
+
+	* arch/BfdContainer.cs
+	(BfdContainer.LookupType): We now use a type hashtable in the
+	`BfdContainer' and keep track of incomplete structs: if there's a
+	typedef entry for the same struct in more than one source file,
+	return the actual definition.
+
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
+	* backends/remoting/DebuggerClient.cs
+	(DebuggerClient.ClientShutdown): New public event.
+
+	* frontend/Interpreter.cs
+	(Interpreter.Exit): Call Environment.Exit() in a `finally'
+	handler; print, but ignore all exceptions.
+	(Interpreter.InterpreterEventSink): Connect to the
+	`DebuggerClient.ClientShutdown' event.
+
 2005-12-07  Martin Baulig  <martin@ximian.com>
 
 	Reworked the breakpoint code and added session management.

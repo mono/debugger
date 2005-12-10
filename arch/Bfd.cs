@@ -233,6 +233,7 @@ namespace Mono.Debugger.Backends
 			if (module == null) {
 				module = new Module (filename, this);
 				backend.ModuleManager.AddModule (module);
+				OnModuleChanged ();
 			} else {
 				module.LoadModule (this);
 			}
@@ -461,6 +462,12 @@ namespace Mono.Debugger.Backends
 		public Architecture Architecture {
 			get {
 				return arch;
+			}
+		}
+
+		public BfdContainer BfdContainer {
+			get {
+				return container;
 			}
 		}
 
@@ -1009,12 +1016,10 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		public TargetType LookupType (string name)
+		public void ReadTypes ()
 		{
 			if (dwarf != null)
-				return dwarf.LookupType (name);
-
-			return null;
+				dwarf.ReadTypes ();
 		}
 
 		internal override IDisposable RegisterLoadHandler (TargetAccess target,

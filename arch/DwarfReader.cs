@@ -102,16 +102,17 @@ namespace Mono.Debugger.Backends
 		ObjectCache debug_line_reader;
 		ObjectCache debug_aranges_reader;
 		ObjectCache debug_pubnames_reader;
+		ObjectCache debug_pubtypes_reader;
 		ObjectCache debug_str_reader;
 
 		Hashtable source_hash;
 		Hashtable method_source_hash;
 		Hashtable method_hash;
 		Hashtable compile_unit_hash;
-		Hashtable type_hash;
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
 		Hashtable pubnames;
+		Hashtable pubtypes;
 		ITargetInfo target_info;
 		SourceFileFactory factory;
 
@@ -144,18 +145,19 @@ namespace Mono.Debugger.Backends
 			debug_line_reader = create_reader (".debug_line");
 			debug_aranges_reader = create_reader (".debug_aranges");
 			debug_pubnames_reader = create_reader (".debug_pubnames");
+			debug_pubtypes_reader = create_reader (".debug_pubtypes");
 			debug_str_reader = create_reader (".debug_str");
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
 			method_hash = Hashtable.Synchronized (new Hashtable ());
 			source_hash = Hashtable.Synchronized (new Hashtable ());
-			type_hash = Hashtable.Synchronized (new Hashtable ());
 
 			if (bfd.IsLoaded) {
 				aranges = ArrayList.Synchronized (read_aranges ());
 				symtab = new DwarfSymbolTable (this, aranges);
-				pubnames = Hashtable.Synchronized (read_pubnames ());
+				pubnames = read_pubnames ();
+				pubtypes = read_pubtypes ();
 			}
 
 			long offset = 0;
@@ -174,7 +176,8 @@ namespace Mono.Debugger.Backends
 			aranges = ArrayList.Synchronized (read_aranges ());
 			symtab = new DwarfSymbolTable (this, aranges);
 
-			pubnames = Hashtable.Synchronized (read_pubnames ());
+			pubnames = read_pubnames ();
+			pubtypes = read_pubtypes ();
 		}
 
 		public static bool IsSupported (Bfd bfd)
@@ -285,19 +288,21 @@ namespace Mono.Debugger.Backends
 			return file;
 		}
 
-		protected void AddType (string name, DieType type)
+		protected void AddType (DieType type)
 		{
-			if (!type_hash.Contains (name))
-				type_hash.Add (name, type);
+			bfd.BfdContainer.AddType (type);
 		}
 
-		public TargetType LookupType (string name)
+		bool types_initialized;
+		public void ReadTypes ()
 		{
-			DieType type = (DieType) type_hash [name];
-			if (type == null)
-				return null;
+			if (types_initialized)
+				return;
 
-			return type.ResolveType ();
+			foreach (CompileUnitBlock block in compile_unit_hash.Values)
+				block.ReadSymbolTable ();
+
+			types_initialized = true;
 		}
 
 		protected class CompileUnitBlock
@@ -309,6 +314,7 @@ namespace Mono.Debugger.Backends
 			SymbolTableCollection symtabs;
 			ArrayList compile_units;
 			bool initialized;
+			bool symbols_initialized;
 
 			public Method Lookup (TargetAddress address)
 			{
@@ -321,6 +327,11 @@ namespace Mono.Debugger.Backends
 					build_symtabs ();
 					return symtabs;
 				}
+			}
+
+			public void ReadSymbolTable ()
+			{
+				read_children ();
 			}
 
 			CompilationUnit get_comp_unit (long offset)
@@ -351,7 +362,7 @@ namespace Mono.Debugger.Backends
 				return subprog.SourceMethod;
 			}
 
-			void build_symtabs ()
+			void read_children ()
 			{
 				// If we're already initialized, we don't need to do any locking,
 				// so do this check here without locking.
@@ -364,6 +375,26 @@ namespace Mono.Debugger.Backends
 					if (initialized)
 						return;
 
+					foreach (CompilationUnit comp_unit in compile_units)
+						comp_unit.DieCompileUnit.ReadChildren ();
+
+					initialized = true;
+				}
+			}
+
+			void build_symtabs ()
+			{
+				// If we're already initialized, we don't need to do any locking,
+				// so do this check here without locking.
+				if (symbols_initialized)
+					return;
+
+				lock (this) {
+					// We need to check this again after we acquired the thread
+					// lock to avoid a race condition.
+					if (symbols_initialized)
+						return;
+
 					symtabs = new SymbolTableCollection ();
 					symtabs.Lock ();
 
@@ -372,7 +403,7 @@ namespace Mono.Debugger.Backends
 
 					symtabs.UnLock ();
 
-					initialized = true;
+					symbols_initialized = true;
 				}
 			}
 
@@ -580,13 +611,12 @@ namespace Mono.Debugger.Backends
 		{
 			DwarfBinaryReader reader = DebugPubnamesReader;
 
-			Hashtable names = new Hashtable ();
-
-			// if the reader comes back null, we just
-			// can't look up symbols by name, return an
-			// empty Hashtable to reflect this.
+			// if the reader comes back null, we just can't look up symbols
+			// by name, return null.
 			if (reader == null)
-				return names;
+				return null;
+
+			Hashtable names = Hashtable.Synchronized (new Hashtable ());
 
 			while (!reader.IsEof) {
 				long length = reader.ReadInitialLength ();
@@ -598,6 +628,43 @@ namespace Mono.Debugger.Backends
 				if (version != 2)
 					throw new DwarfException (
 						bfd, "Wrong version in .debug_pubnames: {0}",
+						version);
+
+				while (reader.Position < stop) {
+					long offset = reader.ReadInt32 ();
+					if (offset == 0)
+						break;
+
+					string name = reader.ReadString ();
+					if (!names.Contains (name))
+						names.Add (name, new NameEntry (debug_offset, offset));
+				}
+			}
+
+			return names;
+		}
+
+		Hashtable read_pubtypes ()
+		{
+			DwarfBinaryReader reader = DebugPubtypesReader;
+
+			// if the reader comes back null, we just can't look up types
+			// by name, return null.
+			if (reader == null)
+				return null;
+
+			Hashtable names = Hashtable.Synchronized (new Hashtable ());
+
+			while (!reader.IsEof) {
+				long length = reader.ReadInitialLength ();
+				long stop = reader.Position + length;
+				int version = reader.ReadInt16 ();
+				long debug_offset = reader.ReadOffset ();
+				reader.ReadOffset ();
+
+				if (version != 2)
+					throw new DwarfException (
+						bfd, "Wrong version in .debug_pubtypes: {0}",
 						version);
 
 				while (reader.Position < stop) {
@@ -664,6 +731,17 @@ namespace Mono.Debugger.Backends
 				else
 					return new DwarfBinaryReader (
 							bfd, (TargetBlob) debug_pubnames_reader.Data, Is64Bit);
+			}
+		}
+
+		public DwarfBinaryReader DebugPubtypesReader {
+			get {
+				TargetBlob blob = (TargetBlob) debug_pubtypes_reader.Data;
+				if (blob == null)
+					return null;
+				else
+					return new DwarfBinaryReader (
+							bfd, (TargetBlob) debug_pubtypes_reader.Data, Is64Bit);
 			}
 		}
 
@@ -1839,6 +1917,7 @@ namespace Mono.Debugger.Backends
 			CompileUnitSymbolTable symtab;
 			ArrayList children;
 			LineNumberEngine engine;
+			bool children_initialized;
 
 			protected long line_offset;
 			protected bool has_lines;
@@ -1858,16 +1937,32 @@ namespace Mono.Debugger.Backends
 
 						children.Add (subprog);
 					}
-
-					children.Sort ();
 				}
+			}
+
+			void initialize_children ()
+			{
+				if (children_initialized)
+					return;
+
+				read_children ();
+
+				children.Sort ();
 
 				if (has_lines) {
-					engine = new LineNumberEngine (dwarf, line_offset, comp_dir, children);
+					engine = new LineNumberEngine (
+						dwarf, line_offset, comp_dir, children);
 
 					foreach (DieSubprogram subprog in children)
 						subprog.SetEngine (engine);
 				}
+
+				children_initialized = true;
+			}
+
+			public void ReadChildren ()
+			{
+				read_children ();
 			}
 
 			void read_symtab ()
@@ -1875,26 +1970,27 @@ namespace Mono.Debugger.Backends
 				if ((symtab != null) || !dwarf.bfd.IsLoaded)
 					return;
 
+				initialize_children ();
 				symtab = new CompileUnitSymbolTable (this);
 			}
 
 			protected LineNumberEngine Engine {
 				get {
-					read_children ();
+					initialize_children ();
 					return engine;
 				}
 			}
 
 			public ArrayList Subprograms {
 				get {
-					read_children ();
+					initialize_children ();
 					return children;
 				}
 			}
 
 			public DieSubprogram GetSubprogram (long offset)
 			{
-				read_children ();
+				initialize_children ();
 				foreach (DieSubprogram subprog in children) {
 					if (subprog.RealOffset == offset)
 						return subprog;
@@ -2649,7 +2745,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected abstract class DieType : Die
+		protected abstract class DieType : Die, ITypeEntry
 		{
 			string name;
 			protected long offset;
@@ -2666,7 +2762,7 @@ namespace Mono.Debugger.Backends
 				comp_unit.AddType (offset, this);
 
 				if (name != null)
-					comp_unit.DwarfReader.AddType (name, this);
+					comp_unit.DwarfReader.AddType (this);
 			}
 
 			protected override void ProcessAttribute (Attribute attribute)
@@ -2681,6 +2777,10 @@ namespace Mono.Debugger.Backends
 			protected DieType GetReference (long offset)
 			{
 				return comp_unit.GetType (offset);
+			}
+
+			public virtual bool IsComplete {
+				get { return true; }
 			}
 
 			public TargetType ResolveType ()
@@ -2831,8 +2931,16 @@ namespace Mono.Debugger.Backends
 					break;
 
 				case DwarfBaseTypeEncoding.signed_char:
+					if (byte_size == 1)
+						return FundamentalKind.SByte;
+					else
+						return FundamentalKind.Char;
+
+
 				case DwarfBaseTypeEncoding.unsigned_char:
-					if (byte_size <= 2)
+					if (byte_size == 1)
+						return FundamentalKind.Byte;
+					else
 						return FundamentalKind.Char;
 					break;
 
@@ -2896,8 +3004,7 @@ namespace Mono.Debugger.Backends
 					return null;
 
 				TargetFundamentalType fundamental = ref_type as TargetFundamentalType;
-				if ((fundamental != null) &&
-				    (fundamental.FundamentalKind == FundamentalKind.Char))
+				if ((fundamental != null) && (fundamental.Name == "char"))
 					return new NativeStringType (language, byte_size);
 
 				string name;
@@ -3197,6 +3304,10 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
+			public override bool IsComplete {
+				get { return false; }
+			}
+
 			protected override TargetType CreateType ()
 			{
 				reference = GetReference (type_offset);
@@ -3305,9 +3416,16 @@ namespace Mono.Debugger.Backends
 			NativeFieldInfo[] fields;
 			new NativeStructType type;
 
+			public override bool IsComplete {
+				get { return abbrev.HasChildren; }
+			}
+
 			protected override TargetType CreateType ()
 			{
-				type = new NativeStructType (language, Name, fields, byte_size);
+				if (abbrev.HasChildren)
+					type = new NativeStructType (language, Name, fields, byte_size);
+				else
+					return new NativeTypeAlias (language, Name, Name);
 				return type;
 			}
 

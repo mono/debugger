@@ -12,6 +12,7 @@ namespace Mono.Debugger.Backends
 	internal class BfdContainer : MarshalByRefObject, IDisposable
 	{
 		Hashtable bfd_hash;
+		Hashtable type_hash;
 		Debugger backend;
 		NativeLanguage language;
 		Bfd main_bfd;
@@ -19,7 +20,8 @@ namespace Mono.Debugger.Backends
 		public BfdContainer (Debugger backend)
 		{
 			this.backend = backend;
-			this.bfd_hash = new Hashtable ();
+			this.bfd_hash = Hashtable.Synchronized (new Hashtable ());
+			this.type_hash = Hashtable.Synchronized (new Hashtable ());
 		}
 
 		public NativeLanguage NativeLanguage {
@@ -73,13 +75,23 @@ namespace Mono.Debugger.Backends
 
 		public TargetType LookupType (string name)
 		{
-			foreach (Bfd bfd in bfd_hash.Values) {
-				TargetType type = bfd.LookupType (name);
-				if (type != null)
-					return type;
-			}
+			foreach (Bfd bfd in bfd_hash.Values)
+				bfd.ReadTypes ();
 
-			return null;
+			ITypeEntry entry = (ITypeEntry) type_hash [name];
+			if (entry == null)
+				return null;
+
+			return entry.ResolveType ();
+		}
+
+		public void AddType (ITypeEntry entry)
+		{
+			if (!type_hash.Contains (entry.Name))
+				type_hash.Add (entry.Name, entry);
+
+			if (entry.IsComplete)
+				type_hash [entry.Name] = entry;
 		}
 
 		public void CloseBfd (Bfd bfd)
