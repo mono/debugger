@@ -103,6 +103,11 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
+		public override TargetPointerType CreatePointerType (TargetType type)
+		{
+			return new NativePointerType (this, type.Name + "*", type, type.Size);
+		}
+
 		private bool disposed = false;
 
 		private void Dispose (bool disposing)

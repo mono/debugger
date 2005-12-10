@@ -837,6 +837,11 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoNullObject ((TargetType) type, location);
 		}
 
+		public override TargetPointerType CreatePointerType (TargetType type)
+		{
+			return null;
+		}
+
 		public override TargetFundamentalType IntegerType {
 			get { return builtin_types.Int32Type; }
 		}

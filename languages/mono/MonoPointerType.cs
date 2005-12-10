@@ -33,5 +33,10 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return new MonoPointerObject (this, location);
 		}
+
+		public override TargetPointerObject GetObject (TargetAddress address)
+		{
+			return new MonoPointerObject (this, new AbsoluteTargetLocation (address));
+		}
 	}
 }

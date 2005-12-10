@@ -43,6 +43,11 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerObject (this, location);
 		}
 
+		public override TargetPointerObject GetObject (TargetAddress address)
+		{
+			return new NativePointerObject (this, new AbsoluteTargetLocation (address));
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}:{2}:{3}]", GetType (),

@@ -1,5 +1,10 @@
 2005-12-11  Martin Baulig  <martin@ximian.com>
 
+	* languages/Language.cs
+	(Language.CreatePointerType): New public method.
+
+2005-12-11  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfReader.cs: Improved the type support.
 
 	* arch/BfdContainer.cs

@@ -61,6 +61,8 @@ namespace Mono.Debugger.Languages
 
 		public abstract TargetObject CreateNullObject (TargetAccess target,
 							       TargetType type);
+
+		public abstract TargetPointerType CreatePointerType (TargetType type);
 	}
 }
 
