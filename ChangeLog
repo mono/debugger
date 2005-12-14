@@ -1,5 +1,9 @@
 2005-12-14  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Require Mono 1.1.11.
+
+2005-12-14  Martin Baulig  <martin@ximian.com>
+
 	* backends/remoting/DebuggerClient.cs
 	(DebuggerClient.IsRemote): Use another appdomain instead of
 	another process.
