@@ -1,5 +1,11 @@
 2005-12-14  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/Mono.Debugger.Cecil.dll: Added this to SVN.
+
+	* wrapper/Makefile.am: Don't build Mono.Debugger.Cecil.dll.
+
+2005-12-14  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Require Mono 1.1.11.
 
 2005-12-14  Martin Baulig  <martin@ximian.com>
