@@ -1,3 +1,9 @@
+2005-12-14  Martin Baulig  <martin@ximian.com>
+
+	* backends/remoting/DebuggerClient.cs
+	(DebuggerClient.IsRemote): Use another appdomain instead of
+	another process.
+
 2005-12-11  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs

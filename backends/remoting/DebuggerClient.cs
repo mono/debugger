@@ -13,7 +13,7 @@ namespace Mono.Debugger.Remoting
 	{
 		public delegate void EventHandler (DebuggerClient client);
 
-		public const bool IsRemote = true;
+		public const bool IsRemote = false;
 
 		static DebuggerChannel channel;
 		static Hashtable connections = Hashtable.Synchronized (new Hashtable ());
