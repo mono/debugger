@@ -1,8 +1,2 @@
 EXTRA_DIST = \
-	IArchitecture.cs IDisassembler.cs IEventHandle.cs ILanguage.cs IMethod.cs ISourceBuffer.cs ISymbolFile.cs \
-	ISymbolTable.cs ITargetArrayObject.cs ITargetArrayType.cs ITargetClassObject.cs ITargetClassType.cs \
-	ITargetEnumObject.cs ITargetEnumType.cs ITargetFunctionObject.cs ITargetFunctionType.cs \
-	ITargetFundamentalObject.cs ITargetFundamentalType.cs ITargetMemoryAccess.cs ITargetNotification.cs \
-	ITargetObject.cs ITargetPointerObject.cs ITargetPointerType.cs ITargetStructObject.cs ITargetStructType.cs \
-	ITargetType.cs ITargetTypeInfo.cs IVariable.cs TargetObjectKind.cs ITargetTypeAlias.cs
-
+	ISourceBuffer.cs ISymbolTable.cs ITargetMemoryAccess.cs ITargetNotification.cs

@@ -1,2 +1,4 @@
-EXTRA_DIST = MonoVariableLocation.cs Semaphore.cs TargetReader.cs Utils.cs \
-	BitfieldTargetLocation.cs
+EXTRA_DIST = AbsoluteTargetLocation.cs BitfieldTargetLocation.cs \
+	ClientSuppliedTargetLocation.cs EventQueue.cs MonoVariableLocation.cs \
+	RelativeTargetLocation.cs TargetLocation.cs TargetReader.cs Utils.cs
+

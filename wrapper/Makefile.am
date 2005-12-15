@@ -67,7 +67,7 @@ LIBRARY_DEPS = \
 	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:System.Runtime.Remoting			\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:./Mono.Debugger.Cecil.dll
+	-r:$(srcdir)/Mono.Debugger.Cecil.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
@@ -79,7 +79,7 @@ MDB_SERVER_DEPS = \
 	-r:System.Runtime.Remoting		\
 	-r:./Mono.Debugger.dll
 
-Mono.Debugger.dll: Makefile Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
+Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
@@ -99,10 +99,11 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 
 noinst_DATA = Mono.Debugger.dll.config
 
-CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
+CLEANFILES = *.exe *.dll *.mdb mdb mdb-server AssemblyInfo.cs Mono.Debugger.dll.config
 
 EXTRA_DIST = \
-	mdb.in mdb-wrapper.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
+	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
+	Mono.Debugger.Cecil.dll Server.cs mdb-server.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
@@ -114,7 +115,7 @@ mdb-server: mdb-server.in Makefile
 	&& mv mdb-server.tmp mdb-server
 
 install-data-local:
-	$(GACUTIL) /i Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i $(srcdir)/Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:

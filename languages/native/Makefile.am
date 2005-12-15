@@ -1,5 +1,5 @@
 EXTRA_DIST = \
-	NativeArrayObject.cs NativeArrayType.cs NativeEnumObject.cs NativeEnumType.cs NativeFunctionObject.cs NativeFunctionType.cs \
-	NativeFundamentalObject.cs NativeFundamentalType.cs NativeLanguage.cs NativeObject.cs NativeOpaqueObject.cs NativeOpaqueType.cs \
-	NativePointerObject.cs NativePointerType.cs NativeStringObject.cs NativeStringType.cs NativeStructObject.cs \
-	NativeStructType.cs NativeType.cs NativeTypeAlias.cs
+	ITypeEntry.cs NativeArrayObject.cs NativeArrayType.cs NativeEnumType.cs \
+	NativeFunctionType.cs NativeLanguage.cs NativeOpaqueObject.cs NativeOpaqueType.cs \
+	NativePointerObject.cs NativePointerType.cs NativeStringObject.cs NativeStringType.cs \
+	NativeStructObject.cs NativeStructType.cs NativeTypeAlias.cs
