@@ -23,7 +23,7 @@ one_SCRIPTS = mdb.exe mdb-server.exe mdb-server
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
-noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Cecil.dll
+noinst_SCRIPTS = Mono.Debugger.dll
 
 EXTRA_DATA = Mono.Debugger.Cecil.dll
 
