@@ -1,1 +1,2 @@
-mono --debug @onedir@/mdb.exe $*
+#!/bin/sh
+exec mono --debug @onedir@/mdb.exe $*
