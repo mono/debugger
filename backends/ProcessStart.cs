@@ -23,12 +23,13 @@ namespace Mono.Debugger.Backends
 
 		static ProcessStart ()
 		{
-			string base_directory = System.AppDomain.CurrentDomain.BaseDirectory;
-
-			/* Use relative path based on where Mono.Debugger.dll is at to enable relocation */
+			/* Use relative path based on where mscorlib.dll is at to enable relocation */
+			string corlibURI = typeof (object).Assembly.CodeBase;
+			string corlibPath= new Uri (corlibURI).AbsolutePath;
+			string corlibDirPath = Path.GetDirectoryName (corlibPath);
 			JitWrapper = Path.GetFullPath (
-				base_directory + Path.DirectorySeparatorChar +
-				Path.DirectorySeparatorChar + "mono-debugger-mini-wrapper");
+				corlibDirPath + Path.DirectorySeparatorChar +
+				"mono-debugger-mini-wrapper");
 		}
 
 		protected static bool IsMonoAssembly (string filename)

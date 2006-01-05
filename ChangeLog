@@ -1,3 +1,9 @@
+2006-01-05  Hans Kratz <kratz@omnicore.com>
+
+	* backends/ProcessStart.cs: Search for the for the wrapper in 
+	the directory where mscorlib.dll is located instead.   This is
+	used so other clients can work (X-Develop for example).
+
 2005-12-21  Wade Berrier <wberrier@novell.com>
 
 	* wrapper/mdb.in: Modify wrapper to match more closly the wrappers in mono
