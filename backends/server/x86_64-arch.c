@@ -153,6 +153,10 @@ x86_arch_get_registers (ServerHandle *handle)
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	_server_ptrace_get_dr (handle->inferior, DR_STATUS, &handle->arch->dr_status);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
 	return COMMAND_ERROR_NONE;
 }
 

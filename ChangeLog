@@ -1,3 +1,21 @@
+2006-01-19  Martin Baulig  <martin@ximian.com>
+
+	Fix #77056.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ProcessChildEvent): Don't remove the
+	temporary breakpoint here unless we actually hit it.
+	(SingleSteppingEngine.step_over_breakpoint): The `trampoline'
+	argument is either null or the same than `until'; so change its
+	type into a `bool'.
+	(Operation.ResumeOperation): New protected virtual method; we're
+	called if the operation got interrupted by a non-breaking
+	breakpoint and we need to resume it.
+
+	* backends/server/x86_64-arch.cx
+	(86_arch_get_registers): Also read `DR_STATUS' here to make
+	hardware breakpoints actually work.
+
 2006-01-05  Hans Kratz <kratz@omnicore.com>
 
 	* backends/ProcessStart.cs: Search for the for the wrapper in 

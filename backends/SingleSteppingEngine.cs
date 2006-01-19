@@ -285,7 +285,7 @@ namespace Mono.Debugger.Backends
 					result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
 				} else if (arg == 0) {
 					// Unknown breakpoint, always stop.
-				} else if (step_over_breakpoint (TargetAddress.Null, TargetAddress.Null, false)) {
+				} else if (step_over_breakpoint (TargetAddress.Null, false, false)) {
 					Report.Debug (DebugFlags.SSE,
 						      "{0} now stepping over breakpoint", this);
 					return;
@@ -295,15 +295,6 @@ namespace Mono.Debugger.Backends
 					do_continue ();
 					return;
 				}
-			}
-
-			if (temp_breakpoint_id != 0) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} hit temporary breakpoint at {1}: {2}",
-					      this, inferior.CurrentFrame, message);
-
-				inferior.RemoveBreakpoint (temp_breakpoint_id);
-				temp_breakpoint_id = 0;
 			}
 
 			switch (message) {
@@ -767,7 +758,7 @@ namespace Mono.Debugger.Backends
 			return bpt.CheckBreakpointHit (target_access, inferior.CurrentFrame);
 		}
 
-		bool step_over_breakpoint (TargetAddress trampoline, TargetAddress until, bool current)
+		bool step_over_breakpoint (TargetAddress until, bool trampoline, bool current)
 		{
 			int index;
 			bool is_enabled;
@@ -984,6 +975,9 @@ namespace Mono.Debugger.Backends
 			check_inferior ();
 			int dr_index;
 
+			if (temp_breakpoint_id != 0)
+				throw new InternalError ("FUCK");
+
 			temp_breakpoint_id = inferior.InsertHardwareBreakpoint (
 				address, true, out dr_index);
 
@@ -1023,22 +1017,22 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		void do_continue ()
 		{
-			do_continue (TargetAddress.Null, TargetAddress.Null);
+			do_continue (TargetAddress.Null, false);
 		}
 
 		void do_continue (TargetAddress until)
 		{
-			do_continue (TargetAddress.Null, until);
+			do_continue (until, false);
 		}
 
-		void do_continue (TargetAddress trampoline, TargetAddress until)
+		void do_continue (TargetAddress until, bool trampoline)
 		{
 			check_inferior ();
 			frames_invalid ();
 			if (!until.IsNull)
 				insert_temporary_breakpoint (until);
 
-			if (step_over_breakpoint (trampoline, until, true))
+			if (step_over_breakpoint (until, trampoline, true))
 				return;
 
 			inferior.Continue ();
@@ -1046,7 +1040,7 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			if (step_over_breakpoint (TargetAddress.Null, TargetAddress.Null, true))
+			if (step_over_breakpoint (TargetAddress.Null, false, true))
 				return;
 
 			inferior.Step ();
@@ -1671,7 +1665,8 @@ namespace Mono.Debugger.Backends
 			Running,
 			Completed,
 			CompletedCallback,
-			AskParent
+			AskParent,
+			ResumeOperation
 		}
 
 		public abstract bool IsSourceOperation {
@@ -1697,6 +1692,11 @@ namespace Mono.Debugger.Backends
 		}
 
 		protected abstract void DoExecute (SingleSteppingEngine sse);
+
+		protected virtual bool ResumeOperation (SingleSteppingEngine sse)
+		{
+			return false;
+		}
 
 		Operation child;
 
@@ -1742,11 +1742,17 @@ namespace Mono.Debugger.Backends
 				EventResult result = child.ProcessEvent (
 					sse, inferior, cevent, out args);
 
-				if (result != EventResult.AskParent)
+				if ((result != EventResult.AskParent) &&
+				    (result != EventResult.ResumeOperation))
 					return result;
 
 				Operation old_child = child;
 				child = null;
+
+				if ((result == EventResult.ResumeOperation) && ResumeOperation (sse)) {
+					args = null;
+					return EventResult.Running;
+				}
 
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} resending event {1} from {2} to {3}",
@@ -1775,7 +1781,7 @@ namespace Mono.Debugger.Backends
 		public override string ToString ()
 		{
 			if (child == null)
-				return String.Format ("{0} ()", GetType ().Name, MyToString ());
+				return String.Format ("{0} ({1})", GetType ().Name, MyToString ());
 			else
 				return String.Format ("{0}:{1}", GetType ().Name, child);
 		}
@@ -1813,17 +1819,17 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationStepOverBreakpoint : Operation
 	{
-		TargetAddress trampoline;
 		TargetAddress until;
 		public readonly int Index;
+		bool is_trampoline;
 		bool has_thread_lock;
 
-		public OperationStepOverBreakpoint (int index, TargetAddress trampoline,
+		public OperationStepOverBreakpoint (int index, bool is_trampoline,
 						    TargetAddress until)
 			: base (null)
 		{
 			this.Index = index;
-			this.trampoline = trampoline;
+			this.is_trampoline = is_trampoline;
 			this.until = until;
 		}
 
@@ -1840,12 +1846,11 @@ namespace Mono.Debugger.Backends
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} stepping over breakpoint {1} at {5} until {2}/{3} ({4})",
-				      sse, Index, trampoline, until, sse.current_method,
+				      sse, Index, is_trampoline, until, sse.current_method,
 				      sse.inferior.CurrentFrame);
 
-			if (!trampoline.IsNull) {
+			if (is_trampoline) {
 				until = TargetAddress.Null;
-				sse.insert_temporary_breakpoint (trampoline);
 				sse.inferior.Continue ();
 				return;
 			}
@@ -1932,7 +1937,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			args = null;
-			return EventResult.AskParent;
+			return EventResult.ResumeOperation;
 		}
 	}
 
@@ -2058,6 +2063,25 @@ namespace Mono.Debugger.Backends
 			default:
 				throw new InvalidOperationException ();
 			}
+		}
+
+		protected override bool ResumeOperation (SingleSteppingEngine sse)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
+
+			switch (StepMode) {
+			case StepMode.NativeInstruction:
+			case StepMode.NextInstruction:
+			case StepMode.NextLine:
+				if (sse.temp_breakpoint_id != 0) {
+					sse.inferior.Continue ();
+					return true;
+				}
+
+				break;
+			}
+
+			return !Step (sse, false);
 		}
 
 		public override bool HandleException (SingleSteppingEngine sse,
@@ -2841,7 +2865,7 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
 				      sse, inferior.CurrentFrame, address);
 
-			sse.do_continue (address, address);
+			sse.do_continue (address, true);
 			return false;
 		}
 
