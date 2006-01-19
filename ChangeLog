@@ -1,5 +1,15 @@
 2006-01-19  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.do_continue): Only insert the temporary
+	breakpoint if we're not stepping over a breakpoint; otherwise
+	OperationStepOverBreakpoint takes care of that.
+
+	* tests/mono-debugger.tests/TestBreakpoint.exp: Added some more
+	test cases; this also addresses the underlying problem of #77056.
+
+2006-01-19  Martin Baulig  <martin@ximian.com>
+
 	Fix #77056.
 
 	* backends/SingleSteppingEngine.cs

@@ -772,7 +772,7 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE,
 				      "{0} stepping over {3}breakpoint {1} at {2} until {4}/{5}",
 				      this, index, inferior.CurrentFrame,
-				      current ? "current " : "", trampoline, until);
+				      current ? "current " : "", until, trampoline);
 
 			PushOperation (new OperationStepOverBreakpoint (index, trampoline, until));
 			return true;
@@ -1029,12 +1029,12 @@ namespace Mono.Debugger.Backends
 		{
 			check_inferior ();
 			frames_invalid ();
-			if (!until.IsNull)
-				insert_temporary_breakpoint (until);
 
 			if (step_over_breakpoint (until, trampoline, true))
 				return;
 
+			if (!until.IsNull)
+				insert_temporary_breakpoint (until);
 			inferior.Continue ();
 		}
 
@@ -1846,12 +1846,12 @@ namespace Mono.Debugger.Backends
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} stepping over breakpoint {1} at {5} until {2}/{3} ({4})",
-				      sse, Index, is_trampoline, until, sse.current_method,
+				      sse, Index, until, is_trampoline, sse.current_method,
 				      sse.inferior.CurrentFrame);
 
 			if (is_trampoline) {
+				sse.do_continue (until);
 				until = TargetAddress.Null;
-				sse.inferior.Continue ();
 				return;
 			}
 

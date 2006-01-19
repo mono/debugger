@@ -96,6 +96,16 @@ class X
 	{
 		Martin.Baulig.Hello hello = new Martin.Baulig.Hello ();
 		hello.Test ();
+		Y.Hello ();
+		hello.Test ();
 		Console.WriteLine (hello);
+	}
+}
+
+public class Y
+{
+	public static void Hello ()
+	{
+		Console.WriteLine ("Hello World");
 	}
 }
