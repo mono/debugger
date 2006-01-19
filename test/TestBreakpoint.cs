@@ -98,6 +98,7 @@ class X
 		hello.Test ();
 		Y.Hello ();
 		hello.Test ();
+		Y.Test (hello);
 		Console.WriteLine (hello);
 	}
 }
@@ -107,5 +108,10 @@ public class Y
 	public static void Hello ()
 	{
 		Console.WriteLine ("Hello World");
+	}
+
+	public static void Test (Martin.Baulig.Hello hello)
+	{
+		hello.Test ();
 	}
 }

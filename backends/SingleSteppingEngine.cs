@@ -2069,16 +2069,9 @@ namespace Mono.Debugger.Backends
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
-			switch (StepMode) {
-			case StepMode.NativeInstruction:
-			case StepMode.NextInstruction:
-			case StepMode.NextLine:
-				if (sse.temp_breakpoint_id != 0) {
-					sse.inferior.Continue ();
-					return true;
-				}
-
-				break;
+			if (sse.temp_breakpoint_id != 0) {
+				sse.inferior.Continue ();
+				return true;
 			}
 
 			return !Step (sse, false);
@@ -2317,6 +2310,18 @@ namespace Mono.Debugger.Backends
 			}
 
 			sse.do_step_native ();
+		}
+
+		protected override bool ResumeOperation (SingleSteppingEngine sse)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
+
+			if (sse.temp_breakpoint_id != 0) {
+				sse.inferior.Continue ();
+				return true;
+			}
+
+			return !DoProcessEvent (sse, sse.inferior);
 		}
 
 		protected override bool DoProcessEvent (SingleSteppingEngine sse,

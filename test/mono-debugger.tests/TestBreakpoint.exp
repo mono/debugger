@@ -11,6 +11,7 @@ set line_porta_nigra 74
 set line_roman_baths 86
 set line_main 97
 set line_main_2 99
+set line_y_test 115
 set file $srcdir/TestBreakpoint.cs
 
 set porta_nigra_url "http://de.wikipedia.org/wiki/Bild:Porta_Nigra_Trier.jpg"
@@ -97,6 +98,15 @@ mdb_expect_line $city_center_url
 mdb_expect_line "Irish Pub"
 mdb_expect_line $roman_baths_url
 mdb_expect_stopped 0 "X.Main()" $file [expr $line_main_2 + 2]
+
+mdb_send "step"
+mdb_expect_stopped 0 "Y.Test(Martin.Baulig.Hello)" $file $line_y_test
+mdb_send "finish"
+mdb_expect_line $porta_nigra_url
+mdb_expect_line $city_center_url
+mdb_expect_line "Irish Pub"
+mdb_expect_line $roman_baths_url
+mdb_expect_stopped 0 "X.Main()" $file [expr $line_main_2 + 3]
 
 mdb_send "continue"
 mdb_expect_line "Martin.Baulig.Hello"
