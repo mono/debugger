@@ -559,7 +559,6 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	mono_debugger_breakpoint_manager_lock ();
 	breakpoint = g_new0 (X86BreakpointInfo, 1);
 	breakpoint->info.address = address;
 	breakpoint->info.refcount = 1;
