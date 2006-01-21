@@ -9,6 +9,8 @@
 #include <locale.h>
 #include <string.h>
 
+static GPtrArray *thread_array = NULL;
+
 static gpointer main_started_cond;
 static gpointer main_ready_cond;
 
@@ -56,7 +58,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 MonoDebuggerManager MONO_DEBUGGER__manager = {
 	sizeof (MonoDebuggerManager),
 	sizeof (MonoDebuggerThread),
-	NULL, NULL, 0, NULL
+	NULL, NULL, NULL, 0
 };
 
 static guint64
@@ -236,11 +238,112 @@ debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg)
 	}
 }
 
+static void
+debugger_thread_manager_thread_created (MonoDebuggerThread *thread)
+{
+	if (!thread_array)
+		thread_array = g_ptr_array_new ();
+
+	g_ptr_array_add (thread_array, thread);
+}
+
+static void
+debugger_thread_manager_add_thread (gsize tid, gpointer start_stack, gpointer func)
+{
+	MonoDebuggerThread *thread = g_new0 (MonoDebuggerThread, 1);
+
+	thread->tid = tid;
+	thread->func = func;
+	thread->start_stack = start_stack;
+
+	mono_debugger_notification_function (
+		NOTIFICATION_THREAD_CREATED, GPOINTER_TO_UINT (thread), tid);
+
+	debugger_thread_manager_thread_created (thread);
+}
+
+static void
+debugger_thread_manager_start_resume (gsize tid)
+{
+}
+
+static void
+debugger_thread_manager_end_resume (gsize tid)
+{
+}
+
+static void
+debugger_thread_manager_acquire_global_thread_lock (void)
+{
+	int tid = IO_LAYER (GetCurrentThreadId) ();
+
+	mono_debugger_notification_function (
+		NOTIFICATION_ACQUIRE_GLOBAL_THREAD_LOCK, 0, tid);
+}
+
+static void
+debugger_thread_manager_release_global_thread_lock (void)
+{
+	int tid = IO_LAYER (GetCurrentThreadId) ();
+
+	mono_debugger_notification_function (
+		NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK, 0, tid);
+}
+
+extern void GC_push_all_stack (gpointer b, gpointer t);
+
+static void
+debugger_gc_stop_world (void)
+{
+	debugger_thread_manager_acquire_global_thread_lock ();
+}
+
+static void
+debugger_gc_start_world (void)
+{
+	debugger_thread_manager_release_global_thread_lock ();
+}
+
+static void
+debugger_gc_push_all_stacks (void)
+{
+	int i, tid;
+
+	tid = IO_LAYER (GetCurrentThreadId) ();
+
+	if (!thread_array)
+		return;
+
+	for (i = 0; i < thread_array->len; i++) {
+		MonoDebuggerThread *thread = g_ptr_array_index (thread_array, i);
+		gpointer end_stack = (thread->tid == tid) ? &i : thread->end_stack;
+
+		GC_push_all_stack (end_stack, thread->start_stack);
+	}
+}
+
+static GCThreadFunctions debugger_thread_vtable = {
+	NULL,
+
+	debugger_gc_stop_world,
+	debugger_gc_push_all_stacks,
+	debugger_gc_start_world
+};
+
+static void
+debugger_thread_manager_init (void)
+{
+	if (!thread_array)
+		thread_array = g_ptr_array_new ();
+
+	gc_thread_vtable = &debugger_thread_vtable;
+}
+
 static MonoThreadCallbacks thread_callbacks = {
 	&debugger_compile_method_cb,
-	&mono_debugger_thread_manager_add_thread,
-	&mono_debugger_thread_manager_start_resume,
-	&mono_debugger_thread_manager_end_resume
+	&debugger_thread_manager_add_thread,
+	&debugger_thread_manager_start_resume,
+	&debugger_thread_manager_end_resume
 };
 
 static void
@@ -278,7 +381,7 @@ main_thread_handler (gpointer user_data)
 	MONO_DEBUGGER__manager.main_thread->tid = IO_LAYER (GetCurrentThreadId) ();
 	MONO_DEBUGGER__manager.main_thread->start_stack = &main_args;
 
-	mono_debugger_thread_manager_thread_created (MONO_DEBUGGER__manager.main_thread);
+	debugger_thread_manager_thread_created (MONO_DEBUGGER__manager.main_thread);
 
 	IO_LAYER (ReleaseSemaphore) (main_started_cond, 1, NULL);
 
@@ -304,8 +407,6 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	MonoImage *image;
 
 	initialize_debugger_support ();
-
-	mono_debugger_init_icalls ();
 
 	/*
 	 * Start the debugger thread and wait until it's ready.
@@ -347,7 +448,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 
 	mono_debugger_event_handler = debugger_event_handler;
 	mono_install_thread_callbacks (&thread_callbacks);
-	mono_debugger_thread_manager_init ();
+	debugger_thread_manager_init ();
 
 	/*
 	 * Reload symbol tables.

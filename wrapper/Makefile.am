@@ -10,8 +10,6 @@ INCLUDES = \
 mono_debugger_mini_wrapper_SOURCES = \
 	mini-main.c			\
 	wrapper.c			\
-	thread-manager.c		\
-	icall.c				\
 	mono-debugger-jit-wrapper.h
 
 mono_debugger_mini_wrapper_LDADD = \

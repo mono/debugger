@@ -83,16 +83,6 @@ enum {
 
 int mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv, char **envp);
 
-void mono_debugger_thread_manager_init (void);
-void mono_debugger_thread_manager_main (void);
-void mono_debugger_thread_manager_add_thread (guint32 thread, gpointer stack_start, gpointer func);
-void mono_debugger_thread_manager_thread_created (MonoDebuggerThread *thread);
-void mono_debugger_thread_manager_start_resume (guint32 thread);
-void mono_debugger_thread_manager_end_resume (guint32 thread);
-void mono_debugger_thread_manager_acquire_global_thread_lock (void);
-void mono_debugger_thread_manager_release_global_thread_lock (void);
-void mono_debugger_init_icalls (void);
-
 extern MonoDebuggerManager MONO_DEBUGGER__manager;
 
 extern void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
