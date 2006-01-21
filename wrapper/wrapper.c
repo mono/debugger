@@ -1,13 +1,15 @@
-#include <mono-debugger-jit-wrapper.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/mono-debug.h>
-#define IN_MONO_DEBUGGER
+#define _IN_THE_MONO_DEBUGGER
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/private/libgc-mono-debugger.h>
 #include <unistd.h>
 #include <locale.h>
 #include <string.h>
+
+#define IO_LAYER(func) (* mono_debugger_io_layer.func)
 
 static GPtrArray *thread_array = NULL;
 
@@ -29,6 +31,8 @@ static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *st
 static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
 
 void (*mono_debugger_notification_function) (guint64 command, guint64 data, guint64 data2);
+
+extern void mono_debugger_run_finally (void *start_ctx);
 
 /*
  * This is a global data symbol which is read by the debugger.
@@ -88,7 +92,7 @@ debugger_compile_method_cb (MonoMethod *method)
 	retval = mono_compile_method (method);
 	mono_debugger_unlock ();
 
-	mono_debugger_notification_function (NOTIFICATION_METHOD_COMPILED, GPOINTER_TO_UINT (retval), 0);
+	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_METHOD_COMPILED, GPOINTER_TO_UINT (retval), 0);
 
 	return retval;
 }
@@ -189,53 +193,9 @@ debugger_class_get_static_field_data (guint64 value)
 }
 
 static void
-unhandled_exception (guint64 data, guint64 arg)
-{
-	MonoObject *exc = (MonoObject *) GUINT_TO_POINTER ((gssize) data);
-	MonoClass *klass;
-	const gchar *name;
-
-	klass = mono_object_get_class (exc);
-	name = mono_class_get_name (klass);
-
-	if (!strcmp (name, "ThreadAbortException")) {
-		guint32 tid = pthread_self ();
-
-		mono_debugger_notification_function (NOTIFICATION_THREAD_ABORT, 0, tid);
-		pthread_exit (NULL);
-	}
-
-	mono_debugger_notification_function (NOTIFICATION_UNHANDLED_EXCEPTION, data, arg);
-}
-
-static void
 debugger_event_handler (MonoDebuggerEvent event, guint64 data, guint64 arg)
 {
-	switch (event) {
-	case MONO_DEBUGGER_EVENT_RELOAD_SYMTABS:
-		mono_debugger_notification_function (NOTIFICATION_RELOAD_SYMTABS, 0, 0);
-		break;
-
-	case MONO_DEBUGGER_EVENT_ADD_MODULE:
-		mono_debugger_notification_function (NOTIFICATION_ADD_MODULE, data, 0);
-		break;
-
-	case MONO_DEBUGGER_EVENT_BREAKPOINT:
-		mono_debugger_notification_function (NOTIFICATION_JIT_BREAKPOINT, data, arg);
-		break;
-
-	case MONO_DEBUGGER_EVENT_UNHANDLED_EXCEPTION:
-		unhandled_exception (data, arg);
-		break;
-
-	case MONO_DEBUGGER_EVENT_EXCEPTION:
-		mono_debugger_notification_function (NOTIFICATION_HANDLE_EXCEPTION, data, arg);
-		break;
-
-	case MONO_DEBUGGER_EVENT_THROW_EXCEPTION:
-		mono_debugger_notification_function (NOTIFICATION_THROW_EXCEPTION, data, arg);
-		break;
-	}
+	mono_debugger_notification_function (event, data, arg);
 }
 
 static void
@@ -257,7 +217,7 @@ debugger_thread_manager_add_thread (gsize tid, gpointer start_stack, gpointer fu
 	thread->start_stack = start_stack;
 
 	mono_debugger_notification_function (
-		NOTIFICATION_THREAD_CREATED, GPOINTER_TO_UINT (thread), tid);
+		MONO_DEBUGGER_EVENT_THREAD_CREATED, GPOINTER_TO_UINT (thread), tid);
 
 	debugger_thread_manager_thread_created (thread);
 }
@@ -278,7 +238,7 @@ debugger_thread_manager_acquire_global_thread_lock (void)
 	int tid = IO_LAYER (GetCurrentThreadId) ();
 
 	mono_debugger_notification_function (
-		NOTIFICATION_ACQUIRE_GLOBAL_THREAD_LOCK, 0, tid);
+		MONO_DEBUGGER_EVENT_ACQUIRE_GLOBAL_THREAD_LOCK, 0, tid);
 }
 
 static void
@@ -287,7 +247,7 @@ debugger_thread_manager_release_global_thread_lock (void)
 	int tid = IO_LAYER (GetCurrentThreadId) ();
 
 	mono_debugger_notification_function (
-		NOTIFICATION_RELEASE_GLOBAL_THREAD_LOCK, 0, tid);
+		MONO_DEBUGGER_EVENT_RELEASE_GLOBAL_THREAD_LOCK, 0, tid);
 }
 
 extern void GC_push_all_stack (gpointer b, gpointer t);
@@ -394,7 +354,7 @@ main_thread_handler (gpointer user_data)
 	/*
 	 * This will never return.
 	 */
-	mono_debugger_notification_function (NOTIFICATION_MAIN_EXITED, 0, GPOINTER_TO_UINT (retval));
+	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_MAIN_EXITED, 0, GPOINTER_TO_UINT (retval));
 
 	return retval;
 }
@@ -453,8 +413,8 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * Reload symbol tables.
 	 */
-	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_MANAGED_CODE, 0, 0);
-	mono_debugger_notification_function (NOTIFICATION_INITIALIZE_THREAD_MANAGER, 0, 0);
+	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_MANAGED_CODE, 0, 0);
+	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_INITIALIZE_THREAD_MANAGER, 0, 0);
 
 	mono_debugger_unlock ();
 
@@ -466,7 +426,7 @@ mono_debugger_main (MonoDomain *domain, const char *file, int argc, char **argv,
 	/*
 	 * This will never return.
 	 */
-	mono_debugger_notification_function (NOTIFICATION_WRAPPER_MAIN, 0, 0);
+	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_WRAPPER_MAIN, 0, 0);
 
 	return 0;
 }

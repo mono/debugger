@@ -1,5 +1,12 @@
 2006-01-21  Martin Baulig  <martin@ximian.com>
 
+	You need to use the latest SVN version of Mono from either HEAD or
+	the mono-1-1-13 branch for this.
+
+	* wrapper/mono-debugger-jit-wrapper.h: Removed.
+
+2006-01-21  Martin Baulig  <martin@ximian.com>
+
 	* wrapper/wrapper.c, thread-manager.c: Merge wrapper.c and
 	thread-manager.c into wrapper.c.
 

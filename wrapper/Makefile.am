@@ -9,8 +9,7 @@ INCLUDES = \
 
 mono_debugger_mini_wrapper_SOURCES = \
 	mini-main.c			\
-	wrapper.c			\
-	mono-debugger-jit-wrapper.h
+	wrapper.c
 
 mono_debugger_mini_wrapper_LDADD = \
 	$(WRAPPER_LIBS)

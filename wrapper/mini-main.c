@@ -1,4 +1,5 @@
-#include <mono-debugger-jit-wrapper.h>
+#define _IN_THE_MONO_DEBUGGER
+#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/jit/jit.h>
 #include <locale.h>
 
