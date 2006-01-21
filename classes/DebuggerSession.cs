@@ -53,6 +53,9 @@ namespace Mono.Debugger
 		 * command line argument */
 		public string MonoPrefix = null;
 
+		/* non-null if the user specified the -mono command line argument */
+		public string MonoPath = null;
+
 		public string RemoteHost = null;
 		public string RemoteMono = null;
 	}

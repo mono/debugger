@@ -310,6 +310,15 @@ namespace Mono.Debugger.Frontend
 				debug_options.MonoPrefix = value;
 				return true;
 
+			case "-mono":
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.MonoPath = value;
+				return true;
+
 			case "-prompt":
 				value = GetValue (ref args, ref i, ms_value);
 				if (value == null) {
@@ -413,6 +422,7 @@ namespace Mono.Debugger.Frontend
 				"   -debug-flags:PARAM        Sets the debugging flags\n" +
 				"   -fullname                 Sets the debugging flags (short -f)\n" +
 				"   -jit-optimizations:PARAM  Set jit optimizations used on the inferior process\n" +
+				"   -mono:PATH                Override the inferior mono\n" +
 				"   -mono-prefix:PATH         Override the mono prefix\n" +
 				"   -native-symtabs           Load native symtabs\n" +
 				"   -prompt:PROMPT            Override the default command-line prompt (short -p)\n" +

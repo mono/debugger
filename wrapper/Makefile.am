@@ -1,18 +1,4 @@
 onedir = $(prefix)/lib/mono/1.0
-wrapperdir = $(onedir)
-
-wrapper_PROGRAMS = mono-debugger-mini-wrapper
-
-INCLUDES = \
-	-DG_LOG_DOMAIN=\"MonoDebuggerJitWrapper\" \
-	$(WRAPPER_CFLAGS) $(glue_cflags)
-
-mono_debugger_mini_wrapper_SOURCES = \
-	mini-main.c			\
-	wrapper.c
-
-mono_debugger_mini_wrapper_LDADD = \
-	$(WRAPPER_LIBS)
 
 bin_SCRIPTS = mdb
 

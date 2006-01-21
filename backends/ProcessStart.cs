@@ -19,17 +19,13 @@ namespace Mono.Debugger.Backends
 		string[] envp;
 		DebuggerOptions options;
 
-		public static string JitWrapper;
+		public static string MonoPath;
 
 		static ProcessStart ()
 		{
 			/* Use relative path based on where mscorlib.dll is at to enable relocation */
-			string corlibURI = typeof (object).Assembly.CodeBase;
-			string corlibPath= new Uri (corlibURI).AbsolutePath;
-			string corlibDirPath = Path.GetDirectoryName (corlibPath);
-			JitWrapper = Path.GetFullPath (
-				corlibDirPath + Path.DirectorySeparatorChar +
-				"mono-debugger-mini-wrapper");
+			string prefix = new DirectoryInfo (Path.GetDirectoryName (typeof (int).Assembly.Location)).Parent.Parent.Parent.FullName;
+			MonoPath = Path.Combine (Path.Combine (prefix, "bin"), "mono");
 		}
 
 		protected static bool IsMonoAssembly (string filename)
@@ -74,13 +70,23 @@ namespace Mono.Debugger.Backends
 			this.UserArguments = options.InferiorArgs;
 			this.WorkingDirectory = options.WorkingDirectory;
 
+			string mono_path = options.MonoPath != null ?
+				options.MonoPath : MonoPath;
+
 			if (IsMonoAssembly (UserArguments [0])) {
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
-				string[] start_argv = {
-					JitWrapper, options.JitOptimizations
-				};
+				string[] start_argv;
+				if (options.JitOptimizations != "")
+					start_argv = new string[] {
+						mono_path, "--inside-mdb",
+						"--optimize=" + options.JitOptimizations
+					};
+				else
+					start_argv = new string[] {
+						mono_path, "--inside-mdb"
+					};
 
 				this.argv = new string [UserArguments.Length + start_argv.Length];
 				start_argv.CopyTo (this.argv, 0);

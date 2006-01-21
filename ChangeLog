@@ -1,8 +1,16 @@
 2006-01-21  Martin Baulig  <martin@ximian.com>
 
-	You need to use the latest SVN version of Mono from either HEAD or
-	the mono-1-1-13 branch for this.
+	The debugger is now using the normal `mono' instead of its own
+	`mono-debugger-mini-wrapper' to execute managed code.  You need to
+	use the latest SVN version of Mono from either HEAD or the
+	mono-1-1-13 branch for this.
 
+	* frontend/Main.cs: Added `-mono' command line argument to
+	specify the `mono' which should be used to execute managed code.
+
+	* wrapper/Makefile.am: The `mono-debugger-mini-wrapper' is gone.
+
+	* wrapper/wrapper.c: Removed.
 	* wrapper/mono-debugger-jit-wrapper.h: Removed.
 
 2006-01-21  Martin Baulig  <martin@ximian.com>
