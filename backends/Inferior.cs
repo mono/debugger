@@ -36,7 +36,8 @@ namespace Mono.Debugger.Backends
 		protected ChildOutputHandler stdout_handler;
 		protected ChildOutputHandler stderr_handler;
 
-		int child_pid, tid;
+		int child_pid;
+		long tid;
 		bool initialized;
 
 		TargetInfo target_info;
@@ -59,7 +60,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int TID {
+		public long TID {
 			get {
 				check_disposed ();
 				return tid;
@@ -70,7 +71,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, out int tid);
+		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, out long tid);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_frame (IntPtr handle, out ServerStackFrame frame);

@@ -282,8 +282,6 @@ namespace Mono.Debugger.Backends
 			thread_hash.Remove (engine.PID);
 			engine_hash.Remove (engine.ID);
 			engine.Process.Kill ();
-			if (mono_manager != null)
-				mono_manager.KillThread (engine.TID);
 			backend.OnThreadExitedEvent (engine.Process);
 		}
 
@@ -346,7 +344,7 @@ namespace Mono.Debugger.Backends
 
 			bool retval = false;
 			if (mono_manager != null)
-				retval = mono_manager.HandleChildEvent (inferior, ref cevent);
+				retval = mono_manager.HandleChildEvent (engine, inferior, ref cevent);
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {

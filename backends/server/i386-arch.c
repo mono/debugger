@@ -397,7 +397,7 @@ x86_arch_get_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-guint32
+guint64
 x86_arch_get_tid (ServerHandle *handle)
 {
 	guint32 start = (guint32) INFERIOR_REG_ESP (handle->arch->current_regs) + 12;

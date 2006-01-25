@@ -57,7 +57,7 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 }
 
 ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, guint32 pid, guint32 *tid)
+mono_debugger_server_attach (ServerHandle *handle, guint32 pid, guint64 *tid)
 {
 	if (!global_vtable->attach)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
@@ -147,7 +147,7 @@ mono_debugger_server_detach (ServerHandle *handle)
 }
 
 ServerCommandError
-mono_debugger_server_peek_word (ServerHandle *handle, guint64 start, guint32 *word)
+mono_debugger_server_peek_word (ServerHandle *handle, guint64 start, guint64 *word)
 {
 	if (!global_vtable->peek_word)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;

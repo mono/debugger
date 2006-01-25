@@ -1,3 +1,17 @@
+2006-01-25  Martin Baulig  <martin@ximian.com>
+
+	* backends/MonoThreadManager.cs: Started to clean this up; removed
+	the `thread_hash'.
+
+	* backends/Inferior.cs (Inferior.TID): Make this a `long', not `int'.
+	* backends/Process.cs (Process.TID): Likewise.
+
+	* backends/server/library.c
+	(mono_debugger_server_attach): `tid' is now a `guint64 *'.
+	(mono_debugger_server_peek_word): `word' is now a `guint64 *'.
+
+	* backends/server/x86-arch.h (x86_arch_get_tid): Return a `guint64'.
+
 2006-01-21  Martin Baulig  <martin@ximian.com>
 
 	The debugger is now using the normal `mono' instead of its own

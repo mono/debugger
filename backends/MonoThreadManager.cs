@@ -21,7 +21,6 @@ namespace Mono.Debugger.Backends
 	internal class MonoThreadManager
 	{
 		ThreadManager thread_manager;
-		Hashtable thread_hash;
 		TargetAddress info;
 		Inferior inferior;
 
@@ -44,8 +43,6 @@ namespace Mono.Debugger.Backends
 			this.info = info;
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
-
-			thread_hash = Hashtable.Synchronized (new Hashtable ());
 		}
 
 		TargetAddress main_function;
@@ -66,7 +63,7 @@ namespace Mono.Debugger.Backends
 			return main_function;
 		}
 
-		void do_initialize (Inferior inferior)
+		void do_initialize (SingleSteppingEngine engine, Inferior inferior)
 		{
 			int size = inferior.ReadInteger (info);
 			TargetBlob blob = inferior.ReadMemory (info, size);
@@ -81,7 +78,7 @@ namespace Mono.Debugger.Backends
 			main_thread = reader.ReadAddress ();
 			reader.ReadInteger (); /* main_tid */
 
-			thread_created (inferior, main_thread, true);
+			thread_created (engine, inferior, main_thread, true);
 		}
 
 		int thread_size;
@@ -90,6 +87,7 @@ namespace Mono.Debugger.Backends
 
 		bool is_nptl;
 		int first_index;
+		int index;
 
 		// These two constants represent the index of the first
 		// *managed* thread started by the runtime.  In the NPTL
@@ -101,10 +99,9 @@ namespace Mono.Debugger.Backends
 		public bool ThreadCreated (SingleSteppingEngine sse, Inferior inferior,
 					   Inferior caller_inferior)
 		{
-			ThreadData tdata = new ThreadData (sse, inferior.TID, inferior.PID);
-			thread_hash.Add (inferior.TID, tdata);
+			++index;
 
-			if (thread_hash.Count == 1) {
+			if (index == 1) {
 				sse.Process.SetDaemon ();
 				return false;
 			}
@@ -114,13 +111,13 @@ namespace Mono.Debugger.Backends
 				first_index = is_nptl ? NPTL_FIRST_MANAGED_INDEX : NON_NPTL_FIRST_MANAGED_INDEX;
 			}
 
-			if (thread_hash.Count == first_index) {
+			if (index == first_index) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed main sse: {0}",
 					      sse);
 				csharp_language = thread_manager.Debugger.CreateDebuggerHandler ();
 				return true;
-			} else if (thread_hash.Count > first_index) {
+			} else if (index > first_index) {
 				Report.Debug (DebugFlags.Threads,
 					      "Created managed thread: {0}", sse);
 				return false;
@@ -130,79 +127,49 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		void thread_created (Inferior inferior, TargetAddress data, bool is_main)
+		void thread_created (SingleSteppingEngine engine, Inferior inferior,
+				     TargetAddress data, bool is_main)
 		{
 			TargetBlob blob = inferior.ReadMemory (data, thread_size);
 			TargetReader reader = new TargetReader (blob.Contents, inferior);
 			reader.ReadAddress ();
-			int tid = reader.BinaryReader.ReadInt32 ();
-			reader.BinaryReader.ReadInt32 ();
+			reader.ReadAddress ();
 			TargetAddress func = reader.ReadAddress ();
-			TargetAddress start_stack = reader.ReadAddress ();
 
-			ThreadData thread = (ThreadData) thread_hash [tid];
-			thread.StartStack = start_stack;
-			thread.Engine.EndStackAddress = data;
+			engine.EndStackAddress = data;
 
 			if (!is_main)
-				thread.Engine.Start (func, false);
+				engine.Start (func, false);
 		}
 
-		internal void KillThread (int tid)
-		{
-			Report.Debug (DebugFlags.Threads, "Aborting thread {0:x}", tid);
-
-			ThreadData thread = (ThreadData) thread_hash [tid];
-			thread_hash.Remove (tid);
-		}
-
-		void thread_abort (Inferior inferior, int tid)
-		{
-			Report.Debug (DebugFlags.Threads, "Aborting thread {0:x}", tid);
-
-			ThreadData thread = (ThreadData) thread_hash [tid];
-			thread_hash.Remove (tid);
-
-			inferior.Continue ();
-		}
-
-		internal bool HandleChildEvent (Inferior inferior,
+		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
 						ref Inferior.ChildEvent cevent)
 		{
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) {
 				NotificationType type = (NotificationType) cevent.Argument;
 
 				switch (type) {
-				case NotificationType.AcquireGlobalThreadLock: {
-					int tid = (int) cevent.Data2;
-					ThreadData thread = (ThreadData) thread_hash [tid];
-					thread_manager.AcquireGlobalThreadLock (thread.Engine);
+				case NotificationType.AcquireGlobalThreadLock:
+					thread_manager.AcquireGlobalThreadLock (engine);
 					break;
-				}
 
-				case NotificationType.ReleaseGlobalThreadLock: {
-					int tid = (int) cevent.Data2;
-					ThreadData thread = (ThreadData) thread_hash [tid];
-					thread_manager.ReleaseGlobalThreadLock (thread.Engine);
+				case NotificationType.ReleaseGlobalThreadLock:
+					thread_manager.ReleaseGlobalThreadLock (engine);
 					break;
-				}
 
 				case NotificationType.ThreadCreated: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					thread_created (inferior, data, false);
+					thread_created (engine, inferior, data, false);
 					break;
 				}
 
-				case NotificationType.ThreadAbort: {
-					int tid = (int) cevent.Data2;
-					thread_abort (inferior, tid);
-					return true;
-				}
+				case NotificationType.ThreadAbort:
+					break;
 
 				case NotificationType.InitializeThreadManager:
-					do_initialize (inferior);
+					do_initialize (engine, inferior);
 					break;
 
 				case NotificationType.WrapperMain:
@@ -236,6 +203,8 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
+					Console.WriteLine ("NOTIFICATION: {0} {1}", type, data);
+
 					csharp_language.Notification (
 						inferior, type, data, cevent.Data2);
 					break;
@@ -253,39 +222,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			return false;
-		}
-
-		protected class ThreadData {
-			public readonly int TID;
-			public readonly int PID;
-			public bool IsManaged;
-			public SingleSteppingEngine Engine;
-			public TargetAddress StartStack;
-
-			public ThreadData (SingleSteppingEngine sse, int tid, int pid,
-					   TargetAddress start_stack)
-			{
-				this.IsManaged = true;
-				this.Engine = sse;
-				this.TID = tid;
-				this.PID = pid;
-				this.StartStack = start_stack;
-			}
-
-			public ThreadData (SingleSteppingEngine sse, int tid, int pid)
-			{
-				this.IsManaged = false;
-				this.Engine = sse;
-				this.TID = tid;
-				this.PID = pid;
-				this.StartStack = TargetAddress.Null;
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("ThreadData ({0:x}:{1}:{2}:{3})",
-						      TID, PID, IsManaged, StartStack);
-			}
 		}
 	}
 }

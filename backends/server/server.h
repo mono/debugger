@@ -106,7 +106,7 @@ struct InferiorVTable {
 
 	ServerCommandError    (* attach)              (ServerHandle       *handle,
 						       guint32             pid,
-						       guint32            *tid);
+						       guint64            *tid);
 
 	ServerCommandError    (* detach)              (ServerHandle       *handle);
 
@@ -159,7 +159,7 @@ struct InferiorVTable {
 
 	ServerCommandError    (* peek_word)           (ServerHandle     *handle,
 						       guint64           start,
-						       guint32          *word);
+						       guint64          *word);
 
 	/*
 	 * Read `size' bytes from the target's address space starting at `start'.
@@ -334,7 +334,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
 					   guint32             pid,
-					   guint32            *tid);
+					   guint64            *tid);
 
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
@@ -375,7 +375,7 @@ mono_debugger_server_detach               (ServerHandle       *handle);
 ServerCommandError
 mono_debugger_server_peek_word            (ServerHandle       *handle,
 					   guint64             start,
-					   guint32            *word);
+					   guint64            *word);
 
 ServerCommandError
 mono_debugger_server_read_memory          (ServerHandle       *handle,

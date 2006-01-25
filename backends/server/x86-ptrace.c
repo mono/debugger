@@ -45,7 +45,8 @@ static guint32 io_thread (gpointer data);
 
 struct InferiorHandle
 {
-	int pid, tid;
+	guint32 pid;
+	guint64 tid;
 #ifdef __linux__
 	int mem_fd;
 #endif
@@ -118,7 +119,7 @@ server_ptrace_kill (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_peek_word (ServerHandle *handle, guint64 start, gsize *retval)
+server_ptrace_peek_word (ServerHandle *handle, guint64 start, guint64 *retval)
 {
 	return server_ptrace_read_memory (handle, start, sizeof (gsize), retval);
 }
@@ -335,7 +336,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 }
 
 static ServerCommandError
-server_ptrace_attach (ServerHandle *handle, guint32 pid, guint32 *tid)
+server_ptrace_attach (ServerHandle *handle, guint32 pid, guint64 *tid)
 {
 	InferiorHandle *inferior = handle->inferior;
 

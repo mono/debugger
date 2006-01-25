@@ -45,7 +45,8 @@ namespace Mono.Debugger
 		}
 
 		bool is_daemon;
-		int id, pid, tid;
+		int id, pid;
+		long tid;
 		ThreadGroup tgroup;
 		SingleSteppingEngine engine;
 		Debugger backend;
@@ -115,7 +116,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public int TID {
+		public long TID {
 			get {
 				return tid;
 			}

@@ -1627,7 +1627,7 @@ namespace Mono.Debugger.Backends
 		public readonly string Name;
 		public readonly int ID;
 		public readonly int PID;
-		public readonly int TID;
+		public readonly long TID;
 
 		int stepping_over_breakpoint;
 
