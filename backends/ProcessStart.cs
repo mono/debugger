@@ -31,29 +31,29 @@ namespace Mono.Debugger.Backends
 		protected static bool IsMonoAssembly (string filename)
 		{
 			try {
-				FileStream stream = new FileStream (filename, FileMode.Open);
+				using (FileStream stream = new FileStream (filename, FileMode.Open, FileAccess.Read)) {
+					byte[] data = new byte [128];
+					if (stream.Read (data, 0, 128) != 128)
+						return false;
 
-				byte[] data = new byte [128];
-				if (stream.Read (data, 0, 128) != 128)
-					return false;
+					if ((data [0] != 'M') || (data [1] != 'Z'))
+						return false;
 
-				if ((data [0] != 'M') || (data [1] != 'Z'))
-					return false;
+					int offset = data [60] + (data [61] << 8) +
+						(data [62] << 16) + (data [63] << 24);
 
-				int offset = data [60] + (data [61] << 8) +
-					(data [62] << 16) + (data [63] << 24);
+					stream.Position = offset;
 
-				stream.Position = offset;
+					data = new byte [28];
+					if (stream.Read (data, 0, 28) != 28)
+						return false;
 
-				data = new byte [28];
-				if (stream.Read (data, 0, 28) != 28)
-					return false;
+					if ((data [0] != 'P') && (data [1] != 'E') &&
+					    (data [2] != 0) && (data [3] != 0))
+						return false;
 
-				if ((data [0] != 'P') && (data [1] != 'E') &&
-				    (data [2] != 0) && (data [3] != 0))
-					return false;
-
-				return true;
+					return true;
+				}
 			} catch {
 				return false;
 			}
