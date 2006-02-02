@@ -1,5 +1,5 @@
 using System;
-using System.Threading;
+using ST = System.Threading;
 using System.Collections;
 
 using Mono.Debugger.Backends;
@@ -14,7 +14,7 @@ namespace Mono.Debugger.Remoting
 		static int next_id = 0;
 		private Hashtable clients = Hashtable.Synchronized (new Hashtable ());
 		private Hashtable threads = Hashtable.Synchronized (new Hashtable ());
-		private ManualResetEvent interrupt_event = new ManualResetEvent (false);
+		private ST.ManualResetEvent interrupt_event = new ST.ManualResetEvent (false);
 
 		private Hashtable thread_groups;
 		private ThreadGroup global_thread_group;
@@ -62,11 +62,11 @@ namespace Mono.Debugger.Remoting
 			if (process == null)
 				return;
 
-			WaitHandle[] handles = new WaitHandle [2];
+			ST.WaitHandle[] handles = new ST.WaitHandle [2];
 			handles [0] = interrupt_event;
 			handles [1] = process.WaitHandle;
 
-			WaitHandle.WaitAny (handles);
+			ST.WaitHandle.WaitAny (handles);
 		}
 
 		public void Interrupt ()
@@ -101,6 +101,15 @@ namespace Mono.Debugger.Remoting
 				Process thread = new Process (this, sse);
 				threads.Add (thread.ID, thread);
 				return thread;
+			}
+		}
+
+		internal Process CreateProcess (Thread thread, int pid)
+		{
+			lock (this) {
+				Process process = new Process (this, thread, pid);
+				threads.Add (process.ID, process);
+				return process;
 			}
 		}
 
