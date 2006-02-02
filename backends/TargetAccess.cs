@@ -333,4 +333,88 @@ namespace Mono.Debugger.Backends
 				return sse.Process.DisassembleMethod (method);
 		}
 	}
+
+	[Serializable]
+	internal sealed class ThreadTargetAccess : TargetAccess
+	{
+		Thread thread;
+		ITargetMemoryAccess memory;
+
+		public ThreadTargetAccess (Thread thread, ITargetMemoryAccess memory,
+					   int id, string name)
+			: base (id, name)
+		{
+			this.thread = thread;
+			this.memory = memory;
+		}
+
+		public override Debugger Debugger {
+			get { return thread.ThreadManager.Debugger; }
+		}
+
+		public override ITargetMemoryAccess TargetMemoryAccess {
+			get { return memory; }
+		}
+
+		public override ITargetMemoryInfo TargetMemoryInfo {
+			get { return thread.TargetMemoryInfo; }
+		}
+
+		public override ITargetInfo TargetInfo {
+			get { return thread.TargetInfo; }
+		}
+
+		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+							    TargetAddress arg2)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override TargetAddress CallMethod (TargetAddress method, long method_arg,
+							    string string_arg)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override void RemoveBreakpoint (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override void AddEventHandler (EventType type, EventHandle handle)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override void RemoveEventHandler (int index)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override object Invoke (TargetAccessDelegate func, object data)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		public override AssemblerLine DisassembleInstruction (Method method,
+								      TargetAddress address)
+		{
+			return thread.DisassembleInstruction (method, address);
+		}
+
+		public override AssemblerMethod DisassembleMethod (Method method)
+		{
+			return thread.DisassembleMethod (method);
+		}
+	}
 }

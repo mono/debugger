@@ -68,10 +68,13 @@ namespace Mono.Debugger.Backends
 		}
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_initialize (IntPtr handle, int child_pid, out long tid);
+
+		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, out long tid);
+		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, bool is_main, out long tid);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_frame (IntPtr handle, out ServerStackFrame frame);
@@ -152,13 +155,16 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_kill (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_server_initialize (IntPtr breakpoint_manager);
+		static extern IntPtr mono_debugger_server_create_inferior (IntPtr breakpoint_manager);
 
 		[DllImport("monodebuggerserver")]
 		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, out IntPtr data);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_get_threads (IntPtr handle, out int count, out IntPtr data);
 
 		internal enum ChildEventType {
 			NONE = 0,
@@ -235,7 +241,7 @@ namespace Mono.Debugger.Backends
 			this.breakpoint_manager = bpm;
 			this.address_domain = address_domain;
 
-			server_handle = mono_debugger_server_initialize (breakpoint_manager.Manager);
+			server_handle = mono_debugger_server_create_inferior (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 		}
@@ -488,17 +494,42 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public void Attach (int pid)
+		public void Initialize (int pid)
 		{
 			if (initialized)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			initialized = true;
 
-			check_error (mono_debugger_server_attach (server_handle, pid, out tid));
+			check_error (mono_debugger_server_initialize (server_handle, pid, out tid));
 			this.child_pid = pid;
 
+			SetupInferior ();
+
 			change_target_state (TargetState.STOPPED, 0);
+		}
+
+		public void Attach (int pid, bool is_main)
+		{
+			if (initialized)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			initialized = true;
+
+			check_error (mono_debugger_server_attach (server_handle, pid, is_main, out tid));
+			this.child_pid = pid;
+
+			SetupInferior ();
+
+			change_target_state (TargetState.STOPPED, 0);
+		}
+
+		public CoreFile OpenCoreFile (string core_file)
+		{
+			SetupInferior ();
+
+			CoreFile core = new CoreFile (thread_manager, this, bfd, core_file);
+			return core;
 		}
 
 		public ChildEvent ProcessEvent (int status)
@@ -575,7 +606,7 @@ namespace Mono.Debugger.Backends
 
 		public void InitializeModules ()
 		{
-			bfd.UpdateSharedLibraryInfo (this);
+			bfd.UpdateSharedLibraryInfo (this, this);
 		}
 
 		public BreakpointManager BreakpointManager {
@@ -1063,6 +1094,22 @@ namespace Mono.Debugger.Backends
 			} finally {
 				if (buffer != IntPtr.Zero)
 					Marshal.FreeHGlobal (buffer);
+			}
+		}
+
+		public int[] GetThreads ()
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				int count;
+				check_error (mono_debugger_server_get_threads (
+						     server_handle, out count, out data));
+
+				int[] threads = new int [count];
+				Marshal.Copy (data, threads, 0, count);
+				return threads;
+			} finally {
+				g_free (data);
 			}
 		}
 

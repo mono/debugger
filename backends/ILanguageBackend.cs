@@ -18,7 +18,8 @@ namespace Mono.Debugger.Backends
 		ThreadCreated,
 		ThreadAbort,
 		ThrowException,
-		HandleException
+		HandleException,
+		ReachedMain
 	}
 
 	internal interface ILanguageBackend : IDisposable

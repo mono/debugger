@@ -1,5 +1,11 @@
 2006-02-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(Debugger.Attach): New public method.
+	(Debugger.OpenCoreFile): New public method.
+
+2006-02-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/Thread.cs: New file.
 	(Mono.Debugger.Backends.Thread): New public abstract class.
 

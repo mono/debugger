@@ -124,6 +124,35 @@ namespace Mono.Debugger
 			thread_manager.StartApplication (start);
 		}
 
+		public void Attach (DebuggerOptions options, int pid)
+		{
+			check_disposed ();
+
+			if (thread_manager.HasTarget)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			start = new ProcessStart (options, pid);
+
+			module_manager.Lock ();
+
+			thread_manager.StartApplication (start);
+		}
+
+		public Process OpenCoreFile (DebuggerOptions options, string core_file,
+					     out Process[] threads)
+		{
+			check_disposed ();
+
+			if (thread_manager.HasTarget)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			start = new ProcessStart (options, core_file);
+
+			module_manager.Lock ();
+
+			return thread_manager.OpenCoreFile (start, out threads);
+		}
+
 		public Process WaitForApplication ()
 		{
 			return thread_manager.WaitForApplication ();
@@ -200,9 +229,9 @@ namespace Mono.Debugger
 		}
 
 		// XXX This desperately needs to be renamed.
-		internal ILanguageBackend CreateDebuggerHandler ()
+		internal ILanguageBackend CreateDebuggerHandler (MonoDebuggerInfo info)
 		{
-			mono_language = new MonoLanguageBackend (this);
+			mono_language = new MonoLanguageBackend (this, info);
 			languages.Add (mono_language);
 
 			return mono_language;
