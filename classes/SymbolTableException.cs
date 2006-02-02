@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
@@ -8,5 +9,11 @@ namespace Mono.Debugger
 		public SymbolTableException (string message, params object[] args)
 			: base (TargetError.SymbolTable, String.Format (message, args))
 		{ }
+
+
+		protected SymbolTableException (SerializationInfo info, StreamingContext context)
+			: base (info, context)
+		{
+		}
 	}
 }

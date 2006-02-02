@@ -105,6 +105,8 @@ namespace Mono.Debugger
 			if (symtab_thread != null)
 				symtabs_loaded_event.WaitOne ();
 			lock (this) {
+				if (current_symtab == null)
+					return null;
 				return current_symtab.Lookup (address);
 			}
 		}
@@ -117,6 +119,9 @@ namespace Mono.Debugger
 			}
 
 			lock (this) {
+				if (current_modules == null)
+					return null;
+
 				foreach (Module module in current_modules) {
 					Symbol name = module.SimpleLookup (address, exact_match);
 					if (name != null)
