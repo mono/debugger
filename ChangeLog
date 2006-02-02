@@ -1,5 +1,20 @@
 2006-02-02  Martin Baulig  <martin@ximian.com>
 
+	* arch/bfdglue.h (BfdGlueSection): Added `name'.
+
+	* arch/bfdglue.c (bfd_glue_core_file_failing_command): New
+	function.
+
+	* arch/Bfd.cs: Added core file support.
+
+	* arch/CoreFile.cs: New file.
+	(Mono.Debugger.Backends.CoreFile): New internal class.
+
+	* arch/Architecture.cs (Architecture.CreateFrame): Added
+	overloaded version taking a `Registers' argument.
+
+2006-02-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-linux-ptrace.c
 	(server_ptrace_get_threads): New function.
 

@@ -18,7 +18,6 @@ namespace Mono.Debugger.Backends
 		protected BfdContainer container;
 		protected Debugger backend;
 		protected ITargetMemoryInfo info;
-		protected Bfd core_file_bfd;
 		protected Bfd main_bfd;
 		protected Architecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
@@ -58,6 +57,7 @@ namespace Mono.Debugger.Backends
 			public readonly long vma;
 			public readonly long size;
 			public readonly long section;
+			public readonly string name;
 
 			public override string ToString ()
 			{
@@ -69,6 +69,7 @@ namespace Mono.Debugger.Backends
 		internal class Section
 		{
 			public readonly Bfd bfd;
+			public readonly string name;
 			public readonly long vma;
 			public readonly long size;
 			public readonly SectionFlags flags;
@@ -77,6 +78,7 @@ namespace Mono.Debugger.Backends
 			internal Section (Bfd bfd, InternalSection section)
 			{
 				this.bfd = bfd;
+				this.name = section.name;
 				this.vma = section.vma;
 				this.size = section.size;
 				this.flags = (SectionFlags) section.flags;
@@ -89,6 +91,8 @@ namespace Mono.Debugger.Backends
 				InternalSection section = (InternalSection) user_data;
 
 				byte[] data = bfd.GetSectionContents (new IntPtr (section.section), true);
+				if (data == null)
+					throw new SymbolTableException ("Can't get bfd section {0}", name);
 				return new TargetReader (data, bfd.info);
 			}
 
@@ -122,7 +126,7 @@ namespace Mono.Debugger.Backends
 		extern static IntPtr bfd_get_section_by_name (IntPtr bfd, string name);
 
 		[DllImport("monodebuggerserver")]
-		extern static string bfd_core_file_failing_command (IntPtr bfd);
+		extern static string bfd_glue_core_file_failing_command (IntPtr bfd);
 
 		[DllImport("monodebuggerserver")]
 		extern static IntPtr disassembler (IntPtr bfd);
@@ -183,7 +187,11 @@ namespace Mono.Debugger.Backends
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
 
-			if (!bfd_glue_check_format_object (bfd))
+			if (bfd_glue_check_format_object (bfd))
+				is_coredump = false;
+			else if (bfd_glue_check_format_core (bfd))
+				is_coredump = true;
+			else
 				throw new SymbolTableException ("Not an object file: {0}", filename);
 
 			target = bfd_glue_get_target_name (bfd);
@@ -193,16 +201,21 @@ namespace Mono.Debugger.Backends
 				else
 					arch = new Architecture_X86_64 (backend);
 
-				InternalSection text = GetSectionByName (".text", true);
+				if (!is_coredump) {
+					InternalSection text = GetSectionByName (".text", true);
 
-				if (!base_address.IsNull)
-					start_address = new TargetAddress (
-						info.AddressDomain,
-						base_address.Address + text.vma);
-				else
-					start_address = new TargetAddress (
-						info.AddressDomain, text.vma);
-				end_address = start_address + text.size;
+					if (!base_address.IsNull)
+						start_address = new TargetAddress (
+							info.AddressDomain,
+							base_address.Address + text.vma);
+					else
+						start_address = new TargetAddress (
+							info.AddressDomain, text.vma);
+					end_address = start_address + text.size;
+				} else {
+					start_address = main_bfd.StartAddress;
+					end_address = main_bfd.EndAddress;
+				}
 
 				read_bfd_symbols ();
 
@@ -237,6 +250,13 @@ namespace Mono.Debugger.Backends
 			} else {
 				module.LoadModule (this);
 			}
+		}
+
+		public Bfd OpenCoreFile (string core_file)
+		{
+			Bfd core = new Bfd (container, info, core_file, this, TargetAddress.Null, true);
+			core.is_coredump = true;
+			return core;
 		}
 
 		void read_bfd_symbols ()
@@ -303,11 +323,11 @@ namespace Mono.Debugger.Backends
 			if (inferior.ReadInteger (rdebug_state_addr) != 0)
 				return false;
 
-			do_update_shlib_info (inferior);
+			do_update_shlib_info (inferior, inferior);
 			return false;
 		}
 
-		bool read_dynamic_info (Inferior inferior)
+		bool read_dynamic_info (Inferior inferior, ITargetMemoryAccess target)
 		{
 			if (initialized)
 				return has_shlib_info;
@@ -318,10 +338,10 @@ namespace Mono.Debugger.Backends
 			if (section == null)
 				return false;
 
-			TargetAddress vma = new TargetAddress (inferior.AddressDomain, section.vma);
+			TargetAddress vma = new TargetAddress (target.AddressDomain, section.vma);
 
 			int size = (int) section.size;
-			byte[] dynamic = inferior.ReadBuffer (vma, size);
+			byte[] dynamic = target.ReadBuffer (vma, size);
 
 			TargetAddress debug_base;
 			IntPtr data = IntPtr.Zero;
@@ -331,17 +351,17 @@ namespace Mono.Debugger.Backends
 				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
 				if (base_ptr == 0)
 					return false;
-				debug_base = new TargetAddress (inferior.AddressDomain, base_ptr);
+				debug_base = new TargetAddress (target.AddressDomain, base_ptr);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 
-			int the_size = 2 * inferior.TargetLongIntegerSize +
-				3 * inferior.TargetAddressSize;
+			int the_size = 2 * target.TargetLongIntegerSize +
+				3 * target.TargetAddressSize;
 
-			TargetBlob blob = inferior.ReadMemory (debug_base, the_size);
-			TargetReader reader = new TargetReader (blob.Contents, inferior);
+			TargetBlob blob = target.ReadMemory (debug_base, the_size);
+			TargetReader reader = new TargetReader (blob.Contents, target);
 			if (reader.ReadLongInteger () != 1)
 				return false;
 
@@ -353,30 +373,30 @@ namespace Mono.Debugger.Backends
 			if (reader.ReadLongInteger () != 0)
 				return false;
 
-			inferior.BreakpointManager.InsertBreakpoint (
-				inferior, new DynlinkBreakpoint (this), dynlink_breakpoint);
+			if (inferior != null)
+				inferior.BreakpointManager.InsertBreakpoint (
+					inferior, new DynlinkBreakpoint (this), dynlink_breakpoint);
 
 			has_shlib_info = true;
 			return true;
 		}
 
-		public void UpdateSharedLibraryInfo (Inferior inferior)
+		public void UpdateSharedLibraryInfo (Inferior inferior, ITargetMemoryAccess target)
 		{
 			// This fails if it's a statically linked executable.
 			try {
-				if (!read_dynamic_info (inferior))
+				if (!read_dynamic_info (inferior, target))
 					return;
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("UPDATE SHLIB INFO #1: {0}", ex);
 				return;
 			}
 
-			do_update_shlib_info (inferior);
+			do_update_shlib_info (inferior, target);
 		}
 
-		void do_update_shlib_info (Inferior inferior)
+		void do_update_shlib_info (Inferior inferior, ITargetMemoryAccess target)
 		{
-			ITargetMemoryAccess target = inferior;
-
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
@@ -418,26 +438,6 @@ namespace Mono.Debugger.Backends
 
 				bfd = container.AddFile (target, name, l_addr, module.StepInto, true);
 				bfd.module_loaded (inferior, l_addr);
-			}
-		}
-
-		public Bfd CoreFileBfd {
-			get {
-				return core_file_bfd;
-			}
-
-			set {
-				core_file_bfd = value;
-				if (core_file_bfd != null) {
-#if FALSE
-					InternalSection text = GetSectionByName (".text", true);
-
-					base_address = new TargetAddress (
-						memory.AddressDomain, text.vma);
-					end_address = new TargetAddress (
-						memory.AddressDomain, text.vma + text.size);
-#endif
-				}
 			}
 		}
 
@@ -522,7 +522,7 @@ namespace Mono.Debugger.Backends
 				if (!is_coredump)
 					throw new InvalidOperationException ();
 
-				return bfd_core_file_failing_command (bfd);
+				return bfd_glue_core_file_failing_command (bfd);
 			}
 		}
 
@@ -786,9 +786,20 @@ namespace Mono.Debugger.Backends
 
 			section = bfd_get_section_by_name (bfd, name);
 			if (section == IntPtr.Zero)
-				return null;
+				throw new SymbolTableException ("Can't get bfd section {0}", name);
 
-			return GetSectionContents (section, raw_section);
+			byte[] contents = GetSectionContents (section, raw_section);
+			if (contents == null)
+				throw new SymbolTableException ("Can't get bfd section {0}", name);
+			return contents;
+		}
+
+		public TargetReader GetSectionReader (string name, bool raw_section)
+		{
+			byte[] contents = GetSectionContents (name, raw_section);
+			if (contents == null)
+				throw new SymbolTableException ("Can't get bfd section {0}", name);
+			return new TargetReader (contents, info);
 		}
 
 		byte[] GetSectionContents (IntPtr section, bool raw_section)
@@ -1043,7 +1054,7 @@ namespace Mono.Debugger.Backends
 		{
 			this.base_address = address;
 
-			if (symbols.Contains ("__libc_pthread_functions")) {
+			if ((inferior != null) && symbols.Contains ("__libc_pthread_functions")) {
 				TargetAddress vtable = (TargetAddress)
 					symbols ["__libc_pthread_functions"];
 

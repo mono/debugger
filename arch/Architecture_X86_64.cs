@@ -412,7 +412,11 @@ namespace Mono.Debugger.Backends
 
 		public override string PrintRegisters (StackFrame frame)
 		{
-			Registers registers = frame.Registers;
+			return PrintRegisters (frame.Registers);
+		}
+
+		public string PrintRegisters (Registers registers)
+		{
 			return String.Format (
 				"RAX={0}  RBX={1}  RCX={2}  RDX={3}\n" +
 				"RSI={4}  RDI={5}  RBP={6}  RSP={7}\n" +
@@ -563,7 +567,8 @@ namespace Mono.Debugger.Backends
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Process, frame.TargetAccess,
+					    new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
@@ -595,7 +600,8 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Process, frame.TargetAccess,
+						    new_rip, new_rsp, new_rbp, regs);
 			}
 
 			// push %ebp
@@ -618,7 +624,8 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Process, frame.TargetAccess,
+						    new_rip, new_rsp, new_rbp, regs);
 			}
 
 			if (code [pos++] != 0x48) {
@@ -663,7 +670,8 @@ namespace Mono.Debugger.Backends
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame, new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Process, frame.TargetAccess,
+					    new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, ITargetMemoryAccess memory)
@@ -744,6 +752,20 @@ namespace Mono.Debugger.Backends
 			regs [(int) X86_64_Register.RAX].SetValue (TargetAddress.Null);
 
 			inferior.SetRegisters (regs);
+		}
+
+		internal override StackFrame CreateFrame (Process process, TargetAccess target,
+							  ITargetMemoryInfo info, Registers regs)
+		{
+			TargetAddress address = new TargetAddress (
+				info.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+			TargetAddress stack_pointer = new TargetAddress (
+				info.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+			TargetAddress frame_pointer = new TargetAddress (
+				info.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+
+			return CreateFrame (
+				process, target, address, stack_pointer, frame_pointer, regs);
 		}
 	}
 }

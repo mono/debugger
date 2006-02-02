@@ -199,6 +199,7 @@ bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, gu
 		*size = section->_raw_size;
 	else
 		*size = section->_cooked_size;
+
 	*data = g_malloc0 (*size);
 
 	retval = bfd_get_section_contents (abfd, section, *data, offset, *size);
@@ -224,6 +225,7 @@ fill_section (BfdGlueSection *section, asection *p, int idx)
 	section->size = p->_raw_size;
 	section->flags = flags;
 	section->section = GPOINTER_TO_UINT (p);
+	section->name = p->name;
 }
 
 gboolean
@@ -257,6 +259,12 @@ bfd_glue_get_section_by_name (bfd *abfd, const char *name, BfdGlueSection **sect
 	fill_section (*section, p, 0);
 
 	return TRUE;
+}
+
+gchar *
+bfd_glue_core_file_failing_command (bfd *abfd)
+{
+	return g_strdup (bfd_core_file_failing_command (abfd));
 }
 
 guint64

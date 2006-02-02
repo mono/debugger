@@ -50,6 +50,7 @@ typedef struct {
 	guint64 vma;
 	guint64 size;
 	guint64 section;
+	gchar *name;
 } BfdGlueSection;
 
 extern bfd *
@@ -74,6 +75,9 @@ bfd_glue_get_sections (bfd *abfd, BfdGlueSection **sections, guint32 *count);
 
 extern gboolean
 bfd_glue_get_section_by_name (bfd *abfd, const char *name, BfdGlueSection **section);
+
+extern gchar *
+bfd_glue_core_file_failing_command (bfd *abfd);
 
 extern guint64
 bfd_glue_elfi386_locate_base (bfd *abfd, const guint8 *data, int size);

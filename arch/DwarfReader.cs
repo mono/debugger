@@ -683,17 +683,15 @@ namespace Mono.Debugger.Backends
 
 		object create_reader_func (object user_data)
 		{
-			byte[] contents = bfd.GetSectionContents ((string) user_data, false);
-
-			if (contents == null) {
+			try {
+				byte[] contents = bfd.GetSectionContents ((string) user_data, false);
+				return new TargetBlob (contents, bfd.TargetInfo);
+			} catch {
 				Report.Debug (DebugFlags.DwarfReader,
 					      "{1} Can't find DWARF 2 debugging info in section `{0}'",
 					      bfd.FileName, (string) user_data);
 
 				return null;
-			}
-			else {
-				return new TargetBlob (contents, bfd.TargetInfo);
 			}
 		}
 
