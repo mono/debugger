@@ -14,64 +14,6 @@ namespace Mono.Debugger.Languages.Mono
 						  object user_data);
 
 	// <summary>
-	//   This class is the managed representation of the MONO_DEBUGGER__debugger_info struct.
-	//   as defined in debugger/wrapper/mono-debugger-jit-wrapper.h
-	// </summary>
-	internal class MonoDebuggerInfo
-	{
-		public readonly TargetAddress MonoTrampolineCode;
-		public readonly TargetAddress SymbolTable;
-		public readonly int SymbolTableSize;
-		public readonly TargetAddress CompileMethod;
-		public readonly TargetAddress GetVirtualMethod;
-		public readonly TargetAddress GetBoxedObjectMethod;
-		public readonly TargetAddress InsertBreakpoint;
-		public readonly TargetAddress RemoveBreakpoint;
-		public readonly TargetAddress RuntimeInvoke;
-		public readonly TargetAddress CreateString;
-		public readonly TargetAddress ClassGetStaticFieldData;
-		public readonly TargetAddress LookupClass;
-		public readonly TargetAddress LookupType;
-		public readonly TargetAddress LookupAssembly;
-		public readonly TargetAddress RunFinally;
-
-		internal MonoDebuggerInfo (ITargetMemoryReader reader)
-		{
-			/* skip past magic, version, and total_size */
-			reader.Offset = 16;
-
-			SymbolTableSize         = reader.ReadInteger ();
-
-			reader.Offset = 24;
-			MonoTrampolineCode      = reader.ReadAddress ();
-			SymbolTable             = reader.ReadAddress ();
-			CompileMethod           = reader.ReadAddress ();
-			GetVirtualMethod        = reader.ReadAddress ();
-			GetBoxedObjectMethod    = reader.ReadAddress ();
-			InsertBreakpoint        = reader.ReadAddress ();
-			RemoveBreakpoint        = reader.ReadAddress ();
-			RuntimeInvoke           = reader.ReadAddress ();
-			CreateString            = reader.ReadAddress ();
-			ClassGetStaticFieldData = reader.ReadAddress ();
-			LookupClass             = reader.ReadAddress ();
-			LookupType              = reader.ReadAddress ();
-			LookupAssembly          = reader.ReadAddress ();
-			RunFinally              = reader.ReadAddress ();
-
-			Report.Debug (DebugFlags.JitSymtab, this);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x})",
-				MonoTrampolineCode, SymbolTable, SymbolTableSize,
-				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
-				RuntimeInvoke);
-		}
-	}
-
-	// <summary>
 	//   This class is the managed representation of the
 	//   MonoDefaults struct (at least the types we're interested
 	//   in) as defined in mono/metadata/class-internals.h.
@@ -257,11 +199,6 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoLanguageBackend : Language, ILanguageBackend
 	{
-		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 53;
-		public const int  MaxDynamicVersion = 53;
-		public const long DynamicMagic      = 0x7aff65af4253d427;
-
 		ArrayList symbol_files;
 		int last_num_symbol_files;
 		Hashtable image_hash;
@@ -280,9 +217,10 @@ namespace Mono.Debugger.Languages.Mono
 		bool initialized;
 		DebuggerMutex mutex;
 
-		public MonoLanguageBackend (Debugger backend)
+		public MonoLanguageBackend (Debugger backend, MonoDebuggerInfo info)
 		{
 			this.backend = backend;
+			this.info = info;
 			mutex = new DebuggerMutex ("mono_mutex");
 		}
 
@@ -411,35 +349,8 @@ namespace Mono.Debugger.Languages.Mono
 			return (MonoSymbolFile) image_hash [address];
 		}
 
-		void read_mono_debugger_info (ITargetMemoryAccess memory, Bfd bfd)
+		void read_mono_debugger_info (ITargetMemoryAccess memory)
 		{
-			TargetAddress symbol_info = bfd ["MONO_DEBUGGER__debugger_info"];
-			if (symbol_info.IsNull)
-				throw new SymbolTableException (
-					"Can't get address of `MONO_DEBUGGER__debugger_info'.");
-
-			TargetBinaryReader header = memory.ReadMemory (symbol_info, 16).GetReader ();
-			long magic = header.ReadInt64 ();
-			if (magic != DynamicMagic)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
-
-			int version = header.ReadInt32 ();
-			if (version < MinDynamicVersion)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at least {1}.", version, MinDynamicVersion);
-			if (version > MaxDynamicVersion)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at most {1}.", version, MaxDynamicVersion);
-
-			int size = header.ReadInt32 ();
-
-			TargetReader table = new TargetReader (
-				memory.ReadMemory (symbol_info, size), memory);
-			info = new MonoDebuggerInfo (table);
-
 			init_trampolines (memory);
 
 			symbol_files = new ArrayList ();
@@ -494,21 +405,21 @@ namespace Mono.Debugger.Languages.Mono
 				memory.ReadMemory (symtab_address, info.SymbolTableSize), memory);
 
 			long magic = header.BinaryReader.ReadInt64 ();
-			if (magic != DynamicMagic)
+			if (magic != MonoDebuggerInfo.DynamicMagic)
 				throw new SymbolTableException (
 					"Debugger symbol table has unknown magic {0:x}.", magic);
 
 			int version = header.ReadInteger ();
-			if (version < MinDynamicVersion)
+			if (version < MonoDebuggerInfo.MinDynamicVersion)
 				throw new SymbolTableException (
 					"Debugger symbol table has version {0}, but " +
 					"expected at least {1}.", version,
-					MinDynamicVersion);
-			if (version > MaxDynamicVersion)
+					MonoDebuggerInfo.MinDynamicVersion);
+			if (version > MonoDebuggerInfo.MaxDynamicVersion)
 				throw new SymbolTableException (
 					"Debugger symbol table has version {0}, but " +
 					"expected at most {1}.", version,
-					MaxDynamicVersion);
+					MonoDebuggerInfo.MaxDynamicVersion);
 
 			int total_size = header.ReadInteger ();
 			if (total_size != info.SymbolTableSize)
@@ -517,7 +428,6 @@ namespace Mono.Debugger.Languages.Mono
 					"expected {1}.", total_size, info.SymbolTableSize);
 
 			TargetAddress corlib_address = header.ReadAddress ();
-			TargetAddress metadata_info = header.ReadAddress ();
 
 			TargetAddress symfiles_address = header.ReadAddress ();
 			int num_symbol_files = header.ReadInteger ();
@@ -539,11 +449,12 @@ namespace Mono.Debugger.Languages.Mono
 						continue;
 
 					corlib = symfile;
-					builtin_types = new MonoBuiltinTypeInfo (corlib, memory, metadata_info);
+					builtin_types = new MonoBuiltinTypeInfo (
+						corlib, memory, info.MetadataInfo);
 				} catch (C.MonoSymbolFileException ex) {
 					Console.WriteLine (ex.Message);
 				} catch (Exception ex) {
-					Console.WriteLine (ex.Message);
+					Console.WriteLine (ex);
 				}
 			}
 
@@ -946,7 +857,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			switch (type) {
 			case NotificationType.InitializeManagedCode:
-				read_mono_debugger_info (inferior, inferior.Bfd);
+				read_mono_debugger_info (inferior);
 				do_update_symbol_table (inferior);
 				break;
 

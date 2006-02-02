@@ -1,5 +1,13 @@
 2006-02-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/MonoThreadManager.cs: The big API cleanup.
+	(MonoDebuggerInfo): Moved this here from MonoLanguageBackend.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoDebuggerInfo): Moved into MonoThreadManager.
+
+2006-02-02  Martin Baulig  <martin@ximian.com>
+
 	* arch/bfdglue.h (BfdGlueSection): Added `name'.
 
 	* arch/bfdglue.c (bfd_glue_core_file_failing_command): New

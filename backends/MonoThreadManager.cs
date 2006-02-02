@@ -21,7 +21,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoThreadManager
 	{
 		ThreadManager thread_manager;
-		TargetAddress info;
+		MonoDebuggerInfo debugger_info;
+		Hashtable engine_hash;
 		Inferior inferior;
 
 		[DllImport("monodebuggerserver")]
@@ -30,7 +31,7 @@ namespace Mono.Debugger.Backends
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
 							    Inferior inferior)
 		{
-			TargetAddress info = inferior.SimpleLookup ("MONO_DEBUGGER__manager");
+			TargetAddress info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
 			if (info.IsNull)
 				return null;
 
@@ -40,106 +41,78 @@ namespace Mono.Debugger.Backends
 		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
 					     TargetAddress info)
 		{
-			this.info = info;
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
+
+			this.engine_hash = Hashtable.Synchronized (new Hashtable ());
+
+			TargetBinaryReader header = inferior.ReadMemory (info, 16).GetReader ();
+			long magic = header.ReadInt64 ();
+			if (magic != MonoDebuggerInfo.DynamicMagic)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
+
+			int version = header.ReadInt32 ();
+			if (version < MonoDebuggerInfo.MinDynamicVersion)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					"but expected at least {1}.", version,
+					MonoDebuggerInfo.MinDynamicVersion);
+			if (version > MonoDebuggerInfo.MaxDynamicVersion)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					"but expected at most {1}.", version,
+					MonoDebuggerInfo.MaxDynamicVersion);
+
+			int size = header.ReadInt32 ();
+
+			TargetReader reader = new TargetReader (
+				inferior.ReadMemory (info, size), inferior);
+			debugger_info = new MonoDebuggerInfo (reader);
+
+			mono_debugger_server_set_notification (debugger_info.NotificationAddress.Address);
 		}
 
 		TargetAddress main_function;
 		TargetAddress main_thread;
-		TargetAddress notification_address;
-
-		public TargetAddress Initialize (SingleSteppingEngine sse, Inferior inferior)
-		{
-			main_function = inferior.ReadAddress (info + 8);
-			notification_address = inferior.ReadAddress (
-				info + 8 + inferior.TargetAddressSize);
-
-			mono_debugger_server_set_notification (notification_address.Address);
-
-			manager_sse = sse;
-			manager_sse.Process.SetDaemon ();
-
-			return main_function;
-		}
-
-		void do_initialize (SingleSteppingEngine engine, Inferior inferior)
-		{
-			int size = inferior.ReadInteger (info);
-			TargetBlob blob = inferior.ReadMemory (info, size);
-			TargetReader reader = new TargetReader (blob.Contents, inferior);
-
-			reader.ReadInteger ();
-			thread_size = reader.ReadInteger ();
-
-			main_function = reader.ReadAddress ();
-			notification_address = reader.ReadAddress ();
-
-			main_thread = reader.ReadAddress ();
-			reader.ReadInteger (); /* main_tid */
-
-			thread_created (engine, inferior, main_thread, true);
-		}
-
-		int thread_size;
-		SingleSteppingEngine manager_sse;
 		ILanguageBackend csharp_language;
 
-		bool is_nptl;
-		int first_index;
 		int index;
-
-		// These two constants represent the index of the first
-		// *managed* thread started by the runtime.  In the NPTL
-		// case, it is the third thread started, in the non-NPTL
-		// case, it's the fourth.
-		const int NPTL_FIRST_MANAGED_INDEX = 3;
-		const int NON_NPTL_FIRST_MANAGED_INDEX = 4;
 
 		public bool ThreadCreated (SingleSteppingEngine sse, Inferior inferior,
 					   Inferior caller_inferior)
 		{
+			engine_hash.Add (sse.TID, sse);
+
 			++index;
-
-			if (index == 1) {
+			if (index < 3)
 				sse.Process.SetDaemon ();
-				return false;
-			}
 
-			if (first_index == 0) {
-				is_nptl = caller_inferior == this.inferior;
-				first_index = is_nptl ? NPTL_FIRST_MANAGED_INDEX : NON_NPTL_FIRST_MANAGED_INDEX;
-			}
-
-			if (index == first_index) {
-				Report.Debug (DebugFlags.Threads,
-					      "Created managed main sse: {0}",
-					      sse);
-				csharp_language = thread_manager.Debugger.CreateDebuggerHandler ();
-				return true;
-			} else if (index > first_index) {
-				Report.Debug (DebugFlags.Threads,
-					      "Created managed thread: {0}", sse);
-				return false;
-			} else {
-				sse.Process.SetDaemon ();
-				return false;
-			}
+			return false;
 		}
 
 		void thread_created (SingleSteppingEngine engine, Inferior inferior,
-				     TargetAddress data, bool is_main)
+				     TargetAddress data, long tid)
 		{
-			TargetBlob blob = inferior.ReadMemory (data, thread_size);
-			TargetReader reader = new TargetReader (blob.Contents, inferior);
-			reader.ReadAddress ();
-			reader.ReadAddress ();
-			TargetAddress func = reader.ReadAddress ();
-
+			engine = (SingleSteppingEngine) engine_hash [tid];
 			engine.EndStackAddress = data;
+		}
 
-			if (!is_main)
-				engine.Start (func, false);
+		public void Attach (SingleSteppingEngine main_engine, CommandResult[] results)
+		{
+			foreach (CommandResult result in results)
+				result.Wait ();
+			main_engine.Attach (debugger_info);
+		}
+
+		public CommandResult GetThreadID (SingleSteppingEngine engine)
+		{
+			return engine.GetThreadID (this, debugger_info);
+		}
+
+		internal void SetThreadId (SingleSteppingEngine engine)
+		{
+			engine_hash.Add (engine.TID, engine);
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
@@ -161,7 +134,7 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					thread_created (engine, inferior, data, false);
+					thread_created (engine, inferior, data, cevent.Data2);
 					break;
 				}
 
@@ -169,8 +142,21 @@ namespace Mono.Debugger.Backends
 					break;
 
 				case NotificationType.InitializeThreadManager:
-					do_initialize (engine, inferior);
+					if (!engine_hash.Contains (cevent.Data1))
+						engine_hash.Add (cevent.Data1, engine);
+					csharp_language = thread_manager.Debugger.CreateDebuggerHandler (
+						debugger_info);
 					break;
+
+				case NotificationType.ReachedMain: {
+					TargetAddress data = new TargetAddress (
+						inferior.AddressDomain, cevent.Data1);
+
+					engine.ReachedMain (data);
+
+					thread_manager.ReachedMain (inferior);
+					return true;
+				}
 
 				case NotificationType.WrapperMain:
 					return true;
@@ -203,8 +189,6 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					Console.WriteLine ("NOTIFICATION: {0} {1}", type, data);
-
 					csharp_language.Notification (
 						inferior, type, data, cevent.Data2);
 					break;
@@ -222,6 +206,77 @@ namespace Mono.Debugger.Backends
 			}
 
 			return false;
+		}
+	}
+
+	// <summary>
+	//   This class is the managed representation of the MONO_DEBUGGER__debugger_info struct.
+	//   as defined in debugger/wrapper/mono-debugger-jit-wrapper.h
+	// </summary>
+	internal class MonoDebuggerInfo
+	{
+		// These constants must match up with those in mono/mono/metadata/mono-debug.h
+		public const int  MinDynamicVersion = 53;
+		public const int  MaxDynamicVersion = 53;
+		public const long DynamicMagic      = 0x7aff65af4253d427;
+
+		public readonly TargetAddress NotificationAddress;
+		public readonly TargetAddress MonoTrampolineCode;
+		public readonly TargetAddress SymbolTable;
+		public readonly int SymbolTableSize;
+		public readonly TargetAddress MetadataInfo;
+		public readonly TargetAddress CompileMethod;
+		public readonly TargetAddress GetVirtualMethod;
+		public readonly TargetAddress GetBoxedObjectMethod;
+		public readonly TargetAddress InsertBreakpoint;
+		public readonly TargetAddress RemoveBreakpoint;
+		public readonly TargetAddress RuntimeInvoke;
+		public readonly TargetAddress CreateString;
+		public readonly TargetAddress ClassGetStaticFieldData;
+		public readonly TargetAddress LookupClass;
+		public readonly TargetAddress LookupType;
+		public readonly TargetAddress LookupAssembly;
+		public readonly TargetAddress RunFinally;
+		public readonly TargetAddress GetThreadId;
+		public readonly TargetAddress Attach;
+
+		internal MonoDebuggerInfo (ITargetMemoryReader reader)
+		{
+			/* skip past magic, version, and total_size */
+			reader.Offset = 16;
+
+			SymbolTableSize         = reader.ReadInteger ();
+
+			reader.Offset = 24;
+			NotificationAddress     = reader.ReadAddress ();
+			MonoTrampolineCode      = reader.ReadAddress ();
+			SymbolTable             = reader.ReadAddress ();
+			MetadataInfo            = reader.ReadAddress ();
+			CompileMethod           = reader.ReadAddress ();
+			GetVirtualMethod        = reader.ReadAddress ();
+			GetBoxedObjectMethod    = reader.ReadAddress ();
+			InsertBreakpoint        = reader.ReadAddress ();
+			RemoveBreakpoint        = reader.ReadAddress ();
+			RuntimeInvoke           = reader.ReadAddress ();
+			CreateString            = reader.ReadAddress ();
+			ClassGetStaticFieldData = reader.ReadAddress ();
+			LookupClass             = reader.ReadAddress ();
+			LookupType              = reader.ReadAddress ();
+			LookupAssembly          = reader.ReadAddress ();
+			RunFinally              = reader.ReadAddress ();
+			GetThreadId             = reader.ReadAddress ();
+			Attach                  = reader.ReadAddress ();
+
+			Report.Debug (DebugFlags.JitSymtab, this);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format (
+				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x})",
+				MonoTrampolineCode, SymbolTable, SymbolTableSize,
+				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
+				RuntimeInvoke);
 		}
 	}
 }
