@@ -1,5 +1,5 @@
 using System;
-using System.Threading;
+using ST = System.Threading;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger;
@@ -14,8 +14,8 @@ namespace Mono.Debugger.Frontend
 		string prompt;
 		int line = 0;
 
-		Thread command_thread;
-		Thread main_thread;
+		ST.Thread command_thread;
+		ST.Thread main_thread;
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_static_init ();
@@ -41,10 +41,10 @@ namespace Mono.Debugger.Frontend
 					Style = GetStyle("emacs");
 			}
 
-			main_thread = new Thread (new ThreadStart (main_thread_main));
+			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
 
-			command_thread = new Thread (new ThreadStart (command_thread_main));
+			command_thread = new ST.Thread (new ST.ThreadStart (command_thread_main));
 			command_thread.IsBackground = true;
 		}
 
@@ -108,6 +108,8 @@ namespace Mono.Debugger.Frontend
 			e.RegisterCommand ("library", typeof (LibraryCommand));
 			e.RegisterCommand ("run", typeof (RunCommand));
 			e.RegisterAlias   ("r", typeof (RunCommand));
+			e.RegisterCommand ("attach", typeof (AttachCommand));
+			e.RegisterCommand ("core", typeof (OpenCoreFileCommand));
 			e.RegisterCommand ("about", typeof (AboutCommand));
 			e.RegisterCommand ("lookup", typeof (LookupCommand));
 			e.RegisterCommand ("return", typeof (ReturnCommand));
@@ -140,8 +142,8 @@ namespace Mono.Debugger.Frontend
 				try {
 					DebuggerManager.ClearInterrupt ();
 					MainLoop ();
-				} catch (ThreadAbortException) {
-					Thread.ResetAbort ();
+				} catch (ST.ThreadAbortException) {
+					ST.Thread.ResetAbort ();
 				}
 			}
 		}

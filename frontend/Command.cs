@@ -398,7 +398,6 @@ namespace Mono.Debugger.Frontend
 				start = pexp.EvaluateAddress (context);
 			}
 
-
 			byte[] data = target.TargetMemoryAccess.ReadBuffer (start, count);
 			context.Print (TargetBinaryReader.HexDump (start, data));
 			start += count;
@@ -984,6 +983,78 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
+	public class AttachCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((context.Interpreter.Options.File == null) ||
+			    (context.Interpreter.Options.File == "")) {
+				throw new ScriptingException (
+					"No executable file specified.\nUse the `file' command.");
+			}
+
+			if (context.HasBackend && context.Interpreter.IsInteractive) {
+				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
+							       "Start it from the beginning?")) {
+					context.Interpreter.Kill ();
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			int pid = Int32.Parse ((string) Args [0]);
+
+			context.Interpreter.Attach (pid);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Start debugged program."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class OpenCoreFileCommand : DebuggerCommand, IDocumentableCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((context.Interpreter.Options.File == null) ||
+			    (context.Interpreter.Options.File == "")) {
+				throw new ScriptingException (
+					"No core file specified.\nUse the `file' command.");
+			}
+
+			if (context.HasBackend && context.Interpreter.IsInteractive) {
+				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
+							       "Start it from the beginning?")) {
+					context.Interpreter.Kill ();
+					return true;
+				}
+				else {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.OpenCoreFile ((string) Args [0]);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Start debugged program."; } }
+		public string Documentation { get { return ""; } }
+	}
+
 	public class KillCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
@@ -1233,7 +1304,8 @@ namespace Mono.Debugger.Frontend
 				bool printed_something = false;
 				foreach (Process proc in context.Interpreter.Processes) {
 					string prefix = proc.ID == current_id ? "(*)" : "   ";
-					context.Print ("{0} {1}", prefix, proc);
+					context.Print ("{0} {1} ({2}:{3:x})", prefix, proc,
+						       proc.PID, proc.TID);
 					printed_something = true;
 				}
 
@@ -1247,7 +1319,6 @@ namespace Mono.Debugger.Frontend
 			protected override void DoExecute (ScriptingContext context)
 			{
 				StackFrame frame = ResolveFrame (context);
-
 				Architecture arch = frame.Process.Architecture;
 				context.Print (arch.PrintRegisters (frame));
 			}

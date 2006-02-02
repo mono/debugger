@@ -1,5 +1,15 @@
 2006-02-02  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(AttachCommand): New command.
+	(OpenCoreFileCommand): New command.
+
+	* frontend/Interpreter.cs
+	(Interpreter.Attach): New public method.
+	(Interpreter.OpenCoreFile): New public method.
+
+2006-02-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/ProcessStart.cs
 	(ProcessStart.CoreFile): New public readonly field.
 	(ProcessStart.PID): New public readonly field

@@ -313,6 +313,71 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public Process Attach (int pid)
+		{
+			if (main_process != null)
+				throw new ScriptingException ("Process already started.");
+
+			Console.WriteLine ("Attaching to {0}", pid);
+
+			try {
+				DebuggerClient client;
+				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				DebuggerServer server = client.DebuggerServer;
+
+				new InterpreterEventSink (this, client, server);
+				new ProcessEventSink (this, client, server);
+
+				session = server.Session;
+
+				server.Attach (options, pid);
+				Process process = server.WaitForApplication ();
+				main_process = process;
+
+				start_event.WaitOne ();
+				context.CurrentProcess = main_process;
+				manager.Wait (process);
+
+				return process;
+			} catch (TargetException e) {
+				Kill ();
+				throw new ScriptingException (e.Message);
+			}
+		}
+
+		public Process OpenCoreFile (string core_file)
+		{
+			if (main_process != null)
+				throw new ScriptingException ("Process already started.");
+
+			Console.WriteLine ("Loading core file {0}", core_file);
+
+			try {
+				DebuggerClient client;
+				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				DebuggerServer server = client.DebuggerServer;
+
+				new InterpreterEventSink (this, client, server);
+				new ProcessEventSink (this, client, server);
+
+				session = server.Session;
+
+				Process[] threads;
+				Process process = server.OpenCoreFile (options, core_file, out threads);
+				main_process = process;
+
+				context.CurrentProcess = main_process;
+
+				foreach (Process thread in threads)
+					procs.Add (thread.ID, thread);
+
+				return process;
+			} catch (TargetException e) {
+				Kill ();
+				throw new ScriptingException (e.Message);
+			}
+		}
+
 		public void SaveSession (Stream stream)
 		{
 			BinaryFormatter formatter = new BinaryFormatter ();
