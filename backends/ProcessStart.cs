@@ -8,6 +8,8 @@ namespace Mono.Debugger.Backends
 {
 	internal sealed class ProcessStart : MarshalByRefObject
 	{
+		public readonly int PID;
+		public readonly string CoreFile;
 		public readonly string[] UserArguments;
 		public readonly string[] UserEnvironment;
 		public readonly bool IsNative;
@@ -101,6 +103,18 @@ namespace Mono.Debugger.Backends
 			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
 
 			SetupEnvironment ();
+		}
+
+		internal ProcessStart (DebuggerOptions options, int pid)
+			: this (options)
+		{
+			this.PID = pid;
+		}
+
+		internal ProcessStart (DebuggerOptions options, string core_file)
+			: this (options)
+		{
+			this.CoreFile = core_file;
 		}
 
 		public DebuggerOptions Options {

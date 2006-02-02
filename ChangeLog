@@ -1,5 +1,9 @@
 2006-02-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/ProcessStart.cs
+	(ProcessStart.CoreFile): New public readonly field.
+	(ProcessStart.PID): New public readonly field
+
 	* backends/Debugger.cs
 	(Debugger.Attach): New public method.
 	(Debugger.OpenCoreFile): New public method.
