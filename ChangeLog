@@ -1,5 +1,19 @@
 2006-02-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/Thread.cs: New file.
+	(Mono.Debugger.Backends.Thread): New public abstract class.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine): Derive from `Thread'.
+
+	* arch/CoreFile.cs (CoreFile): Derive from `Thread'.
+
+	* backends/Process.cs (Process): Use a new `Thread thread' field
+	to perform non-stepping operations so we can talk both to a
+	`SingleSteppingEngine' and a `CoreFile'.
+
+2006-02-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/MonoThreadManager.cs: The big API cleanup.
 	(MonoDebuggerInfo): Moved this here from MonoLanguageBackend.
 

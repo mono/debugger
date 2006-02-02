@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
+using ST = System.Threading;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
@@ -23,6 +23,7 @@ namespace Mono.Debugger
 		internal Process (DebuggerManager debugger_manager, SingleSteppingEngine engine)
 		{
 			this.engine = engine;
+			this.thread = engine;
 			this.id = engine.ThreadManager.NextProcessID;
 			this.debugger_manager = debugger_manager;
 
@@ -37,10 +38,32 @@ namespace Mono.Debugger
 			tgroup = debugger_manager.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
 
-			operation_completed_event = new ManualResetEvent (false);
+			operation_completed_event = new ST.ManualResetEvent (false);
 
 			this.target_info = engine.TargetInfo;
 			this.target_memory_info = engine.TargetMemoryInfo;
+			this.target_access = new ClientTargetAccess (this);
+		}
+
+		internal Process (DebuggerManager debugger_manager, Thread thread, int pid)
+		{
+			this.thread = thread;
+			this.id = thread.ThreadManager.NextProcessID;
+			this.debugger_manager = debugger_manager;
+			this.pid = pid;
+
+			this.manager = thread.ThreadManager;
+			this.backend = manager.Debugger;
+
+			this.symtab_manager = backend.SymbolTableManager;
+
+			tgroup = debugger_manager.CreateThreadGroup ("@" + ID);
+			tgroup.AddThread (ID);
+
+			operation_completed_event = new ST.ManualResetEvent (false);
+
+			this.target_info = thread.TargetInfo;
+			this.target_memory_info = thread.TargetMemoryInfo;
 			this.target_access = new ClientTargetAccess (this);
 		}
 
@@ -48,23 +71,24 @@ namespace Mono.Debugger
 		int id, pid;
 		long tid;
 		ThreadGroup tgroup;
+		Thread thread;
 		SingleSteppingEngine engine;
 		Debugger backend;
 		ThreadManager manager;
 		DebuggerManager debugger_manager;
 		SymbolTableManager symtab_manager;
-		ManualResetEvent operation_completed_event;
+		ST.ManualResetEvent operation_completed_event;
 		ITargetInfo target_info;
 		ITargetMemoryInfo target_memory_info;
 		TargetAccess target_access;
 
-		public WaitHandle WaitHandle {
+		public ST.WaitHandle WaitHandle {
 			get { return operation_completed_event; }
 		}
 
 		protected internal Language NativeLanguage {
 			get {
-				check_engine ();
+				check_thread ();
 				return Debugger.BfdContainer.NativeLanguage;
 			}
 		}
@@ -88,10 +112,10 @@ namespace Mono.Debugger
 		// </summary>
 		public TargetState State {
 			get {
-				if (engine == null)
+				if (thread == null)
 					return TargetState.NO_TARGET;
 				else
-					return engine.State;
+					return thread.State;
 			}
 		}
 
@@ -124,14 +148,14 @@ namespace Mono.Debugger
 
 		public Architecture Architecture {
 			get {
-				check_engine ();
+				check_thread ();
 				return target_memory_info.Architecture;
 			}
 		}
 
 		public Debugger Debugger {
 			get {
-				check_engine ();
+				check_thread ();
 				return backend;
 			}
 		}
@@ -151,9 +175,20 @@ namespace Mono.Debugger
 			is_daemon = true;
 		}
 
+		internal void SetTID (long tid)
+		{
+			this.tid = tid;
+		}
+
 		void check_engine ()
 		{
 			if (engine == null)
+				throw new TargetException (TargetError.NoTarget);
+		}
+
+		void check_thread ()
+		{
+			if (thread == null)
 				throw new TargetException (TargetError.NoTarget);
 		}
 
@@ -167,15 +202,15 @@ namespace Mono.Debugger
 		// </summary>
 		public StackFrame CurrentFrame {
 			get {
-				check_engine ();
-				return engine.CurrentFrame;
+				check_thread ();
+				return thread.CurrentFrame;
 			}
 		}
 
 		public TargetAddress CurrentFrameAddress {
 			get {
-				check_engine ();
-				return engine.CurrentFrameAddress;
+				check_thread ();
+				return thread.CurrentFrameAddress;
 			}
 		}
 
@@ -190,13 +225,14 @@ namespace Mono.Debugger
 		// </summary>
 		public Backtrace GetBacktrace (int max_frames)
 		{
-			check_engine ();
-			return engine.GetBacktrace (max_frames);
+			check_thread ();
+			return thread.GetBacktrace (max_frames);
 		}
 
 		public Backtrace GetBacktrace ()
 		{
-			Backtrace bt = engine.CurrentBacktrace;
+			check_thread ();
+			Backtrace bt = thread.CurrentBacktrace;
 			if (bt != null)
 				return bt;
 
@@ -205,8 +241,8 @@ namespace Mono.Debugger
 
 		public Registers GetRegisters ()
 		{
-			check_engine ();
-			return engine.GetRegisters ();
+			check_thread ();
+			return thread.GetRegisters ();
 		}
 
 		public void SetRegisters (Registers registers)
@@ -459,20 +495,20 @@ namespace Mono.Debugger
 
 		public int GetInstructionSize (TargetAddress address)
 		{
-			check_engine ();
-			return engine.GetInstructionSize (address);
+			check_thread ();
+			return thread.GetInstructionSize (address);
 		}
 
 		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
-			check_engine ();
-			return engine.DisassembleInstruction (method, address);
+			check_thread ();
+			return thread.DisassembleInstruction (method, address);
 		}
 
 		public AssemblerMethod DisassembleMethod (Method method)
 		{
-			check_engine ();
-			return engine.DisassembleMethod (method);
+			check_thread ();
+			return thread.DisassembleMethod (method);
 		}
 
 		public void RuntimeInvoke (TargetFunctionType function,
@@ -602,8 +638,8 @@ namespace Mono.Debugger
 #region ITargetMemoryAccess implementation
 		void write_memory (TargetAddress address, byte[] buffer)
 		{
-			check_engine ();
-			engine.WriteMemory (address, buffer);
+			check_thread ();
+			thread.WriteBuffer (address, buffer);
 		}
 
 		AddressDomain ITargetMemoryInfo.AddressDomain {
@@ -614,45 +650,45 @@ namespace Mono.Debugger
 
 		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
 		{
-			check_engine ();
-			return engine.ReadByte (address);
+			check_thread ();
+			return thread.ReadByte (address);
 		}
 
 		int ITargetMemoryAccess.ReadInteger (TargetAddress address)
 		{
-			check_engine ();
-			return engine.ReadInteger (address);
+			check_thread ();
+			return thread.ReadInteger (address);
 		}
 
 		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
 		{
-			check_engine ();
-			return engine.ReadLongInteger (address);
+			check_thread ();
+			return thread.ReadLongInteger (address);
 		}
 
 		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
 		{
-			check_engine ();
-			return engine.ReadAddress (address);
+			check_thread ();
+			return thread.ReadAddress (address);
 		}
 
 		string ITargetMemoryAccess.ReadString (TargetAddress address)
 		{
-			check_engine ();
-			return engine.ReadString (address);
+			check_thread ();
+			return thread.ReadString (address);
 		}
 
 		TargetBlob ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
 		{
-			check_engine ();
-			byte[] buffer = engine.ReadMemory (address, size);
+			check_thread ();
+			byte[] buffer = thread.ReadBuffer (address, size);
 			return new TargetBlob (buffer, target_info);
 		}
 
 		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
 		{
-			check_engine ();
-			return engine.ReadMemory (address, size);
+			check_thread ();
+			return thread.ReadBuffer (address, size);
 		}
 
 		bool ITargetMemoryAccess.CanWrite {
@@ -681,7 +717,7 @@ namespace Mono.Debugger
 
 		void ITargetMemoryAccess.WriteAddress (TargetAddress address, TargetAddress value)
 		{
-			check_engine ();
+			check_thread ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (
 				target_info.TargetAddressSize, target_info);
 			writer.WriteAddress (value);
@@ -698,7 +734,7 @@ namespace Mono.Debugger
 				this.process = process;
 			}
 
-			public override WaitHandle CompletedEvent {
+			public override ST.WaitHandle CompletedEvent {
 				get { return process.WaitHandle; }
 			}
 
