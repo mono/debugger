@@ -52,6 +52,6 @@ mdb_expect_line "Foo with a string: Boston"
 mdb_expect_line "Hello: 9"
 mdb_expect_line "Static Hello: 9"
 mdb_expect_line "Static Hello: 9"
-mdb_expect_line "Process @4 terminated normally."
+mdb_expect_line "Process @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"

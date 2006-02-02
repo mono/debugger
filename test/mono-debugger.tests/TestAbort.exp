@@ -76,7 +76,7 @@ mdb_expect_line "Hello World"
 mdb_expect_line "Done: 5 10 3"
 mdb_expect_line "3"
 
-mdb_expect_line "Process @4 terminated normally."
+mdb_expect_line "Process @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"
 

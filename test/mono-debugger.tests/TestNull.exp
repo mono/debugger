@@ -39,6 +39,6 @@ mdb_expect_line "True"
 mdb_expect_line "True"
 mdb_expect_line "False"
 mdb_expect_line "False"
-mdb_expect_line "Process @4 terminated normally."
+mdb_expect_line "Process @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"

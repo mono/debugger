@@ -60,6 +60,6 @@ mdb_send_and_expect "print base.a" "(System.Int32) 8"
 mdb_send_and_expect "print base.Hello" "(System.String) \"Hello World\""
 mdb_send_and_expect "print Virtual ()" "(System.Int32) 2"
 mdb_send "continue"
-mdb_expect_line "Process @4 terminated normally."
+mdb_expect_line "Process @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"
