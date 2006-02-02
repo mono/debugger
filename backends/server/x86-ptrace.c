@@ -250,7 +250,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 }
 
 static ServerHandle *
-server_ptrace_initialize (BreakpointManager *bpm)
+server_ptrace_create_inferior (BreakpointManager *bpm)
 {
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
 
@@ -336,11 +336,9 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 }
 
 static ServerCommandError
-server_ptrace_attach (ServerHandle *handle, guint32 pid, guint64 *tid)
+server_ptrace_initialize (ServerHandle *handle, guint32 pid, guint64 *tid)
 {
 	InferiorHandle *inferior = handle->inferior;
-
-	ptrace (PT_ATTACH, pid, NULL, 0);
 
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
@@ -348,6 +346,29 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid, guint64 *tid)
 	_server_ptrace_setup_inferior (handle, FALSE);
 
 	*tid = inferior->tid;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_attach (ServerHandle *handle, guint32 pid, gboolean is_main, guint64 *tid)
+{
+	InferiorHandle *inferior = handle->inferior;
+
+	if (ptrace (PT_ATTACH, pid, NULL, 0) != 0) {
+		g_warning (G_STRLOC ": Can't attach to %d - %s", pid,
+			   g_strerror (errno));
+		return COMMAND_ERROR_CANNOT_START_TARGET;
+	}
+
+	inferior->pid = pid;
+	inferior->is_thread = TRUE;
+
+	_server_ptrace_setup_inferior (handle, is_main);
+	if (is_main)
+		_server_ptrace_setup_thread_manager (handle);
+
+	*tid = -1;
 
 	return COMMAND_ERROR_NONE;
 }
@@ -430,6 +451,7 @@ extern void GC_end_blocking (void);
 
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_init,
+	server_ptrace_create_inferior,
 	server_ptrace_initialize,
 	server_ptrace_spawn,
 	server_ptrace_attach,
@@ -464,5 +486,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_set_signal,
 	server_ptrace_kill,
 	server_ptrace_get_signal_info,
-	server_ptrace_set_notification
+	server_ptrace_set_notification,
+	server_ptrace_get_threads
 };

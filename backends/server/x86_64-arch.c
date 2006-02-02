@@ -183,7 +183,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	x86_arch_get_registers (handle);
 
-	if (INFERIOR_REG_RIP (arch->current_regs) == notification_address) {
+	if (INFERIOR_REG_RIP (arch->current_regs) - 1 == notification_address) {
 		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
 		*retval = INFERIOR_REG_RSI (arch->current_regs);
 		*retval2 = INFERIOR_REG_RDX (arch->current_regs);

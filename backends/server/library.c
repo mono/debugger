@@ -21,14 +21,14 @@ static InferiorVTable *global_vtable = &i386_ptrace_inferior;
 #endif
 
 ServerHandle *
-mono_debugger_server_initialize (BreakpointManager *breakpoint_manager)
+mono_debugger_server_create_inferior (BreakpointManager *breakpoint_manager)
 {
 	if ((getuid () == 0) || (geteuid () == 0)) {
 		g_message ("WARNING: Running mdb as root may be a problem because setuid() and\n"
 			   "seteuid() do nothing.\n"
 			   "See http://primates.ximian.com/~martin/blog/entry_150.html for details.");
 	}
-	return global_vtable->initialize (breakpoint_manager);
+	return global_vtable->create_inferior (breakpoint_manager);
 }
 
 guint32
@@ -57,12 +57,21 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 }
 
 ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, guint32 pid, guint64 *tid)
+mono_debugger_server_initialize (ServerHandle *handle, guint32 pid, guint64 *tid)
+{
+	if (!global_vtable->initialize)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->initialize) (handle, pid, tid);
+}
+
+ServerCommandError
+mono_debugger_server_attach (ServerHandle *handle, guint32 pid, gboolean is_main, guint64 *tid)
 {
 	if (!global_vtable->attach)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->attach) (handle, pid, tid);
+	return (* global_vtable->attach) (handle, pid, is_main, tid);
 }
 
 void
@@ -355,6 +364,16 @@ mono_debugger_server_set_notification (guint64 notification)
 	if (global_vtable->set_notification)
 		return (* global_vtable->set_notification) (notification);
 }
+
+ServerCommandError
+mono_debugger_server_get_threads (ServerHandle *handle, guint32 *count, guint32 **threads)
+{
+	if (!global_vtable->get_threads)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->get_threads) (handle, count, threads);
+}
+
 
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;

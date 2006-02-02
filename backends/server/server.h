@@ -93,7 +93,11 @@ struct ServerHandle {
 struct InferiorVTable {
 	void                  (* global_init)         (void);
 
-	ServerHandle *        (* initialize)          (BreakpointManager  *bpm);
+	ServerHandle *        (* create_inferior)     (BreakpointManager  *bpm);
+
+	ServerCommandError    (* initialize)          (ServerHandle       *handle,
+						       guint32             pid,
+						       guint64            *tid);
 
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
 						       const gchar        *working_directory,
@@ -106,6 +110,7 @@ struct InferiorVTable {
 
 	ServerCommandError    (* attach)              (ServerHandle       *handle,
 						       guint32             pid,
+						       gboolean            is_main,
 						       guint64            *tid);
 
 	ServerCommandError    (* detach)              (ServerHandle       *handle);
@@ -303,6 +308,10 @@ struct InferiorVTable {
 						       SignalInfo      **sinfo);
 
 	void                  (* set_notification)    (guint64           notification);
+
+	ServerCommandError    (* get_threads)         (ServerHandle     *handle,
+						       guint32          *count,
+						       guint32         **threads);
 };
 
 /*
@@ -319,7 +328,12 @@ void
 mono_debugger_server_global_init          (void);
 
 ServerHandle *
-mono_debugger_server_initialize           (BreakpointManager  *bpm);
+mono_debugger_server_create_inferior      (BreakpointManager  *bpm);
+
+ServerCommandError
+mono_debugger_server_initialize           (ServerHandle       *handle,
+					   guint32             pid,
+					   guint64            *tid);
 
 ServerCommandError
 mono_debugger_server_spawn                (ServerHandle       *handle,
@@ -334,6 +348,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
 					   guint32             pid,
+					   gboolean            is_main,
 					   guint64            *tid);
 
 void
@@ -479,6 +494,11 @@ mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 
 void
 mono_debugger_server_set_notification    (guint64              notification);
+
+ServerCommandError
+mono_debugger_server_get_threads         (ServerHandle        *handle,
+					  guint32             *count,
+					  guint32            **threads);
 
 /* POSIX semaphores */
 

@@ -1,3 +1,24 @@
+2006-02-02  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86-linux-ptrace.c
+	(server_ptrace_get_threads): New function.
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_initialize): Renamed into `server_ptrace_create_inferior'.
+	(server_ptrace_attach): Renamed into `server_ptrace_initialize'
+	and created a new `server_ptrace_attach' to actually attach to a process.
+	Note that If we "attach" to a thread after receiving a PTRACE_EVENT_CLONE,
+	we are in fact already attached to that thread and don't need another
+	PT_ATTACH call.
+
+	* backends/server/library.c
+	(mono_debugger_server_initialize): Use this to "attach" to a new
+	thread of the application we're already debugging; this is used
+	after receiving a PTRACE_EVENT_CLONE.
+	(mono_debugger_server_attach): Use this to actually attach to a
+	new process.
+	(mono_debugger_server_get_threads): Get all threads of the process.
+
 2006-01-25  Martin Baulig  <martin@ximian.com>
 
 	* backends/MonoThreadManager.cs: Started to clean this up; removed

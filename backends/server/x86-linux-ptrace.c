@@ -356,3 +356,47 @@ server_ptrace_global_init (void)
 	stop_requested = 0;
 	stop_status = 0;
 }
+
+static ServerCommandError
+server_ptrace_get_threads (ServerHandle *handle, guint32 *count, guint32 **threads)
+{
+	gchar *dirname = g_strdup_printf ("/proc/%d/task", handle->inferior->pid);
+	const gchar *filename;
+	GPtrArray *array;
+	GDir *dir;
+	int i;
+
+	dir = g_dir_open (dirname, 0, NULL);
+	if (!dir) {
+		g_warning (G_STRLOC ": Can't get threads of %d", handle->inferior->pid);
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	}
+
+	array = g_ptr_array_new ();
+
+	while ((filename = g_dir_read_name (dir)) != NULL) {
+		gchar *endptr;
+		guint32 pid;
+
+		pid = (guint32) strtol (filename, &endptr, 10);
+		if (*endptr)
+			goto out_error;
+
+		g_ptr_array_add (array, GUINT_TO_POINTER (pid));
+	}
+
+	*count = array->len;
+	*threads = g_new0 (guint32, array->len);
+
+	for (i = 0; i < array->len; i++)
+		(*threads) [i] = GPOINTER_TO_UINT (g_ptr_array_index (array, i));
+
+	g_dir_close (dir);
+	return COMMAND_ERROR_NONE;
+
+ out_error:
+	g_dir_close (dir);
+	g_ptr_array_free (array, FALSE);
+	g_warning (G_STRLOC ": Can't get threads of %d", handle->inferior->pid);
+	return COMMAND_ERROR_UNKNOWN_ERROR;
+}
