@@ -94,6 +94,8 @@ namespace Mono.Debugger.Backends
 
 		internal TargetReader (byte[] data, ITargetMemoryInfo info)
 		{
+			if ((info == null) || (data == null))
+				throw new ArgumentNullException ();
 			this.reader = new TargetBinaryReader (data, info);
 			this.info = info;
 			this.data = data;
