@@ -15,7 +15,7 @@
 
 struct ArchInfo
 {
-	long call_address;
+	guint32 call_address;
 	guint64 callback_argument;
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
@@ -32,8 +32,8 @@ typedef struct
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	int saved_signal;
-	long call_address;
-	long exc_address;
+	guint32 call_address;
+	guint32 exc_address;
 	gboolean debug;
 	guint64 callback_argument;
 } RuntimeInvokeData;
@@ -126,7 +126,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
-	long new_esp, call_disp;
+	guint32 new_esp, call_disp;
 
 	guint8 code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
 			  0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
@@ -154,7 +154,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+16)) = method_argument1 & 0xffffffff;
 	*((guint32 *) (code+21)) = call_disp - 25;
 
-	server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -179,7 +179,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
-	long new_esp, call_disp;
+	guint32 new_esp, call_disp;
 
 	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
 					0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0xe8,
@@ -188,7 +188,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	int size = static_size + strlen (string_argument) + 1;
 	guint8 *code = g_malloc0 (size);
 	memcpy (code, static_code, static_size);
-	strcpy (code + static_size, string_argument);
+	strcpy ((char *) (code + static_size), string_argument);
 
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
@@ -209,7 +209,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+11)) = method_argument & 0xffffffff;
 	*((guint32 *) (code+16)) = call_disp - 20;
 
-	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -229,7 +229,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	RuntimeInvokeData *rdata;
-	long new_esp;
+	guint32 new_esp;
 
 	int size = 57;
 	guint8 *code = g_malloc0 (size);
@@ -262,7 +262,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	rdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
-	server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -289,7 +289,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	RuntimeInvokeData *rdata;
-	long new_esp, call_disp;
+	guint32 new_esp;
 	int i;
 
 	static guint8 static_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -334,7 +334,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	rdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
-	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -401,10 +401,12 @@ guint64
 x86_arch_get_tid (ServerHandle *handle)
 {
 	guint32 start = (guint32) INFERIOR_REG_ESP (handle->arch->current_regs) + 12;
-	guint32 tid;
+	guint64 tid;
 
 	if (server_ptrace_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't get tid");
+
+	tid &= 0x00000000ffffffffL;
 
 	return tid;
 }
@@ -451,7 +453,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	rdata = get_runtime_invoke_data (arch);
 	if (rdata && (rdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
-		guint32 exc_object;
+		guint64 exc_object;
 
 		if (_server_ptrace_set_registers (inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
@@ -486,7 +488,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	}
 
 	if (!arch->call_address || arch->call_address != INFERIOR_REG_EIP (arch->current_regs)) {
-		int code;
+		guint64 code;
 
 #if defined(__linux__) || defined(__FreeBSD__)
 		if (stopsig != SIGTRAP)
