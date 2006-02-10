@@ -72,7 +72,7 @@ namespace Mono.Debugger.Languages
 					if (indices [i] >= bounds [i].Length)
 						throw new ArgumentException ();
 				}
-			} else if ((indices [0] < 0) || (indices [0] > bounds [0].Length))
+			} else if ((indices [0] < 0) || (indices [0] >= bounds [0].Length))
 				throw new ArgumentException ();
 
 			int index = indices [0];
