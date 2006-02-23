@@ -104,7 +104,7 @@ namespace Mono.Debugger.Remoting
 			}
 		}
 
-		internal Process CreateProcess (Thread thread, int pid)
+		internal Process CreateProcess (ThreadBase thread, int pid)
 		{
 			lock (this) {
 				Process process = new Process (this, thread, pid);

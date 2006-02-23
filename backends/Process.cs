@@ -18,7 +18,7 @@ namespace Mono.Debugger
 {
 	using SSE = SingleSteppingEngine;
 
-	public class Process : Thread
+	public class Process : ThreadBase
 	{
 		internal Process (DebuggerManager debugger_manager, SingleSteppingEngine engine)
 		{
@@ -45,7 +45,7 @@ namespace Mono.Debugger
 			this.target_access = new ClientTargetAccess (this);
 		}
 
-		internal Process (DebuggerManager debugger_manager, Thread thread, int pid)
+		internal Process (DebuggerManager debugger_manager, ThreadBase thread, int pid)
 		{
 			this.thread = thread;
 			this.id = thread.ThreadManager.NextProcessID;
@@ -71,7 +71,7 @@ namespace Mono.Debugger
 		int id, pid;
 		long tid;
 		ThreadGroup tgroup;
-		Thread thread;
+		ThreadBase thread;
 		SingleSteppingEngine engine;
 		Debugger backend;
 		ThreadManager manager;

@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Backends
 {
-	public abstract class Thread : MarshalByRefObject, ITargetMemoryAccess
+	public abstract class ThreadBase : MarshalByRefObject, ITargetMemoryAccess
 	{
 		internal abstract ThreadManager ThreadManager {
 			get;

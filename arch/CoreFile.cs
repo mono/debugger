@@ -155,7 +155,7 @@ namespace Mono.Debugger.Backends
 			get { return memory_info; }
 		}
 
-		protected class CoreFileThread : Thread, ITargetMemoryAccess
+		protected class CoreFileThread : ThreadBase, ITargetMemoryAccess
 		{
 			public readonly int PID;
 			public readonly CoreFile CoreFile;

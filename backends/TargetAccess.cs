@@ -337,10 +337,10 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal sealed class ThreadTargetAccess : TargetAccess
 	{
-		Thread thread;
+		ThreadBase thread;
 		ITargetMemoryAccess memory;
 
-		public ThreadTargetAccess (Thread thread, ITargetMemoryAccess memory,
+		public ThreadTargetAccess (ThreadBase thread, ITargetMemoryAccess memory,
 					   int id, string name)
 			: base (id, name)
 		{
