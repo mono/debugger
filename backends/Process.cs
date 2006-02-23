@@ -18,7 +18,7 @@ namespace Mono.Debugger
 {
 	using SSE = SingleSteppingEngine;
 
-	public class Process : MarshalByRefObject, ITargetMemoryAccess
+	public class Process : Thread
 	{
 		internal Process (DebuggerManager debugger_manager, SingleSteppingEngine engine)
 		{
@@ -110,7 +110,7 @@ namespace Mono.Debugger
 		//   The single-stepping engine's target state.  This will be
 		//   TargetState.RUNNING while the engine is stepping.
 		// </summary>
-		public TargetState State {
+		public override TargetState State {
 			get {
 				if (thread == null)
 					return TargetState.NO_TARGET;
@@ -146,7 +146,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public Architecture Architecture {
+		public override Architecture Architecture {
 			get {
 				check_thread ();
 				return target_memory_info.Architecture;
@@ -157,6 +157,13 @@ namespace Mono.Debugger
 			get {
 				check_thread ();
 				return backend;
+			}
+		}
+
+		internal override ThreadManager ThreadManager {
+			get {
+				check_thread ();
+				return manager;
 			}
 		}
 
@@ -200,14 +207,14 @@ namespace Mono.Debugger
 		//   unnecessarily compute this several times if more than one client
 		//   accesses this property.
 		// </summary>
-		public StackFrame CurrentFrame {
+		public override StackFrame CurrentFrame {
 			get {
 				check_thread ();
 				return thread.CurrentFrame;
 			}
 		}
 
-		public TargetAddress CurrentFrameAddress {
+		public override TargetAddress CurrentFrameAddress {
 			get {
 				check_thread ();
 				return thread.CurrentFrameAddress;
@@ -223,7 +230,7 @@ namespace Mono.Debugger
 		//   without doing any stepping operations in the meantime, you'll always
 		//   get the same backtrace.
 		// </summary>
-		public Backtrace GetBacktrace (int max_frames)
+		public override Backtrace GetBacktrace (int max_frames)
 		{
 			check_thread ();
 			return thread.GetBacktrace (max_frames);
@@ -239,13 +246,20 @@ namespace Mono.Debugger
 			return GetBacktrace (-1);
 		}
 
-		public Registers GetRegisters ()
+		public override Backtrace CurrentBacktrace {
+			get {
+				check_thread ();
+				return thread.CurrentBacktrace;
+			}
+		}
+
+		public override Registers GetRegisters ()
 		{
 			check_thread ();
 			return thread.GetRegisters ();
 		}
 
-		public void SetRegisters (Registers registers)
+		public override void SetRegisters (Registers registers)
 		{
 			check_engine ();
 			engine.SetRegisters (registers);
@@ -417,7 +431,7 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			check_engine ();
 			return engine.InsertBreakpoint (breakpoint, address);
@@ -493,19 +507,19 @@ namespace Mono.Debugger
 		// Disassembling.
 		//
 
-		public int GetInstructionSize (TargetAddress address)
+		public override int GetInstructionSize (TargetAddress address)
 		{
 			check_thread ();
 			return thread.GetInstructionSize (address);
 		}
 
-		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
+		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			check_thread ();
 			return thread.DisassembleInstruction (method, address);
 		}
 
-		public AssemblerMethod DisassembleMethod (Method method)
+		public override AssemblerMethod DisassembleMethod (Method method)
 		{
 			check_thread ();
 			return thread.DisassembleMethod (method);
@@ -609,28 +623,28 @@ namespace Mono.Debugger
 			get { return this; }
 		}
 
-		public ITargetInfo TargetInfo {
+		public override ITargetInfo TargetInfo {
 			get { return target_info; }
 		}
 
-		public ITargetMemoryInfo TargetMemoryInfo {
+		public override ITargetMemoryInfo TargetMemoryInfo {
 			get { return target_memory_info; }
 		}
 
 #region ITargetInfo implementation
-		int ITargetInfo.TargetAddressSize {
+		public override int TargetAddressSize {
 			get { return target_info.TargetAddressSize; }
 		}
 
-		int ITargetInfo.TargetIntegerSize {
+		public override int TargetIntegerSize {
 			get { return target_info.TargetIntegerSize; }
 		}
 
-		int ITargetInfo.TargetLongIntegerSize {
+		public override int TargetLongIntegerSize {
 			get { return target_info.TargetLongIntegerSize; }
 		}
 
-		bool ITargetInfo.IsBigEndian {
+		public override bool IsBigEndian {
 			get { return target_info.IsBigEndian; }
 		}
 #endregion
@@ -642,80 +656,80 @@ namespace Mono.Debugger
 			thread.WriteBuffer (address, buffer);
 		}
 
-		AddressDomain ITargetMemoryInfo.AddressDomain {
+		public override AddressDomain AddressDomain {
 			get {
 				return target_memory_info.AddressDomain;
 			}
 		}
 
-		byte ITargetMemoryAccess.ReadByte (TargetAddress address)
+		public override byte ReadByte (TargetAddress address)
 		{
 			check_thread ();
 			return thread.ReadByte (address);
 		}
 
-		int ITargetMemoryAccess.ReadInteger (TargetAddress address)
+		public override int ReadInteger (TargetAddress address)
 		{
 			check_thread ();
 			return thread.ReadInteger (address);
 		}
 
-		long ITargetMemoryAccess.ReadLongInteger (TargetAddress address)
+		public override long ReadLongInteger (TargetAddress address)
 		{
 			check_thread ();
 			return thread.ReadLongInteger (address);
 		}
 
-		TargetAddress ITargetMemoryAccess.ReadAddress (TargetAddress address)
+		public override TargetAddress ReadAddress (TargetAddress address)
 		{
 			check_thread ();
 			return thread.ReadAddress (address);
 		}
 
-		string ITargetMemoryAccess.ReadString (TargetAddress address)
+		public override string ReadString (TargetAddress address)
 		{
 			check_thread ();
 			return thread.ReadString (address);
 		}
 
-		TargetBlob ITargetMemoryAccess.ReadMemory (TargetAddress address, int size)
+		public override TargetBlob ReadMemory (TargetAddress address, int size)
 		{
 			check_thread ();
 			byte[] buffer = thread.ReadBuffer (address, size);
 			return new TargetBlob (buffer, target_info);
 		}
 
-		byte[] ITargetMemoryAccess.ReadBuffer (TargetAddress address, int size)
+		public override byte[] ReadBuffer (TargetAddress address, int size)
 		{
 			check_thread ();
 			return thread.ReadBuffer (address, size);
 		}
 
-		bool ITargetMemoryAccess.CanWrite {
+		public override bool CanWrite {
 			get { return false; }
 		}
 
-		void ITargetMemoryAccess.WriteBuffer (TargetAddress address, byte[] buffer)
+		public override void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			write_memory (address, buffer);
 		}
 
-		void ITargetMemoryAccess.WriteByte (TargetAddress address, byte value)
+		public override void WriteByte (TargetAddress address, byte value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetMemoryAccess.WriteInteger (TargetAddress address, int value)
+		public override void WriteInteger (TargetAddress address, int value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetMemoryAccess.WriteLongInteger (TargetAddress address, long value)
+		public override void WriteLongInteger (TargetAddress address, long value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		void ITargetMemoryAccess.WriteAddress (TargetAddress address, TargetAddress value)
+		public override void WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_thread ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (

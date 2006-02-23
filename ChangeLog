@@ -1,5 +1,9 @@
 2006-02-23  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs (Process): Derive from `Thread'.
+
+2006-02-23  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/library.c
 	(mono_debugger_server_get_application): Return the currently
 	running application, its current working directory and command
