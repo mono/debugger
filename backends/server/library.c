@@ -374,6 +374,16 @@ mono_debugger_server_get_threads (ServerHandle *handle, guint32 *count, guint32 
 	return (* global_vtable->get_threads) (handle, count, threads);
 }
 
+ServerCommandError
+mono_debugger_server_get_application (ServerHandle *handle, gchar **exe_file, gchar **cwd,
+				      guint32 *nargs, gchar **cmdline_args)
+{
+	if (!global_vtable->get_application)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->get_application) (handle, exe_file, cwd, nargs, cmdline_args);
+}
+
 
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;

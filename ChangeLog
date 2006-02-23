@@ -1,5 +1,21 @@
 2006-02-23  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c
+	(mono_debugger_server_get_application): Return the currently
+	running application, its current working directory and command
+	line arguments; we use this after attaching to a process.
+
+	* backends/Inferior.cs (Inferior.GetApplication): New public
+	method to get the currently running application.
+	(Inferior.Attach): Call GetApplication() after attaching and setup
+	the `ProcessStart' accordingly.
+
+	* backends/ProcessStart.cs
+	(ProcessStart.SetupApplication): New public method; we use this
+	after attaching, so the user doesn't need to specify the application.
+
+2006-02-23  Martin Baulig  <martin@ximian.com>
+
 	Support multiple appdomains; this is only used when attaching to a
 	process which is running without `-O=shared'; the API to insert a
 	breakpoint in another appdomain is intentionally undocumented and

@@ -487,5 +487,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_kill,
 	server_ptrace_get_signal_info,
 	server_ptrace_set_notification,
-	server_ptrace_get_threads
+	server_ptrace_get_threads,
+	server_ptrace_get_application
 };

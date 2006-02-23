@@ -10,12 +10,11 @@ namespace Mono.Debugger.Backends
 	{
 		public readonly int PID;
 		public readonly string CoreFile;
-		public readonly string[] UserArguments;
 		public readonly string[] UserEnvironment;
 		public readonly bool IsNative;
 		public readonly bool LoadNativeSymbolTable = true;
-		public readonly string WorkingDirectory;
 
+		string cwd;
 		string base_dir;
 		string[] argv;
 		string[] envp;
@@ -69,13 +68,12 @@ namespace Mono.Debugger.Backends
 				throw new ArgumentException ();
 
 			this.options = options;
-			this.UserArguments = options.InferiorArgs;
-			this.WorkingDirectory = options.WorkingDirectory;
+			this.cwd = options.WorkingDirectory;
 
 			string mono_path = options.MonoPath != null ?
 				options.MonoPath : MonoPath;
 
-			if (IsMonoAssembly (UserArguments [0])) {
+			if (IsMonoAssembly (options.InferiorArgs [0])) {
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
@@ -90,14 +88,14 @@ namespace Mono.Debugger.Backends
 						mono_path, "--inside-mdb"
 					};
 
-				this.argv = new string [UserArguments.Length + start_argv.Length];
+				this.argv = new string [options.InferiorArgs.Length + start_argv.Length];
 				start_argv.CopyTo (this.argv, 0);
-				UserArguments.CopyTo (this.argv, start_argv.Length);
+				options.InferiorArgs.CopyTo (this.argv, start_argv.Length);
 			} else {
 				LoadNativeSymbolTable = true;
 				IsNative = true;
 
-				this.argv = UserArguments;
+				this.argv = options.InferiorArgs;
 			}
 
 			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
@@ -106,15 +104,30 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal ProcessStart (DebuggerOptions options, int pid)
-			: this (options)
 		{
+			this.options = options;
 			this.PID = pid;
+
+			LoadNativeSymbolTable = true;
+			IsNative = true;
 		}
 
 		internal ProcessStart (DebuggerOptions options, string core_file)
 			: this (options)
 		{
 			this.CoreFile = core_file;
+		}
+
+		public void SetupApplication (string exe_file, string cwd, string[] cmdline_args)
+		{
+			this.cwd = cwd;
+
+			cmdline_args [0] = exe_file;
+			this.argv = cmdline_args;
+
+			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
+
+			SetupEnvironment ();
 		}
 
 		public DebuggerOptions Options {
@@ -135,6 +148,10 @@ namespace Mono.Debugger.Backends
 
 		public string BaseDirectory {
 			get { return base_dir; }
+		}
+
+		public string WorkingDirectory {
+			get { return cwd; }
 		}
 
 		void AddUserEnvironment (Hashtable hash)
@@ -227,8 +244,7 @@ namespace Mono.Debugger.Backends
 		{
 			return String.Format ("{0} ({1},{2},{3},{4},{5})",
 					      GetType (), WorkingDirectory,
-					      print_argv (UserArguments),
-					      print_argv (UserEnvironment),
+					      print_argv (argv), print_argv (envp),
 					      IsNative, LoadNativeSymbolTable);
 		}
 	}

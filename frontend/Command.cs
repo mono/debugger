@@ -987,24 +987,17 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((context.Interpreter.Options.File == null) ||
-			    (context.Interpreter.Options.File == "")) {
-				throw new ScriptingException (
-					"No executable file specified.\nUse the `file' command.");
-			}
+			if (!context.HasBackend)
+				return true;
 
-			if (context.HasBackend && context.Interpreter.IsInteractive) {
-				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
-							       "Start it from the beginning?")) {
-					context.Interpreter.Kill ();
-					return true;
-				}
-				else {
-					return false;
-				}
+			if (context.Interpreter.IsInteractive && context.Interpreter.Query (
+				    "The program being debugged has been started already.\n" +
+				    "Start it from the beginning?")) {
+				context.Interpreter.Kill ();
+				return true;
+			} else {
+				return false;
 			}
-
-			return true;
 		}
 
 		protected override void DoExecute (ScriptingContext context)

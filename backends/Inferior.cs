@@ -166,6 +166,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_threads (IntPtr handle, out int count, out IntPtr data);
 
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_get_application (IntPtr handle, out string exe_file, out string cwd, out int nargs, out IntPtr data);
+
 		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
@@ -518,6 +521,12 @@ namespace Mono.Debugger.Backends
 
 			check_error (mono_debugger_server_attach (server_handle, pid, is_main, out tid));
 			this.child_pid = pid;
+
+			string exe_file, cwd;
+			string[] cmdline_args;
+			exe_file = GetApplication (out cwd, out cmdline_args);
+
+			start.SetupApplication (exe_file, cwd, cmdline_args);
 
 			SetupInferior ();
 
@@ -1108,6 +1117,29 @@ namespace Mono.Debugger.Backends
 				int[] threads = new int [count];
 				Marshal.Copy (data, threads, 0, count);
 				return threads;
+			} finally {
+				g_free (data);
+			}
+		}
+
+		public string GetApplication (out string cwd, out string[] cmdline_args)
+		{
+			IntPtr data = IntPtr.Zero;
+			try {
+				int count;
+				string exe_file;
+				check_error (mono_debugger_server_get_application (
+						     server_handle, out exe_file, out cwd,
+						     out count, out data));
+
+				cmdline_args = new string [count];
+
+				for (int i = 0; i < count; i++) {
+					IntPtr ptr = Marshal.ReadIntPtr (data, i * IntPtr.Size);
+					cmdline_args [i] = Marshal.PtrToStringAuto (ptr);
+				}
+
+				return exe_file;
 			} finally {
 				g_free (data);
 			}

@@ -369,6 +369,7 @@ server_ptrace_get_threads (ServerHandle *handle, guint32 *count, guint32 **threa
 	dir = g_dir_open (dirname, 0, NULL);
 	if (!dir) {
 		g_warning (G_STRLOC ": Can't get threads of %d", handle->inferior->pid);
+		g_free (dirname);
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
@@ -391,12 +392,81 @@ server_ptrace_get_threads (ServerHandle *handle, guint32 *count, guint32 **threa
 	for (i = 0; i < array->len; i++)
 		(*threads) [i] = GPOINTER_TO_UINT (g_ptr_array_index (array, i));
 
+	g_free (dirname);
 	g_dir_close (dir);
+	g_ptr_array_free (array, FALSE);
 	return COMMAND_ERROR_NONE;
 
  out_error:
+	g_free (dirname);
 	g_dir_close (dir);
 	g_ptr_array_free (array, FALSE);
 	g_warning (G_STRLOC ": Can't get threads of %d", handle->inferior->pid);
 	return COMMAND_ERROR_UNKNOWN_ERROR;
+}
+
+static ServerCommandError
+server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **cwd,
+			       guint32 **nargs, gchar ***cmdline_args)
+{
+	gchar *exe_filename = g_strdup_printf ("/proc/%d/exe", handle->inferior->pid);
+	gchar *cwd_filename = g_strdup_printf ("/proc/%d/cwd", handle->inferior->pid);
+	gchar *cmdline_filename = g_strdup_printf ("/proc/%d/cmdline", handle->inferior->pid);
+	char buffer [BUFSIZ];
+	GPtrArray *array;
+	gchar *cmdline;
+	gsize pos, len;
+	int i;
+
+	len = readlink (exe_filename, buffer, BUFSIZ);
+	if (len < 0) {
+		g_free (cwd_filename);
+		g_free (exe_filename);
+		g_free (cmdline_filename);
+		g_warning (G_STRLOC ": Can't get exe file of %d", handle->inferior->pid);
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	}
+
+	buffer [len] = 0;
+	*exe_file = g_strdup (buffer);
+
+	len = readlink (cwd_filename, buffer, BUFSIZ);
+	if (len < 0) {
+		g_free (cwd_filename);
+		g_free (exe_filename);
+		g_free (cmdline_filename);
+		g_warning (G_STRLOC ": Can't get cwd of %d", handle->inferior->pid);
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	}
+
+	buffer [len] = 0;
+	*cwd = g_strdup (buffer);
+
+	if (!g_file_get_contents (cmdline_filename, &cmdline, &len, NULL)) {
+		g_free (cwd_filename);
+		g_free (exe_filename);
+		g_free (cmdline_filename);
+		g_warning (G_STRLOC ": Can't get cmdline args of %d", handle->inferior->pid);
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	}
+
+	array = g_ptr_array_new ();
+
+	pos = 0;
+	while (pos < len) {
+		g_ptr_array_add (array, cmdline + pos);
+		pos += strlen (cmdline + pos) + 1;
+	}
+
+	*nargs = array->len;
+	*cmdline_args = g_new0 (gchar *, array->len + 1);
+
+	for (i = 0; i < array->len; i++)
+		(*cmdline_args) [i] = g_ptr_array_index (array, i);
+
+	g_free (cwd_filename);
+	g_free (exe_filename);
+	g_free (cmdline_filename);
+	g_ptr_array_free (array, FALSE);
+	return COMMAND_ERROR_NONE;
 }

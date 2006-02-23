@@ -312,6 +312,12 @@ struct InferiorVTable {
 	ServerCommandError    (* get_threads)         (ServerHandle     *handle,
 						       guint32          *count,
 						       guint32         **threads);
+
+	ServerCommandError    (* get_application)     (ServerHandle       *handle,
+						       gchar             **exe_file,
+						       gchar             **cwd,
+						       guint32            *nargs,
+						       gchar             **cmdline_args);
 };
 
 /*
@@ -499,6 +505,13 @@ ServerCommandError
 mono_debugger_server_get_threads         (ServerHandle        *handle,
 					  guint32             *count,
 					  guint32            **threads);
+
+ServerCommandError
+mono_debugger_server_get_application     (ServerHandle        *handle,
+					  gchar              **exe_file,
+					  gchar              **cwd,
+					  guint32             *nargs,
+					  gchar              **cmdline_args);
 
 /* POSIX semaphores */
 
