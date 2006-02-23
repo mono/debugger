@@ -319,10 +319,10 @@ namespace Mono.Debugger
 			get { return mono_language != null; }
 		}
 
-		public EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
-						     SourceLocation location)
+		public EventHandle InsertBreakpoint (TargetAccess target, int domain,
+						     Breakpoint bpt, SourceLocation location)
 		{
-			return new BreakpointHandle (target, bpt, location);
+			return new BreakpointHandle (target, domain, bpt, location);
 		}
 
 		public EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,

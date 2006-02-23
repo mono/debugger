@@ -144,11 +144,11 @@ namespace Mono.Debugger
 				handle.Enable (thread.TargetAccess);
 		}
 
-		public EventHandle InsertBreakpoint (TargetAccess target, SourceLocation location,
-						     Breakpoint breakpoint)
+		public EventHandle InsertBreakpoint (TargetAccess target, int domain,
+						     SourceLocation location, Breakpoint breakpoint)
 		{
 			EventHandle handle = target.Debugger.InsertBreakpoint (
-				target, breakpoint, location);
+				target, domain, breakpoint, location);
 			if (handle == null)
 				return handle;
 

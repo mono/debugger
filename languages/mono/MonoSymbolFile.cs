@@ -337,8 +337,10 @@ namespace Mono.Debugger.Languages.Mono
 		internal void AddRangeEntry (ITargetMemoryReader reader, byte[] contents)
 		{
 			MethodRangeEntry range = MethodRangeEntry.Create (this, reader, contents);
-			range_hash.Add (range.Index, range);
-			ranges.Add (range);
+			if (!range_hash.Contains (range.Index)) {
+				range_hash.Add (range.Index, range);
+				ranges.Add (range);
+			}
 		}
 
 		internal void AddWrapperEntry (ITargetMemoryAccess memory, ITargetMemoryReader reader,
@@ -525,9 +527,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_hash = new Hashtable ();
 
-		public override Method GetMethod (long handle)
+		public override Method GetMethod (int domain, long handle)
 		{
-			MethodRangeEntry entry = (MethodRangeEntry) range_hash [(int) handle];
+			MethodHashEntry index = new MethodHashEntry (domain, (int) handle);
+			MethodRangeEntry entry = (MethodRangeEntry) range_hash [index];
 			if (entry == null)
 				return null;
 
@@ -553,15 +556,15 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		protected MonoMethod GetMonoMethod (int index)
+		protected MonoMethod GetMonoMethod (MethodHashEntry index)
 		{
 			ensure_sources ();
 			MonoMethod mono_method = (MonoMethod) method_hash [index];
 			if (mono_method != null)
 				return mono_method;
 
-			SourceMethod method = GetSourceMethod (index);
-			C.MethodEntry entry = File.GetMethod (index);
+			SourceMethod method = GetSourceMethod (index.Index);
+			C.MethodEntry entry = File.GetMethod (index.Index);
 
 			Cecil.IMethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
@@ -571,7 +574,7 @@ namespace Mono.Debugger.Languages.Mono
 			return mono_method;
 		}
 
-		protected MonoMethod GetMonoMethod (int index, byte[] contents)
+		protected MonoMethod GetMonoMethod (MethodHashEntry index, byte[] contents)
 		{
 			MonoMethod method = GetMonoMethod (index);
 
@@ -588,7 +591,8 @@ namespace Mono.Debugger.Languages.Mono
 								   MethodLoadedHandler handler,
 								   object user_data)
 		{
-			MonoMethod method = GetMonoMethod ((int) source.Handle);
+			int index = (int) source.Handle;
+			MonoMethod method = GetMonoMethod (new MethodHashEntry (0, index));
 			return method.RegisterLoadHandler (target, handler, user_data);
 		}
 
@@ -1003,20 +1007,37 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		private struct MethodHashEntry
+		{
+			public readonly int Domain;
+			public readonly int Index;
+
+			public MethodHashEntry (int domain, int index)
+			{
+				this.Domain = domain;
+				this.Index = index;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("MethodHashEntry ({0}:{1:x})", Domain, Index);
+			}
+		}
+
 		private class MethodRangeEntry : SymbolRangeEntry
 		{
 			public readonly MonoSymbolFile File;
-			public readonly int Index;
+			public readonly MethodHashEntry Index;
 			public readonly TargetAddress WrapperAddress;
 			readonly byte[] contents;
 
-			private MethodRangeEntry (MonoSymbolFile file, int index,
+			private MethodRangeEntry (MonoSymbolFile file, int domain, int index,
 						  TargetAddress start_address, TargetAddress end_address,
 						  TargetAddress wrapper_address, byte[] contents)
 				: base (start_address, end_address)
 			{
 				this.File = file;
-				this.Index = index;
+				this.Index = new MethodHashEntry (domain, index);
 				this.WrapperAddress = wrapper_address;
 				this.contents = contents;
 			}
@@ -1024,7 +1045,7 @@ namespace Mono.Debugger.Languages.Mono
 			public static MethodRangeEntry Create (MonoSymbolFile file, ITargetMemoryReader reader,
 							       byte[] contents)
 			{
-				reader.BinaryReader.ReadInt32 (); /* domain */
+				int domain = reader.BinaryReader.ReadInt32 ();
 				int index = reader.BinaryReader.ReadInt32 ();
 				int size = reader.BinaryReader.ReadInt32 ();
 				reader.BinaryReader.ReadInt32 (); /* dummy */
@@ -1032,7 +1053,8 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress end = start + size;
 				TargetAddress wrapper = reader.ReadAddress ();
 
-				return new MethodRangeEntry (file, index, start, end, wrapper, contents);
+				return new MethodRangeEntry (
+					file, domain, index, start, end, wrapper, contents);
 			}
 
 			internal Method GetMethod ()

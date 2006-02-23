@@ -563,7 +563,7 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
-		public override Method GetMethod (long handle)
+		public override Method GetMethod (int domain, long handle)
 		{
 			if (dwarf != null)
 				return dwarf.GetMethod (handle);

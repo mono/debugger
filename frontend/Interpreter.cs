@@ -604,12 +604,13 @@ namespace Mono.Debugger.Frontend
 				group.RemoveThread (process.ID);
 		}
 
-		public int InsertBreakpoint (TargetAccess target, ThreadGroup group,
+		public int InsertBreakpoint (TargetAccess target, ThreadGroup group, int domain,
 					     SourceLocation location)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
-			EventHandle handle = session.InsertBreakpoint (target, location, breakpoint);
+			EventHandle handle = session.InsertBreakpoint (
+				target, domain, location, breakpoint);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 

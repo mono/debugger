@@ -41,7 +41,7 @@ namespace Mono.Debugger
 
 		public abstract SourceMethod[] GetMethods (SourceFile file);
 
-		public abstract Method GetMethod (long handle);
+		public abstract Method GetMethod (int domain, long handle);
 
 		public abstract SourceMethod FindMethod (string name);
 
@@ -261,9 +261,9 @@ namespace Mono.Debugger
 			return SymbolFile.GetMethods (file);
 		}
 
-		public Method GetMethod (long handle)
+		public Method GetMethod (int domain, long handle)
 		{
-			return SymbolFile.GetMethod (handle);
+			return SymbolFile.GetMethod (domain, handle);
 		}
 
 		// <summary>

@@ -1,3 +1,30 @@
+2006-02-23  Martin Baulig  <martin@ximian.com>
+
+	Support multiple appdomains; this is only used when attaching to a
+	process which is running without `-O=shared'; the API to insert a
+	breakpoint in another appdomain is intentionally undocumented and
+	will change in near future.
+
+	* classes/SourceInfo.cs (SourceMethod.IsLoaded): Removed.
+	(SourceMethod.Method): Replaced the property with a new
+	GetMethod() method which takes a `domain' argument.
+	(SourceMethod.GetMethod): New public method.
+	(SourceMethod.Lookup): Removed.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertBreakpoint): Added `int domain' argument.
+
+	* classes/Module.cs
+	(SymbolFile.GetMethod): Added `int domain' argument.
+
+	* classes/SourceLocation.cs
+	(SourceLocation.GetAddress): Added `int domain' argument to
+	support multiple application domains.
+
+	* classes/BreakpointHandle.cs: Support multiple appdomains.
+
+	* languages/mono/MonoSymbolFile.cs: Support multiple appdomains.
+
 2006-02-08  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/i386-arch.c: Use `guint32' instead of `long'

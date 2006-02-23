@@ -122,30 +122,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		// <summary>
-		//   Whether this method is current loaded in memory.  For managed
-		//   methods, this returns whether the method has already been JITed.
-		// </summary>
-		public bool IsLoaded {
-			get {
-				return module.GetMethod (handle) != null;
-			}
-		}
-
-		// <summary>
-		//   May only be used while the method is loaded and return's the Method.
-		//
-		//   Throws:
-		//     InvalidOperationException - IsLoaded is false.
-		// </summary>
-		public Method Method {
-			get {
-				Method method = module.GetMethod (handle);
-				if (method == null)
-					throw new InvalidOperationException ();
-
-				return method;
-			}
+		public Method GetMethod (int domain)
+		{
+			return module.GetMethod (domain, handle);
 		}
 
 		// <summary>
@@ -162,22 +141,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public TargetAddress Lookup (int SourceLine)
-		{
-			Method method = module.GetMethod (handle);
-			if (method == null)
-				throw new InvalidOperationException ();
-
-			if (method.HasSource)
-				return method.Source.Lookup (SourceLine);
-			else
-				return TargetAddress.Null;
-		}
-
 		public override string ToString ()
 		{
-			return String.Format ("Method ({0}:{1}:{2}:{3}:{4})", Name, SourceFile,
-					      StartRow, EndRow, IsLoaded);
+			return String.Format ("Method ({0}:{1}:{2}:{3})", Name, SourceFile,
+					      StartRow, EndRow);
 		}
 
 		Module module;

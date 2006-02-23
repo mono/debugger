@@ -1907,6 +1907,7 @@ namespace Mono.Debugger.Frontend
 	public class BreakCommand : SourceCommand, IDocumentableCommand
 	{
 		string group;
+		int domain = 0;
 		int process_id = -1;
 		TargetFunctionType func;
 		Process process;
@@ -1915,6 +1916,11 @@ namespace Mono.Debugger.Frontend
 		public string Group {
 			get { return group; }
 			set { group = value; }
+		}
+
+		public int Domain {
+			get { return domain; }
+			set { domain = value; }
 		}
 
 		public int Process {
@@ -1978,15 +1984,20 @@ namespace Mono.Debugger.Frontend
 					location = new SourceLocation (method);
 
 					int index = context.Interpreter.InsertBreakpoint (
-						process.TargetAccess, tgroup, location);
+						process.TargetAccess, tgroup, domain, location);
 					context.Print ("Breakpoint {0} at {1}", index, location.Name);
 				}
 				return;
 			} else if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
-					process.TargetAccess, tgroup, location);
+					process.TargetAccess, tgroup, domain, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
 			} else if (func != null) {
+				if (domain != 0) {
+					context.Error ("Can't insert function breakpoints in " +
+						       "other appdomains.");
+					return;
+				}
 				int index = context.Interpreter.InsertBreakpoint (
 					process.TargetAccess, tgroup, func);
 				context.Print ("Breakpoint {0} at {1}", index, func.Name);

@@ -12,7 +12,7 @@ namespace Mono.Debugger
 	public class SourceLocation
 	{
 		Module module;
-		SourceMethod method;
+		SourceMethod source;
 		ISourceBuffer buffer;
 		int line;
 
@@ -21,7 +21,7 @@ namespace Mono.Debugger
 		}
 
 		public bool HasSourceFile {
-			get { return method != null; }
+			get { return source != null; }
 		}
 
 		public ISourceBuffer SourceBuffer {
@@ -38,7 +38,7 @@ namespace Mono.Debugger
 				if (!HasSourceFile)
 					throw new InvalidOperationException ();
 
-				return method.SourceFile;
+				return source.SourceFile;
 			}
 		}
 
@@ -47,14 +47,14 @@ namespace Mono.Debugger
 				if (!HasSourceFile)
 					throw new InvalidOperationException ();
 
-				return method;
+				return source;
 			}
 		}
 
 		public int Line {
 			get {
 				if (line == -1)
-					return method.StartRow;
+					return source.StartRow;
 				else
 					return line;
 			}
@@ -63,7 +63,7 @@ namespace Mono.Debugger
 		public string Name {
 			get {
 				if (line == -1)
-					return method.Name;
+					return source.Name;
 				else if (HasSourceFile)
 					return String.Format ("{0}:{1}", SourceFile.FileName, line);
 				else
@@ -71,17 +71,17 @@ namespace Mono.Debugger
 			}
 		}
 
-		public SourceLocation (SourceMethod method)
-			: this (method, -1)
+		public SourceLocation (SourceMethod source)
+			: this (source, -1)
 		{ }
 
-		public SourceLocation (SourceMethod method, int line)
+		public SourceLocation (SourceMethod source, int line)
 		{
-			this.module = method.SourceFile.Module;
-			this.method = method;
+			this.module = source.SourceFile.Module;
+			this.source = source;
 			this.line = line;
 
-			if (method == null)
+			if (source == null)
 				throw new InvalidOperationException ();
 		}
 
@@ -92,17 +92,21 @@ namespace Mono.Debugger
 			this.line = line;
 		}
 
-		internal TargetAddress GetAddress ()
+		internal TargetAddress GetAddress (int domain)
 		{
-			if (!method.IsLoaded)
-				throw new InvalidOperationException ();
+			Method method = source.GetMethod (domain);
+			if (method == null)
+				return TargetAddress.Null;
 
-			if (line != -1)
-				return method.Lookup (line);
-			else if (method.Method.HasMethodBounds)
-				return method.Method.MethodStartAddress;
+			if (line != -1) {
+				if (method.HasSource)
+					return method.Source.Lookup (line);
+				else
+					return TargetAddress.Null;
+			} else if (method.HasMethodBounds)
+				return method.MethodStartAddress;
 			else
-				return method.Method.StartAddress;
+				return method.StartAddress;
 		}
 
 		public override string ToString ()

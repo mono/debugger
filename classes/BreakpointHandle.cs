@@ -15,6 +15,7 @@ namespace Mono.Debugger
 		TargetAddress address = TargetAddress.Null;
 		int breakpoint_id = -1;
 		IDisposable load_handler;
+		int domain;
 
 		private BreakpointHandle (Breakpoint breakpoint)
 			: base (breakpoint.ThreadGroup, breakpoint.Name)
@@ -22,14 +23,15 @@ namespace Mono.Debugger
 			this.breakpoint = breakpoint;
 		}
 
-		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
+		internal BreakpointHandle (TargetAccess target, int domain, Breakpoint breakpoint,
 					   SourceLocation location)
 			: this (breakpoint)
 		{
+			this.domain = domain;
 			this.location = location;
 
-			if (location.Method.IsLoaded)
-				address = location.GetAddress ();
+			address = location.GetAddress (domain);
+
 			Enable (target);
 		}
 
@@ -125,15 +127,21 @@ namespace Mono.Debugger
 		//   The method has just been loaded, lookup the breakpoint
 		//   address and actually insert it.
 		// </summary>
-		void method_loaded (ITargetMemoryAccess target, SourceMethod method,
+		void method_loaded (ITargetMemoryAccess target, SourceMethod source,
 				    object data)
 		{
 			load_handler = null;
 
+			Method method = source.GetMethod (domain);
+
 			if (location != null)
-				address = location.GetAddress ();
-			else
-				address = method.Method.StartAddress;
+				address = location.GetAddress (domain);
+			else {
+				if (method == null)
+					return;
+
+				address = method.StartAddress;
+			}
 
 			if (address.IsNull)
 				return;
