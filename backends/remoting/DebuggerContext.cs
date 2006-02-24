@@ -85,8 +85,8 @@ namespace Mono.Debugger.Remoting
 
 			public override TargetAccess GetTargetAccess (int id)
 			{
-				Thread process = manager.GetThread (id);
-				return new ClientTargetAccess (process);
+				Thread thread = manager.GetThread (id);
+				return new ClientTargetAccess (thread);
 			}
 		}
 

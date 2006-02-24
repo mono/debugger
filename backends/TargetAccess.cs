@@ -111,28 +111,28 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal sealed class ClientTargetAccess : TargetAccess
 	{
-		Thread process;
+		Thread thread;
 
-		public ClientTargetAccess (Thread process)
-			: base (process.ID, process.Name)
+		public ClientTargetAccess (Thread thread)
+			: base (thread.ID, thread.Name)
 		{
-			this.process = process;
+			this.thread = thread;
 		}
 
 		public override Debugger Debugger {
-			get { return process.Debugger; }
+			get { return thread.Debugger; }
 		}
 
 		public override ITargetMemoryAccess TargetMemoryAccess {
-			get { return process.TargetMemoryAccess; }
+			get { return thread.TargetMemoryAccess; }
 		}
 
 		public override ITargetInfo TargetInfo {
-			get { return process.TargetInfo; }
+			get { return thread.TargetInfo; }
 		}
 
 		public override ITargetMemoryInfo TargetMemoryInfo {
-			get { return process.TargetMemoryInfo; }
+			get { return thread.TargetMemoryInfo; }
 		}
 
 		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
@@ -152,12 +152,12 @@ namespace Mono.Debugger.Backends
 
 		internal override void AddEventHandler (EventType type, EventHandle handle)
 		{
-			process.AddEventHandler (type, handle);
+			thread.AddEventHandler (type, handle);
 		}
 
 		internal override void RemoveEventHandler (int index)
 		{
-			process.RemoveEventHandler (index);
+			thread.RemoveEventHandler (index);
 		}
 
 		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
@@ -180,12 +180,12 @@ namespace Mono.Debugger.Backends
 		public override AssemblerLine DisassembleInstruction (Method method,
 								      TargetAddress address)
 		{
-			return process.DisassembleInstruction (method, address);
+			return thread.DisassembleInstruction (method, address);
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
 		{
-			return process.DisassembleMethod (method);
+			return thread.DisassembleMethod (method);
 		}
 	}
 

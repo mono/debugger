@@ -754,7 +754,7 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread process, TargetAccess target,
+		internal override StackFrame CreateFrame (Thread thread, TargetAccess target,
 							  ITargetMemoryInfo info, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
@@ -765,7 +765,7 @@ namespace Mono.Debugger.Backends
 				info.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			return CreateFrame (
-				process, target, address, stack_pointer, frame_pointer, regs);
+				thread, target, address, stack_pointer, frame_pointer, regs);
 		}
 	}
 }

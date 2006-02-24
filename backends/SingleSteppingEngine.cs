@@ -103,9 +103,9 @@ namespace Mono.Debugger.Backends
 
 			setup_engine ();
 
-			process = DebuggerManager.CreateThread (this);
-			ID = process.ID;
-			Name = process.Name;
+			thread = DebuggerManager.CreateThread (this);
+			ID = thread.ID;
+			Name = thread.Name;
 			target_access = new ServerTargetAccess (this);
 		}
 
@@ -124,9 +124,9 @@ namespace Mono.Debugger.Backends
 
 			setup_engine ();
 
-			process = DebuggerManager.CreateThread (this);
-			ID = process.ID;
-			Name = process.Name;
+			thread = DebuggerManager.CreateThread (this);
+			ID = thread.ID;
+			Name = thread.Name;
 			target_access = new ServerTargetAccess (this);
 		}
 
@@ -481,14 +481,14 @@ namespace Mono.Debugger.Backends
 
 		internal void Start (TargetAddress func)
 		{
-			CommandResult result = new Thread.StepCommandResult (process);
+			CommandResult result = new Thread.StepCommandResult (thread);
 			current_operation = new OperationRun (func, true, result);
 			current_operation.Execute (this);
 		}
 
 		internal void ReachedMain (TargetAddress method)
 		{
-			CommandResult result = new Thread.StepCommandResult (process);
+			CommandResult result = new Thread.StepCommandResult (thread);
 
 			is_main = true;
 			current_operation = new OperationInitialize (result);
@@ -500,7 +500,7 @@ namespace Mono.Debugger.Backends
 
 		internal void Attach (MonoDebuggerInfo info)
 		{
-			CommandResult result = new Thread.StepCommandResult (process);
+			CommandResult result = new Thread.StepCommandResult (thread);
 
 			this.is_main = true;
 			StartOperation (new OperationAttach (info, result));
@@ -632,7 +632,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public Thread Thread {
-			get { return process; }
+			get { return thread; }
 		}
 
 		internal override ThreadManager ThreadManager {
@@ -820,7 +820,7 @@ namespace Mono.Debugger.Backends
 				inferior.CurrentFrame, out index, out is_enabled);
 
 			if ((index == 0) || !is_enabled ||
-			    (!current && (bpt != null) && bpt.Breaks (process.ID)))
+			    (!current && (bpt != null) && bpt.Breaks (thread.ID)))
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
@@ -937,7 +937,7 @@ namespace Mono.Debugger.Backends
 				}
 
 				update_current_frame (new StackFrame (
-					process, target_access, iframe.Address, iframe.StackPointer,
+					thread, target_access, iframe.Address, iframe.StackPointer,
 					iframe.FrameAddress, registers, current_method, source));
 			} else {
 				if (!same_method && (current_method != null)) {
@@ -949,7 +949,7 @@ namespace Mono.Debugger.Backends
 
 				if (current_method != null)
 					update_current_frame (new StackFrame (
-						process, target_access, iframe.Address,
+						thread, target_access, iframe.Address,
 						iframe.StackPointer, iframe.FrameAddress,
 						registers, current_method));
 				else {
@@ -960,7 +960,7 @@ namespace Mono.Debugger.Backends
 						name = null;
 					}
 					update_current_frame (new StackFrame (
-						process, target_access, iframe.Address,
+						thread, target_access, iframe.Address,
 						iframe.StackPointer, iframe.FrameAddress,
 						registers, name));
 				}
@@ -1306,7 +1306,7 @@ namespace Mono.Debugger.Backends
 
 		void inferior_output_handler (bool is_stderr, string line)
 		{
-			process.OnInferiorOutput (is_stderr, line);
+			thread.OnInferiorOutput (is_stderr, line);
 		}
 
 		public override string ToString ()
@@ -1712,7 +1712,7 @@ namespace Mono.Debugger.Backends
 		Operation current_operation;
 
 		ThreadManager manager;
-		Thread process;
+		Thread thread;
 		Inferior inferior;
 		TargetAccess target_access;
 		Architecture arch;
@@ -1946,7 +1946,7 @@ namespace Mono.Debugger.Backends
 				      sse, data1, data2, Result);
 
 			sse.tid = data1;
-			sse.process.SetTID (data1);
+			sse.thread.SetTID (data1);
 			manager.SetThreadId (sse);
 			return true;
 		}
@@ -2629,7 +2629,7 @@ namespace Mono.Debugger.Backends
 			Symbol name = new Symbol ("<method called from mdb>", iframe.Address, 0);
 
 			StackFrame rti_frame = new StackFrame (
-				sse.process, sse.target_access, iframe.Address,
+				sse.thread, sse.target_access, iframe.Address,
 				iframe.StackPointer, iframe.FrameAddress, registers, name);
 
 			sse.push_runtime_invoke (rti_frame);

@@ -34,9 +34,9 @@ namespace Mono.Debugger.Remoting
 			DebuggerContext.CreateClientContext (this);
 		}
 
-		int next_process_id = 0;
+		int next_thread_id = 0;
 		public int NextThreadID {
-			get { return ++next_process_id; }
+			get { return ++next_thread_id; }
 		}
 
 		long next_sequence_id = 0;
@@ -57,14 +57,14 @@ namespace Mono.Debugger.Remoting
 			clients.Remove (client.ID);
 		}
 
-		public void Wait (Thread process)
+		public void Wait (Thread thread)
 		{
-			if (process == null)
+			if (thread == null)
 				return;
 
 			ST.WaitHandle[] handles = new ST.WaitHandle [2];
 			handles [0] = interrupt_event;
-			handles [1] = process.WaitHandle;
+			handles [1] = thread.WaitHandle;
 
 			ST.WaitHandle.WaitAny (handles);
 		}
@@ -107,9 +107,9 @@ namespace Mono.Debugger.Remoting
 		internal Thread CreateThread (ThreadBase thread, int pid)
 		{
 			lock (this) {
-				Thread process = new Thread (this, thread, pid);
-				threads.Add (process.ID, process);
-				return process;
+				Thread new_thread = new Thread (this, thread, pid);
+				threads.Add (new_thread.ID, new_thread);
+				return new_thread;
 			}
 		}
 

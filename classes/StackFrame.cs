@@ -187,7 +187,7 @@ namespace Mono.Debugger
 
 		int level;
 		Method method;
-		Thread process;
+		Thread thread;
 		TargetAccess target;
 		SourceAddress source;
 		StackFrame parent_frame;
@@ -195,11 +195,11 @@ namespace Mono.Debugger
 		bool has_source;
 		Symbol name;
 
-		internal StackFrame (Thread process, TargetAccess target,
+		internal StackFrame (Thread thread, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers)
 		{
-			this.process = process;
+			this.thread = thread;
 			this.target = target;
 			this.address = address;
 			this.stack_pointer = stack_pointer;
@@ -207,21 +207,21 @@ namespace Mono.Debugger
 			this.registers = registers;
 		}
 
-		internal StackFrame (Thread process, TargetAccess target,
+		internal StackFrame (Thread thread, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
 				     Symbol name)
-			: this (process, target, address, stack_pointer, frame_address,
+			: this (thread, target, address, stack_pointer, frame_address,
 				registers)
 		{
 			this.name = name;
 		}
 
-		internal StackFrame (Thread process, TargetAccess target,
+		internal StackFrame (Thread thread, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
 				     Method method)
-			: this (process, target, address, stack_pointer, frame_address,
+			: this (thread, target, address, stack_pointer, frame_address,
 				registers)
 		{
 			this.method = method;
@@ -229,11 +229,11 @@ namespace Mono.Debugger
 		}
 
 
-		internal StackFrame (Thread process, TargetAccess target,
+		internal StackFrame (Thread thread, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
 				     Method method, SourceAddress source)
-			: this (process, target, address, stack_pointer, frame_address,
+			: this (thread, target, address, stack_pointer, frame_address,
 				registers, method)
 		{
 			this.source = source;
@@ -273,7 +273,7 @@ namespace Mono.Debugger
 		}
 
 		public Thread Thread {
-			get { return process; }
+			get { return thread; }
 		}
 
 		public TargetAccess TargetAccess {
@@ -310,7 +310,7 @@ namespace Mono.Debugger
 				if (method != null)
 					return method.Module.Language;
 				else
-					return process.NativeLanguage;
+					return thread.NativeLanguage;
 			}
 		}
 
@@ -349,7 +349,7 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			foreach (Module module in process.Debugger.Modules) {
+			foreach (Module module in thread.Debugger.Modules) {
 				try {
 					new_frame = module.UnwindStack (this, memory);
 				} catch {

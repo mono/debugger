@@ -741,20 +741,20 @@ namespace Mono.Debugger
 
 		internal class StepCommandResult : CommandResult
 		{
-			Thread process;
+			Thread thread;
 
-			public StepCommandResult (Thread process)
+			public StepCommandResult (Thread thread)
 			{
-				this.process = process;
+				this.thread = thread;
 			}
 
 			public override ST.WaitHandle CompletedEvent {
-				get { return process.WaitHandle; }
+				get { return thread.WaitHandle; }
 			}
 
 			public override void Completed ()
 			{
-				process.operation_completed_event.Set ();
+				thread.operation_completed_event.Set ();
 			}
 		}
 

@@ -17,7 +17,7 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public delegate void DebuggerEventHandler (Debugger debugger, Thread process);
+	public delegate void DebuggerEventHandler (Debugger debugger, Thread thread);
 
 	public abstract class Debugger : MarshalByRefObject, IDisposable
 	{
@@ -177,10 +177,10 @@ namespace Mono.Debugger
 				ThreadCreatedEvent (this, new_process);
 		}
 
-		internal void OnThreadExitedEvent (Thread process)
+		internal void OnThreadExitedEvent (Thread thread)
 		{
 			if (ThreadExitedEvent != null)
-				ThreadExitedEvent (this, process);
+				ThreadExitedEvent (this, thread);
 		}
 
 		internal void OnTargetExitedEvent ()
@@ -294,7 +294,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void LoadLibrary (Thread process, string filename)
+		public void LoadLibrary (Thread thread, string filename)
 		{
 			if (mono_language == null)
 				throw new SymbolTableException (
@@ -302,8 +302,8 @@ namespace Mono.Debugger
 						"debugging an unmanaged application",
 						filename);
 
-			if (!mono_language.TryFindImage (process, filename))
-				bfd_container.AddFile (process, filename, TargetAddress.Null, true, false);
+			if (!mono_language.TryFindImage (thread, filename))
+				bfd_container.AddFile (thread, filename, TargetAddress.Null, true, false);
 		}
 
 		internal MonoLanguageBackend MonoLanguage {
