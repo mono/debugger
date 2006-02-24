@@ -248,7 +248,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return corlib.TargetInfo; }
 		}
 
-		internal bool TryFindImage (Process process, string filename)
+		internal bool TryFindImage (Thread process, string filename)
 		{
 			Cecil.IAssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
 			if (ass == null)

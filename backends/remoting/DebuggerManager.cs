@@ -35,7 +35,7 @@ namespace Mono.Debugger.Remoting
 		}
 
 		int next_process_id = 0;
-		public int NextProcessID {
+		public int NextThreadID {
 			get { return ++next_process_id; }
 		}
 
@@ -57,7 +57,7 @@ namespace Mono.Debugger.Remoting
 			clients.Remove (client.ID);
 		}
 
-		public void Wait (Process process)
+		public void Wait (Thread process)
 		{
 			if (process == null)
 				return;
@@ -95,32 +95,32 @@ namespace Mono.Debugger.Remoting
 			get { return clients.Count > 0; }
 		}
 
-		internal Process CreateProcess (SingleSteppingEngine sse)
+		internal Thread CreateThread (SingleSteppingEngine sse)
 		{
 			lock (this) {
-				Process thread = new Process (this, sse);
+				Thread thread = new Thread (this, sse);
 				threads.Add (thread.ID, thread);
 				return thread;
 			}
 		}
 
-		internal Process CreateProcess (ThreadBase thread, int pid)
+		internal Thread CreateThread (ThreadBase thread, int pid)
 		{
 			lock (this) {
-				Process process = new Process (this, thread, pid);
+				Thread process = new Thread (this, thread, pid);
 				threads.Add (process.ID, process);
 				return process;
 			}
 		}
 
-		internal void ProcessExited (int id)
+		internal void ThreadExited (int id)
 		{
 			threads.Remove (id);
 		}
 
-		internal Process GetProcess (int id)
+		internal Thread GetThread (int id)
 		{
-			return (Process) threads [id];
+			return (Thread) threads [id];
 		}
 
 		//

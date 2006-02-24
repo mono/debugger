@@ -111,9 +111,9 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal sealed class ClientTargetAccess : TargetAccess
 	{
-		Process process;
+		Thread process;
 
-		public ClientTargetAccess (Process process)
+		public ClientTargetAccess (Thread process)
 			: base (process.ID, process.Name)
 		{
 			this.process = process;
@@ -209,7 +209,7 @@ namespace Mono.Debugger.Backends
 				if (sse.ThreadManager.InBackgroundThread)
 					return sse.Inferior;
 				else
-					return sse.Process;
+					return sse.Thread;
 			}
 		}
 
@@ -322,7 +322,7 @@ namespace Mono.Debugger.Backends
 			if (sse.ThreadManager.InBackgroundThread)
 				return sse.DisassembleInstruction (method, address);
 			else
-				return sse.Process.DisassembleInstruction (method, address);
+				return sse.Thread.DisassembleInstruction (method, address);
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
@@ -330,7 +330,7 @@ namespace Mono.Debugger.Backends
 			if (sse.ThreadManager.InBackgroundThread)
 				return sse.DisassembleMethod (method);
 			else
-				return sse.Process.DisassembleMethod (method);
+				return sse.Thread.DisassembleMethod (method);
 		}
 	}
 

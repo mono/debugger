@@ -25,7 +25,7 @@ namespace Mono.Debugger.Frontend
 		DebuggerSession session;
 		ScriptingContext context;
 
-		Process main_process;
+		Thread main_thread;
 		Hashtable procs;
 
 		Hashtable styles;
@@ -112,10 +112,10 @@ namespace Mono.Debugger.Frontend
 
 		public AddressDomain AddressDomain {
 			get {
-				if (main_process == null)
+				if (main_thread == null)
 					throw new ScriptingException ("No target.");
 
-				return main_process.TargetMemoryInfo.AddressDomain;
+				return main_thread.TargetMemoryInfo.AddressDomain;
 			}
 		}
 
@@ -211,9 +211,9 @@ namespace Mono.Debugger.Frontend
 			set { exit_code = value; }
 		}
 
-		public Process[] Processes {
+		public Thread[] Threads {
 			get {
-				Process[] retval = new Process [procs.Count];
+				Thread[] retval = new Thread [procs.Count];
 				procs.Values.CopyTo (retval, 0);
 				return retval;
 			}
@@ -276,14 +276,14 @@ namespace Mono.Debugger.Frontend
 
 		public bool HasTarget {
 			get {
-				return main_process != null;
+				return main_thread != null;
 			}
 		}
 
-		public Process Start ()
+		public Thread Start ()
 		{
-			if (main_process != null)
-				throw new ScriptingException ("Process already started.");
+			if (main_thread != null)
+				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Starting program: {0}",
 					   String.Join (" ", options.InferiorArgs));
@@ -294,29 +294,29 @@ namespace Mono.Debugger.Frontend
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
-				new ProcessEventSink (this, client, server);
+				new ThreadEventSink (this, client, server);
 
 				session = server.Session;
 
 				server.Run (options);
-				Process process = server.WaitForApplication ();
-				main_process = process;
+				Thread thread = server.WaitForApplication ();
+				main_thread = thread;
 
 				start_event.WaitOne ();
-				context.CurrentProcess = main_process;
-				manager.Wait (process);
+				context.CurrentThread = main_thread;
+				manager.Wait (thread);
 
-				return process;
+				return thread;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
 			}
 		}
 
-		public Process Attach (int pid)
+		public Thread Attach (int pid)
 		{
-			if (main_process != null)
-				throw new ScriptingException ("Process already started.");
+			if (main_thread != null)
+				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Attaching to {0}", pid);
 
@@ -326,29 +326,29 @@ namespace Mono.Debugger.Frontend
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
-				new ProcessEventSink (this, client, server);
+				new ThreadEventSink (this, client, server);
 
 				session = server.Session;
 
 				server.Attach (options, pid);
-				Process process = server.WaitForApplication ();
-				main_process = process;
+				Thread thread = server.WaitForApplication ();
+				main_thread = thread;
 
 				start_event.WaitOne ();
-				context.CurrentProcess = main_process;
-				manager.Wait (process);
+				context.CurrentThread = main_thread;
+				manager.Wait (thread);
 
-				return process;
+				return thread;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
 			}
 		}
 
-		public Process OpenCoreFile (string core_file)
+		public Thread OpenCoreFile (string core_file)
 		{
-			if (main_process != null)
-				throw new ScriptingException ("Process already started.");
+			if (main_thread != null)
+				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Loading core file {0}", core_file);
 
@@ -358,20 +358,20 @@ namespace Mono.Debugger.Frontend
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
-				new ProcessEventSink (this, client, server);
+				new ThreadEventSink (this, client, server);
 
 				session = server.Session;
 
-				Process[] threads;
-				Process process = server.OpenCoreFile (options, core_file, out threads);
-				main_process = process;
+				Thread[] threads;
+				Thread thread = server.OpenCoreFile (options, core_file, out threads);
+				main_thread = thread;
 
-				context.CurrentProcess = main_process;
+				context.CurrentThread = main_thread;
 
-				foreach (Process thread in threads)
-					procs.Add (thread.ID, thread);
+				foreach (Thread t in threads)
+					procs.Add (t.ID, t);
 
-				return process;
+				return thread;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
@@ -385,10 +385,10 @@ namespace Mono.Debugger.Frontend
 			session.Save (stream);
 		}
 
-		public Process LoadSession (Stream stream)
+		public Thread LoadSession (Stream stream)
 		{
-			if (main_process != null)
-				throw new ScriptingException ("Process already started.");
+			if (main_thread != null)
+				throw new ScriptingException ("Thread already started.");
 
 			try {
 				DebuggerClient client;
@@ -398,33 +398,33 @@ namespace Mono.Debugger.Frontend
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
-				new ProcessEventSink (this, client, server);
+				new ThreadEventSink (this, client, server);
 
 				server.Run (options);
-				Process process = server.WaitForApplication ();
-				main_process = process;
+				Thread thread = server.WaitForApplication ();
+				main_thread = thread;
 
 				session = server.LoadSession (stream);
 
-				session.InsertBreakpoints (main_process);
+				session.InsertBreakpoints (main_thread);
 
 				start_event.WaitOne ();
-				context.CurrentProcess = main_process;
-				manager.Wait (process);
+				context.CurrentThread = main_thread;
+				manager.Wait (thread);
 
-				return process;
+				return thread;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
 			}
 		}
 
-		protected void ThreadCreated (Process process)
+		protected void ThreadCreated (Thread thread)
 		{
-			procs.Add (process.ID, process);
+			procs.Add (thread.ID, thread);
 
 			if (initialized)
-				Print ("New process @{0}", process.ID);
+				Print ("New thread @{0}", thread.ID);
 		}
 
 		protected void DebuggerInitialized ()
@@ -474,18 +474,18 @@ namespace Mono.Debugger.Frontend
 			return handle;
 		}
 
-		public void DeleteEvent (Process process, EventHandle handle)
+		public void DeleteEvent (Thread thread, EventHandle handle)
 		{
-			handle.Remove (process.TargetAccess);
+			handle.Remove (thread.TargetAccess);
 			session.DeleteEvent (handle.Index);
 		}
 
-		protected void ProcessExited (DebuggerClient client, Process process)
+		protected void ThreadExited (DebuggerClient client, Thread thread)
 		{
-			procs.Remove (process.ID);
-			if (process == main_process) {
+			procs.Remove (thread.ID);
+			if (thread == main_thread) {
 				TargetExited (client);
-				context.CurrentProcess = null;
+				context.CurrentThread = null;
 			}
 		}
 
@@ -494,20 +494,20 @@ namespace Mono.Debugger.Frontend
 			if (client != null) {
 				manager.TargetExited (client);
 
-				foreach (Process proc in Processes) {
+				foreach (Thread proc in Threads) {
 					if (proc.Debugger == client.DebuggerServer)
 						procs.Remove (proc.ID);
 				}
 
-				if ((main_process != null) &&
-				    (main_process.Debugger == client.DebuggerServer)) {
-					main_process = null;
-					context.CurrentProcess = null;
+				if ((main_thread != null) &&
+				    (main_thread.Debugger == client.DebuggerServer)) {
+					main_thread = null;
+					context.CurrentThread = null;
 				}
 			} else {
 				procs = new Hashtable ();
-				context.CurrentProcess = null;
-				main_process = null;
+				context.CurrentThread = null;
+				main_thread = null;
 			}
 
 			initialized = false;
@@ -519,24 +519,24 @@ namespace Mono.Debugger.Frontend
 			TargetExited (client);
 		}
 
-		public Process GetProcess (int number)
+		public Thread GetThread (int number)
 		{
 			if (number == -1)
-				return context.CurrentProcess;
+				return context.CurrentThread;
 
-			foreach (Process proc in Processes)
+			foreach (Thread proc in Threads)
 				if (proc.ID == number)
 					return proc;
 
-			throw new ScriptingException ("No such process: {0}", number);
+			throw new ScriptingException ("No such thread: {0}", number);
 		}
 
-		public Process[] GetProcesses (int[] indices)
+		public Thread[] GetThreads (int[] indices)
 		{
-			Process[] retval = new Process [indices.Length];
+			Thread[] retval = new Thread [indices.Length];
 
 			for (int i = 0; i < indices.Length; i++)
-				retval [i] = GetProcess (indices [i]);
+				retval [i] = GetThread (indices [i]);
 
 			return retval;
 		}
@@ -588,20 +588,20 @@ namespace Mono.Debugger.Frontend
 			return group;
 		}
 
-		public void AddToThreadGroup (string name, Process[] threads)
+		public void AddToThreadGroup (string name, Thread[] threads)
 		{
 			ThreadGroup group = GetThreadGroup (name, true);
 
-			foreach (Process process in threads)
-				group.AddThread (process.ID);
+			foreach (Thread thread in threads)
+				group.AddThread (thread.ID);
 		}
 
-		public void RemoveFromThreadGroup (string name, Process[] threads)
+		public void RemoveFromThreadGroup (string name, Thread[] threads)
 		{
 			ThreadGroup group = GetThreadGroup (name, true);
 	
-			foreach (Process process in threads)
-				group.RemoveThread (process.ID);
+			foreach (Thread thread in threads)
+				group.RemoveThread (thread.ID);
 		}
 
 		public int InsertBreakpoint (TargetAccess target, ThreadGroup group, int domain,
@@ -664,13 +664,13 @@ namespace Mono.Debugger.Frontend
 				client.ClientShutdown += client_shutdown;
 			}
 
-			public void thread_created (Debugger debugger, Process process)
+			public void thread_created (Debugger debugger, Thread thread)
 			{
-				process.TargetOutput += new TargetOutputHandler (target_output);
-				interpreter.ThreadCreated (process);
+				thread.TargetOutput += new TargetOutputHandler (target_output);
+				interpreter.ThreadCreated (thread);
 			}
 
-			public void debugger_initialized (Debugger debugger, Process process)
+			public void debugger_initialized (Debugger debugger, Thread thread)
 			{
 				interpreter.DebuggerInitialized ();
 			}
@@ -695,12 +695,12 @@ namespace Mono.Debugger.Frontend
 		}
 
 		[Serializable]
-		protected class ProcessEventSink
+		protected class ThreadEventSink
 		{
 			Interpreter interpreter;
 			DebuggerClient client;
 
-			public ProcessEventSink (Interpreter interpreter, DebuggerClient client,
+			public ThreadEventSink (Interpreter interpreter, DebuggerClient client,
 						 Debugger debugger)
 			{
 				this.interpreter = interpreter;
@@ -711,11 +711,11 @@ namespace Mono.Debugger.Frontend
 
 			public void target_event (TargetAccess target, TargetEventArgs args)
 			{
-				Process process = (Process) interpreter.procs [target.ID];
-				interpreter.Style.TargetEvent (target, process, args);
+				Thread thread = (Thread) interpreter.procs [target.ID];
+				interpreter.Style.TargetEvent (target, thread, args);
 				if ((args.Type == TargetEventType.TargetExited) ||
 				    (args.Type == TargetEventType.TargetSignaled))
-					interpreter.ProcessExited (client, process);
+					interpreter.ThreadExited (client, thread);
 			}
 		}
 	}

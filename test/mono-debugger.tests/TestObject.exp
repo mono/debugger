@@ -31,7 +31,7 @@ mdb_expect_line "Bar"
 mdb_expect_line "Bar"
 mdb_expect_line "0x12345678"
 mdb_expect_line "0x12345678"
-mdb_expect_line "Process @1 terminated normally."
+mdb_expect_line "Thread @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"
 

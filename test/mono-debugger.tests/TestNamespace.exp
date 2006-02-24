@@ -32,6 +32,6 @@ mdb_expect_hit_breakpoint 0 "Y.Test()" $bpt_test $file $line_test
 mdb_send_and_expect "print Martin.Baulig.Foo.Boston" "(System.String) \"Boston\""
 mdb_send_and_expect "print Martin.Baulig.Foo.Print ()" "(System.String) \"Boston\""
 mdb_send "continue"
-mdb_expect_line "Process @1 terminated normally."
+mdb_expect_line "Thread @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"

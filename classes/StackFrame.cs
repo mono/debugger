@@ -187,7 +187,7 @@ namespace Mono.Debugger
 
 		int level;
 		Method method;
-		Process process;
+		Thread process;
 		TargetAccess target;
 		SourceAddress source;
 		StackFrame parent_frame;
@@ -195,7 +195,7 @@ namespace Mono.Debugger
 		bool has_source;
 		Symbol name;
 
-		internal StackFrame (Process process, TargetAccess target,
+		internal StackFrame (Thread process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers)
 		{
@@ -207,7 +207,7 @@ namespace Mono.Debugger
 			this.registers = registers;
 		}
 
-		internal StackFrame (Process process, TargetAccess target,
+		internal StackFrame (Thread process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
 				     Symbol name)
@@ -217,7 +217,7 @@ namespace Mono.Debugger
 			this.name = name;
 		}
 
-		internal StackFrame (Process process, TargetAccess target,
+		internal StackFrame (Thread process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
 				     Method method)
@@ -229,7 +229,7 @@ namespace Mono.Debugger
 		}
 
 
-		internal StackFrame (Process process, TargetAccess target,
+		internal StackFrame (Thread process, TargetAccess target,
 				     TargetAddress address, TargetAddress stack_pointer,
 				     TargetAddress frame_address, Registers registers,
 				     Method method, SourceAddress source)
@@ -272,7 +272,7 @@ namespace Mono.Debugger
 			get { return frame_address; }
 		}
 
-		public Process Process {
+		public Thread Thread {
 			get { return process; }
 		}
 

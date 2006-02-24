@@ -138,7 +138,7 @@ namespace Mono.Debugger
 			formatter.Serialize (stream, info);
 		}
 
-		public void InsertBreakpoints (Process thread)
+		public void InsertBreakpoints (Thread thread)
 		{
 			foreach (EventHandle handle in events.Values)
 				handle.Enable (thread.TargetAccess);

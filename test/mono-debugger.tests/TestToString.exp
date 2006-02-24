@@ -45,7 +45,7 @@ mdb_send_and_expect "p hello.GetType ()" "(System.MonoType) { \"Hello\" }"
 mdb_send_and_expect "p hello.ToString ()" "(System.String) \"Albert Einstein\""
 
 mdb_send "continue"
-mdb_expect_line "Process @1 terminated normally."
+mdb_expect_line "Thread @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"
 

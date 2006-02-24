@@ -567,7 +567,7 @@ namespace Mono.Debugger.Backends
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame.Process, frame.TargetAccess,
+			return CreateFrame (frame.Thread, frame.TargetAccess,
 					    new_rip, new_rsp, new_rbp, regs);
 		}
 
@@ -600,7 +600,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Process, frame.TargetAccess,
+				return CreateFrame (frame.Thread, frame.TargetAccess,
 						    new_rip, new_rsp, new_rbp, regs);
 			}
 
@@ -624,7 +624,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Process, frame.TargetAccess,
+				return CreateFrame (frame.Thread, frame.TargetAccess,
 						    new_rip, new_rsp, new_rbp, regs);
 			}
 
@@ -670,7 +670,7 @@ namespace Mono.Debugger.Backends
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame.Process, frame.TargetAccess,
+			return CreateFrame (frame.Thread, frame.TargetAccess,
 					    new_rip, new_rsp, new_rbp, regs);
 		}
 
@@ -726,7 +726,7 @@ namespace Mono.Debugger.Backends
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
 			return new StackFrame (
-				frame.Process, frame.TargetAccess, rip, rsp, rbp, regs, name);
+				frame.Thread, frame.TargetAccess, rip, rsp, rbp, regs, name);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame frame,
@@ -754,7 +754,7 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Process process, TargetAccess target,
+		internal override StackFrame CreateFrame (Thread process, TargetAccess target,
 							  ITargetMemoryInfo info, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (

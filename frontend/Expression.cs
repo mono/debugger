@@ -866,7 +866,7 @@ namespace Mono.Debugger.Frontend
 		protected bool DoResolveBase (ScriptingContext context)
 		{
 			if (expr is SimpleNameExpression) {
-				Debugger debugger = context.CurrentProcess.Debugger;
+				Debugger debugger = context.CurrentThread.Debugger;
 				Language native = debugger.NativeLanguage;
 
 				underlying_type = native.LookupType (expr.Name);
@@ -1410,7 +1410,7 @@ namespace Mono.Debugger.Frontend
 						     TargetPropertyInfo prop)
 		{
 			string exc_message;
-			TargetObject res = context.CurrentProcess.RuntimeInvoke (
+			TargetObject res = context.CurrentThread.RuntimeInvoke (
 				prop.Getter, InstanceObject, new TargetObject [0], true,
 				out exc_message);
 
@@ -2545,17 +2545,17 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				if (debug) {
-					Process process = context.CurrentProcess;
-					process.RuntimeInvoke (method, instance, objs, true);
+					Thread thread = context.CurrentThread;
+					thread.RuntimeInvoke (method, instance, objs, true);
 
 					if (context.Interpreter.IsSynchronous)
-						context.Interpreter.DebuggerManager.Wait (process);
+						context.Interpreter.DebuggerManager.Wait (thread);
 
 					return null;
 				}
 
 				string exc_message;
-				TargetObject retval = context.CurrentProcess.RuntimeInvoke (
+				TargetObject retval = context.CurrentThread.RuntimeInvoke (
 					method, mg.InstanceObject, objs, true, out exc_message);
 
 				if (exc_message != null)

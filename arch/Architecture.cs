@@ -118,10 +118,10 @@ namespace Mono.Debugger
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
 							       ITargetMemoryAccess memory);
 
-		internal abstract StackFrame CreateFrame (Process process, TargetAccess target,
+		internal abstract StackFrame CreateFrame (Thread process, TargetAccess target,
 							  ITargetMemoryInfo info, Registers regs);
 
-		internal StackFrame CreateFrame (Process process, TargetAccess target,
+		internal StackFrame CreateFrame (Thread process, TargetAccess target,
 						 TargetAddress address, TargetAddress stack,
 						 TargetAddress frame_pointer, Registers regs)
 		{

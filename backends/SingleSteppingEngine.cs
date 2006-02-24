@@ -67,7 +67,7 @@ namespace Mono.Debugger.Backends
 	//   are just meant to be called from the SingleSteppingEngine (since it's a
 	//   protected nested class they can't actually be called from anywhere else).
 	//
-	//   See the `Process' class for the "user interface".
+	//   See the `Thread' class for the "user interface".
 	// </summary>
 	internal class SingleSteppingEngine : ThreadBase
 	{
@@ -103,7 +103,7 @@ namespace Mono.Debugger.Backends
 
 			setup_engine ();
 
-			process = DebuggerManager.CreateProcess (this);
+			process = DebuggerManager.CreateThread (this);
 			ID = process.ID;
 			Name = process.Name;
 			target_access = new ServerTargetAccess (this);
@@ -124,7 +124,7 @@ namespace Mono.Debugger.Backends
 
 			setup_engine ();
 
-			process = DebuggerManager.CreateProcess (this);
+			process = DebuggerManager.CreateThread (this);
 			ID = process.ID;
 			Name = process.Name;
 			target_access = new ServerTargetAccess (this);
@@ -481,14 +481,14 @@ namespace Mono.Debugger.Backends
 
 		internal void Start (TargetAddress func)
 		{
-			CommandResult result = new Process.StepCommandResult (process);
+			CommandResult result = new Thread.StepCommandResult (process);
 			current_operation = new OperationRun (func, true, result);
 			current_operation.Execute (this);
 		}
 
 		internal void ReachedMain (TargetAddress method)
 		{
-			CommandResult result = new Process.StepCommandResult (process);
+			CommandResult result = new Thread.StepCommandResult (process);
 
 			is_main = true;
 			current_operation = new OperationInitialize (result);
@@ -500,7 +500,7 @@ namespace Mono.Debugger.Backends
 
 		internal void Attach (MonoDebuggerInfo info)
 		{
-			CommandResult result = new Process.StepCommandResult (process);
+			CommandResult result = new Thread.StepCommandResult (process);
 
 			this.is_main = true;
 			StartOperation (new OperationAttach (info, result));
@@ -631,7 +631,7 @@ namespace Mono.Debugger.Backends
 			get { return arch; }
 		}
 
-		public Process Process {
+		public Thread Thread {
 			get { return process; }
 		}
 
@@ -1712,7 +1712,7 @@ namespace Mono.Debugger.Backends
 		Operation current_operation;
 
 		ThreadManager manager;
-		Process process;
+		Thread process;
 		Inferior inferior;
 		TargetAccess target_access;
 		Architecture arch;

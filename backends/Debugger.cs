@@ -17,7 +17,7 @@ using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
-	public delegate void DebuggerEventHandler (Debugger debugger, Process process);
+	public delegate void DebuggerEventHandler (Debugger debugger, Thread process);
 
 	public abstract class Debugger : MarshalByRefObject, IDisposable
 	{
@@ -138,8 +138,8 @@ namespace Mono.Debugger
 			thread_manager.StartApplication (start);
 		}
 
-		public Process OpenCoreFile (DebuggerOptions options, string core_file,
-					     out Process[] threads)
+		public Thread OpenCoreFile (DebuggerOptions options, string core_file,
+					    out Thread[] threads)
 		{
 			check_disposed ();
 
@@ -153,31 +153,31 @@ namespace Mono.Debugger
 			return thread_manager.OpenCoreFile (start, out threads);
 		}
 
-		public Process WaitForApplication ()
+		public Thread WaitForApplication ()
 		{
 			return thread_manager.WaitForApplication ();
 		}
 
-		internal void OnInitializedEvent (Process main_process)
+		internal void OnInitializedEvent (Thread main_process)
 		{
 			manager.MainThreadGroup.AddThread (main_process.ID);
 			if (InitializedEvent != null)
 				InitializedEvent (this, main_process);
 		}
 
-		internal void OnMainThreadCreatedEvent (Process new_process)
+		internal void OnMainThreadCreatedEvent (Thread new_process)
 		{
 			if (MainThreadCreatedEvent != null)
 				MainThreadCreatedEvent (this, new_process);
 		}
 
-		internal void OnThreadCreatedEvent (Process new_process)
+		internal void OnThreadCreatedEvent (Thread new_process)
 		{
 			if (ThreadCreatedEvent != null)
 				ThreadCreatedEvent (this, new_process);
 		}
 
-		internal void OnThreadExitedEvent (Process process)
+		internal void OnThreadExitedEvent (Thread process)
 		{
 			if (ThreadExitedEvent != null)
 				ThreadExitedEvent (this, process);
@@ -294,7 +294,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void LoadLibrary (Process process, string filename)
+		public void LoadLibrary (Thread process, string filename)
 		{
 			if (mono_language == null)
 				throw new SymbolTableException (

@@ -86,7 +86,7 @@ namespace Mono.Debugger.Backends
 
 			++index;
 			if (index < 3)
-				sse.Process.SetDaemon ();
+				sse.Thread.SetDaemon ();
 
 			return false;
 		}

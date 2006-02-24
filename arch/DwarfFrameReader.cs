@@ -358,7 +358,7 @@ namespace Mono.Debugger.Backends
 					frame_addr = new TargetAddress (
 						target.AddressDomain, ebp.Value);
 
-				return arch.CreateFrame (frame.Process, frame.TargetAccess,
+				return arch.CreateFrame (frame.Thread, frame.TargetAccess,
 							 address, stack, frame_addr, regs);
 			}
 		}

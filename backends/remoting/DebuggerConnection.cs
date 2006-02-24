@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using System.Threading;
+using ST = System.Threading;
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Channels;
@@ -16,7 +16,7 @@ namespace Mono.Debugger.Remoting
 		DebuggerStream network_stream;
 		DebuggerServerChannel server_channel;
 		Hashtable requests;
-		Thread poll_thread;
+		ST.Thread poll_thread;
 		bool aborted;
 		bool shutdown_requested;
 
@@ -71,7 +71,7 @@ namespace Mono.Debugger.Remoting
 			requests = Hashtable.Synchronized (new Hashtable ());
 			network_stream = new DebuggerStream (socket_fd);
 
-			poll_thread = new Thread (poll_thread_main);
+			poll_thread = new ST.Thread (poll_thread_main);
 			poll_thread.IsBackground = true;
 			poll_thread.Start ();
 		}
@@ -209,7 +209,7 @@ namespace Mono.Debugger.Remoting
 		protected sealed class MessageData : IDisposable
 		{
 			public readonly long SequenceID;
-			public readonly ManualResetEvent Handle;
+			public readonly ST.ManualResetEvent Handle;
 
 			public ITransportHeaders ResponseHeaders;
 			public Stream ResponseStream;
@@ -217,7 +217,7 @@ namespace Mono.Debugger.Remoting
 			public MessageData (long id)
 			{
 				this.SequenceID = id;
-				this.Handle = new ManualResetEvent (false);
+				this.Handle = new ST.ManualResetEvent (false);
 			}
 
 			public void Dispose ()

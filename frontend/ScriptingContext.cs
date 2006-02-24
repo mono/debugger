@@ -40,7 +40,7 @@ namespace Mono.Debugger.Frontend
 
 	public class ScriptingContext : MarshalByRefObject
 	{
-		Process current_process;
+		Thread current_thread;
 		int current_frame_idx = -1;
 		Interpreter interpreter;
 
@@ -75,7 +75,7 @@ namespace Mono.Debugger.Frontend
 		{
 			this.parent = parent;
 
-			current_process = parent.CurrentProcess;
+			current_thread = parent.CurrentThread;
 		}
 
 		public ScriptingContext GetExpressionContext ()
@@ -93,10 +93,10 @@ namespace Mono.Debugger.Frontend
 
 		public Debugger GetDebugger ()
 		{
-			if (current_process == null)
+			if (current_thread == null)
 				throw new ScriptingException ("No program to debug.");
 
-			Debugger backend = current_process.Debugger;
+			Debugger backend = current_thread.Debugger;
 			if (backend == null)
 				throw new ScriptingException ("No program to debug.");
 
@@ -117,15 +117,15 @@ namespace Mono.Debugger.Frontend
 			get { return is_synchronous; }
 		}
 
-		public Process CurrentProcess {
+		public Thread CurrentThread {
 			get {
-				if (current_process == null)
+				if (current_thread == null)
 					throw new ScriptingException ("No program to debug.");
 
-				return current_process;
+				return current_thread;
 			}
 
-			set { current_process = value; }
+			set { current_thread = value; }
 		}
 
 		public StackFrame CurrentFrame {
@@ -136,14 +136,14 @@ namespace Mono.Debugger.Frontend
 
 		public StackFrame GetFrame (int number)
 		{
-			Process process = CurrentProcess;
-			if (!process.IsStopped)
+			Thread thread = CurrentThread;
+			if (!thread.IsStopped)
 				throw new ScriptingException ("Target is not stopped.");
 
 			if (number == -1)
-				return process.CurrentFrame;
+				return thread.CurrentFrame;
 
-			Backtrace bt = process.GetBacktrace ();
+			Backtrace bt = thread.GetBacktrace ();
 			if (number >= bt.Count)
 				throw new ScriptingException ("No such frame: {0}", number);
 
@@ -239,7 +239,7 @@ namespace Mono.Debugger.Frontend
 
 		string MonoObjectToString (TargetClassObject obj)
 		{
-			TargetAccess target = CurrentProcess.TargetAccess;
+			TargetAccess target = CurrentThread.TargetAccess;
 			TargetClassObject cobj = obj;
 
 		again:
@@ -258,7 +258,7 @@ namespace Mono.Debugger.Frontend
 					continue;
 
 				string exc_message;
-				TargetObject retval = CurrentProcess.RuntimeInvoke (
+				TargetObject retval = CurrentThread.RuntimeInvoke (
 					ftype, obj, new TargetObject [0], true, out exc_message);
 				if ((exc_message != null) || (retval == null))
 					return null;
@@ -285,7 +285,7 @@ namespace Mono.Debugger.Frontend
 				}
 			}
 
-			return CurrentProcess.PrintObject (interpreter.Style, obj, format);
+			return CurrentThread.PrintObject (interpreter.Style, obj, format);
 		}
 
 		public void PrintObject (object obj, DisplayFormat format)
@@ -296,7 +296,7 @@ namespace Mono.Debugger.Frontend
 					formatted = DoPrintObject ((TargetObject) obj, format);
 				else
 					formatted = interpreter.Style.FormatObject (
-						CurrentProcess.TargetAccess, obj, format);
+						CurrentThread.TargetAccess, obj, format);
 			} catch {
 				formatted = "<cannot display object>";
 			}
@@ -307,7 +307,7 @@ namespace Mono.Debugger.Frontend
 		{
 			string formatted;
 			try {
-				formatted = CurrentProcess.PrintType (
+				formatted = CurrentThread.PrintType (
 					interpreter.Style, type);
 			} catch {
 				formatted = "<cannot display type>";
@@ -721,7 +721,7 @@ namespace Mono.Debugger.Frontend
 			return backend.SourceFileFactory.FindFile (filename);
 		}
 
-		public void LoadLibrary (Process process, string filename)
+		public void LoadLibrary (Thread thread, string filename)
 		{
 			Debugger backend = GetDebugger ();
 			string pathname = Path.GetFullPath (filename);
@@ -730,7 +730,7 @@ namespace Mono.Debugger.Frontend
 					"No such file: `{0}'", pathname);
 
 			try {
-				backend.LoadLibrary (process, pathname);
+				backend.LoadLibrary (thread, pathname);
 			} catch (TargetException ex) {
 				throw new ScriptingException (
 					"Cannot load library `{0}': {1}",

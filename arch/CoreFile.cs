@@ -120,16 +120,16 @@ namespace Mono.Debugger.Backends
 			get { return debugger_manager; }
 		}
 
-		public Process MainProcess {
-			get { return main_thread.Process; }
+		public Thread MainThread {
+			get { return main_thread.Thread; }
 		}
 
-		public Process[] Threads {
+		public Thread[] Threads {
 			get {
-				Process[] retval = new Process [threads.Count];
+				Thread[] retval = new Thread [threads.Count];
 				for (int i = 0; i < threads.Count; i++) {
 					CoreFileThread thread = (CoreFileThread) threads [i];
-					retval [i] = thread.Process;
+					retval [i] = thread.Thread;
 				}
 				return retval;
 			}
@@ -159,7 +159,7 @@ namespace Mono.Debugger.Backends
 		{
 			public readonly int PID;
 			public readonly CoreFile CoreFile;
-			public readonly Process Process;
+			public readonly Thread Thread;
 			public readonly TargetAccess TargetAccess;
 			public readonly Registers Registers;
 			public readonly BfdDisassembler Disassembler;
@@ -170,9 +170,9 @@ namespace Mono.Debugger.Backends
 			{
 				this.PID = pid;
 				this.CoreFile = core;
-				this.Process = core.DebuggerManager.CreateProcess (this, pid);
+				this.Thread = core.DebuggerManager.CreateThread (this, pid);
 				this.TargetAccess = new ThreadTargetAccess (
-					this, this, Process.ID, Process.Name);
+					this, this, Thread.ID, Thread.Name);
 
 				this.Disassembler = core.CoreBfd.GetDisassembler (this);
 				this.Registers = read_registers ();
@@ -228,7 +228,7 @@ namespace Mono.Debugger.Backends
 				get {
 					if (current_frame == null)
 						current_frame = CoreFile.Architecture.CreateFrame (
-							Process, TargetAccess, CoreFile.TargetMemoryInfo,
+							Thread, TargetAccess, CoreFile.TargetMemoryInfo,
 							Registers);
 
 					return current_frame;
@@ -376,7 +376,7 @@ namespace Mono.Debugger.Backends
 		protected void check_disposed ()
 		{
 			if (disposed)
-				throw new ObjectDisposedException ("Process");
+				throw new ObjectDisposedException ("Thread");
 		}
 
 		protected virtual void DoDispose ()

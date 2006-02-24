@@ -1,5 +1,24 @@
 2006-02-24  Martin Baulig  <martin@ximian.com>
 
+	The big `Process' -> `Thread' rename.
+
+	* backends/Process.cs: Renamed to Thread.cs
+	(Process): Renamed to Thread.
+
+	* frontend/Command.cs
+	(ProcessCommand): Renamed to `ThreadCommand'.
+	(ThreadCommand.ResolveProcess): Renamed to `ResolveThread'.
+	(FrameCommand.Process): Renamed the property to `Thread'.
+	(SelectProcessCommand): Renamed to `SelectThreadCommand'.
+	(BackgroundProcessCommand): Renamed to `SelectThreadCommand'.
+	(StopProcessCommand): Renamed to `StopThreadCommand'.
+
+	* frontend/Main.cs
+	(CommandLineInterpreter.SetupEngine): Renamed the "process"
+	command to "thread".
+
+2006-02-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/Thread.cs: Renamed to ThreadBase.cs.
 	(Thread): Renamed to `ThreadBase'.
 

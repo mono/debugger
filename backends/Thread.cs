@@ -18,13 +18,13 @@ namespace Mono.Debugger
 {
 	using SSE = SingleSteppingEngine;
 
-	public class Process : ThreadBase
+	public class Thread : ThreadBase
 	{
-		internal Process (DebuggerManager debugger_manager, SingleSteppingEngine engine)
+		internal Thread (DebuggerManager debugger_manager, SingleSteppingEngine engine)
 		{
 			this.engine = engine;
 			this.thread = engine;
-			this.id = engine.ThreadManager.NextProcessID;
+			this.id = engine.ThreadManager.NextThreadID;
 			this.debugger_manager = debugger_manager;
 
 			this.manager = engine.ThreadManager;
@@ -45,10 +45,10 @@ namespace Mono.Debugger
 			this.target_access = new ClientTargetAccess (this);
 		}
 
-		internal Process (DebuggerManager debugger_manager, ThreadBase thread, int pid)
+		internal Thread (DebuggerManager debugger_manager, ThreadBase thread, int pid)
 		{
 			this.thread = thread;
-			this.id = thread.ThreadManager.NextProcessID;
+			this.id = thread.ThreadManager.NextThreadID;
 			this.debugger_manager = debugger_manager;
 			this.pid = pid;
 
@@ -128,9 +128,9 @@ namespace Mono.Debugger
 		public string Name {
 			get {
 				if (IsDaemon)
-					return String.Format ("Daemon process @{0}", id);
+					return String.Format ("Daemon thread @{0}", id);
 				else
-					return String.Format ("Process @{0}", id);
+					return String.Format ("Thread @{0}", id);
 			}
 		}
 
@@ -741,9 +741,9 @@ namespace Mono.Debugger
 
 		internal class StepCommandResult : CommandResult
 		{
-			Process process;
+			Thread process;
 
-			public StepCommandResult (Process process)
+			public StepCommandResult (Thread process)
 			{
 				this.process = process;
 			}
@@ -764,7 +764,7 @@ namespace Mono.Debugger
 		protected void check_disposed ()
 		{
 			if (disposed)
-				throw new ObjectDisposedException ("Process");
+				throw new ObjectDisposedException ("Thread");
 		}
 
 		protected virtual void DoDispose ()
@@ -775,7 +775,7 @@ namespace Mono.Debugger
 
 				operation_completed_event.Set ();
 
-				debugger_manager.ProcessExited (ID);
+				debugger_manager.ThreadExited (ID);
 			}
 		}
 
@@ -801,7 +801,7 @@ namespace Mono.Debugger
 		}
 #endregion
 
-		~Process ()
+		~Thread ()
 		{
 			Dispose (false);
 		}

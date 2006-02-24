@@ -69,7 +69,7 @@ namespace Mono.Debugger.Backends
 		DebuggerMutex thread_lock_mutex;
 		AddressDomain address_domain;
 
-		Process main_process;
+		Thread main_process;
 		SingleSteppingEngine main_engine;
 
 		ST.ManualResetEvent start_event;
@@ -100,7 +100,7 @@ namespace Mono.Debugger.Backends
 			thread_hash.Add (the_engine.PID, the_engine);
 			engine_hash.Add (the_engine.ID, the_engine);
 
-			backend.OnThreadCreatedEvent (the_engine.Process);
+			backend.OnThreadCreatedEvent (the_engine.Thread);
 
 			event_queue.Lock ();
 
@@ -157,14 +157,14 @@ namespace Mono.Debugger.Backends
 			wait_until_engine_is_ready ();
 		}
 
-		public Process OpenCoreFile (ProcessStart start, out Process[] threads)
+		public Thread OpenCoreFile (ProcessStart start, out Thread[] threads)
 		{
 			this.start = start;
 
 			Inferior inferior = Inferior.CreateInferior (this, start);
 			CoreFile core = inferior.OpenCoreFile (start.CoreFile);
 
-			main_process = core.MainProcess;
+			main_process = core.MainThread;
 			threads = core.Threads;
 
 			backend.OnInitializedEvent (main_process);
@@ -176,7 +176,7 @@ namespace Mono.Debugger.Backends
 			return main_process;
 		}
 
-		internal Process WaitForApplication ()
+		internal Thread WaitForApplication ()
 		{
 			initialized_event.WaitOne ();
 
@@ -201,7 +201,7 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 			mono_manager = MonoThreadManager.Initialize (this, inferior);
 
-			main_process = the_engine.Process;
+			main_process = the_engine.Thread;
 			main_engine = the_engine;
 
 			if (start.PID != 0) {
@@ -240,13 +240,13 @@ namespace Mono.Debugger.Backends
 			ready_event.Set ();
 		}
 
-		public Process[] Threads {
+		public Thread[] Threads {
 			get {
 				lock (this) {
-					Process[] procs = new Process [thread_hash.Count];
+					Thread[] procs = new Thread [thread_hash.Count];
 					int i = 0;
 					foreach (SingleSteppingEngine engine in thread_hash.Values)
-						procs [i] = engine.Process;
+						procs [i] = engine.Thread;
 					return procs;
 				}
 			}
@@ -266,7 +266,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		int next_process_id = 0;
-		internal int NextProcessID {
+		internal int NextThreadID {
 			get { return ++next_process_id; }
 		}
 
@@ -322,21 +322,21 @@ namespace Mono.Debugger.Backends
 
 			if ((mono_manager != null) && !do_attach &&
 			    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
-				main_process = new_thread.Process;
+				main_process = new_thread.Thread;
 				main_engine = new_thread;
 			}
 
 			if (!do_attach)
 				new_thread.Start (TargetAddress.Null);
-			backend.OnThreadCreatedEvent (new_thread.Process);
+			backend.OnThreadCreatedEvent (new_thread.Thread);
 		}
 
 		internal void KillThread (SingleSteppingEngine engine)
 		{
 			thread_hash.Remove (engine.PID);
 			engine_hash.Remove (engine.ID);
-			engine.Process.Kill ();
-			backend.OnThreadExitedEvent (engine.Process);
+			engine.Thread.Kill ();
+			backend.OnThreadExitedEvent (engine.Thread);
 		}
 
 		void Kill ()
@@ -415,7 +415,7 @@ namespace Mono.Debugger.Backends
 			get { return breakpoint_manager; }
 		}
 
-		public Process MainProcess {
+		public Thread MainThread {
 			get { return main_process; }
 		}
 
@@ -691,9 +691,9 @@ namespace Mono.Debugger.Backends
 				thread_hash.Values.CopyTo (threads, 0);
 
 				for (int i = 0; i < threads.Length; i++) {
-					if (main_process == threads[i].Process)
+					if (main_process == threads[i].Thread)
 						main_in_threads = true;
-					threads [i].Process.Dispose ();
+					threads [i].Thread.Dispose ();
 				}
 
 				if (main_process != null && !main_in_threads)
@@ -703,7 +703,7 @@ namespace Mono.Debugger.Backends
 					breakpoint_manager.Dispose ();
 
 				if (the_engine != null)
-					the_engine.Process.Dispose ();
+					the_engine.Thread.Dispose ();
 			}
 		}
 

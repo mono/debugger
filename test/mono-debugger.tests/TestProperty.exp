@@ -21,7 +21,7 @@ mdb_send_and_expect "p test.Hello (new D ())" "(System.String) \"D\""
 
 mdb_send "continue"
 mdb_expect_line "Test"
-mdb_expect_line "Process @1 terminated normally."
+mdb_expect_line "Thread @1 terminated normally."
 mdb_expect_prompt
 mdb_send "quit"
 

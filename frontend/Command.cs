@@ -179,44 +179,44 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public abstract class ProcessCommand : DebuggerCommand
+	public abstract class ThreadCommand : DebuggerCommand
 	{
-		int process;
+		int thread;
 
-		public int Process {
-			get { return process; }
-			set { process = value; }
+		public int Thread {
+			get { return thread; }
+			set { thread = value; }
 		}
 
-		protected virtual Process ResolveProcess (ScriptingContext context)
+		protected virtual Thread ResolveThread (ScriptingContext context)
 		{
-			if (process > 0)
-				return context.Interpreter.GetProcess (process);
+			if (thread > 0)
+				return context.Interpreter.GetThread (thread);
 
-			return context.CurrentProcess;
+			return context.CurrentThread;
 		}
 	}
 
 	public abstract class FrameCommand : DebuggerCommand
 	{
 		int frame = -1;
-		int process = -1;
+		int thread = -1;
 
 		public int Frame {
 			get { return frame; }
 			set { frame = value; }
 		}
 
-		public int Process {
-			get { return process; }
-			set { process = value; }
+		public int Thread {
+			get { return thread; }
+			set { thread = value; }
 		}
 
 		protected virtual StackFrame ResolveFrame (ScriptingContext context)
 		{
 			context.ResetCurrentSourceCode ();
-			if (process > 0) {
-				Process proc = context.Interpreter.GetProcess (process);
+			if (thread > 0) {
+				Thread proc = context.Interpreter.GetThread (thread);
 				if (frame < 0)
 					return proc.CurrentFrame;
 
@@ -475,7 +475,7 @@ namespace Mono.Debugger.Frontend
 	
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = context.CurrentProcess;
+			Thread thread = context.CurrentThread;
 
 			if (do_method) {
 				Method method = frame.Method;
@@ -510,7 +510,7 @@ namespace Mono.Debugger.Frontend
 					return;
 				}
 
-				line = process.DisassembleInstruction (method, address);
+				line = thread.DisassembleInstruction (method, address);
 				if (line == null) {
 					context.Error ("Cannot disassemble instruction at " +
 						       "address {0}.", address);
@@ -635,7 +635,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return "The change does not take effect for the program being debugged\nuntil the next time it is started."; } } 
 	}
 
-	public class SelectProcessCommand : DebuggerCommand, IDocumentableCommand
+	public class SelectThreadCommand : DebuggerCommand, IDocumentableCommand
 	{
 		int index = -1;
 
@@ -647,7 +647,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				index = (int) UInt32.Parse (Argument);
 			} catch {
-				context.Print ("Process number expected.");
+				context.Print ("Thread number expected.");
 				return false;
 			}
 
@@ -656,81 +656,81 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process;
+			Thread thread;
 			if (index >= 0)
-				process = context.Interpreter.GetProcess (index);
+				thread = context.Interpreter.GetThread (index);
 			else
-				process = context.CurrentProcess;
+				thread = context.CurrentThread;
 
-			context.CurrentProcess = process;
-			context.Print (process);
+			context.CurrentThread = thread;
+			context.Print (thread);
 		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Threads; } }
-		public string Description { get { return "Print or select current process"; } }
+		public string Description { get { return "Print or select current thread"; } }
 		public string Documentation { get { return 
-						"Without argument, print the current process.\n\n" +
-						"With a process argument, make that process the current process.\n" +
-						"This is the process which is used if you do not explicitly specify\n" +
-						"a process (see `help process_expression' for details).\n"; } }
+						"Without argument, print the current thread.\n\n" +
+						"With a thread argument, make that thread the current thread.\n" +
+						"This is the thread which is used if you do not explicitly specify\n" +
+						"a thread (see `help thread_expression' for details).\n"; } }
 	}
 
-	public class BackgroundProcessCommand : ProcessCommand, IDocumentableCommand
+	public class BackgroundThreadCommand : ThreadCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = ResolveProcess (context);
-			process.Continue (true);
+			Thread thread = ResolveThread (context);
+			thread.Continue (true);
 		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Threads; } }
-		public string Description { get { return "Run process in background"; } }
+		public string Description { get { return "Run thread in background"; } }
 		public string Documentation { get { return
-						"Resumes execution of the selected process, but does not wait for it.\n\n" +
-						"The difference to `continue' is that `continue' waits until the process\n" +
+						"Resumes execution of the selected thread, but does not wait for it.\n\n" +
+						"The difference to `continue' is that `continue' waits until the thread\n" +
 						"stops again (for instance, because it hit a breakpoint or received a signal)\n" +
-						"while this command just lets the process running.  Note that the process\n" +
+						"while this command just lets the thread running.  Note that the thread\n" +
 						"still stops if it hits a breakpoint.\n"; } }
 	}
 
-	public class StopProcessCommand : ProcessCommand, IDocumentableCommand
+	public class StopThreadCommand : ThreadCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = ResolveProcess (context);
-			process.Stop ();
+			Thread thread = ResolveThread (context);
+			thread.Stop ();
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.DebuggerManager.Wait (process);
+				context.Interpreter.DebuggerManager.Wait (thread);
 		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Threads; } }
-		public string Description { get { return "Stop execution of a process"; } }
+		public string Description { get { return "Stop execution of a thread"; } }
 		public string Documentation { get { return ""; } }
 	}
 
-	public abstract class SteppingCommand : ProcessCommand
+	public abstract class SteppingCommand : ThreadCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = ResolveProcess (context);
+			Thread thread = ResolveThread (context);
 			context.ResetCurrentSourceCode ();
-			DoStep (context, process);
+			DoStep (context, thread);
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.DebuggerManager.Wait (process);
+				context.Interpreter.DebuggerManager.Wait (thread);
 
 		}
 
-		protected abstract void DoStep (ScriptingContext context, Process process);
+		protected abstract void DoStep (ScriptingContext context, Thread thread);
 	}
 
 	public class ContinueCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoStep (ScriptingContext context, Process process)
+		protected override void DoStep (ScriptingContext context, Thread thread)
 		{
-			process.Continue ();
+			thread.Continue ();
 		}
 
 		// IDocumentableCommand
@@ -741,10 +741,10 @@ namespace Mono.Debugger.Frontend
 
 	public class StepCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoStep (ScriptingContext context, Process process)
+		protected override void DoStep (ScriptingContext context, Thread thread)
 		{
 			context.Interpreter.Style.IsNative = false;
-			process.StepLine ();
+			thread.StepLine ();
 		}
 
 		// IDocumentableCommand
@@ -755,10 +755,10 @@ namespace Mono.Debugger.Frontend
 
 	public class NextCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoStep (ScriptingContext context, Process process)
+		protected override void DoStep (ScriptingContext context, Thread thread)
 		{
 			context.Interpreter.Style.IsNative = false;
-			process.NextLine ();
+			thread.NextLine ();
 		}
 
 		// IDocumentableCommand
@@ -776,13 +776,13 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override void DoStep (ScriptingContext context, Process process)
+		protected override void DoStep (ScriptingContext context, Thread thread)
 		{
 			context.Interpreter.Style.IsNative = true;
 			if (Native)
-				process.StepNativeInstruction ();
+				thread.StepNativeInstruction ();
 			else
-				process.StepInstruction ();
+				thread.StepInstruction ();
 		}
 
 		// IDocumentableCommand
@@ -793,10 +793,10 @@ namespace Mono.Debugger.Frontend
 
 	public class NextInstructionCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override void DoStep (ScriptingContext context, Process process)
+		protected override void DoStep (ScriptingContext context, Thread thread)
 		{
 			context.Interpreter.Style.IsNative = true;
-			process.NextInstruction ();
+			thread.NextInstruction ();
 		}
 
 		// IDocumentableCommand
@@ -814,12 +814,12 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override void DoStep (ScriptingContext context, Process process)
+		protected override void DoStep (ScriptingContext context, Thread thread)
 		{
 			if (Native)
-				process.FinishNative ();
+				thread.FinishNative ();
 			else
-				process.Finish ();
+				thread.Finish ();
 		}
 
 		// IDocumentableCommand
@@ -828,7 +828,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class BacktraceCommand : ProcessCommand, IDocumentableCommand
+	public class BacktraceCommand : ThreadCommand, IDocumentableCommand
 	{
 		int max_frames = -1;
 
@@ -839,12 +839,12 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = ResolveProcess (context);
+			Thread thread = ResolveThread (context);
 
 			int current_idx = context.CurrentFrameIndex;
 			if (current_idx < 0)
 				current_idx = 0;
-			Backtrace backtrace = process.GetBacktrace (max_frames);
+			Backtrace backtrace = thread.GetBacktrace (max_frames);
 			context.ResetCurrentSourceCode ();
 
 			for (int i = 0; i < backtrace.Count; i++) {
@@ -859,7 +859,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class UpCommand : ProcessCommand, IDocumentableCommand
+	public class UpCommand : ThreadCommand, IDocumentableCommand
 	{
 		int increment = 1;
 
@@ -898,7 +898,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class DownCommand : ProcessCommand, IDocumentableCommand
+	public class DownCommand : ThreadCommand, IDocumentableCommand
 	{
 		int decrement = 1;
 
@@ -1286,16 +1286,16 @@ namespace Mono.Debugger.Frontend
 	public class ShowCommand : NestedCommand, IDocumentableCommand
 	{
 #region show subcommands
-		private class ShowProcessesCommand : DebuggerCommand
+		private class ShowThreadsCommand : DebuggerCommand
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
 				int current_id = -1;
 				if (context.Interpreter.HasTarget)
-					current_id = context.CurrentProcess.ID;
+					current_id = context.CurrentThread.ID;
 
 				bool printed_something = false;
-				foreach (Process proc in context.Interpreter.Processes) {
+				foreach (Thread proc in context.Interpreter.Threads) {
 					string prefix = proc.ID == current_id ? "(*)" : "   ";
 					context.Print ("{0} {1} ({2}:{3:x})", prefix, proc,
 						       proc.PID, proc.TID);
@@ -1312,7 +1312,7 @@ namespace Mono.Debugger.Frontend
 			protected override void DoExecute (ScriptingContext context)
 			{
 				StackFrame frame = ResolveFrame (context);
-				Architecture arch = frame.Process.Architecture;
+				Architecture arch = frame.Thread.Architecture;
 				context.Print (arch.PrintRegisters (frame));
 			}
 		}
@@ -1524,8 +1524,7 @@ namespace Mono.Debugger.Frontend
 
 		public ShowCommand ()
 		{
-			RegisterSubcommand ("processes", typeof (ShowProcessesCommand));
-			RegisterSubcommand ("procs", typeof (ShowProcessesCommand));
+			RegisterSubcommand ("threads", typeof (ShowThreadsCommand));
 			RegisterSubcommand ("registers", typeof (ShowRegistersCommand));
 			RegisterSubcommand ("regs", typeof (ShowRegistersCommand));
 			RegisterSubcommand ("locals", typeof (ShowLocalsCommand));
@@ -1592,14 +1591,14 @@ namespace Mono.Debugger.Frontend
 		private class ThreadGroupAddCommand : DebuggerCommand
 		{
 			protected string name;
-			protected Process[] threads;
+			protected Thread[] threads;
 
 			protected override bool DoResolve (ScriptingContext context)
 			{
 				if ((Args == null) || (Args.Count < 2)) {
 					context.Print ("Invalid arguments: Need the name of the " +
 						       "thread group to operate on and one ore more " +
-						       "processes");
+						       "threads");
 					return false;
 				}
 
@@ -1610,12 +1609,12 @@ namespace Mono.Debugger.Frontend
 						ids [i] = (int) UInt32.Parse ((string) Args [i+1]);
 					} catch {
 						context.Print ("Invalid argument {0}: expected " +
-							       "process id", i+1);
+							       "thread id", i+1);
 						return false;
 					}
 				}
 
-				threads = context.Interpreter.GetProcesses (ids);
+				threads = context.Interpreter.GetThreads (ids);
 				return threads != null;
 			}
 
@@ -1675,12 +1674,12 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Enable (context.CurrentProcess.TargetAccess);
+				handle.Enable (context.CurrentThread.TargetAccess);
 			}
 			else {
 				// enable all breakpoints
 				foreach (EventHandle h in context.Interpreter.Events)
-					h.Enable (context.CurrentProcess.TargetAccess);
+					h.Enable (context.CurrentThread.TargetAccess);
 			}
 		}
 
@@ -1695,12 +1694,12 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Disable (context.CurrentProcess.TargetAccess);
+				handle.Disable (context.CurrentThread.TargetAccess);
 			}
 			else {
 				// enable all breakpoints
 				foreach (EventHandle h in context.Interpreter.Events)
-					h.Disable (context.CurrentProcess.TargetAccess);
+					h.Disable (context.CurrentThread.TargetAccess);
 			}
 		}
 
@@ -1715,7 +1714,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				context.Interpreter.DeleteEvent (context.CurrentProcess, handle);
+				context.Interpreter.DeleteEvent (context.CurrentThread, handle);
 			}
 			else {
 				EventHandle[] hs = context.Interpreter.Events;
@@ -1728,7 +1727,7 @@ namespace Mono.Debugger.Frontend
 
 				// delete all breakpoints
 				foreach (EventHandle h in context.Interpreter.Events)
-					context.Interpreter.DeleteEvent (context.CurrentProcess, h);
+					context.Interpreter.DeleteEvent (context.CurrentThread, h);
 			}
 		}
 
@@ -1901,9 +1900,9 @@ namespace Mono.Debugger.Frontend
 	{
 		string group;
 		int domain = 0;
-		int process_id = -1;
+		int thread_id = -1;
 		TargetFunctionType func;
-		Process process;
+		Thread thread;
 		ThreadGroup tgroup;
 
 		public string Group {
@@ -1916,9 +1915,9 @@ namespace Mono.Debugger.Frontend
 			set { domain = value; }
 		}
 
-		public int Process {
-			get { return process_id; }
-			set { process_id = value; }
+		public int Thread {
+			get { return thread_id; }
+			set { thread_id = value; }
 		}
 
 		bool ResolveMethod (ScriptingContext context)
@@ -1953,12 +1952,12 @@ namespace Mono.Debugger.Frontend
 				return false;
 			}
 
-			if (process_id > 0) {
-				process = context.Interpreter.GetProcess (process_id);
+			if (thread_id > 0) {
+				thread = context.Interpreter.GetThread (thread_id);
 				if (group == null)
-					tgroup = process.ThreadGroup;
+					tgroup = thread.ThreadGroup;
 			} else
-				process = context.CurrentProcess;
+				thread = context.CurrentThread;
 
 			if (tgroup == null)
 				tgroup = context.Interpreter.GetThreadGroup (Group, false);
@@ -1977,13 +1976,13 @@ namespace Mono.Debugger.Frontend
 					location = new SourceLocation (method);
 
 					int index = context.Interpreter.InsertBreakpoint (
-						process.TargetAccess, tgroup, domain, location);
+						thread.TargetAccess, tgroup, domain, location);
 					context.Print ("Breakpoint {0} at {1}", index, location.Name);
 				}
 				return;
 			} else if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
-					process.TargetAccess, tgroup, domain, location);
+					thread.TargetAccess, tgroup, domain, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
 			} else if (func != null) {
 				if (domain != 0) {
@@ -1992,7 +1991,7 @@ namespace Mono.Debugger.Frontend
 					return;
 				}
 				int index = context.Interpreter.InsertBreakpoint (
-					process.TargetAccess, tgroup, func);
+					thread.TargetAccess, tgroup, func);
 				context.Print ("Breakpoint {0} at {1}", index, func.Name);
 			} else {
 				throw new ScriptingException ("Cannot insert breakpoint.");
@@ -2080,7 +2079,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
-				context.CurrentProcess.TargetAccess, tgroup, type);
+				context.CurrentThread.TargetAccess, tgroup, type);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 		}
 
@@ -2145,7 +2144,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.LoadLibrary (context.CurrentProcess, Argument);
+			context.LoadLibrary (context.CurrentThread, Argument);
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -2299,7 +2298,7 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetAddress address = pexpr.EvaluateAddress (context);
 
-			Symbol symbol = context.CurrentProcess.SimpleLookup (address, false);
+			Symbol symbol = context.CurrentThread.SimpleLookup (address, false);
 			if (symbol == null)
 				context.Print ("No method contains address {0}.", address);
 			else
@@ -2313,7 +2312,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class ReturnCommand : ProcessCommand
+	public class ReturnCommand : ThreadCommand
 	{
 		bool unconfirmed;
 		bool invocation;
@@ -2344,11 +2343,11 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			Process process = ResolveProcess (context);
+			Thread thread = ResolveThread (context);
 			if (Invocation)
-				process.AbortInvocation ();
+				thread.AbortInvocation ();
 			else
-				process.Return (true);
+				thread.Return (true);
 		}
 
 		// IDocumentableCommand

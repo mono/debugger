@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Threading;
+using ST = System.Threading;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -12,21 +12,21 @@ namespace Mono.Debugger
 	{
 		bool symtab_thread_exit;
 
-		Thread symtab_thread;
-		AutoResetEvent symtab_reload_event;
-		ManualResetEvent symtabs_loaded_event;
-		ManualResetEvent modules_loaded_event;
-		ManualResetEvent update_completed_event;
+		ST.Thread symtab_thread;
+		ST.AutoResetEvent symtab_reload_event;
+		ST.ManualResetEvent symtabs_loaded_event;
+		ST.ManualResetEvent modules_loaded_event;
+		ST.ManualResetEvent update_completed_event;
 		bool symtab_update_in_progress;
 		bool module_update_in_progress;
 
 		internal SymbolTableManager ()
 		{
-			symtab_reload_event = new AutoResetEvent (false);
-			symtabs_loaded_event = new ManualResetEvent (true);
-			modules_loaded_event = new ManualResetEvent (true);
-			update_completed_event = new ManualResetEvent (true);
-			symtab_thread = new Thread (new ThreadStart (symtab_thread_start));
+			symtab_reload_event = new ST.AutoResetEvent (false);
+			symtabs_loaded_event = new ST.ManualResetEvent (true);
+			modules_loaded_event = new ST.ManualResetEvent (true);
+			update_completed_event = new ST.ManualResetEvent (true);
+			symtab_thread = new ST.Thread (new ST.ThreadStart (symtab_thread_start));
 			symtab_thread.IsBackground = true;
 			symtab_thread.Start ();
 		}

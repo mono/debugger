@@ -425,7 +425,7 @@ namespace Mono.Debugger.Backends
 				ebp -= addr_size;
 			}
 
-			return CreateFrame (frame.Process, frame.TargetAccess,
+			return CreateFrame (frame.Thread, frame.TargetAccess,
 					    new_eip, new_esp, new_ebp, regs);
 		}
 
@@ -459,7 +459,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Process, frame.TargetAccess,
+				return CreateFrame (frame.Thread, frame.TargetAccess,
 						    new_eip, new_esp, new_ebp, regs);
 			}
 
@@ -482,7 +482,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Process, frame.TargetAccess,
+				return CreateFrame (frame.Thread, frame.TargetAccess,
 						    new_eip, new_esp, new_ebp, regs);
 			}
 
@@ -567,7 +567,7 @@ namespace Mono.Debugger.Backends
 			esp += 0x40;
 			regs [(int)I386Register.ESP].SetValue (esp.Address);
 
-			return CreateFrame (frame.Process, frame.TargetAccess,
+			return CreateFrame (frame.Thread, frame.TargetAccess,
 					    eip, esp, ebp, regs);
 		}
 
@@ -591,7 +591,7 @@ namespace Mono.Debugger.Backends
 			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
 			regs [(int)I386Register.EBP].SetValue (new_ebp);
 
-			return CreateFrame (frame.Process, frame.TargetAccess,
+			return CreateFrame (frame.Thread, frame.TargetAccess,
 					    new_eip, new_esp, new_ebp, regs);
 		}
 
@@ -644,7 +644,7 @@ namespace Mono.Debugger.Backends
 
 			ebp -= addr_size;
 
-			return CreateFrame (frame.Process, frame.TargetAccess,
+			return CreateFrame (frame.Thread, frame.TargetAccess,
 					    new_eip, new_esp, new_ebp, regs);
 		}
 
@@ -669,7 +669,7 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Process process, TargetAccess target,
+		internal override StackFrame CreateFrame (Thread process, TargetAccess target,
 							  ITargetMemoryInfo info, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (

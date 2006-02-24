@@ -65,10 +65,10 @@ namespace Mono.Debugger.Frontend
 			e.RegisterAlias   ("f", typeof (PrintFrameCommand));
 			e.RegisterCommand ("disassemble", typeof (DisassembleCommand));
 			e.RegisterAlias   ("dis", typeof (DisassembleCommand));
-			e.RegisterCommand ("process", typeof (SelectProcessCommand));
-			e.RegisterCommand ("background", typeof (BackgroundProcessCommand));
-			e.RegisterAlias   ("bg", typeof (BackgroundProcessCommand));
-			e.RegisterCommand ("stop", typeof (StopProcessCommand));
+			e.RegisterCommand ("thread", typeof (SelectThreadCommand));
+			e.RegisterCommand ("background", typeof (BackgroundThreadCommand));
+			e.RegisterAlias   ("bg", typeof (BackgroundThreadCommand));
+			e.RegisterCommand ("stop", typeof (StopThreadCommand));
 			e.RegisterCommand ("continue", typeof (ContinueCommand));
 			e.RegisterAlias   ("cont", typeof (ContinueCommand));
 			e.RegisterAlias   ("c", typeof (ContinueCommand));

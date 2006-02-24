@@ -11,7 +11,7 @@ proc mdb_start {file args} {
     global mono
     global timeout
     global verbose
-    global process
+    global thread
     global spawn_id
     global srcdir
 
@@ -38,11 +38,11 @@ proc mdb_start {file args} {
 }
 
 proc mdb_expect_started { } {
-    global process
+    global thread
 
     expect {
-	-re "Process @(\[0-9\]+) stopped at (\[^\n\r\]+)\[\r\n\]+" {
-	    set process $expect_out(1,string)
+	-re "Thread @(\[0-9\]+) stopped at (\[^\n\r\]+)\[\r\n\]+" {
+	    set thread $expect_out(1,string)
 	    pass "Target started"
 	} -re {^ERROR:([^\n\r]+)} {
 	    set message $expect_out(1,string)
@@ -137,9 +137,9 @@ proc mdb_test_frame {frame index func file line} {
 }
 
 proc mdb_expect_frame {index func file line} {
-    global process
+    global thread
 
-    mdb_send "frame -process $process"
+    mdb_send "frame -thread $thread"
     expect {
 	-re {^([^\n\r]+)[\n\r]+} {
 	    mdb_test_frame $expect_out(1,string) $index $func $file $line
@@ -158,7 +158,7 @@ proc mdb_expect_frame {index func file line} {
 }
 
 proc mdb_expect_backtrace_frame {index func file line} {
-    global process
+    global thread
 
     expect {
 	-re {^(\(\*\))?[ ]*([^\n\r]+)[\n\r]+} {
@@ -177,18 +177,18 @@ proc mdb_expect_backtrace_frame {index func file line} {
 }
 
 proc mdb_expect_stopped {index func file line} {
-    global process
+    global thread
     global max_repeat
 
     set count 0
     while {$count < $max_repeat} {
 	expect {
-	    -re {Process @([0-9]+) stopped at ([^\n\r]+)\.[\n\r]+} {
-		set real_process $expect_out(1,string)
+	    -re {Thread @([0-9]+) stopped at ([^\n\r]+)\.[\n\r]+} {
+		set real_thread $expect_out(1,string)
 		set real_frame $expect_out(2,string)
 
-		if {$real_process != $process} {
-		    fail "Debugger stopped in process $real_process, but expected $process"
+		if {$real_thread != $thread} {
+		    fail "Debugger stopped in thread $real_thread, but expected $thread"
 		    return
 		}
 
@@ -197,7 +197,7 @@ proc mdb_expect_stopped {index func file line} {
 		return
 	    }
 	    {^(mdb) } {
-		fail "Process failed to stop in $func at $file:$line"
+		fail "Thread failed to stop in $func at $file:$line"
 		return -1
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
@@ -216,19 +216,19 @@ proc mdb_expect_stopped {index func file line} {
 }
 
 proc mdb_expect_hit_breakpoint {index func bpt_index file line} {
-    global process
+    global thread
     global max_repeat
 
     set count 0
     while {$count < $max_repeat} {
 	expect {
-	    -re {Process @([0-9]+) hit breakpoint ([0-9]+) at ([^\n\r]+)\.[\n\r]+} {
-		set real_process $expect_out(1,string)
+	    -re {Thread @([0-9]+) hit breakpoint ([0-9]+) at ([^\n\r]+)\.[\n\r]+} {
+		set real_thread $expect_out(1,string)
 		set real_bpt $expect_out(2,string)
 		set real_frame $expect_out(3,string)
 
-		if {$real_process != $process} {
-		    fail "Debugger stopped in process $real_process, but expected $process"
+		if {$real_thread != $thread} {
+		    fail "Debugger stopped in thread $real_thread, but expected $thread"
 		    return
 		}
 
@@ -242,7 +242,7 @@ proc mdb_expect_hit_breakpoint {index func bpt_index file line} {
 		return
 	    }
 	    {^(mdb) } {
-		fail "Process failed to stop in $func at $file:$line"
+		fail "Thread failed to stop in $func at $file:$line"
 		return -1
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
@@ -261,7 +261,7 @@ proc mdb_expect_hit_breakpoint {index func bpt_index file line} {
 }
 
 proc mdb_expect_breakpoint {} {
-    global process
+    global thread
     global file
     global max_repeat
 
@@ -294,7 +294,7 @@ proc mdb_expect_breakpoint {} {
 }
 
 proc mdb_expect_catchpoint {} {
-    global process
+    global thread
     global file
     global max_repeat
 
@@ -327,18 +327,18 @@ proc mdb_expect_catchpoint {} {
 }
 
 proc mdb_expect_exception {index func file line} {
-    global process
+    global thread
     global max_repeat
 
     set count 0
     while {$count < $max_repeat} {
 	expect {
-	    -re {Process @([0-9]+) caught exception at ([^\n\r]+)\.[\n\r]+} {
-		set real_process $expect_out(1,string)
+	    -re {Thread @([0-9]+) caught exception at ([^\n\r]+)\.[\n\r]+} {
+		set real_thread $expect_out(1,string)
 		set real_frame $expect_out(2,string)
 
-		if {$real_process != $process} {
-		    fail "Debugger stopped in process $real_process, but expected $process"
+		if {$real_thread != $thread} {
+		    fail "Debugger stopped in thread $real_thread, but expected $thread"
 		    return
 		}
 
@@ -347,7 +347,7 @@ proc mdb_expect_exception {index func file line} {
 		return
 	    }
 	    {^(mdb) } {
-		fail "Process failed to catch exception in $func at $file:$line"
+		fail "Thread failed to catch exception in $func at $file:$line"
 		return -1
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
@@ -365,22 +365,22 @@ proc mdb_expect_exception {index func file line} {
     exit 1
 }
 
-proc mdb_expect_process {} {
+proc mdb_expect_thread {} {
     global max_repeat
 
     set count 0
-    set new_processs 0
+    set new_threads 0
     while {$count < $max_repeat} {
 	expect {
-	    -re {^New process \@([\d]+)[\n\r]+} {
-		set new_process $expect_out(1,string)
-		pass "Started new process $new_process"
+	    -re {^New thread \@([\d]+)[\n\r]+} {
+		set new_thread $expect_out(1,string)
+		pass "Started new thread $new_thread"
 		# mdb_expect_prompt
-		return $new_process
+		return $new_thread
 	    }
 	    -re {^([^\n\r]+)[\n\r]+} {
 		set line $expect_out(1,string)
-		fail "Received `$line' when waiting for a new process"
+		fail "Received `$line' when waiting for a new thread"
 		incr count
 	    } timeout {
 		perror "(timeout) Mono Debugger is not responding."
