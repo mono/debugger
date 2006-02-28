@@ -161,7 +161,6 @@ namespace Mono.Debugger.Backends
 			public readonly int PID;
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
-			public readonly TargetAccess TargetAccess;
 			public readonly Registers Registers;
 			public readonly BfdDisassembler Disassembler;
 			Backtrace current_backtrace;
@@ -172,9 +171,6 @@ namespace Mono.Debugger.Backends
 				this.PID = pid;
 				this.CoreFile = core;
 				this.Thread = new Thread (this, pid);
-
-				this.TargetAccess = new ThreadTargetAccess (
-					this, this, Thread.ID, Thread.Name);
 
 				this.Disassembler = core.CoreBfd.GetDisassembler (this);
 				this.Registers = read_registers ();

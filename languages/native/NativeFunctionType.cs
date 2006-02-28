@@ -65,12 +65,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public TargetObject Invoke (TargetAccess target, TargetObject instance,
-					    TargetObject[] args)
-		{
-			throw new NotSupportedException ();
-		}
-
 		public override TargetClassType DeclaringType {
 			get {
 				return null;

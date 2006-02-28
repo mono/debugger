@@ -108,7 +108,6 @@ namespace Mono.Debugger.Backends
 			thread = new Thread (this);
 			ID = thread.ID;
 			Name = thread.Name;
-			target_access = new ServerTargetAccess (this);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, Process process,
@@ -129,7 +128,6 @@ namespace Mono.Debugger.Backends
 			thread = new Thread (this);
 			ID = thread.ID;
 			Name = thread.Name;
-			target_access = new ServerTargetAccess (this);
 		}
 
 		void setup_engine ()
@@ -622,10 +620,6 @@ namespace Mono.Debugger.Backends
 		}
 
 #region public properties
-		internal TargetAccess TargetAccess {
-			get { return target_access; }
-		}
-
 		internal Inferior Inferior {
 			get { return inferior; }
 		}
@@ -1716,7 +1710,6 @@ namespace Mono.Debugger.Backends
 		Thread thread;
 		Process process;
 		Inferior inferior;
-		TargetAccess target_access;
 		Architecture arch;
 		Disassembler disassembler;
 		ProcessStart start;

@@ -1,7 +1,6 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
-	* backends/TargetAccess.cs (TargetAccess): Make this class
-	`internal' in preparation for its deletion.
+	* backends/TargetAccess.cs: Removed.
 
 2006-02-28  Martin Baulig  <martin@ximian.com>
 

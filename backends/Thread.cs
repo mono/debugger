@@ -18,6 +18,9 @@ namespace Mono.Debugger
 {
 	using SSE = SingleSteppingEngine;
 
+	[Serializable]
+	internal delegate object TargetAccessDelegate (Thread target, object user_data);
+
 	public class Thread : ThreadBase
 	{
 		internal Thread (SingleSteppingEngine engine)
@@ -595,7 +598,7 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public object Invoke (TargetAccessDelegate func, object data)
+		internal object Invoke (TargetAccessDelegate func, object data)
 		{
 			if (engine.ThreadManager.InBackgroundThread)
 				return func (this, data);
