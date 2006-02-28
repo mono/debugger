@@ -37,6 +37,7 @@ namespace Mono.Debugger.Backends
 			wait_event = new ST.AutoResetEvent (false);
 			idle_event = new ST.ManualResetEvent (false);
 			engine_event = new ST.ManualResetEvent (true);
+			ready_event = new ST.ManualResetEvent (false);
 
 			event_queue = new DebuggerEventQueue ("event_queue");
 			event_queue.DebugFlags = DebugFlags.Wait;
@@ -50,6 +51,8 @@ namespace Mono.Debugger.Backends
 			inferior_thread = new ST.Thread (new ST.ThreadStart (start_inferior));
 			inferior_thread.IsBackground = true;
 			inferior_thread.Start ();
+
+			ready_event.WaitOne ();
 		}
 
 		ProcessStart start;
@@ -57,6 +60,7 @@ namespace Mono.Debugger.Backends
 		DebuggerEventQueue event_queue;
 		ST.Thread inferior_thread;
 		ST.Thread wait_thread;
+		ST.ManualResetEvent ready_event;
 		ST.ManualResetEvent idle_event;
 		ST.ManualResetEvent engine_event;
 		ST.AutoResetEvent wait_event;
@@ -82,7 +86,8 @@ namespace Mono.Debugger.Backends
 
 		void start_inferior ()
 		{
-			// event_queue.Lock ();
+			event_queue.Lock ();
+			ready_event.Set ();
 
 			while (!abort_requested) {
 				engine_thread_main ();
@@ -291,6 +296,8 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.Wait, "ThreadManager waiting");
 
 			event_queue.Wait ();
+
+			Report.Debug (DebugFlags.Wait, "ThreadManager done waiting");
 
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait, "Engine thread abort requested");

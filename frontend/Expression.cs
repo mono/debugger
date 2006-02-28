@@ -2549,7 +2549,7 @@ namespace Mono.Debugger.Frontend
 					thread.RuntimeInvoke (method, instance, objs, true);
 
 					if (context.Interpreter.IsSynchronous)
-						context.Interpreter.DebuggerManager.Wait (thread);
+						context.Interpreter.Wait (thread);
 
 					return null;
 				}

@@ -28,16 +28,21 @@ namespace Mono.Debugger.Remoting
 
 		int id;
 		string url;
-		DebuggerManager manager;
+		static int next_id;
 		DebuggerServer server;
-		Debugger backend;
 		DebuggerConnection connection;
 		ILease lease;
 		Sponsor sponsor;
 
-		internal DebuggerClient (DebuggerManager manager, int id, string host, string path)
+		public static DebuggerClient Run (ReportWriter writer, string host, string path)
 		{
-			this.manager = manager;
+			int id = ++next_id;
+			DebuggerClient client = new DebuggerClient (writer, id, host, path);
+			return client;
+		}
+
+		internal DebuggerClient (ReportWriter writer, int id, string host, string path)
+		{
 			this.id = id;
 
 			// FIXME FIXME FIXME
@@ -57,23 +62,15 @@ namespace Mono.Debugger.Remoting
 				connection = Connect (host, path);
 				connection.ConnectionClosedEvent += client_connection_closed;
 				object[] url = { new UrlAttribute (connection.URL) };
-				object[] args = { manager, this };
+				object[] args = { this, writer };
 				server = (DebuggerServer) Activator.CreateInstance (
 					typeof (DebuggerServer), args, url);
-
-				backend = server;
 
 				lease = (ILease) server.GetLifetimeService ();
 				sponsor = new Sponsor ();
 				lease.Register (sponsor);
 			} else {
-				object[] args = { manager, this };
-				AppDomain domain = AppDomain.CreateDomain ("mdb");
-				server = (DebuggerServer) domain.CreateInstanceAndUnwrap (
-					"Mono.Debugger", "Mono.Debugger.Remoting.DebuggerServer",
-					false, 0, null, args, null, null, null);
-
-				backend = server;
+				server = new DebuggerServer (this, writer);
 			}
 		}
 
@@ -123,10 +120,6 @@ namespace Mono.Debugger.Remoting
 			connection.ConnectionClosedEvent += new ConnectionHandler (connection_closed);
 			connections.Add (channel_uri, connection);
 			return connection;
-		}
-
-		public DebuggerManager DebuggerManager {
-			get { return manager; }
 		}
 
 		public DebuggerServer DebuggerServer {

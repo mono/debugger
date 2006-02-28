@@ -20,12 +20,11 @@ namespace Mono.Debugger
 
 	public class Thread : ThreadBase
 	{
-		internal Thread (DebuggerManager debugger_manager, SingleSteppingEngine engine)
+		internal Thread (SingleSteppingEngine engine)
 		{
 			this.engine = engine;
 			this.thread = engine;
 			this.id = engine.ThreadManager.NextThreadID;
-			this.debugger_manager = debugger_manager;
 
 			this.manager = engine.ThreadManager;
 			this.process = engine.Process;
@@ -44,11 +43,10 @@ namespace Mono.Debugger
 			this.target_memory_info = engine.TargetMemoryInfo;
 		}
 
-		internal Thread (DebuggerManager debugger_manager, ThreadBase thread, int pid)
+		internal Thread (ThreadBase thread, int pid)
 		{
 			this.thread = thread;
 			this.id = thread.ThreadManager.NextThreadID;
-			this.debugger_manager = debugger_manager;
 			this.pid = pid;
 
 			this.manager = thread.ThreadManager;
@@ -73,7 +71,6 @@ namespace Mono.Debugger
 		SingleSteppingEngine engine;
 		Process process;
 		ThreadManager manager;
-		DebuggerManager debugger_manager;
 		SymbolTableManager symtab_manager;
 		ST.ManualResetEvent operation_completed_event;
 		ITargetInfo target_info;
@@ -771,8 +768,6 @@ namespace Mono.Debugger
 				engine = null;
 
 				operation_completed_event.Set ();
-
-				debugger_manager.ThreadExited (ID);
 			}
 		}
 

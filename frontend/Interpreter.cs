@@ -19,12 +19,13 @@ namespace Mono.Debugger.Frontend
 {
 	public abstract class Interpreter : MarshalByRefObject
 	{
-		protected readonly DebuggerManager manager;
+		public readonly ReportWriter ReportWriter;
 
 		DebuggerOptions options;
 		DebuggerSession session;
 		ScriptingContext context;
 
+		DebuggerClient client;
 		Process main_process;
 		Thread main_thread;
 		Hashtable procs;
@@ -42,6 +43,7 @@ namespace Mono.Debugger.Frontend
 		int exit_code = 0;
 
 		AutoResetEvent start_event;
+		ManualResetEvent interrupt_event;
 
 		internal Interpreter (bool is_synchronous, bool is_interactive,
 				      DebuggerOptions options)
@@ -50,7 +52,14 @@ namespace Mono.Debugger.Frontend
 			this.is_interactive = is_interactive;
 			this.options = options;
 
-			manager = new DebuggerManager (options);
+			interrupt_event = new ManualResetEvent (false);
+
+			if (options.HasDebugFlags)
+				ReportWriter = new ReportWriter (options.DebugOutput, options.DebugFlags);
+			else
+				ReportWriter = new ReportWriter ();
+
+			Report.Initialize (ReportWriter);
 
 			procs = new Hashtable ();
 
@@ -89,10 +98,6 @@ namespace Mono.Debugger.Frontend
 			} finally {
 				Environment.Exit (exit_code);
 			}
-		}
-
-		public DebuggerManager DebuggerManager {
-			get { return manager; }
 		}
 
 		public ScriptingContext GlobalContext {
@@ -292,15 +297,15 @@ namespace Mono.Debugger.Frontend
 
 		public Process Start ()
 		{
-			if (main_process != null)
+			if (client != null)
 				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Starting program: {0}",
 					   String.Join (" ", options.InferiorArgs));
 
 			try {
-				DebuggerClient client;
-				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				client = DebuggerClient.Run (
+					ReportWriter, options.RemoteHost, options.RemoteMono);
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
@@ -313,7 +318,7 @@ namespace Mono.Debugger.Frontend
 				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
 				context.CurrentThread = main_thread;
-				manager.Wait (main_thread);
+				Wait (main_thread);
 
 				return main_process;
 			} catch (TargetException e) {
@@ -324,14 +329,14 @@ namespace Mono.Debugger.Frontend
 
 		public Process Attach (int pid)
 		{
-			if (main_process != null)
+			if (client != null)
 				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Attaching to {0}", pid);
 
 			try {
-				DebuggerClient client;
-				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				client = DebuggerClient.Run (
+					ReportWriter, options.RemoteHost, options.RemoteMono);
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
@@ -344,7 +349,7 @@ namespace Mono.Debugger.Frontend
 				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
 				context.CurrentThread = main_thread;
-				manager.Wait (main_thread);
+				Wait (main_thread);
 
 				return main_process;
 			} catch (TargetException e) {
@@ -355,14 +360,14 @@ namespace Mono.Debugger.Frontend
 
 		public Process OpenCoreFile (string core_file)
 		{
-			if (main_process != null)
+			if (client != null)
 				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Loading core file {0}", core_file);
 
 			try {
-				DebuggerClient client;
-				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				client = DebuggerClient.Run (
+					ReportWriter, options.RemoteHost, options.RemoteMono);
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
@@ -395,14 +400,14 @@ namespace Mono.Debugger.Frontend
 
 		public Process LoadSession (Stream stream)
 		{
-			if (main_process != null)
+			if (client != null)
 				throw new ScriptingException ("Thread already started.");
 
 			try {
-				DebuggerClient client;
 				BinaryFormatter formatter = new BinaryFormatter ();
 				options = (DebuggerOptions) formatter.Deserialize (stream);
-				client = manager.Run (options.RemoteHost, options.RemoteMono);
+				client = DebuggerClient.Run (
+					ReportWriter, options.RemoteHost, options.RemoteMono);
 				DebuggerServer server = client.DebuggerServer;
 
 				new InterpreterEventSink (this, client, server);
@@ -417,7 +422,7 @@ namespace Mono.Debugger.Frontend
 				start_event.WaitOne ();
 				main_thread = process.MainThread;
 				context.CurrentThread = main_thread;
-				manager.Wait (main_thread);
+				Wait (main_thread);
 
 				return process;
 			} catch (TargetException e) {
@@ -432,6 +437,28 @@ namespace Mono.Debugger.Frontend
 
 			if (initialized)
 				Print ("New thread @{0}", thread.ID);
+		}
+
+		public void Wait (Thread thread)
+		{
+			if (thread == null)
+				return;
+
+			WaitHandle[] handles = new WaitHandle [2];
+			handles [0] = interrupt_event;
+			handles [1] = thread.WaitHandle;
+
+			WaitHandle.WaitAny (handles);
+		}
+
+		public void Interrupt ()
+		{
+			interrupt_event.Set ();
+		}
+
+		public void ClearInterrupt ()
+		{
+			interrupt_event.Reset ();
 		}
 
 		protected void DebuggerInitialized ()
@@ -499,8 +526,6 @@ namespace Mono.Debugger.Frontend
 		protected void TargetExited (DebuggerClient client)
 		{
 			if (client != null) {
-				manager.TargetExited (client);
-
 				foreach (Thread proc in Threads) {
 					if (proc.Process.Debugger == client.DebuggerServer)
 						procs.Remove (proc.ID);
@@ -651,7 +676,12 @@ namespace Mono.Debugger.Frontend
 
 		public void Kill ()
 		{
-			manager.Kill ();
+			if (client != null) {
+				client.DebuggerServer.Dispose ();
+				client.Shutdown ();
+				client = null;
+			}
+
 			TargetExited (null);
 		}
 

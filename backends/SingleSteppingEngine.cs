@@ -105,7 +105,7 @@ namespace Mono.Debugger.Backends
 
 			setup_engine ();
 
-			thread = DebuggerManager.CreateThread (this);
+			thread = new Thread (this);
 			ID = thread.ID;
 			Name = thread.Name;
 			target_access = new ServerTargetAccess (this);
@@ -126,7 +126,7 @@ namespace Mono.Debugger.Backends
 
 			setup_engine ();
 
-			thread = DebuggerManager.CreateThread (this);
+			thread = new Thread (this);
 			ID = thread.ID;
 			Name = thread.Name;
 			target_access = new ServerTargetAccess (this);
@@ -644,10 +644,6 @@ namespace Mono.Debugger.Backends
 
 		internal override ThreadManager ThreadManager {
 			get { return manager; }
-		}
-
-		public DebuggerManager DebuggerManager {
-			get { return manager.Debugger.DebuggerManager; }
 		}
 
 		public override Backtrace CurrentBacktrace {

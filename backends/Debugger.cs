@@ -22,15 +22,13 @@ namespace Mono.Debugger
 
 	public abstract class Debugger : MarshalByRefObject, IDisposable
 	{
-		DebuggerManager manager;
+		DebuggerClient client;
 		ThreadManager thread_manager;
 		ProcessStart start;
 
-		protected Debugger (DebuggerManager manager)
+		protected Debugger (DebuggerClient client)
 		{
-			this.manager = manager;
-
-			DebuggerContext.CreateServerContext (this);
+			this.client = client;
 
 			thread_manager = new ThreadManager (this);
 		}
@@ -127,10 +125,6 @@ namespace Mono.Debugger
 				Error ("{0} caught exception while sending {1}:\n{2}",
 				       sse, args, ex);
 			}
-		}
-
-		internal DebuggerManager DebuggerManager {
-			get { return manager; }
 		}
 
 		public void Error (string message, params object[] args)

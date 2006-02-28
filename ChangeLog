@@ -1,5 +1,11 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/remoting/DebuggerContext.cs: Removed.
+
+	* backends/remoting/DebuggerManager.cs: Removed.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/TargetAccess.cs (ClientTargetAccess): Removed.
 	(TargetAccessHelper): Removed; we now share the same
 	`TargetAccess' between client and server.

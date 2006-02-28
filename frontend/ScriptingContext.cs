@@ -105,7 +105,7 @@ namespace Mono.Debugger.Frontend
 
 		public bool HasBackend {
 			get {
-				return interpreter.DebuggerManager.HasTarget;
+				return interpreter.HasTarget;
 			}
 		}
 

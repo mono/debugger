@@ -140,7 +140,7 @@ namespace Mono.Debugger.Frontend
 		{
 			while (true) {
 				try {
-					DebuggerManager.ClearInterrupt ();
+					ClearInterrupt ();
 					MainLoop ();
 				} catch (ST.ThreadAbortException) {
 					ST.Thread.ResetAbort ();
@@ -456,7 +456,7 @@ namespace Mono.Debugger.Frontend
 				if (mono_debugger_server_get_pending_sigint () == 0)
 					continue;
 
-				DebuggerManager.Interrupt ();
+				Interrupt ();
 				main_thread.Abort ();
 			} while (true);
 		}

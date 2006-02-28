@@ -11,7 +11,6 @@ namespace Mono.Debugger.Backends
 	{
 		ITargetInfo info;
 		ITargetMemoryInfo memory_info;
-		DebuggerManager debugger_manager;
 		CoreFileThread main_thread;
 		Bfd bfd, core_bfd;
 		string core_file;
@@ -34,7 +33,6 @@ namespace Mono.Debugger.Backends
 
 		private void OpenCoreFile (Inferior inferior, Bfd bfd, string core_file)
 		{
-			this.debugger_manager = ThreadManager.Debugger.DebuggerManager;
 			this.info = inferior.TargetInfo;
 			this.memory_info = inferior.TargetMemoryInfo;
 			this.bfd = bfd;
@@ -127,10 +125,6 @@ namespace Mono.Debugger.Backends
 #endif
 		}
 
-		public DebuggerManager DebuggerManager {
-			get { return debugger_manager; }
-		}
-
 		public Thread[] Threads {
 			get {
 				Thread[] retval = new Thread [threads.Count];
@@ -177,7 +171,8 @@ namespace Mono.Debugger.Backends
 			{
 				this.PID = pid;
 				this.CoreFile = core;
-				this.Thread = core.DebuggerManager.CreateThread (this, pid);
+				this.Thread = new Thread (this, pid);
+
 				this.TargetAccess = new ThreadTargetAccess (
 					this, this, Thread.ID, Thread.Name);
 

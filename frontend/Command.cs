@@ -702,7 +702,7 @@ namespace Mono.Debugger.Frontend
 			Thread thread = ResolveThread (context);
 			thread.Stop ();
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.DebuggerManager.Wait (thread);
+				context.Interpreter.Wait (thread);
 		}
 
 		// IDocumentableCommand
@@ -719,7 +719,7 @@ namespace Mono.Debugger.Frontend
 			context.ResetCurrentSourceCode ();
 			DoStep (context, thread);
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.DebuggerManager.Wait (thread);
+				context.Interpreter.Wait (thread);
 
 		}
 

@@ -35,10 +35,11 @@ namespace Mono.Debugger.Remoting
 			ChannelServices.UnregisterChannel (channel);
 		}
 
-		public DebuggerServer (DebuggerManager manager, DebuggerClient client)
-			: base (manager)
+		public DebuggerServer (DebuggerClient client, ReportWriter writer)
+			: base (client)
 		{
 			this.client = client;
+			Report.Initialize (writer);
 			this.session = new DebuggerSession (client);
 		}
 

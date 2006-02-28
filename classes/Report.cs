@@ -28,6 +28,13 @@ namespace Mono.Debugger
 
 	public static class Report
 	{
+		private static ReportWriter ReportWriter = null;
+
+		public static void Initialize (ReportWriter writer)
+		{
+			ReportWriter = writer;
+		}
+
 		[Conditional("DEBUG")]
 		public static void Debug (DebugFlags category, object argument)
 		{
@@ -38,19 +45,19 @@ namespace Mono.Debugger
 		public static void Debug (DebugFlags category, string message, params object[] args)
 		{
 			string formatted = String.Format (message, args);
-			DebuggerContext.ReportWriter.Debug (category, formatted);
+			ReportWriter.Debug (category, formatted);
 		}
 
 		public static void Print (string message, params object[] args)
 		{
 			string formatted = String.Format (message, args);
-			DebuggerContext.ReportWriter.Print (formatted);
+			ReportWriter.Print (formatted);
 		}
 
 		public static void Error (string message, params object[] args)
 		{
 			string formatted = String.Format (message, args);
-			DebuggerContext.ReportWriter.Error (formatted);
+			ReportWriter.Error (formatted);
 		}
 	}
 
