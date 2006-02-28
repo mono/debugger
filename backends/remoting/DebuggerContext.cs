@@ -38,11 +38,6 @@ namespace Mono.Debugger.Remoting
 			get { return CurrentContext.ReportWriter; }
 		}
 
-		public static TargetAccess GetTargetAccess (int id)
-		{
-			return CurrentContext.GetTargetAccess (id);
-		}
-
 		protected abstract class DebuggerContextBase
 		{
 			internal abstract ThreadManager ThreadManager {
@@ -56,8 +51,6 @@ namespace Mono.Debugger.Remoting
 			public abstract ReportWriter ReportWriter {
 				get;
 			}
-
-			public abstract TargetAccess GetTargetAccess (int id);
 		}
 
 		private sealed class DebuggerClientContext : DebuggerContextBase
@@ -82,12 +75,6 @@ namespace Mono.Debugger.Remoting
 			public override ReportWriter ReportWriter {
 				get { return report; }
 			}
-
-			public override TargetAccess GetTargetAccess (int id)
-			{
-				Thread thread = manager.GetThread (id);
-				return new ClientTargetAccess (thread);
-			}
 		}
 
 		private sealed class DebuggerServerContext : DebuggerContextBase
@@ -111,12 +98,6 @@ namespace Mono.Debugger.Remoting
 
 			public override ReportWriter ReportWriter {
 				get { return report; }
-			}
-
-			public override TargetAccess GetTargetAccess (int id)
-			{
-				SingleSteppingEngine sse = ThreadManager.GetEngine (id);
-				return new ServerTargetAccess (sse);
 			}
 		}
 	}

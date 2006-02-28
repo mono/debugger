@@ -15,7 +15,7 @@ namespace Mono.Debugger
 	public delegate object TargetAccessDelegate (TargetAccess target, object user_data);
 
 	[Serializable]
-	public abstract class TargetAccess : ISerializable
+	public abstract class TargetAccess
 	{
 		int id;
 		string name;
@@ -72,123 +72,11 @@ namespace Mono.Debugger
 								      TargetAddress address);
 
 		public abstract AssemblerMethod DisassembleMethod (Method method);
-
-		//
-		// ISerializable
-		//
-
-		public void GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			info.AddValue ("id", id);
-			info.SetType (typeof (Mono.Debugger.Backends.TargetAccessHelper));
-		}
 	}
 }
 
 namespace Mono.Debugger.Backends
 {
-	[Serializable]
-	internal sealed class TargetAccessHelper : ISerializable, IObjectReference
-	{
-		int id;
-
-		public object GetRealObject (StreamingContext context)
-		{
-			return DebuggerContext.GetTargetAccess (id);
-		}
-
-		protected TargetAccessHelper (SerializationInfo sinfo, StreamingContext context)
-		{
-			this.id = (int) sinfo.GetValue ("id", typeof (int));
-		}
-
-		void ISerializable.GetObjectData (SerializationInfo info, StreamingContext context)
-		{
-			throw new InvalidOperationException ();
-		}
-	}
-
-	[Serializable]
-	internal sealed class ClientTargetAccess : TargetAccess
-	{
-		Thread thread;
-
-		public ClientTargetAccess (Thread thread)
-			: base (thread.ID, thread.Name)
-		{
-			this.thread = thread;
-		}
-
-		public override Debugger Debugger {
-			get { return thread.ThreadManager.Debugger; }
-		}
-
-		public override ITargetMemoryAccess TargetMemoryAccess {
-			get { return thread.TargetMemoryAccess; }
-		}
-
-		public override ITargetInfo TargetInfo {
-			get { return thread.TargetInfo; }
-		}
-
-		public override ITargetMemoryInfo TargetMemoryInfo {
-			get { return thread.TargetMemoryInfo; }
-		}
-
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override void RemoveBreakpoint (int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override void AddEventHandler (EventType type, EventHandle handle)
-		{
-			thread.AddEventHandler (type, handle);
-		}
-
-		internal override void RemoveEventHandler (int index)
-		{
-			thread.RemoveEventHandler (index);
-		}
-
-		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-							  TargetAddress arg2)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override TargetAddress CallMethod (TargetAddress method, long method_argument,
-							    string string_argument)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override object Invoke (TargetAccessDelegate func, object data)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override AssemblerLine DisassembleInstruction (Method method,
-								      TargetAddress address)
-		{
-			return thread.DisassembleInstruction (method, address);
-		}
-
-		public override AssemblerMethod DisassembleMethod (Method method)
-		{
-			return thread.DisassembleMethod (method);
-		}
-	}
-
 	[Serializable]
 	internal sealed class ServerTargetAccess : TargetAccess
 	{

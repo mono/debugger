@@ -1,5 +1,14 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/TargetAccess.cs (ClientTargetAccess): Removed.
+	(TargetAccessHelper): Removed; we now share the same
+	`TargetAccess' between client and server.
+
+	* backends/remoting/DebuggerContext.cs
+	(DebuggerContext.GetTargetAccess): Removed.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs
 	(Process): Manage thread groups here and not in `DebuggerManager'.
 

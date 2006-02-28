@@ -42,7 +42,6 @@ namespace Mono.Debugger
 
 			this.target_info = engine.TargetInfo;
 			this.target_memory_info = engine.TargetMemoryInfo;
-			this.target_access = new ClientTargetAccess (this);
 		}
 
 		internal Thread (DebuggerManager debugger_manager, ThreadBase thread, int pid)
@@ -64,7 +63,6 @@ namespace Mono.Debugger
 
 			this.target_info = thread.TargetInfo;
 			this.target_memory_info = thread.TargetMemoryInfo;
-			this.target_access = new ClientTargetAccess (this);
 		}
 
 		bool is_daemon;
@@ -80,7 +78,6 @@ namespace Mono.Debugger
 		ST.ManualResetEvent operation_completed_event;
 		ITargetInfo target_info;
 		ITargetMemoryInfo target_memory_info;
-		TargetAccess target_access;
 
 		public ST.WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -616,7 +613,7 @@ namespace Mono.Debugger
 		}
 
 		public TargetAccess TargetAccess {
-			get { return target_access; }
+			get { return engine.TargetAccess; }
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {
