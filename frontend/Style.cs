@@ -65,7 +65,7 @@ namespace Mono.Debugger.Frontend
 			if (!PrintSource (context, frame))
 				native = true;
 			if (native) {
-				AssemblerLine insn = frame.TargetAccess.DisassembleInstruction (
+				AssemblerLine insn = frame.Thread.DisassembleInstruction (
 					frame.Method, frame.TargetAddress);
 
 				if (insn != null)
@@ -116,7 +116,7 @@ namespace Mono.Debugger.Frontend
 						  TargetEventArgs args)
 		{
 			if (args.Frame != null)
-				TargetEvent (target, args.Frame, args);
+				TargetEvent (thread, args.Frame, args);
 
 			switch (args.Type) {
 			case TargetEventType.TargetExited:
@@ -139,7 +139,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void TargetEvent (TargetAccess target, StackFrame frame,
+		protected void TargetEvent (Thread target, StackFrame frame,
 					    TargetEventArgs args)
 		{
 			switch (args.Type) {

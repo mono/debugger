@@ -484,7 +484,7 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException (
 						"Selected stack frame has no method.");
 
-				AssemblerMethod asm = frame.TargetAccess.DisassembleMethod (method);
+				AssemblerMethod asm = frame.Thread.DisassembleMethod (method);
 				foreach (AssemblerLine insn in asm.Lines)
 					context.PrintInstruction (insn);
 				return;

@@ -57,11 +57,6 @@ namespace Mono.Debugger
 							    string string_argument);
 
 		internal abstract object Invoke (TargetAccessDelegate func, object data);
-
-		public abstract AssemblerLine DisassembleInstruction (Method method,
-								      TargetAddress address);
-
-		public abstract AssemblerMethod DisassembleMethod (Method method);
 	}
 }
 
@@ -144,23 +139,6 @@ namespace Mono.Debugger.Backends
 			else
 				return sse.ThreadManager.SendCommand (sse, func, data);
 		}
-
-		public override AssemblerLine DisassembleInstruction (Method method,
-								      TargetAddress address)
-		{
-			if (sse.ThreadManager.InBackgroundThread)
-				return sse.DisassembleInstruction (method, address);
-			else
-				return sse.Thread.DisassembleInstruction (method, address);
-		}
-
-		public override AssemblerMethod DisassembleMethod (Method method)
-		{
-			if (sse.ThreadManager.InBackgroundThread)
-				return sse.DisassembleMethod (method);
-			else
-				return sse.Thread.DisassembleMethod (method);
-		}
 	}
 
 	[Serializable]
@@ -208,17 +186,6 @@ namespace Mono.Debugger.Backends
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
 			throw new InvalidOperationException ();
-		}
-
-		public override AssemblerLine DisassembleInstruction (Method method,
-								      TargetAddress address)
-		{
-			return thread.DisassembleInstruction (method, address);
-		}
-
-		public override AssemblerMethod DisassembleMethod (Method method)
-		{
-			return thread.DisassembleMethod (method);
 		}
 	}
 }

@@ -1,6 +1,12 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
 	* backends/TargetAccess.cs
+	(TargetAccess.DisassembleInstruction): Removed.
+	(TargetAccess.DisassembleMethod): Removed.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
+	* backends/TargetAccess.cs
 	(TargetAccess.InsertBreakpoint): Removed.
 	(TargetAccess.RemoveBreakpoint): Removed.
 	(TargetAccess.AddEventHandler): Removed.
