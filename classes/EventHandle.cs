@@ -18,13 +18,11 @@ namespace Mono.Debugger
 		private int index;
 		private string name;
 
-		protected static int NextBreakpointIndex = 0;
-
-		protected EventHandle (ThreadGroup group, string name)
+		protected EventHandle (ThreadGroup group, string name, int index)
 		{
 			this.group = group;
 			this.name = name;
-			this.index = ++NextBreakpointIndex;
+			this.index = index;
 		}
 
 		// <summary>
@@ -85,7 +83,7 @@ namespace Mono.Debugger
 
 		protected virtual void SetSessionData (SerializationInfo info, DebuggerClient client)
 		{
-			index = ++NextBreakpointIndex;
+			index = Breakpoint.GetNextBreakpointIndex ();
 			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
 			name = info.GetString ("name");
 		}

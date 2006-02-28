@@ -1,5 +1,14 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* classes/Breakpoint.cs
+	(Breakpoint.GetNextBreakpointIndex): New internal static method.
+
+	* classes/EventHandle.cs (EventHandle..ctor): We now take an
+	`index' argument; we use `Breakpoint.Index' for breakpoints and
+	generate a new unique index for catchpoints.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/remoting/DebuggerContext.cs: Removed.
 
 	* backends/remoting/DebuggerManager.cs: Removed.

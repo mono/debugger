@@ -18,7 +18,7 @@ namespace Mono.Debugger
 		int domain;
 
 		private BreakpointHandle (Breakpoint breakpoint)
-			: base (breakpoint.ThreadGroup, breakpoint.Name)
+			: base (breakpoint.ThreadGroup, breakpoint.Name, breakpoint.Index)
 		{
 			this.breakpoint = breakpoint;
 		}

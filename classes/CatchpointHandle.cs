@@ -14,7 +14,7 @@ namespace Mono.Debugger
 
 		internal CatchpointHandle (TargetAccess target, ThreadGroup group,
 					   TargetType exception)
-			: base (group, exception.Name)
+			: base (group, exception.Name, Breakpoint.GetNextBreakpointIndex ())
 		{
 			this.exception = exception;
 

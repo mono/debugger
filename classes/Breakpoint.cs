@@ -91,6 +91,11 @@ namespace Mono.Debugger
 
 		protected static int NextBreakpointIndex = 0;
 
+		internal static int GetNextBreakpointIndex ()
+		{
+			return ++NextBreakpointIndex;
+		}
+
 		protected Breakpoint (string name, ThreadGroup group)
 		{
 			this.index = ++NextBreakpointIndex;
