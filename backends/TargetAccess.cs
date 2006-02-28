@@ -137,57 +137,6 @@ namespace Mono.Debugger.Backends
 			return (TargetAddress) result.Result;
 		}
 
-#if FIXME
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
-		{
-			return (int) Invoke (delegate (TargetAccess target, object user_data) {
-				return sse.InsertBreakpoint (breakpoint, address);
-				}, null);
-		}
-
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
-		{
-			if (sse.ThreadManager.InBackgroundThread)
-				throw new InvalidOperationException ();
-
-			CommandResult result = (CommandResult) sse.ThreadManager.SendCommand (
-				sse, delegate (TargetAccess target, object user_data) {
-					return sse.InsertBreakpoint (breakpoint, func);
-				}, null);
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (int) result.Result;
-		}
-
-		internal override void RemoveBreakpoint (int index)
-		{
-			Invoke (delegate (TargetAccess target, object user_data) {
-				sse.RemoveBreakpoint (index);
-				return null;
-				}, null);
-		}
-
-		internal override void AddEventHandler (EventType type, EventHandle handle)
-		{
-			Invoke (delegate (TargetAccess target, object user_data) {
-				sse.AddEventHandler (type, handle);
-				return null;
-				}, null);
-		}
-
-		internal override void RemoveEventHandler (int index)
-		{
-			Invoke (delegate (TargetAccess target, object user_data) {
-				sse.RemoveEventHandler (index);
-				return null;
-			}, null);
-		}
-#endif
-
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
