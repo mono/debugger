@@ -53,9 +53,6 @@ namespace Mono.Debugger
 		internal abstract TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							    TargetAddress arg2);
 
-		internal abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
-							    string string_argument);
-
 		internal abstract object Invoke (TargetAccessDelegate func, object data);
 	}
 }
@@ -113,25 +110,6 @@ namespace Mono.Debugger.Backends
 			return (TargetAddress) result.Result;
 		}
 
-		internal override TargetAddress CallMethod (TargetAddress method, long method_arg,
-							    string string_arg)
-		{
-			if (sse.ThreadManager.InBackgroundThread)
-				throw new InvalidOperationException ();
-
-			CommandResult result = (CommandResult) sse.ThreadManager.SendCommand (
-				sse, delegate (TargetAccess target, object user_data) {
-					return sse.CallMethod (method, method_arg, string_arg);
-				}, null);
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (TargetAddress) result.Result;
-		}
-
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
@@ -173,12 +151,6 @@ namespace Mono.Debugger.Backends
 
 		internal override TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 							    TargetAddress arg2)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override TargetAddress CallMethod (TargetAddress method, long method_arg,
-							    string string_arg)
 		{
 			throw new InvalidOperationException ();
 		}

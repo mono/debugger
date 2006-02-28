@@ -80,7 +80,7 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		public override bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
+		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
 		{
 			TargetClassObject exc = exception.Language.CreateObject (target, address)
 				as TargetClassObject;

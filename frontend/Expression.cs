@@ -365,7 +365,7 @@ namespace Mono.Debugger.Frontend
 			    !frame.Language.CanCreateInstance (val.GetType ()))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
-			return frame.Language.CreateInstance (frame.TargetAccess, val);
+			return frame.Language.CreateInstance (frame.Thread, val);
 		}
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
@@ -415,7 +415,7 @@ namespace Mono.Debugger.Frontend
 			    !frame.Language.CanCreateInstance (typeof (string)))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
-			return frame.Language.CreateInstance (frame.TargetAccess, val);
+			return frame.Language.CreateInstance (frame.Thread, val);
 		}
 
 		public override string ToString ()
@@ -455,7 +455,7 @@ namespace Mono.Debugger.Frontend
 			    !frame.Language.CanCreateInstance (typeof (bool)))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
-			return frame.Language.CreateInstance (frame.TargetAccess, val);
+			return frame.Language.CreateInstance (frame.Thread, val);
 		}
 
 		public override string ToString ()
@@ -2245,7 +2245,7 @@ namespace Mono.Debugger.Frontend
 			if (new_value == null)
 				return null;
 
-			return type.Language.CreateInstance (target, new_value);
+			return type.Language.CreateInstance (context.CurrentThread, new_value);
 		}
 
 		static bool ImplicitReferenceConversionExists (ScriptingContext context,
@@ -2677,7 +2677,7 @@ namespace Mono.Debugger.Frontend
 			if (right is NullExpression) {
 				StackFrame frame = context.CurrentFrame;
 				TargetType ltype = left.EvaluateType (context);
-				obj = frame.Language.CreateNullObject (frame.TargetAccess, ltype);
+				obj = frame.Language.CreateNullObject (frame.Thread, ltype);
 			} else
 				obj = right.EvaluateObject (context);
 

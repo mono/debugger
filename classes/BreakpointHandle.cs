@@ -77,7 +77,7 @@ namespace Mono.Debugger
 			Disable (target);
 		}
 
-		public override bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
+		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
 		{
 			return breakpoint.CheckBreakpointHit (target, address);
 		}

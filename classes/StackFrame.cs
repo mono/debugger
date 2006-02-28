@@ -323,11 +323,11 @@ namespace Mono.Debugger
 			get { return exc_object; }
 		}
 
-		internal void SetExceptionObject (TargetAccess target, TargetAddress exc)
+		internal void SetExceptionObject (TargetAddress exc)
 		{
 			try {
 				if (Language != null)
-					exc_object = Language.CreateObject (target, exc);
+					exc_object = Language.CreateObject (thread, exc);
 			} catch {
 				exc_object = null;
 			}

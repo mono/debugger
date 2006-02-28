@@ -708,7 +708,7 @@ namespace Mono.Debugger.Languages.Mono
 			return GetFundamentalType (type) != null;
 		}
 
-		public override TargetFundamentalObject CreateInstance (TargetAccess target, object obj)
+		public override TargetFundamentalObject CreateInstance (Thread target, object obj)
 		{
 			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
 			if (type == null)
@@ -722,7 +722,7 @@ namespace Mono.Debugger.Languages.Mono
 			return process.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public override TargetObject CreateObject (TargetAccess target, TargetAddress address)
+		public override TargetObject CreateObject (Thread target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
@@ -731,7 +731,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetObject result;
 			try {
-				result = obj.GetDereferencedObject (target);
+				result = obj.GetDereferencedObject (target.TargetAccess);
 				if (result == null)
 					result = obj;
 			} catch {
@@ -741,7 +741,7 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public override TargetObject CreateNullObject (TargetAccess target, TargetType type)
+		public override TargetObject CreateNullObject (Thread target, TargetType type)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (TargetAddress.Null);
 

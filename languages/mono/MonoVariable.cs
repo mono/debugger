@@ -115,7 +115,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (location.HasAddress && location.Address.IsNull)
 				return process.MonoLanguage.CreateNullObject (
-					frame.TargetAccess, type);
+					frame.Thread, type);
 
 			return type.GetObject (location);
 		}

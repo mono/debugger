@@ -71,7 +71,7 @@ namespace Mono.Debugger
 		//   The @target argument is *not* serializable and may not be used
 		//   anywhere outside this handler.
 		// </remarks>
-		public virtual bool CheckBreakpointHit (TargetAccess target, TargetAddress address)
+		public virtual bool CheckBreakpointHit (Thread target, TargetAddress address)
 		{
 			return true;
 		}

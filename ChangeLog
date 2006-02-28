@@ -1,5 +1,19 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/Language.cs
+	(Language.CreateObject): Take a `Thread' argument, not a `TargetAccess'.
+	(Language.CreateInstance): Likewise.
+	(Language.CreateNullObject): Likewise.
+
+	* classes/Breakpoint.cs
+	(Breakpoint.CheckBreakpointHit): Take a `Thread' argument, not a
+	`TargetAccess'.
+
+	* classes/SimpleBreakpoint.cs
+	(BreakpointCheckHandler): Take a `Thread' argument, not a `TargetAccess'.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/TargetAccess.cs
 	(TargetAccess.DisassembleInstruction): Removed.
 	(TargetAccess.DisassembleMethod): Removed.

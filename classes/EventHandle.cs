@@ -72,8 +72,7 @@ namespace Mono.Debugger
 
 		public abstract void Remove (Thread target);
 
-		public abstract bool CheckBreakpointHit (TargetAccess target,
-							 TargetAddress address);
+		public abstract bool CheckBreakpointHit (Thread target, TargetAddress address);
 
 		protected virtual void GetSessionData (SerializationInfo info)
 		{

@@ -812,7 +812,7 @@ namespace Mono.Debugger.Backends
 			if (bpt.BreakpointHandler (inferior, out remain_stopped))
 				return remain_stopped;
 
-			return bpt.CheckBreakpointHit (target_access, inferior.CurrentFrame);
+			return bpt.CheckBreakpointHit (thread, inferior.CurrentFrame);
 		}
 
 		bool step_over_breakpoint (TargetAddress until, bool trampoline, bool current)
@@ -855,7 +855,7 @@ namespace Mono.Debugger.Backends
 					      "{0} invoking exception handler {1} for {0}",
 					      this, handle.Name, exc);
 
-				if (!handle.CheckBreakpointHit (target_access, exc))
+				if (!handle.CheckBreakpointHit (thread, exc))
 					continue;
 
 				Report.Debug (DebugFlags.SSE,
@@ -2855,7 +2855,7 @@ namespace Mono.Debugger.Backends
 					TargetAddress exc_address = new TargetAddress (
 						inferior.AddressDomain, data2);
 					TargetFundamentalObject exc_obj = (TargetFundamentalObject)
-						language.CreateObject (sse.target_access, exc_address);
+						language.CreateObject (sse.Thread, exc_address);
 
 					result.ExceptionMessage = (string) exc_obj.GetObject (
 						sse.target_access);
@@ -2866,7 +2866,7 @@ namespace Mono.Debugger.Backends
 						inferior.AddressDomain, data1);
 
 					result.ReturnObject = language.CreateObject (
-						sse.target_access, retval_address);
+						sse.Thread, retval_address);
 				}
 
 				Result.Result = result;
@@ -3134,14 +3134,14 @@ namespace Mono.Debugger.Backends
 		{
 			if (unhandled) {
 				sse.frame_changed (inferior.CurrentFrame, null);
-				sse.current_frame.SetExceptionObject (sse.target_access, exc);
+				sse.current_frame.SetExceptionObject (exc);
 				args = new TargetEventArgs (
 					TargetEventType.UnhandledException,
 					exc, sse.current_frame);
 				return EventResult.Completed;
 			} else {
 				sse.frame_changed (inferior.CurrentFrame, null);
-				sse.current_frame.SetExceptionObject (sse.target_access, exc);
+				sse.current_frame.SetExceptionObject (exc);
 				args = new TargetEventArgs (
 					TargetEventType.Exception,
 					exc, sse.current_frame);
