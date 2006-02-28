@@ -188,53 +188,44 @@ namespace Mono.Debugger
 		int level;
 		Method method;
 		Thread thread;
-		TargetAccess target;
 		SourceAddress source;
 		StackFrame parent_frame;
 		TargetObject exc_object;
 		bool has_source;
 		Symbol name;
 
-		internal StackFrame (Thread thread, TargetAccess target,
-				     TargetAddress address, TargetAddress stack_pointer,
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers)
 		{
 			this.thread = thread;
-			this.target = target;
 			this.address = address;
-			this.stack_pointer = stack_pointer;
+			this.stack_pointer = stack_ptr;
 			this.frame_address = frame_address;
 			this.registers = registers;
 		}
 
-		internal StackFrame (Thread thread, TargetAccess target,
-				     TargetAddress address, TargetAddress stack_pointer,
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
 				     Symbol name)
-			: this (thread, target, address, stack_pointer, frame_address,
-				registers)
+			: this (thread, address, stack_ptr, frame_address, registers)
 		{
 			this.name = name;
 		}
 
-		internal StackFrame (Thread thread, TargetAccess target,
-				     TargetAddress address, TargetAddress stack_pointer,
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
 				     Method method)
-			: this (thread, target, address, stack_pointer, frame_address,
-				registers)
+			: this (thread, address, stack_ptr, frame_address, registers)
 		{
 			this.method = method;
 			this.name = new Symbol (method.Name, method.StartAddress, 0);
 		}
 
 
-		internal StackFrame (Thread thread, TargetAccess target,
-				     TargetAddress address, TargetAddress stack_pointer,
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
 				     Method method, SourceAddress source)
-			: this (thread, target, address, stack_pointer, frame_address,
-				registers, method)
+			: this (thread, address, stack_ptr, frame_address, registers, method)
 		{
 			this.source = source;
 			this.has_source = true;
@@ -274,10 +265,6 @@ namespace Mono.Debugger
 
 		public Thread Thread {
 			get { return thread; }
-		}
-
-		internal TargetAccess TargetAccess {
-			get { return target; }
 		}
 
 		public Registers Registers {

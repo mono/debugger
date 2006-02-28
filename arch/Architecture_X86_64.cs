@@ -567,8 +567,7 @@ namespace Mono.Debugger.Backends
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, frame.TargetAccess,
-					    new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
@@ -600,8 +599,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, frame.TargetAccess,
-						    new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
 			}
 
 			// push %ebp
@@ -624,8 +622,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, frame.TargetAccess,
-						    new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
 			}
 
 			if (code [pos++] != 0x48) {
@@ -670,8 +667,7 @@ namespace Mono.Debugger.Backends
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame.Thread, frame.TargetAccess,
-					    new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, ITargetMemoryAccess memory)
@@ -725,8 +721,7 @@ namespace Mono.Debugger.Backends
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
-			return new StackFrame (
-				frame.Thread, frame.TargetAccess, rip, rsp, rbp, regs, name);
+			return new StackFrame (frame.Thread, rip, rsp, rbp, regs, name);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame frame,
@@ -754,8 +749,8 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, TargetAccess target,
-							  ITargetMemoryInfo info, Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, ITargetMemoryInfo info,
+							  Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
 				info.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
@@ -764,8 +759,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress frame_pointer = new TargetAddress (
 				info.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
-			return CreateFrame (
-				thread, target, address, stack_pointer, frame_pointer, regs);
+			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
 		}
 	}
 }

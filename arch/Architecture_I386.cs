@@ -425,8 +425,7 @@ namespace Mono.Debugger.Backends
 				ebp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, frame.TargetAccess,
-					    new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 		}
 
 		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
@@ -459,8 +458,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, frame.TargetAccess,
-						    new_eip, new_esp, new_ebp, regs);
+				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 			}
 
 			// push %ebp
@@ -482,8 +480,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, frame.TargetAccess,
-						    new_eip, new_esp, new_ebp, regs);
+				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 			}
 
 			// mov %ebp, %esp
@@ -567,8 +564,7 @@ namespace Mono.Debugger.Backends
 			esp += 0x40;
 			regs [(int)I386Register.ESP].SetValue (esp.Address);
 
-			return CreateFrame (frame.Thread, frame.TargetAccess,
-					    eip, esp, ebp, regs);
+			return CreateFrame (frame.Thread, eip, esp, ebp, regs);
 		}
 
 		StackFrame try_syscall_trampoline (StackFrame frame, ITargetMemoryAccess memory)
@@ -591,8 +587,7 @@ namespace Mono.Debugger.Backends
 			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
 			regs [(int)I386Register.EBP].SetValue (new_ebp);
 
-			return CreateFrame (frame.Thread, frame.TargetAccess,
-					    new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 		}
 
 		StackFrame do_hacks (StackFrame frame, ITargetMemoryAccess memory)
@@ -644,8 +639,7 @@ namespace Mono.Debugger.Backends
 
 			ebp -= addr_size;
 
-			return CreateFrame (frame.Thread, frame.TargetAccess,
-					    new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,
@@ -669,8 +663,8 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, TargetAccess target,
-							  ITargetMemoryInfo info, Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, ITargetMemoryInfo info,
+							  Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
 				info.AddressDomain, regs [(int) I386Register.EIP]);
@@ -679,8 +673,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress frame_pointer = new TargetAddress (
 				info.AddressDomain, regs [(int) I386Register.EBP]);
 
-			return CreateFrame (
-				thread, target, address, stack_pointer, frame_pointer, regs);
+			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
 		}
 	}
 }
