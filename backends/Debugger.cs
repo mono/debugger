@@ -132,24 +132,6 @@ namespace Mono.Debugger
 			Console.WriteLine ("ERROR: " + String.Format (message, args));
 		}
 
-		public EventHandle InsertBreakpoint (TargetAccess target, int domain,
-						     Breakpoint bpt, SourceLocation location)
-		{
-			return new BreakpointHandle (target, domain, bpt, location);
-		}
-
-		public EventHandle InsertBreakpoint (TargetAccess target, Breakpoint bpt,
-						     TargetFunctionType func)
-		{
-			return new BreakpointHandle (target, bpt, func);
-		}
-
-		public EventHandle InsertExceptionCatchPoint (TargetAccess target, ThreadGroup group,
-							      TargetType exception)
-		{
-			return new CatchpointHandle (target, group, exception);
-		}
-
 		//
 		// IDisposable
 		//

@@ -141,14 +141,13 @@ namespace Mono.Debugger
 		public void InsertBreakpoints (Thread thread)
 		{
 			foreach (EventHandle handle in events.Values)
-				handle.Enable (thread.TargetAccess);
+				handle.Enable (thread);
 		}
 
-		public EventHandle InsertBreakpoint (TargetAccess target, int domain,
-						     SourceLocation location, Breakpoint breakpoint)
+		public EventHandle InsertBreakpoint (Thread target, int domain,
+						     SourceLocation location, Breakpoint bpt)
 		{
-			EventHandle handle = target.Debugger.InsertBreakpoint (
-				target, domain, breakpoint, location);
+			EventHandle handle = new BreakpointHandle (target, domain, bpt, location);
 			if (handle == null)
 				return handle;
 
@@ -156,11 +155,10 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		public EventHandle InsertBreakpoint (TargetAccess target, TargetFunctionType func,
-						     Breakpoint breakpoint)
+		public EventHandle InsertBreakpoint (Thread target, TargetFunctionType func,
+						     Breakpoint bpt)
 		{
-			EventHandle handle = target.Debugger.InsertBreakpoint (
-				target, breakpoint, func);
+			EventHandle handle = new BreakpointHandle (target, bpt, func);
 			if (handle == null)
 				return handle;
 
@@ -168,11 +166,10 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		public EventHandle InsertExceptionCatchPoint (TargetAccess target, ThreadGroup group,
+		public EventHandle InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 							      TargetType exception)
 		{
-			EventHandle handle = target.Debugger.InsertExceptionCatchPoint (
-				target, group, exception);
+			EventHandle handle = new CatchpointHandle (target, group, exception);
 			if (handle == null)
 				return null;
 

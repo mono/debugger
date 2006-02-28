@@ -23,7 +23,7 @@ namespace Mono.Debugger
 			this.breakpoint = breakpoint;
 		}
 
-		internal BreakpointHandle (TargetAccess target, int domain, Breakpoint breakpoint,
+		internal BreakpointHandle (Thread target, int domain, Breakpoint breakpoint,
 					   SourceLocation location)
 			: this (breakpoint)
 		{
@@ -35,7 +35,7 @@ namespace Mono.Debugger
 			Enable (target);
 		}
 
-		internal BreakpointHandle (TargetAccess target, Breakpoint breakpoint,
+		internal BreakpointHandle (Thread target, Breakpoint breakpoint,
 					   TargetFunctionType func)
 			: this (breakpoint)
 		{
@@ -54,21 +54,21 @@ namespace Mono.Debugger
 			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}
 
-		public override void Enable (TargetAccess target)
+		public override void Enable (Thread target)
 		{
 			lock (this) {
 				EnableBreakpoint (target);
 			}
 		}
 
-		public override void Disable (TargetAccess target)
+		public override void Disable (Thread target)
 		{
 			lock (this) {
 				DisableBreakpoint (target);
 			}
 		}
 
-		public override void Remove (TargetAccess target)
+		public override void Remove (Thread target)
 		{
 			if (load_handler != null) {
 				load_handler.Dispose ();
@@ -82,7 +82,7 @@ namespace Mono.Debugger
 			return breakpoint.CheckBreakpointHit (target, address);
 		}
 
-		void EnableBreakpoint (TargetAccess target)
+		void EnableBreakpoint (Thread target)
 		{
 			if ((load_handler != null) || (breakpoint_id > 0))
 				return;
@@ -107,7 +107,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		void DisableBreakpoint (TargetAccess target)
+		void DisableBreakpoint (Thread target)
 		{
 			if (breakpoint_id > 0)
 				target.RemoveBreakpoint (breakpoint_id);

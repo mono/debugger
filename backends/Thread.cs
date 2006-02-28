@@ -559,6 +559,24 @@ namespace Mono.Debugger
 			return res.ReturnObject;
 		}
 
+		public TargetAddress CallMethod (TargetAddress method, long method_arg,
+						 string string_arg)
+		{
+			CommandResult result;
+
+			lock (this) {
+				check_engine ();
+				result = engine.CallMethod (method, method_arg, string_arg);
+			}
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
+		}
+
 		public object Invoke (TargetAccessDelegate func, object data)
 		{
 			lock (this) {

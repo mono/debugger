@@ -51,7 +51,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract IDisposable RegisterLoadHandler (TargetAccess target,
+		internal abstract IDisposable RegisterLoadHandler (Thread target,
 								   SourceMethod method,
 								   MethodLoadedHandler handler,
 								   object user_data);
@@ -325,7 +325,7 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
-		internal IDisposable RegisterLoadHandler (TargetAccess target,
+		internal IDisposable RegisterLoadHandler (Thread target,
 							  SourceMethod method,
 							  MethodLoadedHandler handler,
 							  object user_data)

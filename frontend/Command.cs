@@ -1676,12 +1676,12 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Enable (context.CurrentThread.TargetAccess);
+				handle.Enable (context.CurrentThread);
 			}
 			else {
 				// enable all breakpoints
 				foreach (EventHandle h in context.Interpreter.Events)
-					h.Enable (context.CurrentThread.TargetAccess);
+					h.Enable (context.CurrentThread);
 			}
 		}
 
@@ -1696,12 +1696,12 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Disable (context.CurrentThread.TargetAccess);
+				handle.Disable (context.CurrentThread);
 			}
 			else {
 				// enable all breakpoints
 				foreach (EventHandle h in context.Interpreter.Events)
-					h.Disable (context.CurrentThread.TargetAccess);
+					h.Disable (context.CurrentThread);
 			}
 		}
 
@@ -1978,13 +1978,13 @@ namespace Mono.Debugger.Frontend
 					location = new SourceLocation (method);
 
 					int index = context.Interpreter.InsertBreakpoint (
-						thread.TargetAccess, tgroup, domain, location);
+						thread, tgroup, domain, location);
 					context.Print ("Breakpoint {0} at {1}", index, location.Name);
 				}
 				return;
 			} else if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
-					thread.TargetAccess, tgroup, domain, location);
+					thread, tgroup, domain, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
 			} else if (func != null) {
 				if (domain != 0) {
@@ -1993,7 +1993,7 @@ namespace Mono.Debugger.Frontend
 					return;
 				}
 				int index = context.Interpreter.InsertBreakpoint (
-					thread.TargetAccess, tgroup, func);
+					thread, tgroup, func);
 				context.Print ("Breakpoint {0} at {1}", index, func.Name);
 			} else {
 				throw new ScriptingException ("Cannot insert breakpoint.");
@@ -2081,7 +2081,7 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
-				context.CurrentThread.TargetAccess, tgroup, type);
+				context.CurrentThread, tgroup, type);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 		}
 

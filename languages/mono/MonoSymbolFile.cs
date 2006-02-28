@@ -582,7 +582,7 @@ namespace Mono.Debugger.Languages.Mono
 			return method;
 		}
 
-		internal override IDisposable RegisterLoadHandler (TargetAccess target,
+		internal override IDisposable RegisterLoadHandler (Thread target,
 								   SourceMethod source,
 								   MethodLoadedHandler handler,
 								   object user_data)
@@ -821,7 +821,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 #region load handlers for unjitted methods
-			public IDisposable RegisterLoadHandler (TargetAccess target,
+			public IDisposable RegisterLoadHandler (Thread target,
 								MethodLoadedHandler handler,
 								object user_data)
 			{

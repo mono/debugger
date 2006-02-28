@@ -12,7 +12,7 @@ namespace Mono.Debugger
 		TargetType exception;
 		bool enabled;
 
-		internal CatchpointHandle (TargetAccess target, ThreadGroup group,
+		internal CatchpointHandle (Thread target, ThreadGroup group,
 					   TargetType exception)
 			: base (group, exception.Name, Breakpoint.GetNextBreakpointIndex ())
 		{
@@ -25,26 +25,26 @@ namespace Mono.Debugger
 			get { return enabled; }
 		}
 
-		public override void Enable (TargetAccess target)
+		public override void Enable (Thread target)
 		{
 			lock (this) {
 				EnableCatchpoint (target);
 			}
 		}
 
-		public override void Disable (TargetAccess target)
+		public override void Disable (Thread target)
 		{
 			lock (this) {
 				DisableCatchpoint (target);
 			}
 		}
 
-		public override void Remove (TargetAccess target)
+		public override void Remove (Thread target)
 		{
 			Disable (target);
 		}
 
-		void EnableCatchpoint (TargetAccess target)
+		void EnableCatchpoint (Thread target)
 		{
 			lock (this) {
 				if (enabled)
@@ -55,7 +55,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		void DisableCatchpoint (TargetAccess target)
+		void DisableCatchpoint (Thread target)
 		{
 			lock (this) {
 				if (enabled)

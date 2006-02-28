@@ -66,11 +66,11 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract void Enable (TargetAccess target);
+		public abstract void Enable (Thread target);
 
-		public abstract void Disable (TargetAccess target);
+		public abstract void Disable (Thread target);
 
-		public abstract void Remove (TargetAccess target);
+		public abstract void Remove (Thread target);
 
 		public abstract bool CheckBreakpointHit (TargetAccess target,
 							 TargetAddress address);

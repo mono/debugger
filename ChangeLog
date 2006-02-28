@@ -1,5 +1,26 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/TargetAccess.cs
+	(TargetAccess.InsertBreakpoint): Removed.
+	(TargetAccess.RemoveBreakpoint): Removed.
+	(TargetAccess.AddEventHandler): Removed.
+	(TargetAccess.RemoveEventHandler): Removed.
+
+	* backends/Debugger.cs
+	(Debugger.InsertBreakpoint): Removed.
+	(Debugger.InsertExceptionCatchpoint): Removed.
+
+	* backends/BreakpointHandle.cs
+	(BreakpointHandle): We now operate directly on the `Thread'
+	instead of the `TargetAccess'.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertBreakpoint): Take a `Thread' argument
+	instead of a `TargetAccess'.
+	(DebuggerSession.InsertExceptionCatchPoint): Likewise.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs
 	(Breakpoint.GetNextBreakpointIndex): New internal static method.
 

@@ -510,7 +510,7 @@ namespace Mono.Debugger.Frontend
 
 		public void DeleteEvent (Thread thread, EventHandle handle)
 		{
-			handle.Remove (thread.TargetAccess);
+			handle.Remove (thread);
 			session.DeleteEvent (handle.Index);
 		}
 
@@ -639,7 +639,7 @@ namespace Mono.Debugger.Frontend
 				group.RemoveThread (thread.ID);
 		}
 
-		public int InsertBreakpoint (TargetAccess target, ThreadGroup group, int domain,
+		public int InsertBreakpoint (Thread target, ThreadGroup group, int domain,
 					     SourceLocation location)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
@@ -652,7 +652,7 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public int InsertBreakpoint (TargetAccess target, ThreadGroup group,
+		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     TargetFunctionType func)
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
@@ -664,7 +664,7 @@ namespace Mono.Debugger.Frontend
 			return breakpoint.Index;
 		}
 
-		public int InsertExceptionCatchPoint (TargetAccess target, ThreadGroup group,
+		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 						      TargetType exception)
 		{
 			EventHandle handle = session.InsertExceptionCatchPoint (

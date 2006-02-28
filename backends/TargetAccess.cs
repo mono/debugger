@@ -56,16 +56,6 @@ namespace Mono.Debugger
 		internal abstract TargetAddress CallMethod (TargetAddress method, long method_argument,
 							    string string_argument);
 
-		internal abstract int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
-
-		internal abstract int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func);
-
-		internal abstract void RemoveBreakpoint (int index);
-
-		internal abstract void AddEventHandler (EventType type, EventHandle handle);
-
-		internal abstract void RemoveEventHandler (int index);
-
 		internal abstract object Invoke (TargetAccessDelegate func, object data);
 
 		public abstract AssemblerLine DisassembleInstruction (Method method,
@@ -147,6 +137,7 @@ namespace Mono.Debugger.Backends
 			return (TargetAddress) result.Result;
 		}
 
+#if FIXME
 		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			return (int) Invoke (delegate (TargetAccess target, object user_data) {
@@ -195,6 +186,7 @@ namespace Mono.Debugger.Backends
 				return null;
 			}, null);
 		}
+#endif
 
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
@@ -260,31 +252,6 @@ namespace Mono.Debugger.Backends
 
 		internal override TargetAddress CallMethod (TargetAddress method, long method_arg,
 							    string string_arg)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override void RemoveBreakpoint (int index)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override void AddEventHandler (EventType type, EventHandle handle)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override void RemoveEventHandler (int index)
 		{
 			throw new InvalidOperationException ();
 		}

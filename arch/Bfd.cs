@@ -1026,7 +1026,7 @@ namespace Mono.Debugger.Backends
 				dwarf.ReadTypes ();
 		}
 
-		internal override IDisposable RegisterLoadHandler (TargetAccess target,
+		internal override IDisposable RegisterLoadHandler (Thread target,
 								   SourceMethod method,
 								   MethodLoadedHandler handler,
 								   object user_data)
