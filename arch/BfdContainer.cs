@@ -13,13 +13,13 @@ namespace Mono.Debugger.Backends
 	{
 		Hashtable bfd_hash;
 		Hashtable type_hash;
-		Debugger backend;
+		Process process;
 		NativeLanguage language;
 		Bfd main_bfd;
 
-		public BfdContainer (Debugger backend)
+		public BfdContainer (Process process)
 		{
-			this.backend = backend;
+			this.process = process;
 			this.bfd_hash = Hashtable.Synchronized (new Hashtable ());
 			this.type_hash = Hashtable.Synchronized (new Hashtable ());
 		}
@@ -28,8 +28,8 @@ namespace Mono.Debugger.Backends
 			get { return language; }
 		}
 
-		public Debugger Debugger {
-			get { return backend; }
+		public Process Process {
+			get { return process; }
 		}
 
 		public Bfd this [string filename] {
@@ -57,7 +57,7 @@ namespace Mono.Debugger.Backends
 
 			bfd_hash.Add (filename, bfd);
 
-			backend.AddLanguage (bfd);
+			process.AddLanguage (bfd);
 
 			return bfd;
 		}

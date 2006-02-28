@@ -112,7 +112,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public override void TargetEvent (TargetAccess target, Thread thread,
+		public override void TargetEvent (Thread thread, TargetAccess target,
 						  TargetEventArgs args)
 		{
 			if (args.Frame != null)
@@ -766,7 +766,7 @@ namespace Mono.Debugger.Frontend
 		public abstract void UnhandledException (ScriptingContext context, StackFrame frame,
 							 AssemblerLine current_insn);
 
-		public abstract void TargetEvent (TargetAccess target, Thread thread,
+		public abstract void TargetEvent (Thread thread, TargetAccess target,
 						  TargetEventArgs args);
 	}
 }

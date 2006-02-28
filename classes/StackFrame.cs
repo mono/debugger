@@ -349,7 +349,7 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			foreach (Module module in thread.Debugger.Modules) {
+			foreach (Module module in thread.Process.Modules) {
 				try {
 					new_frame = module.UnwindStack (this, memory);
 				} catch {

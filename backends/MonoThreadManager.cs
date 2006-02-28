@@ -121,6 +121,10 @@ namespace Mono.Debugger.Backends
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) {
 				NotificationType type = (NotificationType) cevent.Argument;
 
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received notification {1}: {2}",
+					      engine, type, cevent);
+
 				switch (type) {
 				case NotificationType.AcquireGlobalThreadLock:
 					thread_manager.AcquireGlobalThreadLock (engine);
@@ -144,7 +148,7 @@ namespace Mono.Debugger.Backends
 				case NotificationType.InitializeThreadManager:
 					if (!engine_hash.Contains (cevent.Data1))
 						engine_hash.Add (cevent.Data1, engine);
-					csharp_language = thread_manager.Debugger.CreateDebuggerHandler (
+					csharp_language = inferior.Process.CreateDebuggerHandler (
 						debugger_info);
 					break;
 
@@ -154,18 +158,13 @@ namespace Mono.Debugger.Backends
 
 					engine.ReachedMain (data);
 
-					thread_manager.ReachedMain (inferior);
+					inferior.Process.ReachedMain (inferior, engine.Thread, engine);
 					return true;
 				}
 
 				case NotificationType.WrapperMain:
-					return true;
-
 				case NotificationType.MainExited:
-					cevent = new Inferior.ChildEvent (
-						Inferior.ChildEventType.CHILD_EXITED,
-						0, 0, 0);
-					return false;
+					break;
 
 				case NotificationType.UnhandledException:
 					cevent = new Inferior.ChildEvent (

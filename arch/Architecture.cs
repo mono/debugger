@@ -8,11 +8,11 @@ namespace Mono.Debugger
 	// </summary>
 	public abstract class Architecture : MarshalByRefObject
 	{
-		protected readonly Debugger backend;
+		protected readonly Process process;
 
-		protected Architecture (Debugger backend)
+		protected Architecture (Process process)
 		{
-			this.backend = backend;
+			this.process = process;
 		}
 
 		// <summary>
@@ -128,12 +128,12 @@ namespace Mono.Debugger
 			if (address.IsNull)
 				return null;
 
-			Method method = backend.SymbolTableManager.Lookup (address);
+			Method method = process.SymbolTableManager.Lookup (address);
 			if (method != null)
 				return new StackFrame (
 					thread, target, address, stack, frame_pointer, regs, method);
 
-			Symbol name = backend.SymbolTableManager.SimpleLookup (address, false);
+			Symbol name = process.SymbolTableManager.SimpleLookup (address, false);
 			return new StackFrame (
 				thread, target, address, stack, frame_pointer, regs, name);
 		}

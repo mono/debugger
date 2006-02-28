@@ -188,7 +188,9 @@ namespace Mono.Debugger
 
 			public SessionInfo (DebuggerSession session)
 			{
-				this.Modules = session.Client.DebuggerServer.Modules;
+#if FIXME
+				this.Modules = session.Process.Modules;
+#endif
 				this.Events = session.Events;
 			}
 

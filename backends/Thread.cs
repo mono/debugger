@@ -28,9 +28,9 @@ namespace Mono.Debugger
 			this.debugger_manager = debugger_manager;
 
 			this.manager = engine.ThreadManager;
-			this.backend = manager.Debugger;
+			this.process = engine.Process;
 
-			this.symtab_manager = backend.SymbolTableManager;
+			this.symtab_manager = process.SymbolTableManager;
 
 			this.pid = engine.PID;
 			this.tid = engine.TID;
@@ -53,9 +53,9 @@ namespace Mono.Debugger
 			this.pid = pid;
 
 			this.manager = thread.ThreadManager;
-			this.backend = manager.Debugger;
+			this.process = thread.Process;
 
-			this.symtab_manager = backend.SymbolTableManager;
+			this.symtab_manager = process.SymbolTableManager;
 
 			tgroup = debugger_manager.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
@@ -73,7 +73,7 @@ namespace Mono.Debugger
 		ThreadGroup tgroup;
 		ThreadBase thread;
 		SingleSteppingEngine engine;
-		Debugger backend;
+		Process process;
 		ThreadManager manager;
 		DebuggerManager debugger_manager;
 		SymbolTableManager symtab_manager;
@@ -89,7 +89,7 @@ namespace Mono.Debugger
 		protected internal Language NativeLanguage {
 			get {
 				check_thread ();
-				return Debugger.BfdContainer.NativeLanguage;
+				return process.BfdContainer.NativeLanguage;
 			}
 		}
 
@@ -153,10 +153,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		public Debugger Debugger {
+		public override Process Process {
 			get {
 				check_thread ();
-				return backend;
+				return process;
 			}
 		}
 
@@ -406,7 +406,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void Kill ()
+		internal void Kill ()
 		{
 			operation_completed_event.Set ();
 			Dispose ();

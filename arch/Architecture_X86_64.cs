@@ -42,8 +42,8 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_X86_64 : Architecture
 	{
-		internal Architecture_X86_64 (Debugger backend)
-			: base (backend)
+		internal Architecture_X86_64 (Process process)
+			: base (process)
 		{ }
 
 		internal override bool IsRetInstruction (ITargetMemoryAccess memory,

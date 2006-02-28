@@ -8,16 +8,16 @@ namespace Mono.Debugger.Languages.Mono
 		VariableInfo info;
 		string name;
 		TargetType type;
-		Debugger backend;
+		Process process;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
 		bool has_liveness_info, is_byref;
 
-		public MonoVariable (Debugger backend, string name, TargetType type,
+		public MonoVariable (Process process, string name, TargetType type,
 				     bool is_local, bool is_byref, Method method,
 				     VariableInfo info, int start_scope_offset,
 				     int end_scope_offset)
-			: this (backend, name, type, is_local, is_byref, method, info)
+			: this (process, name, type, is_local, is_byref, method, info)
 		{
 			if (is_local) {
 				start_scope = method.StartAddress + start_scope_offset;
@@ -42,11 +42,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoVariable (Debugger backend, string name, TargetType type,
+		public MonoVariable (Process process, string name, TargetType type,
 				     bool is_local, bool is_byref, Method method,
 				     VariableInfo info)
 		{
-			this.backend = backend;
+			this.process = process;
 			this.name = name;
 			this.type = type;
 			this.info = info;
@@ -61,10 +61,6 @@ namespace Mono.Debugger.Languages.Mono
 				end_liveness = method.MethodEndAddress;
 				has_liveness_info = false;
 			}
-		}
-
-		public Debugger Backend {
-			get { return backend; }
 		}
 
 		public override string Name {
@@ -118,7 +114,7 @@ namespace Mono.Debugger.Languages.Mono
 				throw new LocationInvalidException ();
 
 			if (location.HasAddress && location.Address.IsNull)
-				return backend.MonoLanguage.CreateNullObject (
+				return process.MonoLanguage.CreateNullObject (
 					frame.TargetAccess, type);
 
 			return type.GetObject (location);

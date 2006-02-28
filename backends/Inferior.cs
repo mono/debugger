@@ -27,7 +27,7 @@ namespace Mono.Debugger.Backends
 
 		protected readonly BfdContainer bfd_container;
 		protected readonly SymbolTableCollection symtab_collection;
-		protected readonly Debugger backend;
+		protected readonly Process process;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
 		protected readonly AddressDomain address_domain;
@@ -230,16 +230,16 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected Inferior (ThreadManager thread_manager, Debugger backend,
+		protected Inferior (ThreadManager thread_manager, Process process,
 				    ProcessStart start, BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
 				    AddressDomain address_domain)
 		{
 			this.thread_manager = thread_manager;
-			this.backend = backend;
+			this.process = process;
 			this.start = start;
 			this.native = start.IsNative;
-			this.bfd_container = backend.BfdContainer;
+			this.bfd_container = process.BfdContainer;
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
 			this.address_domain = address_domain;
@@ -249,19 +249,18 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 		}
 
-		public static Inferior CreateInferior (ThreadManager thread_manager,
+		public static Inferior CreateInferior (ThreadManager thread_manager, Process process,
 						       ProcessStart start)
 		{
 			return new Inferior (
-				thread_manager, thread_manager.Debugger, start,
-				thread_manager.BreakpointManager, null,
+				thread_manager, process, start, process.BreakpointManager, null,
 				thread_manager.AddressDomain);
 		}
 
 		public Inferior CreateThread ()
 		{
 			Inferior inferior = new Inferior (
-				thread_manager, backend, start, breakpoint_manager,
+				thread_manager, process, start, breakpoint_manager,
 				error_handler, address_domain);
 
 			inferior.signal_info = signal_info;
@@ -448,12 +447,6 @@ namespace Mono.Debugger.Backends
 				server_handle, breakpoint));
 		}
 
-		public Debugger Debugger {
-			get {
-				return backend;
-			}
-		}
-
 		public ProcessStart ProcessStart {
 			get {
 				return start;
@@ -463,6 +456,12 @@ namespace Mono.Debugger.Backends
 		public BfdContainer BfdContainer {
 			get {
 				return bfd_container;
+			}
+		}
+
+		public Process Process {
+			get {
+				return process;
 			}
 		}
 
@@ -531,14 +530,6 @@ namespace Mono.Debugger.Backends
 			SetupInferior ();
 
 			change_target_state (TargetState.STOPPED, 0);
-		}
-
-		public CoreFile OpenCoreFile (string core_file)
-		{
-			SetupInferior ();
-
-			CoreFile core = new CoreFile (thread_manager, this, bfd, core_file);
-			return core;
 		}
 
 		public ChildEvent ProcessEvent (int status)

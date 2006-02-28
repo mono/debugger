@@ -176,9 +176,11 @@ namespace Mono.Debugger
 				location = (SourceLocation) info.GetValue (
 					"location", typeof (SourceLocation));
 			else if (type == "function") {
+#if FIXME
 				Language language = client.DebuggerServer.MonoLanguage;
 				string funcname = info.GetString ("function");
 				function = (TargetFunctionType) language.LookupType (funcname);
+#endif
 			}
 		}
 	}

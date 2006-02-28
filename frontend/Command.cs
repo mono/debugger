@@ -1065,6 +1065,7 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
+#if FIXME
 			if (context.HasBackend && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program is running.  Exit anyway?")) {
 					return true;
@@ -1074,6 +1075,7 @@ namespace Mono.Debugger.Frontend
 					return false;
 				}
 			}
+#endif
 
 			return true;
 		}

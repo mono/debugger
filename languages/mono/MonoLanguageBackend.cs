@@ -211,15 +211,15 @@ namespace Mono.Debugger.Languages.Mono
 		int last_num_data_tables;
 		int last_data_table_offset;
 
-		Debugger backend;
+		Process process;
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
 		bool initialized;
 		DebuggerMutex mutex;
 
-		public MonoLanguageBackend (Debugger backend, MonoDebuggerInfo info)
+		public MonoLanguageBackend (Process process, MonoDebuggerInfo info)
 		{
-			this.backend = backend;
+			this.process = process;
 			this.info = info;
 			mutex = new DebuggerMutex ("mono_mutex");
 		}
@@ -241,7 +241,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public SourceFileFactory SourceFileFactory {
-			get { return backend.SourceFileFactory; }
+			get { return process.SourceFileFactory; }
 		}
 
 		public override ITargetInfo TargetInfo {
@@ -382,7 +382,7 @@ namespace Mono.Debugger.Languages.Mono
 		void do_update_symbol_table (ITargetMemoryAccess memory)
 		{
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
-			backend.ModuleManager.Lock ();
+			process.ModuleManager.Lock ();
 			try {
 				do_update (memory);
 			} catch (ThreadAbortException) {
@@ -391,7 +391,7 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("Can't update symbol table: {0}", e);
 				return;
 			} finally {
-				backend.ModuleManager.UnLock ();
+				process.ModuleManager.UnLock ();
 			}
 			Report.Debug (DebugFlags.JitSymtab, "Done updating symbol table");
 		}
@@ -439,7 +439,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				try {
 					MonoSymbolFile symfile = new MonoSymbolFile (
-						this, backend, memory, memory, address);
+						this, process, memory, memory, address);
 					image_hash.Add (symfile.MonoImage, symfile);
 					symbol_files.Add (symfile);
 					assembly_hash.Add (symfile.Assembly, symfile);
@@ -719,7 +719,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
 		{
-			return backend.BfdContainer.NativeLanguage.CreatePointer (frame, address);
+			return process.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
 		public override TargetObject CreateObject (TargetAccess target, TargetAddress address)

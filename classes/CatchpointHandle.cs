@@ -100,8 +100,10 @@ namespace Mono.Debugger
 		{
 			base.SetSessionData (info, client);
 
+#if FIXME
 			Language language = client.DebuggerServer.MonoLanguage;
 			exception = language.LookupType (info.GetString ("exception"));
+#endif
 		}
 	}
 }

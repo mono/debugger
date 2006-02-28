@@ -363,6 +363,7 @@ namespace Mono.Debugger
 						     StreamingContext context,
 						     ISurrogateSelector selector)
 			{
+#if FIXME
 				DebuggerClient client = (DebuggerClient) context.Context;
 				ModuleManager manager = client.DebuggerServer.ModuleManager;
 
@@ -374,6 +375,9 @@ namespace Mono.Debugger
 				module.step_into = info.GetBoolean ("step-into");
 
 				return module;
+#else
+				throw new InternalError ();
+#endif
 			}
 		}
 	}

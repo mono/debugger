@@ -866,8 +866,8 @@ namespace Mono.Debugger.Frontend
 		protected bool DoResolveBase (ScriptingContext context)
 		{
 			if (expr is SimpleNameExpression) {
-				Debugger debugger = context.CurrentThread.Debugger;
-				Language native = debugger.NativeLanguage;
+				Process process = context.CurrentThread.Process;
+				Language native = process.NativeLanguage;
 
 				underlying_type = native.LookupType (expr.Name);
 			} else {

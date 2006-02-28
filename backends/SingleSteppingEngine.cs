@@ -81,6 +81,7 @@ namespace Mono.Debugger.Backends
 		{
 			this.manager = manager;
 			this.inferior = inferior;
+			this.process = inferior.Process;
 			this.start = inferior.ProcessStart;
 
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
@@ -90,8 +91,9 @@ namespace Mono.Debugger.Backends
 			engine_stopped_event = new ManualResetEvent (false);
 		}
 
-		public SingleSteppingEngine (ThreadManager manager, ProcessStart start)
-			: this (manager, Inferior.CreateInferior (manager, start))
+		public SingleSteppingEngine (ThreadManager manager, Process process,
+					     ProcessStart start)
+			: this (manager, Inferior.CreateInferior (manager, process, start))
 		{
 			if (start.PID != 0)
 				inferior.Attach (start.PID, true);
@@ -109,8 +111,8 @@ namespace Mono.Debugger.Backends
 			target_access = new ServerTargetAccess (this);
 		}
 
-		public SingleSteppingEngine (ThreadManager manager, Inferior inferior,
-					     int pid, bool do_attach)
+		public SingleSteppingEngine (ThreadManager manager, Process process,
+					     Inferior inferior, int pid, bool do_attach)
 			: this (manager, inferior)
 		{
 			this.PID = pid;
@@ -158,6 +160,8 @@ namespace Mono.Debugger.Backends
 		public void ProcessEvent (int status)
 		{
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
+			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} ({2:x})",
+				      this, cevent, status);
 			if (has_thread_lock) {
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} while being thread-locked ({2})",
@@ -267,7 +271,7 @@ namespace Mono.Debugger.Backends
 					inferior.RemoveBreakpoint (temp_breakpoint_id);
 					temp_breakpoint_id = 0;
 
-					Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (arg);
+					Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (arg);
 					Report.Debug (DebugFlags.SSE,
 						      "{0} hit temporary breakpoint {1} at {2} {3}",
 						      this, arg, inferior.CurrentFrame, bpt);
@@ -370,8 +374,8 @@ namespace Mono.Debugger.Backends
 						main_method_retaddr = ret_frame.TargetAddress;
 					}
 
-					if (!manager.IsManaged)
-						manager.ReachedMain (inferior);
+					if (!process.IsManaged)
+						process.ReachedMain (inferior, thread, this);
 				}
 				return;
 			}
@@ -447,7 +451,7 @@ namespace Mono.Debugger.Backends
 			else if (current_operation != null)
 				pending_bpt = current_operation.PendingBreakpoint;
 			if (pending_bpt >= 0) {
-				Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (pending_bpt);
+				Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (pending_bpt);
 				if (bpt != null) {
 					result = new TargetEventArgs (
 						TargetEventType.TargetHitBreakpoint, bpt.Index,
@@ -493,8 +497,7 @@ namespace Mono.Debugger.Backends
 			is_main = true;
 			current_operation = new OperationInitialize (result);
 
-			MonoLanguageBackend language = manager.Debugger.MonoLanguage;
-			TargetAddress compile = language.CompileMethodFunc;
+			TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
 			PushOperation (new OperationCompileMethod (compile, method, null));
 		}
 
@@ -608,14 +611,14 @@ namespace Mono.Debugger.Backends
 
 		protected Method Lookup (TargetAddress address)
 		{
-			inferior.Debugger.UpdateSymbolTable (inferior);
+			process.UpdateSymbolTable (inferior);
 
-			return inferior.Debugger.SymbolTableManager.Lookup (address);
+			return process.SymbolTableManager.Lookup (address);
 		}
 
 		protected Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			return inferior.Debugger.SymbolTableManager.SimpleLookup (address, exact_match);
+			return process.SymbolTableManager.SimpleLookup (address, exact_match);
 		}
 
 #region public properties
@@ -633,6 +636,10 @@ namespace Mono.Debugger.Backends
 
 		public Thread Thread {
 			get { return thread; }
+		}
+
+		public override Process Process {
+			get { return process; }
 		}
 
 		internal override ThreadManager ThreadManager {
@@ -801,7 +808,7 @@ namespace Mono.Debugger.Backends
 			if (index == 0)
 				return true;
 
-			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (index);
+			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (index);
 			if (bpt == null)
 				return false;
 
@@ -816,7 +823,7 @@ namespace Mono.Debugger.Backends
 		{
 			int index;
 			bool is_enabled;
-			Breakpoint bpt = manager.BreakpointManager.LookupBreakpoint (
+			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index, out is_enabled);
 
 			if ((index == 0) || !is_enabled ||
@@ -1144,7 +1151,7 @@ namespace Mono.Debugger.Backends
 			if ((source == null) || source.IsDynamic)
 				return false;
 
-			SourceFileFactory factory = manager.Debugger.SourceFileFactory;
+			SourceFileFactory factory = process.SourceFileFactory;
 			if (!factory.Exists (source.SourceFile.FileName))
 				return false;
 
@@ -1416,7 +1423,7 @@ namespace Mono.Debugger.Backends
 				if (parent_frame == null)
 					return null;
 
-				if (!manager.Debugger.IsManagedApplication || !run_finally) {
+				if (!process.IsManagedApplication || !run_finally) {
 					return_finished (parent_frame);
 					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
@@ -1425,7 +1432,7 @@ namespace Mono.Debugger.Backends
 					return null;
 				}
 
-				MonoLanguageBackend language = manager.Debugger.MonoLanguage;
+				MonoLanguageBackend language = process.MonoLanguage;
 				return StartOperation (new OperationReturn (language, parent_frame));
 			});
 		}
@@ -1437,11 +1444,11 @@ namespace Mono.Debugger.Backends
 				if (current_backtrace == null)
 					throw new TargetException (TargetError.NoStack);
 
-				if ((callback_stack.Count == 0) || !manager.Debugger.IsManagedApplication)
+				if ((callback_stack.Count == 0) || !process.IsManagedApplication)
 					throw new InvalidOperationException ();
 
 				StackFrame rti_frame = (StackFrame) callback_stack.Peek ();
-				MonoLanguageBackend language = manager.Debugger.MonoLanguage;
+				MonoLanguageBackend language = process.MonoLanguage;
 
 				return StartOperation (new OperationAbortInvocation (
 							       language, current_backtrace, rti_frame));
@@ -1457,7 +1464,7 @@ namespace Mono.Debugger.Backends
 					throw new TargetException (TargetError.NotStopped);
 				}
 
-				inferior.Debugger.UpdateSymbolTable (inferior);
+				process.UpdateSymbolTable (inferior);
 
 				if (current_frame == null)
 					throw new TargetException (TargetError.NoStack);
@@ -1502,7 +1509,7 @@ namespace Mono.Debugger.Backends
 		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			return (int) SendCommand (delegate {
-				return manager.BreakpointManager.InsertBreakpoint (
+				return process.BreakpointManager.InsertBreakpoint (
 					inferior, breakpoint, address);
 			});
 		}
@@ -1510,7 +1517,7 @@ namespace Mono.Debugger.Backends
 		public void RemoveBreakpoint (int index)
 		{
 			SendCommand (delegate {
-				manager.BreakpointManager.RemoveBreakpoint (inferior, index);
+				process.BreakpointManager.RemoveBreakpoint (inferior, index);
 				return null;
 			});
 		}
@@ -1713,6 +1720,7 @@ namespace Mono.Debugger.Backends
 
 		ThreadManager manager;
 		Thread thread;
+		Process process;
 		Inferior inferior;
 		TargetAccess target_access;
 		Architecture arch;
@@ -1980,7 +1988,7 @@ namespace Mono.Debugger.Backends
 				      sse, data1, data2, Result);
 
 			RestoreStack (sse);
-			sse.manager.ReachedMain (inferior);
+			sse.process.ReachedMain (inferior, sse.thread, sse);
 			return true;
 		}
 	}
@@ -2132,7 +2140,7 @@ namespace Mono.Debugger.Backends
 
 		protected bool CheckTrampoline (SingleSteppingEngine sse, TargetAddress call)
 		{
-			foreach (ILanguageBackend language in sse.inferior.Debugger.Languages) {
+			foreach (ILanguageBackend language in sse.process.Languages) {
 				bool is_start;
 				TargetAddress trampoline = language.GetTrampolineAddress (
 					sse.inferior, call, out is_start);
@@ -2682,7 +2690,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			language = sse.ThreadManager.Debugger.MonoLanguage;
+			language = sse.process.MonoLanguage;
 
 			if (!Function.MonoClass.ResolveClass ()) {
 				TargetAddress image = Function.MonoClass.File.MonoImage;
@@ -3078,7 +3086,7 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
 			if (language == null)
-				language = sse.ThreadManager.Debugger.MonoLanguage;
+				language = sse.process.MonoLanguage;
 
 			method = Function.GetMethodAddress (sse.target_access);
 
@@ -3092,7 +3100,7 @@ namespace Mono.Debugger.Backends
 		{
 			address = new TargetAddress (inferior.AddressDomain, data1);
 
-			int index = sse.ThreadManager.BreakpointManager.InsertBreakpoint (
+			int index = sse.process.BreakpointManager.InsertBreakpoint (
 				inferior, Breakpoint, address);
 
 			Result.Result = index;
@@ -3269,7 +3277,8 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal enum CommandType {
 		Message,
-		TargetAccess
+		TargetAccess,
+		CreateProcess
 	}
 
 	[Serializable]
@@ -3292,6 +3301,12 @@ namespace Mono.Debugger.Backends
 			this.Engine = sse;
 			this.Data1 = func;
 			this.Data2 = data;
+		}
+
+		public Command (CommandType type, object data)
+		{
+			this.Type = type;
+			this.Data1 = data;
 		}
 
 		public override string ToString ()

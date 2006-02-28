@@ -211,7 +211,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly AddressDomain AddressDomain;
 		internal readonly ITargetMemoryInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
-		protected readonly Debugger backend;
+		protected readonly Process process;
 		MonoSymbolTable symtab;
 		string name;
 		int address_size;
@@ -227,15 +227,15 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable source_file_hash;
 		Hashtable method_index_hash;
 
-		internal MonoSymbolFile (MonoLanguageBackend language, Debugger backend,
+		internal MonoSymbolFile (MonoLanguageBackend language, Process process,
 					 ITargetMemoryInfo target_info, ITargetMemoryAccess memory,
 					 TargetAddress address)
 		{
 			this.MonoLanguage = language;
 			this.TargetInfo = target_info;
-			this.backend = backend;
+			this.process = process;
 
-			ThreadManager = backend.ThreadManager;
+			ThreadManager = process.ThreadManager;
 			AddressDomain = memory.AddressDomain;
 
 			address_size = TargetInfo.TargetAddressSize;
@@ -271,10 +271,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			name = Assembly.Name.FullName;
 
-			Module = backend.ModuleManager.GetModule (name);
+			Module = process.ModuleManager.GetModule (name);
 			if (Module == null) {
 				Module = new Module (name, this);
-				backend.ModuleManager.AddModule (Module);
+				process.ModuleManager.AddModule (Module);
 			} else {
 				Module.LoadModule (this);
 			}
@@ -284,10 +284,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return String.Format ("{0} ({1}:{2})",
 					      GetType (), ImageFile, Module);
-		}
-
-		public Debugger Debugger {
-			get { return backend; }
 		}
 
 		protected ArrayList SymbolRanges {
@@ -694,7 +690,7 @@ namespace Mono.Debugger.Languages.Mono
 						param_types [i] = file.MonoLanguage.VoidType;
 
 					parameters [i] = new MonoVariable (
-						file.backend, param_info [i].Name, param_types [i],
+						file.process, param_info [i].Name, param_types [i],
 						false, param_types [i].IsByRef, this,
 						address.ParamVariableInfo [i], 0, 0);
 				}
@@ -710,13 +706,13 @@ namespace Mono.Debugger.Languages.Mono
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
 						locals [i] = new MonoVariable (
-							file.backend, local.Name, local_types [i],
+							file.process, local.Name, local_types [i],
 							true, local_types [i].IsByRef, this,
 							address.LocalVariableInfo [local.Index],
 							block.StartAddress, block.EndAddress);
 					} else {
 						locals [i] = new MonoVariable (
-							file.backend, local.Name, local_types [i],
+							file.process, local.Name, local_types [i],
 							true, local_types [i].IsByRef, this,
 							address.LocalVariableInfo [local.Index]);
 					}
@@ -726,7 +722,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
-						file.backend, "this", decl_type, true,
+						file.process, "this", decl_type, true,
 						true, this, address.ThisVariableInfo);
 
 				has_variables = true;

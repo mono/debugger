@@ -120,7 +120,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override Debugger Debugger {
-			get { return thread.Debugger; }
+			get { return thread.ThreadManager.Debugger; }
 		}
 
 		public override ITargetMemoryAccess TargetMemoryAccess {

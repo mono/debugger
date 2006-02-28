@@ -24,20 +24,16 @@ namespace Mono.Debugger.Backends
 		{
 			this.backend = backend;
 
-			breakpoint_manager = new BreakpointManager ();
-
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			engine_hash = Hashtable.Synchronized (new Hashtable ());
+			processes = ArrayList.Synchronized (new ArrayList ());
 			
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 			address_domain = new AddressDomain ("global");
 
-			start_event = new ST.ManualResetEvent (false);
 			command_mutex = new DebuggerMutex ("command_mutex");
 			command_mutex.DebugFlags = DebugFlags.Wait;
 
-			initialized_event = new ST.ManualResetEvent (false);
-			ready_event = new ST.ManualResetEvent (false);
 			wait_event = new ST.AutoResetEvent (false);
 			idle_event = new ST.ManualResetEvent (false);
 			engine_event = new ST.ManualResetEvent (true);
@@ -46,33 +42,32 @@ namespace Mono.Debugger.Backends
 			event_queue.DebugFlags = DebugFlags.Wait;
 
 			mono_debugger_server_global_init ();
-		}
 
-		SingleSteppingEngine the_engine;
+			wait_thread = new ST.Thread (new ST.ThreadStart (start_wait_thread));
+			wait_thread.IsBackground = true;
+			wait_thread.Start ();
+
+			inferior_thread = new ST.Thread (new ST.ThreadStart (start_inferior));
+			inferior_thread.IsBackground = true;
+			inferior_thread.Start ();
+		}
 
 		ProcessStart start;
 		Debugger backend;
 		DebuggerEventQueue event_queue;
-		BreakpointManager breakpoint_manager;
 		ST.Thread inferior_thread;
 		ST.Thread wait_thread;
-		ST.ManualResetEvent initialized_event;
-		ST.ManualResetEvent ready_event;
 		ST.ManualResetEvent idle_event;
 		ST.ManualResetEvent engine_event;
 		ST.AutoResetEvent wait_event;
 		Hashtable thread_hash;
 		Hashtable engine_hash;
-		ArrayList attach_results;
+		ArrayList processes;
 
 		bool has_thread_lock;
 		DebuggerMutex thread_lock_mutex;
 		AddressDomain address_domain;
 
-		Thread main_process;
-		SingleSteppingEngine main_engine;
-
-		ST.ManualResetEvent start_event;
 		DebuggerMutex command_mutex;
 		bool abort_requested;
 
@@ -87,32 +82,12 @@ namespace Mono.Debugger.Backends
 
 		void start_inferior ()
 		{
-			try {
-				the_engine = new SingleSteppingEngine (this, start);
-			} catch (Exception ex) {
-				engine_error (ex);
-				return;
-			}
-
-			Report.Debug (DebugFlags.Threads, "Thread manager ({0}) started: {1}",
-				      DebuggerWaitHandle.CurrentThread, the_engine);
-
-			thread_hash.Add (the_engine.PID, the_engine);
-			engine_hash.Add (the_engine.ID, the_engine);
-
-			backend.OnThreadCreatedEvent (the_engine.Thread);
-
-			event_queue.Lock ();
-
-			wait_event.Set ();
+			// event_queue.Lock ();
 
 			while (!abort_requested) {
 				engine_thread_main ();
 			}
 		}
-
-		bool engine_is_ready = false;
-		Exception start_error = null;
 
 		// <remarks>
 		//   These three variables are shared between the two threads, so you need to
@@ -122,143 +97,38 @@ namespace Mono.Debugger.Backends
 		SingleSteppingEngine current_event = null;
 		int current_event_status = 0;
 
-		void engine_error (Exception ex)
+		public Process StartApplication (ProcessStart start)
 		{
-			lock (this) {
-				start_error = ex;
-				start_event.Set ();
-			}
+			Process process = CreateProcess (start);
+			process.WaitForApplication ();
+			return process;
 		}
 
-		// <remarks>
-		//   This is only called on startup and blocks until the background thread
-		//   has actually been started and it's waiting for commands.
-		// </summary>
-		void wait_until_engine_is_ready ()
-		{
-			start_event.WaitOne ();
-
-			if (start_error != null)
-				throw start_error;
-		}
-
-		public void StartApplication (ProcessStart start)
+		public Process OpenCoreFile (ProcessStart start, out Thread[] threads)
 		{
 			this.start = start;
 
-			wait_thread = new ST.Thread (new ST.ThreadStart (start_wait_thread));
-			wait_thread.IsBackground = true;
-			wait_thread.Start ();
+			CoreFile core = CoreFile.OpenCoreFile (this, start);
 
-			inferior_thread = new ST.Thread (new ST.ThreadStart (start_inferior));
-			inferior_thread.IsBackground = true;
-			inferior_thread.Start ();
-
-			wait_until_engine_is_ready ();
-		}
-
-		public Thread OpenCoreFile (ProcessStart start, out Thread[] threads)
-		{
-			this.start = start;
-
-			Inferior inferior = Inferior.CreateInferior (this, start);
-			CoreFile core = inferior.OpenCoreFile (start.CoreFile);
-
-			main_process = core.MainThread;
 			threads = core.Threads;
 
-			backend.OnInitializedEvent (main_process);
-			backend.OnMainThreadCreatedEvent (main_process);
-
-			backend.ReachedMain ();
-			core.InitializeModules ();
-
-			return main_process;
+			return core;
 		}
 
-		internal Thread WaitForApplication ()
+		internal void AddEngine (SingleSteppingEngine engine)
 		{
-			initialized_event.WaitOne ();
-
-			if (attach_results != null) {
-				CommandResult[] results = new CommandResult [attach_results.Count];
-				attach_results.CopyTo (results, 0);
-
-				mono_manager.Attach (the_engine, results);
-			}
-
-			ready_event.WaitOne ();
-
-			return main_process;
+			thread_hash.Add (engine.PID, engine);
+			engine_hash.Add (engine.ID, engine);
 		}
 
-		bool initialized;
-		MonoThreadManager mono_manager;
-		TargetAddress main_method = TargetAddress.Null;
-
-		protected void Initialize (Inferior inferior)
+		internal void RemoveProcess (Process process)
 		{
-			initialized = true;
-			mono_manager = MonoThreadManager.Initialize (this, inferior);
-
-			main_process = the_engine.Thread;
-			main_engine = the_engine;
-
-			if (start.PID != 0) {
-				int[] threads = inferior.GetThreads ();
-				foreach (int thread in threads) {
-					if (thread_hash.Contains (thread))
-						continue;
-					thread_created (inferior, thread, true);
-				}
-
-				if (mono_manager == null)
-					return;
-
-				attach_results = new ArrayList ();
-				foreach (SingleSteppingEngine engine in thread_hash.Values)
-					attach_results.Add (mono_manager.GetThreadID (engine));
-			}
-
-			if (mono_manager != null) {
-				inferior.Continue ();
-				return;
-			}
-
-			main_method = inferior.MainMethodAddress;
-			the_engine.Start (main_method);
-		}
-
-		internal void ReachedMain (Inferior inferior)
-		{
-			backend.OnInitializedEvent (main_process);
-			backend.OnMainThreadCreatedEvent (main_process);
-
-			backend.ReachedMain ();
-			inferior.InitializeModules ();
-
-			ready_event.Set ();
-		}
-
-		public Thread[] Threads {
-			get {
-				lock (this) {
-					Thread[] procs = new Thread [thread_hash.Count];
-					int i = 0;
-					foreach (SingleSteppingEngine engine in thread_hash.Values)
-						procs [i] = engine.Thread;
-					return procs;
-				}
-			}
+			processes.Remove (process);
 		}
 
 		internal SingleSteppingEngine GetEngine (int id)
 		{
 			return (SingleSteppingEngine) engine_hash [id];
-		}
-
-		public bool IsManaged {
-			get { return mono_manager != null; }
 		}
 
 		public bool HasTarget {
@@ -308,59 +178,6 @@ namespace Mono.Debugger.Backends
 				      "Released global thread lock: {0}", caller);
 		}
 
-		void thread_created (Inferior inferior, int pid, bool do_attach)
-		{
-			Inferior new_inferior = inferior.CreateThread ();
-
-			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				this, new_inferior, pid, do_attach);
-
-			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1}", pid, new_thread);
-
-			thread_hash.Add (pid, new_thread);
-			engine_hash.Add (new_thread.ID, new_thread);
-
-			if ((mono_manager != null) && !do_attach &&
-			    mono_manager.ThreadCreated (new_thread, new_inferior, inferior)) {
-				main_process = new_thread.Thread;
-				main_engine = new_thread;
-			}
-
-			if (!do_attach)
-				new_thread.Start (TargetAddress.Null);
-			backend.OnThreadCreatedEvent (new_thread.Thread);
-		}
-
-		internal void KillThread (SingleSteppingEngine engine)
-		{
-			thread_hash.Remove (engine.PID);
-			engine_hash.Remove (engine.ID);
-			engine.Thread.Kill ();
-			backend.OnThreadExitedEvent (engine.Thread);
-		}
-
-		void Kill ()
-		{
-			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
-			thread_hash.Values.CopyTo (threads, 0);
-
-			bool main_in_threads = false;
-
-			for (int i = 0; i < threads.Length; i++) {
-				SingleSteppingEngine thread = threads [i];
-
-				if (main_engine == thread) {
-					main_in_threads = true;
-					continue;
-				}
-
-				thread.Kill ();
-			}
-
-			if (main_in_threads)
-				main_engine.Kill ();
-		}
-
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
 						ref Inferior.ChildEvent cevent)
 		{
@@ -369,39 +186,33 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			if (!initialized) {
+			if (!inferior.Process.Initialize (engine, inferior)) {
 				if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 				    (cevent.Argument != 0))
 					throw new InternalError (
 						"Received unexpected initial child event {0}",
 						cevent);
 
-				Initialize (inferior);
-				initialized_event.Set ();
 				return true;
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
-				thread_created (inferior, (int) cevent.Argument, false);
+				inferior.Process.ThreadCreated (inferior, (int) cevent.Argument, false);
 				inferior.Continue ();
 				return true;
 			}
 
 			bool retval = false;
-			if (mono_manager != null)
-				retval = mono_manager.HandleChildEvent (engine, inferior, ref cevent);
+			if (inferior.Process.MonoManager != null)
+				retval = inferior.Process.MonoManager.HandleChildEvent (
+					engine, inferior, ref cevent);
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				if (engine == main_engine) {
-					abort_requested = true;
-					Kill ();
-					backend.OnTargetExitedEvent ();
-					backend.Dispose ();
-					return true;
-				} else {
-					KillThread (engine);
-				}
+				thread_hash.Remove (engine.PID);
+				engine_hash.Remove (engine.ID);
+				engine.Process.KillThread (engine);
+				return false;
 			}
 
 			return retval;
@@ -409,14 +220,6 @@ namespace Mono.Debugger.Backends
 
 		public Debugger Debugger {
 			get { return backend; }
-		}
-
-		internal BreakpointManager BreakpointManager {
-			get { return breakpoint_manager; }
-		}
-
-		public Thread MainThread {
-			get { return main_process; }
 		}
 
 		public AddressDomain AddressDomain {
@@ -451,6 +254,29 @@ namespace Mono.Debugger.Backends
 				return command.Result;
 		}
 
+		internal Process CreateProcess (ProcessStart start)
+		{
+			Command command = new Command (CommandType.CreateProcess, start);
+
+			if (!engine_event.WaitOne (WaitTimeout, false))
+				throw new TargetException (TargetError.NotStopped);
+
+			event_queue.Lock ();
+			engine_event.Reset ();
+
+			current_command = command;
+
+			event_queue.Signal ();
+			event_queue.Unlock ();
+
+			engine_event.WaitOne ();
+
+			if (command.Result is Exception)
+				throw (Exception) command.Result;
+			else
+				return (Process) command.Result;
+		}
+
 		// <summary>
 		//   The heart of the SingleSteppingEngine.  This runs in a background
 		//   thread and processes stepping commands and events.
@@ -468,7 +294,6 @@ namespace Mono.Debugger.Backends
 
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait, "Engine thread abort requested");
-				Kill ();
 				return;
 			}
 
@@ -505,11 +330,6 @@ namespace Mono.Debugger.Backends
 
 				engine_event.Set ();
 				wait_event.Set ();
-
-				if (!engine_is_ready) {
-					engine_is_ready = true;
-					start_event.Set ();
-				}
 			}
 
 			if (command == null)
@@ -536,6 +356,29 @@ namespace Mono.Debugger.Backends
 				try {
 					command.Result = command.Engine.Invoke (
 						(TargetAccessDelegate) command.Data1, command.Data2);
+				} catch (ST.ThreadAbortException) {
+					return;
+				} catch (Exception ex) {
+					command.Result = ex;
+				}
+
+				engine_event.Set ();
+			} else if (command.Type == CommandType.CreateProcess) {
+				try {
+					ProcessStart start = (ProcessStart) command.Data1;
+					Process process = new Process (this, start);
+					SingleSteppingEngine sse = new SingleSteppingEngine (
+						this, process, start);
+
+					thread_hash.Add (sse.PID, sse);
+					engine_hash.Add (sse.ID, sse);
+					processes.Add (process);
+
+					backend.OnThreadCreatedEvent (sse.Thread);
+
+					wait_event.Set ();
+
+					command.Result = process;
 				} catch (ST.ThreadAbortException) {
 					return;
 				} catch (Exception ex) {
@@ -685,25 +528,11 @@ namespace Mono.Debugger.Backends
 					inferior_thread.Join ();
 				wait_thread.Join ();
 
-				bool main_in_threads = false;
+				Process[] procs = new Process [processes.Count];
+				processes.CopyTo (procs, 0);
 
-				SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
-				thread_hash.Values.CopyTo (threads, 0);
-
-				for (int i = 0; i < threads.Length; i++) {
-					if (main_process == threads[i].Thread)
-						main_in_threads = true;
-					threads [i].Thread.Dispose ();
-				}
-
-				if (main_process != null && !main_in_threads)
-					main_process.Dispose ();
-
-				if (breakpoint_manager != null)
-					breakpoint_manager.Dispose ();
-
-				if (the_engine != null)
-					the_engine.Thread.Dispose ();
+				for (int i = 0; i < procs.Length; i++)
+					procs [i].Dispose ();
 			}
 		}
 

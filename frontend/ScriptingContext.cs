@@ -91,16 +91,16 @@ namespace Mono.Debugger.Frontend
 			get { return interpreter; }
 		}
 
-		public Debugger GetDebugger ()
+		public Process GetProcess ()
 		{
 			if (current_thread == null)
 				throw new ScriptingException ("No program to debug.");
 
-			Debugger backend = current_thread.Debugger;
-			if (backend == null)
+			Process process = current_thread.Process;
+			if (process == null)
 				throw new ScriptingException ("No program to debug.");
 
-			return backend;
+			return process;
 		}
 
 		public bool HasBackend {
@@ -508,12 +508,12 @@ namespace Mono.Debugger.Frontend
 
 		public string GetFullPathByFilename (string filename)
 		{
-			Debugger backend = GetDebugger ();
+			Process process = GetProcess ();
 
 			try {
-				backend.ModuleManager.Lock ();
+				process.ModuleManager.Lock ();
 
-				Module[] modules = backend.Modules;
+				Module[] modules = process.Modules;
 
 				foreach (Module module in modules) {
 					if (!module.SymbolsLoaded)
@@ -525,7 +525,7 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 			} finally {
-				backend.ModuleManager.UnLock ();
+				process.ModuleManager.UnLock ();
 			}
 
 			return null;
@@ -549,8 +549,8 @@ namespace Mono.Debugger.Frontend
 		public SourceLocation FindLocation (string file, int line)
 		{
 			string path = GetFullPath (file);
-			Debugger backend = GetDebugger ();
-			SourceLocation location = backend.FindLocation (path, line);
+			Process process = GetProcess ();
+			SourceLocation location = process.FindLocation (path, line);
 
 			if (location != null)
 				return location;
@@ -571,21 +571,21 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation FindMethod (string name)
 		{
-			Debugger backend = GetDebugger ();
-			return backend.FindMethod (name);
+			Process process = GetProcess ();
+			return process.FindMethod (name);
 		}
 
 		public Module[] GetModules (int[] indices)
 		{
-			Debugger backend = GetDebugger ();
+			Process process = GetProcess ();
 
 			try {
-				backend.ModuleManager.Lock ();
+				process.ModuleManager.Lock ();
 
 				int pos = 0;
 				Module[] retval = new Module [indices.Length];
 
-				Module[] modules = backend.Modules;
+				Module[] modules = process.Modules;
 
 				foreach (int index in indices) {
 					if ((index < 0) || (index > modules.Length))
@@ -596,27 +596,27 @@ namespace Mono.Debugger.Frontend
 
 				return retval;
 			} finally {
-				backend.ModuleManager.UnLock ();
+				process.ModuleManager.UnLock ();
 			}
 		}
 
 		public Module[] Modules 	{
 			get {
-				Debugger backend = GetDebugger ();
-				return backend.Modules;
+				Process process = GetProcess ();
+				return process.Modules;
 			}
 		}
 
 		public SourceFile[] GetSources (int[] indices)
 		{
-			Debugger backend = GetDebugger ();
+			Process process = GetProcess ();
 
 			try {
-				backend.ModuleManager.Lock ();
+				process.ModuleManager.Lock ();
 
 				Hashtable source_hash = new Hashtable ();
 
-				Module[] modules = backend.Modules;
+				Module[] modules = process.Modules;
 
 				foreach (Module module in modules) {
 					if (!module.SymbolsLoaded)
@@ -640,17 +640,17 @@ namespace Mono.Debugger.Frontend
 
 				return retval;
 			} finally {
-				backend.ModuleManager.UnLock ();
+				process.ModuleManager.UnLock ();
 			}
 		}
 
 		public void ShowModules ()
 		{
-			Debugger backend = GetDebugger ();
+			Process process = GetProcess ();
 
 			try {
-				backend.ModuleManager.Lock ();
-				Module[] modules = backend.Modules;
+				process.ModuleManager.Lock ();
+				Module[] modules = process.Modules;
 
 				Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
 				for (int i = 0; i < modules.Length; i++) {
@@ -663,7 +663,7 @@ namespace Mono.Debugger.Frontend
 					       module.Name);
 				}
 			} finally {
-				backend.ModuleManager.UnLock ();
+				process.ModuleManager.UnLock ();
 			}
 		}
 
@@ -691,16 +691,16 @@ namespace Mono.Debugger.Frontend
 
 		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
 		{
-			Debugger backend = GetDebugger ();
+			Process process = GetProcess ();
 
 			try {
-				backend.ModuleManager.Lock ();
+				process.ModuleManager.Lock ();
 
 				foreach (Module module in modules)
 					module_operation (module, operations);
 			} finally {
-				backend.ModuleManager.UnLock ();
-				backend.SymbolTableManager.Wait ();
+				process.ModuleManager.UnLock ();
+				process.SymbolTableManager.Wait ();
 			}
 		}
 
@@ -717,20 +717,20 @@ namespace Mono.Debugger.Frontend
 
 		public ISourceBuffer FindFile (string filename)
 		{
-			Debugger backend = GetDebugger ();
-			return backend.SourceFileFactory.FindFile (filename);
+			Process process = GetProcess ();
+			return process.SourceFileFactory.FindFile (filename);
 		}
 
 		public void LoadLibrary (Thread thread, string filename)
 		{
-			Debugger backend = GetDebugger ();
+			Process process = GetProcess ();
 			string pathname = Path.GetFullPath (filename);
 			if (!File.Exists (pathname))
 				throw new ScriptingException (
 					"No such file: `{0}'", pathname);
 
 			try {
-				backend.LoadLibrary (thread, pathname);
+				process.LoadLibrary (thread, pathname);
 			} catch (TargetException ex) {
 				throw new ScriptingException (
 					"Cannot load library `{0}': {1}",

@@ -8,6 +8,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		public abstract Process Process {
+			get;
+		}
+
 		public abstract ITargetInfo TargetInfo {
 			get;
 		}

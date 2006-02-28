@@ -1,3 +1,16 @@
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
+	* backends/Process.cs: New file.
+	(Process): New internal class.  This class holds all the
+	information about one instance of a target application; ie. the
+	target application's threads, breakpoints, modules and symbol
+	tables.
+
+	* backends/ThreadManager.cs
+	(ThreadManager): The `ThreadManager' can now persist across
+	multiple invocations of a target application; all the state is in
+	the new `Process' class.
+
 2006-02-24  Martin Baulig  <martin@ximian.com>
 
 	The big `Process' -> `Thread' rename.

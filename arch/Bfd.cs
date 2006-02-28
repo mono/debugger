@@ -16,7 +16,6 @@ namespace Mono.Debugger.Backends
 		IntPtr bfd;
 		protected Module module;
 		protected BfdContainer container;
-		protected Debugger backend;
 		protected ITargetMemoryInfo info;
 		protected Bfd main_bfd;
 		protected Architecture arch;
@@ -177,7 +176,6 @@ namespace Mono.Debugger.Backends
 			this.info = info;
 			this.filename = filename;
 			this.base_address = base_address;
-			this.backend = container.Debugger;
 			this.main_bfd = main_bfd;
 			this.is_loaded = is_loaded;
 
@@ -197,9 +195,9 @@ namespace Mono.Debugger.Backends
 			target = bfd_glue_get_target_name (bfd);
 			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
 				if (target == "elf32-i386")
-					arch = new Architecture_I386 (backend);
+					arch = new Architecture_I386 (container.Process);
 				else
-					arch = new Architecture_X86_64 (backend);
+					arch = new Architecture_X86_64 (container.Process);
 
 				if (!is_coredump) {
 					InternalSection text = GetSectionByName (".text", true);
@@ -242,10 +240,10 @@ namespace Mono.Debugger.Backends
 
 			entry_point = this ["main"];
 
-			module = backend.ModuleManager.GetModule (filename);
+			module = container.Process.ModuleManager.GetModule (filename);
 			if (module == null) {
 				module = new Module (filename, this);
-				backend.ModuleManager.AddModule (module);
+				container.Process.ModuleManager.AddModule (module);
 				OnModuleChanged ();
 			} else {
 				module.LoadModule (this);
@@ -441,12 +439,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Debugger Debugger {
-			get {
-				return backend;
-			}
-		}
-
 		public Bfd MainBfd {
 			get {
 				return main_bfd;
@@ -638,7 +630,8 @@ namespace Mono.Debugger.Backends
 				return;
 
 			try {
-				dwarf = new DwarfReader (this, module, backend.SourceFileFactory);
+				dwarf = new DwarfReader (
+					this, module, container.Process.SourceFileFactory);
 			} catch (Exception ex) {
 				Console.WriteLine ("Cannot read DWARF debugging info from " +
 						   "symbol file `{0}': {1}", FileName, ex);
@@ -685,7 +678,7 @@ namespace Mono.Debugger.Backends
 			IntPtr info = bfd_glue_init_disassembler (bfd);
 
 			return new BfdDisassembler (
-				backend.SymbolTableManager, memory, dis, info);
+				container.Process.SymbolTableManager, memory, dis, info);
 		}
 
 		public TargetAddress this [string name] {

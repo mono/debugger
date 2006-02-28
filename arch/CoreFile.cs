@@ -7,22 +7,34 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
-	internal class CoreFile : MarshalByRefObject
+	internal class CoreFile : Process
 	{
 		ITargetInfo info;
 		ITargetMemoryInfo memory_info;
 		DebuggerManager debugger_manager;
 		CoreFileThread main_thread;
-		ThreadManager manager;
 		Bfd bfd, core_bfd;
 		string core_file;
 		string application;
 		ArrayList threads;
 
-		public CoreFile (ThreadManager manager, Inferior inferior, Bfd bfd, string core_file)
+		public static CoreFile OpenCoreFile (ThreadManager manager, ProcessStart start)
 		{
-			this.manager = manager;
-			this.debugger_manager = manager.Debugger.DebuggerManager;
+			CoreFile core = new CoreFile (manager, start);
+
+			Inferior inferior = Inferior.CreateInferior (manager, core, start);
+			core.OpenCoreFile (inferior, inferior.Bfd, start.CoreFile);
+
+			return core;
+		}
+
+		protected CoreFile (ThreadManager manager, ProcessStart start)
+			: base (manager, start)
+		{ }
+
+		private void OpenCoreFile (Inferior inferior, Bfd bfd, string core_file)
+		{
+			this.debugger_manager = ThreadManager.Debugger.DebuggerManager;
 			this.info = inferior.TargetInfo;
 			this.memory_info = inferior.TargetMemoryInfo;
 			this.bfd = bfd;
@@ -60,6 +72,9 @@ namespace Mono.Debugger.Backends
 
 			read_note_section ();
 			main_thread = (CoreFileThread) threads [0];
+
+			ReachedMain (inferior, main_thread.Thread, null);
+			InitializeModules ();
 		}
 
 		public void InitializeModules ()
@@ -112,16 +127,8 @@ namespace Mono.Debugger.Backends
 #endif
 		}
 
-		public ThreadManager ThreadManager {
-			get { return manager; }
-		}
-
 		public DebuggerManager DebuggerManager {
 			get { return debugger_manager; }
-		}
-
-		public Thread MainThread {
-			get { return main_thread.Thread; }
 		}
 
 		public Thread[] Threads {
@@ -200,6 +207,10 @@ namespace Mono.Debugger.Backends
 
 			internal override ThreadManager ThreadManager {
 				get { return CoreFile.ThreadManager; }
+			}
+
+			public override Process Process {
+				get { return CoreFile; }
 			}
 
 			public override ITargetInfo TargetInfo {
@@ -371,49 +382,11 @@ namespace Mono.Debugger.Backends
 		// IDisposable
 		//
 
-		private bool disposed = false;
-
-		protected void check_disposed ()
-		{
-			if (disposed)
-				throw new ObjectDisposedException ("Thread");
-		}
-
-		protected virtual void DoDispose ()
+		protected override void DoDispose ()
 		{
 			if (core_bfd != null)
 				core_bfd.Dispose ();
-		}
-
-		protected virtual void Dispose (bool disposing)
-		{
-			// Check to see if Dispose has already been called.
-			if (disposed)
-				return;
-
-			lock (this) {
-				if (disposed)
-					return;
-
-				disposed = true;
-			}
-
-			// If this is a call to Dispose, dispose all managed resources.
-			if (disposing) {
-				DoDispose ();
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~CoreFile ()
-		{
-			Dispose (false);
+			base.DoDispose ();
 		}
 	}
 }
