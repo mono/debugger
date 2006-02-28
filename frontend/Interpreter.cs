@@ -298,7 +298,7 @@ namespace Mono.Debugger.Frontend
 		public Process Start ()
 		{
 			if (client != null)
-				throw new ScriptingException ("Thread already started.");
+				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Starting program: {0}",
 					   String.Join (" ", options.InferiorArgs));
@@ -330,7 +330,7 @@ namespace Mono.Debugger.Frontend
 		public Process Attach (int pid)
 		{
 			if (client != null)
-				throw new ScriptingException ("Thread already started.");
+				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Attaching to {0}", pid);
 
@@ -361,7 +361,7 @@ namespace Mono.Debugger.Frontend
 		public Process OpenCoreFile (string core_file)
 		{
 			if (client != null)
-				throw new ScriptingException ("Thread already started.");
+				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Loading core file {0}", core_file);
 
@@ -401,7 +401,7 @@ namespace Mono.Debugger.Frontend
 		public Process LoadSession (Stream stream)
 		{
 			if (client != null)
-				throw new ScriptingException ("Thread already started.");
+				throw new ScriptingException ("Program already started.");
 
 			try {
 				BinaryFormatter formatter = new BinaryFormatter ();
@@ -514,16 +514,16 @@ namespace Mono.Debugger.Frontend
 			session.DeleteEvent (handle.Index);
 		}
 
-		protected void ThreadExited (DebuggerClient client, Thread thread)
+		protected void ThreadExited (Thread thread)
 		{
 			procs.Remove (thread.ID);
 			if (thread == main_thread) {
-				TargetExited (client);
+				TargetExited ();
 				context.CurrentThread = null;
 			}
 		}
 
-		protected void TargetExited (DebuggerClient client)
+		protected void TargetExited ()
 		{
 			if (client != null) {
 				foreach (Thread proc in Threads) {
@@ -544,13 +544,14 @@ namespace Mono.Debugger.Frontend
 				main_process = null;
 			}
 
+			client = null;
 			initialized = false;
 		}
 
-		protected void ClientShutdown (DebuggerClient client)
+		protected void ClientShutdown ()
 		{
 			Print ("Connection to debugger server terminated.");
-			TargetExited (client);
+			TargetExited ();
 		}
 
 		public Thread GetThread (int number)
@@ -682,7 +683,7 @@ namespace Mono.Debugger.Frontend
 				client = null;
 			}
 
-			TargetExited (null);
+			TargetExited ();
 		}
 
 		protected class InterpreterEventSink : MarshalByRefObject
@@ -716,7 +717,7 @@ namespace Mono.Debugger.Frontend
 
 			public void target_exited ()
 			{
-				interpreter.TargetExited (client);
+				interpreter.TargetExited ();
 			}
 
 			public void target_output (bool is_stderr, string line)
@@ -729,7 +730,7 @@ namespace Mono.Debugger.Frontend
 
 			public void client_shutdown (DebuggerClient client)
 			{
-				interpreter.ClientShutdown (client);
+				interpreter.ClientShutdown ();
 			}
 		}
 
@@ -754,7 +755,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.Style.TargetEvent (thread, target, args);
 				if ((args.Type == TargetEventType.TargetExited) ||
 				    (args.Type == TargetEventType.TargetSignaled))
-					interpreter.ThreadExited (client, thread);
+					interpreter.ThreadExited (thread);
 			}
 		}
 	}
