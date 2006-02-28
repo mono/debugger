@@ -3276,7 +3276,6 @@ namespace Mono.Debugger.Backends
 
 	[Serializable]
 	internal enum CommandType {
-		Message,
 		TargetAccess,
 		CreateProcess
 	}
@@ -3287,13 +3286,6 @@ namespace Mono.Debugger.Backends
 		public readonly CommandType Type;
 		public object Data1, Data2;
 		public object Result;
-
-		public Command (IMethodCallMessage message, IMessageSink sink)
-		{
-			this.Type = CommandType.Message;
-			this.Data1 = message;
-			this.Data2 = sink;
-		}
 
 		public Command (SingleSteppingEngine sse, TargetAccessDelegate func, object data)
 		{

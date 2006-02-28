@@ -337,22 +337,7 @@ namespace Mono.Debugger.Backends
 
 			// These are synchronous commands; ie. the caller blocks on us
 			// until we finished the command and sent the result.
-			if (command.Type == CommandType.Message) {
-				IMessage return_message;
-				try {
-					return_message = ChannelServices.SyncDispatchMessage (
-						(IMessage) command.Data1);
-				} catch (ST.ThreadAbortException) {
-					return;
-				} catch (Exception ex) {
-					return_message = new ReturnMessage (
-						ex, (IMethodCallMessage) command.Data1);
-				}
-
-				engine_event.Set ();
-
-				((IMessageSink) command.Data2).SyncProcessMessage (return_message);
-			} else if (command.Type == CommandType.TargetAccess) {
+			if (command.Type == CommandType.TargetAccess) {
 				try {
 					command.Result = command.Engine.Invoke (
 						(TargetAccessDelegate) command.Data1, command.Data2);
