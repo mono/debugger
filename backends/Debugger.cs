@@ -120,7 +120,7 @@ namespace Mono.Debugger
 		{
 			try {
 				if (TargetEvent != null)
-					TargetEvent (sse.Thread, sse.TargetAccess, args);
+					TargetEvent (sse.Thread, args);
 			} catch (Exception ex) {
 				Error ("{0} caught exception while sending {1}:\n{2}",
 				       sse, args, ex);

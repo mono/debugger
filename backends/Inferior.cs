@@ -330,7 +330,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void RuntimeInvoke (TargetAccess target, TargetAddress invoke_method,
+		public void RuntimeInvoke (Thread target, TargetAddress invoke_method,
 					   TargetAddress method_argument,
 					   TargetObject object_argument, TargetObject[] param_objects,
 					   long callback_arg, bool debug)

@@ -86,7 +86,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return true; }
 		}
 
-		public override TargetAddress GetMethodAddress (TargetAccess target)
+		public override TargetAddress GetMethodAddress (Thread target)
 		{
 			throw new NotSupportedException ();
 		}

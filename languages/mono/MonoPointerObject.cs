@@ -12,29 +12,29 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		public override TargetType GetCurrentType (TargetAccess target)
+		public override TargetType GetCurrentType (Thread target)
 		{
 			return Type.StaticType;
 		}
 
-		public override TargetObject GetDereferencedObject (TargetAccess target)
+		public override TargetObject GetDereferencedObject (Thread target)
 		{
 			return Type.StaticType.GetObject (Location);
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (TargetAccess target, int index)
+		public override TargetObject GetArrayElement (Thread target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			if (HasAddress)
 				return String.Format ("{0}", Address);

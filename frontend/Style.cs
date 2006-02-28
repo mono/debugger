@@ -112,8 +112,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public override void TargetEvent (Thread thread, TargetAccess target,
-						  TargetEventArgs args)
+		public override void TargetEvent (Thread thread, TargetEventArgs args)
 		{
 			if (args.Frame != null)
 				TargetEvent (thread, args.Frame, args);
@@ -217,7 +216,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public override string FormatObject (TargetAccess target, object obj,
+		public override string FormatObject (Thread target, object obj,
 						     DisplayFormat format)
 		{
 			if ((obj is byte) || (obj is sbyte) || (obj is char) ||
@@ -251,7 +250,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string FormatEnumMember (TargetAccess target, string prefix,
+		protected string FormatEnumMember (Thread target, string prefix,
 						   TargetMemberInfo member, bool is_static,
 						   Hashtable hash)
 		{
@@ -338,12 +337,12 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		public override string FormatType (TargetAccess target, TargetType type)
+		public override string FormatType (Thread target, TargetType type)
 		{
 			return FormatType (target, "", type, null);
 		}
 
-		protected string FormatType (TargetAccess target, string prefix,
+		protected string FormatType (Thread target, string prefix,
 					     TargetType type, Hashtable hash)
 		{
 			string retval;
@@ -472,12 +471,12 @@ namespace Mono.Debugger.Frontend
 			return retval;
 		}
 
-		public string FormatEnumType (TargetAccess target, TargetEnumType etype)
+		public string FormatEnumType (Thread target, TargetEnumType etype)
 		{
 			return String.Format ("enum {0}", etype.Name);
 		}
 
-		public string FormatStructType (TargetAccess target, TargetClassType stype)
+		public string FormatStructType (Thread target, TargetClassType stype)
 		{
 			string header = "";
 			switch (stype.Kind) {
@@ -515,7 +514,7 @@ namespace Mono.Debugger.Frontend
 			}       
 		}
 
-		protected string PrintObject (TargetAccess target, TargetObject obj)
+		protected string PrintObject (Thread target, TargetObject obj)
 		{
 			try {
 				return obj.Print (target);
@@ -524,7 +523,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string DoFormatObject (TargetAccess target, TargetObject obj,
+		protected string DoFormatObject (Thread target, TargetObject obj,
 						 bool recursed, DisplayFormat format)
 		{
 			try {
@@ -542,7 +541,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected string DoFormatObjectRecursed (TargetAccess target, TargetObject obj,
+		protected string DoFormatObjectRecursed (Thread target, TargetObject obj,
 							 DisplayFormat format)
 		{
 			if (obj.IsNull)
@@ -561,7 +560,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void DoFormatArray (TargetAccess target, TargetArrayObject aobj,
+		protected void DoFormatArray (Thread target, TargetArrayObject aobj,
 					      StringBuilder sb, int dimension, int rank,
 					      int[] indices, DisplayFormat format)
 		{
@@ -587,7 +586,7 @@ namespace Mono.Debugger.Frontend
 			sb.Append (" ]");
 		}
 
-		protected string DoFormatArray (TargetAccess target, TargetArrayObject aobj,
+		protected string DoFormatArray (Thread target, TargetArrayObject aobj,
 						DisplayFormat format)
 		{
 			int rank = aobj.Type.Rank;
@@ -597,7 +596,7 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		protected string DoFormatEnum (TargetAccess target, TargetEnumObject eobj,
+		protected string DoFormatEnum (Thread target, TargetEnumObject eobj,
 					       DisplayFormat format)
 		{
 			TargetFundamentalObject fobj = eobj.Value as TargetFundamentalObject;
@@ -645,7 +644,7 @@ namespace Mono.Debugger.Frontend
 			return DoFormatObject (target, fobj, true, format);
 		}
 
-		protected string DoFormatObject (TargetAccess target, TargetObject obj,
+		protected string DoFormatObject (Thread target, TargetObject obj,
 						 DisplayFormat format)
 		{
 			if (obj.IsNull)
@@ -725,7 +724,7 @@ namespace Mono.Debugger.Frontend
 				obj = variable.GetObject (frame);
 				if (obj != null)
 					contents = DoFormatObject (
-						frame.TargetAccess, obj, false, DisplayFormat.Default);
+						frame.Thread, obj, false, DisplayFormat.Default);
 				else
 					contents = "<cannot display object>";
 			} catch {
@@ -766,7 +765,6 @@ namespace Mono.Debugger.Frontend
 		public abstract void UnhandledException (ScriptingContext context, StackFrame frame,
 							 AssemblerLine current_insn);
 
-		public abstract void TargetEvent (Thread thread, TargetAccess target,
-						  TargetEventArgs args);
+		public abstract void TargetEvent (Thread thread, TargetEventArgs args);
 	}
 }

@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 			return reader.ReadInteger (4) * 2;
 		}
 
-		public override object GetObject (TargetAccess target)
+		public override object GetObject (Thread target)
 		{
 			TargetLocation dynamic_location;
 			TargetBlob object_blob = Location.ReadMemory (target, type.Size);
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new String (retval);
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			if (Location.Address.IsNull)
 				return "null";

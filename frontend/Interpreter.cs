@@ -749,10 +749,9 @@ namespace Mono.Debugger.Frontend
 				debugger.TargetEvent += new TargetEventHandler (target_event);
 			}
 
-			public void target_event (Thread thread, TargetAccess target,
-						  TargetEventArgs args)
+			public void target_event (Thread thread, TargetEventArgs args)
 			{
-				interpreter.Style.TargetEvent (thread, target, args);
+				interpreter.Style.TargetEvent (thread, args);
 				if ((args.Type == TargetEventType.TargetExited) ||
 				    (args.Type == TargetEventType.TargetSignaled))
 					interpreter.ThreadExited (thread);

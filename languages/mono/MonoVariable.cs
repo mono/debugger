@@ -84,10 +84,10 @@ namespace Mono.Debugger.Languages.Mono
 			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return new MonoVariableLocation (
-					frame.TargetAccess, false, register, info.Offset, is_byref);
+					frame.Thread, false, register, info.Offset, is_byref);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
 				return new MonoVariableLocation (
-					frame.TargetAccess, true, register, info.Offset, is_byref);
+					frame.Thread, true, register, info.Offset, is_byref);
 			else
 				return null;
 		}
@@ -131,7 +131,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			type.SetObject (frame.TargetAccess, location, (TargetObject) obj);
+			type.SetObject (frame.Thread, location, (TargetObject) obj);
 		}
 
 		public override string ToString ()

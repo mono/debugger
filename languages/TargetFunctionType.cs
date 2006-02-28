@@ -42,6 +42,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetAddress GetMethodAddress (TargetAccess target);
+		public abstract TargetAddress GetMethodAddress (Thread target);
 	}
 }

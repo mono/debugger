@@ -60,11 +60,11 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		internal abstract long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal abstract long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location);
 
-		public virtual string Print (TargetAccess target)
+		public virtual string Print (Thread target)
 		{
 			return ToString ();
 		}

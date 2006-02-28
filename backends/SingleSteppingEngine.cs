@@ -565,7 +565,7 @@ namespace Mono.Debugger.Backends
 		object SendCommand (TargetAccessDelegate target)
 		{
 			if (ThreadManager.InBackgroundThread)
-				return target (target_access, null);
+				return target (thread, null);
 			else
 				return manager.SendCommand (this, target, null);
 		}
@@ -1651,21 +1651,21 @@ namespace Mono.Debugger.Backends
 		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
 			return (string) SendCommand (delegate {
-				return style.FormatObject (target_access, obj, format);
+				return style.FormatObject (thread, obj, format);
 			});
 		}
 
 		public string PrintType (Style style, TargetType type)
 		{
 			return (string) SendCommand (delegate {
-				return style.FormatType (target_access, type);
+				return style.FormatType (thread, type);
 			});
 		}
 
 		public object Invoke (TargetAccessDelegate func, object data)
 		{
 			return SendCommand (delegate {
-				return func (target_access, data);
+				return func (thread, data);
 			});
 		}
 #endregion
@@ -2731,7 +2731,7 @@ namespace Mono.Debugger.Backends
 				sse.insert_temporary_breakpoint (invoke);
 
 				sse.inferior.RuntimeInvoke (
-					sse.target_access, language.RuntimeInvokeFunc,
+					sse.Thread, language.RuntimeInvokeFunc,
 					method, instance, ParamObjects, ID, Debug);
 
 				stage = Stage.InvokedMethod;
@@ -2745,7 +2745,7 @@ namespace Mono.Debugger.Backends
 
 		bool get_method_address (SingleSteppingEngine sse)
 		{
-			method = Function.GetMethodAddress (sse.TargetAccess);
+			method = Function.GetMethodAddress (sse.Thread);
 
 			if ((instance == null) || instance.Type.IsByRef)
 				return true;
@@ -2790,7 +2790,7 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolved class: {1}", sse, klass);
 
-				Function.MonoClass.ClassResolved (sse.target_access, klass);
+				Function.MonoClass.ClassResolved (sse.Thread, klass);
 				stage = Stage.ResolvedClass;
 				do_execute (sse);
 				return false;
@@ -2816,7 +2816,7 @@ namespace Mono.Debugger.Backends
 					      "{0} rti got virtual method: {1}", sse, method);
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
-				TargetType class_type = language.GetClass (sse.target_access, klass);
+				TargetType class_type = language.GetClass (sse.Thread, klass);
 
 				if (!class_type.IsByRef) {
 					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
@@ -2858,7 +2858,7 @@ namespace Mono.Debugger.Backends
 						language.CreateObject (sse.Thread, exc_address);
 
 					result.ExceptionMessage = (string) exc_obj.GetObject (
-						sse.target_access);
+						sse.Thread);
 				}
 
 				if (data1 != 0) {
@@ -3084,7 +3084,7 @@ namespace Mono.Debugger.Backends
 			if (language == null)
 				language = sse.process.MonoLanguage;
 
-			method = Function.GetMethodAddress (sse.target_access);
+			method = Function.GetMethodAddress (sse.Thread);
 
 			sse.inferior.CallMethod (language.CompileMethodFunc,
 						 method.Address, 0, ID);

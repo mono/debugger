@@ -140,13 +140,13 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetObject GetStaticField (TargetAccess target,
+		public override TargetObject GetStaticField (Thread target,
 							     TargetFieldInfo field)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override void SetStaticField (TargetAccess target, TargetFieldInfo field,
+		public override void SetStaticField (Thread target, TargetFieldInfo field,
 						     TargetObject obj)
 		{
 			throw new InvalidOperationException ();
@@ -205,7 +205,7 @@ namespace Mono.Debugger.Languages.Native
 			return new NativeStructObject (this, location);
 		}
 
-		internal TargetObject GetField (TargetAccess target, TargetLocation location,
+		internal TargetObject GetField (Thread target, TargetLocation location,
 						NativeFieldInfo field)
 		{
 			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);
@@ -220,7 +220,7 @@ namespace Mono.Debugger.Languages.Native
 			return field.Type.GetObject (field_loc);
 		}
 
-		internal void SetField (TargetAccess target, TargetLocation location,
+		internal void SetField (Thread target, TargetLocation location,
 					NativeFieldInfo field, TargetObject obj)
 		{
 			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);

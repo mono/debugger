@@ -335,7 +335,7 @@ namespace Mono.Debugger.Languages.Mono
 			AddClass (klass, type);
 		}
 
-		public TargetType GetClass (TargetAccess target, TargetAddress klass_address)
+		public TargetType GetClass (Thread target, TargetAddress klass_address)
 		{
 			TargetType type = (TargetType) class_hash [klass_address];
 			if (type != null)
@@ -731,7 +731,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetObject result;
 			try {
-				result = obj.GetDereferencedObject (target.TargetAccess);
+				result = obj.GetDereferencedObject (target);
 				if (result == null)
 					result = obj;
 			} catch {

@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Native
 			: base (type, location)
 		{ }
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{

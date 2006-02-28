@@ -1,5 +1,9 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/*.cs: Use `Thread' everywhere instead of `TargetAccess'.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* languages/Language.cs
 	(Language.CreateObject): Take a `Thread' argument, not a `TargetAccess'.
 	(Language.CreateInstance): Likewise.

@@ -15,9 +15,9 @@ namespace Mono.Debugger.Languages
 			this.Rank = type.Rank;
 		}
 
-		protected abstract void DoGetArrayBounds (TargetAccess target);
+		protected abstract void DoGetArrayBounds (Thread target);
 
-		protected bool GetArrayBounds (TargetAccess target)
+		protected bool GetArrayBounds (Thread target)
 		{
 			if (bounds != null)
 				return true;
@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public int GetLowerBound (TargetAccess target, int dimension)
+		public int GetLowerBound (Thread target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -43,7 +43,7 @@ namespace Mono.Debugger.Languages
 			return bounds [dimension].Lower;
 		}
 
-		public int GetUpperBound (TargetAccess target, int dimension)
+		public int GetUpperBound (Thread target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -54,7 +54,7 @@ namespace Mono.Debugger.Languages
 			return bounds [dimension].Lower + bounds [dimension].Length;
 		}
 
-		protected int GetArrayOffset (TargetAccess target, int[] indices)
+		protected int GetArrayOffset (Thread target, int[] indices)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -87,7 +87,7 @@ namespace Mono.Debugger.Languages
 				throw new InvalidOperationException ();
 		}
 
-		protected int GetLength (TargetAccess target)
+		protected int GetLength (Thread target)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -98,9 +98,9 @@ namespace Mono.Debugger.Languages
 			return length;
 		}
 
-		public abstract TargetObject GetElement (TargetAccess target, int[] indices);
+		public abstract TargetObject GetElement (Thread target, int[] indices);
 
-		public abstract void SetElement (TargetAccess target, int[] indices,
+		public abstract void SetElement (Thread target, int[] indices,
 						 TargetObject obj);
 
 		public override string ToString ()

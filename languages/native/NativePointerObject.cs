@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Native
 			: base (type, location)
 		{ }
 
-		public override TargetType GetCurrentType (TargetAccess target)
+		public override TargetType GetCurrentType (Thread target)
 		{
 			if (!Type.HasStaticType)
 				throw new InvalidOperationException ();
@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.StaticType;
 		}
 
-		public override TargetObject GetDereferencedObject (TargetAccess target)
+		public override TargetObject GetDereferencedObject (Thread target)
 		{
 			if (!Type.HasStaticType)
 				throw new InvalidOperationException ();
@@ -25,14 +25,14 @@ namespace Mono.Debugger.Languages.Native
 			return Type.StaticType.GetObject (new_location);
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (TargetAccess target, int index)
+		public override TargetObject GetArrayElement (Thread target, int index)
 		{
 			if (!Type.IsArray)
 				throw new InvalidOperationException ();
@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.StaticType.GetObject (new_loc);
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			if (HasAddress) {
 				if (Address.IsNull)

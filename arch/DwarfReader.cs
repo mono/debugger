@@ -2694,7 +2694,7 @@ namespace Mono.Debugger.Backends
 				reg = dwarf.bfd.Architecture.DwarfFrameRegisterMap [reg];
 
 				MonoVariableLocation loc = new MonoVariableLocation (
-					frame.TargetAccess, true, frame.Registers [reg],
+					frame.Thread, true, frame.Registers [reg],
 					off + offset, type.IsByRef);
 
 				if (!locreader.IsEof)
@@ -2734,7 +2734,7 @@ namespace Mono.Debugger.Backends
 				if (var_object == null)
 					return;
 
-				var_object.SetObject (frame.TargetAccess, obj);
+				var_object.SetObject (frame.Thread, obj);
 			}
 
 			public override string ToString ()

@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 			: base (type, location)
 		{ }
 
-		protected override void DoGetArrayBounds (TargetAccess target)
+		protected override void DoGetArrayBounds (Thread target)
 		{
 			TargetBinaryReader reader = Location.ReadMemory (target, type.Size).GetReader ();
 
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetObject GetElement (TargetAccess target, int[] indices)
+		public override TargetObject GetElement (Thread target, int[] indices)
 		{
 			int offset = GetArrayOffset (target, indices);
 
@@ -60,7 +60,7 @@ namespace Mono.Debugger.Languages.Mono
 			return Type.ElementType.GetObject (new_loc);
 		}
 
-		public override void SetElement (TargetAccess target, int[] indices,
+		public override void SetElement (Thread target, int[] indices,
 						 TargetObject obj)
 		{
 			int offset = GetArrayOffset (target, indices);
@@ -89,7 +89,7 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
@@ -98,7 +98,7 @@ namespace Mono.Debugger.Languages.Mono
 			return element_size * GetLength (target);
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			if (Location.HasAddress)
 				return String.Format ("{0}", Location.Address);

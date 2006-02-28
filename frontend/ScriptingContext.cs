@@ -239,7 +239,6 @@ namespace Mono.Debugger.Frontend
 
 		string MonoObjectToString (TargetClassObject obj)
 		{
-			TargetAccess target = CurrentThread.TargetAccess;
 			TargetClassObject cobj = obj;
 
 		again:
@@ -263,11 +262,11 @@ namespace Mono.Debugger.Frontend
 				if ((exc_message != null) || (retval == null))
 					return null;
 
-				object value = ((TargetFundamentalObject) retval).GetObject (target);
+				object value = ((TargetFundamentalObject) retval).GetObject (CurrentThread);
 				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
 			}
 
-			cobj = cobj.GetParentObject (target);
+			cobj = cobj.GetParentObject (CurrentThread);
 			if (cobj != null)
 				goto again;
 
@@ -296,7 +295,7 @@ namespace Mono.Debugger.Frontend
 					formatted = DoPrintObject ((TargetObject) obj, format);
 				else
 					formatted = interpreter.Style.FormatObject (
-						CurrentThread.TargetAccess, obj, format);
+						CurrentThread, obj, format);
 			} catch {
 				formatted = "<cannot display object>";
 			}

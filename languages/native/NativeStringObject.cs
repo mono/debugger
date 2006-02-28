@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override object GetObject (TargetAccess target)
+		public override object GetObject (Thread target)
 		{
 			try {
 				return ReadString (target, Location);
@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Native
 		static char[] hex_chars = { '0', '1', '2', '3', '4', '5', '6', '7',
 					    '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-		protected string ReadString (TargetAccess target, TargetLocation start)
+		protected string ReadString (Thread target, TargetLocation start)
 		{
 			if (start.HasAddress && start.Address.IsNull)
 				return "null";

@@ -12,14 +12,14 @@ namespace Mono.Debugger.Languages
 			this.Type = type;
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public virtual object GetObject (TargetAccess target)
+		public virtual object GetObject (Thread target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 
@@ -77,12 +77,12 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public void SetObject (TargetAccess target, TargetObject obj)
+		public void SetObject (Thread target, TargetObject obj)
 		{
 			Type.SetObject (target, Location, obj);
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			object obj = GetObject (target);
 			if (obj is IntPtr)

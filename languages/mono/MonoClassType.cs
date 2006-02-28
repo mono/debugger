@@ -140,13 +140,13 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetObject GetStaticField (TargetAccess target, TargetFieldInfo field)
+		public override TargetObject GetStaticField (Thread target, TargetFieldInfo field)
 		{
 			MonoClassInfo info = GetTypeInfo ();
 			return info.GetStaticField (target, field);
 		}
 
-		public override void SetStaticField (TargetAccess target, TargetFieldInfo field,
+		public override void SetStaticField (Thread target, TargetFieldInfo field,
 						     TargetObject obj)
 		{
 			MonoClassInfo info = GetTypeInfo ();
@@ -399,7 +399,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type_info != null;
 		}
 
-		internal MonoClassInfo ClassResolved (TargetAccess target, TargetAddress klass)
+		internal MonoClassInfo ClassResolved (Thread target, TargetAddress klass)
 		{
 			type_info = new MonoClassInfo (this, target, klass);
 			return type_info;
@@ -458,7 +458,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public static TargetType ReadMonoClass (MonoLanguageBackend language,
-							TargetAccess target, TargetAddress address)
+							Thread target, TargetAddress address)
 		{
 			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
 				address, language.BuiltinTypes.KlassSize);

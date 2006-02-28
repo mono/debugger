@@ -579,9 +579,8 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetClassObject cobj = (TargetClassObject) base.DoEvaluateObject (context);
-			return cobj.GetParentObject (target);
+			return cobj.GetParentObject (context.CurrentThread);
 		}
 	}
 
@@ -759,9 +758,8 @@ namespace Mono.Debugger.Frontend
 			if (method.HasThis)
 				instance = (TargetClassObject) method.This.GetObject (frame);
 
-			TargetAccess target = frame.TargetAccess;
 			MemberExpression member = StructAccessExpression.FindMember (
-				target, method.DeclaringType, instance, full_name, true, true);
+				frame.Thread, method.DeclaringType, instance, full_name, true, true);
 			if (member == null)
 				return null;
 
@@ -925,7 +923,7 @@ namespace Mono.Debugger.Frontend
 		{
 			MemberExpression member;
 
-			TargetAccess target = context.CurrentFrame.TargetAccess;
+			Thread target = context.CurrentThread;
 
 			Expression lexpr = left.TryResolve (context);
 			if (lexpr is TypeExpr) {
@@ -1348,15 +1346,14 @@ namespace Mono.Debugger.Frontend
 					"Cannot store non-fundamental object `{0}' in " +
 					" a registers", tobj);
 
-			StackFrame frame = context.CurrentFrame;
-			object obj = fobj.GetObject (frame.TargetAccess);
+			object obj = fobj.GetObject (context.CurrentThread);
 			long value = System.Convert.ToInt64 (obj);
 
-			Register register = frame.Registers [name];
+			Register register = context.CurrentFrame.Registers [name];
 			if (register == null)
 				throw new ScriptingException ("No such register `{0}'.", name);
 
-			register.WriteRegister (frame.TargetAccess, value);
+			register.WriteRegister (context.CurrentThread, value);
 			return true;
 		}
 	}
@@ -1398,7 +1395,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		protected TargetObject GetField (TargetAccess target, TargetFieldInfo field)
+		protected TargetObject GetField (Thread target, TargetFieldInfo field)
 		{
 			if (field.IsStatic)
 				return Type.GetStaticField (target, field);
@@ -1422,8 +1419,8 @@ namespace Mono.Debugger.Frontend
 			return res;
 		}
 
-		protected TargetObject GetMember (ScriptingContext context, TargetAccess target,
-						   TargetMemberInfo member)
+		protected TargetObject GetMember (ScriptingContext context, Thread target,
+						  TargetMemberInfo member)
 		{
 			if (member is TargetPropertyInfo)
 				return GetProperty (context, (TargetPropertyInfo) member);
@@ -1434,7 +1431,7 @@ namespace Mono.Debugger.Frontend
 							      Name, member.GetType ());
 		}
 
-		public static MemberExpression FindMember (TargetAccess target, TargetClassType stype,
+		public static MemberExpression FindMember (Thread target, TargetClassType stype,
 							   TargetClassObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
@@ -1506,7 +1503,7 @@ namespace Mono.Debugger.Frontend
 					"Instance member `{0}' cannot be used in static context.", Name);
 
 			try {
-				return GetMember (context, frame.TargetAccess, Member);
+				return GetMember (context, frame.Thread, Member);
 			} catch (TargetException ex) {
 				throw new ScriptingException ("Cannot access struct member `{0}': {1}",
 							      Name, ex.Message);
@@ -1571,7 +1568,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void SetField (TargetAccess target, TargetFieldInfo field, TargetObject obj)
+		protected void SetField (Thread target, TargetFieldInfo field, TargetObject obj)
 		{
 			if (field.IsStatic)
 				Type.SetStaticField (target, field, obj);
@@ -1582,15 +1579,13 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			if (Member is TargetFieldInfo) {
-				StackFrame frame = context.CurrentFrame;
-
 				if (Member.Type != obj.Type)
 					throw new ScriptingException (
 						"Type mismatch: cannot assign expression of type " +
 						"`{0}' to field `{1}', which is of type `{2}'.",
 						obj.TypeName, Name, Member.Type.Name);
 
-				SetField (frame.TargetAccess, (TargetFieldInfo) Member, obj);
+				SetField (context.CurrentThread, (TargetFieldInfo) Member, obj);
 			}
 			else if (Member is TargetPropertyInfo) 
 			  	throw new ScriptingException ("Can't set properties directly.");
@@ -1648,12 +1643,11 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetObject obj = expr.EvaluateObject (context);
 
-			TargetAccess target = context.CurrentFrame.TargetAccess;
 			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj != null) {
 				TargetObject result;
 				try {
-					result = pobj.GetDereferencedObject (target);
+					result = pobj.GetDereferencedObject (context.CurrentThread);
 				} catch {
 					result = null;
 				}
@@ -1795,7 +1789,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		int GetIntIndex (TargetAccess target, Expression index, ScriptingContext context)
+		int GetIntIndex (Thread target, Expression index, ScriptingContext context)
 		{
 			try {
 				object idx = index.Evaluate (context);
@@ -1812,7 +1806,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		int[] GetIntIndices (TargetAccess target, ScriptingContext context)
+		int[] GetIntIndices (Thread target, ScriptingContext context)
 		{
 			int[] int_indices = new int [indices.Length];
 			for (int i = 0; i < indices.Length; i++)
@@ -1822,7 +1816,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			TargetAccess target = context.CurrentFrame.TargetAccess;
+			Thread target = context.CurrentThread;
 			TargetObject obj = expr.EvaluateObject (context);
 
 			// array[int]
@@ -1901,7 +1895,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject right)
 		{
-			TargetAccess target = context.CurrentFrame.TargetAccess;
+			Thread target = context.CurrentThread;
 			TargetObject obj = expr.EvaluateObject (context);
 
 			// array[int]
@@ -1991,8 +1985,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		static TargetClassObject TryParentCast (ScriptingContext context,
-							TargetAccess target,
+		static TargetClassObject TryParentCast (ScriptingContext context, Thread target,
 							TargetClassObject source,
 							TargetClassType source_type,
 							TargetClassType target_type)
@@ -2011,8 +2004,7 @@ namespace Mono.Debugger.Frontend
 			return source.GetParentObject (target);
 		}
 
-		static TargetClassObject TryCurrentCast (ScriptingContext context,
-							 TargetAccess target,
+		static TargetClassObject TryCurrentCast (ScriptingContext context, Thread target,
 							 TargetClassObject source,
 							 TargetClassType target_type)
 		{
@@ -2029,7 +2021,7 @@ namespace Mono.Debugger.Frontend
 			if (source.Type == target_type)
 				return source;
 
-			TargetAccess target = context.CurrentFrame.TargetAccess;
+			Thread target = context.CurrentThread;
 
 			TargetClassObject sobj = Convert.ToClassObject (target, source);
 			if (sobj == null)
@@ -2073,7 +2065,7 @@ namespace Mono.Debugger.Frontend
 
 			TargetClassType type = Convert.ToClassType (target_type);
 			TargetClassObject source = Convert.ToClassObject (
-				context.CurrentFrame.TargetAccess, expr.EvaluateObject (context));
+				context.CurrentThread, expr.EvaluateObject (context));
 			if (source == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
@@ -2238,8 +2230,7 @@ namespace Mono.Debugger.Frontend
 			if (!ImplicitFundamentalConversionExists (skind, tkind))
 				return null;
 
-			TargetAccess target = context.CurrentFrame.TargetAccess;
-			object value = obj.GetObject (target);
+			object value = obj.GetObject (context.CurrentThread);
 
 			object new_value = ImplicitFundamentalConversion (value, tkind);
 			if (new_value == null)
@@ -2272,7 +2263,7 @@ namespace Mono.Debugger.Frontend
 			if (!obj.Type.HasParent)
 				return null;
 
-			return obj.GetParentObject (context.CurrentFrame.TargetAccess);
+			return obj.GetParentObject (context.CurrentThread);
 		}
 
 		public static bool ImplicitConversionExists (ScriptingContext context,
@@ -2341,7 +2332,7 @@ namespace Mono.Debugger.Frontend
 				"Type `{0}' is not a struct or class.", type.Name);
 		}
 
-		public static TargetClassObject ToClassObject (TargetAccess target, TargetObject obj)
+		public static TargetClassObject ToClassObject (Thread target, TargetObject obj)
 		{
 			TargetClassObject cobj = obj as TargetClassObject;
 			if (cobj != null)
@@ -2449,7 +2440,7 @@ namespace Mono.Debugger.Frontend
 								     Expression expr)
 		{
 			TargetClassObject sobj = Convert.ToClassObject (
-				context.CurrentFrame.TargetAccess, expr.EvaluateObject (context));
+				context.CurrentThread, expr.EvaluateObject (context));
 			if (sobj == null)
 				return null;
 

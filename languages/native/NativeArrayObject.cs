@@ -12,10 +12,10 @@ namespace Mono.Debugger.Languages.Native
 			bounds [0] = new ArrayBounds (lower_bound, upper_bound - lower_bound);
 		}
 
-		protected override void DoGetArrayBounds (TargetAccess target)
+		protected override void DoGetArrayBounds (Thread target)
 		{ }
 
-		public override TargetObject GetElement (TargetAccess target, int[] indices)
+		public override TargetObject GetElement (Thread target, int[] indices)
 		{
 			if (indices.Length != 1)
 				throw new ArgumentException ();
@@ -30,20 +30,20 @@ namespace Mono.Debugger.Languages.Native
 			return Type.ElementType.GetObject (new_location);
 		}
 
-		public override void SetElement (TargetAccess target, int[] indices,
+		public override void SetElement (Thread target, int[] indices,
 						 TargetObject obj)
 		{
 			throw new NotSupportedException ();
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			if (Location.HasAddress)
 				return String.Format ("{0}", Location.Address);

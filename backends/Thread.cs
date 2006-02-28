@@ -579,10 +579,10 @@ namespace Mono.Debugger
 
 		public object Invoke (TargetAccessDelegate func, object data)
 		{
-			lock (this) {
-				check_engine ();
-				return engine.Invoke (func, data);
-			}
+			if (engine.ThreadManager.InBackgroundThread)
+				return func (this, data);
+			else
+				return engine.ThreadManager.SendCommand (engine, func, data);
 		}
 
 		public void Return (bool run_finally)

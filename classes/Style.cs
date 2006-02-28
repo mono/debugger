@@ -82,9 +82,9 @@ namespace Mono.Debugger
 
 		public abstract string PrintVariable (TargetVariable variable, StackFrame frame);
 
-		public abstract string FormatObject (TargetAccess target, object obj,
+		public abstract string FormatObject (Thread target, object obj,
 						     DisplayFormat format);
 
-		public abstract string FormatType (TargetAccess target, TargetType type);
+		public abstract string FormatType (Thread target, TargetType type);
 	}
 }

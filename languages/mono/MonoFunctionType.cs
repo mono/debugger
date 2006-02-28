@@ -95,7 +95,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass.ResolveClass (); }
 		}
 
-		public override TargetAddress GetMethodAddress (TargetAccess target)
+		public override TargetAddress GetMethodAddress (Thread target)
 		{
 			MonoClassInfo info = klass.GetTypeInfo ();
 			if (info == null)

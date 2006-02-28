@@ -3,8 +3,7 @@ using System.IO;
 
 namespace Mono.Debugger
 {
-	public delegate void TargetEventHandler (Thread thread, TargetAccess target,
-						 TargetEventArgs args);
+	public delegate void TargetEventHandler (Thread thread, TargetEventArgs args);
 
 	[Serializable]
 	public enum TargetEventType

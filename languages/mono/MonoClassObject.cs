@@ -13,7 +13,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 		}
 
-		public override TargetClassObject GetParentObject (TargetAccess target)
+		public override TargetClassObject GetParentObject (Thread target)
 		{
 			if (!type.Type.HasParent)
 				return null;
@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetParentObject (target, Location);
 		}
 
-		public override TargetClassObject GetCurrentObject (TargetAccess target)
+		public override TargetClassObject GetCurrentObject (Thread target)
 		{
 			if (!type.Type.IsByRef)
 				return null;
@@ -29,12 +29,12 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetCurrentObject (target, Location);
 		}
 
-		public override TargetObject GetField (TargetAccess target, TargetFieldInfo field)
+		public override TargetObject GetField (Thread target, TargetFieldInfo field)
 		{
 			return type.GetField (target, Location, field);
 		}
 
-		public override void SetField (TargetAccess target, TargetFieldInfo field,
+		public override void SetField (Thread target, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			type.SetField (target, Location, field, obj);
@@ -44,14 +44,14 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.KlassAddress; }
 		}
 
-		internal override long GetDynamicSize (TargetAccess target, TargetBlob blob,
+		internal override long GetDynamicSize (Thread target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print (TargetAccess target)
+		public override string Print (Thread target)
 		{
 			if (Location.HasAddress)
 				return String.Format ("{0}", Location.Address);

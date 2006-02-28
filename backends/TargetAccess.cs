@@ -12,7 +12,7 @@ using Mono.Debugger.Languages;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public delegate object TargetAccessDelegate (TargetAccess target, object user_data);
+	public delegate object TargetAccessDelegate (Thread target, object user_data);
 
 	[Serializable]
 	public abstract class TargetAccess
@@ -98,7 +98,7 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 
 			CommandResult result = (CommandResult) sse.ThreadManager.SendCommand (
-				sse, delegate (TargetAccess target, object user_data) {
+				sse, delegate (Thread target, object user_data) {
 					return sse.CallMethod (method, arg1, arg2);
 				}, null);
 
@@ -113,7 +113,7 @@ namespace Mono.Debugger.Backends
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
 			if (sse.ThreadManager.InBackgroundThread)
-				return func (this, data);
+				return func (sse.Thread, data);
 			else
 				return sse.ThreadManager.SendCommand (sse, func, data);
 		}

@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 			debugger_info = type.File.MonoLanguage.MonoDebuggerInfo;
 		}
 
-		public MonoClassInfo (MonoClassType type, TargetAccess target,
+		public MonoClassInfo (MonoClassType type, Thread target,
 				      TargetAddress klass_address)
 		{
 			this.type = type;
@@ -53,7 +53,7 @@ namespace Mono.Debugger.Languages.Mono
 			do_initialize (target, null);
 		}
 
-		void initialize (TargetAccess target)
+		void initialize (Thread target)
 		{
 			if (initialized)
 				return;
@@ -61,7 +61,7 @@ namespace Mono.Debugger.Languages.Mono
 			target.Invoke (do_initialize, null);
 		}
 
-		object do_initialize (TargetAccess target, object data)
+		object do_initialize (Thread target, object data)
 		{
 			if (type.ParentType != null) {
 				parent = type.MonoParentType.GetTypeInfo ();
@@ -116,7 +116,7 @@ namespace Mono.Debugger.Languages.Mono
 			return field_offsets [field.Position - type.FirstField];
 		}
 
-		internal TargetObject GetField (TargetAccess target, TargetLocation location,
+		internal TargetObject GetField (Thread target, TargetLocation location,
 						TargetFieldInfo finfo)
 		{
 			initialize (target);
@@ -135,7 +135,7 @@ namespace Mono.Debugger.Languages.Mono
 			return finfo.Type.GetObject (field_loc);
 		}
 
-		internal void SetField (TargetAccess target, TargetLocation location,
+		internal void SetField (Thread target, TargetLocation location,
 					TargetFieldInfo finfo, TargetObject obj)
 		{
 			initialize (target);
@@ -151,11 +151,11 @@ namespace Mono.Debugger.Languages.Mono
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
 
-		internal TargetObject GetStaticField (TargetAccess target, TargetFieldInfo finfo)
+		internal TargetObject GetStaticField (Thread target, TargetFieldInfo finfo)
 		{
 			initialize (target);
 
-			TargetAddress data_address = target.CallMethod (
+			TargetAddress data_address = target.TargetAccess.CallMethod (
 				debugger_info.ClassGetStaticFieldData, KlassAddress,
 				TargetAddress.Null);
 
@@ -170,14 +170,14 @@ namespace Mono.Debugger.Languages.Mono
 			return finfo.Type.GetObject (field_loc);
 		}
 
-		internal void SetStaticField (TargetAccess target, TargetFieldInfo finfo,
+		internal void SetStaticField (Thread target, TargetFieldInfo finfo,
 					      TargetObject obj)
 		{
 			initialize (target);
 
 			int offset = GetFieldOffset (finfo);
 
-			TargetAddress data_address = target.CallMethod (
+			TargetAddress data_address = target.TargetAccess.CallMethod (
 				debugger_info.ClassGetStaticFieldData, KlassAddress,
 				TargetAddress.Null);
 
@@ -190,7 +190,7 @@ namespace Mono.Debugger.Languages.Mono
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
 
-		internal TargetAddress GetMethodAddress (TargetAccess target, int token)
+		internal TargetAddress GetMethodAddress (Thread target, int token)
 		{
 			initialize (target);
 			if (!methods.Contains (token))
@@ -211,7 +211,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (this, location);
 		}
 
-		internal MonoClassObject GetParentObject (TargetAccess target, TargetLocation location)
+		internal MonoClassObject GetParentObject (Thread target, TargetLocation location)
 		{
 			initialize (target);
 
@@ -219,7 +219,7 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 
 			if (!type.IsByRef && parent.Type.IsByRef) {
-				TargetAddress boxed = target.CallMethod (
+				TargetAddress boxed = target.TargetAccess.CallMethod (
 					debugger_info.GetBoxedObjectMethod,
 					KlassAddress, location.Address);
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
@@ -229,7 +229,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (parent, location);
 		}
 
-		internal MonoClassObject GetCurrentObject (TargetAccess target, TargetLocation location)
+		internal MonoClassObject GetCurrentObject (Thread target, TargetLocation location)
 		{
 			initialize (target);
 
