@@ -559,6 +559,24 @@ namespace Mono.Debugger
 			return res.ReturnObject;
 		}
 
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
+						 TargetAddress arg2)
+		{
+			CommandResult result;
+
+			lock (this) {
+				check_engine ();
+				result = engine.CallMethod (method, arg1, arg2);
+			}
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
+		}
+
 		public TargetAddress CallMethod (TargetAddress method, long method_arg,
 						 string string_arg)
 		{
@@ -625,10 +643,6 @@ namespace Mono.Debugger
 
 		public bool IsStopped {
 			get { return State == TargetState.STOPPED; }
-		}
-
-		public TargetAccess TargetAccess {
-			get { return engine.TargetAccess; }
 		}
 
 		public ITargetMemoryAccess TargetMemoryAccess {

@@ -155,7 +155,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			initialize (target);
 
-			TargetAddress data_address = target.TargetAccess.CallMethod (
+			TargetAddress data_address = target.CallMethod (
 				debugger_info.ClassGetStaticFieldData, KlassAddress,
 				TargetAddress.Null);
 
@@ -177,7 +177,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int offset = GetFieldOffset (finfo);
 
-			TargetAddress data_address = target.TargetAccess.CallMethod (
+			TargetAddress data_address = target.CallMethod (
 				debugger_info.ClassGetStaticFieldData, KlassAddress,
 				TargetAddress.Null);
 
@@ -219,7 +219,7 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InvalidOperationException ();
 
 			if (!type.IsByRef && parent.Type.IsByRef) {
-				TargetAddress boxed = target.TargetAccess.CallMethod (
+				TargetAddress boxed = target.CallMethod (
 					debugger_info.GetBoxedObjectMethod,
 					KlassAddress, location.Address);
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);

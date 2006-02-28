@@ -276,7 +276,7 @@ namespace Mono.Debugger
 			get { return thread; }
 		}
 
-		public TargetAccess TargetAccess {
+		internal TargetAccess TargetAccess {
 			get { return target; }
 		}
 

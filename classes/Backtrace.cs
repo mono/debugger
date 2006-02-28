@@ -35,7 +35,7 @@ namespace Mono.Debugger
 			get { return (StackFrame) frames [number]; }
 		}
 
-		public void GetBacktrace (TargetAccess target, Architecture arch,
+		public void GetBacktrace (Thread target, Architecture arch,
 					  TargetAddress until, int max_frames)
 		{
 			while (TryUnwind (target, arch, until)) {
@@ -44,7 +44,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool TryUnwind (TargetAccess target, Architecture arch,
+		public bool TryUnwind (Thread target, Architecture arch,
 				       TargetAddress until)
 		{
 			StackFrame new_frame = null;

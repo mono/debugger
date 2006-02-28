@@ -1471,12 +1471,12 @@ namespace Mono.Debugger.Backends
 
 				foreach (StackFrame rti_frame in callback_stack) {
 					current_backtrace.GetBacktrace (
-						target_access, arch, rti_frame.StackPointer, max_frames);
+						thread, arch, rti_frame.StackPointer, max_frames);
 
 					current_backtrace.AddFrame (rti_frame);
 				}
 
-				current_backtrace.GetBacktrace (target_access, arch, until, max_frames);
+				current_backtrace.GetBacktrace (thread, arch, until, max_frames);
 
 				return current_backtrace;
 			});

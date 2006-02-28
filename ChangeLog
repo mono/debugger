@@ -1,5 +1,10 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/TargetAccess.cs (TargetAccess): Make this class
+	`internal' in preparation for its deletion.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* languages/*.cs: Use `Thread' everywhere instead of `TargetAccess'.
 
 2006-02-28  Martin Baulig  <martin@ximian.com>

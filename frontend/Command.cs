@@ -386,7 +386,6 @@ namespace Mono.Debugger.Frontend
 		protected override void DoExecute (ScriptingContext context)
 		{
 			StackFrame frame = ResolveFrame (context);
-			TargetAccess target = frame.TargetAccess;
 
 			if (!Repeating) {
 				PointerExpression pexp = expression as PointerExpression;
@@ -398,7 +397,7 @@ namespace Mono.Debugger.Frontend
 				start = pexp.EvaluateAddress (context);
 			}
 
-			byte[] data = target.TargetMemoryAccess.ReadBuffer (start, count);
+			byte[] data = frame.Thread.TargetMemoryAccess.ReadBuffer (start, count);
 			context.Print (TargetBinaryReader.HexDump (start, data));
 			start += count;
 		}
