@@ -16,20 +16,12 @@ namespace Mono.Debugger.Remoting
 		private Hashtable threads = Hashtable.Synchronized (new Hashtable ());
 		private ST.ManualResetEvent interrupt_event = new ST.ManualResetEvent (false);
 
-		private Hashtable thread_groups;
-		private ThreadGroup global_thread_group;
-		private ThreadGroup main_thread_group;
-
 		public DebuggerManager (DebuggerOptions options)
 		{
 			if (options.HasDebugFlags)
 				ReportWriter = new ReportWriter (options.DebugOutput, options.DebugFlags);
 			else
 				ReportWriter = new ReportWriter ();
-
-			thread_groups = Hashtable.Synchronized (new Hashtable ());
-			global_thread_group = CreateThreadGroup ("global");
-			main_thread_group = CreateThreadGroup ("main");
 
 			DebuggerContext.CreateClientContext (this);
 		}
@@ -121,56 +113,6 @@ namespace Mono.Debugger.Remoting
 		internal Thread GetThread (int id)
 		{
 			return (Thread) threads [id];
-		}
-
-		//
-		// Thread Groups
-		//
-
-		public ThreadGroup CreateThreadGroup (string name)
-		{
-			lock (thread_groups) {
-				ThreadGroup group = (ThreadGroup) thread_groups [name];
-				if (group != null)
-					return group;
-
-				group = new ThreadGroup (name);
-				thread_groups.Add (name, group);
-				return group;
-			}
-		}
-
-		public void DeleteThreadGroup (string name)
-		{
-			thread_groups.Remove (name);
-		}
-
-		public bool ThreadGroupExists (string name)
-		{
-			return thread_groups.Contains (name);
-		}
-
-		public ThreadGroup[] ThreadGroups {
-			get {
-				lock (thread_groups) {
-					ThreadGroup[] retval = new ThreadGroup [thread_groups.Values.Count];
-					thread_groups.Values.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-		}
-
-		public ThreadGroup ThreadGroupByName (string name)
-		{
-			return (ThreadGroup) thread_groups [name];
-		}
-
-		public ThreadGroup MainThreadGroup {
-			get { return main_thread_group; }
-		}
-
-		public ThreadGroup GlobalThreadGroup {
-			get { return global_thread_group; }
 		}
 	}
 }

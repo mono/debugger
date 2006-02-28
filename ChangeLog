@@ -1,5 +1,14 @@
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs
+	(Process): Manage thread groups here and not in `DebuggerManager'.
+
+	* backends/remoting/DebuggerManager.cs
+	(DebuggerManager): Moved all the thread groups related code into
+	the new `Process' class.
+
+2006-02-28  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs: New file.
 	(Process): New internal class.  This class holds all the
 	information about one instance of a target application; ie. the

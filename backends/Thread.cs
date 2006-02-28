@@ -35,7 +35,7 @@ namespace Mono.Debugger
 			this.pid = engine.PID;
 			this.tid = engine.TID;
 
-			tgroup = debugger_manager.CreateThreadGroup ("@" + ID);
+			tgroup = process.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
 
 			operation_completed_event = new ST.ManualResetEvent (false);
@@ -57,7 +57,7 @@ namespace Mono.Debugger
 
 			this.symtab_manager = process.SymbolTableManager;
 
-			tgroup = debugger_manager.CreateThreadGroup ("@" + ID);
+			tgroup = process.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
 
 			operation_completed_event = new ST.ManualResetEvent (false);

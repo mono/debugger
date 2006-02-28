@@ -25,6 +25,7 @@ namespace Mono.Debugger.Frontend
 		DebuggerSession session;
 		ScriptingContext context;
 
+		Process main_process;
 		Thread main_thread;
 		Hashtable procs;
 
@@ -116,6 +117,15 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException ("No target.");
 
 				return main_thread.TargetMemoryInfo.AddressDomain;
+			}
+		}
+
+		public Process MainProcess {
+			get {
+				if (main_process == null)
+					throw new ScriptingException ("No target.");
+
+				return main_process;
 			}
 		}
 
@@ -276,13 +286,13 @@ namespace Mono.Debugger.Frontend
 
 		public bool HasTarget {
 			get {
-				return main_thread != null;
+				return main_process != null;
 			}
 		}
 
 		public Process Start ()
 		{
-			if (main_thread != null)
+			if (main_process != null)
 				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Starting program: {0}",
@@ -298,14 +308,14 @@ namespace Mono.Debugger.Frontend
 
 				session = server.Session;
 
-				Process process = server.Run (options);
+				main_process = server.Run (options);
 
 				start_event.WaitOne ();
-				main_thread = process.MainThread;
+				main_thread = main_process.MainThread;
 				context.CurrentThread = main_thread;
 				manager.Wait (main_thread);
 
-				return process;
+				return main_process;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
@@ -314,7 +324,7 @@ namespace Mono.Debugger.Frontend
 
 		public Process Attach (int pid)
 		{
-			if (main_thread != null)
+			if (main_process != null)
 				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Attaching to {0}", pid);
@@ -329,14 +339,14 @@ namespace Mono.Debugger.Frontend
 
 				session = server.Session;
 
-				Process process = server.Attach (options, pid);
+				main_process = server.Attach (options, pid);
 
 				start_event.WaitOne ();
-				main_thread = process.MainThread;
+				main_thread = main_process.MainThread;
 				context.CurrentThread = main_thread;
 				manager.Wait (main_thread);
 
-				return process;
+				return main_process;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
@@ -345,7 +355,7 @@ namespace Mono.Debugger.Frontend
 
 		public Process OpenCoreFile (string core_file)
 		{
-			if (main_thread != null)
+			if (main_process != null)
 				throw new ScriptingException ("Thread already started.");
 
 			Console.WriteLine ("Loading core file {0}", core_file);
@@ -361,15 +371,15 @@ namespace Mono.Debugger.Frontend
 				session = server.Session;
 
 				Thread[] threads;
-				Process process = server.OpenCoreFile (options, core_file, out threads);
-				main_thread = process.MainThread;
+				main_process = server.OpenCoreFile (options, core_file, out threads);
+				main_thread = main_process.MainThread;
 
 				context.CurrentThread = main_thread;
 
 				foreach (Thread thread in threads)
 					procs.Add (thread.ID, thread);
 
-				return process;
+				return main_process;
 			} catch (TargetException e) {
 				Kill ();
 				throw new ScriptingException (e.Message);
@@ -385,7 +395,7 @@ namespace Mono.Debugger.Frontend
 
 		public Process LoadSession (Stream stream)
 		{
-			if (main_thread != null)
+			if (main_process != null)
 				throw new ScriptingException ("Thread already started.");
 
 			try {
@@ -499,12 +509,14 @@ namespace Mono.Debugger.Frontend
 				if ((main_thread != null) &&
 				    (main_thread.Process.Debugger == client.DebuggerServer)) {
 					main_thread = null;
+					main_process = null;
 					context.CurrentThread = null;
 				}
 			} else {
 				procs = new Hashtable ();
 				context.CurrentThread = null;
 				main_thread = null;
+				main_process = null;
 			}
 
 			initialized = false;
@@ -540,7 +552,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowThreadGroups ()
 		{
-			foreach (ThreadGroup group in manager.ThreadGroups) {
+			foreach (ThreadGroup group in MainProcess.ThreadGroups) {
 				if (group.Name.StartsWith ("@"))
 					continue;
 				StringBuilder ids = new StringBuilder ();
@@ -554,18 +566,18 @@ namespace Mono.Debugger.Frontend
 
 		public void CreateThreadGroup (string name)
 		{
-			if (manager.ThreadGroupExists (name))
+			if (MainProcess.ThreadGroupExists (name))
 				throw new ScriptingException ("A thread group with that name already exists.");
 
-			manager.CreateThreadGroup (name);
+			MainProcess.CreateThreadGroup (name);
 		}
 
 		public void DeleteThreadGroup (string name)
 		{
-			if (!manager.ThreadGroupExists (name))
+			if (!MainProcess.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			manager.DeleteThreadGroup (name);
+			MainProcess.DeleteThreadGroup (name);
 		}
 
 		public ThreadGroup GetThreadGroup (string name, bool writable)
@@ -574,10 +586,10 @@ namespace Mono.Debugger.Frontend
 				name = "global";
 			if (name.StartsWith ("@"))
 				throw new ScriptingException ("No such thread group.");
-			if (!manager.ThreadGroupExists (name))
+			if (!MainProcess.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			ThreadGroup group = manager.CreateThreadGroup (name);
+			ThreadGroup group = MainProcess.CreateThreadGroup (name);
 
 			if (writable && group.IsSystem)
 				throw new ScriptingException ("Cannot modify system-created thread group.");

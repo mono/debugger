@@ -73,10 +73,10 @@ namespace Mono.Debugger
 						     StreamingContext context,
 						     ISurrogateSelector selector)
 			{
-				DebuggerClient client = (DebuggerClient) context.Context;
+				Process process = (Process) context.Context;
 
 				string name = info.GetString ("name");
-				return client.DebuggerManager.ThreadGroupByName (name);
+				return process.ThreadGroupByName (name);
 			}
 		}
 	}

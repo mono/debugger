@@ -56,7 +56,7 @@ namespace Mono.Debugger
 
 		internal void OnInitializedEvent (Process process)
 		{
-			manager.MainThreadGroup.AddThread (process.MainThread.ID);
+			process.MainThreadGroup.AddThread (process.MainThread.ID);
 			if (InitializedEvent != null)
 				InitializedEvent (this, process);
 		}
