@@ -1,3 +1,11 @@
+2006-03-04  Martin Baulig  <martin@ximian.com>
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.Initialize): The notification function is not
+	dynamically allocated at runtime; we need to insert a breakpoint
+	on the `initialize' function in the `MONO_DEBUGGER_debugger_info'
+	vtable and read the notification address once we hit that bpt.
+
 2006-02-28  Martin Baulig  <martin@ximian.com>
 
 	* backends/TargetAccess.cs: Removed.

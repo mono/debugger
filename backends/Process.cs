@@ -194,7 +194,7 @@ namespace Mono.Debugger
 				return true;
 
 			initialized = true;
-			mono_manager = MonoThreadManager.Initialize (manager, inferior);
+			mono_manager = MonoThreadManager.Initialize (manager, inferior, start.PID != 0);
 
 			thread_hash.Add (engine.PID, engine);
 

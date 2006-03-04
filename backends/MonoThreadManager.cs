@@ -29,17 +29,17 @@ namespace Mono.Debugger.Backends
 		static extern void mono_debugger_server_set_notification (long address);
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
-							    Inferior inferior)
+							    Inferior inferior, bool attach)
 		{
 			TargetAddress info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
 			if (info.IsNull)
 				return null;
 
-			return new MonoThreadManager (thread_manager, inferior, info);
+			return new MonoThreadManager (thread_manager, inferior, info, attach);
 		}
 
 		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
-					     TargetAddress info)
+					     TargetAddress info, bool attach)
 		{
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
@@ -70,7 +70,44 @@ namespace Mono.Debugger.Backends
 				inferior.ReadMemory (info, size), inferior);
 			debugger_info = new MonoDebuggerInfo (reader);
 
-			mono_debugger_server_set_notification (debugger_info.NotificationAddress.Address);
+			if (attach)
+				initialize_notifications (inferior);
+			else
+				notification_bpt = inferior.BreakpointManager.InsertBreakpoint (
+					inferior, new InitializeBreakpoint (this),
+					debugger_info.Initialize);
+		}
+
+		int notification_bpt;
+
+		protected void initialize_notifications (Inferior inferior)
+		{
+			TargetAddress notification = inferior.ReadAddress (
+				debugger_info.NotificationAddress);
+
+			mono_debugger_server_set_notification (notification.Address);
+
+			inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
+		}
+
+		[Serializable]
+		protected class InitializeBreakpoint : Breakpoint
+		{
+			protected readonly MonoThreadManager manager;
+
+			public InitializeBreakpoint (MonoThreadManager manager)
+				: base ("initialize", null)
+			{
+				this.manager = manager;
+			}
+
+			internal override bool BreakpointHandler (Inferior inferior,
+								  out bool remain_stopped)
+			{
+				manager.initialize_notifications (inferior);
+				remain_stopped = false;
+				return true;
+			}
 		}
 
 		TargetAddress main_function;
@@ -238,6 +275,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress GetThreadId;
 		public readonly TargetAddress Attach;
+		public readonly TargetAddress Initialize;
 
 		internal MonoDebuggerInfo (ITargetMemoryReader reader)
 		{
@@ -265,6 +303,7 @@ namespace Mono.Debugger.Backends
 			RunFinally              = reader.ReadAddress ();
 			GetThreadId             = reader.ReadAddress ();
 			Attach                  = reader.ReadAddress ();
+			Initialize              = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
