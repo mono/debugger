@@ -19,4 +19,4 @@ CLEANFILES = lib*.a lib*.dll
 
 EXTRA_DIST = \
 	Architecture.cs Architecture_I386.cs Architecture_X86_64.cs BfdContainer.cs Bfd.cs \
-	BfdDisassembler.cs Disassembler.cs DwarfFrameReader.cs DwarfReader.cs
+	BfdDisassembler.cs Disassembler.cs DwarfFrameReader.cs DwarfReader.cs CoreFile.cs

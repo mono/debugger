@@ -1,3 +1,8 @@
+2006-03-13  Wade Berrier <wberrier@novell.com>
+
+	* arch/Makefile.am backends/remoting/Makefile.am backends/Makefile.am:
+	Update EXTRA_DIST to fix make dist and make distcheck
+
 2006-03-04  Martin Baulig  <martin@ximian.com>
 
 	* backends/MonoThreadManager.cs
