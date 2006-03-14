@@ -2,7 +2,11 @@ onedir = $(prefix)/lib/mono/1.0
 
 bin_SCRIPTS = mdb
 
-one_SCRIPTS = mdb.exe mdb-server.exe mdb-server
+one_SCRIPTS = mdb.exe
+
+if DISABLED
+one_SCRIPTS += mdb-server.exe mdb-server
+endif
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
@@ -42,9 +46,6 @@ LIBRARY_SRCLIST = \
 	$(top_srcdir)/interfaces/*.cs			\
 	AssemblyInfo.cs
 
-MDB_SERVER_SRCLIST = \
-	$(top_srcdir)/wrapper/Server.cs
-
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
@@ -58,10 +59,6 @@ MDB_DEPS = \
 	-r:System.Runtime.Remoting			\
 	-r:./Mono.Debugger.dll
 
-MDB_SERVER_DEPS = \
-	-r:System.Runtime.Remoting		\
-	-r:./Mono.Debugger.dll
-
 Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
@@ -71,9 +68,6 @@ Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
-mdb-server.exe: Makefile $(MDB_SERVER_SRCLIST) Mono.Debugger.dll
-	$(MCS) -out:mdb-server.exe $(MDB_SERVER_DEPS) $(MDB_SERVER_SRCLIST) $(MCS_FLAGS)
-
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	sed -e 's^\@libdir\@^$(libdir)^g' \
 		-e 's^\@prefix\@^$(prefix)^g' \
@@ -82,20 +76,32 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 
 noinst_DATA = Mono.Debugger.dll.config
 
-CLEANFILES = *.exe *.dll *.mdb mdb mdb-server AssemblyInfo.cs Mono.Debugger.dll.config
+CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config
 
 EXTRA_DIST = \
 	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
-	Mono.Debugger.Cecil.dll Server.cs mdb-server.in
+	Mono.Debugger.Cecil.dll
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
+if DISABLED
+MDB_SERVER_DEPS = \
+	-r:System.Runtime.Remoting		\
+	-r:./Mono.Debugger.dll
+
+mdb-server.exe: Makefile $(MDB_SERVER_SRCLIST) Mono.Debugger.dll
+	$(MCS) -out:mdb-server.exe $(MDB_SERVER_DEPS) $(MDB_SERVER_SRCLIST) $(MCS_FLAGS)
+
 mdb-server: mdb-server.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' \
 		-e 's^\@prefix\@^$(prefix)^g' < $(srcdir)/mdb-server.in > mdb-server.tmp \
 	&& mv mdb-server.tmp mdb-server
+
+CLEANFILES += mdb-server
+EXTRA_DIST += mdb-server.in
+endif
 
 install-data-local:
 	$(GACUTIL) /i $(srcdir)/Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;

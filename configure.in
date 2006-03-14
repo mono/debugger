@@ -211,6 +211,8 @@ AC_CHECK_FUNCS(strlcpy strlcat)
 
 CHECK_READLINE
 
+AM_CONDITIONAL(DISABLED, false)
+
 AC_OUTPUT([
 Makefile
 mono-debugger.pc
