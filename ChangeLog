@@ -1,5 +1,9 @@
 2006-03-14  Martin Baulig  <martin@ximian.com>
 
+	Released version 0.12 "Portland" of the Mono Debugger :-)
+
+2006-03-14  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Require Mono >= 1.1.13.
 
 2006-03-13  Wade Berrier <wberrier@novell.com>

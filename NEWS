@@ -1,3 +1,31 @@
+March 14th, 2006 - Martin Baulig
+--------------------------------
+
+Released version 0.12 "Portland" of the Mono Debugger :-)
+
+- This version of the Mono Debugger requires Mono 1.1.13.4.
+
+  For those of you using SVN, you need the latest Mono from either
+  SVN HEAD or anything from the 1-1-13 branch which is at least
+  Mono 1.1.13.4.
+
+- The debugger no longer uses a `mono-debugger-mini-wrapper',
+  it's now using the normal `mono' instead.
+
+- We can now attach to processes and examine core files -
+  this still needs some testing; bug reports are very welcome ...
+
+- We no longer run the backend in another process/appdomain;
+  most of the remoting stuff is gone to make the debugger faster
+  and more reliable.
+
+- This release is named after Portland, Oregon.
+
+December 15th, 2005 - Martin Baulig
+-----------------------------------
+
+Released version 0.11 "Guam" of the Mono Debugger :-)
+
 June 13th, 2005 - Chris Toshok
 -------------------------------
 
