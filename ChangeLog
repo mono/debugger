@@ -1,3 +1,7 @@
+2006-03-14  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Require Mono >= 1.1.13.
+
 2006-03-13  Wade Berrier <wberrier@novell.com>
 
 	* arch/Makefile.am backends/remoting/Makefile.am backends/Makefile.am:
