@@ -20,16 +20,6 @@ namespace Mono.Debugger.Frontend
 		{ }
 	}
 
-	public class MultipleLocationsMatchException : ScriptingException
-	{
-		public readonly SourceMethod[] Sources;
-		public MultipleLocationsMatchException (SourceMethod[] sources)
-		  : base ("")
-		{
-			Sources = sources;
-		}
-	}
-
 	public enum ModuleOperation
 	{
 		Ignore,
@@ -44,20 +34,8 @@ namespace Mono.Debugger.Frontend
 		int current_frame_idx = -1;
 		Interpreter interpreter;
 
-		ScriptingContext parent;
-		ArrayList method_search_results;
-		Hashtable method_search_hash;
-
 		bool is_interactive;
 		bool is_synchronous;
-
-		internal static readonly string DirectorySeparatorStr;
-
-		static ScriptingContext ()
-		{
-			// FIXME: Why isn't this public in System.IO.Path ?
-			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
-		}
 
 		internal ScriptingContext (Interpreter interpreter, bool is_interactive,
 					   bool is_synchronous)
@@ -65,26 +43,17 @@ namespace Mono.Debugger.Frontend
 			this.interpreter = interpreter;
 			this.is_interactive = is_interactive;
 			this.is_synchronous = is_synchronous;
-
-			method_search_results = new ArrayList ();
-			method_search_hash = new Hashtable ();
 		}
 
 		protected ScriptingContext (ScriptingContext parent)
 			: this (parent.Interpreter, parent.IsInteractive, parent.IsSynchronous)
 		{
-			this.parent = parent;
-
 			current_thread = parent.CurrentThread;
 		}
 
 		public ScriptingContext GetExpressionContext ()
 		{
 			return new ScriptingContext (this);
-		}
-
-		public ScriptingContext Parent {
-			get { return parent; }
 		}
 
 		public Interpreter Interpreter {
@@ -321,30 +290,10 @@ namespace Mono.Debugger.Frontend
 			Print ("{0:11x}\t{1}", line.Address, line.Text);
 		}
 
-		public void AddMethodSearchResult (SourceMethod[] methods, bool print)
-		{
-			ClearMethodSearchResults ();
-
-			if (print)
-				interpreter.Print ("More than one method matches your query:");
-
-			foreach (SourceMethod method in methods) {
-				int id = AddMethodSearchResult (method);
-				if (print)
-					interpreter.Print ("{0,4}  {1}", id, method.Name);
-			}
-
-			if (print)
-				interpreter.Print ("\nYou may use either the full method signature,\n" +
-						   "'-id N' where N is the number to the left of the method, or\n" +
-						   "'-all' to select all methods.");
-		}
-
 		public void PrintMethods (SourceMethod[] methods)
 		{
-			foreach (SourceMethod method in methods) {
-				int id = AddMethodSearchResult (method);
-				interpreter.Print ("{0,4}  {1}", id, method.Name);
+			for (int i = 0; i < methods.Length; i++) {
+				interpreter.Print ("{0,4}  {1}", i+1, methods [i].Name);
 			}
 		}
 
@@ -352,39 +301,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Print ("Methods from source file {0}: {1}", source.ID, source.FileName);
 			PrintMethods (source.Methods);
-		}
-
-		public int AddMethodSearchResult (SourceMethod method)
-		{
-			if (method_search_hash.Contains (method.Name))
-				return (int) method_search_hash [method.Name];
-
-			int index = method_search_results.Count + 1;
-			method_search_hash.Add (method.Name, index);
-			method_search_results.Add (method);
-			return index;
-		}
-
-		public SourceMethod GetMethodSearchResult (int index)
-		{
-			if ((index < 1) || (index > method_search_results.Count))
-				throw new ScriptingException (
-					"No such item in the method history.");
-
-			return (SourceMethod) method_search_results [index - 1];
-		}
-
-		public int NumMethodSearchResults
-		{
-			get {
-				return method_search_results.Count;
-			}
-		}
-
-		public void ClearMethodSearchResults ()
-		{
-			method_search_hash = new Hashtable ();
-			method_search_results = new ArrayList ();
 		}
 
 		int last_line = -1;
@@ -505,49 +421,9 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		public string GetFullPathByFilename (string filename)
-		{
-			Process process = GetProcess ();
-
-			try {
-				process.ModuleManager.Lock ();
-
-				Module[] modules = process.Modules;
-
-				foreach (Module module in modules) {
-					if (!module.SymbolsLoaded)
-						continue;
-
-					foreach (SourceFile source in module.Sources) {
-						if (filename.Equals (source.Name))
-							return source.FileName;
-					}
-				}
-			} finally {
-				process.ModuleManager.UnLock ();
-			}
-
-			return null;
-		}
-
-
-		public string GetFullPath (string filename)
-		{
-			if (Path.IsPathRooted (filename))
-				return filename;
-
-			string path = GetFullPathByFilename (filename);
-			if (path == null)
-				path = String.Concat (
-					interpreter.Options.WorkingDirectory, DirectorySeparatorStr,
-					filename);
-
-			return path;
-		}
-
 		public SourceLocation FindLocation (string file, int line)
 		{
-			string path = GetFullPath (file);
+			string path = interpreter.GetFullPath (file);
 			Process process = GetProcess ();
 			SourceLocation location = process.FindLocation (path, line);
 

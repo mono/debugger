@@ -59,6 +59,11 @@ namespace Mono.Debugger
 			string formatted = String.Format (message, args);
 			ReportWriter.Error (formatted);
 		}
+
+		public static string ReadLine ()
+		{
+			return ReportWriter.ReadLine ();
+		}
 	}
 
 	public class ReportWriter : MarshalByRefObject
@@ -122,6 +127,11 @@ namespace Mono.Debugger
 			Console.Write (message);
 			if (file != null)
 				writer.Write (message);
+		}
+
+		public string ReadLine ()
+		{
+			return Console.ReadLine ();
 		}
 	}
 }

@@ -45,6 +45,14 @@ namespace Mono.Debugger.Frontend
 		AutoResetEvent start_event;
 		ManualResetEvent interrupt_event;
 
+		internal static readonly string DirectorySeparatorStr;
+
+		static Interpreter ()
+		{
+			// FIXME: Why isn't this public in System.IO.Path ?
+			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
+		}
+
 		internal Interpreter (bool is_synchronous, bool is_interactive,
 				      DebuggerOptions options)
 		{
@@ -284,9 +292,44 @@ namespace Mono.Debugger.Frontend
 			Report.Print (prompt);
 			Report.Print (" (y or n) ");
 	    
-			int c = Console.Read ();
-			Console.Read (); /* consume the \n */
-			return (c == 'y');
+			string result = Report.ReadLine ();
+			return (result == "y") || (result == "yes");
+		}
+
+		public TargetFunctionType QueryMethod (TargetFunctionType[] methods)
+		{
+			Report.Print ("More than one method matches your query:\n");
+
+			ArrayList list = new ArrayList ();
+
+			foreach (TargetFunctionType method in methods) {
+				if (method.Source == null)
+					continue;
+
+				list.Add (method);
+				Report.Print ("{0,4}  {1}\n", list.Count, method.Name);
+			}
+
+			Report.Print ("Select a method or 0 to abort: ");
+			string result = Report.ReadLine ();
+
+			uint index;
+			try {
+				index = UInt32.Parse (result);
+			} catch {
+				Report.Print ("Invalid number.");
+				return null;
+			}
+
+			if (index == 0)
+				return null;
+
+			if (index > list.Count) {
+				Report.Print ("No such method.");
+				return null;
+			}
+
+			return (TargetFunctionType) list [(int) index];
 		}
 
 		public bool HasTarget {
@@ -684,6 +727,43 @@ namespace Mono.Debugger.Frontend
 			}
 
 			TargetExited ();
+		}
+
+		public string GetFullPathByFilename (string filename)
+		{
+			try {
+				main_process.ModuleManager.Lock ();
+
+				Module[] modules = main_process.Modules;
+
+				foreach (Module module in modules) {
+					if (!module.SymbolsLoaded)
+						continue;
+
+					foreach (SourceFile source in module.Sources) {
+						if (filename.Equals (source.Name))
+							return source.FileName;
+					}
+				}
+			} finally {
+				main_process.ModuleManager.UnLock ();
+			}
+
+			return null;
+		}
+
+		public string GetFullPath (string filename)
+		{
+			if (Path.IsPathRooted (filename))
+				return filename;
+
+			string path = GetFullPathByFilename (filename);
+			if (path == null)
+				path = String.Concat (
+					options.WorkingDirectory, DirectorySeparatorStr,
+					filename);
+
+			return path;
 		}
 
 		protected class InterpreterEventSink : MarshalByRefObject

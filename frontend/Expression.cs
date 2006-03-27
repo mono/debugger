@@ -1108,17 +1108,7 @@ namespace Mono.Debugger.Frontend
 			if (func != null)
 				return func;
 
-			ArrayList list = new ArrayList ();
-			foreach (TargetFunctionType method in methods) {
-				if (method.Source == null)
-					continue;
-				list.Add (method.Source);
-			}
-			if (list.Count == 0)
-				return null;
-			SourceMethod[] sources = new SourceMethod [list.Count];
-			list.CopyTo (sources, 0);
-			throw new MultipleLocationsMatchException (sources);
+			return context.Interpreter.QueryMethod (methods);
 		}
 
 		public TargetFunctionType OverloadResolve (ScriptingContext context,

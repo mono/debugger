@@ -1064,17 +1064,15 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-#if FIXME
 			if (context.HasBackend && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program is running.  Exit anyway?")) {
 					return true;
 				}
 				else {
-					Console.WriteLine ("Not confirmed.");
+					context.Print ("Not confirmed.");
 					return false;
 				}
 			}
-#endif
 
 			return true;
 		}
@@ -1740,15 +1738,8 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class SourceCommand : DebuggerCommand
 	{
-		int method_id = -1;
-		bool all;
 		LocationType type = LocationType.Method;
 		protected SourceLocation location;
-
-		public int ID {
-			get { return method_id; }
-			set { method_id = value; }
-		}
 
 		public bool Get {
 			get { return type == LocationType.PropertyGetter; }
@@ -1775,11 +1766,6 @@ namespace Mono.Debugger.Frontend
 			set { type = LocationType.DelegateInvoke; }
 		}
 
-		public bool All {
-			get { return all; }
-			set { all = value; }
-		}
-
 		protected TargetFunctionType EvaluateMethod (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
@@ -1792,9 +1778,6 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				return expr.EvaluateMethod (context, type, null);
-			} catch (MultipleLocationsMatchException ex) {
-				context.AddMethodSearchResult (ex.Sources, !all);
-				return null;
 			} catch (ScriptingException ex) {
 				return null;
 			}
@@ -1802,24 +1785,6 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (ID > 0) {
-				if (Argument != "") {
-					context.Error ("Cannot specify both a method id " +
-						       "and an expression.");
-					return false;
-				}
-
-				if (All) {
-					context.Error ("Cannot specify both a method id " +
-						       "and -all.");
-					return false;
-				}
-
-				SourceMethod method = context.GetMethodSearchResult (ID);
-				location = new SourceLocation (method);
-				return true;
-			}
-
 			int line;
 			int pos = Argument.IndexOf (':');
 			if (pos >= 0) {
@@ -1932,13 +1897,6 @@ namespace Mono.Debugger.Frontend
 			bool resolved = false;
 
 			try {
-				if (All) {
-					if (Argument == "" && context.NumMethodSearchResults == 0) {
-						context.Error ("to use -all you must either specify a method or have previously done a search");
-						return false;
-					}
-				}
-					  
 				resolved = base.DoResolve (context);
 			} catch (ScriptingException ex) {
 				context.Error (ex);
@@ -1971,17 +1929,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override void DoExecute (ScriptingContext context)
 		{
-			if (All) {
-				for (int i = 1; i <= context.NumMethodSearchResults; i ++) {
-					SourceMethod method = context.GetMethodSearchResult (i);
-					location = new SourceLocation (method);
-
-					int index = context.Interpreter.InsertBreakpoint (
-						thread, tgroup, domain, location);
-					context.Print ("Breakpoint {0} at {1}", index, location.Name);
-				}
-				return;
-			} else if (location != null) {
+			if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
 					thread, tgroup, domain, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
