@@ -461,7 +461,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public Module[] Modules 	{
+		public Module[] Modules {
 			get {
 				Process process = GetProcess ();
 				return process.Modules;
