@@ -90,7 +90,7 @@ namespace Mono.Debugger.Frontend
 
 			start_event = new AutoResetEvent (false);
 
-			context = new ScriptingContext (this, is_interactive, true);
+			context = new ScriptingContext (this);
 		}
 
 		AppDomain debugger_domain;

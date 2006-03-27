@@ -34,19 +34,13 @@ namespace Mono.Debugger.Frontend
 		int current_frame_idx = -1;
 		Interpreter interpreter;
 
-		bool is_interactive;
-		bool is_synchronous;
-
-		internal ScriptingContext (Interpreter interpreter, bool is_interactive,
-					   bool is_synchronous)
+		internal ScriptingContext (Interpreter interpreter)
 		{
 			this.interpreter = interpreter;
-			this.is_interactive = is_interactive;
-			this.is_synchronous = is_synchronous;
 		}
 
 		protected ScriptingContext (ScriptingContext parent)
-			: this (parent.Interpreter, parent.IsInteractive, parent.IsSynchronous)
+			: this (parent.Interpreter)
 		{
 			current_thread = parent.CurrentThread;
 		}
@@ -76,14 +70,6 @@ namespace Mono.Debugger.Frontend
 			get {
 				return interpreter.HasTarget;
 			}
-		}
-
-		public bool IsInteractive {
-			get { return is_interactive; }
-		}
-
-		public bool IsSynchronous {
-			get { return is_synchronous; }
 		}
 
 		public Thread CurrentThread {
