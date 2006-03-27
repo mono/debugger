@@ -39,17 +39,6 @@ namespace Mono.Debugger.Frontend
 			this.interpreter = interpreter;
 		}
 
-		protected ScriptingContext (ScriptingContext parent)
-			: this (parent.Interpreter)
-		{
-			current_thread = parent.CurrentThread;
-		}
-
-		public ScriptingContext GetExpressionContext ()
-		{
-			return new ScriptingContext (this);
-		}
-
 		public Interpreter Interpreter {
 			get { return interpreter; }
 		}
@@ -158,7 +147,7 @@ namespace Mono.Debugger.Frontend
 
 		public AddressDomain AddressDomain {
 			get {
-				return interpreter.AddressDomain;
+				return CurrentThread.TargetMemoryInfo.AddressDomain;
 			}
 		}
 

@@ -124,15 +124,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public AddressDomain AddressDomain {
-			get {
-				if (main_thread == null)
-					throw new ScriptingException ("No target.");
-
-				return main_thread.TargetMemoryInfo.AddressDomain;
-			}
-		}
-
 		public Process MainProcess {
 			get {
 				if (main_process == null)
