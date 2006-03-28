@@ -240,6 +240,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types; }
 		}
 
+		public override Process Process {
+			get { return process; }
+		}
+
 		public SourceFileFactory SourceFileFactory {
 			get { return process.SourceFileFactory; }
 		}

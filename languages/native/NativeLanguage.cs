@@ -29,6 +29,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return "native"; }
 		}
 
+		public override Process Process {
+			get { return bfd_container.Process; }
+		}
+
 		public override TargetFundamentalType IntegerType {
 			get { return integer_type; }
 		}

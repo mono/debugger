@@ -10,6 +10,7 @@ namespace Mono.Debugger
 	{
 		StackFrame last_frame;
 		ArrayList frames;
+		int current_frame_idx;
 
 		public Backtrace (StackFrame first_frame)
 		{
@@ -33,6 +34,21 @@ namespace Mono.Debugger
 
 		public StackFrame this [int number] {
 			get { return (StackFrame) frames [number]; }
+		}
+
+		public StackFrame CurrentFrame {
+			get { return this [current_frame_idx]; }
+		}
+
+		public int CurrentFrameIndex {
+			get { return current_frame_idx; }
+
+			set {
+				if ((value < 0) || (value >= frames.Count))
+					throw new ArgumentException ();
+
+				current_frame_idx = value;
+			}
 		}
 
 		public void GetBacktrace (Thread target, Architecture arch,

@@ -1,3 +1,12 @@
+2006-03-28  Martin Baulig  <martin@ximian.com>
+
+	* classes/Backtrace.cs
+	(Backtrace.CurrentFrame): New public property.
+	(Backtrace.CurrentFrameIndex): Likewise.
+
+	* languages/Language.cs
+	(Language.Process): New public porperty.
+
 2006-03-14  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.12 "Portland" of the Mono Debugger :-)

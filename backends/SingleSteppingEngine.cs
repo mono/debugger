@@ -1015,7 +1015,6 @@ namespace Mono.Debugger.Backends
 		void update_current_frame (StackFrame new_frame)
 		{
 			current_frame = new_frame;
-			current_backtrace = new Backtrace (current_frame);
 		}
 
 		int temp_breakpoint_id = 0;
