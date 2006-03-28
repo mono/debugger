@@ -23,7 +23,6 @@ namespace Mono.Debugger.Frontend
 
 		DebuggerOptions options;
 		DebuggerSession session;
-		ScriptingContext context;
 
 		DebuggerClient client;
 		Process main_process;
@@ -44,6 +43,7 @@ namespace Mono.Debugger.Frontend
 
 		AutoResetEvent start_event;
 		ManualResetEvent interrupt_event;
+		Thread current_thread;
 
 		internal static readonly string DirectorySeparatorStr;
 
@@ -89,8 +89,6 @@ namespace Mono.Debugger.Frontend
 			current_parser_name = "auto";
 
 			start_event = new AutoResetEvent (false);
-
-			context = new ScriptingContext (this);
 		}
 
 		AppDomain debugger_domain;
@@ -106,10 +104,6 @@ namespace Mono.Debugger.Frontend
 			} finally {
 				Environment.Exit (exit_code);
 			}
-		}
-
-		public ScriptingContext GlobalContext {
-			get { return context; }
 		}
 
 		public DebuggerSession Session {
@@ -160,20 +154,6 @@ namespace Mono.Debugger.Frontend
 				else {
 					throw new ScriptingException ("No such language: `{0}'", value);
 				}
-			}
-		}
-
-		public string CurrentLangPretty {
-			get {
-				if (current_parser_name == "auto") {
-					try {
-						string l = (string)parser_names_by_language [context.CurrentLanguage.Name];
-						return String.Format ("auto, currently set to {0}", l);
-					}
-					catch { }
-				}
-
-				return current_parser_name;
 			}
 		}
 
@@ -287,6 +267,13 @@ namespace Mono.Debugger.Frontend
 			return (result == "y") || (result == "yes");
 		}
 
+		public void PrintInstruction (AssemblerLine line)
+		{
+			if (line.Label != null)
+				Print ("{0}:", line.Label);
+			Print ("{0:11x}\t{1}", line.Address, line.Text);
+		}
+
 		public TargetFunctionType QueryMethod (TargetFunctionType[] methods)
 		{
 			Report.Print ("More than one method matches your query:\n");
@@ -351,7 +338,7 @@ namespace Mono.Debugger.Frontend
 
 				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
-				context.CurrentThread = main_thread;
+				CurrentThread = main_thread;
 				Wait (main_thread);
 
 				return main_process;
@@ -382,7 +369,7 @@ namespace Mono.Debugger.Frontend
 
 				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
-				context.CurrentThread = main_thread;
+				CurrentThread = main_thread;
 				Wait (main_thread);
 
 				return main_process;
@@ -413,7 +400,7 @@ namespace Mono.Debugger.Frontend
 				main_process = server.OpenCoreFile (options, core_file, out threads);
 				main_thread = main_process.MainThread;
 
-				context.CurrentThread = main_thread;
+				CurrentThread = main_thread;
 
 				foreach (Thread thread in threads)
 					procs.Add (thread.ID, thread);
@@ -455,7 +442,7 @@ namespace Mono.Debugger.Frontend
 
 				start_event.WaitOne ();
 				main_thread = process.MainThread;
-				context.CurrentThread = main_thread;
+				CurrentThread = main_thread;
 				Wait (main_thread);
 
 				return process;
@@ -553,7 +540,7 @@ namespace Mono.Debugger.Frontend
 			procs.Remove (thread.ID);
 			if (thread == main_thread) {
 				TargetExited ();
-				context.CurrentThread = null;
+				CurrentThread = null;
 			}
 		}
 
@@ -569,11 +556,11 @@ namespace Mono.Debugger.Frontend
 				    (main_thread.Process.Debugger == client.DebuggerServer)) {
 					main_thread = null;
 					main_process = null;
-					context.CurrentThread = null;
+					CurrentThread = null;
 				}
 			} else {
 				procs = new Hashtable ();
-				context.CurrentThread = null;
+				CurrentThread = null;
 				main_thread = null;
 				main_process = null;
 			}
@@ -588,10 +575,21 @@ namespace Mono.Debugger.Frontend
 			TargetExited ();
 		}
 
+		public Thread CurrentThread {
+			get {
+				if (current_thread == null)
+					throw new ScriptingException ("No program to debug.");
+
+				return current_thread;
+			}
+
+			set { current_thread = value; }
+		}
+
 		public Thread GetThread (int number)
 		{
 			if (number == -1)
-				return context.CurrentThread;
+				return CurrentThread;
 
 			foreach (Thread proc in Threads)
 				if (proc.ID == number)

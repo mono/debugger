@@ -228,14 +228,14 @@ namespace Mono.Debugger.Frontend
 			GnuReadLine.SetCompletionMatches (null);
 		}
 
-		public void SymbolCompleter (string text, int start, int end)
+		public void SymbolCompleter (ScriptingContext context, string text, int start, int end)
 		{
 			DebuggerEngine de = engine as DebuggerEngine;
 
 			try {
 				ArrayList method_list = new ArrayList ();
-				string[] namespaces = de.Interpreter.GlobalContext.GetNamespaces();
-				Module[] modules = de.Interpreter.GlobalContext.Modules;
+				string[] namespaces = context.GetNamespaces();
+				Module[] modules = context.Modules;
 
 				foreach (Module module in modules) {
 					if (!module.SymbolsLoaded || !module.SymbolTable.HasMethods)

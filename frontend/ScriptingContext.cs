@@ -31,7 +31,7 @@ namespace Mono.Debugger.Frontend
 	public class ScriptingContext : MarshalByRefObject
 	{
 		Thread current_thread;
-		int current_frame_idx = -1;
+		StackFrame current_frame;
 		Interpreter interpreter;
 
 		internal ScriptingContext (Interpreter interpreter)
@@ -74,8 +74,13 @@ namespace Mono.Debugger.Frontend
 
 		public StackFrame CurrentFrame {
 			get {
-				return GetFrame (current_frame_idx);
+				if (current_frame == null)
+					throw new ScriptingException ("No program to debug.");
+
+				return current_frame;
 			}
+
+			set { current_frame = value; }
 		}
 
 		public StackFrame GetFrame (int number)
@@ -92,16 +97,6 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("No such frame: {0}", number);
 
 			return bt [number];
-		}
-
-		public int CurrentFrameIndex {
-			get {
-				return current_frame_idx;
-			}
-
-			set {
-				current_frame_idx = value;
-			}
 		}
 
 		public Language CurrentLanguage {
@@ -256,13 +251,6 @@ namespace Mono.Debugger.Frontend
 				formatted = "<cannot display type>";
 			}
 			Print (formatted);
-		}
-
-		public void PrintInstruction (AssemblerLine line)
-		{
-			if (line.Label != null)
-				Print ("{0}:", line.Label);
-			Print ("{0:11x}\t{1}", line.Address, line.Text);
 		}
 
 		public void PrintMethods (SourceMethod[] methods)

@@ -1,5 +1,19 @@
 2006-03-28  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(DebuggerCommand.Execute): Create a new `ScriptingContext'.
+	(DebuggerCommand.Resolve): Call DoResolveBase() before
+	DoResolve().
+	(ThreadCommand.DoResolveBase): Set `context.CurrentThread' here.
+	(ThreadCommand.ResolveThread): Removed; use `CurrentThread' instead.
+	(ThreadCommand.CurrentThread): New public property.
+	(FrameCommand.DoResolveBase): Set `context.CurrentFrame' here.
+	(FrameCommand.ResolveFrame): Removed; use `CurrentFrame' instead.
+	(FrameCommand.CurrentFrame): New public property.
+	(UpCommand, DownCommand): We now use `backtrace.CurrentFrameIndex'.
+
+2006-03-28  Martin Baulig  <martin@ximian.com>
+
 	* classes/Backtrace.cs
 	(Backtrace.CurrentFrame): New public property.
 	(Backtrace.CurrentFrameIndex): Likewise.

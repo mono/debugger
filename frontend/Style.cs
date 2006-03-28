@@ -20,7 +20,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public override void TargetStopped (ScriptingContext context, StackFrame frame,
+		public override void TargetStopped (Interpreter interpreter, StackFrame frame,
 						    AssemblerLine current_insn)
 		{
 			if (frame == null)
@@ -62,38 +62,38 @@ namespace Mono.Debugger.Frontend
 		{
 			context.Print (frame);
 			bool native = false;
-			if (!PrintSource (context, frame))
+			if (!PrintSource (context.Interpreter, frame))
 				native = true;
 			if (native) {
 				AssemblerLine insn = frame.Thread.DisassembleInstruction (
 					frame.Method, frame.TargetAddress);
 
 				if (insn != null)
-					context.PrintInstruction (insn);
+					context.Interpreter.PrintInstruction (insn);
 				else
 					context.Error ("Cannot disassemble instruction at address {0}.",
 						       frame.TargetAddress);
 			}
 		}
 
-		public override void TargetStopped (ScriptingContext context, StackFrame frame,
+		public override void TargetStopped (Interpreter interpreter, StackFrame frame,
 						    AssemblerLine current_insn)
 		{
 			if (frame != null) {
-				if (!PrintSource (context, frame))
+				if (!PrintSource (interpreter, frame))
 					native = true;
 			}
 			if (native && (current_insn != null))
-				context.PrintInstruction (current_insn);
+				interpreter.PrintInstruction (current_insn);
 		}
 
-		public override void UnhandledException (ScriptingContext context,
-							 StackFrame frame, AssemblerLine insn)
+		public override void UnhandledException (Interpreter interpreter, StackFrame frame,
+							 AssemblerLine insn)
 		{
-			TargetStopped (context, frame, insn);
+			TargetStopped (interpreter, frame, insn);
 		}
 
-		protected bool PrintSource (ScriptingContext context, StackFrame frame)
+		protected bool PrintSource (Interpreter interpreter, StackFrame frame)
 		{
 			SourceAddress location = frame.SourceAddress;
 			if (location == null)
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			string line = source.SourceBuffer.Contents [location.Row - 1];
-			context.Print (String.Format ("{0,4} {1}", location.Row, line));
+			interpreter.Print (String.Format ("{0,4} {1}", location.Row, line));
 			return true;
 		}
 
@@ -162,8 +162,7 @@ namespace Mono.Debugger.Frontend
 					insn = null;
 				}
 
-				interpreter.Style.TargetStopped (
-					interpreter.GlobalContext, frame, insn);
+				interpreter.Style.TargetStopped (interpreter, frame, insn);
 
 				break;
 			}
@@ -186,8 +185,7 @@ namespace Mono.Debugger.Frontend
 					insn = null;
 				}
 
-				interpreter.Style.TargetStopped (
-					interpreter.GlobalContext, frame, insn);
+				interpreter.Style.TargetStopped (interpreter, frame, insn);
 
 				break;
 			}
@@ -209,8 +207,7 @@ namespace Mono.Debugger.Frontend
 					insn = null;
 				}
 
-				interpreter.Style.UnhandledException (
-					interpreter.GlobalContext, frame, insn);
+				interpreter.Style.UnhandledException (interpreter, frame, insn);
 
 				break;
 			}
@@ -759,10 +756,10 @@ namespace Mono.Debugger.Frontend
 
 		public abstract void PrintFrame (ScriptingContext context, StackFrame frame);
 
-		public abstract void TargetStopped (ScriptingContext context, StackFrame frame,
+		public abstract void TargetStopped (Interpreter interpreter, StackFrame frame,
 						    AssemblerLine current_insn);
 
-		public abstract void UnhandledException (ScriptingContext context, StackFrame frame,
+		public abstract void UnhandledException (Interpreter interpreter, StackFrame frame,
 							 AssemblerLine current_insn);
 
 		public abstract void TargetEvent (Thread thread, TargetEventArgs args);
