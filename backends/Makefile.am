@@ -1,4 +1,4 @@
-SUBDIRS = classes server remoting
+SUBDIRS = classes server
 
 EXTRA_DIST = BreakpointManager.cs Debugger.cs ILanguageBackend.cs Inferior.cs \
 	MonoThreadManager.cs Process.cs ProcessStart.cs SingleSteppingEngine.cs \

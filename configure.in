@@ -224,7 +224,6 @@ wrapper/Mono.Debugger.dll.config
 backends/Makefile
 backends/classes/Makefile
 backends/server/Makefile
-backends/remoting/Makefile
 languages/Makefile
 languages/mono/Makefile
 languages/native/Makefile

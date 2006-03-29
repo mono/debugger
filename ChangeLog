@@ -1,5 +1,9 @@
 2006-03-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/remoting/: Removed.
+
+2006-03-29  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs (Debugger): Don't make this abstract and
 	added a public .ctor.
 
