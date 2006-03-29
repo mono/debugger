@@ -3,7 +3,6 @@ using System.IO;
 
 namespace Mono.Debugger
 {
-	public delegate void TargetExitedHandler ();
 	public delegate void TargetOutputHandler (bool is_stderr, string output);
 	public delegate void DebuggerOutputHandler (string output);
 	public delegate void DebuggerErrorHandler (object sender, string message, Exception e);

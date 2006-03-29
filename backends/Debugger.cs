@@ -16,7 +16,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
-	public delegate void DebuggerEventHandler (Debugger debugger, Thread thread);
+	public delegate void ThreadEventHandler (Debugger debugger, Thread thread);
 	public delegate void ProcessEventHandler (Debugger debugger, Process process);
 
 	public class Debugger : MarshalByRefObject, IDisposable
@@ -40,29 +40,30 @@ namespace Mono.Debugger
 			get { return session; }
 		}
 
-		public event DebuggerEventHandler ThreadCreatedEvent;
-		public event DebuggerEventHandler ThreadExitedEvent;
-		public event ProcessEventHandler InitializedEvent;
-		public event TargetExitedHandler TargetExitedEvent;
+		public event ThreadEventHandler ThreadCreatedEvent;
+		public event ThreadEventHandler ThreadExitedEvent;
+		public event ProcessEventHandler ProcessCreatedEvent;
+		public event ProcessEventHandler ProcessExitedEvent;
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
-		internal void OnInitializedEvent (Process process)
+		internal void OnProcessCreatedEvent (Process process)
 		{
-			process.MainThreadGroup.AddThread (process.MainThread.ID);
-			if (InitializedEvent != null)
-				InitializedEvent (this, process);
+			if (ProcessCreatedEvent != null)
+				ProcessCreatedEvent (this, process);
+		}
+
+		internal void OnProcessExitedEvent (Process process)
+		{
+			if (ProcessExitedEvent != null)
+				ProcessExitedEvent (this, process);
 		}
 
 		public Process Run (DebuggerOptions options)
 		{
 			check_disposed ();
 
-			if (thread_manager.HasTarget)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
 			ProcessStart start = new ProcessStart (options);
-
 			return thread_manager.StartApplication (start);
 		}
 
@@ -70,11 +71,7 @@ namespace Mono.Debugger
 		{
 			check_disposed ();
 
-			if (thread_manager.HasTarget)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
 			ProcessStart start = new ProcessStart (options, pid);
-
 			return thread_manager.StartApplication (start);
 		}
 
@@ -83,11 +80,7 @@ namespace Mono.Debugger
 		{
 			check_disposed ();
 
-			if (thread_manager.HasTarget)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
 			ProcessStart start = new ProcessStart (options, core_file);
-
 			return thread_manager.OpenCoreFile (start, out threads);
 		}
 
@@ -101,12 +94,6 @@ namespace Mono.Debugger
 		{
 			if (ThreadExitedEvent != null)
 				ThreadExitedEvent (this, thread);
-		}
-
-		internal void OnTargetExitedEvent ()
-		{
-			if (TargetExitedEvent != null)
-				TargetExitedEvent ();
 		}
 
 		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)

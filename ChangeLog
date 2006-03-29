@@ -1,5 +1,11 @@
 2006-03-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(Debugger.InitializedEvent): Renamed to `ProcessCreatedEvent'.
+	(Debugger.TargetExitedEvent): Renamed to `ProcessExitedEvent'.
+
+2006-03-29  Martin Baulig  <martin@ximian.com>
+
 	* backends/remoting/: Removed.
 
 2006-03-29  Martin Baulig  <martin@ximian.com>

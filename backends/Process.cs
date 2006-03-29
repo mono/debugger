@@ -152,7 +152,9 @@ namespace Mono.Debugger
 			this.main_thread = thread;
 			this.main_engine = engine;
 
-			manager.Debugger.OnInitializedEvent (this);
+			main_thread_group.AddThread (thread.ID);
+
+			manager.Debugger.OnProcessCreatedEvent (this);
 
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
@@ -252,7 +254,7 @@ namespace Mono.Debugger
 		{
 			if (engine == main_engine) {
 				Kill ();
-				manager.Debugger.OnTargetExitedEvent ();
+				manager.Debugger.OnProcessExitedEvent (main_engine.Process);
 			} else {
 				thread_hash.Remove (engine.PID);
 				engine.Thread.Kill ();
