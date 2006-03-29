@@ -24,7 +24,6 @@ namespace Mono.Debugger.Frontend
 		DebuggerOptions options;
 		DebuggerSession session;
 
-		DebuggerClient client;
 		Process main_process;
 		Thread main_thread;
 		Hashtable procs;
@@ -98,7 +97,6 @@ namespace Mono.Debugger.Frontend
 		{
 			try {
 				Kill ();
-				DebuggerClient.GlobalShutdown ();
 			} catch (Exception ex) {
 				Console.WriteLine (ex);
 			} finally {
@@ -318,23 +316,21 @@ namespace Mono.Debugger.Frontend
 
 		public Process Start ()
 		{
-			if (client != null)
+			if (main_process != null)
 				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Starting program: {0}",
 					   String.Join (" ", options.InferiorArgs));
 
 			try {
-				client = DebuggerClient.Run (
-					ReportWriter, options.RemoteHost, options.RemoteMono);
-				DebuggerServer server = client.DebuggerServer;
+				Debugger debugger = new Debugger ();
 
-				new InterpreterEventSink (this, client, server);
-				new ThreadEventSink (this, client, server);
+				new InterpreterEventSink (this, debugger);
+				new ThreadEventSink (this, debugger);
 
-				session = server.Session;
+				session = debugger.Session;
 
-				main_process = server.Run (options);
+				main_process = debugger.Run (options);
 
 				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
@@ -350,22 +346,20 @@ namespace Mono.Debugger.Frontend
 
 		public Process Attach (int pid)
 		{
-			if (client != null)
+			if (main_process != null)
 				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Attaching to {0}", pid);
 
 			try {
-				client = DebuggerClient.Run (
-					ReportWriter, options.RemoteHost, options.RemoteMono);
-				DebuggerServer server = client.DebuggerServer;
+				Debugger debugger = new Debugger ();
 
-				new InterpreterEventSink (this, client, server);
-				new ThreadEventSink (this, client, server);
+				new InterpreterEventSink (this, debugger);
+				new ThreadEventSink (this, debugger);
 
-				session = server.Session;
+				session = debugger.Session;
 
-				main_process = server.Attach (options, pid);
+				main_process = debugger.Attach (options, pid);
 
 				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
@@ -381,23 +375,21 @@ namespace Mono.Debugger.Frontend
 
 		public Process OpenCoreFile (string core_file)
 		{
-			if (client != null)
+			if (main_process != null)
 				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Loading core file {0}", core_file);
 
 			try {
-				client = DebuggerClient.Run (
-					ReportWriter, options.RemoteHost, options.RemoteMono);
-				DebuggerServer server = client.DebuggerServer;
+				Debugger debugger = new Debugger ();
 
-				new InterpreterEventSink (this, client, server);
-				new ThreadEventSink (this, client, server);
+				new InterpreterEventSink (this, debugger);
+				new ThreadEventSink (this, debugger);
 
-				session = server.Session;
+				session = debugger.Session;
 
 				Thread[] threads;
-				main_process = server.OpenCoreFile (options, core_file, out threads);
+				main_process = debugger.OpenCoreFile (options, core_file, out threads);
 				main_thread = main_process.MainThread;
 
 				CurrentThread = main_thread;
@@ -421,22 +413,20 @@ namespace Mono.Debugger.Frontend
 
 		public Process LoadSession (Stream stream)
 		{
-			if (client != null)
+			if (main_process != null)
 				throw new ScriptingException ("Program already started.");
 
 			try {
 				BinaryFormatter formatter = new BinaryFormatter ();
 				options = (DebuggerOptions) formatter.Deserialize (stream);
-				client = DebuggerClient.Run (
-					ReportWriter, options.RemoteHost, options.RemoteMono);
-				DebuggerServer server = client.DebuggerServer;
+				Debugger debugger = new Debugger ();
 
-				new InterpreterEventSink (this, client, server);
-				new ThreadEventSink (this, client, server);
+				new InterpreterEventSink (this, debugger);
+				new ThreadEventSink (this, debugger);
 
-				Process process = server.Run (options);
+				Process process = debugger.Run (options);
 
-				session = server.LoadSession (stream);
+				session = DebuggerSession.Load (debugger, stream);
 
 				session.InsertBreakpoints (main_thread);
 
@@ -546,14 +536,14 @@ namespace Mono.Debugger.Frontend
 
 		protected void TargetExited ()
 		{
-			if (client != null) {
+			if (main_process != null) {
 				foreach (Thread proc in Threads) {
-					if (proc.Process.Debugger == client.DebuggerServer)
+					if (proc.Process == main_process)
 						procs.Remove (proc.ID);
 				}
 
 				if ((main_thread != null) &&
-				    (main_thread.Process.Debugger == client.DebuggerServer)) {
+				    (main_thread.Process == main_process)) {
 					main_thread = null;
 					main_process = null;
 					CurrentThread = null;
@@ -565,14 +555,7 @@ namespace Mono.Debugger.Frontend
 				main_process = null;
 			}
 
-			client = null;
 			initialized = false;
-		}
-
-		protected void ClientShutdown ()
-		{
-			Print ("Connection to debugger server terminated.");
-			TargetExited ();
 		}
 
 		public Thread CurrentThread {
@@ -709,12 +692,6 @@ namespace Mono.Debugger.Frontend
 
 		public void Kill ()
 		{
-			if (client != null) {
-				client.DebuggerServer.Dispose ();
-				client.Shutdown ();
-				client = null;
-			}
-
 			TargetExited ();
 		}
 
@@ -758,19 +735,14 @@ namespace Mono.Debugger.Frontend
 		protected class InterpreterEventSink : MarshalByRefObject
 		{
 			Interpreter interpreter;
-			DebuggerClient client;
 
-			public InterpreterEventSink (Interpreter interpreter, DebuggerClient client,
-						     Debugger backend)
+			public InterpreterEventSink (Interpreter interpreter, Debugger backend)
 			{
 				this.interpreter = interpreter;
-				this.client = client;
 
 				backend.ThreadCreatedEvent += thread_created;
 				backend.TargetExitedEvent += target_exited;
 				backend.InitializedEvent += debugger_initialized;
-
-				client.ClientShutdown += client_shutdown;
 			}
 
 			public void thread_created (Debugger debugger, Thread thread)
@@ -796,24 +768,16 @@ namespace Mono.Debugger.Frontend
 				else
 					Report.Print (line);
 			}
-
-			public void client_shutdown (DebuggerClient client)
-			{
-				interpreter.ClientShutdown ();
-			}
 		}
 
 		[Serializable]
 		protected class ThreadEventSink
 		{
 			Interpreter interpreter;
-			DebuggerClient client;
 
-			public ThreadEventSink (Interpreter interpreter, DebuggerClient client,
-						Debugger debugger)
+			public ThreadEventSink (Interpreter interpreter, Debugger debugger)
 			{
 				this.interpreter = interpreter;
-				this.client = client;
 
 				debugger.TargetEvent += new TargetEventHandler (target_event);
 			}

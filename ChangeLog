@@ -1,5 +1,16 @@
 2006-03-29  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs (Debugger): Don't make this abstract and
+	added a public .ctor.
+
+	* backends/DebuggerSession.cs: Take a `Debugger' argument, not a
+	`DebuggerClient' one.
+
+	* backends/remoting/DebuggerClient.cs: Removed.
+	* backends/remoting/DebuggerServer.cs: Removed.
+
+2006-03-29  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(DebuggerCommand.Execute): Don't create a new `ScriptingContext'
 	if we're repeating.

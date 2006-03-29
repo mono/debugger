@@ -8,7 +8,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
-using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {
@@ -62,17 +61,17 @@ namespace Mono.Debugger
 
 	public class DebuggerSession : MarshalByRefObject
 	{
-		public readonly DebuggerClient Client;
+		public readonly Debugger Debugger;
 
 		Hashtable events = Hashtable.Synchronized (new Hashtable ());
 
-		internal DebuggerSession (DebuggerClient client)
+		internal DebuggerSession (Debugger debugger)
 		{
-			this.Client = client;
+			this.Debugger = debugger;
 		}
 
-		protected DebuggerSession (DebuggerClient client, EventHandle[] event_list)
-			: this (client)
+		protected DebuggerSession (Debugger debugger, EventHandle[] event_list)
+			: this (debugger)
 		{
 			foreach (EventHandle handle in event_list)
 				events.Add (handle.Index, handle);				
@@ -114,16 +113,16 @@ namespace Mono.Debugger
 			return ss;
 		}
 
-		internal static DebuggerSession Load (DebuggerClient client, Stream stream)
+		public static DebuggerSession Load (Debugger debugger, Stream stream)
 		{
 			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, client);
+				StreamingContextStates.Persistence, debugger);
 
 			SurrogateSelector ss = CreateSurrogateSelector (context);
 			BinaryFormatter formatter = new BinaryFormatter (ss, context);
 
 			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
-			return info.CreateSession (client);
+			return info.CreateSession (debugger);
 		}
 
 		public void Save (Stream stream)
@@ -200,9 +199,9 @@ namespace Mono.Debugger
 			void IDeserializationCallback.OnDeserialization (object obj)
 			{ }
 
-			public DebuggerSession CreateSession (DebuggerClient client)
+			public DebuggerSession CreateSession (Debugger debugger)
 			{
-				return new DebuggerSession (client, Events);
+				return new DebuggerSession (debugger, Events);
 			}
 
 			private SessionInfo (SerializationInfo info, StreamingContext context)

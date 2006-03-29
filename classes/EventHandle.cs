@@ -80,7 +80,7 @@ namespace Mono.Debugger
 			info.AddValue ("name", name);
 		}
 
-		protected virtual void SetSessionData (SerializationInfo info, DebuggerClient client)
+		protected virtual void SetSessionData (SerializationInfo info, Debugger debugger)
 		{
 			index = Breakpoint.GetNextBreakpointIndex ();
 			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
@@ -101,7 +101,7 @@ namespace Mono.Debugger
 						     ISurrogateSelector selector)
 			{
 				EventHandle handle = (EventHandle) obj;
-				handle.SetSessionData (info, (DebuggerClient) context.Context);
+				handle.SetSessionData (info, (Debugger) context.Context);
 				return handle;
 			}
 		}

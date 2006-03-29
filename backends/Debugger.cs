@@ -20,16 +20,15 @@ namespace Mono.Debugger
 	public delegate void DebuggerEventHandler (Debugger debugger, Thread thread);
 	public delegate void ProcessEventHandler (Debugger debugger, Process process);
 
-	public abstract class Debugger : MarshalByRefObject, IDisposable
+	public class Debugger : MarshalByRefObject, IDisposable
 	{
-		DebuggerClient client;
 		ThreadManager thread_manager;
+		DebuggerSession session;
 		ProcessStart start;
 
-		protected Debugger (DebuggerClient client)
+		public Debugger ()
 		{
-			this.client = client;
-
+			session = new DebuggerSession (this);
 			thread_manager = new ThreadManager (this);
 		}
 
@@ -43,6 +42,10 @@ namespace Mono.Debugger
 			get {
 				return start;
 			}
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
 		}
 
 		public event DebuggerEventHandler ThreadCreatedEvent;
@@ -136,8 +139,6 @@ namespace Mono.Debugger
 		// IDisposable
 		//
 
-		protected abstract void DebuggerExited ();
-
 		private bool disposed = false;
 
 		private void check_disposed ()
@@ -164,8 +165,6 @@ namespace Mono.Debugger
 				}
 
 				ObjectCache.Shutdown ();
-
-				DebuggerExited ();
 			}
 		}
 

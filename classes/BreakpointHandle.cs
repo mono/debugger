@@ -166,9 +166,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected override void SetSessionData (SerializationInfo info, DebuggerClient client)
+		protected override void SetSessionData (SerializationInfo info, Debugger debugger)
 		{
-			base.SetSessionData (info, client);
+			base.SetSessionData (info, debugger);
 			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
 
 			string type = info.GetString ("type");

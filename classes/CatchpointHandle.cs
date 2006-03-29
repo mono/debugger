@@ -96,9 +96,9 @@ namespace Mono.Debugger
 			info.AddValue ("exception", exception.Name);
 		}
 
-		protected override void SetSessionData (SerializationInfo info, DebuggerClient client)
+		protected override void SetSessionData (SerializationInfo info, Debugger debugger)
 		{
-			base.SetSessionData (info, client);
+			base.SetSessionData (info, debugger);
 
 #if FIXME
 			Language language = client.DebuggerServer.MonoLanguage;
