@@ -84,16 +84,19 @@ namespace Mono.Debugger.Frontend
 	public abstract class DebuggerCommand : Command
 	{
 		protected bool Repeating;
+		private ScriptingContext context;
 
 		public override string Execute (Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
 			try {
-				ScriptingContext context = new ScriptingContext (engine.Interpreter);
+				if (!Repeating) {
+					context = new ScriptingContext (engine.Interpreter);
 
-				if (!Resolve (context))
-					return null;
+					if (!Resolve (context))
+						return null;
+				}
 
 				Execute (context);
 			} catch (ThreadAbortException) {

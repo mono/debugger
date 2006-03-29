@@ -1,3 +1,9 @@
+2006-03-29  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(DebuggerCommand.Execute): Don't create a new `ScriptingContext'
+	if we're repeating.
+
 2006-03-28  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs
