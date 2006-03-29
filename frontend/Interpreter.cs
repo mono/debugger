@@ -11,7 +11,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
-using Mono.Debugger.Remoting;
 
 using Mono.GetOptions;
 

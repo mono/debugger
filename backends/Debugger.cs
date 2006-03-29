@@ -13,7 +13,6 @@ using System.Runtime.Remoting;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
-using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {

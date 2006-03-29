@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
-using Mono.Debugger.Remoting;
 
 using Mono.GetOptions;
 

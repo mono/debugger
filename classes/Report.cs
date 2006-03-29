@@ -4,8 +4,6 @@ using System.Text;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Remoting;
-
 namespace Mono.Debugger
 {
 	[Flags]

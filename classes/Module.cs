@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
-using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger
 {

@@ -1,6 +1,5 @@
 using System;
 using Mono.Debugger.Backends;
-using Mono.Debugger.Remoting;
 using System.Runtime.Serialization;
 
 namespace Mono.Debugger

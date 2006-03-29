@@ -12,7 +12,6 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Languages;
-using Mono.Debugger.Remoting;
 
 namespace Mono.Debugger.Backends
 {

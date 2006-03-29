@@ -3,8 +3,6 @@ using System.Collections;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Remoting;
-
 namespace Mono.Debugger
 {
 	// <summary>

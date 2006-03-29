@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Runtime.InteropServices;
-using Mono.Debugger.Remoting;
 using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
