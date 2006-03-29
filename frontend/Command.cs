@@ -1316,7 +1316,7 @@ namespace Mono.Debugger.Frontend
 			{
 				int current_id = -1;
 				if (context.Interpreter.HasTarget)
-					current_id = context.CurrentThread.ID;
+					current_id = context.Interpreter.CurrentThread.ID;
 
 				bool printed_something = false;
 				foreach (Thread proc in context.Interpreter.Threads) {
@@ -1374,7 +1374,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		private class ShowModulesCommand : DebuggerCommand
+		private class ShowModulesCommand : ThreadCommand
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
@@ -1382,7 +1382,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		private class ShowSourcesCommand : DebuggerCommand
+		private class ShowSourcesCommand : ThreadCommand
 		{
 			protected string name;
 			protected Module[] modules;
@@ -1417,7 +1417,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		private class ShowMethodsCommand : DebuggerCommand
+		private class ShowMethodsCommand : ThreadCommand
 		{
 			protected string name;
 			protected SourceFile[] sources;
