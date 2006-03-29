@@ -23,7 +23,6 @@ namespace Mono.Debugger
 	{
 		ThreadManager thread_manager;
 		DebuggerSession session;
-		ProcessStart start;
 
 		public Debugger ()
 		{
@@ -34,12 +33,6 @@ namespace Mono.Debugger
 		internal ThreadManager ThreadManager {
 			get {
 				return thread_manager;
-			}
-		}
-
-		internal ProcessStart ProcessStart {
-			get {
-				return start;
 			}
 		}
 
@@ -65,12 +58,10 @@ namespace Mono.Debugger
 		{
 			check_disposed ();
 
-#if FIXME
 			if (thread_manager.HasTarget)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
-#endif
 
-			start = new ProcessStart (options);
+			ProcessStart start = new ProcessStart (options);
 
 			return thread_manager.StartApplication (start);
 		}
@@ -82,7 +73,7 @@ namespace Mono.Debugger
 			if (thread_manager.HasTarget)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			start = new ProcessStart (options, pid);
+			ProcessStart start = new ProcessStart (options, pid);
 
 			return thread_manager.StartApplication (start);
 		}
@@ -95,7 +86,7 @@ namespace Mono.Debugger
 			if (thread_manager.HasTarget)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			start = new ProcessStart (options, core_file);
+			ProcessStart start = new ProcessStart (options, core_file);
 
 			return thread_manager.OpenCoreFile (start, out threads);
 		}
