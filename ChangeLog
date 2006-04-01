@@ -1,3 +1,8 @@
+2006-04-02  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Interpreter.cs: Correctly dispose the `Debugger', so we
+	don't hang on exit.
+
 2006-04-01  Martin Baulig  <martin@ximian.com>
 
 	* backends/Process.cs: Implement follow-fork and follow-exec.

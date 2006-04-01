@@ -23,6 +23,7 @@ namespace Mono.Debugger.Frontend
 		DebuggerOptions options;
 		DebuggerSession session;
 
+		Debugger debugger;
 		Process main_process;
 		Thread main_thread;
 		Hashtable procs;
@@ -315,14 +316,14 @@ namespace Mono.Debugger.Frontend
 
 		public Process Start ()
 		{
-			if (main_process != null)
+			if (debugger != null)
 				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Starting program: {0}",
 					   String.Join (" ", options.InferiorArgs));
 
 			try {
-				Debugger debugger = new Debugger ();
+				debugger = new Debugger ();
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -345,13 +346,13 @@ namespace Mono.Debugger.Frontend
 
 		public Process Attach (int pid)
 		{
-			if (main_process != null)
+			if (debugger != null)
 				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Attaching to {0}", pid);
 
 			try {
-				Debugger debugger = new Debugger ();
+				debugger = new Debugger ();
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -374,13 +375,13 @@ namespace Mono.Debugger.Frontend
 
 		public Process OpenCoreFile (string core_file)
 		{
-			if (main_process != null)
+			if (debugger != null)
 				throw new ScriptingException ("Program already started.");
 
 			Console.WriteLine ("Loading core file {0}", core_file);
 
 			try {
-				Debugger debugger = new Debugger ();
+				debugger = new Debugger ();
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -412,13 +413,13 @@ namespace Mono.Debugger.Frontend
 
 		public Process LoadSession (Stream stream)
 		{
-			if (main_process != null)
+			if (debugger != null)
 				throw new ScriptingException ("Program already started.");
 
 			try {
 				BinaryFormatter formatter = new BinaryFormatter ();
 				options = (DebuggerOptions) formatter.Deserialize (stream);
-				Debugger debugger = new Debugger ();
+				debugger = new Debugger ();
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -691,6 +692,10 @@ namespace Mono.Debugger.Frontend
 
 		public void Kill ()
 		{
+			if (debugger != null) {
+				debugger.Dispose ();
+				debugger = null;
+			}
 			TargetExited ();
 		}
 
