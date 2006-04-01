@@ -225,7 +225,17 @@ namespace Mono.Debugger.Frontend
 			if (!CurrentThread.IsStopped)
 				throw new ScriptingException ("Target is not stopped.");
 
-			backtrace = CurrentThread.GetBacktrace ();
+			try {
+				backtrace = CurrentThread.GetBacktrace ();
+			} catch (TargetException ex) {
+				if (ex.Type == TargetError.NotStopped)
+					throw new ScriptingException ("Target is not stopped.");
+				else
+					throw new ScriptingException (
+						"Cannot get backtrace: {0}", ex.Message);
+				return false;
+			}
+
 			if (index == -1)
 				frame = backtrace.CurrentFrame;
 			else {
@@ -671,7 +681,7 @@ namespace Mono.Debugger.Frontend
 			else
 				thread = context.CurrentThread;
 
-			context.CurrentThread = thread;
+			context.Interpreter.CurrentThread = thread;
 			context.Print (thread);
 		}
 
