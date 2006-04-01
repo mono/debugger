@@ -1,5 +1,13 @@
 2006-04-01  Martin Baulig  <martin@ximian.com>
 
+	* languages/native/NativeLanguage.cs
+	(NativeLanguage.StringType): Implemented.
+
+	* languages/native/NativePointerObject.cs
+	(NativePointerObject.Print): Check whether we're a string.
+
+2006-04-01  Martin Baulig  <martin@ximian.com>
+
 	* backends/ProcessStart.cs
 	(ProcessStart.SetupEnvironment): Set `MONO_SHARED_HOSTNAME=mdb'.
 

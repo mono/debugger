@@ -48,6 +48,21 @@ namespace Mono.Debugger.Languages.Native
 
 		public override string Print (Thread target)
 		{
+			if (Type.HasStaticType) {
+				TargetFundamentalType ftype;
+				NativeTypeAlias alias = Type.StaticType as NativeTypeAlias;
+				if (alias != null)
+					ftype = alias.TargetType as TargetFundamentalType;
+				else
+					ftype = Type.StaticType as TargetFundamentalType;
+
+				if ((ftype != null) && (ftype.Name == "char")) {
+					TargetObject sobj = Type.Language.StringType.GetObject (Location);
+					if (sobj != null)
+						return sobj.Print (target);
+				}
+			}
+
 			if (HasAddress) {
 				if (Address.IsNull)
 					return "0x0";
