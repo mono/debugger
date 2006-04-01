@@ -384,6 +384,14 @@ mono_debugger_server_get_application (ServerHandle *handle, gchar **exe_file, gc
 	return (* global_vtable->get_application) (handle, exe_file, cwd, nargs, cmdline_args);
 }
 
+ServerCommandError
+mono_debugger_server_init_after_fork (ServerHandle *handle)
+{
+	if (!global_vtable->init_after_fork)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->init_after_fork) (handle);
+}
 
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;

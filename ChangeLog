@@ -1,5 +1,25 @@
 2006-04-01  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-linux-ptrace.c
+	(_server_ptrace_setup_thread_manager): Add `PTRACE_O_TRACEFORK',
+	`PTRACE_O_TRACEVFORK' and `PTRACE_O_TRACEEXEC'.
+
+	* backends/server/server.h (ServerStatusMessageType): Added
+	`MESSAGE_CHILD_FORKED' and `MESSAGE_CHILD_EXECD'.
+
+	* backends/server/library.c
+	(mono_debugger_server_init_after_fork): New public function.
+
+	* backends/server/i386-arch.c
+	(do_disable, do_enable): Don't modify `breakpoint->info.enabled';
+	this is now done by our caller.
+
+	* backends/server/x86_64-arch.c
+	(do_disable, do_enable): Don't modify `breakpoint->info.enabled';
+	this is now done by our caller.
+
+2006-04-01  Martin Baulig  <martin@ximian.com>
+
 	* languages/native/NativeLanguage.cs
 	(NativeLanguage.StringType): Implemented.
 

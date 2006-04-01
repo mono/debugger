@@ -317,7 +317,8 @@ _server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main)
 static gboolean
 _server_ptrace_setup_thread_manager (ServerHandle *handle)
 {
-	int flags = PTRACE_O_TRACECLONE;
+	int flags = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
+		PTRACE_O_TRACEEXEC;
 
 	if (ptrace (PTRACE_SETOPTIONS, handle->inferior->pid, 0, flags)) {
 		g_warning (G_STRLOC ": Can't PTRACE_SETOPTIONS %d: %s",

@@ -41,6 +41,8 @@ typedef enum {
 	MESSAGE_CHILD_HIT_BREAKPOINT,
 	MESSAGE_CHILD_MEMORY_CHANGED,
 	MESSAGE_CHILD_CREATED_THREAD,
+	MESSAGE_CHILD_FORKED,
+	MESSAGE_CHILD_EXECD,
 	MESSAGE_CHILD_NOTIFICATION
 } ServerStatusMessageType;
 
@@ -313,11 +315,13 @@ struct InferiorVTable {
 						       guint32          *count,
 						       guint32         **threads);
 
-	ServerCommandError    (* get_application)     (ServerHandle       *handle,
-						       gchar             **exe_file,
-						       gchar             **cwd,
-						       guint32            *nargs,
-						       gchar             **cmdline_args);
+	ServerCommandError    (* get_application)     (ServerHandle     *handle,
+						       gchar           **exe_file,
+						       gchar           **cwd,
+						       guint32          *nargs,
+						       gchar           **cmdline_args);
+
+	ServerCommandError    (* init_after_fork)     (ServerHandle      *handle);
 };
 
 /*
@@ -512,6 +516,9 @@ mono_debugger_server_get_application     (ServerHandle        *handle,
 					  gchar              **cwd,
 					  guint32             *nargs,
 					  gchar              **cmdline_args);
+
+ServerCommandError
+mono_debugger_server_init_after_fork     (ServerHandle        *handle);
 
 /* POSIX semaphores */
 

@@ -407,8 +407,6 @@ do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 			return result;
 	}
 
-	breakpoint->info.enabled = TRUE;
-
 	return COMMAND_ERROR_NONE;
 }
 
@@ -446,8 +444,6 @@ do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 	}
-
-	breakpoint->info.enabled = FALSE;
 
 	return COMMAND_ERROR_NONE;
 }
@@ -489,6 +485,7 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 		return result;
 	}
 
+	breakpoint->info.enabled = TRUE;
 	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
  done:
 	*bhandle = breakpoint->info.id;
@@ -519,11 +516,34 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
+	breakpoint->info.enabled = FALSE;
 	mono_debugger_breakpoint_manager_remove (handle->bpm, (BreakpointInfo *) breakpoint);
 
  out:
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
+}
+
+static ServerCommandError
+server_ptrace_init_after_fork (ServerHandle *handle)
+{
+	GPtrArray *breakpoints;
+	int i;
+
+	mono_debugger_breakpoint_manager_lock ();
+
+	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
+	for (i = 0; i < breakpoints->len; i++) {
+		X86BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+
+		if (info->dr_index >= 0)
+			do_disable (handle, info);
+		else
+			info->info.refcount++;
+	}
+
+	mono_debugger_breakpoint_manager_unlock ();
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -573,6 +593,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 		return result;
 	}
 
+	breakpoint->info.enabled = TRUE;
 	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
  done:
 	*bhandle = breakpoint->info.id;
@@ -595,6 +616,7 @@ server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 	}
 
 	result = do_enable (handle, breakpoint);
+	breakpoint->info.enabled = TRUE;
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
 }
@@ -613,6 +635,7 @@ server_ptrace_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
 	}
 
 	result = do_disable (handle, breakpoint);
+	breakpoint->info.enabled = FALSE;
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
 }

@@ -39,6 +39,9 @@ x86_arch_get_registers (ServerHandle *handle);
 static guint64
 x86_arch_get_tid (ServerHandle *handle);
 
+static ServerCommandError
+server_ptrace_init_after_fork (ServerHandle *handle);
+
 #if defined(__i386__)
 #include "i386-arch.h"
 #elif defined(__x86_64__)

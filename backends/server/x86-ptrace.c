@@ -162,7 +162,6 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
 }	
 
-
 static ServerStatusMessageType
 server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
 			      guint64 *data1, guint64 *data2)
@@ -181,6 +180,22 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			*arg = new_pid;
 			return MESSAGE_CHILD_CREATED_THREAD;
 		}
+
+		case PTRACE_EVENT_FORK: {
+			int new_pid;
+
+			if (ptrace (PTRACE_GETEVENTMSG, handle->inferior->pid, 0, &new_pid)) {
+				g_warning (G_STRLOC ": %d - %s", handle->inferior->pid,
+					   g_strerror (errno));
+				return FALSE;
+			}
+
+			*arg = new_pid;
+			return MESSAGE_CHILD_FORKED;
+		}
+
+		case PTRACE_EVENT_EXEC:
+			return MESSAGE_CHILD_EXECD;
 
 		default:
 			g_warning (G_STRLOC ": Received unknown wait result %x on child %d",
@@ -488,5 +503,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_get_signal_info,
 	server_ptrace_set_notification,
 	server_ptrace_get_threads,
-	server_ptrace_get_application
+	server_ptrace_get_application,
+	server_ptrace_init_after_fork
 };
