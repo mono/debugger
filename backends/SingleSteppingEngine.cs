@@ -482,6 +482,7 @@ namespace Mono.Debugger.Backends
 
 		internal void Start (TargetAddress func)
 		{
+			is_main = true;
 			CommandResult result = new Thread.StepCommandResult (thread);
 			current_operation = new OperationRun (func, true, result);
 			current_operation.Execute (this);

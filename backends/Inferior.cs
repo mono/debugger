@@ -169,6 +169,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_application (IntPtr handle, out string exe_file, out string cwd, out int nargs, out IntPtr data);
 
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_init_after_fork (IntPtr handle);
+
 		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
@@ -180,6 +183,8 @@ namespace Mono.Debugger.Backends
 			CHILD_HIT_BREAKPOINT,
 			CHILD_MEMORY_CHANGED,
 			CHILD_CREATED_THREAD,
+			CHILD_FORKED,
+			CHILD_EXECD,
 			CHILD_NOTIFICATION,
 			UNHANDLED_EXCEPTION,
 			THROW_EXCEPTION,
@@ -532,6 +537,17 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
+		void child_execd ()
+		{
+			string exe_file, cwd;
+			string[] cmdline_args;
+			exe_file = GetApplication (out cwd, out cmdline_args);
+
+			start.SetupApplication (exe_file, cwd, cmdline_args);
+
+			SetupInferior ();
+		}
+
 		public ChildEvent ProcessEvent (int status)
 		{
 			long arg, data1, data2;
@@ -551,6 +567,10 @@ namespace Mono.Debugger.Backends
 			case ChildEventType.CHILD_STOPPED:
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
 				change_target_state (TargetState.STOPPED);
+				break;
+
+			case ChildEventType.CHILD_EXECD:
+				child_execd ();
 				break;
 			}
 
@@ -1113,7 +1133,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public string GetApplication (out string cwd, out string[] cmdline_args)
+		protected string GetApplication (out string cwd, out string[] cmdline_args)
 		{
 			IntPtr data = IntPtr.Zero;
 			try {
@@ -1134,6 +1154,11 @@ namespace Mono.Debugger.Backends
 			} finally {
 				g_free (data);
 			}
+		}
+
+		public void InitializeAfterFork ()
+		{
+			check_error (mono_debugger_server_init_after_fork (server_handle));
 		}
 
 		internal struct ServerStackFrame

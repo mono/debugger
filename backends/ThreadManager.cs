@@ -105,6 +105,7 @@ namespace Mono.Debugger.Backends
 		{
 			Process process = CreateProcess (start);
 			process.WaitForApplication ();
+			backend.OnProcessCreatedEvent (process);
 			return process;
 		}
 
@@ -115,7 +116,7 @@ namespace Mono.Debugger.Backends
 			CoreFile core = CoreFile.OpenCoreFile (this, start);
 
 			threads = core.Threads;
-
+			backend.OnProcessCreatedEvent (core);
 			return core;
 		}
 
@@ -202,6 +203,18 @@ namespace Mono.Debugger.Backends
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
 				inferior.Process.ThreadCreated (inferior, (int) cevent.Argument, false);
+				inferior.Continue ();
+				return true;
+			}
+
+			if (cevent.Type == Inferior.ChildEventType.CHILD_FORKED) {
+				inferior.Process.ChildForked (inferior, (int) cevent.Argument);
+				inferior.Continue ();
+				return true;
+			}
+
+			if (cevent.Type == Inferior.ChildEventType.CHILD_EXECD) {
+				inferior.Process.ChildExecd (inferior);
 				inferior.Continue ();
 				return true;
 			}

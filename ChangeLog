@@ -1,5 +1,12 @@
 2006-04-01  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs: Implement follow-fork and follow-exec.
+
+	* backends/Debugger.cs
+	(Debugger.ProcessReachedMainEvent): New public event.
+
+2006-04-01  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-linux-ptrace.c
 	(_server_ptrace_setup_thread_manager): Add `PTRACE_O_TRACEFORK',
 	`PTRACE_O_TRACEVFORK' and `PTRACE_O_TRACEEXEC'.

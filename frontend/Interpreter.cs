@@ -740,7 +740,7 @@ namespace Mono.Debugger.Frontend
 				this.interpreter = interpreter;
 
 				backend.ThreadCreatedEvent += thread_created;
-				backend.ProcessCreatedEvent += process_created;
+				backend.ProcessReachedMainEvent += process_reached_main;
 				backend.ProcessExitedEvent += process_exited;
 			}
 
@@ -750,7 +750,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.ThreadCreated (thread);
 			}
 
-			public void process_created (Debugger debugger, Process process)
+			public void process_reached_main (Debugger debugger, Process process)
 			{
 				interpreter.DebuggerInitialized ();
 			}

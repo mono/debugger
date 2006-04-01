@@ -24,6 +24,7 @@ namespace Mono.Debugger
 		Hashtable thread_hash;
 		ArrayList attach_results;
 
+		bool is_forked;
 		bool initialized;
 		ST.ManualResetEvent initialized_event;
 
@@ -44,15 +45,42 @@ namespace Mono.Debugger
 			global_thread_group = CreateThreadGroup ("global");
 			main_thread_group = CreateThreadGroup ("main");
 
-			module_manager.ModulesChanged += new ModulesChangedHandler (modules_changed);
-			module_manager.BreakpointsChanged += new BreakpointsChangedHandler (breakpoints_changed);
+			module_manager.ModulesChanged += modules_changed;
+			module_manager.BreakpointsChanged += breakpoints_changed;
 
 			symtab_manager = new SymbolTableManager ();
-			symtab_manager.ModulesChangedEvent +=
-				new SymbolTableManager.ModuleHandler (modules_reloaded);
+			symtab_manager.ModulesChangedEvent += modules_reloaded;
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
+
+			thread_hash = Hashtable.Synchronized (new Hashtable ());
+			initialized_event = new ST.ManualResetEvent (false);
+		}
+
+		private Process (Process parent, int pid)
+		{
+			this.manager = parent.manager;
+			this.start = new ProcessStart (parent.ProcessStart, pid);
+			this.is_forked = true;
+			this.initialized = true;
+
+			breakpoint_manager = parent.breakpoint_manager;
+			module_manager = parent.module_manager;
+			source_factory = parent.source_factory;
+
+			thread_groups = Hashtable.Synchronized (new Hashtable ());
+			global_thread_group = CreateThreadGroup ("global");
+			main_thread_group = CreateThreadGroup ("main");
+
+			module_manager.ModulesChanged += modules_changed;
+			module_manager.BreakpointsChanged += breakpoints_changed;
+
+			symtab_manager = parent.symtab_manager;
+			symtab_manager.ModulesChangedEvent += modules_reloaded;
+
+			languages = parent.languages;
+			bfd_container = parent.bfd_container;
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
@@ -102,6 +130,10 @@ namespace Mono.Debugger
 
 		public Debugger Debugger {
 			get { return manager.Debugger; }
+		}
+
+		internal ProcessStart ProcessStart {
+			get { return start; }
 		}
 
 		internal void AddLanguage (ILanguageBackend language)
@@ -154,7 +186,7 @@ namespace Mono.Debugger
 
 			main_thread_group.AddThread (thread.ID);
 
-			manager.Debugger.OnProcessCreatedEvent (this);
+			manager.Debugger.OnProcessReachedMainEvent (this);
 
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
@@ -180,9 +212,44 @@ namespace Mono.Debugger
 				// main_engine = new_thread;
 			}
 
+			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
+
 			if (!do_attach)
 				new_thread.Start (TargetAddress.Null);
+		}
+
+		internal void ChildForked (Inferior inferior, int pid)
+		{
+			Process new_process = new Process (this, pid);
+
+			Inferior new_inferior = Inferior.CreateInferior (
+				manager, new_process, new_process.ProcessStart);
+
+			SingleSteppingEngine new_thread = new SingleSteppingEngine (
+				manager, new_process, new_inferior, pid, false);
+
+			new_inferior.InitializeAfterFork ();
+
+			Report.Debug (DebugFlags.Threads, "Child forked: {0} {1}", pid, new_thread);
+
+			new_process.main_thread = new_thread.Thread;
+			new_process.main_engine = new_thread;
+
+			manager.Debugger.OnProcessCreatedEvent (this);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
+
+			manager.AddEngine (new_thread);
+			new_thread.Start (TargetAddress.Null);
+		}
+
+		internal void ChildExecd (Inferior inferior)
+		{
+			TargetAddress main_method = inferior.MainMethodAddress;
+
+			Report.Debug (DebugFlags.Threads, "Child execd: {0} {1} {2}",
+				      inferior.PID, start, main_method);
+
+			main_engine.Start (main_method);
 		}
 
 		internal void WaitForApplication ()
@@ -196,7 +263,9 @@ namespace Mono.Debugger
 				return true;
 
 			initialized = true;
-			mono_manager = MonoThreadManager.Initialize (manager, inferior, start.PID != 0);
+			if (!is_forked)
+				mono_manager = MonoThreadManager.Initialize (
+					manager, inferior, start.PID != 0);
 
 			thread_hash.Add (engine.PID, engine);
 
@@ -416,7 +485,7 @@ namespace Mono.Debugger
 				symtab_manager = null;
 			}
 
-			if (breakpoint_manager != null)
+			if (!is_forked && (breakpoint_manager != null))
 				breakpoint_manager.Dispose ();
 
 			manager.RemoveProcess (this);

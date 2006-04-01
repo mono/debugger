@@ -23,11 +23,13 @@ namespace Mono.Debugger
 	{
 		ThreadManager thread_manager;
 		DebuggerSession session;
+		Hashtable process_hash;
 
 		public Debugger ()
 		{
 			session = new DebuggerSession (this);
 			thread_manager = new ThreadManager (this);
+			process_hash = Hashtable.Synchronized (new Hashtable ());
 		}
 
 		internal ThreadManager ThreadManager {
@@ -43,18 +45,27 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event ProcessEventHandler ProcessCreatedEvent;
+		public event ProcessEventHandler ProcessReachedMainEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		internal void OnProcessCreatedEvent (Process process)
 		{
+			process_hash.Add (process, process);
 			if (ProcessCreatedEvent != null)
 				ProcessCreatedEvent (this, process);
 		}
 
+		internal void OnProcessReachedMainEvent (Process process)
+		{
+			if (ProcessReachedMainEvent != null)
+				ProcessReachedMainEvent (this, process);
+		}
+
 		internal void OnProcessExitedEvent (Process process)
 		{
+			process_hash.Remove (process);
 			if (ProcessExitedEvent != null)
 				ProcessExitedEvent (this, process);
 		}
