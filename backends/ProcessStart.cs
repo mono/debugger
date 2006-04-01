@@ -118,6 +118,18 @@ namespace Mono.Debugger.Backends
 			this.CoreFile = core_file;
 		}
 
+		internal ProcessStart (ProcessStart parent, int pid)
+		{
+			this.PID = pid;
+
+			this.options = parent.options;
+			this.cwd = parent.cwd;
+			this.argv = parent.argv;
+			this.base_dir = parent.base_dir;
+
+			SetupEnvironment ();
+		}
+
 		public void SetupApplication (string exe_file, string cwd, string[] cmdline_args)
 		{
 			this.cwd = cwd;
@@ -204,6 +216,8 @@ namespace Mono.Debugger.Backends
 				add_env_path (hash, "PATH", prefix + "/bin");
 			}
 
+			add_env_path (hash, "MONO_SHARED_HOSTNAME", "mdb");
+
 			ArrayList list = new ArrayList ();
 			foreach (DictionaryEntry entry in hash) {
 				string key = (string) entry.Key;
@@ -242,10 +256,10 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1},{2},{3},{4},{5})",
+			return String.Format ("{0} ({1},{2},{3},{4})",
 					      GetType (), WorkingDirectory,
-					      print_argv (argv), print_argv (envp),
-					      IsNative, LoadNativeSymbolTable);
+					      print_argv (argv), IsNative,
+					      LoadNativeSymbolTable);
 		}
 	}
 }
