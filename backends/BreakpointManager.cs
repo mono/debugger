@@ -93,7 +93,7 @@ namespace Mono.Debugger.Backends
 					throw new TargetException (
 						TargetError.AlreadyHaveBreakpoint,
 						"Already have breakpoint {0} at address {1}.",
-						address, old.Index);
+						old.Index, address);
 
 				index = inferior.InsertBreakpoint (address);
 				breakpoints.Add (index, breakpoint);
