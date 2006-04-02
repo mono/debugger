@@ -5,12 +5,6 @@
 
 G_BEGIN_DECLS
 
-typedef struct {
-	BreakpointInfo info;
-	int dr_index;
-	char saved_insn;
-} X86BreakpointInfo;
-
 typedef enum {
 	STOP_ACTION_SEND_STOPPED,
 	STOP_ACTION_BREAKPOINT_HIT,

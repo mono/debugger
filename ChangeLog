@@ -1,5 +1,13 @@
 2006-04-02  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/breakpoints.h
+	(BreakpointInfo): Merge this with `X86BreakpointInfo'.
+
+	* backends/server/x86-arch.h
+	(X86BreakpointInfo): Merged into `BreakpointInfo'.
+
+2006-04-02  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs: Correctly dispose the `Debugger', so we
 	don't hang on exit.
 

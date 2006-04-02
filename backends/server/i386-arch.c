@@ -90,15 +90,15 @@ x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 st
 
 	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
 	for (i = 0; i < breakpoints->len; i++) {
-		X86BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+		BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 		guint32 offset;
 
-		if (info->info.is_hardware_bpt || !info->info.enabled)
+		if (info->is_hardware_bpt || !info->enabled)
 			continue;
-		if ((info->info.address < start) || (info->info.address >= start+size))
+		if ((info->address < start) || (info->address >= start+size))
 			continue;
 
-		offset = (guint32) info->info.address - start;
+		offset = (guint32) info->address - start;
 		ptr [offset] = info->saved_insn;
 	}
 
@@ -354,16 +354,16 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 static gboolean
 check_breakpoint (ServerHandle *handle, guint64 address, guint64 *retval)
 {
-	X86BreakpointInfo *info;
+	BreakpointInfo *info;
 
 	mono_debugger_breakpoint_manager_lock ();
-	info = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
-	if (!info || !info->info.enabled) {
+	info = (BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	if (!info || !info->enabled) {
 		mono_debugger_breakpoint_manager_unlock ();
 		return FALSE;
 	}
 
-	*retval = info->info.id;
+	*retval = info->id;
 	mono_debugger_breakpoint_manager_unlock ();
 	return TRUE;
 }
@@ -594,7 +594,7 @@ server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 }
 
 static ServerCommandError
-do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
+do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
@@ -602,10 +602,10 @@ do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 	char bopcode = 0xcc;
 	guint32 address;
 
-	if (breakpoint->info.enabled)
+	if (breakpoint->enabled)
 		return COMMAND_ERROR_NONE;
 
-	address = (guint32) breakpoint->info.address;
+	address = (guint32) breakpoint->address;
 
 	if (breakpoint->dr_index >= 0) {
 		X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
@@ -623,7 +623,7 @@ do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 			return result;
 		}
 
-		arch->dr_regs [breakpoint->dr_index] = breakpoint->info.id;
+		arch->dr_regs [breakpoint->dr_index] = breakpoint->id;
 	} else {
 		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
@@ -638,17 +638,17 @@ do_enable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 }
 
 static ServerCommandError
-do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
+do_disable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
 	guint32 address;
 
-	if (!breakpoint->info.enabled)
+	if (!breakpoint->enabled)
 		return COMMAND_ERROR_NONE;
 
-	address = (guint32) breakpoint->info.address;
+	address = (guint32) breakpoint->address;
 
 	if (breakpoint->dr_index >= 0) {
 		X86_DR_DISABLE (arch, breakpoint->dr_index);
@@ -678,31 +678,31 @@ do_disable (ServerHandle *handle, X86BreakpointInfo *breakpoint)
 static ServerCommandError
 server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 *bhandle)
 {
-	X86BreakpointInfo *breakpoint;
+	BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	breakpoint = (BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
 	if (breakpoint) {
 		/*
 		 * You cannot have a hardware breakpoint and a normal breakpoint on the same
 		 * instruction.
 		 */
-		if (breakpoint->info.is_hardware_bpt) {
+		if (breakpoint->is_hardware_bpt) {
 			mono_debugger_breakpoint_manager_unlock ();
 			return COMMAND_ERROR_DR_OCCUPIED;
 		}
 
-		breakpoint->info.refcount++;
+		breakpoint->refcount++;
 		goto done;
 	}
 
-	breakpoint = g_new0 (X86BreakpointInfo, 1);
+	breakpoint = g_new0 (BreakpointInfo, 1);
 
-	breakpoint->info.refcount = 1;
-	breakpoint->info.address = address;
-	breakpoint->info.is_hardware_bpt = FALSE;
-	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
+	breakpoint->refcount = 1;
+	breakpoint->address = address;
+	breakpoint->is_hardware_bpt = FALSE;
+	breakpoint->id = mono_debugger_breakpoint_manager_get_next_id ();
 	breakpoint->dr_index = -1;
 
 	result = do_enable (handle, breakpoint);
@@ -712,10 +712,10 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 		return result;
 	}
 
-	breakpoint->info.enabled = TRUE;
+	breakpoint->enabled = TRUE;
 	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
  done:
-	*bhandle = breakpoint->info.id;
+	*bhandle = breakpoint->id;
 	mono_debugger_breakpoint_manager_unlock ();
 
 	return COMMAND_ERROR_NONE;
@@ -724,17 +724,17 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 static ServerCommandError
 server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
-	X86BreakpointInfo *breakpoint;
+	BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	breakpoint = (BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
 	if (!breakpoint) {
 		result = COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 		goto out;
 	}
 
-	if (--breakpoint->info.refcount > 0) {
+	if (--breakpoint->refcount > 0) {
 		result = COMMAND_ERROR_NONE;
 		goto out;
 	}
@@ -743,7 +743,7 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
-	breakpoint->info.enabled = FALSE;
+	breakpoint->enabled = FALSE;
 	mono_debugger_breakpoint_manager_remove (handle->bpm, (BreakpointInfo *) breakpoint);
 
  out:
@@ -761,12 +761,12 @@ server_ptrace_init_after_fork (ServerHandle *handle)
 
 	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
 	for (i = 0; i < breakpoints->len; i++) {
-		X86BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+		BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 
 		if (info->dr_index >= 0)
 			do_disable (handle, info);
 		else
-			info->info.refcount++;
+			info->refcount++;
 	}
 
 	mono_debugger_breakpoint_manager_unlock ();
@@ -792,13 +792,13 @@ static ServerCommandError
 server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 				    guint64 address, guint32 *bhandle)
 {
-	X86BreakpointInfo *breakpoint;
+	BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
+	breakpoint = (BreakpointInfo *) mono_debugger_breakpoint_manager_lookup (handle->bpm, address);
 	if (breakpoint) {
-		breakpoint->info.refcount++;
+		breakpoint->refcount++;
 		goto done;
 	}
 
@@ -807,11 +807,11 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 		return result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = g_new0 (X86BreakpointInfo, 1);
-	breakpoint->info.address = address;
-	breakpoint->info.refcount = 1;
-	breakpoint->info.id = mono_debugger_breakpoint_manager_get_next_id ();
-	breakpoint->info.is_hardware_bpt = TRUE;
+	breakpoint = g_new0 (BreakpointInfo, 1);
+	breakpoint->address = address;
+	breakpoint->refcount = 1;
+	breakpoint->id = mono_debugger_breakpoint_manager_get_next_id ();
+	breakpoint->is_hardware_bpt = TRUE;
 	breakpoint->dr_index = *idx;
 
 	result = do_enable (handle, breakpoint);
@@ -821,10 +821,10 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 		return result;
 	}
 
-	breakpoint->info.enabled = TRUE;
+	breakpoint->enabled = TRUE;
 	mono_debugger_breakpoint_manager_insert (handle->bpm, (BreakpointInfo *) breakpoint);
  done:
-	*bhandle = breakpoint->info.id;
+	*bhandle = breakpoint->id;
 	mono_debugger_breakpoint_manager_unlock ();
 
 	return COMMAND_ERROR_NONE;
@@ -833,18 +833,18 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 static ServerCommandError
 server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
-	X86BreakpointInfo *breakpoint;
+	BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	breakpoint = (BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
 	if (!breakpoint) {
 		mono_debugger_breakpoint_manager_unlock ();
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 	}
 
 	result = do_enable (handle, breakpoint);
-	breakpoint->info.enabled = TRUE;
+	breakpoint->enabled = TRUE;
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
 }
@@ -852,18 +852,18 @@ server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 static ServerCommandError
 server_ptrace_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
 {
-	X86BreakpointInfo *breakpoint;
+	BreakpointInfo *breakpoint;
 	ServerCommandError result;
 
 	mono_debugger_breakpoint_manager_lock ();
-	breakpoint = (X86BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
+	breakpoint = (BreakpointInfo *) mono_debugger_breakpoint_manager_lookup_by_id (handle->bpm, bhandle);
 	if (!breakpoint) {
 		mono_debugger_breakpoint_manager_unlock ();
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 	}
 
 	result = do_disable (handle, breakpoint);
-	breakpoint->info.enabled = FALSE;
+	breakpoint->enabled = FALSE;
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
 }

@@ -16,6 +16,8 @@ typedef struct {
 	int refcount;
 	int enabled;
 	int is_hardware_bpt;
+	int dr_index;
+	char saved_insn;
 	guint64 address;
 } BreakpointInfo;
 
