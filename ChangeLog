@@ -1,5 +1,12 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	HEADS UP: The debugger no longer works with the stable Mono from
+	the 1.1.13 branch, sorry.
+
+	* configure.in: Require Mono >= 1.1.14.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(Debugger.TargetOutputEvent): Moved here from `Thread'.
 

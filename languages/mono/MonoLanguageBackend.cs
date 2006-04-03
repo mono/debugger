@@ -187,7 +187,7 @@ namespace Mono.Debugger.Languages.Mono
 			language.AddCoreType (DelegateType, delegate_type, klass);
 
 			// Skip a whole bunch of clases we don't care about
-			mono_defaults.Offset += 7 * corlib.TargetInfo.TargetAddressSize;
+			mono_defaults.Offset += 8 * corlib.TargetInfo.TargetAddressSize;
 
 			// and get to the Exception class
 			klass = mono_defaults.ReadAddress ();
