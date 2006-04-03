@@ -678,7 +678,7 @@ namespace Mono.Debugger.Frontend
 			if (index >= 0)
 				thread = context.Interpreter.GetThread (index);
 			else
-				thread = context.CurrentThread;
+				thread = context.Interpreter.CurrentThread;
 
 			context.Interpreter.CurrentThread = thread;
 			context.Print (thread);
