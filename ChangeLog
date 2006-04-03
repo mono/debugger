@@ -1,3 +1,8 @@
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/breakpoints.c
+	(mono_debugger_breakpoint_manager_clone): New public function.
+
 2006-04-02  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/breakpoints.h

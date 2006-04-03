@@ -538,8 +538,6 @@ server_ptrace_init_after_fork (ServerHandle *handle)
 
 		if (info->dr_index >= 0)
 			do_disable (handle, info);
-		else
-			info->refcount++;
 	}
 
 	mono_debugger_breakpoint_manager_unlock ();

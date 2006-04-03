@@ -24,6 +24,22 @@ mono_debugger_breakpoint_manager_new (void)
 	return bpm;
 }
 
+BreakpointManager *
+mono_debugger_breakpoint_manager_clone (BreakpointManager *old)
+{
+	BreakpointManager *bpm = mono_debugger_breakpoint_manager_new ();
+	int i;
+
+	for (i = 0; i < old->breakpoints->len; i++) {
+		BreakpointInfo *old_info = g_ptr_array_index (old->breakpoints, i);
+		BreakpointInfo *info = g_memdup (old_info, sizeof (BreakpointInfo));
+
+		mono_debugger_breakpoint_manager_insert (bpm, info);
+	}
+
+	return bpm;
+}
+
 void
 mono_debugger_breakpoint_manager_free (BreakpointManager *bpm)
 {

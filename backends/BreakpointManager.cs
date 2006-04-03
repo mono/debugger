@@ -14,6 +14,9 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_breakpoint_manager_new ();
 
 		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_breakpoint_manager_clone (IntPtr manager);
+
+		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_breakpoint_manager_free (IntPtr manager);
 
 		[DllImport("monodebuggerserver")]
@@ -35,6 +38,21 @@ namespace Mono.Debugger.Backends
 		{
 			breakpoints = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_new ();
+		}
+
+		public BreakpointManager (BreakpointManager old)
+		{
+			Lock ();
+
+			breakpoints = new Hashtable ();
+			_manager = mono_debugger_breakpoint_manager_clone (old.Manager);
+
+			foreach (int index in old.breakpoints.Keys) {
+				Breakpoint breakpoint = (Breakpoint) old.breakpoints [index];
+				breakpoints.Add (index, breakpoint.Clone ());
+			}
+
+			Unlock ();
 		}
 
 		protected void Lock ()

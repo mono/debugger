@@ -24,6 +24,9 @@ typedef struct {
 BreakpointManager *
 mono_debugger_breakpoint_manager_new                 (void);
 
+BreakpointManager *
+mono_debugger_breakpoint_manager_clone               (BreakpointManager *old);
+
 void
 mono_debugger_breakpoint_manager_free                (BreakpointManager *bpm);
 
