@@ -105,7 +105,6 @@ namespace Mono.Debugger.Backends
 		{
 			Process process = CreateProcess (start);
 			process.WaitForApplication ();
-			backend.OnProcessCreatedEvent (process);
 			return process;
 		}
 
@@ -116,7 +115,6 @@ namespace Mono.Debugger.Backends
 			CoreFile core = CoreFile.OpenCoreFile (this, start);
 
 			threads = core.Threads;
-			backend.OnProcessCreatedEvent (core);
 			return core;
 		}
 

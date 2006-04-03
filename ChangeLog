@@ -1,5 +1,10 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs: Inform the user about newly created and
+	exited processes.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.MainProcess): Removed.
 	(Interpreter.CurrentProcess): New public property.

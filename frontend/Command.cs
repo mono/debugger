@@ -1328,33 +1328,14 @@ namespace Mono.Debugger.Frontend
 					string prefix = process == context.Interpreter.CurrentProcess ?
 						"(*)" : "   ";
 
-					context.Print ("{0} {1}", prefix, PrintProcess (process));
+					context.Print ("{0} Process {1}", prefix,
+						       context.Interpreter.PrintProcess (process));
 					printed_something = true;
 				}
 			}
-
-			protected string PrintProcess (Process process)
-			{
-				bool first = true;
-				StringBuilder sb = new StringBuilder ();
-				foreach (string arg in process.CommandLineArguments) {
-					if (first)
-						first = false;
-					else
-						sb.Append (" ");
-					sb.Append (arg);
-				}
-				string command_line = sb.ToString ();
-				if (command_line.Length > 70) {
-					command_line = command_line.Substring (0, 70);
-					command_line += " ...";
-				}
-				return String.Format ("Process #{0} ({1}:{2})", process.ID,
-						      process.MainThread.PID, command_line);
-			}
 		}
 
-		private class ShowThreadsCommand : ShowProcessesCommand
+		private class ShowThreadsCommand : DebuggerCommand
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
@@ -1364,7 +1345,8 @@ namespace Mono.Debugger.Frontend
 
 				bool printed_something = false;
 				foreach (Process process in context.Interpreter.Processes) {
-					context.Print ("{0}:", PrintProcess (process));
+					context.Print ("Process {0}:",
+						       context.Interpreter.PrintProcess (process));
 					foreach (Thread proc in process.Threads) {
 						string prefix = proc.ID == current_id ? "(*)" : "   ";
 						context.Print ("  {0} {1} ({2}:{3:x})", prefix, proc,

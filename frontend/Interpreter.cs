@@ -420,7 +420,8 @@ namespace Mono.Debugger.Frontend
 		protected void ThreadCreated (Thread thread)
 		{
 			if (!thread.IsDaemon)
-				Print ("New thread @{0}", thread.ID);
+				Print ("Process {0} created new thread @{1}.",
+				       PrintProcess (thread.Process), thread.ID);
 		}
 
 		public void Wait (Thread thread)
@@ -498,8 +499,15 @@ namespace Mono.Debugger.Frontend
 				current_thread = null;
 		}
 
+		protected void ProcessCreated (Process process)
+		{
+			Print ("Created new process {0}.", PrintProcess (process));
+		}
+
 		protected void ProcessExited (Process process)
 		{
+			if (process != main_process)
+				Print ("Process {0} exited.", PrintProcess (process));
 			if (process == main_process) {
 				current_process = main_process = null;
 				current_thread = null;
@@ -712,6 +720,26 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public string PrintProcess (Process process)
+		{
+			bool first = true;
+			StringBuilder sb = new StringBuilder ();
+			foreach (string arg in process.CommandLineArguments) {
+				if (first)
+					first = false;
+				else
+					sb.Append (" ");
+				sb.Append (arg);
+			}
+			string command_line = sb.ToString ();
+			if (command_line.Length > 70) {
+				command_line = command_line.Substring (0, 70);
+				command_line += " ...";
+			}
+			return String.Format ("#{0} ({1}:{2})", process.ID,
+					      process.MainThread.PID, command_line);
+		}
+
 		protected class InterpreterEventSink : MarshalByRefObject
 		{
 			Interpreter interpreter;
@@ -722,6 +750,7 @@ namespace Mono.Debugger.Frontend
 
 				backend.TargetExitedEvent += target_exited;
 				backend.ThreadCreatedEvent += thread_created;
+				backend.ProcessCreatedEvent += process_created;
 				backend.ProcessReachedMainEvent += process_reached_main;
 				backend.ProcessExitedEvent += process_exited;
 			}
@@ -730,6 +759,11 @@ namespace Mono.Debugger.Frontend
 			{
 				thread.TargetOutput += new TargetOutputHandler (target_output);
 				interpreter.ThreadCreated (thread);
+			}
+
+			public void process_created (Debugger debugger, Process process)
+			{
+				interpreter.ProcessCreated (process);
 			}
 
 			public void process_reached_main (Debugger debugger, Process process)

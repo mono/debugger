@@ -109,6 +109,7 @@ namespace Mono.Debugger
 
 			ProcessStart start = new ProcessStart (options);
 			main_process = thread_manager.StartApplication (start);
+			process_hash.Add (main_process, main_process);
 			return main_process;
 		}
 
@@ -121,6 +122,7 @@ namespace Mono.Debugger
 
 			ProcessStart start = new ProcessStart (options, pid);
 			main_process = thread_manager.StartApplication (start);
+			process_hash.Add (main_process, main_process);
 			return main_process;
 		}
 
@@ -134,6 +136,7 @@ namespace Mono.Debugger
 
 			ProcessStart start = new ProcessStart (options, core_file);
 			main_process = thread_manager.OpenCoreFile (start, out threads);
+			process_hash.Add (main_process, main_process);
 			return main_process;
 		}
 
