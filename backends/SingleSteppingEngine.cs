@@ -1300,7 +1300,7 @@ namespace Mono.Debugger.Backends
 
 		void inferior_output_handler (bool is_stderr, string line)
 		{
-			thread.OnInferiorOutput (is_stderr, line);
+			manager.Debugger.OnInferiorOutput (is_stderr, line);
 		}
 
 		public override string ToString ()

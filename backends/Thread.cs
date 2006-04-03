@@ -89,14 +89,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public event TargetOutputHandler TargetOutput;
-
-		internal void OnInferiorOutput (bool is_stderr, string line)
-		{
-			if (TargetOutput != null)
-				TargetOutput (is_stderr, line);
-		}
-
 		public override string ToString ()
 		{
 			return Name;

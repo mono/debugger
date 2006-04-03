@@ -44,6 +44,7 @@ namespace Mono.Debugger
 			get { return session; }
 		}
 
+		public event TargetOutputHandler TargetOutputEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event ProcessEventHandler ProcessCreatedEvent;
@@ -150,6 +151,12 @@ namespace Mono.Debugger
 		{
 			if (ThreadExitedEvent != null)
 				ThreadExitedEvent (this, thread);
+		}
+
+		internal void OnInferiorOutput (bool is_stderr, string line)
+		{
+			if (TargetOutputEvent != null)
+				TargetOutputEvent (is_stderr, line);
 		}
 
 		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)

@@ -1,5 +1,10 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(Debugger.TargetOutputEvent): Moved here from `Thread'.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs: Inform the user about newly created and
 	exited processes.
 

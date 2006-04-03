@@ -753,11 +753,11 @@ namespace Mono.Debugger.Frontend
 				backend.ProcessCreatedEvent += process_created;
 				backend.ProcessReachedMainEvent += process_reached_main;
 				backend.ProcessExitedEvent += process_exited;
+				backend.TargetOutputEvent += target_output;
 			}
 
 			public void thread_created (Debugger debugger, Thread thread)
 			{
-				thread.TargetOutput += new TargetOutputHandler (target_output);
 				interpreter.ThreadCreated (thread);
 			}
 
