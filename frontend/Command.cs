@@ -84,6 +84,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class DebuggerCommand : Command
 	{
 		protected bool Repeating;
+		private bool Error;
 		private ScriptingContext context;
 
 		public override string Execute (Engine e)
@@ -91,11 +92,13 @@ namespace Mono.Debugger.Frontend
 			DebuggerEngine engine = (DebuggerEngine) e;
 
 			try {
-				if (!Repeating) {
+				if (!Repeating || Error) {
 					context = new ScriptingContext (engine.Interpreter);
 
-					if (!Resolve (context))
+					if (!Resolve (context)) {
+						Error = true;
 						return null;
+					}
 				}
 
 				Execute (context);
