@@ -65,7 +65,7 @@ namespace Mono.Debugger
 			this.is_forked = true;
 			this.initialized = true;
 
-			breakpoint_manager = parent.breakpoint_manager;
+			breakpoint_manager = new BreakpointManager (parent.breakpoint_manager);
 			module_manager = parent.module_manager;
 			source_factory = parent.source_factory;
 
@@ -235,7 +235,7 @@ namespace Mono.Debugger
 			new_process.main_thread = new_thread.Thread;
 			new_process.main_engine = new_thread;
 
-			manager.Debugger.OnProcessCreatedEvent (this);
+			manager.Debugger.OnProcessCreatedEvent (new_process);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
 
 			manager.AddEngine (new_thread);

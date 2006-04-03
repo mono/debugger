@@ -29,5 +29,10 @@ namespace Mono.Debugger
 
 			return base.CheckBreakpointHit (target, address);
 		}
+
+		public override Breakpoint Clone ()
+		{
+			return new SimpleBreakpoint (name, group, check_handler);
+		}
 	}
 }
