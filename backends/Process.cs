@@ -261,15 +261,16 @@ namespace Mono.Debugger
 			main_engine.Start (main_method);
 		}
 		
-		protected void OnThreadCreatedEvent (Thread new_thread)
+		protected void OnThreadCreatedEvent (Thread thread)
 		{
-			thread_hash.Add (new_thread.PID, new_thread);
-			manager.Debugger.OnThreadCreatedEvent (new_thread);
+			thread_hash.Add (thread.PID, thread);
+			manager.Debugger.OnThreadCreatedEvent (thread);
 		}
 
-		internal void OnThreadExitedEvent (Thread new_thread)
+		internal void OnThreadExitedEvent (Thread thread)
 		{
-			manager.Debugger.OnThreadExitedEvent (new_thread);
+			thread.Kill ();
+			manager.Debugger.OnThreadExitedEvent (thread);
 		}
 
 		internal void WaitForApplication ()
@@ -330,18 +331,8 @@ namespace Mono.Debugger
 				thread_hash.Values.CopyTo (threads, 0);
 			}
 
-			bool main_in_threads = false;
-
-			for (int i = 0; i < threads.Length; i++) {
-				Thread thread = threads [i];
-
-				if (main_engine.Thread == thread) {
-					main_in_threads = true;
-					continue;
-				}
-
-				thread.Kill ();
-			}
+			for (int i = 0; i < threads.Length; i++)
+				threads [i].Kill ();
 
 			Dispose ();
 		}
