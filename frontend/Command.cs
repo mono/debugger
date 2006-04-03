@@ -104,9 +104,14 @@ namespace Mono.Debugger.Frontend
 				Execute (context);
 			} catch (ThreadAbortException) {
 			} catch (ScriptingException ex) {
+				Error = true;
 				engine.Interpreter.Error (ex);
 				return null;
+			} catch (TargetException ex) {
+				Error = true;
+				engine.Interpreter.Error (ex);
 			} catch (Exception ex) {
+				Error = true;
 				engine.Interpreter.Error (
 					"Caught exception while executing command {0}: {1}",
 					this, ex);
@@ -226,18 +231,9 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			if (!CurrentThread.IsStopped)
-				throw new ScriptingException ("Target is not stopped.");
+				throw new TargetException (TargetError.NotStopped);
 
-			try {
-				backtrace = CurrentThread.GetBacktrace ();
-			} catch (TargetException ex) {
-				if (ex.Type == TargetError.NotStopped)
-					throw new ScriptingException ("Target is not stopped.");
-				else
-					throw new ScriptingException (
-						"Cannot get backtrace: {0}", ex.Message);
-				return false;
-			}
+			backtrace = CurrentThread.GetBacktrace ();
 
 			if (index == -1)
 				frame = backtrace.CurrentFrame;

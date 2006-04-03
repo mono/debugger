@@ -45,11 +45,11 @@ namespace Mono.Debugger.Frontend
 		public Process GetProcess ()
 		{
 			if (current_thread == null)
-				throw new ScriptingException ("No program to debug.");
+				throw new TargetException (TargetError.NoTarget);
 
 			Process process = current_thread.Process;
 			if (process == null)
-				throw new ScriptingException ("No program to debug.");
+				throw new TargetException (TargetError.NoTarget);
 
 			return process;
 		}
@@ -63,7 +63,7 @@ namespace Mono.Debugger.Frontend
 		public Thread CurrentThread {
 			get {
 				if (current_thread == null)
-					throw new ScriptingException ("No program to debug.");
+					throw new TargetException (TargetError.NoTarget);
 
 				return current_thread;
 			}
@@ -74,7 +74,7 @@ namespace Mono.Debugger.Frontend
 		public StackFrame CurrentFrame {
 			get {
 				if (current_frame == null)
-					throw new ScriptingException ("No program to debug.");
+					throw new TargetException (TargetError.NoTarget);
 
 				return current_frame;
 			}
@@ -86,7 +86,7 @@ namespace Mono.Debugger.Frontend
 		{
 			Thread thread = CurrentThread;
 			if (!thread.IsStopped)
-				throw new ScriptingException ("Target is not stopped.");
+				throw new TargetException (TargetError.NotStopped);
 
 			if (number == -1)
 				return thread.CurrentFrame;

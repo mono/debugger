@@ -112,7 +112,7 @@ namespace Mono.Debugger.Frontend
 		public Process CurrentProcess {
 			get {
 				if (current_process == null)
-					throw new ScriptingException ("No target.");
+					throw new TargetException (TargetError.NoTarget);
 
 				return current_process;
 			}
@@ -302,7 +302,7 @@ namespace Mono.Debugger.Frontend
 		public Process Start ()
 		{
 			if ((debugger != null) || (main_process != null))
-				throw new ScriptingException ("Program already started.");
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			Console.WriteLine ("Starting program: {0}",
 					   String.Join (" ", options.InferiorArgs));
@@ -323,14 +323,14 @@ namespace Mono.Debugger.Frontend
 				return current_process;
 			} catch (TargetException e) {
 				Kill ();
-				throw new ScriptingException (e.Message);
+				throw;
 			}
 		}
 
 		public Process Attach (int pid)
 		{
 			if ((debugger != null) || (main_process != null))
-				throw new ScriptingException ("Program already started.");
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			Console.WriteLine ("Attaching to {0}", pid);
 
@@ -350,14 +350,14 @@ namespace Mono.Debugger.Frontend
 				return current_process;
 			} catch (TargetException e) {
 				Kill ();
-				throw new ScriptingException (e.Message);
+				throw;
 			}
 		}
 
 		public Process OpenCoreFile (string core_file)
 		{
 			if ((debugger != null) || (main_process != null))
-				throw new ScriptingException ("Program already started.");
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			Console.WriteLine ("Loading core file {0}", core_file);
 
@@ -378,7 +378,7 @@ namespace Mono.Debugger.Frontend
 				return current_process;
 			} catch (TargetException e) {
 				Kill ();
-				throw new ScriptingException (e.Message);
+				throw;
 			}
 		}
 
@@ -392,7 +392,7 @@ namespace Mono.Debugger.Frontend
 		public Process LoadSession (Stream stream)
 		{
 			if ((debugger != null) || (main_process != null))
-				throw new ScriptingException ("Program already started.");
+				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			try {
 				BinaryFormatter formatter = new BinaryFormatter ();
@@ -413,7 +413,7 @@ namespace Mono.Debugger.Frontend
 				return current_process;
 			} catch (TargetException e) {
 				Kill ();
-				throw new ScriptingException (e.Message);
+				throw;
 			}
 		}
 
@@ -512,7 +512,7 @@ namespace Mono.Debugger.Frontend
 		public Thread CurrentThread {
 			get {
 				if (current_thread == null)
-					throw new ScriptingException ("No program to debug.");
+					throw new TargetException (TargetError.NoTarget);
 
 				return current_thread;
 			}
@@ -650,7 +650,6 @@ namespace Mono.Debugger.Frontend
 		{
 			if (debugger != null) {
 				debugger.Kill ();
-				debugger.Dispose ();
 				debugger = null;
 			}
 		}
@@ -707,7 +706,7 @@ namespace Mono.Debugger.Frontend
 		public Process[] Processes {
 			get {
 				if (debugger == null)
-					throw new ScriptingException ("No target.");
+					throw new TargetException (TargetError.NoTarget);
 
 				return debugger.Processes;
 			}
