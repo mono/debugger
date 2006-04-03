@@ -87,7 +87,9 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				int pid = Int32.Parse (section.name.Substring (5));
-				threads.Add (new CoreFileThread (this, pid));
+				CoreFileThread thread = new CoreFileThread (this, pid);
+				OnThreadCreatedEvent (thread.Thread);
+				threads.Add (thread);
 			}
 
 			return;
@@ -122,17 +124,6 @@ namespace Mono.Debugger.Backends
 				reader.Offset += 4 - (reader.Offset % 4);
 			}
 #endif
-		}
-
-		public Thread[] Threads {
-			get {
-				Thread[] retval = new Thread [threads.Count];
-				for (int i = 0; i < threads.Count; i++) {
-					CoreFileThread thread = (CoreFileThread) threads [i];
-					retval [i] = thread.Thread;
-				}
-				return retval;
-			}
 		}
 
 		public Bfd Bfd {

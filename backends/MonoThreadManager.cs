@@ -147,9 +147,9 @@ namespace Mono.Debugger.Backends
 			main_engine.Attach (debugger_info);
 		}
 
-		public CommandResult GetThreadID (SingleSteppingEngine engine)
+		public CommandResult GetThreadID (Thread thread)
 		{
-			return engine.GetThreadID (this, debugger_info);
+			return thread.GetThreadID (this, debugger_info);
 		}
 
 		internal void SetThreadId (SingleSteppingEngine engine)

@@ -32,6 +32,9 @@ namespace Mono.Debugger
 		ThreadGroup global_thread_group;
 		ThreadGroup main_thread_group;
 
+		int id = ++next_id;
+		static int next_id = 0;
+
 		internal Process (ThreadManager manager, ProcessStart start)
 		{
 			this.manager = manager;
@@ -84,6 +87,10 @@ namespace Mono.Debugger
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
+		}
+
+		public int ID {
+			get { return id; }
 		}
 
 		internal ThreadManager ThreadManager {
@@ -153,6 +160,14 @@ namespace Mono.Debugger
 			get { return mono_manager != null; }
 		}
 
+		public string TargetApplication {
+			get { return start.TargetApplication; }
+		}
+
+		public string[] CommandLineArguments {
+			get { return start.CommandLineArguments; }
+		}
+
 		public event ModulesChangedHandler ModulesChangedEvent;
 		public event BreakpointsChangedHandler BreakpointsChangedEvent;
 
@@ -203,7 +218,6 @@ namespace Mono.Debugger
 
 			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1}", pid, new_thread);
 
-			thread_hash.Add (pid, new_thread);
 			manager.AddEngine (new_thread);
 
 			if ((mono_manager != null) && !do_attach &&
@@ -212,7 +226,7 @@ namespace Mono.Debugger
 				// main_engine = new_thread;
 			}
 
-			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
+			OnThreadCreatedEvent (new_thread.Thread);
 
 			if (!do_attach)
 				new_thread.Start (TargetAddress.Null);
@@ -236,7 +250,7 @@ namespace Mono.Debugger
 			new_process.main_engine = new_thread;
 
 			manager.Debugger.OnProcessCreatedEvent (new_process);
-			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
+			OnThreadCreatedEvent (new_thread.Thread);
 
 			manager.AddEngine (new_thread);
 			new_thread.Start (TargetAddress.Null);
@@ -250,6 +264,17 @@ namespace Mono.Debugger
 				      inferior.PID, start, main_method);
 
 			main_engine.Start (main_method);
+		}
+		
+		protected void OnThreadCreatedEvent (Thread new_thread)
+		{
+			thread_hash.Add (new_thread.PID, new_thread);
+			manager.Debugger.OnThreadCreatedEvent (new_thread);
+		}
+
+		internal void OnThreadExitedEvent (Thread new_thread)
+		{
+			manager.Debugger.OnThreadExitedEvent (new_thread);
 		}
 
 		internal void WaitForApplication ()
@@ -267,7 +292,7 @@ namespace Mono.Debugger
 				mono_manager = MonoThreadManager.Initialize (
 					manager, inferior, start.PID != 0);
 
-			thread_hash.Add (engine.PID, engine);
+			thread_hash.Add (engine.PID, engine.Thread);
 
 			if (start.PID != 0) {
 				int[] threads = inferior.GetThreads ();
@@ -281,7 +306,7 @@ namespace Mono.Debugger
 					goto done;
 
 				attach_results = new ArrayList ();
-				foreach (SingleSteppingEngine thread in thread_hash.Values)
+				foreach (Thread thread in thread_hash.Values)
 					attach_results.Add (mono_manager.GetThreadID (thread));
 			}
 
@@ -300,15 +325,18 @@ namespace Mono.Debugger
 
 		internal void Kill ()
 		{
-			SingleSteppingEngine[] threads = new SingleSteppingEngine [thread_hash.Count];
-			thread_hash.Values.CopyTo (threads, 0);
+			Thread[] threads;
+			lock (thread_hash.SyncRoot) {
+				threads = new Thread [thread_hash.Count];
+				thread_hash.Values.CopyTo (threads, 0);
+			}
 
 			bool main_in_threads = false;
 
 			for (int i = 0; i < threads.Length; i++) {
-				SingleSteppingEngine thread = threads [i];
+				Thread thread = threads [i];
 
-				if (main_engine == thread) {
+				if (main_engine.Thread == thread) {
 					main_in_threads = true;
 					continue;
 				}
@@ -327,7 +355,7 @@ namespace Mono.Debugger
 			} else {
 				thread_hash.Remove (engine.PID);
 				engine.Thread.Kill ();
-				manager.Debugger.OnThreadExitedEvent (engine.Thread);
+				OnThreadExitedEvent (engine.Thread);
 			}
 		}
 
@@ -404,6 +432,15 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public Thread[] Threads {
+			get {
+				lock (thread_hash.SyncRoot) {
+					Thread[] threads = new Thread [thread_hash.Count];
+					thread_hash.Values.CopyTo (threads, 0);
+					return threads;
+				}
+			}
+		}
 
 		//
 		// Thread Groups

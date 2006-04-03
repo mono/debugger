@@ -1,5 +1,13 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs
+	(Process.ID): New public property.
+	(Process.Threads): New public property.
+	(Process.TargetApplication): New public property.
+	(Process.CommandLineArguments): New public property.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs (Breakpoint): Implement ICloneable.
 	(Breakpoint.Clone): New public method.
 

@@ -118,6 +118,16 @@ namespace Mono.Debugger
 			}
 		}
 
+		public Process[] Processes {
+			get {
+				lock (process_hash.SyncRoot) {
+					Process[] procs = new Process [process_hash.Count];
+					process_hash.Values.CopyTo (procs, 0);
+					return procs;
+				}
+			}
+		}
+
 		public void Error (string message, params object[] args)
 		{
 			Console.WriteLine ("ERROR: " + String.Format (message, args));

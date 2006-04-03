@@ -631,6 +631,13 @@ namespace Mono.Debugger
 			result.Wait ();
 		}
 
+		internal CommandResult GetThreadID (MonoThreadManager mono_manager,
+						    MonoDebuggerInfo debugger_info)
+		{
+			check_engine ();
+			return engine.GetThreadID (mono_manager, debugger_info);
+		}
+
 		public bool HasTarget {
 			get { return engine != null; }
 		}
