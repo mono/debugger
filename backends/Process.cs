@@ -269,8 +269,8 @@ namespace Mono.Debugger
 
 		internal void OnThreadExitedEvent (Thread thread)
 		{
-			thread.Kill ();
 			manager.Debugger.OnThreadExitedEvent (thread);
+			thread.Kill ();
 		}
 
 		internal void WaitForApplication ()
@@ -340,12 +340,12 @@ namespace Mono.Debugger
 		internal void Kill (SingleSteppingEngine engine)
 		{
 			if (engine == main_engine) {
-				Kill ();
 				manager.Debugger.OnProcessExitedEvent (main_engine.Process);
+				Kill ();
 			} else {
 				thread_hash.Remove (engine.PID);
-				engine.Thread.Kill ();
 				OnThreadExitedEvent (engine.Thread);
+				engine.Thread.Kill ();
 			}
 		}
 
