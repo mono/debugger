@@ -36,10 +36,8 @@ namespace Mono.Debugger.Frontend
 
 		bool is_synchronous;
 		bool is_interactive;
-		bool initialized;
 		int exit_code = 0;
 
-		AutoResetEvent start_event;
 		ManualResetEvent interrupt_event;
 		Thread current_thread;
 
@@ -83,8 +81,6 @@ namespace Mono.Debugger.Frontend
 			parser_names_by_language.Add ("native", "c#");
 
 			current_parser_name = "auto";
-
-			start_event = new AutoResetEvent (false);
 		}
 
 		AppDomain debugger_domain;
@@ -321,7 +317,6 @@ namespace Mono.Debugger.Frontend
 
 				main_process = debugger.Run (options);
 
-				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
 				CurrentThread = main_thread;
 				Wait (main_thread);
@@ -350,7 +345,6 @@ namespace Mono.Debugger.Frontend
 
 				main_process = debugger.Attach (options, pid);
 
-				start_event.WaitOne ();
 				main_thread = main_process.MainThread;
 				CurrentThread = main_thread;
 				Wait (main_thread);
@@ -416,7 +410,6 @@ namespace Mono.Debugger.Frontend
 
 				session.InsertBreakpoints (main_thread);
 
-				start_event.WaitOne ();
 				main_thread = process.MainThread;
 				CurrentThread = main_thread;
 				Wait (main_thread);
@@ -430,7 +423,7 @@ namespace Mono.Debugger.Frontend
 
 		protected void ThreadCreated (Thread thread)
 		{
-			if (initialized)
+			if (!thread.IsDaemon)
 				Print ("New thread @{0}", thread.ID);
 		}
 
@@ -454,12 +447,6 @@ namespace Mono.Debugger.Frontend
 		public void ClearInterrupt ()
 		{
 			interrupt_event.Reset ();
-		}
-
-		protected void DebuggerInitialized ()
-		{
-			initialized = true;
-			start_event.Set ();
 		}
 
 		public void ShowBreakpoints ()
@@ -531,8 +518,6 @@ namespace Mono.Debugger.Frontend
 				main_thread = null;
 				main_process = null;
 			}
-
-			initialized = false;
 		}
 
 		public Thread CurrentThread {
@@ -743,7 +728,6 @@ namespace Mono.Debugger.Frontend
 
 			public void process_reached_main (Debugger debugger, Process process)
 			{
-				interpreter.DebuggerInitialized ();
 			}
 
 			public void process_exited (Debugger debugger, Process process)

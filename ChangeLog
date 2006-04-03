@@ -1,5 +1,19 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs
+	(Process.Initialize): Set `main_thread' and `main_engine' here.
+
+	* backends/Debugger.cs
+	(Debugger.Run): It's now safe to use `process.MainThread' on the
+	returned Process immediately.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Interpreter.cs
+	(Interpreter.start_event): Removed.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.Threads): Removed; we don't keep a separate hash
 	table here anymore, but use `Process.Threads' instead.

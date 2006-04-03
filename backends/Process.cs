@@ -196,11 +196,6 @@ namespace Mono.Debugger
 		internal void ReachedMain (Inferior inferior, Thread thread,
 					   SingleSteppingEngine engine)
 		{
-			this.main_thread = thread;
-			this.main_engine = engine;
-
-			main_thread_group.AddThread (thread.ID);
-
 			manager.Debugger.OnProcessReachedMainEvent (this);
 
 			module_manager.UnLock ();
@@ -292,7 +287,11 @@ namespace Mono.Debugger
 				mono_manager = MonoThreadManager.Initialize (
 					manager, inferior, start.PID != 0);
 
+			this.main_thread = engine.Thread;
+			this.main_engine = engine;
+
 			thread_hash.Add (engine.PID, engine.Thread);
+			main_thread_group.AddThread (engine.Thread.ID);
 
 			if (start.PID != 0) {
 				int[] threads = inferior.GetThreads ();

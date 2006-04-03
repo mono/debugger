@@ -384,8 +384,6 @@ namespace Mono.Debugger.Backends
 					engine_hash.Add (sse.ID, sse);
 					processes.Add (process);
 
-					backend.OnThreadCreatedEvent (sse.Thread);
-
 					wait_event.Set ();
 
 					command.Result = process;
