@@ -26,7 +26,6 @@ namespace Mono.Debugger.Frontend
 		Debugger debugger;
 		Process main_process;
 		Thread main_thread;
-		Hashtable procs;
 
 		Hashtable styles;
 		StyleBase current_style;
@@ -67,8 +66,6 @@ namespace Mono.Debugger.Frontend
 				ReportWriter = new ReportWriter ();
 
 			Report.Initialize (ReportWriter);
-
-			procs = new Hashtable ();
 
 			styles = new Hashtable ();
 			styles.Add ("cli", new StyleCLI (this));
@@ -201,14 +198,6 @@ namespace Mono.Debugger.Frontend
 		public int ExitCode {
 			get { return exit_code; }
 			set { exit_code = value; }
-		}
-
-		public Thread[] Threads {
-			get {
-				Thread[] retval = new Thread [procs.Count];
-				procs.Values.CopyTo (retval, 0);
-				return retval;
-			}
 		}
 
 		public void Abort ()
@@ -394,9 +383,6 @@ namespace Mono.Debugger.Frontend
 
 				CurrentThread = main_thread;
 
-				foreach (Thread thread in threads)
-					procs.Add (thread.ID, thread);
-
 				return main_process;
 			} catch (TargetException e) {
 				Kill ();
@@ -444,8 +430,6 @@ namespace Mono.Debugger.Frontend
 
 		protected void ThreadCreated (Thread thread)
 		{
-			procs.Add (thread.ID, thread);
-
 			if (initialized)
 				Print ("New thread @{0}", thread.ID);
 		}
@@ -527,7 +511,6 @@ namespace Mono.Debugger.Frontend
 
 		protected void ThreadExited (Thread thread)
 		{
-			procs.Remove (thread.ID);
 			if (thread == main_thread) {
 				TargetExited ();
 				CurrentThread = null;
@@ -537,11 +520,6 @@ namespace Mono.Debugger.Frontend
 		protected void TargetExited ()
 		{
 			if (main_process != null) {
-				foreach (Thread proc in Threads) {
-					if (proc.Process == main_process)
-						procs.Remove (proc.ID);
-				}
-
 				if ((main_thread != null) &&
 				    (main_thread.Process == main_process)) {
 					main_thread = null;
@@ -549,7 +527,6 @@ namespace Mono.Debugger.Frontend
 					CurrentThread = null;
 				}
 			} else {
-				procs = new Hashtable ();
 				CurrentThread = null;
 				main_thread = null;
 				main_process = null;
@@ -574,7 +551,7 @@ namespace Mono.Debugger.Frontend
 			if (number == -1)
 				return CurrentThread;
 
-			foreach (Thread proc in Threads)
+			foreach (Thread proc in MainProcess.Threads)
 				if (proc.ID == number)
 					return proc;
 
@@ -734,6 +711,15 @@ namespace Mono.Debugger.Frontend
 					filename);
 
 			return path;
+		}
+
+		public Process[] Processes {
+			get {
+				if (debugger == null)
+					throw new ScriptingException ("No target.");
+
+				return debugger.Processes;
+			}
 		}
 
 		protected class InterpreterEventSink : MarshalByRefObject

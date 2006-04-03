@@ -1,5 +1,15 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.Threads): Removed; we don't keep a separate hash
+	table here anymore, but use `Process.Threads' instead.
+	(Interpreter.Processes): New public property.
+
+	* frontend/Command.cs
+	(Show.ShowProcessesCommand): Added `show processes' command.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs
 	(Process.ID): New public property.
 	(Process.Threads): New public property.

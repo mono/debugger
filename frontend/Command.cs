@@ -1320,6 +1320,37 @@ namespace Mono.Debugger.Frontend
 	public class ShowCommand : NestedCommand, IDocumentableCommand
 	{
 #region show subcommands
+		private class ShowProcessesCommand : DebuggerCommand
+		{
+			protected override void DoExecute (ScriptingContext context)
+			{
+				bool printed_something = false;
+				foreach (Process process in context.Interpreter.Processes) {
+					string prefix = process == context.Interpreter.MainProcess ?
+						"(*)" : "   ";
+
+					bool first = true;
+					StringBuilder sb = new StringBuilder ();
+					foreach (string arg in process.CommandLineArguments) {
+						if (first)
+							first = false;
+						else
+							sb.Append (" ");
+						sb.Append (arg);
+					}
+					string command_line = sb.ToString ();
+					if (command_line.Length > 70) {
+						command_line = command_line.Substring (0, 70);
+						command_line += " ...";
+					}
+					context.Print ("{0} Process #{1} ({2}:{3:x})", prefix,
+						       process.ID, process.MainThread.PID,
+						       command_line);
+					printed_something = true;
+				}
+			}
+		}
+
 		private class ShowThreadsCommand : DebuggerCommand
 		{
 			protected override void DoExecute (ScriptingContext context)
@@ -1329,7 +1360,8 @@ namespace Mono.Debugger.Frontend
 					current_id = context.Interpreter.CurrentThread.ID;
 
 				bool printed_something = false;
-				foreach (Thread proc in context.Interpreter.Threads) {
+				Process process = context.Interpreter.MainProcess;
+				foreach (Thread proc in process.Threads) {
 					string prefix = proc.ID == current_id ? "(*)" : "   ";
 					context.Print ("{0} {1} ({2}:{3:x})", prefix, proc,
 						       proc.PID, proc.TID);
@@ -1550,6 +1582,8 @@ namespace Mono.Debugger.Frontend
 
 		public ShowCommand ()
 		{
+			RegisterSubcommand ("procs", typeof (ShowProcessesCommand));
+			RegisterSubcommand ("processes", typeof (ShowProcessesCommand));
 			RegisterSubcommand ("threads", typeof (ShowThreadsCommand));
 			RegisterSubcommand ("registers", typeof (ShowRegistersCommand));
 			RegisterSubcommand ("regs", typeof (ShowRegistersCommand));
