@@ -1329,29 +1329,33 @@ namespace Mono.Debugger.Frontend
 					string prefix = process == context.Interpreter.MainProcess ?
 						"(*)" : "   ";
 
-					bool first = true;
-					StringBuilder sb = new StringBuilder ();
-					foreach (string arg in process.CommandLineArguments) {
-						if (first)
-							first = false;
-						else
-							sb.Append (" ");
-						sb.Append (arg);
-					}
-					string command_line = sb.ToString ();
-					if (command_line.Length > 70) {
-						command_line = command_line.Substring (0, 70);
-						command_line += " ...";
-					}
-					context.Print ("{0} Process #{1} ({2}:{3:x})", prefix,
-						       process.ID, process.MainThread.PID,
-						       command_line);
+					context.Print ("{0} {1}", prefix, PrintProcess (process));
 					printed_something = true;
 				}
 			}
+
+			protected string PrintProcess (Process process)
+			{
+				bool first = true;
+				StringBuilder sb = new StringBuilder ();
+				foreach (string arg in process.CommandLineArguments) {
+					if (first)
+						first = false;
+					else
+						sb.Append (" ");
+					sb.Append (arg);
+				}
+				string command_line = sb.ToString ();
+				if (command_line.Length > 70) {
+					command_line = command_line.Substring (0, 70);
+					command_line += " ...";
+				}
+				return String.Format ("Process #{0} ({1}:{2})", process.ID,
+						      process.MainThread.PID, command_line);
+			}
 		}
 
-		private class ShowThreadsCommand : DebuggerCommand
+		private class ShowThreadsCommand : ShowProcessesCommand
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
@@ -1360,12 +1364,14 @@ namespace Mono.Debugger.Frontend
 					current_id = context.Interpreter.CurrentThread.ID;
 
 				bool printed_something = false;
-				Process process = context.Interpreter.MainProcess;
-				foreach (Thread proc in process.Threads) {
-					string prefix = proc.ID == current_id ? "(*)" : "   ";
-					context.Print ("{0} {1} ({2}:{3:x})", prefix, proc,
-						       proc.PID, proc.TID);
-					printed_something = true;
+				foreach (Process process in context.Interpreter.Processes) {
+					context.Print ("{0}:", PrintProcess (process));
+					foreach (Thread proc in process.Threads) {
+						string prefix = proc.ID == current_id ? "(*)" : "   ";
+						context.Print ("  {0} {1} ({2}:{3:x})", prefix, proc,
+							       proc.PID, proc.TID);
+						printed_something = true;
+					}
 				}
 
 				if (!printed_something)

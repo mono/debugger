@@ -250,7 +250,7 @@ namespace Mono.Debugger
 			new_process.main_engine = new_thread;
 
 			manager.Debugger.OnProcessCreatedEvent (new_process);
-			OnThreadCreatedEvent (new_thread.Thread);
+			new_process.OnThreadCreatedEvent (new_thread.Thread);
 
 			manager.AddEngine (new_thread);
 			new_thread.Start (TargetAddress.Null);
