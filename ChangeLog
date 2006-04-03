@@ -1,5 +1,17 @@
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.MainProcess): Removed.
+	(Interpreter.CurrentProcess): New public property.
+
+	* backends/Debugger.cs
+	(Debugger.TargetExitedEvent): New public event.
+	(Debugger.OnProcessExitedEvent): Kill all other processes if the
+	main process exited.
+	(Debugger.Kill): New public method.
+
+2006-04-03  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs
 	(Process.Initialize): Set `main_thread' and `main_engine' here.
 

@@ -234,7 +234,7 @@ namespace Mono.Debugger.Backends
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
-				engine.Process.KillThread (engine);
+				engine.Process.Kill (engine);
 				return false;
 			}
 

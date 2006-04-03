@@ -16,6 +16,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
+	public delegate void DebuggerEventHandler (Debugger debugger);
 	public delegate void ThreadEventHandler (Debugger debugger, Thread thread);
 	public delegate void ProcessEventHandler (Debugger debugger, Process process);
 
@@ -24,6 +25,7 @@ namespace Mono.Debugger
 		ThreadManager thread_manager;
 		DebuggerSession session;
 		Hashtable process_hash;
+		Process main_process;
 
 		public Debugger ()
 		{
@@ -47,6 +49,7 @@ namespace Mono.Debugger
 		public event ProcessEventHandler ProcessCreatedEvent;
 		public event ProcessEventHandler ProcessReachedMainEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
+		public event DebuggerEventHandler TargetExitedEvent;
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
@@ -63,27 +66,62 @@ namespace Mono.Debugger
 				ProcessReachedMainEvent (this, process);
 		}
 
+		protected void OnTargetExitedEvent ()
+		{
+			if (TargetExitedEvent != null)
+				TargetExitedEvent (this);
+		}
+
 		internal void OnProcessExitedEvent (Process process)
 		{
 			process_hash.Remove (process);
 			if (ProcessExitedEvent != null)
 				ProcessExitedEvent (this, process);
+
+			if (process == main_process) {
+				Kill ();
+			}
+		}
+
+		public void Kill ()
+		{
+			main_process = null;
+
+			Process[] procs;
+			lock (process_hash.SyncRoot) {
+				procs = new Process [process_hash.Count];
+				process_hash.Values.CopyTo (procs, 0);
+			}
+
+			foreach (Process proc in procs) {
+				proc.Kill ();
+			}
+
+			OnTargetExitedEvent ();
 		}
 
 		public Process Run (DebuggerOptions options)
 		{
 			check_disposed ();
 
+			if (main_process != null)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
 			ProcessStart start = new ProcessStart (options);
-			return thread_manager.StartApplication (start);
+			main_process = thread_manager.StartApplication (start);
+			return main_process;
 		}
 
 		public Process Attach (DebuggerOptions options, int pid)
 		{
 			check_disposed ();
 
+			if (main_process != null)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
 			ProcessStart start = new ProcessStart (options, pid);
-			return thread_manager.StartApplication (start);
+			main_process = thread_manager.StartApplication (start);
+			return main_process;
 		}
 
 		public Process OpenCoreFile (DebuggerOptions options, string core_file,
@@ -91,8 +129,12 @@ namespace Mono.Debugger
 		{
 			check_disposed ();
 
+			if (main_process != null)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
 			ProcessStart start = new ProcessStart (options, core_file);
-			return thread_manager.OpenCoreFile (start, out threads);
+			main_process = thread_manager.OpenCoreFile (start, out threads);
+			return main_process;
 		}
 
 		internal void OnThreadCreatedEvent (Thread new_process)

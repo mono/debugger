@@ -346,7 +346,7 @@ namespace Mono.Debugger
 			Dispose ();
 		}
 
-		internal void KillThread (SingleSteppingEngine engine)
+		internal void Kill (SingleSteppingEngine engine)
 		{
 			if (engine == main_engine) {
 				Kill ();

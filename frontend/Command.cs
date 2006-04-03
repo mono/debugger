@@ -1326,7 +1326,7 @@ namespace Mono.Debugger.Frontend
 			{
 				bool printed_something = false;
 				foreach (Process process in context.Interpreter.Processes) {
-					string prefix = process == context.Interpreter.MainProcess ?
+					string prefix = process == context.Interpreter.CurrentProcess ?
 						"(*)" : "   ";
 
 					context.Print ("{0} {1}", prefix, PrintProcess (process));
