@@ -1,5 +1,9 @@
 2006-04-04  Martin Baulig  <martin@ximian.com>
 
+	* NEWS: Updated NEWS.
+
+2006-04-04  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs
 	(Process.AcquireGlobalThreadLock): Moved here from ThreadManager.
 	(Process.ReleaseGlobalThreadLock): Likewise.

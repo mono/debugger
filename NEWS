@@ -1,3 +1,16 @@
+April 4th, 2006 - Martin Baulig
+-------------------------------
+
+- The debugger now requires Mono 1.1.14.
+
+- Multi-Process support:
+
+  The debugger can now follow fork()s and exec()s and thus debug
+  multiple processes at the same time.
+
+- The next release will be 0.13 "Luxemburg", but there is no
+  release date yet.
+
 March 14th, 2006 - Martin Baulig
 --------------------------------
 
