@@ -119,21 +119,14 @@ namespace Mono.Debugger.Frontend
 
 			switch (args.Type) {
 			case TargetEventType.TargetExited:
-				if (!thread.IsDaemon) {
-					if ((int) args.Data == 0)
-						interpreter.Print ("{0} terminated normally.",
-								   thread.Name);
-					else
-						interpreter.Print ("{0} exited with exit code {1}.",
-								   thread.Name, (int) args.Data);
-				}
+				if ((int) args.Data != 0)
+					interpreter.Print ("{0} exited with exit code {1}.",
+							   thread.Name, (int) args.Data);
 				break;
 
 			case TargetEventType.TargetSignaled:
-				if (!thread.IsDaemon) {
-					interpreter.Print ("{0} died with fatal signal {1}.",
-							   thread.Name, (int) args.Data);
-				}
+				interpreter.Print ("{0} died with fatal signal {1}.",
+						   thread.Name, (int) args.Data);
 				break;
 			}
 		}

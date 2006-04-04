@@ -425,7 +425,7 @@ namespace Mono.Debugger.Frontend
 
 		protected void ThreadCreated (Thread thread)
 		{
-			if (!thread.IsDaemon)
+			if (!IsScript && !thread.IsDaemon)
 				Print ("Process {0} created new thread @{1}.",
 				       PrintProcess (thread.Process), thread.ID);
 		}
@@ -507,6 +507,7 @@ namespace Mono.Debugger.Frontend
 
 		protected void ProcessCreated (Process process)
 		{
+			if (!IsScript)
 			Print ("Created new process {0}.", PrintProcess (process));
 			if (current_process == null) {
 				current_process = process;
@@ -516,7 +517,7 @@ namespace Mono.Debugger.Frontend
 
 		protected void ProcessExited (Process process)
 		{
-			if (process != main_process)
+			if (!IsScript)
 				Print ("Process {0} exited.", PrintProcess (process));
 			if (process == main_process) {
 				current_process = main_process = null;
@@ -685,6 +686,8 @@ namespace Mono.Debugger.Frontend
 
 			main_process = current_process = null;
 			current_thread = null;
+
+			Print ("Target exited.");
 		}
 
 		public string GetFullPathByFilename (string filename)
