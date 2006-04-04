@@ -121,6 +121,12 @@ namespace Mono.Debugger.Backends
 			engine_hash.Add (engine.ID, engine);
 		}
 
+		internal void ProcessExecd (SingleSteppingEngine engine)
+		{
+			thread_hash [engine.PID] = engine;
+			engine_hash [engine.ID] = engine;
+		}
+
 		internal void RemoveProcess (Process process)
 		{
 			processes.Remove (process);

@@ -261,7 +261,26 @@ namespace Mono.Debugger
 			Report.Debug (DebugFlags.Threads, "Child execd: {0} {1} {2}",
 				      inferior.PID, start, main_method);
 
-			main_engine.Start (main_method);
+			thread_hash.Remove (inferior.PID);
+
+			Process new_process = new Process (manager, start);
+
+			Inferior new_inferior = Inferior.CreateInferior (manager, new_process, start);
+
+			SingleSteppingEngine new_thread = new SingleSteppingEngine (
+				manager, new_process, new_inferior, inferior.PID, false);
+
+			Report.Debug (DebugFlags.Threads, "Child execd: {0} {1}",
+				      inferior.PID, new_thread);
+
+			new_process.main_thread = new_thread.Thread;
+			new_process.main_engine = new_thread;
+
+			manager.Debugger.OnProcessCreatedEvent (new_process);
+			new_process.OnThreadCreatedEvent (new_thread.Thread);
+
+			manager.ProcessExecd (new_thread);
+			new_thread.Start (TargetAddress.Null);
 		}
 		
 		protected void OnThreadCreatedEvent (Thread thread)
@@ -294,7 +313,10 @@ namespace Mono.Debugger
 			this.main_thread = engine.Thread;
 			this.main_engine = engine;
 
-			thread_hash.Add (engine.PID, engine.Thread);
+			if (thread_hash.Contains (engine.PID))
+				thread_hash [engine.PID] = engine;
+			else
+				thread_hash.Add (engine.PID, engine.Thread);
 			main_thread_group.AddThread (engine.Thread.ID);
 
 			if (start.PID != 0) {
