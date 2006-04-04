@@ -557,23 +557,25 @@ namespace Mono.Debugger
 
 		protected virtual void DoDispose ()
 		{
-			if (bfd_container != null) {
-				bfd_container.Dispose ();
-				bfd_container = null;
+			if (!is_forked) {
+				if (bfd_container != null) {
+					bfd_container.Dispose ();
+					bfd_container = null;
+				}
+
+				if (languages != null) {
+					foreach (ILanguageBackend lang in languages)
+						lang.Dispose();
+					languages = null;
+				}
+
+				if (symtab_manager != null) {
+					symtab_manager.Dispose ();
+					symtab_manager = null;
+				}
 			}
 
-			if (languages != null) {
-				foreach (ILanguageBackend lang in languages)
-					lang.Dispose();
-				languages = null;
-			}
-
-			if (symtab_manager != null) {
-				symtab_manager.Dispose ();
-				symtab_manager = null;
-			}
-
-			if (!is_forked && (breakpoint_manager != null))
+			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
 
 			manager.RemoveProcess (this);
