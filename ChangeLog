@@ -1,3 +1,9 @@
+2006-04-04  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Pass SIGCHLD to the target, but
+	return a MESSAGE_CHILD_STOPPED without a signal.
+
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
 	HEADS UP: The debugger no longer works with the stable Mono from
