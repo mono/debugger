@@ -289,14 +289,16 @@ _server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main)
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
 	int status, ret;
 
-	do {
-		ret = do_wait (handle->inferior->pid, &status);
-	} while (ret == 0);
+	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE) {
+		do {
+			ret = do_wait (handle->inferior->pid, &status);
+		} while (ret == 0);
 
-	if (is_main) {
-		g_assert (ret == handle->inferior->pid);
-		first_status = status;
-		first_ret = ret;
+		if (is_main) {
+			g_assert (ret == handle->inferior->pid);
+			first_status = status;
+			first_ret = ret;
+		}
 	}
 
 	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE)

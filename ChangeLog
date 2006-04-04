@@ -1,5 +1,11 @@
 2006-04-04  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-linux-ptrace.c
+	(_server_ptrace_setup_inferior): Check whether we're already
+	stopped before blocking on do_wait().
+
+2006-04-04  Martin Baulig  <martin@ximian.com>
+
 	* NEWS: Updated NEWS.
 
 2006-04-04  Martin Baulig  <martin@ximian.com>
