@@ -744,7 +744,7 @@ namespace Mono.Debugger.Backends
 						      this, index, inferior.CurrentFrame);
 
 					inferior.EnableBreakpoint (index);
-					manager.ReleaseGlobalThreadLock (this);
+					process.ReleaseGlobalThreadLock (this);
 				}
 
 				if (!stopped) {
@@ -1249,7 +1249,7 @@ namespace Mono.Debugger.Backends
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		public bool AcquireThreadLock ()
+		public void AcquireThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquiring thread lock", this);
@@ -1266,7 +1266,8 @@ namespace Mono.Debugger.Backends
 			if (!EndStackAddress.IsNull)
 				inferior.WriteAddress (EndStackAddress, frame.StackPointer);
 
-			return stop_event != null;
+			if (stop_event != null)
+				manager.RequestWait ();
 		}
 
 		public void ReleaseThreadLock ()
@@ -2001,7 +2002,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.manager.AcquireGlobalThreadLock (sse);
+			sse.process.AcquireGlobalThreadLock (sse);
 			sse.inferior.DisableBreakpoint (Index);
 
 			has_thread_lock = true;
@@ -2053,7 +2054,7 @@ namespace Mono.Debugger.Backends
 					      sse, sse.inferior.CurrentFrame);
 
 				sse.inferior.EnableBreakpoint (Index);
-				sse.manager.ReleaseGlobalThreadLock (sse);
+				sse.process.ReleaseGlobalThreadLock (sse);
 
 				has_thread_lock = false;
 			}

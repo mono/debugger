@@ -27,6 +27,8 @@ namespace Mono.Debugger
 		bool is_forked;
 		bool initialized;
 		ST.ManualResetEvent initialized_event;
+		DebuggerMutex thread_lock_mutex;
+		bool has_thread_lock;
 
 		Hashtable thread_groups;
 		ThreadGroup global_thread_group;
@@ -35,18 +37,28 @@ namespace Mono.Debugger
 		int id = ++next_id;
 		static int next_id = 0;
 
-		internal Process (ThreadManager manager, ProcessStart start)
+		private Process (ThreadManager manager)
 		{
 			this.manager = manager;
+
+			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
+
+			thread_groups = Hashtable.Synchronized (new Hashtable ());
+			global_thread_group = CreateThreadGroup ("global");
+			main_thread_group = CreateThreadGroup ("main");
+
+			thread_hash = Hashtable.Synchronized (new Hashtable ());
+			initialized_event = new ST.ManualResetEvent (false);
+		}
+
+		internal Process (ThreadManager manager, ProcessStart start)
+			: this (manager)
+		{
 			this.start = start;
 
 			breakpoint_manager = new BreakpointManager ();
 			module_manager = new ModuleManager ();
 			source_factory = new SourceFileFactory ();
-
-			thread_groups = Hashtable.Synchronized (new Hashtable ());
-			global_thread_group = CreateThreadGroup ("global");
-			main_thread_group = CreateThreadGroup ("main");
 
 			module_manager.ModulesChanged += modules_changed;
 			module_manager.BreakpointsChanged += breakpoints_changed;
@@ -56,25 +68,19 @@ namespace Mono.Debugger
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
-
-			thread_hash = Hashtable.Synchronized (new Hashtable ());
-			initialized_event = new ST.ManualResetEvent (false);
 		}
 
 		private Process (Process parent, int pid)
+			: this (parent.manager)
 		{
-			this.manager = parent.manager;
 			this.start = new ProcessStart (parent.ProcessStart, pid);
+
 			this.is_forked = true;
 			this.initialized = true;
 
 			breakpoint_manager = new BreakpointManager (parent.breakpoint_manager);
 			module_manager = parent.module_manager;
 			source_factory = parent.source_factory;
-
-			thread_groups = Hashtable.Synchronized (new Hashtable ());
-			global_thread_group = CreateThreadGroup ("global");
-			main_thread_group = CreateThreadGroup ("main");
 
 			module_manager.ModulesChanged += modules_changed;
 			module_manager.BreakpointsChanged += breakpoints_changed;
@@ -84,9 +90,6 @@ namespace Mono.Debugger
 
 			languages = parent.languages;
 			bfd_container = parent.bfd_container;
-
-			thread_hash = Hashtable.Synchronized (new Hashtable ());
-			initialized_event = new ST.ManualResetEvent (false);
 		}
 
 		public int ID {
@@ -430,6 +433,43 @@ namespace Mono.Debugger
 					return threads;
 				}
 			}
+		}
+
+		// <summary>
+		//   Stop all currently running threads without sending any notifications.
+		//   The threads are automatically resumed to their previos state when
+		//   ReleaseGlobalThreadLock() is called.
+		// </summary>
+		internal void AcquireGlobalThreadLock (SingleSteppingEngine caller)
+		{
+			thread_lock_mutex.Lock ();
+			Report.Debug (DebugFlags.Threads,
+				      "Acquiring global thread lock: {0}", caller);
+			has_thread_lock = true;
+			foreach (Thread thread in thread_hash.Values) {
+				if (thread.Engine == caller)
+					continue;
+				thread.Engine.AcquireThreadLock ();
+			}
+			Report.Debug (DebugFlags.Threads,
+				      "Done acquiring global thread lock: {0}",
+				      caller);
+		}
+
+		internal void ReleaseGlobalThreadLock (SingleSteppingEngine caller)
+		{
+			Report.Debug (DebugFlags.Threads,
+				      "Releasing global thread lock: {0}", caller);
+				
+			foreach (Thread thread in thread_hash.Values) {
+				if (thread.Engine == caller)
+					continue;
+				thread.Engine.ReleaseThreadLock ();
+			}
+			has_thread_lock = false;
+			thread_lock_mutex.Unlock ();
+			Report.Debug (DebugFlags.Threads,
+				      "Released global thread lock: {0}", caller);
 		}
 
 		//

@@ -1,5 +1,11 @@
 2006-04-04  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs
+	(Process.AcquireGlobalThreadLock): Moved here from ThreadManager.
+	(Process.ReleaseGlobalThreadLock): Likewise.
+
+2006-04-04  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-ptrace.c
 	(server_ptrace_dispatch_event): Pass SIGCHLD to the target, but
 	return a MESSAGE_CHILD_STOPPED without a signal.

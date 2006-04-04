@@ -27,7 +27,6 @@ namespace Mono.Debugger.Backends
 			engine_hash = Hashtable.Synchronized (new Hashtable ());
 			processes = ArrayList.Synchronized (new ArrayList ());
 			
-			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 			address_domain = new AddressDomain ("global");
 
 			command_mutex = new DebuggerMutex ("command_mutex");
@@ -67,8 +66,6 @@ namespace Mono.Debugger.Backends
 		Hashtable engine_hash;
 		ArrayList processes;
 
-		bool has_thread_lock;
-		DebuggerMutex thread_lock_mutex;
 		AddressDomain address_domain;
 
 		DebuggerMutex command_mutex;
@@ -141,44 +138,6 @@ namespace Mono.Debugger.Backends
 		int next_process_id = 0;
 		internal int NextThreadID {
 			get { return ++next_process_id; }
-		}
-
-		// <summary>
-		//   Stop all currently running threads without sending any notifications.
-		//   The threads are automatically resumed to their previos state when
-		//   ReleaseGlobalThreadLock() is called.
-		// </summary>
-		internal void AcquireGlobalThreadLock (SingleSteppingEngine caller)
-		{
-			thread_lock_mutex.Lock ();
-			Report.Debug (DebugFlags.Threads,
-				      "Acquiring global thread lock: {0}", caller);
-			has_thread_lock = true;
-			foreach (SingleSteppingEngine engine in thread_hash.Values) {
-				if (engine == caller)
-					continue;
-				if (engine.AcquireThreadLock ())
-					wait_event.Set ();
-			}
-			Report.Debug (DebugFlags.Threads,
-				      "Done acquiring global thread lock: {0}",
-				      caller);
-		}
-
-		internal void ReleaseGlobalThreadLock (SingleSteppingEngine caller)
-		{
-			Report.Debug (DebugFlags.Threads,
-				      "Releasing global thread lock: {0}", caller);
-				
-			foreach (SingleSteppingEngine engine in thread_hash.Values) {
-				if (engine == caller)
-					continue;
-				engine.ReleaseThreadLock ();
-			}
-			has_thread_lock = false;
-			thread_lock_mutex.Unlock ();
-			Report.Debug (DebugFlags.Threads,
-				      "Released global thread lock: {0}", caller);
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
@@ -469,6 +428,11 @@ namespace Mono.Debugger.Backends
 					event_queue.Unlock ();
 				}
 			}
+		}
+
+		internal void RequestWait ()
+		{
+			wait_event.Set ();
 		}
 
 #region IDisposable implementation

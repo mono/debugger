@@ -19,8 +19,10 @@ class X
 
 	static void Main ()
 	{
-		Thread thread = new Thread (new ThreadStart (ThreadMain));
-		thread.Start ();
+		for (int i = 0; i < 10; i++) {
+			Thread thread = new Thread (new ThreadStart (ThreadMain));
+			thread.Start ();
+		}
 
 		GC.Collect ();
 	}

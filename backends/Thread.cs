@@ -155,6 +155,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal SingleSteppingEngine Engine {
+			get {
+				check_engine ();
+				return engine;
+			}
+		}
+
 		public bool IsDaemon {
 			get {
 				return is_daemon;
