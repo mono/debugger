@@ -212,7 +212,7 @@ namespace Mono.Debugger
 			Inferior new_inferior = inferior.CreateThread ();
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, this, new_inferior, pid, do_attach);
+				manager, this, new_inferior, pid, do_attach, false);
 
 			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1}", pid, new_thread);
 
@@ -238,7 +238,7 @@ namespace Mono.Debugger
 				manager, new_process, new_process.ProcessStart);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, new_process, new_inferior, pid, false);
+				manager, new_process, new_inferior, pid, false, false);
 
 			new_inferior.InitializeAfterFork ();
 
@@ -268,7 +268,7 @@ namespace Mono.Debugger
 			Inferior new_inferior = Inferior.CreateInferior (manager, new_process, start);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, new_process, new_inferior, inferior.PID, false);
+				manager, new_process, new_inferior, inferior.PID, false, true);
 
 			Report.Debug (DebugFlags.Threads, "Child execd: {0} {1}",
 				      inferior.PID, new_thread);
@@ -280,7 +280,8 @@ namespace Mono.Debugger
 			new_process.OnThreadCreatedEvent (new_thread.Thread);
 
 			manager.ProcessExecd (new_thread);
-			new_thread.Start (TargetAddress.Null);
+			if (new_process.Initialize (new_thread, new_inferior))
+				new_inferior.Continue ();
 		}
 		
 		protected void OnThreadCreatedEvent (Thread thread)
@@ -314,7 +315,7 @@ namespace Mono.Debugger
 			this.main_engine = engine;
 
 			if (thread_hash.Contains (engine.PID))
-				thread_hash [engine.PID] = engine;
+				thread_hash [engine.PID] = engine.Thread;
 			else
 				thread_hash.Add (engine.PID, engine.Thread);
 			main_thread_group.AddThread (engine.Thread.ID);

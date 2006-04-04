@@ -123,8 +123,13 @@ namespace Mono.Debugger.Backends
 
 		internal void ProcessExecd (SingleSteppingEngine engine)
 		{
-			thread_hash [engine.PID] = engine;
-			engine_hash [engine.ID] = engine;
+			SingleSteppingEngine old_engine = (SingleSteppingEngine) thread_hash [engine.PID];
+			if (old_engine != null) {
+				thread_hash [engine.PID] = engine;
+				engine_hash.Remove (old_engine.ID);
+			} else
+				thread_hash.Add (engine.PID, engine);
+			engine_hash.Add (engine.ID, engine);
 		}
 
 		internal void RemoveProcess (Process process)
@@ -178,7 +183,6 @@ namespace Mono.Debugger.Backends
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_EXECD) {
 				inferior.Process.ChildExecd (inferior);
-				inferior.Continue ();
 				return true;
 			}
 

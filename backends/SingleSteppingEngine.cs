@@ -110,16 +110,17 @@ namespace Mono.Debugger.Backends
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, Process process,
-					     Inferior inferior, int pid, bool do_attach)
+					     Inferior inferior, int pid, bool do_attach, bool is_main)
 			: this (manager, inferior)
 		{
 			this.PID = pid;
+			this.is_main = is_main;
+
 			if (do_attach)
 				inferior.Attach (pid, false);
 			else
 				inferior.Initialize (pid);
 
-			is_main = false;
 			tid = inferior.TID;
 
 			setup_engine ();
