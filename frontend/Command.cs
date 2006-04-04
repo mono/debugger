@@ -1324,7 +1324,10 @@ namespace Mono.Debugger.Frontend
 			protected override void DoExecute (ScriptingContext context)
 			{
 				bool printed_something = false;
-				foreach (Process process in context.Interpreter.Processes) {
+				Process[] processes = context.Interpreter.Processes;
+				if ((processes.Length > 0) && !context.Interpreter.HasCurrentProcess)
+					context.Interpreter.CurrentProcess = processes [0];
+				foreach (Process process in processes) {
 					string prefix = process == context.Interpreter.CurrentProcess ?
 						"(*)" : "   ";
 
@@ -1340,7 +1343,7 @@ namespace Mono.Debugger.Frontend
 			protected override void DoExecute (ScriptingContext context)
 			{
 				int current_id = -1;
-				if (context.Interpreter.HasTarget)
+				if (context.Interpreter.HasCurrentThread)
 					current_id = context.Interpreter.CurrentThread.ID;
 
 				bool printed_something = false;

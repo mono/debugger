@@ -116,6 +116,12 @@ namespace Mono.Debugger.Frontend
 
 				return current_process;
 			}
+
+			set { current_process = value; }
+		}
+
+		public bool HasCurrentProcess {
+			get { return current_process != null; }
 		}
 
 		public StyleBase GetStyle (string name)
@@ -502,6 +508,10 @@ namespace Mono.Debugger.Frontend
 		protected void ProcessCreated (Process process)
 		{
 			Print ("Created new process {0}.", PrintProcess (process));
+			if (current_process == null) {
+				current_process = process;
+				current_thread = process.MainThread;
+			}
 		}
 
 		protected void ProcessExited (Process process)
@@ -529,6 +539,10 @@ namespace Mono.Debugger.Frontend
 				current_thread = value;
 				current_process = value.Process;
 			}
+		}
+
+		public bool HasCurrentThread {
+			get { return current_thread != null; }
 		}
 
 		public Thread GetThread (int number)

@@ -84,6 +84,16 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal void OnProcessExecdEvent (Process old_process, Process new_process)
+		{
+			process_hash.Remove (old_process);
+			if (ProcessExitedEvent != null)
+				ProcessExitedEvent (this, old_process);
+			process_hash.Add (new_process, new_process);
+			if (ProcessCreatedEvent != null)
+				ProcessCreatedEvent (this, new_process);
+		}
+
 		public void Kill ()
 		{
 			main_process = null;

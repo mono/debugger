@@ -258,11 +258,6 @@ namespace Mono.Debugger
 		{
 			TargetAddress main_method = inferior.MainMethodAddress;
 
-			Report.Debug (DebugFlags.Threads, "Child execd: {0} {1} {2}",
-				      inferior.PID, start, main_method);
-
-			thread_hash.Remove (inferior.PID);
-
 			Process new_process = new Process (manager, start);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, new_process, start);
@@ -276,10 +271,13 @@ namespace Mono.Debugger
 			new_process.main_thread = new_thread.Thread;
 			new_process.main_engine = new_thread;
 
-			manager.Debugger.OnProcessCreatedEvent (new_process);
-			new_process.OnThreadCreatedEvent (new_thread.Thread);
+			Kill ();
 
 			manager.ProcessExecd (new_thread);
+			manager.Debugger.OnProcessExecdEvent (this, new_process);
+
+			new_process.OnThreadCreatedEvent (new_thread.Thread);
+
 			if (new_process.Initialize (new_thread, new_inferior))
 				new_inferior.Continue ();
 		}
