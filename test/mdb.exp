@@ -17,7 +17,7 @@ proc mdb_start {file args} {
 
     verbose "Spawning $mdb $file"
 
-    set res [spawn $srcdir/start-mdb.sh -script -debug-flags:logfile:4 $file $args];
+    set res [spawn $srcdir/start-mdb.sh -script $file $args];
     if { $res < 0 || $res == "" } {
 	perror "Spawning $mdb failed."
 	exit 1;
