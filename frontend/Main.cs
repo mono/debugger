@@ -7,8 +7,9 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Frontend
 {
-	public class CommandLineInterpreter : Interpreter
+	public class CommandLineInterpreter
 	{
+		Interpreter interpreter;
 		DebuggerEngine engine;
 		LineParser parser;
 		string prompt;
@@ -28,95 +29,25 @@ namespace Mono.Debugger.Frontend
 			mono_debugger_server_static_init ();
 		}
 
-		internal CommandLineInterpreter (bool is_synchronous, bool is_interactive,
-						 DebuggerOptions options)
-			: base (is_synchronous, is_interactive, options)
+		internal CommandLineInterpreter (bool is_interactive, DebuggerOptions options)
 		{
-			engine = SetupEngine ();
+			if (options.HasDebugFlags)
+				Report.Initialize (options.DebugOutput, options.DebugFlags);
+			else
+				Report.Initialize ();
+
+			interpreter = new Interpreter (true, is_interactive, options);
+			engine = new DebuggerEngine (interpreter);
 			parser = new LineParser (engine);
 
-			if (is_interactive) {
+			if (is_interactive)
 				prompt = options.Prompt;
-				if (options.InEmacs)
-					Style = GetStyle("emacs");
-			}
 
 			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
 
 			command_thread = new ST.Thread (new ST.ThreadStart (command_thread_main));
 			command_thread.IsBackground = true;
-		}
-
-		DebuggerEngine SetupEngine ()
-		{
-			DebuggerEngine e = new DebuggerEngine (this);
-
-			e.RegisterCommand ("pwd", typeof (PwdCommand));
-			e.RegisterCommand ("cd", typeof (CdCommand));
-			e.RegisterCommand ("print", typeof (PrintExpressionCommand));
-			e.RegisterAlias   ("p", typeof (PrintExpressionCommand));
-			e.RegisterCommand ("ptype", typeof (PrintTypeCommand));
-			e.RegisterCommand ("call", typeof (CallCommand));
-			e.RegisterCommand ("examine", typeof (ExamineCommand));
-			e.RegisterAlias   ("x", typeof (ExamineCommand));
-			e.RegisterCommand ("file", typeof (FileCommand));
-			e.RegisterCommand ("frame", typeof (PrintFrameCommand));
-			e.RegisterAlias   ("f", typeof (PrintFrameCommand));
-			e.RegisterCommand ("disassemble", typeof (DisassembleCommand));
-			e.RegisterAlias   ("dis", typeof (DisassembleCommand));
-			e.RegisterCommand ("thread", typeof (SelectThreadCommand));
-			e.RegisterCommand ("background", typeof (BackgroundThreadCommand));
-			e.RegisterAlias   ("bg", typeof (BackgroundThreadCommand));
-			e.RegisterCommand ("stop", typeof (StopThreadCommand));
-			e.RegisterCommand ("continue", typeof (ContinueCommand));
-			e.RegisterAlias   ("cont", typeof (ContinueCommand));
-			e.RegisterAlias   ("c", typeof (ContinueCommand));
-			e.RegisterCommand ("step", typeof (StepCommand));
-			e.RegisterAlias   ("s", typeof (StepCommand));
-			e.RegisterCommand ("next", typeof (NextCommand));
-			e.RegisterAlias   ("n", typeof (NextCommand));
-			e.RegisterCommand ("stepi", typeof (StepInstructionCommand));
-			e.RegisterAlias   ("i", typeof (StepInstructionCommand));
-			e.RegisterCommand ("nexti", typeof (NextInstructionCommand));
-			e.RegisterAlias   ("t", typeof (NextInstructionCommand));
-			e.RegisterCommand ("finish", typeof (FinishCommand));
-			e.RegisterAlias   ("fin", typeof (FinishCommand));
-			e.RegisterCommand ("backtrace", typeof (BacktraceCommand));
-			e.RegisterAlias   ("bt", typeof (BacktraceCommand));
-			e.RegisterAlias   ("where", typeof (BacktraceCommand));
-			e.RegisterCommand ("up", typeof (UpCommand));
-			e.RegisterCommand ("down", typeof (DownCommand));
-			e.RegisterCommand ("kill", typeof (KillCommand));
-			e.RegisterAlias   ("k", typeof (KillCommand));
-			e.RegisterCommand ("set", typeof (SetCommand));
-			e.RegisterCommand ("show", typeof (ShowCommand));
-			e.RegisterCommand ("info", typeof (ShowCommand)); /* for gdb users */
-			e.RegisterCommand ("threadgroup", typeof (ThreadGroupCommand));
-			e.RegisterCommand ("enable", typeof (BreakpointEnableCommand));
-			e.RegisterCommand ("disable", typeof (BreakpointDisableCommand));
-			e.RegisterCommand ("delete", typeof (BreakpointDeleteCommand));
-			e.RegisterCommand ("list", typeof (ListCommand));
-			e.RegisterAlias   ("l", typeof (ListCommand));
-			e.RegisterCommand ("break", typeof (BreakCommand));
-			e.RegisterAlias   ("b", typeof (BreakCommand));
-			e.RegisterCommand ("catch", typeof (CatchCommand));
-			e.RegisterCommand ("quit", typeof (QuitCommand));
-			e.RegisterAlias   ("q", typeof (QuitCommand));
-			e.RegisterCommand ("dump", typeof (DumpCommand));
-			e.RegisterCommand ("help", typeof (HelpCommand));
-			e.RegisterCommand ("library", typeof (LibraryCommand));
-			e.RegisterCommand ("run", typeof (RunCommand));
-			e.RegisterAlias   ("r", typeof (RunCommand));
-			e.RegisterCommand ("attach", typeof (AttachCommand));
-			e.RegisterCommand ("core", typeof (OpenCoreFileCommand));
-			e.RegisterCommand ("about", typeof (AboutCommand));
-			e.RegisterCommand ("lookup", typeof (LookupCommand));
-			e.RegisterCommand ("return", typeof (ReturnCommand));
-			e.RegisterCommand ("save", typeof (SaveCommand));
-			e.RegisterCommand ("load", typeof (LoadCommand));
-
-			return e;
 		}
 
 		public void MainLoop ()
@@ -140,7 +71,7 @@ namespace Mono.Debugger.Frontend
 		{
 			while (true) {
 				try {
-					ClearInterrupt ();
+					interpreter.ClearInterrupt ();
 					MainLoop ();
 				} catch (ST.ThreadAbortException) {
 					ST.Thread.ResetAbort ();
@@ -152,11 +83,16 @@ namespace Mono.Debugger.Frontend
 		{
 			command_thread.Start ();
 
-			if (Options.StartTarget)
-				Start ();
+			if (interpreter.Options.StartTarget)
+				interpreter.Start ();
 
 			main_thread.Start ();
 			main_thread.Join ();
+		}
+
+		public void Exit ()
+		{
+			interpreter.Exit ();
 		}
 
 		public string ReadInput (bool is_complete)
@@ -165,7 +101,7 @@ namespace Mono.Debugger.Frontend
 		again:
 			string result;
 			string the_prompt = is_complete ? prompt : "... ";
-			if (Options.IsScript) {
+			if (interpreter.Options.IsScript) {
 				Console.Write (the_prompt);
 				result = Console.ReadLine ();
 				if (result == null)
@@ -193,7 +129,7 @@ namespace Mono.Debugger.Frontend
 
 		public void Error (int pos, string message)
 		{
-			if (Options.IsScript) {
+			if (interpreter.Options.IsScript) {
 				// If we're reading from a script, abort.
 				Console.Write ("ERROR in line {0}, column {1}: ", line, pos);
 				Console.WriteLine (message);
@@ -456,7 +392,7 @@ namespace Mono.Debugger.Frontend
 				if (mono_debugger_server_get_pending_sigint () == 0)
 					continue;
 
-				Interrupt ();
+				interpreter.Interrupt ();
 				main_thread.Abort ();
 			} while (true);
 		}
@@ -470,7 +406,7 @@ namespace Mono.Debugger.Frontend
 			Console.WriteLine ("Mono Debugger");
 
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (
-				true, is_terminal, options);
+				is_terminal, options);
 
 			try {
 				interpreter.RunMainLoop ();

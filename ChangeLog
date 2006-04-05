@@ -1,5 +1,20 @@
 2006-04-05  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs (DebuggerEngine.ctor): Register all the
+	commands here.
+
+	* frontend/Interpreter.cs (Interpreter): Make this a sealed class
+	and add a public .ctor.
+
+	* frontend/Main.cs (CommandLineInterpreter): Don't derive from
+	`Interpreter' anymore.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.PrintObject): Renamed into FormatObject().
+	(ScriptingContext.PrintType): Renamed into FormatType().
+
+2006-04-05  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/: New directory.  Started to migrate the
 	testsuite to NUnit.
 

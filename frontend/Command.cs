@@ -17,6 +17,70 @@ namespace Mono.Debugger.Frontend
 		public DebuggerEngine (Interpreter interpreter)
 		{
 			this.Interpreter = interpreter;
+
+			RegisterCommand ("pwd", typeof (PwdCommand));
+			RegisterCommand ("cd", typeof (CdCommand));
+			RegisterCommand ("print", typeof (PrintExpressionCommand));
+			RegisterAlias   ("p", typeof (PrintExpressionCommand));
+			RegisterCommand ("ptype", typeof (PrintTypeCommand));
+			RegisterCommand ("call", typeof (CallCommand));
+			RegisterCommand ("examine", typeof (ExamineCommand));
+			RegisterAlias   ("x", typeof (ExamineCommand));
+			RegisterCommand ("file", typeof (FileCommand));
+			RegisterCommand ("frame", typeof (PrintFrameCommand));
+			RegisterAlias   ("f", typeof (PrintFrameCommand));
+			RegisterCommand ("disassemble", typeof (DisassembleCommand));
+			RegisterAlias   ("dis", typeof (DisassembleCommand));
+			RegisterCommand ("thread", typeof (SelectThreadCommand));
+			RegisterCommand ("background", typeof (BackgroundThreadCommand));
+			RegisterAlias   ("bg", typeof (BackgroundThreadCommand));
+			RegisterCommand ("stop", typeof (StopThreadCommand));
+			RegisterCommand ("continue", typeof (ContinueCommand));
+			RegisterAlias   ("cont", typeof (ContinueCommand));
+			RegisterAlias   ("c", typeof (ContinueCommand));
+			RegisterCommand ("step", typeof (StepCommand));
+			RegisterAlias   ("s", typeof (StepCommand));
+			RegisterCommand ("next", typeof (NextCommand));
+			RegisterAlias   ("n", typeof (NextCommand));
+			RegisterCommand ("stepi", typeof (StepInstructionCommand));
+			RegisterAlias   ("i", typeof (StepInstructionCommand));
+			RegisterCommand ("nexti", typeof (NextInstructionCommand));
+			RegisterAlias   ("t", typeof (NextInstructionCommand));
+			RegisterCommand ("finish", typeof (FinishCommand));
+			RegisterAlias   ("fin", typeof (FinishCommand));
+			RegisterCommand ("backtrace", typeof (BacktraceCommand));
+			RegisterAlias   ("bt", typeof (BacktraceCommand));
+			RegisterAlias   ("where", typeof (BacktraceCommand));
+			RegisterCommand ("up", typeof (UpCommand));
+			RegisterCommand ("down", typeof (DownCommand));
+			RegisterCommand ("kill", typeof (KillCommand));
+			RegisterAlias   ("k", typeof (KillCommand));
+			RegisterCommand ("set", typeof (SetCommand));
+			RegisterCommand ("show", typeof (ShowCommand));
+			RegisterCommand ("info", typeof (ShowCommand)); /* for gdb users */
+			RegisterCommand ("threadgroup", typeof (ThreadGroupCommand));
+			RegisterCommand ("enable", typeof (BreakpointEnableCommand));
+			RegisterCommand ("disable", typeof (BreakpointDisableCommand));
+			RegisterCommand ("delete", typeof (BreakpointDeleteCommand));
+			RegisterCommand ("list", typeof (ListCommand));
+			RegisterAlias   ("l", typeof (ListCommand));
+			RegisterCommand ("break", typeof (BreakCommand));
+			RegisterAlias   ("b", typeof (BreakCommand));
+			RegisterCommand ("catch", typeof (CatchCommand));
+			RegisterCommand ("quit", typeof (QuitCommand));
+			RegisterAlias   ("q", typeof (QuitCommand));
+			RegisterCommand ("dump", typeof (DumpCommand));
+			RegisterCommand ("help", typeof (HelpCommand));
+			RegisterCommand ("library", typeof (LibraryCommand));
+			RegisterCommand ("run", typeof (RunCommand));
+			RegisterAlias   ("r", typeof (RunCommand));
+			RegisterCommand ("attach", typeof (AttachCommand));
+			RegisterCommand ("core", typeof (OpenCoreFileCommand));
+			RegisterCommand ("about", typeof (AboutCommand));
+			RegisterCommand ("lookup", typeof (LookupCommand));
+			RegisterCommand ("return", typeof (ReturnCommand));
+			RegisterCommand ("save", typeof (SaveCommand));
+			RegisterCommand ("load", typeof (LoadCommand));
 		}
 	}
 
@@ -328,7 +392,8 @@ namespace Mono.Debugger.Frontend
 						 Expression expression, DisplayFormat format)
 		{
 			object retval = expression.Evaluate (context);
-			context.PrintObject (retval, format);
+			string text = context.FormatObject (retval, format);
+			context.Print (text);
 		}
 
 		// IDocumentableCommand
@@ -343,7 +408,8 @@ namespace Mono.Debugger.Frontend
 						 Expression expression, DisplayFormat format)
 		{
 			TargetType type = expression.EvaluateType (context);
-			context.PrintType (type);
+			string text = context.FormatType (type);
+			context.Print (text);
 		}
 
 		// IDocumentableCommand

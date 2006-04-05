@@ -33,7 +33,7 @@ namespace Mono.Debugger.Frontend
 		StackFrame current_frame;
 		Interpreter interpreter;
 
-		internal ScriptingContext (Interpreter interpreter)
+		public ScriptingContext (Interpreter interpreter)
 		{
 			this.interpreter = interpreter;
 		}
@@ -211,7 +211,7 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-		string DoPrintObject (TargetObject obj, DisplayFormat format)
+		string DoFormatObject (TargetObject obj, DisplayFormat format)
 		{
 			if (format == DisplayFormat.Object) {
 				TargetClassObject cobj = obj as TargetClassObject;
@@ -225,22 +225,22 @@ namespace Mono.Debugger.Frontend
 			return CurrentThread.PrintObject (interpreter.Style, obj, format);
 		}
 
-		public void PrintObject (object obj, DisplayFormat format)
+		public string FormatObject (object obj, DisplayFormat format)
 		{
 			string formatted;
 			try {
 				if (obj is TargetObject)
-					formatted = DoPrintObject ((TargetObject) obj, format);
+					formatted = DoFormatObject ((TargetObject) obj, format);
 				else
 					formatted = interpreter.Style.FormatObject (
 						CurrentThread, obj, format);
 			} catch {
 				formatted = "<cannot display object>";
 			}
-			Print (formatted);
+			return formatted;
 		}
 
-		public void PrintType (TargetType type)
+		public string FormatType (TargetType type)
 		{
 			string formatted;
 			try {
@@ -249,7 +249,7 @@ namespace Mono.Debugger.Frontend
 			} catch {
 				formatted = "<cannot display type>";
 			}
-			Print (formatted);
+			return (formatted);
 		}
 
 		public void PrintMethods (SourceMethod[] methods)

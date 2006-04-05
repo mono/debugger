@@ -16,10 +16,10 @@ using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	public abstract class Interpreter : MarshalByRefObject
-	{
-		public readonly ReportWriter ReportWriter;
+	public delegate void DebuggerOutputHandler (string text);
 
+	public sealed class Interpreter : MarshalByRefObject
+	{
 		DebuggerOptions options;
 		DebuggerSession session;
 
@@ -49,21 +49,14 @@ namespace Mono.Debugger.Frontend
 			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
 		}
 
-		internal Interpreter (bool is_synchronous, bool is_interactive,
-				      DebuggerOptions options)
+		public Interpreter (bool is_synchronous, bool is_interactive,
+				    DebuggerOptions options)
 		{
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 			this.options = options;
 
 			interrupt_event = new ManualResetEvent (false);
-
-			if (options.HasDebugFlags)
-				ReportWriter = new ReportWriter (options.DebugOutput, options.DebugFlags);
-			else
-				ReportWriter = new ReportWriter ();
-
-			Report.Initialize (ReportWriter);
 
 			styles = new Hashtable ();
 			styles.Add ("cli", new StyleCLI (this));
@@ -233,13 +226,17 @@ namespace Mono.Debugger.Frontend
 
 		public void Print (string message)
 		{
-			Report.Print ("{0}\n", message);
+			if (DebuggerOutputEvent != null)
+				DebuggerOutputEvent (message + "\n");
+			else {
+				Report.Print (message);
+				Report.Print ("\n");
+			}
 		}
 
 		public void Print (string format, params object[] args)
 		{
-			Report.Print (format, args);
-			Report.Print ("\n");
+			Print (String.Format (format, args));
 		}
 
 		public void Print (object obj)
@@ -310,8 +307,9 @@ namespace Mono.Debugger.Frontend
 			if ((debugger != null) || (main_process != null))
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			Console.WriteLine ("Starting program: {0}",
-					   String.Join (" ", options.InferiorArgs));
+			if (!IsScript)
+				Print ("Starting program: {0}",
+				       String.Join (" ", options.InferiorArgs));
 
 			try {
 				debugger = new Debugger ();
@@ -508,7 +506,7 @@ namespace Mono.Debugger.Frontend
 		protected void ProcessCreated (Process process)
 		{
 			if (!IsScript)
-			Print ("Created new process {0}.", PrintProcess (process));
+				Print ("Created new process {0}.", PrintProcess (process));
 			if (current_process == null) {
 				current_process = process;
 				current_thread = process.MainThread;
@@ -757,6 +755,22 @@ namespace Mono.Debugger.Frontend
 					      process.MainThread.PID, command_line);
 		}
 
+		public event TargetOutputHandler TargetOutputEvent;
+		public event DebuggerOutputHandler DebuggerOutputEvent;
+
+		protected void TargetOutput (bool is_stderr, string line)
+		{
+			if (TargetOutputEvent != null)
+				TargetOutputEvent (is_stderr, line);
+
+			if (!IsScript) {
+				if (is_stderr)
+					Report.Error (line);
+				else
+					Report.Print (line);
+			}
+		}
+
 		protected class InterpreterEventSink : MarshalByRefObject
 		{
 			Interpreter interpreter;
@@ -799,10 +813,7 @@ namespace Mono.Debugger.Frontend
 
 			public void target_output (bool is_stderr, string line)
 			{
-				if (is_stderr)
-					Report.Error (line);
-				else
-					Report.Print (line);
+				interpreter.TargetOutput (is_stderr, line);
 			}
 		}
 
