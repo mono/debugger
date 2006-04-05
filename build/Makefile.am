@@ -61,16 +61,16 @@ TEST_DEPS = \
 	-r:nunit.framework
 
 Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
-	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
-	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
-	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
-#	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/wrapper/mono.snk)
+#	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/build/mono.snk)
 
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)

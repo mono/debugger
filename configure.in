@@ -224,8 +224,8 @@ mono-debugger.pc
 jay/Makefile
 interfaces/Makefile
 classes/Makefile
-wrapper/Makefile
-wrapper/Mono.Debugger.dll.config
+build/Makefile
+build/Mono.Debugger.dll.config
 backends/Makefile
 backends/classes/Makefile
 backends/server/Makefile

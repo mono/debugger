@@ -1,5 +1,9 @@
 2006-04-05  Martin Baulig  <martin@ximian.com>
 
+	* wrapper/: Renamed to `build'.
+
+2006-04-05  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs (DebuggerEngine.ctor): Register all the
 	commands here.
 
