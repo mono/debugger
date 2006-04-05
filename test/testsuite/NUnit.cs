@@ -335,12 +335,18 @@ namespace Mono.Debugger.Tests
 
 		public void AssertPrint (Thread thread, string expression, string exp_result)
 		{
+			AssertPrint (thread, DisplayFormat.Object, expression, exp_result);
+		}
+
+		public void AssertPrint (Thread thread, DisplayFormat format,
+					 string expression, string exp_result)
+		{
 			string text = null;
 			try {
 				ScriptingContext context = GetContext (thread);
 
 				object obj = EvaluateExpression (context, expression);
-				text = context.FormatObject (obj, DisplayFormat.Object);
+				text = context.FormatObject (obj, format);
 			} catch (AssertionException) {
 				throw;
 			} catch (Exception ex) {
