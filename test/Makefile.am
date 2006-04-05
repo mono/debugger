@@ -4,7 +4,7 @@ EXTRA_SUBDIRS = mono-debugger.tests
 MCS_FLAGS=-debug -unsafe
 
 noinst_SCRIPTS = \
-	TestAssembly.exe TestNamespace.exe TestModule.dll \
+	TestAssembly.exe TestModule.dll \
 	MultiThread.exe Simple.exe TestException.exe
 
 noinst_LTLIBRARIES=libfoo.la
@@ -12,7 +12,7 @@ noinst_LTLIBRARIES=libfoo.la
 noinst_PROGRAMS = testnativetypes module
 
 EXTRA_DIST = \
-	TestAssembly.cs TestNamespace.cs TestModule.cs \
+	TestAssembly.cs TestModule.cs \
 	MultiThread.cs Simple.cs TestException.cs mdb.exp
 
 testnativetypes_SOURCES = testnativetypes.c
