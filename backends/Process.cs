@@ -347,7 +347,7 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		internal void Kill ()
+		public void Kill ()
 		{
 			Thread[] threads;
 			lock (thread_hash.SyncRoot) {

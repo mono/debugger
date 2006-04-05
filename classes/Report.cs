@@ -26,11 +26,16 @@ namespace Mono.Debugger
 
 	public static class Report
 	{
-		private static ReportWriter ReportWriter = null;
+		private static ReportWriter ReportWriter = new ReportWriter ();
 
-		public static void Initialize (ReportWriter writer)
+		public static void Initialize ()
 		{
-			ReportWriter = writer;
+			ReportWriter = new ReportWriter ();
+		}
+
+		public static void Initialize (string file, DebugFlags flags)
+		{
+			ReportWriter = new ReportWriter (file, flags);
 		}
 
 		[Conditional("DEBUG")]
