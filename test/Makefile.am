@@ -1,5 +1,4 @@
 SUBDIRS = src testsuite
-EXTRA_SUBDIRS = mono-debugger.tests
 
 MCS_FLAGS=-debug -unsafe
 
