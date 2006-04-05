@@ -183,8 +183,7 @@ namespace Mono.Debugger.Tests
 			}
 		}
 
-		public void AssertStopped (Thread exp_thread, int exp_index,
-					   string exp_func, int exp_line)
+		public void AssertStopped (Thread exp_thread, string exp_func, int exp_line)
 		{
 			AssertFrame (exp_thread, exp_func, exp_line);
 
@@ -209,7 +208,7 @@ namespace Mono.Debugger.Tests
 				return;
 			}
 
-			AssertFrame (frame, exp_index, exp_func, exp_line);
+			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
 		public void AssertHitBreakpoint (Thread exp_thread, int exp_index,

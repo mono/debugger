@@ -5,7 +5,7 @@ MCS_FLAGS=-debug -unsafe
 
 noinst_SCRIPTS = \
 	TestAssembly.exe TestNamespace.exe TestModule.dll \
-	MultiThread.exe TestInheritance.exe Simple.exe TestException.exe \
+	MultiThread.exe Simple.exe TestException.exe \
 	TestRestart.exe TestDelegate.exe TestNull.exe TestIndexer.exe TestByRef.exe \
 	TestToString.exe TestEnum.exe TestObject.exe TestProperty.exe TestAbort.exe \
 	TestBreakpoint.exe
@@ -16,7 +16,7 @@ noinst_PROGRAMS = testnativetypes module
 
 EXTRA_DIST = \
 	TestAssembly.cs TestNamespace.cs TestModule.cs \
-	MultiThread.cs TestInheritance.cs Simple.cs TestException.cs mdb.exp \
+	MultiThread.cs Simple.cs TestException.cs mdb.exp \
 	TestRestart.cs TestDelegate.cs TestNull.cs TestIndexer.cs TestByRef.cs TestToString.cs \
 	TestEnum.cs TestObject.cs TestProperty.cs TestAbort.cs TestBreakpoint.exe
 

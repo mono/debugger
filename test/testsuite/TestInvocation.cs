@@ -22,7 +22,7 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, 0, "X.Main()", 47);
+			AssertStopped (thread, "X.Main()", 47);
 			int bpt = AssertBreakpoint ("31");
 			Execute ("continue");
 

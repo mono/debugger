@@ -23,7 +23,7 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, 0, "X.Main()", 218);
+			AssertStopped (thread, "X.Main()", 218);
 
 			AssertNoTargetOutput ();
 			AssertNoDebuggerOutput ();

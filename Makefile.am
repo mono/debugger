@@ -1,4 +1,4 @@
-SUBDIRS = jay interfaces languages classes arch backends frontend build test
+SUBDIRS = jay interfaces languages classes arch backends frontend test build
 
 DIST_SUBDIRS= doc $(SUBDIRS)
 
