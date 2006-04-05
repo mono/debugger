@@ -15,7 +15,6 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
-		[Category("NotWorking")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
