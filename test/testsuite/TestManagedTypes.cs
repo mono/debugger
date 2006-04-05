@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestManagedTypes : TestSuite
 	{
 		public TestManagedTypes ()
-			: base ("../TestManagedTypes.exe")
+			: base ("../test/src/TestManagedTypes.exe")
 		{ }
 
 		[Test]

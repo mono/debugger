@@ -66,7 +66,7 @@ Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
 Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
-Mono.Debugger.Test.dll: Makefile $(Test_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
+Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/wrapper/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
@@ -100,3 +100,10 @@ install-data-local:
 uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /u Mono.Debugger.Cecil $(GACUTIL_FLAGS) || exit 1;
+
+NUNIT_CONSOLE_FLAGS =
+
+check-local:
+	$(NUNIT_CONSOLE) $(NUNIT_CONSOLE_FLAGS) /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml Mono.Debugger.Test.dll || ok=false; \
+	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
+	$$ok
