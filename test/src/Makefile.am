@@ -12,7 +12,7 @@ EXTRA_DIST = \
 	TestDelegate.cs TestIndexer.cs TestEnum.cs \
 	TestRestart.cs TestNull.cs TestByRef.cs \
 	TestToString.cs TestObject.cs TestProperty.cs TestAbort.cs \
-	TestBreakpoint.exe TestNamespace.exe
+	TestBreakpoint.cs TestNamespace.cs
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<
