@@ -1,10 +1,10 @@
 MCS_FLAGS=-debug -unsafe
 
 noinst_SCRIPTS = \
-	TestManagedTypes.exe
+	TestManagedTypes.exe TestInvocation.exe
 
 EXTRA_DIST = \
-	TestManagedTypes.cs
+	TestManagedTypes.cs TestInvocation.cs
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<

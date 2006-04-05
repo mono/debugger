@@ -44,6 +44,9 @@ LIBRARY_SRCLIST = \
 TEST_SRCLIST = \
 	$(top_srcdir)/test/testsuite/*.cs
 
+TEST_CASE_SOURCES = \
+	$(top_srcdir)/test/src/*.cs
+
 LIBRARY_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
@@ -103,7 +106,7 @@ uninstall-local:
 
 NUNIT_CONSOLE_FLAGS =
 
-check-local:
+check-local: Mono.Debugger.Test.dll $(TEST_CASE_SOURCES)
 	$(NUNIT_CONSOLE) $(NUNIT_CONSOLE_FLAGS) /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml Mono.Debugger.Test.dll || ok=false; \
 	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 	$$ok
