@@ -1,3 +1,10 @@
+2006-04-05  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/: New directory.  Started to migrate the
+	testsuite to NUnit.
+
+	* test/src/: New directory.  The test sources will be moved here.	
+
 2006-04-04  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86-linux-ptrace.c
