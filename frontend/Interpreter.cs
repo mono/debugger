@@ -82,7 +82,7 @@ namespace Mono.Debugger.Frontend
 		public void Exit ()
 		{
 			try {
-				Kill ();
+				Dispose ();
 			} catch (Exception ex) {
 				Console.WriteLine (ex);
 			} finally {
@@ -791,7 +791,7 @@ namespace Mono.Debugger.Frontend
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
 				if (debugger != null) {
-					debugger.Dispose ();
+					debugger.Kill ();
 					debugger = null;
 				}
 			}

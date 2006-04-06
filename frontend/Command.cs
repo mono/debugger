@@ -12,12 +12,9 @@ namespace Mono.Debugger.Frontend
 {
 	public class DebuggerEngine : Engine
 	{
-		public readonly Interpreter Interpreter;
-
 		public DebuggerEngine (Interpreter interpreter)
+			: base (interpreter)
 		{
-			this.Interpreter = interpreter;
-
 			RegisterCommand ("pwd", typeof (PwdCommand));
 			RegisterCommand ("cd", typeof (CdCommand));
 			RegisterCommand ("print", typeof (PrintExpressionCommand));
@@ -121,11 +118,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public abstract string Execute (Engine e);
+		public abstract void Execute (Engine e);
 
-		public virtual string Repeat (Engine e)
+		public virtual void Repeat (Engine e)
 		{
-			return Execute (e);
+			Execute (e);
 		}
 
 		/* override this to provide command specific completion */
@@ -144,51 +141,32 @@ namespace Mono.Debugger.Frontend
                 }
 	}
 
-
 	public abstract class DebuggerCommand : Command
 	{
 		protected bool Repeating;
 		private bool Error;
 		private ScriptingContext context;
 
-		public override string Execute (Engine e)
+		public override void Execute (Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
-			try {
-				if (!Repeating || Error) {
-					context = new ScriptingContext (engine.Interpreter);
+			if (!Repeating || Error) {
+				context = new ScriptingContext (engine.Interpreter);
 
-					if (!Resolve (context)) {
-						Error = true;
-						return null;
-					}
+				if (!Resolve (context)) {
+					Error = true;
+					return;
 				}
-
-				Execute (context);
-			} catch (ThreadAbortException) {
-			} catch (ScriptingException ex) {
-				Error = true;
-				engine.Interpreter.Error (ex);
-				return null;
-			} catch (TargetException ex) {
-				Error = true;
-				engine.Interpreter.Error (ex);
-			} catch (Exception ex) {
-				Error = true;
-				engine.Interpreter.Error (
-					"Caught exception while executing command {0}: {1}",
-					this, ex);
-				return null;
 			}
 
-			return "";
+			Execute (context);
 		}
 
-		public override string Repeat (Engine e)
+		public override void Repeat (Engine e)
 		{
 			Repeating = true;
-			return Execute (e);
+			Execute (e);
 		}
 
 		protected Expression ParseExpression (ScriptingContext context)
@@ -203,7 +181,8 @@ namespace Mono.Debugger.Frontend
 
 		protected Expression DoParseExpression (ScriptingContext context, string arg)
 		{
-			IExpressionParser parser = context.Interpreter.GetExpressionParser (context, ToString());
+			IExpressionParser parser = context.Interpreter.GetExpressionParser (
+				context, ToString());
 
 			Expression expr = parser.Parse (arg);
 			if (expr == null)
@@ -231,26 +210,15 @@ namespace Mono.Debugger.Frontend
 
 		public bool Resolve (ScriptingContext context)
 		{
-			try {
-				if (!DoResolveBase (context))
-					return false;
-
-				return DoResolve (context);
-			} catch (ScriptingException ex) {
-				context.Error (ex);
+			if (!DoResolveBase (context))
 				return false;
-			}
+
+			return DoResolve (context);
 		}
 
 		public void Execute (ScriptingContext context)
 		{
-			try {
-				DoExecute (context);
-			} catch (ScriptingException ex) {
-				context.Error (ex);
-			} catch (TargetException ex) {
-				context.Error (ex.Message);
-			}
+			DoExecute (context);
 		}
 	}
 
@@ -2214,7 +2182,7 @@ namespace Mono.Debugger.Frontend
 
 	public class HelpCommand : Command, IDocumentableCommand
 	{
-		public override string Execute (Engine e)
+		public override void Execute (Engine e)
 		{
 			if (Args == null || Args.Count == 0) {
 				Console.WriteLine ("List of families of commands:\n");
@@ -2245,7 +2213,7 @@ namespace Mono.Debugger.Frontend
 
 					if (cmds == null) {
 						Console.WriteLine ("No commands exist in that family");
-						return null;
+						return;
 					}
 
 					/* we're printing out a command family */
@@ -2287,7 +2255,6 @@ namespace Mono.Debugger.Frontend
 					Console.WriteLine ("Undefined command \"{0}\".  try \"help\".", args[0]);
 				}
 			}
-			return null;
 		}
 
                 public override void Complete (Engine e, string text, int start, int end) {
@@ -2304,12 +2271,11 @@ namespace Mono.Debugger.Frontend
 
 	public class AboutCommand : Command, IDocumentableCommand
 	{
-		public override string Execute (Engine e)
+		public override void Execute (Engine e)
 		{
 			Console.WriteLine ("Mono Debugger (C) 2003, 2004 Novell, Inc.\n" +
 					   "Written by Martin Baulig (martin@ximian.com)\n" +
 					   "        and Chris Toshok (toshok@ximian.com)\n");
-			return null;
 		}
 
 		// IDocumentableCommand

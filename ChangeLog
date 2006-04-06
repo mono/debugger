@@ -1,5 +1,16 @@
 2006-04-06  Martin Baulig  <martin@ximian.com>
 
+	* frontend/CL.cs (Engine.ctor): Take an `Interpreter' argument.
+	(Engine.Run): Moved the exception handling here.
+
+	* frontend/Command.cs
+	(Command.Execute): Changed return type to `void'; don't catch any
+	exceptions here.
+	(Command.Repeat): Changed return type to `void'.
+	(Command.Resolve): Don't catch any exceptions here.
+
+2006-04-06  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter): Implement `IDisposable'.
 

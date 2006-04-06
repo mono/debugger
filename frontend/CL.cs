@@ -5,19 +5,23 @@
 
 using System;
 using System.Text;
+using System.Threading;
 using System.Collections;
 using System.Reflection;
 
 namespace Mono.Debugger.Frontend
 {
 	public class Engine {
+		public readonly Interpreter Interpreter;
 		public readonly string[] CommandFamilyBlurbs;
 		public readonly ArrayList[] CommandsByFamily;
 		public readonly Hashtable Commands = new Hashtable ();
 		public readonly Hashtable Aliases = new Hashtable ();
 		public readonly Completer Completer;
 
-		public Engine () {
+		public Engine (Interpreter interpreter)
+		{
+			this.Interpreter = interpreter;
 
 			Completer = new Completer (this);
 
@@ -156,13 +160,22 @@ namespace Mono.Debugger.Frontend
 			Command c = Get (s, args);
 			last_command = c;
 			if (c == null) {
-				Console.WriteLine ("No such command `{0}'.", s);
+				Interpreter.Error ("No such command `{0}'.", s);
 				return;
 			}
 
-			string retval = c.Execute (this);
-			if ((retval != null) && (retval != ""))
-				Console.WriteLine (retval);
+			try {
+				c.Execute (this);
+			} catch (ThreadAbortException) {
+			} catch (ScriptingException ex) {
+				Interpreter.Error (ex);
+			} catch (TargetException ex) {
+				Interpreter.Error (ex);
+			} catch (Exception ex) {
+				Interpreter.Error (
+					"Caught exception while executing command {0}: {1}",
+					this, ex);
+			}
 		}
 
 		public void Repeat ()
