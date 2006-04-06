@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestBreakpoint : TestSuite
 	{
 		public TestBreakpoint ()
-			: base ("../test/src/TestBreakpoint.exe")
+			: base ("TestBreakpoint")
 		{ }
 
 		[Test]

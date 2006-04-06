@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestInvocation : TestSuite
 	{
 		public TestInvocation ()
-			: base ("../test/src/TestInvocation.exe")
+			: base ("TestInvocation")
 		{ }
 
 		[Test]

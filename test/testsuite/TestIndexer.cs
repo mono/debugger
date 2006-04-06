@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestIndexer : TestSuite
 	{
 		public TestIndexer ()
-			: base ("../test/src/TestIndexer.exe")
+			: base ("TestIndexer")
 		{ }
 
 		[Test]

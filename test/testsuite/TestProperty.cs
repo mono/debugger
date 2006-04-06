@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestProperty : TestSuite
 	{
 		public TestProperty ()
-			: base ("../test/src/TestProperty.exe")
+			: base ("TestProperty")
 		{ }
 
 		[Test]

@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestNull : TestSuite
 	{
 		public TestNull ()
-			: base ("../test/src/TestNull.exe")
+			: base ("TestNull")
 		{ }
 
 		[Test]

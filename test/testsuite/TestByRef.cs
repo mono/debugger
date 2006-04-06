@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestByRef : TestSuite
 	{
 		public TestByRef ()
-			: base ("../test/src/TestByRef.exe")
+			: base ("TestByRef")
 		{ }
 
 		[Test]

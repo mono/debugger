@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestInheritance : TestSuite
 	{
 		public TestInheritance ()
-			: base ("../test/src/TestInheritance.exe")
+			: base ("TestInheritance")
 		{ }
 
 		[Test]

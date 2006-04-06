@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestEnum : TestSuite
 	{
 		public TestEnum ()
-			: base ("../test/src/TestEnum.exe")
+			: base ("TestEnum")
 		{ }
 
 		[Test]

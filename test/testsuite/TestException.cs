@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -12,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestException : TestSuite
 	{
 		public TestException ()
-			: base ("../test/src/TestException.exe")
+			: base ("TestException")
 		{ }
 
 		[Test]
@@ -22,8 +21,6 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
-
-			string filename = Path.GetFullPath ("../test/src/TestException.cs");
 
 			const int line_exception = 7;
 			const int line_main = 12;
@@ -45,7 +42,7 @@ namespace Mono.Debugger.Tests
 					      "Invocation of `x.Test ()' raised an exception: " +
 					      "System.InvalidOperationException: Operation is not " +
 					      "valid due to the current state of the object\n" +
-					      "in [0x00005] (at " + filename + ":8) X:Test ()");
+					      "in [0x00005] (at " + FileName + ":8) X:Test ()");
 		}
 	}
 }

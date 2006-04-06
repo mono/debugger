@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestNamespace : TestSuite
 	{
 		public TestNamespace ()
-			: base ("../test/src/TestNamespace.exe")
+			: base ("TestNamespace")
 		{ }
 
 		[Test]

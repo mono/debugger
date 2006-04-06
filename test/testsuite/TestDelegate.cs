@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestDelegate : TestSuite
 	{
 		public TestDelegate ()
-			: base ("../test/src/TestDelegate.exe")
+			: base ("TestDelegate")
 		{ }
 
 		[Test]

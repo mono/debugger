@@ -11,7 +11,7 @@ namespace Mono.Debugger.Tests
 	public class TestToString : TestSuite
 	{
 		public TestToString ()
-			: base ("../test/src/TestToString.exe")
+			: base ("TestToString")
 		{ }
 
 		[Test]

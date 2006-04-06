@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -19,6 +20,9 @@ namespace Mono.Debugger.Tests
 		LineReader debugger_output;
 		LineReader inferior_stdout, inferior_stderr;
 
+		public readonly string ExeFileName;
+		public readonly string FileName;
+
 		static Regex breakpoint_regex = new Regex (@"^Breakpoint ([0-9]+) at ([^\n\r]+)$");
 		static Regex catchpoint_regex = new Regex (@"^Inserted catch point ([0-9]+) for ([^\n\r]+)$");
 		static Regex stopped_regex = new Regex (@"^Thread @([0-9]+) stopped at ([^\n\r]+)\.$");
@@ -30,7 +34,10 @@ namespace Mono.Debugger.Tests
 
 		protected TestSuite (string application)
 		{
-			options = CreateOptions (application);
+			ExeFileName = Path.GetFullPath ("../test/src/" + application + ".exe");
+			FileName = Path.GetFullPath ("../test/src/" + application + ".cs");
+
+			options = CreateOptions (ExeFileName);
 
 			debugger_output = new LineReader ();
 			inferior_stdout = new LineReader ();
@@ -148,10 +155,8 @@ namespace Mono.Debugger.Tests
 		public void AssertTargetOutput (string line)
 		{
 			string output = inferior_stdout.ReadLine ();
-			if (output == null) {
+			if (output == null)
 				Assert.Fail ("No target output.");
-				return;
-			}
 
 			Assert.AreEqual (line, output,
 					 "Expected target output `{0}', but got `{1}'.",
@@ -168,10 +173,8 @@ namespace Mono.Debugger.Tests
 		public void AssertDebuggerOutput (string line)
 		{
 			string output = debugger_output.ReadLine ();
-			if (output == null) {
+			if (output == null)
 				Assert.Fail ("No debugger output.");
-				return;
-			}
 
 			Assert.AreEqual (line, output,
 					 "Expected debugger output `{0}', but got `{1}'.",
@@ -188,19 +191,15 @@ namespace Mono.Debugger.Tests
 		public void AssertFrame (string frame, int exp_index, string exp_func, int exp_line)
 		{
 			Match match = frame_regex.Match (frame);
-			if (!match.Success) {
+			if (!match.Success)
 				Assert.Fail ("Received unknown stack frame `{0}'.", frame);
-				return;
-			}
 
 			int index = Int32.Parse (match.Groups [1].Value);
 			string func = match.Groups [2].Value;
 
 			Match source_match = func_source_regex.Match (func);
-			if (!source_match.Success) {
+			if (!source_match.Success)
 				Assert.Fail ("Received unknown stack frame `{0}'.", frame);
-				return;
-			}
 
 			func = source_match.Groups [1].Value;
 			string file = source_match.Groups [2].Value;
@@ -210,22 +209,20 @@ namespace Mono.Debugger.Tests
 			if (offset_match != null)
 				func = offset_match.Groups [1].Value;
 
-			if (index != exp_index) {
+			if (index != exp_index)
 				Assert.Fail ("Received frame {0}, but expected {1}.", index, exp_index);
-				return;
-			}
 
-			if (func != exp_func) {
+			if (file != FileName)
+				Assert.Fail ("Target stopped in {0}, but expected {1}.",
+					     file, FileName);
+
+			if (func != exp_func)
 				Assert.Fail ("Target stopped in function `{0}', but expected `{1}'.",
 					     func, exp_func);
-				return;
-			}
 
-			if (line != exp_line) {
+			if (line != exp_line)
 				Assert.Fail ("Target stopped in line {0}, but expected {1}.",
 					     line, exp_line);
-				return;
-			}
 		}
 
 		public void AssertStopped (Thread exp_thread, string exp_func, int exp_line)
@@ -233,25 +230,19 @@ namespace Mono.Debugger.Tests
 			AssertFrame (exp_thread, exp_func, exp_line);
 
 			string output = debugger_output.ReadLine ();
-			if (output == null) {
+			if (output == null)
 				Assert.Fail ("Target not stopped.");
-				return;
-			}
 
 			Match match = stopped_regex.Match (output);
-			if (!match.Success) {
+			if (!match.Success)
 				Assert.Fail ("Target not stopped.");
-				return;
-			}
 
 			int thread = Int32.Parse (match.Groups [1].Value);
 			string frame = match.Groups [2].Value;
 
-			if (thread != exp_thread.ID) {
+			if (thread != exp_thread.ID)
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
-				return;
-			}
 
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
@@ -262,32 +253,24 @@ namespace Mono.Debugger.Tests
 			AssertFrame (exp_thread, exp_func, exp_line);
 
 			string output = debugger_output.ReadLine ();
-			if (output == null) {
+			if (output == null)
 				Assert.Fail ("Target not stopped.");
-				return;
-			}
 
 			Match match = hit_breakpoint_regex.Match (output);
-			if (!match.Success) {
+			if (!match.Success)
 				Assert.Fail ("Target not stopped.");
-				return;
-			}
 
 			int thread = Int32.Parse (match.Groups [1].Value);
 			int index = Int32.Parse (match.Groups [2].Value);
 			string frame = match.Groups [3].Value;
 
-			if (thread != exp_thread.ID) {
+			if (thread != exp_thread.ID)
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
-				return;
-			}
 
-			if (index != exp_index) {
+			if (index != exp_index)
 				Assert.Fail ("Thread {0} hit breakpoint {1}, but expected {2}.",
 					     thread, index, exp_index);
-				return;
-			}
 
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
@@ -297,25 +280,19 @@ namespace Mono.Debugger.Tests
 			AssertFrame (exp_thread, exp_func, exp_line);
 
 			string output = debugger_output.ReadLine ();
-			if (output == null) {
+			if (output == null)
 				Assert.Fail ("Target not stopped.");
-				return;
-			}
 
 			Match match = caught_exception_regex.Match (output);
-			if (!match.Success) {
+			if (!match.Success)
 				Assert.Fail ("Target not stopped.");
-				return;
-			}
 
 			int thread = Int32.Parse (match.Groups [1].Value);
 			string frame = match.Groups [2].Value;
 
-			if (thread != exp_thread.ID) {
+			if (thread != exp_thread.ID)
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
-				return;
-			}
 
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
