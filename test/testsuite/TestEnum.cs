@@ -28,7 +28,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
 			AssertPrint (thread, DisplayFormat.HexaDecimal, "irish_pub_thursday",
@@ -46,7 +46,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "dinner",
 				     "(Pub) { Music = Country, Drinks = Juice | Tea }");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

@@ -23,7 +23,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main()", 29);
-			Execute ("next");
+			AssertExecute ("next");
 			AssertStopped (thread, "X.Main()", 30);
 
 			AssertPrint (thread, "x.Foo (8)", "(System.Int64) 24");
@@ -36,22 +36,22 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Boston: 9");
 			AssertNoTargetOutput ();
 
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.foo(System.Int32)", 17);
-			Execute ("next");
+			AssertExecute ("next");
 			AssertTargetOutput ("Hello World: 4");
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.foo(System.Int32)", 18);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.foo(System.Int32)", 19);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.boston(System.Int32)", 23);
-			Execute ("next");
+			AssertExecute ("next");
 			AssertTargetOutput ("Boston: 4");
 			AssertStopped (thread, "X.boston(System.Int32)", 24);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.boston(System.Int32)", 25);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 31);
 
 			AssertPrint (thread, "x.Foo (5)", "(System.Int64) 15");
@@ -65,28 +65,28 @@ namespace Mono.Debugger.Tests
 			AssertNoTargetOutput ();
 
 			int bpt = AssertBreakpoint ("-invoke x.Foo");
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertTargetOutput ("Back in main");
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.foo(System.Int32)", 17);
-			Execute ("next");
+			AssertExecute ("next");
 			AssertTargetOutput ("Hello World: 11");
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.foo(System.Int32)", 18);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.foo(System.Int32)", 19);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.boston(System.Int32)", 23);
-			Execute ("next");
+			AssertExecute ("next");
 			AssertTargetOutput ("Boston: 11");
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.boston(System.Int32)", 24);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.boston(System.Int32)", 25);
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 33);
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

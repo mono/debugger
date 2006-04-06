@@ -25,20 +25,20 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", 30);
 
 			int bpt = AssertBreakpoint ("32");
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt, "X.Main()", 32);
 
 			AssertPrint (thread, "x[0]", "(System.String) \"Hello\"");
 			AssertPrint (thread, "x[1]", "(System.String) \"World\"");
 			AssertPrint (thread, "x[0,\"Berlin\"]", "(System.String) \"Hello Berlin\"");
-			Execute ("set x[0] = \"Test\"");
+			AssertExecute ("set x[0] = \"Test\"");
 			AssertPrint (thread, "x[0]", "(System.String) \"Test\"");
 
 			// FIXME
-			// Execute ("set x[0,\"Berlin\"] = \"Trier\"");
+			AssertExecute ("set x[0,\"Berlin\"] = \"Trier\"");
 			// AssertDebuggerOutput ("ERROR: No overload of method `X.x[]' has 3 arguments.");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

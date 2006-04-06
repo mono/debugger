@@ -29,7 +29,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
 
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
 			AssertPrint (thread, "d.Test ()", "(System.String) \"Hello World\"");
@@ -68,7 +68,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "c.Test (c)", "(System.Int32) 64");
 
 			int bpt_hello = AssertBreakpoint (line_hello);
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertTargetOutput ("Hello");
 			AssertTargetOutput ("World");
 			AssertTargetOutput ("3.14");
@@ -82,7 +82,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "base.Hello", "(System.String) \"Hello World\"");
 			AssertPrint (thread, "Virtual ()", "(System.Int32) 2");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

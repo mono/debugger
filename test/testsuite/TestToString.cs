@@ -29,18 +29,18 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
-			// Execute ("bt");
+			// AssertExecute ("bt");
 
 			AssertPrint (thread, "foo.ToString()", "(System.String) \"Hello World!\"");
-			Execute ("next");
+			AssertExecute ("next");
 			AssertStopped (thread, "X.Main()", line_main_3);
 
-			// Execute ("bt");
+			// AssertExecute ("bt");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

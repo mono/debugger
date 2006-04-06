@@ -78,7 +78,7 @@ namespace Mono.Debugger.Tests
 			return options;
 		}
 
-		public void Execute (string text)
+		public void AssertExecute (string text)
 		{
 			parser.Reset ();
 			parser.Append (text);
@@ -272,7 +272,7 @@ namespace Mono.Debugger.Tests
 		public int AssertBreakpoint (string location)
 		{
 			AssertNoDebuggerOutput ();
-			Execute ("break " + location);
+			AssertExecute ("break " + location);
 
 			string output = debugger_output.ReadLine ();
 			if (output == null) {

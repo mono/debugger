@@ -44,52 +44,52 @@ namespace Mono.Debugger.Tests
 			int bpt_world = AssertBreakpoint ("Martin.Baulig.Hello.World");
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
 
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_1, "Martin.Baulig.Hello.Test()",
 					     line_test);
 
 			int bpt_porta_nigra = AssertBreakpoint ("-get trier.PortaNigra");
 			// We are stopped on a breakpoint and use "continue" to step over it
-			Execute ("continue");
+			AssertExecute ("continue");
 
 			AssertHitBreakpoint (thread, bpt_porta_nigra,
 					     "Europe.Germany.Trier.get_PortaNigra()",
 					     line_porta_nigra);
 
-			Execute ("next");
+			AssertExecute ("next");
 			// Step over the breakpoint with "next"
 			AssertStopped (thread, "Europe.Germany.Trier.get_PortaNigra()",
 				       line_porta_nigra + 1);
 
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_world,
 					     "Martin.Baulig.Hello.World(Postcard.Picture)",
 					     line_world);
 
-			Execute ("disable " + bpt_world);
-			Execute ("continue");
+			AssertExecute ("disable " + bpt_world);
+			AssertExecute ("continue");
 			AssertTargetOutput (porta_nigra_url);
 
 			AssertHitBreakpoint (thread, bpt_2,
 					     "Martin.Baulig.Hello.Test()", line_test_2);
 			// We are stopped on a breakpoint and use "next" to step over it
-			Execute ("next");
+			AssertExecute ("next");
 			AssertTargetOutput (city_center_url);
 			AssertStopped (thread, "Martin.Baulig.Hello.Test()", line_test_3 - 1);
 			// If you remove the `Console.WriteLine ("Irish Pub")', the "next"
 			// operation will complete _at_ the instruction where the next
 			// breakpoint is, but it won't actually hit it.
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertTargetOutput ("Irish Pub");
 			AssertHitBreakpoint (thread, bpt_3, "Martin.Baulig.Hello.Test()",
 					     line_test_3);
 
 			// We are stopped on a breakpoint and use "step" to step over it
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "Europe.Germany.Trier.get_RomanBaths()",
 				       line_roman_baths);
 
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertTargetOutput (roman_baths_url);
 
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
@@ -100,17 +100,17 @@ namespace Mono.Debugger.Tests
 				     "(System.String) \"" + porta_nigra_url + "\"");
 
 			int bpt_y_hello = AssertBreakpoint ("Y.Hello");
-			Execute ("disable " + bpt_y_hello);
+			AssertExecute ("disable " + bpt_y_hello);
 
-			Execute ("next");
+			AssertExecute ("next");
 			AssertTargetOutput ("Hello World");
 			AssertStopped (thread, "X.Main()", line_main_2 + 1);
 
-			Execute ("disable " + bpt_1);
-			Execute ("disable " + bpt_2);
-			Execute ("disable " + bpt_3);
-			Execute ("disable " + bpt_porta_nigra);
-			Execute ("next");
+			AssertExecute ("disable " + bpt_1);
+			AssertExecute ("disable " + bpt_2);
+			AssertExecute ("disable " + bpt_3);
+			AssertExecute ("disable " + bpt_porta_nigra);
+			AssertExecute ("next");
 			AssertTargetOutput (porta_nigra_url);
 			AssertTargetOutput (city_center_url);
 			AssertTargetOutput ("Irish Pub");
@@ -118,16 +118,16 @@ namespace Mono.Debugger.Tests
 
 			AssertStopped (thread, "X.Main()", line_main_2 + 2);
 
-			Execute ("step");
+			AssertExecute ("step");
 			AssertStopped (thread, "Y.Test(Martin.Baulig.Hello)", line_y_test);
-			Execute ("finish");
+			AssertExecute ("finish");
 			AssertTargetOutput (porta_nigra_url);
 			AssertTargetOutput (city_center_url);
 			AssertTargetOutput ("Irish Pub");
 			AssertTargetOutput (roman_baths_url);
 			AssertStopped (thread, "X.Main()", line_main_2 + 3);
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

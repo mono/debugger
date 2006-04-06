@@ -28,7 +28,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
 			AssertPrint (thread, "obj", "(object) &(Bar) { Data = 81 }");
@@ -43,7 +43,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "value.GetType ()", "(System.MonoType) { \"Hello\" }");
 			AssertPrint (thread, "value.ToString ()", "(System.String) \"0x12345678\"");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

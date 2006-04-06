@@ -33,7 +33,7 @@ namespace Mono.Debugger.Tests
 			int bpt_world = AssertBreakpoint (line_world);
 			int bpt_test = AssertBreakpoint ("Y.Test");
 
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_world, "Martin.Baulig.Hello.World()",
 					     line_world);
 
@@ -44,19 +44,19 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "Foo.Boston", "(System.String) \"Boston\"");
 			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
 
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertTargetOutput ("Boston");
 			AssertNoTargetOutput ();
 
 			AssertHitBreakpoint (thread, bpt_main_2, "Test.X.Main()", line_main_2);
 
 			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_test, "Y.Test()", line_test);
 			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
 			AssertPrint (thread, "Martin.Baulig.Foo.Print ()", "(System.String) \"Boston\"");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }

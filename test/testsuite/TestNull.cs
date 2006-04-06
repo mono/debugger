@@ -28,7 +28,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
-			Execute ("continue");
+			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
 			AssertPrint (thread, "x", "(X) null");
@@ -37,14 +37,14 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "x_array", "(X[]) null");
 			AssertPrint (thread, "y_array", "(X[]) [ null ]");
 			AssertPrint (thread, "z_array", "(X[]) [ { Foo = 5 } ]");
-			Execute ("set x = new X (81)");
-			Execute ("set y_array [0] = new X (9)");
-			Execute ("set z_array [0] = null");
+			AssertExecute ("set x = new X (81)");
+			AssertExecute ("set y_array [0] = new X (9)");
+			AssertExecute ("set z_array [0] = null");
 			AssertPrint (thread, "x", "(X) { Foo = 81 }");
 			AssertPrint (thread, "y_array", "(X[]) [ { Foo = 9 } ]");
 			AssertPrint (thread, "z_array", "(X[]) [ null ]");
 
-			Execute ("kill");
+			AssertExecute ("kill");
 		}
 	}
 }
