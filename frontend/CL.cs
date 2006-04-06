@@ -326,5 +326,13 @@ namespace Mono.Debugger.Frontend
 				engine.Run (command, args); 
 			}
 		}
+
+		public Command GetCommand ()
+		{
+			if (Parse ())
+				return engine.Get (command, args);
+			else
+				return null;
+		}
 	}
 }

@@ -34,9 +34,8 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("set x[0] = \"Test\"");
 			AssertPrint (thread, "x[0]", "(System.String) \"Test\"");
 
-			// FIXME
-			AssertExecute ("set x[0,\"Berlin\"] = \"Trier\"");
-			// AssertDebuggerOutput ("ERROR: No overload of method `X.x[]' has 3 arguments.");
+			AssertExecuteException ("set x[0,\"Berlin\"] = \"Trier\"",
+						"No overload of method `X.x[]' has 3 arguments.");
 
 			AssertExecute ("kill");
 		}

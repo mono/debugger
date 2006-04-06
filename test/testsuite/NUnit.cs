@@ -95,10 +95,36 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Failed to execute command `{0}': {1}.",
 					     text, ex.Message);
 			} catch (Exception ex) {
-				Interpreter.Error (
-					"Caught exception while executing command `{0}': {1}",
-					text, ex);
+				Assert.Fail ("Caught exception while executing command `{0}': {1}",
+					     text, ex);
 			}
+		}
+
+		public void AssertExecuteException (string text, string exp_exception)
+		{
+			parser.Reset ();
+			parser.Append (text);
+			Command command = parser.GetCommand ();
+			if (command == null)
+				Assert.Fail ("No such command: `{0}'", text);
+
+			string exception = "";
+			try {
+				command.Execute (engine);
+				Assert.Fail ("Execution of command `{0}' failed to throw " +
+					     "exception `{1}'.", command, exp_exception);
+			} catch (ScriptingException ex) {
+				exception = ex.Message;
+			} catch (TargetException ex) {
+				exception = ex.Message;
+			} catch (Exception ex) {
+				Assert.Fail ("Caught exception while executing command `{0}': {1}",
+					     text, ex);
+			}
+
+			if (exception != exp_exception)
+				Assert.Fail ("Execution of command `{0}' threw exception `{1}', " +
+					     "but expected `{2}'.", command, exception, exp_exception);
 		}
 
 		public void AssertFrame (Thread thread, string function, int line)
@@ -389,6 +415,8 @@ namespace Mono.Debugger.Tests
 
 				object obj = EvaluateExpression (context, expression);
 				text = context.FormatObject (obj, DisplayFormat.Object);
+				Assert.Fail ("Evaluation of exception `{0}' failed to throw " +
+					     "exception {1}.", expression, exp_result);
 			} catch (AssertionException) {
 				throw;
 			} catch (ScriptingException ex) {
