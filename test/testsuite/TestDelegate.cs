@@ -64,7 +64,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Boston: 3");
 			AssertNoTargetOutput ();
 
-			int bpt = AssertBreakpoint ("-invoke x.Foo");
+			AssertBreakpoint ("-invoke x.Foo");
 			AssertExecute ("continue");
 			AssertTargetOutput ("Back in main");
 			AssertNoTargetOutput ();

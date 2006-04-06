@@ -139,7 +139,18 @@ namespace Mono.Debugger.Tests
 		public void AssertFrame (Thread thread, string function, int line)
 		{
 			try {
-				StackFrame frame = thread.CurrentFrame;
+				AssertFrame (thread.CurrentFrame, 0, function, line);
+			} catch (TargetException ex) {
+				Assert.Fail ("Cannot get current frame: {0}.", ex.Message);
+			}
+		}
+
+		public void AssertFrame (StackFrame frame, int level, string function, int line)
+		{
+			try {
+				Assert.AreEqual (level, frame.Level,
+						 "Stack frame is from level {0}, but expected {1}.",
+						 level, frame.Level);
 				SourceLocation location = frame.SourceAddress.Location;
 				Assert.AreEqual (function, location.Method.Name,
 						 "Target stopped in method `{0}', but expected `{1}'.",
@@ -150,6 +161,16 @@ namespace Mono.Debugger.Tests
 			} catch (TargetException ex) {
 				Assert.Fail ("Cannot get current frame: {0}.", ex.Message);
 			}
+		}
+
+		public void AssertInternalFrame (StackFrame frame, int level)
+		{
+			Assert.AreEqual (level, frame.Level,
+					 "Stack frame is from level {0}, but expected {1}.",
+					 level, frame.Level);
+			Assert.AreEqual ("<method called from mdb>", frame.Name.ToString (),
+					 "Got frame `{0}', but expected a method " +
+					 "called from mdb.", frame);
 		}
 
 		public void AssertTargetOutput (string line)
