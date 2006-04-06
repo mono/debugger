@@ -18,7 +18,7 @@ namespace Mono.Debugger.Frontend
 {
 	public delegate void DebuggerOutputHandler (string text);
 
-	public sealed class Interpreter : MarshalByRefObject
+	public sealed class Interpreter : MarshalByRefObject, IDisposable
 	{
 		DebuggerOptions options;
 		DebuggerSession session;
@@ -769,6 +769,44 @@ namespace Mono.Debugger.Frontend
 				else
 					Report.Print (line);
 			}
+		}
+
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		private void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing) {
+				if (debugger != null) {
+					debugger.Dispose ();
+					debugger = null;
+				}
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~Interpreter ()
+		{
+			Dispose (false);
 		}
 
 		protected class InterpreterEventSink : MarshalByRefObject

@@ -61,8 +61,9 @@ namespace Mono.Debugger.Tests
 		[TestFixtureTearDown]
 		public void TearDown ()
 		{
-			interpreter.Kill ();
+			interpreter.Dispose ();
 			interpreter = null;
+			GC.Collect ();
 		}
 
 		private static DebuggerOptions CreateOptions (string application)
