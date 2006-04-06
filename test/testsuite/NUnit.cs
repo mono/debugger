@@ -20,8 +20,10 @@ namespace Mono.Debugger.Tests
 		LineReader inferior_stdout, inferior_stderr;
 
 		static Regex breakpoint_regex = new Regex (@"^Breakpoint ([0-9]+) at ([^\n\r]+)$");
+		static Regex catchpoint_regex = new Regex (@"^Inserted catch point ([0-9]+) for ([^\n\r]+)$");
 		static Regex stopped_regex = new Regex (@"^Thread @([0-9]+) stopped at ([^\n\r]+)\.$");
 		static Regex hit_breakpoint_regex = new Regex (@"^Thread @([0-9]+) hit breakpoint ([0-9]+) at ([^\n\r]+)\.$");
+		static Regex caught_exception_regex = new Regex (@"^Thread @([0-9]+) caught exception at ([^\n\r]+)\.$");
 		static Regex frame_regex = new Regex (@"^#([0-9]+): 0x[0-9A-Fa-f]+ in (.*)$");
 		static Regex func_source_regex = new Regex (@"^(.*) at (.*):([0-9]+)$");
 		static Regex func_offset_regex = new Regex (@"^(.*)\+0x([0-9A-Fa-f]+)$");
@@ -290,6 +292,34 @@ namespace Mono.Debugger.Tests
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
+		public void AssertCaughtException (Thread exp_thread, string exp_func, int exp_line)
+		{
+			AssertFrame (exp_thread, exp_func, exp_line);
+
+			string output = debugger_output.ReadLine ();
+			if (output == null) {
+				Assert.Fail ("Target not stopped.");
+				return;
+			}
+
+			Match match = caught_exception_regex.Match (output);
+			if (!match.Success) {
+				Assert.Fail ("Target not stopped.");
+				return;
+			}
+
+			int thread = Int32.Parse (match.Groups [1].Value);
+			string frame = match.Groups [2].Value;
+
+			if (thread != exp_thread.ID) {
+				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
+					     thread, frame, exp_thread.ID);
+				return;
+			}
+
+			AssertFrame (frame, 0, exp_func, exp_line);
+		}
+
 		public int AssertBreakpoint (int location)
 		{
 			return AssertBreakpoint (location.ToString ());
@@ -314,6 +344,27 @@ namespace Mono.Debugger.Tests
 
 			return Int32.Parse (match.Groups [1].Value);
 		}
+
+		public int AssertCatchpoint (string location)
+		{
+			AssertNoDebuggerOutput ();
+			AssertExecute ("catch " + location);
+
+			string output = debugger_output.ReadLine ();
+			if (output == null) {
+				Assert.Fail ("Failed to insert catchpoint.");
+				return -1;
+			}
+
+			Match match = catchpoint_regex.Match (output);
+			if (!match.Success) {
+				Assert.Fail ("Failed to insert catchpoint.");
+				return -1;
+			}
+
+			return Int32.Parse (match.Groups [1].Value);
+		}
+
 
 		ScriptingContext GetContext (Thread thread)
 		{

@@ -5,14 +5,14 @@ noinst_SCRIPTS = \
 	TestDelegate.exe TestIndexer.exe TestEnum.exe \
 	TestRestart.exe TestNull.exe TestByRef.exe \
 	TestToString.exe TestObject.exe TestProperty.exe TestAbort.exe \
-	TestBreakpoint.exe TestNamespace.exe
+	TestBreakpoint.exe TestNamespace.exe TestException.exe
 
 EXTRA_DIST = \
 	TestManagedTypes.cs TestInvocation.cs TestInheritance.cs \
 	TestDelegate.cs TestIndexer.cs TestEnum.cs \
 	TestRestart.cs TestNull.cs TestByRef.cs \
 	TestToString.cs TestObject.cs TestProperty.cs TestAbort.cs \
-	TestBreakpoint.cs TestNamespace.cs
+	TestBreakpoint.cs TestNamespace.cs TestException.cs
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<

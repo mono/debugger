@@ -4,7 +4,7 @@ MCS_FLAGS=-debug -unsafe
 
 noinst_SCRIPTS = \
 	TestAssembly.exe TestModule.dll \
-	MultiThread.exe Simple.exe TestException.exe
+	MultiThread.exe Simple.exe
 
 noinst_LTLIBRARIES=libfoo.la
 
@@ -12,7 +12,7 @@ noinst_PROGRAMS = testnativetypes module
 
 EXTRA_DIST = \
 	TestAssembly.cs TestModule.cs \
-	MultiThread.cs Simple.cs TestException.cs mdb.exp
+	MultiThread.cs Simple.cs mdb.exp
 
 testnativetypes_SOURCES = testnativetypes.c
 
