@@ -78,11 +78,27 @@ namespace Mono.Debugger.Tests
 			return options;
 		}
 
-		public void Execute (string command)
+		public void Execute (string text)
 		{
 			parser.Reset ();
-			parser.Append (command);
-			parser.Execute ();
+			parser.Append (text);
+			Command command = parser.GetCommand ();
+			if (command == null)
+				Assert.Fail ("No such command: `{0}'", text);
+
+			try {
+				command.Execute (engine);
+			} catch (ScriptingException ex) {
+				Assert.Fail ("Failed to execute command `{0}': {1}.",
+					     text, ex.Message);
+			} catch (TargetException ex) {
+				Assert.Fail ("Failed to execute command `{0}': {1}.",
+					     text, ex.Message);
+			} catch (Exception ex) {
+				Interpreter.Error (
+					"Caught exception while executing command `{0}': {1}",
+					text, ex);
+			}
 		}
 
 		public void AssertFrame (Thread thread, string function, int line)
