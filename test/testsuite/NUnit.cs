@@ -250,7 +250,7 @@ namespace Mono.Debugger.Tests
 
 		public int AssertBreakpoint (int location)
 		{
-			return AssertBreakpoint (location);
+			return AssertBreakpoint (location.ToString ());
 		}
 
 		public int AssertBreakpoint (string location)
