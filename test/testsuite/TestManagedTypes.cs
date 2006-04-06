@@ -41,18 +41,18 @@ namespace Mono.Debugger.Tests
 			const int line_complex_struct_type = 205;
 			const int line_function_struct_type = 213;
 
-			int bpt_simple = AssertBreakpoint (line_simple.ToString ());
-			int bpt_boxed_value = AssertBreakpoint (line_boxed_value.ToString ());
-			int bpt_boxed_ref = AssertBreakpoint (line_boxed_ref.ToString ());
-			int bpt_simple_array = AssertBreakpoint (line_simple_array.ToString ());
-			int bpt_multi_value_array = AssertBreakpoint (line_multi_value_array.ToString ());
-			int bpt_string_array = AssertBreakpoint (line_string_array.ToString ());
-			int bpt_multi_string_array = AssertBreakpoint (line_multi_string_array.ToString ());
-			int bpt_struct_type = AssertBreakpoint (line_struct_type.ToString ());
-			int bpt_class_type = AssertBreakpoint (line_class_type.ToString ());
-			int bpt_inherited_class_type = AssertBreakpoint (line_inherited_class_type.ToString ());
-			int bpt_complex_struct_type = AssertBreakpoint (line_complex_struct_type.ToString ());
-			int bpt_function_struct_type = AssertBreakpoint (line_function_struct_type.ToString ());
+			int bpt_simple = AssertBreakpoint (line_simple);
+			int bpt_boxed_value = AssertBreakpoint (line_boxed_value);
+			int bpt_boxed_ref = AssertBreakpoint (line_boxed_ref);
+			int bpt_simple_array = AssertBreakpoint (line_simple_array);
+			int bpt_multi_value_array = AssertBreakpoint (line_multi_value_array);
+			int bpt_string_array = AssertBreakpoint (line_string_array);
+			int bpt_multi_string_array = AssertBreakpoint (line_multi_string_array);
+			int bpt_struct_type = AssertBreakpoint (line_struct_type);
+			int bpt_class_type = AssertBreakpoint (line_class_type);
+			int bpt_inherited_class_type = AssertBreakpoint (line_inherited_class_type);
+			int bpt_complex_struct_type = AssertBreakpoint (line_complex_struct_type);
+			int bpt_function_struct_type = AssertBreakpoint (line_function_struct_type);
 
 			Execute ("continue");
 			AssertHitBreakpoint (thread, bpt_simple, "X.Simple()", line_simple);

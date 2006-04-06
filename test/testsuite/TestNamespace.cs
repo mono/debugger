@@ -29,8 +29,8 @@ namespace Mono.Debugger.Tests
 
 			AssertStopped (thread, "Test.X.Main()", line_main);
 
-			int bpt_main_2 = AssertBreakpoint (line_main_2.ToString ());
-			int bpt_world = AssertBreakpoint (line_world.ToString ());
+			int bpt_main_2 = AssertBreakpoint (line_main_2);
+			int bpt_world = AssertBreakpoint (line_world);
 			int bpt_test = AssertBreakpoint ("Y.Test");
 
 			Execute ("continue");

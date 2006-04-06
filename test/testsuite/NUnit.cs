@@ -248,6 +248,11 @@ namespace Mono.Debugger.Tests
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
+		public int AssertBreakpoint (int location)
+		{
+			return AssertBreakpoint (location);
+		}
+
 		public int AssertBreakpoint (string location)
 		{
 			AssertNoDebuggerOutput ();

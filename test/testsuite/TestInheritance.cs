@@ -27,7 +27,7 @@ namespace Mono.Debugger.Tests
 			const int line_hello = 95;
 
 			AssertStopped (thread, "X.Main()", line_main);
-			int bpt_main_2 = AssertBreakpoint (line_main_2.ToString ());
+			int bpt_main_2 = AssertBreakpoint (line_main_2);
 
 			Execute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
@@ -67,7 +67,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "((D) c)", "(D) { e = 500 }");
 			AssertPrint (thread, "c.Test (c)", "(System.Int32) 64");
 
-			int bpt_hello = AssertBreakpoint (line_hello.ToString ());
+			int bpt_hello = AssertBreakpoint (line_hello);
 			Execute ("continue");
 			AssertTargetOutput ("Hello");
 			AssertTargetOutput ("World");
