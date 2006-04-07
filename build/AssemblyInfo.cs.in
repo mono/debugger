@@ -24,4 +24,10 @@ namespace Mono.Debugger
 		public static string prefix = "@prefix@";
 		public static string libdir = "@libdir@";
 	}
+
+	internal class BuildInfo
+	{
+		public static string srcdir = "@srcdir@";
+		public static string builddir = "@builddir@";
+	}
 }

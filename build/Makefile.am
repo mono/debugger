@@ -42,7 +42,8 @@ LIBRARY_SRCLIST = \
 	AssemblyInfo.cs
 
 TEST_SRCLIST = \
-	$(top_srcdir)/test/testsuite/*.cs
+	$(top_srcdir)/test/testsuite/*.cs		\
+	AssemblyInfo.cs
 
 TEST_CASE_SRCLIST = \
 	$(top_srcdir)/test/src/*.cs
@@ -59,6 +60,7 @@ MDB_DEPS = \
 	-r:./Mono.Debugger.dll
 
 TEST_DEPS = \
+	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll				\
 	-r:./Mono.Debugger.Frontend.dll			\
 	-r:nunit.framework
@@ -81,6 +83,8 @@ mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	sed -e 's^\@libdir\@^$(libdir)^g' \
 		-e 's^\@prefix\@^$(prefix)^g' \
+		-e 's^\@srcdir\@^$(srcdir)^g' \
+		-e 's^\@builddir\@^$(builddir)^g' \
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 

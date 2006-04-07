@@ -34,8 +34,10 @@ namespace Mono.Debugger.Tests
 
 		protected TestSuite (string application)
 		{
-			ExeFileName = Path.GetFullPath ("../test/src/" + application + ".exe");
-			FileName = Path.GetFullPath ("../test/src/" + application + ".cs");
+			string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");
+			string builddir = Path.Combine (BuildInfo.builddir, "../test/src/");
+			ExeFileName = Path.GetFullPath (builddir + application + ".exe");
+			FileName = Path.GetFullPath (srcdir + application + ".cs");
 
 			options = CreateOptions (ExeFileName);
 

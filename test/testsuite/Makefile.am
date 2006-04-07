@@ -4,4 +4,3 @@ EXTRA_DIST = \
 	TestIndexer.cs TestInheritance.cs TestInvocation.cs \
 	TestManagedTypes.cs TestNamespace.cs TestNull.cs TestObject.cs \
 	TestProperty.cs TestToString.cs
-
