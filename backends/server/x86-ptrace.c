@@ -52,9 +52,14 @@ struct InferiorHandle
 #endif
 	int last_signal;
 	int output_fd [2], error_fd [2];
-	ChildOutputFunc stdout_handler, stderr_handler;
 	int is_thread;
 };
+
+typedef struct
+{
+	int output_fd, error_fd;
+	ChildOutputFunc stdout_handler, stderr_handler;
+} IOThreadData;
 
 static void
 server_ptrace_finalize (ServerHandle *handle)
@@ -296,17 +301,21 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		     gchar **error)
 {	
 	InferiorHandle *inferior = handle->inferior;
+	IOThreadData *io_data = g_new0 (IOThreadData, 1);
 	int fd[2], open_max, ret, len, i;
 
 	*error = NULL;
 
 	pipe (fd);
 
-	inferior->stdout_handler = stdout_handler;
-	inferior->stderr_handler = stderr_handler;
-
 	pipe (inferior->output_fd);
 	pipe (inferior->error_fd);
+
+	io_data->output_fd = inferior->output_fd[0];
+	io_data->error_fd = inferior->error_fd[0];
+
+	io_data->stdout_handler = stdout_handler;
+	io_data->stderr_handler = stderr_handler;
 
 	*child_pid = fork ();
 	if (*child_pid == 0) {
@@ -349,7 +358,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	_server_ptrace_setup_inferior (handle, TRUE);
 	_server_ptrace_setup_thread_manager (handle);
 
-	mono_thread_create (mono_get_root_domain (), io_thread, inferior);
+	mono_thread_create (mono_get_root_domain (), io_thread, io_data);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -393,7 +402,7 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid, gboolean is_main, guint
 }
 
 static void
-process_output (InferiorHandle *inferior, int fd, ChildOutputFunc func)
+process_output (int fd, ChildOutputFunc func)
 {
 	char buffer [BUFSIZ + 1];
 	int count;
@@ -409,14 +418,14 @@ process_output (InferiorHandle *inferior, int fd, ChildOutputFunc func)
 static guint32
 io_thread (gpointer data)
 {
-	InferiorHandle *inferior = (InferiorHandle*)data;
+	IOThreadData *io_data = (IOThreadData*)data;
 	struct pollfd fds [2];
 	int ret;
 
-	fds [0].fd = inferior->output_fd [0];
+	fds [0].fd = io_data->output_fd;
 	fds [0].events = POLLIN | POLLHUP | POLLERR;
 	fds [0].revents = 0;
-	fds [1].fd = inferior->error_fd [0];
+	fds [1].fd = io_data->error_fd;
 	fds [1].events = POLLIN | POLLHUP | POLLERR;
 	fds [1].revents = 0;
 
@@ -427,15 +436,16 @@ io_thread (gpointer data)
 			break;
 
 		if (fds [0].revents & POLLIN)
-			process_output (inferior, inferior->output_fd [0], inferior->stdout_handler);
+			process_output (io_data->output_fd, io_data->stdout_handler);
 		if (fds [1].revents & POLLIN)
-			process_output (inferior, inferior->error_fd [0], inferior->stderr_handler);
+			process_output (io_data->error_fd, io_data->stderr_handler);
 
 		if ((fds [0].revents & (POLLHUP | POLLERR))
 		    || (fds [1].revents & (POLLHUP | POLLERR)))
 			break;
 	}
 
+	g_free (io_data);
 	return 0;
 }
 

@@ -1,5 +1,12 @@
 2006-04-07  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-ptrace.c
+	(io_thread): Fix a very old race condition: keep our data in a
+	separate `IOThreadData' structure since the inferior could have
+	been disposed.
+
+2006-04-07  Martin Baulig  <martin@ximian.com>
+
 	* test/: Clean up this directory a bit.
 
 	* test/mono-debugger.tests/: Removed.
