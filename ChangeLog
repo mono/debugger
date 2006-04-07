@@ -1,5 +1,11 @@
 2006-04-07  Martin Baulig  <martin@ximian.com>
 
+	HEADS UP: If you want to use the debugger, you need Mono from SVN
+	which is exactly revision r58893.  Any other SVN revision as well
+	as the latest Mono 1.1.14 release is unsupported and may not work!
+
+2006-04-07  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-ptrace.c (server_ptrace_spawn): Set the
 	child's core-file limit to zero after forking.
 
