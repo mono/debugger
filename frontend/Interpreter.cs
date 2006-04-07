@@ -229,8 +229,7 @@ namespace Mono.Debugger.Frontend
 			if (DebuggerOutputEvent != null)
 				DebuggerOutputEvent (message + "\n");
 			else {
-				Report.Print (message);
-				Report.Print ("\n");
+				Report.Print ("{0}\n", message);
 			}
 		}
 
