@@ -199,12 +199,12 @@ namespace Mono.Debugger
 		internal void ReachedMain (Inferior inferior, Thread thread,
 					   SingleSteppingEngine engine)
 		{
-			manager.Debugger.OnProcessReachedMainEvent (this);
-
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
 
 			inferior.InitializeModules ();
+
+			manager.Debugger.OnProcessReachedMainEvent (this);
 		}
 
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)

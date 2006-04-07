@@ -354,8 +354,6 @@ namespace Mono.Debugger.Backends
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
-				// Ok, inform the user that we stopped.
-				OperationCompleted (result);
 				if (is_main && !reached_main && !exiting) {
 					reached_main = true;
 
@@ -375,6 +373,8 @@ namespace Mono.Debugger.Backends
 					if (!process.IsManaged)
 						process.ReachedMain (inferior, thread, this);
 				}
+				// Ok, inform the user that we stopped.
+				OperationCompleted (result);
 				return;
 			}
 
