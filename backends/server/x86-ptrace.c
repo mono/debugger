@@ -14,6 +14,7 @@
 #include <sys/wait.h>
 #include <sys/poll.h>
 #include <sys/select.h>
+#include <sys/resource.h>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/syscall.h>
@@ -320,12 +321,17 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	*child_pid = fork ();
 	if (*child_pid == 0) {
 		gchar *error_message;
+		struct rlimit core_limit;
 
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 3; i < open_max; i++)
 			fcntl (i, F_SETFD, FD_CLOEXEC);
 
 		setsid ();
+
+		getrlimit (RLIMIT_CORE, &core_limit);
+		core_limit.rlim_cur = 0;
+		setrlimit (RLIMIT_CORE, &core_limit);
 
 		child_setup_func (inferior);
 		execve (argv [0], (char **) argv, (char **) envp);
