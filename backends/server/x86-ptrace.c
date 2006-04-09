@@ -222,10 +222,6 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			if (WSTOPSIG (status) == SIGTRAP) {
 				handle->inferior->last_signal = 0;
 				*arg = 0;
-			} else if (WSTOPSIG (status) == SIGCHLD) {
-				*arg = 0;
-				handle->inferior->last_signal = WSTOPSIG (status);
-				return MESSAGE_CHILD_STOPPED;
 			} else if (WSTOPSIG (status) == 32) {
 				handle->inferior->last_signal = WSTOPSIG (status);
 				return MESSAGE_NONE;

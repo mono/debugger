@@ -186,6 +186,12 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument == inferior.SIGCHLD)) {
+				inferior.Continue ();
+				return true;
+			}
+
 			bool retval = false;
 			if (inferior.Process.MonoManager != null)
 				retval = inferior.Process.MonoManager.HandleChildEvent (

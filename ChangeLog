@@ -1,3 +1,13 @@
+2006-04-09  Martin Baulig  <martin@ximian.com>
+
+	* backends/Threadmanager.cs
+	(ThreadManager.HandleChildEvent): Pass SIGCHLD to the target
+	without stopping it.
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Return a normal
+	MESSAGE_CHILD_STOPPED on SIGCHLD.
+
 2006-04-07  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86-ptrace.c (server_ptrace_spawn): Set the
@@ -74,12 +84,6 @@
 	* backends/Process.cs
 	(Process.AcquireGlobalThreadLock): Moved here from ThreadManager.
 	(Process.ReleaseGlobalThreadLock): Likewise.
-
-2006-04-04  Martin Baulig  <martin@ximian.com>
-
-	* backends/server/x86-ptrace.c
-	(server_ptrace_dispatch_event): Pass SIGCHLD to the target, but
-	return a MESSAGE_CHILD_STOPPED without a signal.
 
 2006-04-03  Martin Baulig  <martin@ximian.com>
 
