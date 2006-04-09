@@ -86,6 +86,9 @@ namespace Mono.Debugger
 			if ((load_handler != null) || (breakpoint_id > 0))
 				return;
 
+			if (address.IsNull && (location != null))
+				address = location.GetAddress (domain);
+
 			if (!address.IsNull)
 				breakpoint_id = target.InsertBreakpoint (breakpoint, address);
 			else if (function != null) {
@@ -165,9 +168,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected override void SetSessionData (SerializationInfo info, Debugger debugger)
+		protected override void SetSessionData (SerializationInfo info, Process process)
 		{
-			base.SetSessionData (info, debugger);
+			base.SetSessionData (info, process);
 			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
 
 			string type = info.GetString ("type");
@@ -175,11 +178,9 @@ namespace Mono.Debugger
 				location = (SourceLocation) info.GetValue (
 					"location", typeof (SourceLocation));
 			else if (type == "function") {
-#if FIXME
-				Language language = client.DebuggerServer.MonoLanguage;
+				Language language = process.MonoLanguage;
 				string funcname = info.GetString ("function");
 				function = (TargetFunctionType) language.LookupType (funcname);
-#endif
 			}
 		}
 	}

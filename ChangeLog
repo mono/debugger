@@ -1,3 +1,14 @@
+2006-04-10  Martin Baulig  <martin@ximian.com>
+
+	* backends/Debugger.cs
+	(Debugger.DebuggerSession): Moved into `Process'.
+
+	* backends/Process.cs
+	(Process.DebuggerSession): Moved here from `Debugger'.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Make this per-process, not per-debugger.
+
 2006-04-09  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/testnativefork.cs: New test.

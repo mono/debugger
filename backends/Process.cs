@@ -30,6 +30,7 @@ namespace Mono.Debugger
 		DebuggerMutex thread_lock_mutex;
 		bool has_thread_lock;
 
+		DebuggerSession session;
 		Hashtable thread_groups;
 		ThreadGroup global_thread_group;
 		ThreadGroup main_thread_group;
@@ -49,6 +50,8 @@ namespace Mono.Debugger
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
+
+			session = new DebuggerSession (this);
 		}
 
 		internal Process (ThreadManager manager, ProcessStart start)
@@ -144,6 +147,10 @@ namespace Mono.Debugger
 
 		internal ProcessStart ProcessStart {
 			get { return start; }
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
 		}
 
 		internal void AddLanguage (ILanguageBackend language)

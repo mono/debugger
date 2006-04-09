@@ -23,13 +23,11 @@ namespace Mono.Debugger
 	public class Debugger : MarshalByRefObject, IDisposable
 	{
 		ThreadManager thread_manager;
-		DebuggerSession session;
 		Hashtable process_hash;
 		Process main_process;
 
 		public Debugger ()
 		{
-			session = new DebuggerSession (this);
 			thread_manager = new ThreadManager (this);
 			process_hash = Hashtable.Synchronized (new Hashtable ());
 		}
@@ -38,10 +36,6 @@ namespace Mono.Debugger
 			get {
 				return thread_manager;
 			}
-		}
-
-		public DebuggerSession Session {
-			get { return session; }
 		}
 
 		public event TargetOutputHandler TargetOutputEvent;

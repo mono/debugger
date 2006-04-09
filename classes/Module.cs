@@ -362,21 +362,16 @@ namespace Mono.Debugger
 						     StreamingContext context,
 						     ISurrogateSelector selector)
 			{
-#if FIXME
-				DebuggerClient client = (DebuggerClient) context.Context;
-				ModuleManager manager = client.DebuggerServer.ModuleManager;
+				Process process = (Process) context.Context;
 
 				string name = info.GetString ("name");
-				Module module = manager.CreateModule (name);
+				Module module = process.ModuleManager.CreateModule (name);
 
 				module.name = info.GetString ("name");
 				module.load_symbols = info.GetBoolean ("load-symbols");
 				module.step_into = info.GetBoolean ("step-into");
 
 				return module;
-#else
-				throw new InternalError ();
-#endif
 			}
 		}
 	}

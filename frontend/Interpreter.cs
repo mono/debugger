@@ -316,10 +316,9 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				session = debugger.Session;
-
 				current_process = main_process = debugger.Run (options);
 
+				session = current_process.Session;
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
 
@@ -343,10 +342,9 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				session = debugger.Session;
-
 				current_process = main_process = debugger.Attach (options, pid);
 
+				session = current_process.Session;
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
 
@@ -370,12 +368,11 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				session = debugger.Session;
-
 				Thread[] threads;
 				current_process = main_process = debugger.OpenCoreFile (
 					options, core_file, out threads);
 
+				session = current_process.Session;
 				current_thread = current_process.MainThread;
 
 				return current_process;
@@ -407,15 +404,17 @@ namespace Mono.Debugger.Frontend
 
 				current_process = main_process = debugger.Run (options);
 
-				session = DebuggerSession.Load (debugger, stream);
-
 				current_thread = current_process.MainThread;
-				session.InsertBreakpoints (current_thread);
 				Wait (current_thread);
+				session = DebuggerSession.Load (main_process, stream);
+				session.InsertBreakpoints (current_thread);
 
 				return current_process;
 			} catch (TargetException e) {
 				Kill ();
+				throw;
+			} catch (Exception ex) {
+				Console.WriteLine ("FUCK: {0}", ex);
 				throw;
 			}
 		}

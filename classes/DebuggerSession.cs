@@ -61,17 +61,17 @@ namespace Mono.Debugger
 
 	public class DebuggerSession : MarshalByRefObject
 	{
-		public readonly Debugger Debugger;
+		public readonly Process Process;
 
 		Hashtable events = Hashtable.Synchronized (new Hashtable ());
 
-		internal DebuggerSession (Debugger debugger)
+		internal DebuggerSession (Process process)
 		{
-			this.Debugger = debugger;
+			this.Process = process;
 		}
 
-		protected DebuggerSession (Debugger debugger, EventHandle[] event_list)
-			: this (debugger)
+		protected DebuggerSession (Process process, EventHandle[] event_list)
+			: this (process)
 		{
 			foreach (EventHandle handle in event_list)
 				events.Add (handle.Index, handle);				
@@ -113,16 +113,16 @@ namespace Mono.Debugger
 			return ss;
 		}
 
-		public static DebuggerSession Load (Debugger debugger, Stream stream)
+		public static DebuggerSession Load (Process process, Stream stream)
 		{
 			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, debugger);
+				StreamingContextStates.Persistence, process);
 
 			SurrogateSelector ss = CreateSurrogateSelector (context);
 			BinaryFormatter formatter = new BinaryFormatter (ss, context);
 
 			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
-			return info.CreateSession (debugger);
+			return info.CreateSession (process);
 		}
 
 		public void Save (Stream stream)
@@ -184,9 +184,7 @@ namespace Mono.Debugger
 
 			public SessionInfo (DebuggerSession session)
 			{
-#if FIXME
 				this.Modules = session.Process.Modules;
-#endif
 				this.Events = session.Events;
 			}
 
@@ -199,9 +197,9 @@ namespace Mono.Debugger
 			void IDeserializationCallback.OnDeserialization (object obj)
 			{ }
 
-			public DebuggerSession CreateSession (Debugger debugger)
+			public DebuggerSession CreateSession (Process process)
 			{
-				return new DebuggerSession (debugger, Events);
+				return new DebuggerSession (process, Events);
 			}
 
 			private SessionInfo (SerializationInfo info, StreamingContext context)

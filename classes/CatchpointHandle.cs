@@ -95,14 +95,12 @@ namespace Mono.Debugger
 			info.AddValue ("exception", exception.Name);
 		}
 
-		protected override void SetSessionData (SerializationInfo info, Debugger debugger)
+		protected override void SetSessionData (SerializationInfo info, Process process)
 		{
-			base.SetSessionData (info, debugger);
+			base.SetSessionData (info, process);
 
-#if FIXME
-			Language language = client.DebuggerServer.MonoLanguage;
+			Language language = process.MonoLanguage;
 			exception = language.LookupType (info.GetString ("exception"));
-#endif
 		}
 	}
 }
