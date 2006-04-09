@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -44,7 +45,15 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "y_array", "(X[]) [ { Foo = 9 } ]");
 			AssertPrint (thread, "z_array", "(X[]) [ null ]");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("True");
+			AssertTargetOutput ("False");
+			AssertTargetOutput ("True");
+			AssertTargetOutput ("True");
+			AssertTargetOutput ("False");
+			AssertTargetOutput ("False");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -36,7 +37,10 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "test.C", "(C[,]) [  ]");
 			AssertPrint (thread, "test.Hello (new D ())", "(System.String) \"D\"");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("Test");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

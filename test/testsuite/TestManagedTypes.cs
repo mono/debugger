@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -234,7 +235,10 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "e.a", "(System.Int32) 9");
 			AssertPrint (thread, "e.Foo (5)", "(System.Int64) 5");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("9");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

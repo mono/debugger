@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -46,7 +47,12 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "dinner",
 				     "(Pub) { Music = Country, Drinks = Juice | Tea }");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("Pub");
+			AssertTargetOutput ("Pub");
+			AssertTargetOutput ("Pub");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

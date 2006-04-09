@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -37,7 +38,10 @@ namespace Mono.Debugger.Tests
 			AssertExecuteException ("set x[0,\"Berlin\"] = \"Trier\"",
 						"No overload of method `X.x[]' has 3 arguments.");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("Test");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

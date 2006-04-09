@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -43,6 +44,11 @@ namespace Mono.Debugger.Tests
 					      "System.InvalidOperationException: Operation is not " +
 					      "valid due to the current state of the object\n" +
 					      "in [0x00005] (at " + FileName + ":8) X:Test ()");
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("Done");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

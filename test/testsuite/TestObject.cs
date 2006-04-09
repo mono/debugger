@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -43,7 +44,13 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "value.GetType ()", "(System.MonoType) { \"Hello\" }");
 			AssertPrint (thread, "value.ToString ()", "(System.String) \"0x12345678\"");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("Bar");
+			AssertTargetOutput ("Bar");
+			AssertTargetOutput ("0x12345678");
+			AssertTargetOutput ("0x12345678");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

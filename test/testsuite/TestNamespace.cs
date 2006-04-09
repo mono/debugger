@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -56,7 +57,9 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
 			AssertPrint (thread, "Martin.Baulig.Foo.Print ()", "(System.String) \"Boston\"");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

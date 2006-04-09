@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -127,7 +128,10 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput (roman_baths_url);
 			AssertStopped (thread, "X.Main()", line_main_2 + 3);
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertTargetOutput ("Martin.Baulig.Hello");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

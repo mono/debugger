@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -102,6 +103,13 @@ namespace Mono.Debugger.Tests
 					     bt.Count, 1);
 
 			AssertFrame (bt [0], 0, "X.Main()", line_main);
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World");
+			AssertTargetOutput ("Done: 5 10 3");
+			AssertTargetOutput ("3");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

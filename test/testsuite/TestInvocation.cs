@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Interpreter.Start ();
@@ -69,8 +70,9 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello: 9");
 			AssertTargetOutput ("Static Hello: 9");
 			AssertTargetOutput ("Static Hello: 9");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 
-			AssertExecute ("kill");
 		}
 	}
 }
