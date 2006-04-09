@@ -146,7 +146,7 @@ namespace Mono.Debugger.Backends
 			get { return inferior_thread != null; }
 		}
 
-		int next_process_id = 0;
+		static int next_process_id = 0;
 		internal int NextThreadID {
 			get { return ++next_process_id; }
 		}

@@ -541,6 +541,19 @@ namespace Mono.Debugger.Frontend
 			get { return current_thread != null; }
 		}
 
+		public Process GetProcess (int number)
+		{
+			if (number == -1)
+				return CurrentProcess;
+
+			foreach (Process process in Processes) {
+				if (process.ID == number)
+					return process;
+			}
+
+			throw new ScriptingException ("No such process: {0}", number);
+		}
+
 		public Thread GetThread (int number)
 		{
 			if (number == -1)

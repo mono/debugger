@@ -77,5 +77,27 @@ namespace Mono.Debugger.Tests
 			AssertProcessExited (thread.Process);
 			AssertTargetExited ();
 		}
+
+		[Test]
+		[Category("Fork")]
+		public void Continue ()
+		{
+			Process process = Interpreter.Start ();
+			Assert.IsFalse (process.IsManaged);
+			Assert.IsTrue (process.MainThread.IsStopped);
+			Thread thread = process.MainThread;
+
+			AssertStopped (thread, "main", line_main);
+		        int bpt_end = AssertBreakpoint (line_waitpid + 1);
+			AssertExecute ("background");
+
+			Thread child = AssertProcessCreated ();
+			AssertProcessExited (child.Process);
+			AssertHitBreakpoint (thread, bpt_end, "main", line_waitpid + 1);
+
+			AssertExecute ("continue");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
+		}
 	}
 }
