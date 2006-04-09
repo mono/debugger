@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using ST = System.Threading;
 using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
@@ -31,13 +32,22 @@ namespace Mono.Debugger.Tests
 		static Regex frame_regex = new Regex (@"^#([0-9]+): 0x[0-9A-Fa-f]+ in (.*)$");
 		static Regex func_source_regex = new Regex (@"^(.*) at (.*):([0-9]+)$");
 		static Regex func_offset_regex = new Regex (@"^(.*)\+0x([0-9A-Fa-f]+)$");
+		static Regex process_created_regex = new Regex (@"^Created new process #([0-9]+) \(([0-9]+):(.*)\)\.$");
+		static Regex thread_created_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) created new thread @([0-9]+)\.$");
+		static Regex process_exited_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) exited\.$");
+
 
 		protected TestSuite (string application)
+			: this (application + ".exe", application + ".cs")
+		{ }
+
+		protected TestSuite (string exe_file, string src_file)
 		{
 			string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");
 			string builddir = Path.Combine (BuildInfo.builddir, "../test/src/");
-			ExeFileName = Path.GetFullPath (builddir + application + ".exe");
-			FileName = Path.GetFullPath (srcdir + application + ".cs");
+
+			ExeFileName = Path.GetFullPath (builddir + exe_file);
+			FileName = Path.GetFullPath (srcdir + src_file);
 
 			options = CreateOptions (ExeFileName);
 
@@ -153,6 +163,8 @@ namespace Mono.Debugger.Tests
 				Assert.AreEqual (level, frame.Level,
 						 "Stack frame is from level {0}, but expected {1}.",
 						 level, frame.Level);
+				if (frame.SourceAddress == null)
+					Assert.Fail ("Current frame `{0}' has no source code.", frame);
 				SourceLocation location = frame.SourceAddress.Location;
 				Assert.AreEqual (function, location.Method.Name,
 						 "Target stopped in method `{0}', but expected `{1}'.",
@@ -195,6 +207,7 @@ namespace Mono.Debugger.Tests
 
 		public void AssertDebuggerOutput (string line)
 		{
+			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
 				Assert.Fail ("No debugger output.");
@@ -250,15 +263,14 @@ namespace Mono.Debugger.Tests
 
 		public void AssertStopped (Thread exp_thread, string exp_func, int exp_line)
 		{
-			AssertFrame (exp_thread, exp_func, exp_line);
-
+			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
 				Assert.Fail ("Target not stopped.");
 
 			Match match = stopped_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Target not stopped.");
+				Assert.Fail ("Target not stopped (received `{0}').", output);
 
 			int thread = Int32.Parse (match.Groups [1].Value);
 			string frame = match.Groups [2].Value;
@@ -267,14 +279,14 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
 
+			AssertFrame (exp_thread, exp_func, exp_line);
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
 		public void AssertHitBreakpoint (Thread exp_thread, int exp_index,
 						 string exp_func, int exp_line)
 		{
-			AssertFrame (exp_thread, exp_func, exp_line);
-
+			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
 				Assert.Fail ("Target not stopped.");
@@ -291,17 +303,17 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
 
-			if (index != exp_index)
+			if ((exp_index != -1) && (index != exp_index))
 				Assert.Fail ("Thread {0} hit breakpoint {1}, but expected {2}.",
 					     thread, index, exp_index);
 
+			AssertFrame (exp_thread, exp_func, exp_line);
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
 		public void AssertCaughtException (Thread exp_thread, string exp_func, int exp_line)
 		{
-			AssertFrame (exp_thread, exp_func, exp_line);
-
+			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
 				Assert.Fail ("Target not stopped.");
@@ -317,6 +329,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
 
+			AssertFrame (exp_thread, exp_func, exp_line);
 			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
@@ -365,6 +378,53 @@ namespace Mono.Debugger.Tests
 			return Int32.Parse (match.Groups [1].Value);
 		}
 
+		public Thread AssertProcessCreated ()
+		{
+			debugger_output.Wait ();
+			string output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Failed to create process.");
+
+			Match match = process_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Failed to create process.");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Failed to create process.");
+
+			match = thread_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Failed to create process.");
+
+			int id = Int32.Parse (match.Groups [4].Value);
+			return interpreter.GetThread (id);
+		}
+
+		public void AssertProcessExited (Process process)
+		{
+			debugger_output.Wait ();
+			string output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exit.");
+
+			Match match = process_exited_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exit.");
+
+			int id = Int32.Parse (match.Groups [1].Value);
+			Assert.AreEqual (id, process.ID,
+					 "Process {0} exited, but expected process {1} to exit.",
+					 id, process.ID);
+		}
+
+		public void AssertTargetExited ()
+		{
+			AssertDebuggerOutput ("Target exited.");
+			AssertNoDebuggerOutput ();
+			AssertNoTargetOutput ();
+		}
 
 		ScriptingContext GetContext (Thread thread)
 		{
@@ -507,29 +567,52 @@ namespace Mono.Debugger.Tests
 			string current_line = "";
 			Queue lines = new Queue ();
 
+			bool waiting;
+			ST.AutoResetEvent wait_event = new ST.AutoResetEvent (false);
+
 			public void Add (string text)
 			{
-			again:
-				int pos = text.IndexOf ('\n');
-				if (pos < 0)
-					current_line += text;
-				else {
-					current_line += text.Substring (0, pos);
-					lines.Enqueue (current_line);
-					current_line = "";
-					text = text.Substring (pos + 1);
-					if (text.Length == 0)
+				lock (this) {
+				again:
+					int pos = text.IndexOf ('\n');
+					if (pos < 0)
+						current_line += text;
+					else {
+						current_line += text.Substring (0, pos);
+						lines.Enqueue (current_line);
+						current_line = "";
+						text = text.Substring (pos + 1);
+						if (text.Length > 0)
+							goto again;
+					}
+
+					if (!waiting)
 						return;
-					goto again;
 				}
+
+				waiting = false;
+				wait_event.Set ();
+			}
+
+			public void Wait ()
+			{
+				lock (this) {
+					if (lines.Count > 0)
+						return;
+
+					waiting = true;
+				}
+				wait_event.WaitOne ();
 			}
 
 			public string ReadLine ()
 			{
-				if (lines.Count < 1)
-					return null;
-				else
-					return (string) lines.Dequeue ();
+				lock (this) {
+					if (lines.Count < 1)
+						return null;
+					else
+						return (string) lines.Dequeue ();
+				}
 			}
 		}
 	}

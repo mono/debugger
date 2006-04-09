@@ -1,5 +1,10 @@
 2006-04-09  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/testnativefork.cs: New test.
+	* test/src/testnativefork.c: Test case for the test.
+
+2006-04-09  Martin Baulig  <martin@ximian.com>
+
 	* backends/Threadmanager.cs
 	(ThreadManager.HandleChildEvent): Pass SIGCHLD to the target
 	without stopping it.

@@ -1,5 +1,7 @@
 MCS_FLAGS=-debug -unsafe
 
+AM_CFLAGS = -g -O0
+
 noinst_SCRIPTS = \
 	TestManagedTypes.exe TestInvocation.exe TestInheritance.exe \
 	TestDelegate.exe TestIndexer.exe TestEnum.exe \
@@ -13,6 +15,8 @@ EXTRA_DIST = \
 	TestRestart.cs TestNull.cs TestByRef.cs \
 	TestToString.cs TestObject.cs TestProperty.cs TestAbort.cs \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs
+
+noinst_PROGRAMS = testnativefork
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<
