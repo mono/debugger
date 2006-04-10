@@ -1,5 +1,18 @@
 2006-04-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/ILanguageBackend.cs
+	(NotificationType): Added `ThreadExited'.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): If we receive a
+	`ThreadExited' notification, clear `engine.EndStackAddress'.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ReleaseThreadLock): Resume the target if we
+	stopped it.
+
+2006-04-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-ptrace.c
 	(server_ptrace_dispatch_event): Clear `inferior->last_signal' if
 	we don't send a `MESSAGE_CHILD_STOPPED'.

@@ -404,6 +404,8 @@ namespace Mono.Debugger
 		internal void Kill ()
 		{
 			operation_completed_event.Set ();
+			if (engine != null)
+				engine.Kill ();
 			Dispose ();
 		}
 

@@ -133,11 +133,22 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		void thread_created (SingleSteppingEngine engine, Inferior inferior,
-				     TargetAddress data, long tid)
+		internal void ThreadExited (SingleSteppingEngine engine)
 		{
-			engine = (SingleSteppingEngine) engine_hash [tid];
+			engine_hash.Remove (engine.TID);
+		}
+
+		void thread_created (TargetAddress data, long tid)
+		{
+			SingleSteppingEngine engine = (SingleSteppingEngine) engine_hash [tid];
 			engine.EndStackAddress = data;
+		}
+
+		void thread_exited (long tid)
+		{
+			SingleSteppingEngine engine = (SingleSteppingEngine) engine_hash [tid];
+			if (engine != null)
+				engine.EndStackAddress = TargetAddress.Null;
 		}
 
 		public void Attach (SingleSteppingEngine main_engine, CommandResult[] results)
@@ -180,9 +191,13 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					thread_created (engine, inferior, data, cevent.Data2);
+					thread_created (data, cevent.Data2);
 					break;
 				}
+
+				case NotificationType.ThreadExited:
+					thread_exited (cevent.Data2);
+					break;
 
 				case NotificationType.ThreadAbort:
 					break;
@@ -252,13 +267,13 @@ namespace Mono.Debugger.Backends
 
 	// <summary>
 	//   This class is the managed representation of the MONO_DEBUGGER__debugger_info struct.
-	//   as defined in debugger/wrapper/mono-debugger-jit-wrapper.h
+	//   as defined in mono/mini/debug-debugger.h
 	// </summary>
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 54;
-		public const int  MaxDynamicVersion = 54;
+		public const int  MinDynamicVersion = 55;
+		public const int  MaxDynamicVersion = 55;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;

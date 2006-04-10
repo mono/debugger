@@ -369,7 +369,7 @@ namespace Mono.Debugger
 			Dispose ();
 		}
 
-		internal void Kill (SingleSteppingEngine engine)
+		internal void KillThread (SingleSteppingEngine engine)
 		{
 			if (engine == main_engine) {
 				manager.Debugger.OnProcessExitedEvent (main_engine.Process);
@@ -379,6 +379,9 @@ namespace Mono.Debugger
 				OnThreadExitedEvent (engine.Thread);
 				engine.Thread.Kill ();
 			}
+
+			if (mono_manager != null)
+				mono_manager.ThreadExited (engine);
 		}
 
 		// XXX This desperately needs to be renamed.
