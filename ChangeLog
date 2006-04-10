@@ -1,5 +1,9 @@
 2006-04-10  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Bumped version number to 0.13.
+
+2006-04-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(Debugger.DebuggerSession): Moved into `Process'.
 
