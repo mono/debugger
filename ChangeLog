@@ -1,5 +1,16 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/Process.cs
+	(Process.SaveSession, LoadSession): New public methods; moved the
+	session handling code here from `DebuggerSession'.
+	(Process.Session): Removed.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Make this a static class for the moment; all
+	the session handling code is now in `Process'.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/ThreadGroup.cs
 	(ThreadGroup.Global, ThreadGroup.System): New public static
 	properties; the "global" and "system" groups are now static and

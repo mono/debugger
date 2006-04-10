@@ -59,25 +59,9 @@ namespace Mono.Debugger
 		public string RemoteMono = null;
 	}
 
-	public class DebuggerSession : MarshalByRefObject
+	public static class DebuggerSession
 	{
-		public readonly Process Process;
-
-		internal DebuggerSession (Process process)
-		{
-			this.Process = process;
-		}
-
-		protected DebuggerSession (Process process, EventHandle[] event_list)
-			: this (process)
-		{
-#if FIXME
-			foreach (EventHandle handle in event_list)
-				events.Add (handle.Index, handle);				
-#endif
-		}
-
-		private static SurrogateSelector CreateSurrogateSelector (StreamingContext context)
+		internal static SurrogateSelector CreateSurrogateSelector (StreamingContext context)
 		{
 			SurrogateSelector ss = new SurrogateSelector ();
 
@@ -93,73 +77,6 @@ namespace Mono.Debugger
 					 new EventHandle.SessionSurrogate ());
 
 			return ss;
-		}
-
-		public static DebuggerSession Load (Process process, Stream stream)
-		{
-			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, process);
-
-			SurrogateSelector ss = CreateSurrogateSelector (context);
-			BinaryFormatter formatter = new BinaryFormatter (ss, context);
-
-			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
-			return info.CreateSession (process);
-		}
-
-		public void Save (Stream stream)
-		{
-			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, this);
-
-			SurrogateSelector ss = CreateSurrogateSelector (context);
-			BinaryFormatter formatter = new BinaryFormatter (ss, context);
-
-			SessionInfo info = new SessionInfo (this);
-			formatter.Serialize (stream, info);
-		}
-
-		public void InsertBreakpoints (Thread thread)
-		{
-#if FIXME
-			foreach (EventHandle handle in events.Values)
-				handle.Enable (thread);
-#endif
-		}
-
-		[Serializable]
-		private class SessionInfo : ISerializable, IDeserializationCallback
-		{
-			public readonly Module[] Modules;
-			public readonly EventHandle[] Events;
-
-			public SessionInfo (DebuggerSession session)
-			{
-				this.Modules = session.Process.Modules;
-				this.Events = session.Process.Events;
-			}
-
-			public void GetObjectData (SerializationInfo info, StreamingContext context)
-			{
-				info.AddValue ("modules", Modules);
-				info.AddValue ("events", Events);
-			}
-
-			void IDeserializationCallback.OnDeserialization (object obj)
-			{ }
-
-			public DebuggerSession CreateSession (Process process)
-			{
-				return new DebuggerSession (process, Events);
-			}
-
-			private SessionInfo (SerializationInfo info, StreamingContext context)
-			{
-				Modules = (Module []) info.GetValue (
-					"modules", typeof (Module []));
-				Events = (EventHandle []) info.GetValue (
-					"events", typeof (EventHandle []));
-			}
 		}
 	}
 }

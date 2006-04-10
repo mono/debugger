@@ -21,7 +21,6 @@ namespace Mono.Debugger.Frontend
 	public sealed class Interpreter : MarshalByRefObject, IDisposable
 	{
 		DebuggerOptions options;
-		DebuggerSession session;
 
 		Debugger debugger;
 		Process main_process;
@@ -88,10 +87,6 @@ namespace Mono.Debugger.Frontend
 			} finally {
 				Environment.Exit (exit_code);
 			}
-		}
-
-		public DebuggerSession Session {
-			get { return session; }
 		}
 
 		public StyleBase Style {
@@ -318,7 +313,6 @@ namespace Mono.Debugger.Frontend
 
 				current_process = main_process = debugger.Run (options);
 
-				session = current_process.Session;
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
 
@@ -344,7 +338,6 @@ namespace Mono.Debugger.Frontend
 
 				current_process = main_process = debugger.Attach (options, pid);
 
-				session = current_process.Session;
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
 
@@ -372,7 +365,6 @@ namespace Mono.Debugger.Frontend
 				current_process = main_process = debugger.OpenCoreFile (
 					options, core_file, out threads);
 
-				session = current_process.Session;
 				current_thread = current_process.MainThread;
 
 				return current_process;
@@ -386,7 +378,7 @@ namespace Mono.Debugger.Frontend
 		{
 			BinaryFormatter formatter = new BinaryFormatter ();
 			formatter.Serialize (stream, options);
-			session.Save (stream);
+			CurrentProcess.SaveSession (stream);
 		}
 
 		public Process LoadSession (Stream stream)
@@ -406,8 +398,7 @@ namespace Mono.Debugger.Frontend
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
-				session = DebuggerSession.Load (main_process, stream);
-				session.InsertBreakpoints (current_thread);
+				current_process.LoadSession (stream);
 
 				return current_process;
 			} catch (TargetException e) {

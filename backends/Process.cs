@@ -1,6 +1,10 @@
 using System;
+using System.IO;
 using System.Collections;
 using ST = System.Threading;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
@@ -31,7 +35,6 @@ namespace Mono.Debugger
 		DebuggerMutex thread_lock_mutex;
 		bool has_thread_lock;
 
-		DebuggerSession session;
 		Hashtable thread_groups;
 		ThreadGroup main_thread_group;
 
@@ -50,8 +53,6 @@ namespace Mono.Debugger
 			events = Hashtable.Synchronized (new Hashtable ());
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
-
-			session = new DebuggerSession (this);
 		}
 
 		internal Process (ThreadManager manager, ProcessStart start)
@@ -147,10 +148,6 @@ namespace Mono.Debugger
 
 		internal ProcessStart ProcessStart {
 			get { return start; }
-		}
-
-		public DebuggerSession Session {
-			get { return session; }
 		}
 
 		internal void AddLanguage (ILanguageBackend language)
@@ -609,6 +606,68 @@ namespace Mono.Debugger
 
 			events.Add (handle.Index, handle);
 			return handle;
+		}
+
+		//
+		// Session management.
+		//
+
+		public void SaveSession (Stream stream)
+		{
+			StreamingContext context = new StreamingContext (
+				StreamingContextStates.Persistence, this);
+
+			SurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
+			BinaryFormatter formatter = new BinaryFormatter (ss, context);
+
+			SessionInfo info = new SessionInfo (this);
+			formatter.Serialize (stream, info);
+		}
+
+		public void LoadSession (Stream stream)
+		{
+			StreamingContext context = new StreamingContext (
+				StreamingContextStates.Persistence, this);
+
+			SurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
+			BinaryFormatter formatter = new BinaryFormatter (ss, context);
+
+			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
+
+			foreach (EventHandle handle in info.Events) {
+				events.Add (handle.Index, handle);
+				handle.Enable (main_thread);
+			}
+		}
+
+		[Serializable]
+		private class SessionInfo : ISerializable, IDeserializationCallback
+		{
+			public readonly Module[] Modules;
+			public readonly EventHandle[] Events;
+
+			public SessionInfo (Process process)
+			{
+				this.Modules = process.Modules;
+				this.Events = process.Events;
+			}
+
+			public void GetObjectData (SerializationInfo info, StreamingContext context)
+			{
+				info.AddValue ("modules", Modules);
+				info.AddValue ("events", Events);
+			}
+
+			void IDeserializationCallback.OnDeserialization (object obj)
+			{ }
+
+			private SessionInfo (SerializationInfo info, StreamingContext context)
+			{
+				Modules = (Module []) info.GetValue (
+					"modules", typeof (Module []));
+				Events = (EventHandle []) info.GetValue (
+					"events", typeof (EventHandle []));
+			}
 		}
 
 		//
