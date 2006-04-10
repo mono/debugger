@@ -355,17 +355,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_mono_debugger_info (ITargetMemoryAccess memory)
 		{
-			init_trampolines (memory);
-
-			symbol_files = new ArrayList ();
-			image_hash = new Hashtable ();
-			assembly_hash = new Hashtable ();
-			assembly_by_name = new Hashtable ();
-			class_hash = new Hashtable ();
-		}
-
-		void init_trampolines (ITargetMemoryAccess memory)
-		{
 			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
 			trampolines [0] = memory.ReadAddress (address);
@@ -375,6 +364,13 @@ namespace Mono.Debugger.Languages.Mono
 			trampolines [2] = memory.ReadAddress (address);
 			address += 2 * memory.TargetAddressSize;
 			trampolines [3] = memory.ReadAddress (address);
+
+			symbol_files = new ArrayList ();
+			image_hash = new Hashtable ();
+			assembly_hash = new Hashtable ();
+			assembly_by_name = new Hashtable ();
+			class_hash = new Hashtable ();
+			initialized = true;
 		}
 
 #region symbol table management
@@ -385,6 +381,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		void do_update_symbol_table (ITargetMemoryAccess memory)
 		{
+			if (!initialized)
+				return;
+
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
 			process.ModuleManager.Lock ();
 			try {
