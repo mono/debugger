@@ -33,7 +33,6 @@ namespace Mono.Debugger
 
 		DebuggerSession session;
 		Hashtable thread_groups;
-		ThreadGroup global_thread_group;
 		ThreadGroup main_thread_group;
 
 		int id = ++next_id;
@@ -46,7 +45,6 @@ namespace Mono.Debugger
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
 			thread_groups = Hashtable.Synchronized (new Hashtable ());
-			global_thread_group = CreateThreadGroup ("global");
 			main_thread_group = CreateThreadGroup ("main");
 
 			events = Hashtable.Synchronized (new Hashtable ());
@@ -517,7 +515,7 @@ namespace Mono.Debugger
 				if (group != null)
 					return group;
 
-				group = new ThreadGroup (name);
+				group = ThreadGroup.CreateThreadGroup (name);
 				thread_groups.Add (name, group);
 				return group;
 			}
@@ -550,10 +548,6 @@ namespace Mono.Debugger
 
 		public ThreadGroup MainThreadGroup {
 			get { return main_thread_group; }
-		}
-
-		public ThreadGroup GlobalThreadGroup {
-			get { return global_thread_group; }
 		}
 
 		//

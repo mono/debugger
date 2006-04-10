@@ -14,20 +14,37 @@ namespace Mono.Debugger
 		string name;
 		Hashtable threads;
 
-		internal ThreadGroup (string name)
+		static ThreadGroup global = new ThreadGroup ("global");
+		static ThreadGroup system = new ThreadGroup ("system");
+
+		protected ThreadGroup (string name)
 		{
 			this.name = name;
 			this.threads = Hashtable.Synchronized (new Hashtable ());
 		}
 
+		internal static ThreadGroup CreateThreadGroup (string name)
+		{
+			if ((name == "global") || (name == "system"))
+				throw new InvalidOperationException ();
+
+			return new ThreadGroup (name);
+		}
+
 		public void AddThread (int id)
 		{
+			if (IsSystem)
+				throw new InvalidOperationException ();
+
 			if (!threads.Contains (id))
 				threads.Add (id, true);
 		}
 
 		public void RemoveThread (int id)
 		{
+			if (IsSystem)
+				throw new InvalidOperationException ();
+
 			threads.Remove (id);
 		}
 
@@ -45,12 +62,20 @@ namespace Mono.Debugger
 			get { return name; }
 		}
 
+		public static ThreadGroup Global {
+			get { return global; }
+		}
+
+		public static ThreadGroup System {
+			get { return system; }
+		}
+
 		public bool IsGlobal {
-			get { return name == "global"; }
+			get { return this == global; }
 		}
 
 		public bool IsSystem {
-			get { return name == "global" || name == "main"; }
+			get { return this == global || this == system; }
 		}
 
 		public override string ToString ()

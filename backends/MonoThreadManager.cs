@@ -96,7 +96,7 @@ namespace Mono.Debugger.Backends
 			protected readonly MonoThreadManager manager;
 
 			public InitializeBreakpoint (MonoThreadManager manager)
-				: base ("initialize", null)
+				: base ("initialize", ThreadGroup.System)
 			{
 				this.manager = manager;
 			}

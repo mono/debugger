@@ -601,6 +601,8 @@ namespace Mono.Debugger.Frontend
 		{
 			if (name == null)
 				name = "main";
+			else if (name == "global")
+				return ThreadGroup.Global;
 			if (name.StartsWith ("@"))
 				throw new ScriptingException ("No such thread group.");
 			if (!CurrentProcess.ThreadGroupExists (name))

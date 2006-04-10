@@ -132,7 +132,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void RemoveBreakpointsAfterFork (Inferior inferior)
+		public void InitializeAfterFork (Inferior inferior)
 		{
 			Lock ();
 			try {
@@ -143,11 +143,11 @@ namespace Mono.Debugger.Backends
 					int idx = indices [i];
 					Breakpoint bpt = (Breakpoint) breakpoints [idx];
 
-					if ((bpt.ThreadGroup != null) && !bpt.ThreadGroup.IsGlobal)
-						RemoveBreakpoint (inferior, idx);
-					else if (bpt.ThreadGroup != null) {
+					if (bpt.ThreadGroup.IsGlobal) {
 						EventHandle handle = new BreakpointHandle (bpt, idx);
 						inferior.Process.AddEvent (handle);
+					} else if (!bpt.ThreadGroup.IsSystem) {
+						RemoveBreakpoint (inferior, idx);
 					}
 				}
 			} finally {

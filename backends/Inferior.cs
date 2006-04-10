@@ -1159,7 +1159,7 @@ namespace Mono.Debugger.Backends
 		public void InitializeAfterFork ()
 		{
 			check_error (mono_debugger_server_init_after_fork (server_handle));
-			breakpoint_manager.RemoveBreakpointsAfterFork (this);
+			breakpoint_manager.InitializeAfterFork (this);
 		}
 
 		internal struct ServerStackFrame

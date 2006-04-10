@@ -37,7 +37,7 @@ namespace Mono.Debugger
 
 		public bool Breaks (int id)
 		{
-			if ((group == null) || group.IsGlobal)
+			if (group.IsSystem)
 				return true;
 
 			foreach (int thread in group.Threads) {
@@ -97,6 +97,9 @@ namespace Mono.Debugger
 
 		protected Breakpoint (string name, ThreadGroup group)
 		{
+			if (group == null)
+				throw new NullReferenceException ();
+
 			this.index = ++NextBreakpointIndex;
 			this.group = group;
 			this.name = name;

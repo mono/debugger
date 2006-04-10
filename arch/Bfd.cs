@@ -1187,7 +1187,7 @@ namespace Mono.Debugger.Backends
 			protected readonly Bfd bfd;
 
 			public SetXidBreakpoint (Bfd bfd)
-				: base ("setxid", null)
+				: base ("setxid", ThreadGroup.System)
 			{
 				this.bfd = bfd;
 			}
@@ -1207,7 +1207,7 @@ namespace Mono.Debugger.Backends
 			protected readonly Bfd bfd;
 
 			public DynlinkBreakpoint (Bfd bfd)
-				: base ("dynlink", null)
+				: base ("dynlink", ThreadGroup.System)
 			{
 				this.bfd = bfd;
 			}

@@ -1,5 +1,16 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/ThreadGroup.cs
+	(ThreadGroup.Global, ThreadGroup.System): New public static
+	properties; the "global" and "system" groups are now static and
+	immutable.
+
+	* backends/BreakpointManager.cs
+	(BreakpointManager.RemoveBreakpointsAfterFork): Renamed into
+	InitializeAfterFork().	
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs (Breakpoint.Clone): Removed.
 
 	* backends/BreakpointManager.cs
