@@ -497,6 +497,8 @@ namespace Mono.Debugger.Frontend
 
 		protected void ThreadExited (Thread thread)
 		{
+			if (!thread.IsDaemon && (thread != thread.Process.MainThread))
+				Print ("Thread @{0} exited.", thread.ID);
 			if (thread == current_thread)
 				current_thread = null;
 		}

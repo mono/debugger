@@ -3,7 +3,7 @@ using System.Threading;
 
 class X
 {
-	public static bool Silent = true;
+	public static bool Silent = false;
 
 	static void Loop (int seconds)
 	{
