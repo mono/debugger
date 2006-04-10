@@ -1,3 +1,32 @@
+April 10th, 2006 - Martin Baulig
+-------------------------------
+
+Released version 0.13 "Luxemburg" of the Mono Debugger :-)
+
+- Unfortunately, there was some confusion about the supported
+  Mono version last week:
+
+  * The "Portand" release won't work with Mono 1.1.14 or the latest
+    SVN anymore because some runtime structure changed.
+
+  * I tested this release with the Mono 1.1.14 tarball and it's
+    working fine.
+
+  * To avoid future incompatibilities due to changes in the runtime
+    structures, I'm making a few changes to the debugger's runtime
+    interface next week - this may break compatibility again.
+
+- The test suite has been migrated to NUnit.
+
+  This makes the test suite more reliable and also allows me to add
+  more complex test to test scenarios which weren't possible with
+  the old test suite.
+
+  Unfortunately, a `make check' now requires a lot of memory to
+  run.  I'm currently using `ulimit -Sm 600000 -Sv 600000'.
+
+- The next releases will be "Bruxelles", "Sidney" and "Cologne".
+
 April 4th, 2006 - Martin Baulig
 -------------------------------
 
