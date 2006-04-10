@@ -1,5 +1,13 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/Breakpoint.cs (Breakpoint.Clone): Removed.
+
+	* backends/BreakpointManager.cs
+	(BreakpointManager.RemoveBreakpointsAfterFork): Create a new
+	`BreakpointHandle' for all global user-defined breakpoints.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs (Process): Moved the breakpoint/event code
 	here from `DebuggerSession'.
 

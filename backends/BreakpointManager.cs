@@ -49,7 +49,7 @@ namespace Mono.Debugger.Backends
 
 			foreach (int index in old.breakpoints.Keys) {
 				Breakpoint breakpoint = (Breakpoint) old.breakpoints [index];
-				breakpoints.Add (index, breakpoint.Clone ());
+				breakpoints.Add (index, breakpoint);
 			}
 
 			Unlock ();
@@ -140,10 +140,15 @@ namespace Mono.Debugger.Backends
 				breakpoints.Keys.CopyTo (indices, 0);
 
 				for (int i = 0; i < indices.Length; i++) {
-					Breakpoint bpt = (Breakpoint) breakpoints [indices [i]];
+					int idx = indices [i];
+					Breakpoint bpt = (Breakpoint) breakpoints [idx];
 
 					if ((bpt.ThreadGroup != null) && !bpt.ThreadGroup.IsGlobal)
-						RemoveBreakpoint (inferior, indices [i]);
+						RemoveBreakpoint (inferior, idx);
+					else if (bpt.ThreadGroup != null) {
+						EventHandle handle = new BreakpointHandle (bpt, idx);
+						inferior.Process.AddEvent (handle);
+					}
 				}
 			} finally {
 				Unlock ();

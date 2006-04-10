@@ -573,6 +573,11 @@ namespace Mono.Debugger
 			return (EventHandle) events [index];
 		}
 
+		internal void AddEvent (EventHandle handle)
+		{
+			events.Add (handle.Index, handle);
+		}
+
 		public void DeleteEvent (Thread thread, EventHandle handle)
 		{
 			handle.Remove (thread);

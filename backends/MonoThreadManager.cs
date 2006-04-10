@@ -108,11 +108,6 @@ namespace Mono.Debugger.Backends
 				remain_stopped = false;
 				return true;
 			}
-
-			public override Breakpoint Clone ()
-			{
-				return new InitializeBreakpoint (manager);
-			}
 		}
 
 		TargetAddress main_function;

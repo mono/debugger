@@ -49,6 +49,12 @@ namespace Mono.Debugger
 			this.address = address;
 		}
 
+		internal BreakpointHandle (Breakpoint breakpoint, int breakpoint_id)
+			: this (breakpoint)
+		{
+			this.breakpoint_id = breakpoint_id;
+		}
+
 		public override bool IsEnabled {
 			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}

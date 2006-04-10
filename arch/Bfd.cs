@@ -1199,11 +1199,6 @@ namespace Mono.Debugger.Backends
 				remain_stopped = false;
 				return true;
 			}
-
-			public override Breakpoint Clone ()
-			{
-				return new SetXidBreakpoint (bfd);
-			}
 		}
 
 		[Serializable]
@@ -1223,11 +1218,6 @@ namespace Mono.Debugger.Backends
 				bfd.dynlink_handler (inferior);
 				remain_stopped = false;
 				return true;
-			}
-
-			public override Breakpoint Clone ()
-			{
-				return new DynlinkBreakpoint (bfd);
 			}
 		}
 

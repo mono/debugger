@@ -9,7 +9,7 @@ namespace Mono.Debugger
 	//   hold the user's settings for a breakpoint.
 	// </summary>
 	[Serializable]
-	public abstract class Breakpoint : ICloneable
+	public abstract class Breakpoint
 	{
 		// <summary>
 		//   An automatically generated unique index for this breakpoint.
@@ -73,13 +73,6 @@ namespace Mono.Debugger
 		public virtual bool CheckBreakpointHit (Thread target, TargetAddress address)
 		{
 			return true;
-		}
-
-		public abstract Breakpoint Clone ();
-
-		object ICloneable.Clone ()
-		{
-			return Clone ();
 		}
 
 		public override string ToString ()
