@@ -612,7 +612,7 @@ namespace Mono.Debugger.Frontend
 		public ThreadGroup GetThreadGroup (string name, bool writable)
 		{
 			if (name == null)
-				name = "global";
+				name = "main";
 			if (name.StartsWith ("@"))
 				throw new ScriptingException ("No such thread group.");
 			if (!CurrentProcess.ThreadGroupExists (name))

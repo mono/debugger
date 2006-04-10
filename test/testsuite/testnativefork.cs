@@ -55,7 +55,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", line_main);
-		        AssertBreakpoint (line_child);
+		        AssertBreakpoint ("-group global " + line_child);
 			AssertExecute ("next");
 
 			Thread child = AssertProcessCreated ();

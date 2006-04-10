@@ -1,5 +1,17 @@
 2006-04-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/BreakpointManager.cs
+	(BreakpointManager.RemoveBreakpointsAfterFork): Remove all
+	non-global breakpoints after a fork().
+
+	* backends/Inferior.cs
+	(Inferior.InitializeAfterFork): Call it here.
+
+	* frontend/Interpreter.cs
+	(Interpreter.GetThreadGroup): Default to `main', not `global'.
+
+2006-04-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/ILanguageBackend.cs
 	(NotificationType): Added `ThreadExited'.
 
