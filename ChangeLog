@@ -1,5 +1,11 @@
 2006-04-10  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Clear `inferior->last_signal' if
+	we don't send a `MESSAGE_CHILD_STOPPED'.
+
+2006-04-10  Martin Baulig  <martin@ximian.com>
+
 	Released version 0.13 "Luxemburg" of the Mono Debugger :-)
 
 2006-04-10  Martin Baulig  <martin@ximian.com>

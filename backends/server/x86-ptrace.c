@@ -217,6 +217,9 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		action = x86_arch_child_stopped (handle, WSTOPSIG (status),
 						 &callback_arg, &retval, &retval2);
 
+		if (action != STOP_ACTION_SEND_STOPPED)
+			handle->inferior->last_signal = 0;
+
 		switch (action) {
 		case STOP_ACTION_SEND_STOPPED:
 			if (WSTOPSIG (status) == SIGTRAP) {
@@ -262,8 +265,13 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		*arg = WEXITSTATUS (status);
 		return MESSAGE_CHILD_EXITED;
 	} else if (WIFSIGNALED (status)) {
-		*arg = WTERMSIG (status);
-		return MESSAGE_CHILD_SIGNALED;
+		if (WTERMSIG (status) == SIGTRAP) {
+			*arg = 0;
+			return MESSAGE_CHILD_EXITED;
+		} else {
+			*arg = WTERMSIG (status);
+			return MESSAGE_CHILD_SIGNALED;
+		}
 	}
 
 	g_warning (G_STRLOC ": Got unknown waitpid() result: %x", status);
