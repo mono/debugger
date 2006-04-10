@@ -22,6 +22,7 @@ namespace Mono.Debugger
 		SingleSteppingEngine main_engine;
 		ArrayList languages;
 		Hashtable thread_hash;
+		Hashtable events;
 		ArrayList attach_results;
 
 		bool is_forked;
@@ -48,6 +49,7 @@ namespace Mono.Debugger
 			global_thread_group = CreateThreadGroup ("global");
 			main_thread_group = CreateThreadGroup ("main");
 
+			events = Hashtable.Synchronized (new Hashtable ());
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
 
@@ -552,6 +554,62 @@ namespace Mono.Debugger
 
 		public ThreadGroup GlobalThreadGroup {
 			get { return global_thread_group; }
+		}
+
+		//
+		// Events
+		//
+
+		public EventHandle[] Events {
+			get {
+				EventHandle[] handles = new EventHandle [events.Count];
+				events.Values.CopyTo (handles, 0);
+				return handles;
+			}
+		}
+
+		public EventHandle GetEvent (int index)
+		{
+			return (EventHandle) events [index];
+		}
+
+		public void DeleteEvent (Thread thread, EventHandle handle)
+		{
+			handle.Remove (thread);
+			events.Remove (handle.Index);
+		}
+
+		public EventHandle InsertBreakpoint (Thread target, int domain,
+						     SourceLocation location, Breakpoint bpt)
+		{
+			EventHandle handle = new BreakpointHandle (target, domain, bpt, location);
+			if (handle == null)
+				return handle;
+
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
+		public EventHandle InsertBreakpoint (Thread target, TargetFunctionType func,
+						     Breakpoint bpt)
+		{
+			EventHandle handle = new BreakpointHandle (target, bpt, func);
+			if (handle == null)
+				return handle;
+
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
+		public EventHandle InsertExceptionCatchPoint (Thread target, ThreadGroup group,
+							      TargetType exception)
+		{
+			EventHandle handle = new CatchpointHandle (target, group, exception);
+			if (handle == null)
+				return null;
+
+			events.Add (handle.Index, handle);
+			return handle;
 		}
 
 		//

@@ -63,8 +63,6 @@ namespace Mono.Debugger
 	{
 		public readonly Process Process;
 
-		Hashtable events = Hashtable.Synchronized (new Hashtable ());
-
 		internal DebuggerSession (Process process)
 		{
 			this.Process = process;
@@ -73,26 +71,10 @@ namespace Mono.Debugger
 		protected DebuggerSession (Process process, EventHandle[] event_list)
 			: this (process)
 		{
+#if FIXME
 			foreach (EventHandle handle in event_list)
 				events.Add (handle.Index, handle);				
-		}
-
-		public EventHandle[] Events {
-			get {
-				EventHandle[] handles = new EventHandle [events.Count];
-				events.Values.CopyTo (handles, 0);
-				return handles;
-			}
-		}
-
-		public EventHandle GetEvent (int index)
-		{
-			return (EventHandle) events [index];
-		}
-
-		public void DeleteEvent (int index)
-		{
-			events.Remove (index);
+#endif
 		}
 
 		private static SurrogateSelector CreateSurrogateSelector (StreamingContext context)
@@ -139,41 +121,10 @@ namespace Mono.Debugger
 
 		public void InsertBreakpoints (Thread thread)
 		{
+#if FIXME
 			foreach (EventHandle handle in events.Values)
 				handle.Enable (thread);
-		}
-
-		public EventHandle InsertBreakpoint (Thread target, int domain,
-						     SourceLocation location, Breakpoint bpt)
-		{
-			EventHandle handle = new BreakpointHandle (target, domain, bpt, location);
-			if (handle == null)
-				return handle;
-
-			events.Add (handle.Index, handle);
-			return handle;
-		}
-
-		public EventHandle InsertBreakpoint (Thread target, TargetFunctionType func,
-						     Breakpoint bpt)
-		{
-			EventHandle handle = new BreakpointHandle (target, bpt, func);
-			if (handle == null)
-				return handle;
-
-			events.Add (handle.Index, handle);
-			return handle;
-		}
-
-		public EventHandle InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							      TargetType exception)
-		{
-			EventHandle handle = new CatchpointHandle (target, group, exception);
-			if (handle == null)
-				return null;
-
-			events.Add (handle.Index, handle);
-			return handle;
+#endif
 		}
 
 		[Serializable]
@@ -185,7 +136,7 @@ namespace Mono.Debugger
 			public SessionInfo (DebuggerSession session)
 			{
 				this.Modules = session.Process.Modules;
-				this.Events = session.Events;
+				this.Events = session.Process.Events;
 			}
 
 			public void GetObjectData (SerializationInfo info, StreamingContext context)

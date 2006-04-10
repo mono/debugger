@@ -450,7 +450,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowBreakpoints ()
 		{
-			EventHandle[] events = session.Events;
+			EventHandle[] events = CurrentProcess.Events;
 			if (events.Length == 0) {
 				Print ("No breakpoints or catchpoints.");
 				return;
@@ -474,25 +474,13 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public EventHandle[] Events {
-			get {
-				return session.Events;
-			}
-		}
-
 		public EventHandle GetEvent (int index)
 		{
-			EventHandle handle = session.GetEvent (index);
+			EventHandle handle = CurrentProcess.GetEvent (index);
 			if (handle == null)
 				throw new ScriptingException ("No such breakpoint/catchpoint.");
 
 			return handle;
-		}
-
-		public void DeleteEvent (Thread thread, EventHandle handle)
-		{
-			handle.Remove (thread);
-			session.DeleteEvent (handle.Index);
 		}
 
 		protected void ThreadExited (Thread thread)
@@ -647,7 +635,7 @@ namespace Mono.Debugger.Frontend
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
-			EventHandle handle = session.InsertBreakpoint (
+			EventHandle handle = target.Process.InsertBreakpoint (
 				target, domain, location, breakpoint);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
@@ -660,7 +648,8 @@ namespace Mono.Debugger.Frontend
 		{
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 
-			EventHandle handle = session.InsertBreakpoint (target, func, breakpoint);
+			EventHandle handle = target.Process.InsertBreakpoint (
+				target, func, breakpoint);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
@@ -670,7 +659,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 						      TargetType exception)
 		{
-			EventHandle handle = session.InsertExceptionCatchPoint (
+			EventHandle handle = target.Process.InsertExceptionCatchPoint (
 				target, group, exception);
 			if (handle == null)
 				throw new ScriptingException ("Could not add catch point.");

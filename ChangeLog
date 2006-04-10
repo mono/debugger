@@ -1,3 +1,11 @@
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
+	* backends/Process.cs (Process): Moved the breakpoint/event code
+	here from `DebuggerSession'.
+
+	* backends/DebuggerSession.cs (DebuggerSession): Moved the
+	breakpoint/event code into `Process'.
+
 2006-04-10  Martin Baulig  <martin@ximian.com>
 
 	* backends/BreakpointManager.cs
