@@ -42,7 +42,6 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event ProcessEventHandler ProcessCreatedEvent;
-		public event ProcessEventHandler ProcessReachedMainEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
 		public event DebuggerEventHandler TargetExitedEvent;
 		public event TargetEventHandler TargetEvent;
@@ -53,12 +52,6 @@ namespace Mono.Debugger
 			process_hash.Add (process, process);
 			if (ProcessCreatedEvent != null)
 				ProcessCreatedEvent (this, process);
-		}
-
-		internal void OnProcessReachedMainEvent (Process process)
-		{
-			if (ProcessReachedMainEvent != null)
-				ProcessReachedMainEvent (this, process);
 		}
 
 		protected void OnTargetExitedEvent ()

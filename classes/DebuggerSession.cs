@@ -59,8 +59,38 @@ namespace Mono.Debugger
 		public string RemoteMono = null;
 	}
 
-	public static class DebuggerSession
+	public class DebuggerSession
 	{
+		public readonly DebuggerOptions Options;
+		byte[] session_data;
+
+		public DebuggerSession (DebuggerOptions options)
+		{
+			this.Options = options;
+		}
+
+		public void MainProcessExited (Process process)
+		{
+			using (MemoryStream stream = new MemoryStream ()) {
+				process.SaveSession (stream);
+				session_data = stream.ToArray ();
+			}
+		}
+
+		public void MainProcessReachedMain (Process process)
+		{
+			if (session_data == null)
+				return;
+
+			using (MemoryStream stream = new MemoryStream (session_data)) {
+				process.LoadSession (stream);
+			}
+		}
+
+		//
+		// Private stuff.
+		//
+
 		internal static ISurrogateSelector CreateSurrogateSelector (StreamingContext context)
 		{
 			return new SurrogateSelector ();

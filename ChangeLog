@@ -1,5 +1,16 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs
+	(Debugger.ProcessReachedMainEvent): Removed.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession): We're not a static class anymore.
+
+	* frontend/Interpreter.cs: Save the session on exit and load it
+	when we restart.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/SimpleBreakpoint.cs: Removed.
 
 	* classes/Breakpoint.cs (Breakpoint): Don't make this abstract.

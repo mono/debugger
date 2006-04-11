@@ -207,8 +207,6 @@ namespace Mono.Debugger
 			symtab_manager.Wait ();
 
 			inferior.InitializeModules ();
-
-			manager.Debugger.OnProcessReachedMainEvent (this);
 		}
 
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)

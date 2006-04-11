@@ -20,7 +20,7 @@ namespace Mono.Debugger.Frontend
 
 	public sealed class Interpreter : MarshalByRefObject, IDisposable
 	{
-		DebuggerOptions options;
+		DebuggerSession session;
 
 		Debugger debugger;
 		Process main_process;
@@ -53,7 +53,7 @@ namespace Mono.Debugger.Frontend
 		{
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
-			this.options = options;
+			this.session = new DebuggerSession (options);
 
 			interrupt_event = new ManualResetEvent (false);
 
@@ -178,11 +178,11 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public bool IsScript {
-			get { return options.IsScript; }
+			get { return Options.IsScript; }
 		}
 
 		public DebuggerOptions Options {
-			get { return options; }
+			get { return session.Options; }
 		}
 
 		public int ExitCode {
@@ -303,7 +303,7 @@ namespace Mono.Debugger.Frontend
 
 			if (!IsScript)
 				Print ("Starting program: {0}",
-				       String.Join (" ", options.InferiorArgs));
+				       String.Join (" ", Options.InferiorArgs));
 
 			try {
 				debugger = new Debugger ();
@@ -311,10 +311,11 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Run (options);
+				current_process = main_process = debugger.Run (Options);
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
+				session.MainProcessReachedMain (current_process);
 
 				return current_process;
 			} catch (TargetException e) {
@@ -336,7 +337,7 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Attach (options, pid);
+				current_process = main_process = debugger.Attach (Options, pid);
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
@@ -363,7 +364,7 @@ namespace Mono.Debugger.Frontend
 
 				Thread[] threads;
 				current_process = main_process = debugger.OpenCoreFile (
-					options, core_file, out threads);
+					Options, core_file, out threads);
 
 				current_thread = current_process.MainThread;
 
@@ -377,7 +378,7 @@ namespace Mono.Debugger.Frontend
 		public void SaveSession (Stream stream)
 		{
 			BinaryFormatter formatter = new BinaryFormatter ();
-			formatter.Serialize (stream, options);
+			formatter.Serialize (stream, session);
 			CurrentProcess.SaveSession (stream);
 		}
 
@@ -388,13 +389,13 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				BinaryFormatter formatter = new BinaryFormatter ();
-				options = (DebuggerOptions) formatter.Deserialize (stream);
+				session = (DebuggerSession) formatter.Deserialize (stream);
 				debugger = new Debugger ();
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Run (options);
+				current_process = main_process = debugger.Run (Options);
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
@@ -495,6 +496,7 @@ namespace Mono.Debugger.Frontend
 		{
 			Print ("Process {0} exited.", PrintProcess (process));
 			if (process == main_process) {
+				session.MainProcessExited (process);
 				current_process = main_process = null;
 				current_thread = null;
 			} else if (process == current_process) {
@@ -702,7 +704,7 @@ namespace Mono.Debugger.Frontend
 			string path = GetFullPathByFilename (filename);
 			if (path == null)
 				path = String.Concat (
-					options.WorkingDirectory, DirectorySeparatorStr,
+					Options.WorkingDirectory, DirectorySeparatorStr,
 					filename);
 
 			return path;
@@ -802,7 +804,6 @@ namespace Mono.Debugger.Frontend
 				backend.TargetExitedEvent += target_exited;
 				backend.ThreadCreatedEvent += thread_created;
 				backend.ProcessCreatedEvent += process_created;
-				backend.ProcessReachedMainEvent += process_reached_main;
 				backend.ProcessExitedEvent += process_exited;
 				backend.TargetOutputEvent += target_output;
 			}
@@ -815,10 +816,6 @@ namespace Mono.Debugger.Frontend
 			public void process_created (Debugger debugger, Process process)
 			{
 				interpreter.ProcessCreated (process);
-			}
-
-			public void process_reached_main (Debugger debugger, Process process)
-			{
 			}
 
 			public void process_exited (Debugger debugger, Process process)
