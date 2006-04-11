@@ -7,14 +7,16 @@ noinst_SCRIPTS = \
 	TestDelegate.exe TestIndexer.exe TestEnum.exe \
 	TestRestart.exe TestNull.exe TestByRef.exe \
 	TestToString.exe TestObject.exe TestProperty.exe TestAbort.exe \
-	TestBreakpoint.exe TestNamespace.exe TestException.exe
+	TestBreakpoint.exe TestNamespace.exe TestException.exe \
+	TestRestart.exe
 
 EXTRA_DIST = \
 	TestManagedTypes.cs TestInvocation.cs TestInheritance.cs \
 	TestDelegate.cs TestIndexer.cs TestEnum.cs \
 	TestRestart.cs TestNull.cs TestByRef.cs \
 	TestToString.cs TestObject.cs TestProperty.cs TestAbort.cs \
-	TestBreakpoint.cs TestNamespace.cs TestException.cs
+	TestBreakpoint.cs TestNamespace.cs TestException.cs \
+	TestRestart.cs
 
 noinst_PROGRAMS = testnativefork
 

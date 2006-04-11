@@ -72,7 +72,7 @@ namespace Mono.Debugger
 		public void MainProcessExited (Process process)
 		{
 			using (MemoryStream stream = new MemoryStream ()) {
-				process.SaveSession (stream);
+				process.SaveSession (stream, StreamingContextStates.Persistence);
 				session_data = stream.ToArray ();
 			}
 		}
@@ -83,7 +83,7 @@ namespace Mono.Debugger
 				return;
 
 			using (MemoryStream stream = new MemoryStream (session_data)) {
-				process.LoadSession (stream);
+				process.LoadSession (stream, StreamingContextStates.Persistence);
 			}
 		}
 

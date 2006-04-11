@@ -170,13 +170,15 @@ namespace Mono.Debugger
 		protected virtual void SetSessionData (SerializationInfo info, Process process)
 		{
 			string type = info.GetString ("type");
-			if (type == "source")
+			if (type == "source") {
 				source = (SourceMethod) info.GetValue (
 					"source", typeof (SourceMethod));
-			else if (type == "function")
+				line = info.GetInt32 ("line");
+			} else if (type == "function") {
 				function = (TargetFunctionType) info.GetValue (
 					"function", typeof (TargetFunctionType));
-			else
+				line = -1;
+			} else
 				throw new InvalidOperationException ();
 		}
 

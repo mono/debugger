@@ -75,13 +75,14 @@ namespace Mono.Debugger
 
 		protected virtual void GetSessionData (SerializationInfo info)
 		{
+			info.AddValue ("index", index);
 			info.AddValue ("group", group);
 			info.AddValue ("name", name);
 		}
 
 		protected virtual void SetSessionData (SerializationInfo info, Process process)
 		{
-			index = Event.GetNextEventIndex ();
+			index = info.GetInt32 ("index");
 			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
 			name = info.GetString ("name");
 		}
@@ -101,6 +102,8 @@ namespace Mono.Debugger
 			{
 				Event handle = (Event) obj;
 				handle.SetSessionData (info, (Process) context.Context);
+				if ((context.State & StreamingContextStates.File) != 0)
+					handle.index = Event.GetNextEventIndex ();
 				return handle;
 			}
 		}

@@ -601,10 +601,10 @@ namespace Mono.Debugger
 		// Session management.
 		//
 
-		public void SaveSession (Stream stream)
+		public void SaveSession (Stream stream, StreamingContextStates states )
 		{
 			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, this);
+				states, this);
 
 			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
 			BinaryFormatter formatter = new BinaryFormatter (ss, context);
@@ -613,7 +613,7 @@ namespace Mono.Debugger
 			formatter.Serialize (stream, info);
 		}
 
-		public void LoadSession (Stream stream)
+		public void LoadSession (Stream stream, StreamingContextStates states)
 		{
 			StreamingContext context = new StreamingContext (
 				StreamingContextStates.Persistence, this);

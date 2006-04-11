@@ -1,5 +1,9 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/TestRestart.cs: New test.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/Debugger.cs
 	(Debugger.ProcessReachedMainEvent): Removed.
 

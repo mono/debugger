@@ -6,6 +6,7 @@ using System.Threading;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 
@@ -379,7 +380,8 @@ namespace Mono.Debugger.Frontend
 		{
 			BinaryFormatter formatter = new BinaryFormatter ();
 			formatter.Serialize (stream, session);
-			CurrentProcess.SaveSession (stream);
+			CurrentProcess.SaveSession (stream, StreamingContextStates.Persistence |
+						    StreamingContextStates.File);
 		}
 
 		public Process LoadSession (Stream stream)
@@ -399,7 +401,9 @@ namespace Mono.Debugger.Frontend
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
-				current_process.LoadSession (stream);
+				current_process.LoadSession (
+					stream, StreamingContextStates.Persistence |
+					StreamingContextStates.File);
 
 				return current_process;
 			} catch (TargetException e) {
