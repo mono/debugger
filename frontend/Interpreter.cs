@@ -626,8 +626,8 @@ namespace Mono.Debugger.Frontend
 		public int InsertBreakpoint (Thread target, ThreadGroup group, int domain,
 					     SourceLocation location)
 		{
-			Event handle = new SimpleBreakpoint (group, location);
-			target.Process.AddEvent (handle);
+			Event handle = target.Process.InsertBreakpoint (
+				target, group, domain, location);
 			handle.Enable (target);
 			return handle.Index;
 		}
@@ -635,8 +635,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     TargetFunctionType func)
 		{
-			Event handle = new SimpleBreakpoint (group, new SourceLocation (func));
-			target.Process.AddEvent (handle);
+			Event handle = target.Process.InsertBreakpoint (target, group, func);
 			handle.Enable (target);
 			return handle.Index;
 		}
@@ -644,8 +643,8 @@ namespace Mono.Debugger.Frontend
 		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 						      TargetType exception)
 		{
-			Event handle = new ExceptionCatchPoint (group, exception);
-			target.Process.AddEvent (handle);
+			Event handle = target.Process.InsertExceptionCatchPoint (
+				target, group, exception);
 			handle.Enable (target);
 			return handle.Index;
 		}

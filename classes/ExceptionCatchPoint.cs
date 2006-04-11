@@ -11,7 +11,7 @@ namespace Mono.Debugger
 	{
 		int handle = -1;
 
-		public ExceptionCatchPoint (ThreadGroup group, TargetType exception)
+		internal ExceptionCatchPoint (ThreadGroup group, TargetType exception)
 			: base (exception.Name, group)
 		{
 			this.exception = exception;

@@ -114,7 +114,7 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			public override Breakpoint Clone ()
+			protected override Breakpoint Clone ()
 			{
 				throw new InvalidOperationException ();
 			}

@@ -1,5 +1,15 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/SimpleBreakpoint.cs: Removed.
+
+	* classes/Breakpoint.cs (Breakpoint): Don't make this abstract.
+
+	* backends/Process.cs
+	(Process.InsertBreakpoint): Create and return a new `Breakpoint'.
+	(Process.InsertExceptionCheckPoint): Likewise.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/Event.cs (Event): New public abstract class.  This
 	replaces the old `EventHandle' class.
 

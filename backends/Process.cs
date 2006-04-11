@@ -564,7 +564,7 @@ namespace Mono.Debugger
 			return (Event) events [index];
 		}
 
-		public void AddEvent (Event handle)
+		internal void AddEvent (Event handle)
 		{
 			events.Add (handle.Index, handle);
 		}
@@ -575,39 +575,29 @@ namespace Mono.Debugger
 			events.Remove (handle.Index);
 		}
 
-#if FIXME
-		public EventHandle InsertBreakpoint (Breakpoint bpt, int domain,
-						     SourceLocation location)
+		public Event InsertBreakpoint (Thread target, ThreadGroup group, int domain,
+					       SourceLocation location)
 		{
-			EventHandle handle = new BreakpointHandle (bpt, domain, location);
-			if (handle == null)
-				return handle;
-
+			Event handle = new Breakpoint (group, location);
 			events.Add (handle.Index, handle);
 			return handle;
 		}
 
-		public EventHandle InsertBreakpoint (Breakpoint bpt, TargetFunctionType func)
+		public Event InsertBreakpoint (Thread target, ThreadGroup group,
+					       TargetFunctionType func)
 		{
-			EventHandle handle = new BreakpointHandle (bpt, func);
-			if (handle == null)
-				return handle;
-
+			Event handle = new Breakpoint (group, new SourceLocation (func));
 			events.Add (handle.Index, handle);
 			return handle;
 		}
 
-		public EventHandle InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							      TargetType exception)
+		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
+							TargetType exception)
 		{
-			EventHandle handle = new CatchpointHandle (target, group, exception);
-			if (handle == null)
-				return null;
-
+			Event handle = new ExceptionCatchPoint (group, exception);
 			events.Add (handle.Index, handle);
 			return handle;
 		}
-#endif
 
 		//
 		// Session management.

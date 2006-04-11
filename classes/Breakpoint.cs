@@ -8,7 +8,7 @@ namespace Mono.Debugger
 	//   This is an abstract base class which is implemented by the user interface to
 	//   hold the user's settings for a breakpoint.
 	// </summary>
-	public abstract class Breakpoint : Event
+	public class Breakpoint : Event
 	{
 		BreakpointHandle handle;
 		SourceLocation location;
@@ -55,7 +55,10 @@ namespace Mono.Debugger
 			return new_bpt;
 		}
 
-		public abstract Breakpoint Clone ();
+		protected virtual Breakpoint Clone ()
+		{
+			return new Breakpoint (ThreadGroup, location);
+		}
 
 		// <summary>
 		//   Internal breakpoint handler.
@@ -70,23 +73,27 @@ namespace Mono.Debugger
 			return false;
 		}
 
+		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+		{
+			return true;
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
 		}
 
-		protected Breakpoint (ThreadGroup group, SourceLocation location)
+		internal Breakpoint (ThreadGroup group, SourceLocation location)
 			: base (location.Name, group)
 		{
 			this.location = location;
 		}
 
-		protected Breakpoint (string name, ThreadGroup group, TargetAddress address)
+		internal Breakpoint (string name, ThreadGroup group, TargetAddress address)
 			: base (name, group)
 		{
 			this.address = address;
 		}
-
 
 		protected override void GetSessionData (SerializationInfo info)
 		{
