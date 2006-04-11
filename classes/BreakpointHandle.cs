@@ -6,12 +6,11 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	public sealed class BreakpointHandle : EventHandle
+	internal sealed class BreakpointHandle : EventHandle
 	{
 		Breakpoint breakpoint;
 		SourceLocation location;
 		TargetFunctionType function;
-		TargetAddress address = TargetAddress.Null;
 		int breakpoint_id = -1;
 		ILoadHandler load_handler;
 		int domain;
@@ -22,31 +21,17 @@ namespace Mono.Debugger
 			this.breakpoint = breakpoint;
 		}
 
-		internal BreakpointHandle (Thread target, int domain, Breakpoint breakpoint,
-					   SourceLocation location)
+		internal BreakpointHandle (Breakpoint breakpoint, int domain, SourceLocation location)
 			: this (breakpoint)
 		{
 			this.domain = domain;
 			this.location = location;
-
-			address = location.GetAddress (domain);
-
-			Enable (target);
 		}
 
-		internal BreakpointHandle (Thread target, Breakpoint breakpoint,
-					   TargetFunctionType func)
+		internal BreakpointHandle (Breakpoint breakpoint, TargetFunctionType func)
 			: this (breakpoint)
 		{
 			this.function = func;
-
-			Enable (target);
-		}
-
-		internal BreakpointHandle (Breakpoint breakpoint, TargetAddress address)
-			: this (breakpoint)
-		{
-			this.address = address;
 		}
 
 		internal BreakpointHandle (Breakpoint breakpoint, int breakpoint_id)
@@ -92,26 +77,24 @@ namespace Mono.Debugger
 			if ((load_handler != null) || (breakpoint_id > 0))
 				return;
 
-			if (address.IsNull && (location != null))
-				address = location.GetAddress (domain);
-
-			if (!address.IsNull)
-				breakpoint_id = target.InsertBreakpoint (breakpoint, address);
-			else if (function != null) {
+			if (location != null) {
+				TargetAddress address = location.GetAddress (domain);
+				if (!address.IsNull)
+					breakpoint_id = target.InsertBreakpoint (breakpoint, address);
+				else if (location.Method.IsDynamic) {
+					// A dynamic method is a method which may emit a
+					// callback when it's loaded.  We register this
+					// callback here and do the actual insertion when
+					// the method is loaded.
+					load_handler = location.Module.RegisterLoadHandler (
+						target, location.Method, method_loaded, null);
+				}
+			} else if (function != null) {
 				if (function.IsLoaded)
 					breakpoint_id = target.InsertBreakpoint (breakpoint, function);
 				else
 					load_handler = function.Module.RegisterLoadHandler (
-						target, function.Source,
-						new MethodLoadedHandler (method_loaded), null);
-			} else if (location.Method.IsDynamic) {
-				// A dynamic method is a method which may emit a
-				// callback when it's loaded.  We register this
-				// callback here and do the actual insertion when
-				// the method is loaded.
-				load_handler = location.Module.RegisterLoadHandler (
-					target, location.Method,
-					new MethodLoadedHandler (method_loaded), null);
+						target, function.Source, method_loaded, null);
 			}
 		}
 
@@ -141,15 +124,14 @@ namespace Mono.Debugger
 			load_handler = null;
 
 			Method method = source.GetMethod (domain);
+			if (method == null)
+				return;
 
+			TargetAddress address;
 			if (location != null)
 				address = location.GetAddress (domain);
-			else {
-				if (method == null)
-					return;
-
+			else
 				address = method.StartAddress;
-			}
 
 			if (address.IsNull)
 				return;
@@ -157,14 +139,11 @@ namespace Mono.Debugger
 			breakpoint_id = target.InsertBreakpoint (breakpoint, address);
 		}
 
-		public TargetAddress Address {
-			get { return address; }
-		}
-
 		protected override void GetSessionData (SerializationInfo info)
 		{
 			base.GetSessionData (info);
 			info.AddValue ("breakpoint", breakpoint);
+			info.AddValue ("domain", domain);
 			if (location != null) {
 				info.AddValue ("type", "location");
 				info.AddValue ("location", location);
@@ -177,6 +156,7 @@ namespace Mono.Debugger
 		protected override void SetSessionData (SerializationInfo info, Process process)
 		{
 			base.SetSessionData (info, process);
+			domain = (int) info.GetInt32 ("domain");
 			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
 
 			string type = info.GetString ("type");

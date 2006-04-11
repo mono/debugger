@@ -1,5 +1,18 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/BreakpointHandle.cs
+	(BreakpointHandle): Make this internal.
+
+	* backends/Process.cs
+	(Process.InsertBreakpoint): Don't take a `Thread' argument and
+	don't enable the breakpoint.
+
+	* frontend/Interpreter.cs
+	(Interpreter.InsertBreakpoint): Process.InsertBreakpoint() no
+	longer enables the breakpoint; do this here.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/Module.cs (ILoadHandler): New internal interface.
 	(SymbolFile.RegisterLoadHandler, Module.RegisterLoadHandler):
 	Return an `ILoadHandler', not an `IDisposable'.	

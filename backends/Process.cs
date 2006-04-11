@@ -575,10 +575,10 @@ namespace Mono.Debugger
 			events.Remove (handle.Index);
 		}
 
-		public EventHandle InsertBreakpoint (Thread target, int domain,
-						     SourceLocation location, Breakpoint bpt)
+		public EventHandle InsertBreakpoint (Breakpoint bpt, int domain,
+						     SourceLocation location)
 		{
-			EventHandle handle = new BreakpointHandle (target, domain, bpt, location);
+			EventHandle handle = new BreakpointHandle (bpt, domain, location);
 			if (handle == null)
 				return handle;
 
@@ -586,10 +586,9 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		public EventHandle InsertBreakpoint (Thread target, TargetFunctionType func,
-						     Breakpoint bpt)
+		public EventHandle InsertBreakpoint (Breakpoint bpt, TargetFunctionType func)
 		{
-			EventHandle handle = new BreakpointHandle (target, bpt, func);
+			EventHandle handle = new BreakpointHandle (bpt, func);
 			if (handle == null)
 				return handle;
 

@@ -629,10 +629,11 @@ namespace Mono.Debugger.Frontend
 			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
 
 			EventHandle handle = target.Process.InsertBreakpoint (
-				target, domain, location, breakpoint);
+				breakpoint, domain, location);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
+			handle.Enable (target);
 			return breakpoint.Index;
 		}
 
@@ -642,10 +643,11 @@ namespace Mono.Debugger.Frontend
 			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
 
 			EventHandle handle = target.Process.InsertBreakpoint (
-				target, func, breakpoint);
+				breakpoint, func);
 			if (handle == null)
 				throw new ScriptingException ("Could not insert breakpoint.");
 
+			handle.Enable (target);
 			return breakpoint.Index;
 		}
 
