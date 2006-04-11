@@ -9,7 +9,6 @@ namespace Mono.Debugger
 		CatchException
 	}
 
-	[Serializable]
 	public abstract class Event
 	{
 		// <summary>
@@ -69,6 +68,42 @@ namespace Mono.Debugger
 		public abstract void Disable (Thread target);
 
 		public abstract void Remove (Thread target);
+
+		//
+		// Session handling.
+		//
+
+		protected virtual void GetSessionData (SerializationInfo info)
+		{
+			info.AddValue ("group", group);
+			info.AddValue ("name", name);
+		}
+
+		protected virtual void SetSessionData (SerializationInfo info, Process process)
+		{
+			index = Event.GetNextEventIndex ();
+			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
+			name = info.GetString ("name");
+		}
+
+		protected internal class SessionSurrogate : ISerializationSurrogate
+		{
+			public virtual void GetObjectData (object obj, SerializationInfo info,
+							   StreamingContext context)
+			{
+				Event handle = (Event) obj;
+				handle.GetSessionData (info);
+			}
+
+			public object SetObjectData (object obj, SerializationInfo info,
+						     StreamingContext context,
+						     ISurrogateSelector selector)
+			{
+				Event handle = (Event) obj;
+				handle.SetSessionData (info, (Process) context.Context);
+				return handle;
+			}
+		}
 
 		//
 		// Everything below is private.

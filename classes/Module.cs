@@ -80,7 +80,7 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public class Module : MarshalByRefObject
+	public sealed class Module : MarshalByRefObject
 	{
 		string name;
 		[NonSerialized]
@@ -257,7 +257,7 @@ namespace Mono.Debugger
 				symfile.OnModuleChanged ();
 		}
 
-		protected internal virtual void OnBreakpointsChangedEvent ()
+		protected internal void OnBreakpointsChangedEvent ()
 		{
 			if (BreakpointsChangedEvent != null)
 				BreakpointsChangedEvent (this);
@@ -290,7 +290,7 @@ namespace Mono.Debugger
 		//   Find the method containing line @line in @source_file, which must be
 		//   the file's full pathname.
 		// </summary>
-		public virtual SourceLocation FindLocation (string source_file, int line)
+		public SourceLocation FindLocation (string source_file, int line)
 		{
 			if (!SymbolsLoaded)
 				return null;

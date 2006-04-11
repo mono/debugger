@@ -618,7 +618,7 @@ namespace Mono.Debugger
 			StreamingContext context = new StreamingContext (
 				StreamingContextStates.Persistence, this);
 
-			SurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
+			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
 			BinaryFormatter formatter = new BinaryFormatter (ss, context);
 
 			SessionInfo info = new SessionInfo (this);
@@ -630,7 +630,7 @@ namespace Mono.Debugger
 			StreamingContext context = new StreamingContext (
 				StreamingContextStates.Persistence, this);
 
-			SurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
+			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
 			BinaryFormatter formatter = new BinaryFormatter (ss, context);
 
 			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);

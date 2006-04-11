@@ -6,7 +6,6 @@ namespace Mono.Debugger
 	public delegate bool BreakpointCheckHandler (Breakpoint bpt, Thread target,
 						     TargetAddress address);
 
-	[Serializable]
 	public class SimpleBreakpoint : Breakpoint
 	{
 		public SimpleBreakpoint (ThreadGroup group, SourceLocation location,

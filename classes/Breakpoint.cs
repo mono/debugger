@@ -8,7 +8,6 @@ namespace Mono.Debugger
 	//   This is an abstract base class which is implemented by the user interface to
 	//   hold the user's settings for a breakpoint.
 	// </summary>
-	[Serializable]
 	public abstract class Breakpoint : Event
 	{
 		BreakpointHandle handle;
@@ -86,6 +85,19 @@ namespace Mono.Debugger
 			: base (name, group)
 		{
 			this.address = address;
+		}
+
+
+		protected override void GetSessionData (SerializationInfo info)
+		{
+			base.GetSessionData (info);
+			info.AddValue ("location", location);
+		}
+
+		protected override void SetSessionData (SerializationInfo info, Process process)
+		{
+			base.SetSessionData (info, process);
+			location = (SourceLocation) info.GetValue ("location", typeof (SourceLocation));
 		}
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.Serialization;
 
 namespace Mono.Debugger.Languages.Native
 {
@@ -81,6 +82,20 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override TargetAddress GetMethodAddress (Thread target)
+		{
+			throw new NotSupportedException ();
+		}
+
+		//
+		// Session handling.
+		//
+
+		protected override void GetSessionData (SerializationInfo info)
+		{
+			throw new NotSupportedException ();
+		}
+
+		protected override object SetSessionData (SerializationInfo info, Process process)
 		{
 			throw new NotSupportedException ();
 		}

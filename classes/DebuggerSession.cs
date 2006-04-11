@@ -61,24 +61,55 @@ namespace Mono.Debugger
 
 	public static class DebuggerSession
 	{
-		internal static SurrogateSelector CreateSurrogateSelector (StreamingContext context)
+		internal static ISurrogateSelector CreateSurrogateSelector (StreamingContext context)
 		{
-			SurrogateSelector ss = new SurrogateSelector ();
+			return new SurrogateSelector ();
+		}
 
-			ss.AddSurrogate (typeof (Module), context,
-					 new Module.SessionSurrogate ());
-			ss.AddSurrogate (typeof (ThreadGroup), context,
-					 new ThreadGroup.SessionSurrogate ());
-#if FIXME
-			ss.AddSurrogate (typeof (EventHandle), context,
-					 new EventHandle.SessionSurrogate ());
-			ss.AddSurrogate (typeof (BreakpointHandle), context,
-					 new EventHandle.SessionSurrogate ());
-			ss.AddSurrogate (typeof (CatchpointHandle), context,
-					 new EventHandle.SessionSurrogate ());
-#endif
+		private class SurrogateSelector : ISurrogateSelector
+		{
+			void ISurrogateSelector.ChainSelector (ISurrogateSelector selector)
+			{
+				throw new NotImplementedException ();
+			}
 
-			return ss;
+			ISurrogateSelector ISurrogateSelector.GetNextSelector()
+			{
+				throw new NotImplementedException ();
+			}
+
+			ISerializationSurrogate ISurrogateSelector.GetSurrogate (
+				Type type, StreamingContext context, out ISurrogateSelector selector)
+			{
+				if (type == typeof (Module)) {
+					selector = this;
+					return new Module.SessionSurrogate ();
+				}
+
+				if (type == typeof (ThreadGroup)) {
+					selector = this;
+					return new ThreadGroup.SessionSurrogate ();
+				}
+
+				if (type.IsSubclassOf (typeof (Event))) {
+					selector = this;
+					return new Event.SessionSurrogate ();
+				}
+
+				if ((type == typeof (SourceLocation)) ||
+				    type.IsSubclassOf (typeof (SourceLocation))) {
+					selector = this;
+					return new SourceLocation.SessionSurrogate ();
+				}
+
+				if (type.IsSubclassOf (typeof (TargetFunctionType))) {
+					selector = this;
+					return new TargetFunctionType.SessionSurrogate ();
+				}
+
+				selector = null;
+				return null;
+			}
 		}
 	}
 }

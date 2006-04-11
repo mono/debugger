@@ -9,7 +9,7 @@ namespace Mono.Debugger
 	//   This is used to share information about breakpoints and signal handlers
 	//   between different invocations of the same target.
 	// </summary>
-	public class ThreadGroup : MarshalByRefObject
+	public sealed class ThreadGroup : MarshalByRefObject
 	{
 		string name;
 		Hashtable threads;

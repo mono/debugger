@@ -582,6 +582,42 @@ namespace Mono.Debugger.Languages.Mono
 			return method;
 		}
 
+		internal MonoFunctionType GetFunctionType (string class_name, int token)
+		{
+			MonoClassType klass = null;
+
+			Cecil.ITypeDefinitionCollection types = Assembly.MainModule.Types;
+			// FIXME: Work around an API problem in Cecil.
+			foreach (Cecil.ITypeDefinition type in types) {
+				if (type.FullName != class_name)
+					continue;
+
+				klass = LookupMonoType (type) as MonoClassType;
+				break;
+			}
+
+			if (klass == null)
+				return null;
+
+			Cecil.IMethodDefinition minfo = MonoDebuggerSupport.GetMethod (
+				ModuleDefinition, token);
+
+			StringBuilder sb = new StringBuilder ();
+			bool first = true;
+			foreach (Cecil.IParameterReference pinfo in minfo.Parameters) {
+				if (first)
+					first = false;
+				else
+					sb.Append (",");
+				sb.Append (pinfo.ParameterType);
+			}
+
+			string fname = String.Format (
+				"{0}.{1}({2})", klass.Name, minfo.Name, sb.ToString ());
+
+			return new MonoFunctionType (klass, minfo, fname);
+		}
+
 		internal override ILoadHandler RegisterLoadHandler (Thread target,
 								    SourceMethod source,
 								    MethodLoadedHandler handler,

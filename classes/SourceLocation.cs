@@ -10,8 +10,7 @@ namespace Mono.Debugger
 	//   Instances of this class are normally created as the result of a user action
 	//   such as a method lookup.
 	// </summary>
-	[Serializable]
-	public class SourceLocation
+	public class SourceLocation : IDeserializationCallback
 	{
 		Module module;
 		SourceMethod source;
@@ -102,6 +101,9 @@ namespace Mono.Debugger
 						target, breakpoint, domain, this);
 			}
 
+			if (source == null)
+				return null;
+
 			TargetAddress address = GetAddress (domain);
 			if (!address.IsNull) {
 				int index = target.InsertBreakpoint (breakpoint, address);
@@ -120,6 +122,9 @@ namespace Mono.Debugger
 
 		protected TargetAddress GetAddress (int domain)
 		{
+			if (source == null)
+				return TargetAddress.Null;
+
 			Method method = source.GetMethod (domain);
 			if (method == null)
 				return TargetAddress.Null;
@@ -133,6 +138,65 @@ namespace Mono.Debugger
 				return method.MethodStartAddress;
 			else
 				return method.StartAddress;
+		}
+
+		//
+		// Session handling.
+		//
+
+		void IDeserializationCallback.OnDeserialization (object sender)
+		{
+			if (function != null) {
+				this.module = function.Module;
+				this.source = function.Source;
+			} else if (source != null) {
+				this.module = source.SourceFile.Module;
+			}
+		}
+
+		protected virtual void GetSessionData (SerializationInfo info)
+		{
+			if (function != null) {
+				info.AddValue ("type", "function");
+				info.AddValue ("function", function);
+			} else if (source != null) {
+				info.AddValue ("type", "source");
+				info.AddValue ("source", source);
+				info.AddValue ("line", line);
+			} else
+				info.AddValue ("type", "unknown");
+		}
+
+		protected virtual void SetSessionData (SerializationInfo info, Process process)
+		{
+			string type = info.GetString ("type");
+			if (type == "source")
+				source = (SourceMethod) info.GetValue (
+					"source", typeof (SourceMethod));
+			else if (type == "function")
+				function = (TargetFunctionType) info.GetValue (
+					"function", typeof (TargetFunctionType));
+			else
+				throw new InvalidOperationException ();
+		}
+
+		protected internal class SessionSurrogate : ISerializationSurrogate
+		{
+			public virtual void GetObjectData (object obj, SerializationInfo info,
+							   StreamingContext context)
+			{
+				SourceLocation location = (SourceLocation) obj;
+				location.GetSessionData (info);
+			}
+
+			public object SetObjectData (object obj, SerializationInfo info,
+						     StreamingContext context,
+						     ISurrogateSelector selector)
+			{
+				SourceLocation location = (SourceLocation) obj;
+				location.SetSessionData (info, (Process) context.Context);
+				return location;
+			}
 		}
 
 		private class FunctionBreakpointHandle : BreakpointHandle

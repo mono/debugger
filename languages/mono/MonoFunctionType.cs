@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Runtime.Serialization;
 using C = Mono.CompilerServices.SymbolWriter;
 using Cecil = Mono.Cecil;
 
@@ -107,6 +108,26 @@ namespace Mono.Debugger.Languages.Mono
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
+		}
+
+		//
+		// Session handling.
+		//
+
+		protected override void GetSessionData (SerializationInfo info)
+		{
+			info.AddValue ("module", Module);
+			info.AddValue ("klass", klass.Name);
+			info.AddValue ("token", token);
+		}
+
+		protected override object SetSessionData (SerializationInfo info, Process process)
+		{
+			Module module = (Module) info.GetValue ("module", typeof (Module));
+			string klass = info.GetString ("klass");
+			int token = info.GetInt32 ("token");
+
+			return ((MonoSymbolFile) module.SymbolFile).GetFunctionType (klass, token);
 		}
 	}
 }

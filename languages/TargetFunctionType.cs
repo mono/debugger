@@ -1,3 +1,5 @@
+using System.Runtime.Serialization;
+
 namespace Mono.Debugger.Languages
 {
 	public abstract class TargetFunctionType : TargetType
@@ -43,5 +45,31 @@ namespace Mono.Debugger.Languages
 		}
 
 		public abstract TargetAddress GetMethodAddress (Thread target);
+
+		//
+		// Session handling.
+		//
+
+		protected abstract void GetSessionData (SerializationInfo info);
+
+		protected abstract object SetSessionData (SerializationInfo info, Process process);
+
+		protected internal class SessionSurrogate : ISerializationSurrogate
+		{
+			public virtual void GetObjectData (object obj, SerializationInfo info,
+							   StreamingContext context)
+			{
+				TargetFunctionType type = (TargetFunctionType) obj;
+				type.GetSessionData (info);
+			}
+
+			public object SetObjectData (object obj, SerializationInfo info,
+						     StreamingContext context,
+						     ISurrogateSelector selector)
+			{
+				TargetFunctionType type = (TargetFunctionType) obj;
+				return type.SetSessionData (info, (Process) context.Context);
+			}
+		}
 	}
 }
