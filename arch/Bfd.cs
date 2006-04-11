@@ -1026,10 +1026,10 @@ namespace Mono.Debugger.Backends
 				dwarf.ReadTypes ();
 		}
 
-		internal override IDisposable RegisterLoadHandler (Thread target,
-								   SourceMethod method,
-								   MethodLoadedHandler handler,
-								   object user_data)
+		internal override ILoadHandler RegisterLoadHandler (Thread target,
+								    SourceMethod method,
+								    MethodLoadedHandler handler,
+								    object user_data)
 		{
 			LoadHandlerData data = new LoadHandlerData (
 				this, method, handler, user_data);
@@ -1078,7 +1078,7 @@ namespace Mono.Debugger.Backends
 				data.Handler (inferior, data.Method, data.UserData);
 		}
 
-		protected sealed class LoadHandlerData : IDisposable
+		protected sealed class LoadHandlerData : ILoadHandler
 		{
 			public readonly Bfd Bfd;
 			public readonly SourceMethod Method;
@@ -1095,29 +1095,13 @@ namespace Mono.Debugger.Backends
 				this.UserData = user_data;
 			}
 
-			private bool disposed = false;
-
-			private void Dispose (bool disposing)
-			{
-				if (!this.disposed) {
-					if (disposing) {
-						Bfd.UnRegisterLoadHandler (this);
-					}
-				}
-						
-				this.disposed = true;
+			object ILoadHandler.UserData {
+				get { return UserData; }
 			}
 
-			public void Dispose ()
+			public void Remove ()
 			{
-				Dispose (true);
-				// Take yourself off the Finalization queue
-				GC.SuppressFinalize (this);
-			}
-
-			~LoadHandlerData ()
-			{
-				Dispose (false);
+				Bfd.UnRegisterLoadHandler (this);
 			}
 		}
 

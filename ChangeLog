@@ -1,5 +1,11 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/Module.cs (ILoadHandler): New internal interface.
+	(SymbolFile.RegisterLoadHandler, Module.RegisterLoadHandler):
+	Return an `ILoadHandler', not an `IDisposable'.	
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceLocation.cs
 	(SourceLocation.SourceBuffer): Removed.
 

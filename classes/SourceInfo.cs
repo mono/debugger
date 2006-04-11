@@ -82,9 +82,6 @@ namespace Mono.Debugger
 		}
 	}
 
-	internal delegate void MethodLoadedHandler (ITargetMemoryAccess target, SourceMethod method,
-						    object user_data);
-
 	// <summary>
 	//   This is a handle to a method which persists across different invocations of
 	//   the same target and which doesn't consume too much memory.

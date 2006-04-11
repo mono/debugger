@@ -13,7 +13,7 @@ namespace Mono.Debugger
 		TargetFunctionType function;
 		TargetAddress address = TargetAddress.Null;
 		int breakpoint_id = -1;
-		IDisposable load_handler;
+		ILoadHandler load_handler;
 		int domain;
 
 		private BreakpointHandle (Breakpoint breakpoint)
@@ -76,7 +76,7 @@ namespace Mono.Debugger
 		public override void Remove (Thread target)
 		{
 			if (load_handler != null) {
-				load_handler.Dispose ();
+				load_handler.Remove ();
 				load_handler = null;
 			}
 			Disable (target);
@@ -121,7 +121,7 @@ namespace Mono.Debugger
 				target.RemoveBreakpoint (breakpoint_id);
 
 			if (load_handler != null)
-				load_handler.Dispose ();
+				load_handler.Remove ();
 
 			load_handler = null;
 			breakpoint_id = -1;

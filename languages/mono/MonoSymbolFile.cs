@@ -582,10 +582,10 @@ namespace Mono.Debugger.Languages.Mono
 			return method;
 		}
 
-		internal override IDisposable RegisterLoadHandler (Thread target,
-								   SourceMethod source,
-								   MethodLoadedHandler handler,
-								   object user_data)
+		internal override ILoadHandler RegisterLoadHandler (Thread target,
+								    SourceMethod source,
+								    MethodLoadedHandler handler,
+								    object user_data)
 		{
 			int index = (int) source.Handle;
 			MonoMethod method = GetMonoMethod (new MethodHashEntry (0, index));
@@ -821,9 +821,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 #region load handlers for unjitted methods
-			public IDisposable RegisterLoadHandler (Thread target,
-								MethodLoadedHandler handler,
-								object user_data)
+			public ILoadHandler RegisterLoadHandler (Thread target,
+								 MethodLoadedHandler handler,
+								 object user_data)
 			{
 				StringBuilder sb = new StringBuilder ();
 				sb.Append (mdef.DeclaringType.FullName);
@@ -867,7 +867,7 @@ namespace Mono.Debugger.Languages.Mono
 					load_handlers = null;
 			}
 
-			protected sealed class HandlerData : MarshalByRefObject, IDisposable
+			protected sealed class HandlerData : MarshalByRefObject, ILoadHandler
 			{
 				public readonly MonoMethod Method;
 				public readonly MethodLoadedHandler Handler;
@@ -882,29 +882,13 @@ namespace Mono.Debugger.Languages.Mono
 					this.UserData = user_data;
 				}
 
-				private bool disposed = false;
-
-				private void Dispose (bool disposing)
-				{
-					if (!this.disposed) {
-						if (disposing) {
-							Method.UnRegisterLoadHandler (this);
-						}
-					}
-						
-					this.disposed = true;
+				object ILoadHandler.UserData {
+					get { return UserData; }
 				}
 
-				public void Dispose ()
+				public void Remove ()
 				{
-					Dispose (true);
-					// Take yourself off the Finalization queue
-					GC.SuppressFinalize (this);
-				}
-
-				~HandlerData ()
-				{
-					Dispose (false);
+					Method.UnRegisterLoadHandler (this);
 				}
 			}
 #endregion

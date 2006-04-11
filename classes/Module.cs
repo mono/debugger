@@ -12,6 +12,18 @@ namespace Mono.Debugger
 {
 	public delegate void ModuleEventHandler (Module module);
 
+	internal delegate void MethodLoadedHandler (ITargetMemoryAccess target, SourceMethod method,
+						    object user_data);
+
+	internal interface ILoadHandler
+	{
+		object UserData {
+			get;
+		}
+
+		void Remove ();
+	}
+
 	internal abstract class SymbolFile : MarshalByRefObject
 	{
 		public abstract string FullName {
@@ -50,10 +62,10 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract IDisposable RegisterLoadHandler (Thread target,
-								   SourceMethod method,
-								   MethodLoadedHandler handler,
-								   object user_data);
+		internal abstract ILoadHandler RegisterLoadHandler (Thread target,
+								    SourceMethod method,
+								    MethodLoadedHandler handler,
+								    object user_data);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
 							  ITargetMemoryAccess memory);
@@ -324,10 +336,10 @@ namespace Mono.Debugger
 		//   Throws:
 		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
 		// </summary>
-		internal IDisposable RegisterLoadHandler (Thread target,
-							  SourceMethod method,
-							  MethodLoadedHandler handler,
-							  object user_data)
+		internal ILoadHandler RegisterLoadHandler (Thread target,
+							   SourceMethod method,
+							   MethodLoadedHandler handler,
+							   object user_data)
 		{
 			return SymbolFile.RegisterLoadHandler (target, method, handler, user_data);
 		}
