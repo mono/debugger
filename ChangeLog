@@ -1,5 +1,10 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceLocation.cs
+	(SourceLocation.SourceBuffer): Removed.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs
 	(Process.SaveSession, LoadSession): New public methods; moved the
 	session handling code here from `DebuggerSession'.

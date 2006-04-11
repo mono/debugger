@@ -13,7 +13,6 @@ namespace Mono.Debugger
 	{
 		Module module;
 		SourceMethod source;
-		ISourceBuffer buffer;
 		int line;
 
 		public Module Module {
@@ -22,15 +21,6 @@ namespace Mono.Debugger
 
 		public bool HasSourceFile {
 			get { return source != null; }
-		}
-
-		public ISourceBuffer SourceBuffer {
-			get {
-				if (HasSourceFile)
-					throw new InvalidOperationException ();
-
-				return buffer;
-			}
 		}
 
 		public SourceFile SourceFile {
@@ -64,10 +54,8 @@ namespace Mono.Debugger
 			get {
 				if (line == -1)
 					return source.Name;
-				else if (HasSourceFile)
-					return String.Format ("{0}:{1}", SourceFile.FileName, line);
 				else
-					return String.Format ("{0}:{1}", SourceBuffer.Name, line);
+					return String.Format ("{0}:{1}", SourceFile.FileName, line);
 			}
 		}
 
@@ -83,13 +71,6 @@ namespace Mono.Debugger
 
 			if (source == null)
 				throw new InvalidOperationException ();
-		}
-
-		public SourceLocation (Module module, ISourceBuffer buffer, int line)
-		{
-			this.module = module;
-			this.buffer = buffer;
-			this.line = line;
 		}
 
 		internal TargetAddress GetAddress (int domain)

@@ -290,7 +290,8 @@ namespace Mono.Debugger.Frontend
 						throw new ScriptingException (
 							"Cannot find source file `{0}'", filename);
 				} else
-					buffer = location.SourceBuffer;
+					throw new ScriptingException (
+						"Current location doesn't have any source code.");
 
 				current_source_code = buffer.Contents;
 
@@ -397,13 +398,10 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation FindLocation (SourceLocation location, int line)
 		{
-			if (location.HasSourceFile)
-				return FindLocation (location.SourceFile.FileName, line);
+			if (!location.HasSourceFile)
+				throw new ScriptingException ("Location doesn't have any source code.");
 
-			if (line > location.SourceBuffer.Contents.Length)
-				throw new ScriptingException ("Requested line is outside the current buffer.");
-
-			return new SourceLocation (location.Module, location.SourceBuffer, line);
+			return FindLocation (location.SourceFile.FileName, line);
 		}
 
 		public SourceLocation FindMethod (string name)
