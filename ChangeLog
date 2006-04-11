@@ -1,5 +1,27 @@
 2006-04-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/Event.cs (Event): New public abstract class.  This
+	replaces the old `EventHandle' class.
+
+	* classes/Breakpoint.cs (Breakpoint): Derive from `Event'.
+
+	* classes/ExceptionCatchPoint.cs
+	(ExceptionCatchPoint): New public class; derives from `Event'.
+
+	* classes/EventHandle.cs: Removed.
+	* classes/CatchpointHandle.cs: Removed.
+
+	* classes/SourceLocation.cs
+	(SourceLocation): We can now also operate on a
+	`TargetFunctionType'.
+	(SourceLocation.HasFunction): New public property.
+	(SourceLocation.InsertBreakpoint): New internal method.
+
+	* classes/BreakpointHandle.cs
+	(BreakpointHandle): This is now private.
+
+2006-04-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/BreakpointHandle.cs
 	(BreakpointHandle): Make this internal.
 

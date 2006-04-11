@@ -441,7 +441,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowBreakpoints ()
 		{
-			EventHandle[] events = CurrentProcess.Events;
+			Event[] events = CurrentProcess.Events;
 			if (events.Length == 0) {
 				Print ("No breakpoints or catchpoints.");
 				return;
@@ -449,10 +449,10 @@ namespace Mono.Debugger.Frontend
 				       
 			Print ("Breakpoints:");
 			Print ("{0,3} {1,6} {2,3} {3,12}  {4}", "Id", "Type", "En", "ThreadGroup", "What");
-			foreach (EventHandle handle in events) {
+			foreach (Event handle in events) {
 				string type;
 
-				if (handle is CatchpointHandle)
+				if (handle is ExceptionCatchPoint)
 					type = "catch";
 				else
 					type = "break";
@@ -465,9 +465,9 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public EventHandle GetEvent (int index)
+		public Event GetEvent (int index)
 		{
-			EventHandle handle = CurrentProcess.GetEvent (index);
+			Event handle = CurrentProcess.GetEvent (index);
 			if (handle == null)
 				throw new ScriptingException ("No such breakpoint/catchpoint.");
 
@@ -626,39 +626,27 @@ namespace Mono.Debugger.Frontend
 		public int InsertBreakpoint (Thread target, ThreadGroup group, int domain,
 					     SourceLocation location)
 		{
-			Breakpoint breakpoint = new SimpleBreakpoint (location.Name, group);
-
-			EventHandle handle = target.Process.InsertBreakpoint (
-				breakpoint, domain, location);
-			if (handle == null)
-				throw new ScriptingException ("Could not insert breakpoint.");
-
+			Event handle = new SimpleBreakpoint (group, location);
+			target.Process.AddEvent (handle);
 			handle.Enable (target);
-			return breakpoint.Index;
+			return handle.Index;
 		}
 
 		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     TargetFunctionType func)
 		{
-			Breakpoint breakpoint = new SimpleBreakpoint (func.Name, group);
-
-			EventHandle handle = target.Process.InsertBreakpoint (
-				breakpoint, func);
-			if (handle == null)
-				throw new ScriptingException ("Could not insert breakpoint.");
-
+			Event handle = new SimpleBreakpoint (group, new SourceLocation (func));
+			target.Process.AddEvent (handle);
 			handle.Enable (target);
-			return breakpoint.Index;
+			return handle.Index;
 		}
 
 		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 						      TargetType exception)
 		{
-			EventHandle handle = target.Process.InsertExceptionCatchPoint (
-				target, group, exception);
-			if (handle == null)
-				throw new ScriptingException ("Could not add catch point.");
-
+			Event handle = new ExceptionCatchPoint (group, exception);
+			target.Process.AddEvent (handle);
+			handle.Enable (target);
 			return handle.Index;
 		}
 

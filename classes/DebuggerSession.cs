@@ -69,12 +69,14 @@ namespace Mono.Debugger
 					 new Module.SessionSurrogate ());
 			ss.AddSurrogate (typeof (ThreadGroup), context,
 					 new ThreadGroup.SessionSurrogate ());
+#if FIXME
 			ss.AddSurrogate (typeof (EventHandle), context,
 					 new EventHandle.SessionSurrogate ());
 			ss.AddSurrogate (typeof (BreakpointHandle), context,
 					 new EventHandle.SessionSurrogate ());
 			ss.AddSurrogate (typeof (CatchpointHandle), context,
 					 new EventHandle.SessionSurrogate ());
+#endif
 
 			return ss;
 		}

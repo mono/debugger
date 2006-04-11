@@ -471,10 +471,10 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveEventHandler() to remove
 		//   the event handler.
 		// </summary>
-		public void AddEventHandler (EventType type, EventHandle handle)
+		public int AddEventHandler (EventType type, Event handle)
 		{
 			check_engine ();
-			engine.AddEventHandler (type, handle);
+			return engine.AddEventHandler (type, handle);
 		}
 
 		// <summary>

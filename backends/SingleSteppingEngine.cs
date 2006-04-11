@@ -845,7 +845,7 @@ namespace Mono.Debugger.Backends
 			if (current_operation is OperationRuntimeInvoke)
 				return false;
 
-			foreach (EventHandle handle in exception_handlers.Values) {
+			foreach (Event handle in exception_handlers.Values) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",
 					      this, handle.Name, exc);
@@ -1517,12 +1517,15 @@ namespace Mono.Debugger.Backends
 			return StartOperation (new OperationInsertBreakpoint (breakpoint, func));
 		}
 
-		public void AddEventHandler (EventType type, EventHandle handle)
+		static int next_event_index = 0;
+		public int AddEventHandler (EventType type, Event handle)
 		{
 			if (type != EventType.CatchException)
 				throw new InternalError ();
 
-			exception_handlers.Add (handle.Index, handle);
+			int index = ++next_event_index;
+			exception_handlers.Add (index, handle);
+			return index;
 		}
 
 		public void RemoveEventHandler (int index)

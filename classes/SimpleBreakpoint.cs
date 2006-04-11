@@ -9,15 +9,15 @@ namespace Mono.Debugger
 	[Serializable]
 	public class SimpleBreakpoint : Breakpoint
 	{
-		public SimpleBreakpoint (string name, ThreadGroup group,
+		public SimpleBreakpoint (ThreadGroup group, SourceLocation location,
 					 BreakpointCheckHandler check_handler)
-			: base (name, group)
+			: base (group, location)
 		{
 			this.check_handler = check_handler;
 		}
 
-		public SimpleBreakpoint (string name, ThreadGroup group)
-			: base (name, group)
+		public SimpleBreakpoint (ThreadGroup group, SourceLocation location)
+			: base (group, location)
 		{ }
 
 		BreakpointCheckHandler check_handler;
@@ -27,7 +27,12 @@ namespace Mono.Debugger
 			if (check_handler != null)
 				return check_handler (this, target, address);
 
-			return base.CheckBreakpointHit (target, address);
+			return true;
+		}
+
+		public override Breakpoint Clone ()
+		{
+			return new SimpleBreakpoint (ThreadGroup, Location, check_handler);
 		}
 	}
 }

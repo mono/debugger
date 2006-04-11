@@ -1,27 +1,24 @@
 using System;
+using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
 
-using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	public class CatchpointHandle : EventHandle
+	[Serializable]
+	public class ExceptionCatchPoint : Event
 	{
-		TargetType exception;
-		bool enabled;
+		int handle = -1;
 
-		internal CatchpointHandle (Thread target, ThreadGroup group,
-					   TargetType exception)
-			: base (group, exception.Name, Breakpoint.GetNextBreakpointIndex ())
+		public ExceptionCatchPoint (ThreadGroup group, TargetType exception)
+			: base (exception.Name, group)
 		{
 			this.exception = exception;
-
-			Enable (target);
 		}
 
 		public override bool IsEnabled {
-			get { return enabled; }
+			get { return handle > 0; }
 		}
 
 		public override void Enable (Thread target)
@@ -46,21 +43,20 @@ namespace Mono.Debugger
 		void EnableCatchpoint (Thread target)
 		{
 			lock (this) {
-				if (enabled)
+				if (handle > 0)
 					return;
 
-				target.AddEventHandler (EventType.CatchException, this);
-				enabled = true;
+				handle = target.AddEventHandler (EventType.CatchException, this);
 			}
 		}
 
 		void DisableCatchpoint (Thread target)
 		{
 			lock (this) {
-				if (enabled)
-					target.RemoveEventHandler (Index);
+				if (handle > 0)
+					target.RemoveEventHandler (handle);
 
-				enabled = false;
+				handle = -1;
 			}
 		}
 
@@ -89,18 +85,6 @@ namespace Mono.Debugger
 			return IsSubclassOf (exc.Type, exception);
 		}
 
-		protected override void GetSessionData (SerializationInfo info)
-		{
-			base.GetSessionData (info);
-			info.AddValue ("exception", exception.Name);
-		}
-
-		protected override void SetSessionData (SerializationInfo info, Process process)
-		{
-			base.SetSessionData (info, process);
-
-			Language language = process.MonoLanguage;
-			exception = language.LookupType (info.GetString ("exception"));
-		}
+		TargetType exception;
 	}
 }

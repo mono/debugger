@@ -6,7 +6,38 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	internal sealed class BreakpointHandle : EventHandle
+	internal abstract class BreakpointHandle
+	{
+		public readonly Breakpoint Breakpoint;
+
+		protected BreakpointHandle (Breakpoint breakpoint)
+		{
+			this.Breakpoint = breakpoint;
+		}
+
+		public abstract void Remove (Thread target);
+	}
+
+	internal class SimpleBreakpointHandle : BreakpointHandle
+	{
+		int index;
+
+		internal SimpleBreakpointHandle (Breakpoint breakpoint, int index)
+			: base (breakpoint)
+		{
+			this.index = index;
+		}
+
+		public override void Remove (Thread target)
+		{
+			if (index > 0)
+				target.RemoveBreakpoint (index);
+			index = -1;
+		}
+	}
+
+#if FIXME
+	internal sealed class BreakpointHandle
 	{
 		Breakpoint breakpoint;
 		SourceLocation location;
@@ -16,7 +47,6 @@ namespace Mono.Debugger
 		int domain;
 
 		private BreakpointHandle (Breakpoint breakpoint)
-			: base (breakpoint.ThreadGroup, breakpoint.Name, breakpoint.Index)
 		{
 			this.breakpoint = breakpoint;
 		}
@@ -40,25 +70,25 @@ namespace Mono.Debugger
 			this.breakpoint_id = breakpoint_id;
 		}
 
-		public override bool IsEnabled {
+		public bool IsEnabled {
 			get { return (breakpoint_id > 0) || (load_handler != null); }
 		}
 
-		public override void Enable (Thread target)
+		public void Enable (Thread target)
 		{
 			lock (this) {
 				EnableBreakpoint (target);
 			}
 		}
 
-		public override void Disable (Thread target)
+		public void Disable (Thread target)
 		{
 			lock (this) {
 				DisableBreakpoint (target);
 			}
 		}
 
-		public override void Remove (Thread target)
+		public void Remove (Thread target)
 		{
 			if (load_handler != null) {
 				load_handler.Remove ();
@@ -67,7 +97,7 @@ namespace Mono.Debugger
 			Disable (target);
 		}
 
-		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+		public bool CheckBreakpointHit (Thread target, TargetAddress address)
 		{
 			return breakpoint.CheckBreakpointHit (target, address);
 		}
@@ -139,9 +169,8 @@ namespace Mono.Debugger
 			breakpoint_id = target.InsertBreakpoint (breakpoint, address);
 		}
 
-		protected override void GetSessionData (SerializationInfo info)
+		protected void GetSessionData (SerializationInfo info)
 		{
-			base.GetSessionData (info);
 			info.AddValue ("breakpoint", breakpoint);
 			info.AddValue ("domain", domain);
 			if (location != null) {
@@ -153,9 +182,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected override void SetSessionData (SerializationInfo info, Process process)
+		protected void SetSessionData (SerializationInfo info, Process process)
 		{
-			base.SetSessionData (info, process);
 			domain = (int) info.GetInt32 ("domain");
 			breakpoint = (Breakpoint) info.GetValue ("breakpoint", typeof (Breakpoint));
 
@@ -167,7 +195,9 @@ namespace Mono.Debugger
 				Language language = process.MonoLanguage;
 				string funcname = info.GetString ("function");
 				function = (TargetFunctionType) language.LookupType (funcname);
+				Console.WriteLine ("TEST: {0} {1}", function, funcname);
 			}
 		}
 	}
+#endif
 }

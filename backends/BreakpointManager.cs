@@ -144,8 +144,8 @@ namespace Mono.Debugger.Backends
 					Breakpoint bpt = (Breakpoint) breakpoints [idx];
 
 					if (bpt.ThreadGroup.IsGlobal) {
-						EventHandle handle = new BreakpointHandle (bpt, idx);
-						inferior.Process.AddEvent (handle);
+						Breakpoint new_bpt = bpt.Clone (idx);
+						inferior.Process.AddEvent (new_bpt);
 					} else if (!bpt.ThreadGroup.IsSystem) {
 						RemoveBreakpoint (inferior, idx);
 					}

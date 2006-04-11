@@ -551,30 +551,31 @@ namespace Mono.Debugger
 		// Events
 		//
 
-		public EventHandle[] Events {
+		public Event[] Events {
 			get {
-				EventHandle[] handles = new EventHandle [events.Count];
+				Event[] handles = new Event [events.Count];
 				events.Values.CopyTo (handles, 0);
 				return handles;
 			}
 		}
 
-		public EventHandle GetEvent (int index)
+		public Event GetEvent (int index)
 		{
-			return (EventHandle) events [index];
+			return (Event) events [index];
 		}
 
-		internal void AddEvent (EventHandle handle)
+		public void AddEvent (Event handle)
 		{
 			events.Add (handle.Index, handle);
 		}
 
-		public void DeleteEvent (Thread thread, EventHandle handle)
+		public void DeleteEvent (Thread thread, Event handle)
 		{
 			handle.Remove (thread);
 			events.Remove (handle.Index);
 		}
 
+#if FIXME
 		public EventHandle InsertBreakpoint (Breakpoint bpt, int domain,
 						     SourceLocation location)
 		{
@@ -606,6 +607,7 @@ namespace Mono.Debugger
 			events.Add (handle.Index, handle);
 			return handle;
 		}
+#endif
 
 		//
 		// Session management.
@@ -633,7 +635,7 @@ namespace Mono.Debugger
 
 			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
 
-			foreach (EventHandle handle in info.Events) {
+			foreach (Event handle in info.Events) {
 				events.Add (handle.Index, handle);
 				handle.Enable (main_thread);
 			}
@@ -643,7 +645,7 @@ namespace Mono.Debugger
 		private class SessionInfo : ISerializable, IDeserializationCallback
 		{
 			public readonly Module[] Modules;
-			public readonly EventHandle[] Events;
+			public readonly Event[] Events;
 
 			public SessionInfo (Process process)
 			{
@@ -664,8 +666,8 @@ namespace Mono.Debugger
 			{
 				Modules = (Module []) info.GetValue (
 					"modules", typeof (Module []));
-				Events = (EventHandle []) info.GetValue (
-					"events", typeof (EventHandle []));
+				Events = (Event []) info.GetValue (
+					"events", typeof (Event []));
 			}
 		}
 

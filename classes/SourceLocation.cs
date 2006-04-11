@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.Serialization;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	// <summary>
@@ -13,6 +15,7 @@ namespace Mono.Debugger
 	{
 		Module module;
 		SourceMethod source;
+		TargetFunctionType function;
 		int line;
 
 		public Module Module {
@@ -21,6 +24,10 @@ namespace Mono.Debugger
 
 		public bool HasSourceFile {
 			get { return source != null; }
+		}
+
+		public bool HasFunction {
+			get { return function != null; }
 		}
 
 		public SourceFile SourceFile {
@@ -52,7 +59,9 @@ namespace Mono.Debugger
 
 		public string Name {
 			get {
-				if (line == -1)
+				if (function != null)
+					return function.Name;
+				else if (line == -1)
 					return source.Name;
 				else
 					return String.Format ("{0}:{1}", SourceFile.FileName, line);
@@ -73,7 +82,43 @@ namespace Mono.Debugger
 				throw new InvalidOperationException ();
 		}
 
-		internal TargetAddress GetAddress (int domain)
+		public SourceLocation (TargetFunctionType function)
+		{
+			this.function = function;
+			this.module = function.Module;
+			this.source = function.Source;
+			this.line = -1;
+		}
+
+		internal BreakpointHandle InsertBreakpoint (Thread target, Breakpoint breakpoint,
+							    int domain)
+		{
+			if (function != null) {
+				if (function.IsLoaded) {
+					int index = target.InsertBreakpoint (breakpoint, function);
+					return new SimpleBreakpointHandle (breakpoint, index);
+				} else
+					return new FunctionBreakpointHandle (
+						target, breakpoint, domain, this);
+			}
+
+			TargetAddress address = GetAddress (domain);
+			if (!address.IsNull) {
+				int index = target.InsertBreakpoint (breakpoint, address);
+				return new SimpleBreakpointHandle (breakpoint, index);
+			} else if (source.IsDynamic) {
+				// A dynamic method is a method which may emit a
+				// callback when it's loaded.  We register this
+				// callback here and do the actual insertion when
+				// the method is loaded.
+				return new FunctionBreakpointHandle (
+					target, breakpoint, domain, this);
+			}
+
+			return null;
+		}
+
+		protected TargetAddress GetAddress (int domain)
 		{
 			Method method = source.GetMethod (domain);
 			if (method == null)
@@ -88,6 +133,52 @@ namespace Mono.Debugger
 				return method.MethodStartAddress;
 			else
 				return method.StartAddress;
+		}
+
+		private class FunctionBreakpointHandle : BreakpointHandle
+		{
+			ILoadHandler load_handler;
+			int index = -1;
+			int domain;
+
+			public FunctionBreakpointHandle (Thread target, Breakpoint bpt, int domain,
+							 SourceLocation location)
+				: base (bpt)
+			{
+				this.domain = domain;
+
+				load_handler = location.Module.RegisterLoadHandler (
+					target, location.Method, method_loaded, location);
+			}
+
+			public override void Remove (Thread target)
+			{
+				if (index > 0)
+					target.RemoveBreakpoint (index);
+
+				if (load_handler != null)
+					load_handler.Remove ();
+
+				load_handler = null;
+				index = -1;
+			}
+
+			// <summary>
+			//   The method has just been loaded, lookup the breakpoint
+			//   address and actually insert it.
+			// </summary>
+			void method_loaded (ITargetMemoryAccess target, SourceMethod source,
+					    object data)
+			{
+				load_handler = null;
+
+				SourceLocation location = (SourceLocation) data;
+				TargetAddress address = location.GetAddress (domain);
+				if (address.IsNull)
+					return;
+
+				index = target.InsertBreakpoint (Breakpoint, address);
+			}
 		}
 
 		public override string ToString ()

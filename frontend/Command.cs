@@ -1733,7 +1733,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class EventHandleCommand : ThreadCommand 
 	{
-		protected EventHandle handle;
+		protected Event handle;
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
@@ -1762,7 +1762,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else {
 				// enable all breakpoints
-				foreach (EventHandle h in CurrentThread.Process.Events)
+				foreach (Event h in CurrentThread.Process.Events)
 					h.Enable (CurrentThread);
 			}
 		}
@@ -1782,7 +1782,7 @@ namespace Mono.Debugger.Frontend
 			}
 			else {
 				// enable all breakpoints
-				foreach (EventHandle h in CurrentThread.Process.Events)
+				foreach (Event h in CurrentThread.Process.Events)
 					h.Disable (CurrentThread);
 			}
 		}
@@ -1800,7 +1800,7 @@ namespace Mono.Debugger.Frontend
 			if (handle != null) {
 				CurrentThread.Process.DeleteEvent (CurrentThread, handle);
 			} else {
-				EventHandle[] hs = CurrentThread.Process.Events;
+				Event[] hs = CurrentThread.Process.Events;
 
 				if (hs.Length == 0)
 					return;
@@ -1809,7 +1809,7 @@ namespace Mono.Debugger.Frontend
 					return;
 
 				// delete all breakpoints
-				foreach (EventHandle h in CurrentThread.Process.Events)
+				foreach (Event h in CurrentThread.Process.Events)
 					CurrentThread.Process.DeleteEvent (CurrentThread, h);
 			}
 		}

@@ -74,7 +74,7 @@ namespace Mono.Debugger.Backends
 				initialize_notifications (inferior);
 			else
 				notification_bpt = inferior.BreakpointManager.InsertBreakpoint (
-					inferior, new InitializeBreakpoint (this),
+					inferior, new InitializeBreakpoint (this, debugger_info.Initialize),
 					debugger_info.Initialize);
 		}
 
@@ -95,10 +95,15 @@ namespace Mono.Debugger.Backends
 		{
 			protected readonly MonoThreadManager manager;
 
-			public InitializeBreakpoint (MonoThreadManager manager)
-				: base ("initialize", ThreadGroup.System)
+			public InitializeBreakpoint (MonoThreadManager manager, TargetAddress address)
+				: base ("initialize", ThreadGroup.System, address)
 			{
 				this.manager = manager;
+			}
+
+			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+			{
+				return true;
 			}
 
 			internal override bool BreakpointHandler (Inferior inferior,
@@ -107,6 +112,11 @@ namespace Mono.Debugger.Backends
 				manager.initialize_notifications (inferior);
 				remain_stopped = false;
 				return true;
+			}
+
+			public override Breakpoint Clone ()
+			{
+				throw new InvalidOperationException ();
 			}
 		}
 

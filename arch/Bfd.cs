@@ -373,7 +373,8 @@ namespace Mono.Debugger.Backends
 
 			if (inferior != null)
 				inferior.BreakpointManager.InsertBreakpoint (
-					inferior, new DynlinkBreakpoint (this), dynlink_breakpoint);
+					inferior, new DynlinkBreakpoint (this, dynlink_breakpoint),
+					dynlink_breakpoint);
 
 			has_shlib_info = true;
 			return true;
@@ -1064,7 +1065,8 @@ namespace Mono.Debugger.Backends
 
 				if (!nptl_setxid.IsNull)
 					inferior.BreakpointManager.InsertBreakpoint (
-						inferior, new SetXidBreakpoint (this), nptl_setxid);
+						inferior, new SetXidBreakpoint (this, nptl_setxid),
+						nptl_setxid);
 			}
 
 			if (dwarf != null) {
@@ -1170,10 +1172,15 @@ namespace Mono.Debugger.Backends
 		{
 			protected readonly Bfd bfd;
 
-			public SetXidBreakpoint (Bfd bfd)
-				: base ("setxid", ThreadGroup.System)
+			public SetXidBreakpoint (Bfd bfd, TargetAddress address)
+				: base ("setxid", ThreadGroup.System, address)
 			{
 				this.bfd = bfd;
+			}
+
+			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+			{
+				return true;
 			}
 
 			internal override bool BreakpointHandler (Inferior inferior,
@@ -1183,6 +1190,11 @@ namespace Mono.Debugger.Backends
 				remain_stopped = false;
 				return true;
 			}
+
+			public override Breakpoint Clone ()
+			{
+				throw new InvalidOperationException ();
+			}
 		}
 
 		[Serializable]
@@ -1190,10 +1202,15 @@ namespace Mono.Debugger.Backends
 		{
 			protected readonly Bfd bfd;
 
-			public DynlinkBreakpoint (Bfd bfd)
-				: base ("dynlink", ThreadGroup.System)
+			public DynlinkBreakpoint (Bfd bfd, TargetAddress address)
+				: base ("dynlink", ThreadGroup.System, address)
 			{
 				this.bfd = bfd;
+			}
+
+			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+			{
+				return true;
 			}
 
 			internal override bool BreakpointHandler (Inferior inferior,
@@ -1202,6 +1219,11 @@ namespace Mono.Debugger.Backends
 				bfd.dynlink_handler (inferior);
 				remain_stopped = false;
 				return true;
+			}
+
+			public override Breakpoint Clone ()
+			{
+				throw new InvalidOperationException ();
 			}
 		}
 

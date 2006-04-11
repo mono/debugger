@@ -9,44 +9,54 @@ namespace Mono.Debugger
 	//   hold the user's settings for a breakpoint.
 	// </summary>
 	[Serializable]
-	public abstract class Breakpoint
+	public abstract class Breakpoint : Event
 	{
-		// <summary>
-		//   An automatically generated unique index for this breakpoint.
-		// </summary>
-		public int Index {
-			get { return index; }
+		BreakpointHandle handle;
+		SourceLocation location;
+		TargetAddress address = TargetAddress.Null;
+		int domain;
+
+		public SourceLocation Location {
+			get { return location; }
 		}
 
-		// <summary>
-		//   The breakpoint's name.  This property has no meaning at all for the
-		//   backend, it's just something which can be displayed to the user to
-		//   help him indentify this breakpoint.
-		// </summary>
-		public string Name {
-			get { return name; }
+		public override bool IsEnabled {
+			get { return handle != null; }
 		}
 
-		// <summary>
-		//   The ThreadGroup in which this breakpoint "breaks".
-		//   If null, then it breaks in all threads.
-		// </summary>
-		public ThreadGroup ThreadGroup {
-			get { return group; }
-		}
-
-		public bool Breaks (int id)
+		public override void Enable (Thread target)
 		{
-			if (group.IsSystem)
-				return true;
+			if (handle != null)
+				return;
 
-			foreach (int thread in group.Threads) {
-				if (thread == id)
-					return true;
-			}
-
-			return false;
+			if (!address.IsNull) {
+				int breakpoint_id = target.InsertBreakpoint (this, address);
+				handle = new SimpleBreakpointHandle (this, breakpoint_id);
+			} else if (location != null)
+				handle = location.InsertBreakpoint (target, this, domain);
 		}
+
+		public override void Disable (Thread target)
+		{
+			if (handle != null) {
+				handle.Remove (target);
+				handle = null;
+			}
+		}
+
+		public override void Remove (Thread target)
+		{
+			Disable (target);
+		}
+
+		internal Breakpoint Clone (int breakpoint_id)
+		{
+			Breakpoint new_bpt = Clone ();
+			new_bpt.handle = new SimpleBreakpointHandle (new_bpt, breakpoint_id);
+			return new_bpt;
+		}
+
+		public abstract Breakpoint Clone ();
 
 		// <summary>
 		//   Internal breakpoint handler.
@@ -61,48 +71,21 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		// <summary>
-		//   This method is called each time the breakpoint is hit.
-		//   It returns true if the target should remain stopped and false
-		//   if the breakpoint is to be ignored.
-		// </summary>
-		// <remarks>
-		//   The @target argument is *not* serializable and may not be used
-		//   anywhere outside this handler.
-		// </remarks>
-		public virtual bool CheckBreakpointHit (Thread target, TargetAddress address)
-		{
-			return true;
-		}
-
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
 		}
 
-		//
-		// Everything below is protected.
-		//
-
-		protected int index;
-		protected string name;
-		protected ThreadGroup group;
-
-		protected static int NextBreakpointIndex = 0;
-
-		internal static int GetNextBreakpointIndex ()
+		protected Breakpoint (ThreadGroup group, SourceLocation location)
+			: base (location.Name, group)
 		{
-			return ++NextBreakpointIndex;
+			this.location = location;
 		}
 
-		protected Breakpoint (string name, ThreadGroup group)
+		protected Breakpoint (string name, ThreadGroup group, TargetAddress address)
+			: base (name, group)
 		{
-			if (group == null)
-				throw new NullReferenceException ();
-
-			this.index = ++NextBreakpointIndex;
-			this.group = group;
-			this.name = name;
+			this.address = address;
 		}
 	}
 }
