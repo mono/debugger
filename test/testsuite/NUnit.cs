@@ -34,6 +34,7 @@ namespace Mono.Debugger.Tests
 		static Regex func_offset_regex = new Regex (@"^(.*)\+0x([0-9A-Fa-f]+)$");
 		static Regex process_created_regex = new Regex (@"^Created new process #([0-9]+) \(([0-9]+):(.*)\)\.$");
 		static Regex thread_created_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) created new thread @([0-9]+)\.$");
+		static Regex process_execd_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) exec\(\)'d\.$");
 		static Regex process_exited_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) exited\.$");
 
 
@@ -41,7 +42,7 @@ namespace Mono.Debugger.Tests
 			: this (application + ".exe", application + ".cs")
 		{ }
 
-		protected TestSuite (string exe_file, string src_file)
+		protected TestSuite (string exe_file, string src_file, params string[] args)
 		{
 			string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");
 			string builddir = Path.Combine (BuildInfo.builddir, "../test/src/");
@@ -49,7 +50,7 @@ namespace Mono.Debugger.Tests
 			ExeFileName = Path.GetFullPath (builddir + exe_file);
 			FileName = Path.GetFullPath (srcdir + src_file);
 
-			options = CreateOptions (ExeFileName);
+			options = CreateOptions (ExeFileName, args);
 
 			debugger_output = new LineReader ();
 			inferior_stdout = new LineReader ();
@@ -58,6 +59,20 @@ namespace Mono.Debugger.Tests
 
 		public Interpreter Interpreter {
 			get { return interpreter; }
+		}
+
+		public static string SourceDirectory {
+			get {
+				string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");
+				return Path.GetFullPath (srcdir);
+			}
+		}
+
+		public static string BuildDirectory {
+			get {
+				string builddir = Path.Combine (BuildInfo.builddir, "../test/src/");
+				return Path.GetFullPath (builddir);
+			}
 		}
 
 		[TestFixtureSetUp]
@@ -87,14 +102,15 @@ namespace Mono.Debugger.Tests
 			GC.Collect ();
 		}
 
-		private static DebuggerOptions CreateOptions (string application)
+		private static DebuggerOptions CreateOptions (string application, string[] args)
 		{
 			DebuggerOptions options = new DebuggerOptions ();
 
 			options.IsScript = true;
 			options.File = application;
-			options.InferiorArgs = new string [1];
+			options.InferiorArgs = new string [args.Length + 1];
 			options.InferiorArgs [0] = options.File;
+			args.CopyTo (options.InferiorArgs, 1);
 
 			return options;
 		}
@@ -418,6 +434,99 @@ namespace Mono.Debugger.Tests
 			Assert.AreEqual (id, process.ID,
 					 "Process {0} exited, but expected process {1} to exit.",
 					 id, process.ID);
+		}
+
+		public Thread AssertProcessExecd ()
+		{
+			debugger_output.Wait ();
+			string output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			Match match = process_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = process_execd_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = thread_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			int id = Int32.Parse (match.Groups [4].Value);
+			return interpreter.GetThread (id);
+		}
+
+		public Thread AssertProcessForkedAndExecd ()
+		{
+			debugger_output.Wait ();
+			string output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			Match match = process_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = thread_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = process_exited_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = process_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = process_execd_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			debugger_output.Wait ();
+			output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Process failed to exec().");
+
+			match = thread_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Process failed to exec().");
+
+			int id = Int32.Parse (match.Groups [4].Value);
+			return interpreter.GetThread (id);
 		}
 
 		public void AssertTargetExited ()

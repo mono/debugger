@@ -43,6 +43,7 @@ namespace Mono.Debugger
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event ProcessEventHandler ProcessCreatedEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
+		public event ProcessEventHandler ProcessExecdEvent;
 		public event DebuggerEventHandler TargetExitedEvent;
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
@@ -79,6 +80,8 @@ namespace Mono.Debugger
 			process_hash.Add (new_process, new_process);
 			if (ProcessCreatedEvent != null)
 				ProcessCreatedEvent (this, new_process);
+			if (ProcessExecdEvent != null)
+				ProcessExecdEvent (this, new_process);
 		}
 
 		public void Kill ()

@@ -509,6 +509,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		protected void ProcessExecd (Process process)
+		{
+			Print ("Process {0} exec()'d.", PrintProcess (process));
+		}
+
 		public Thread CurrentThread {
 			get {
 				if (current_thread == null)
@@ -809,6 +814,7 @@ namespace Mono.Debugger.Frontend
 				backend.ThreadCreatedEvent += thread_created;
 				backend.ProcessCreatedEvent += process_created;
 				backend.ProcessExitedEvent += process_exited;
+				backend.ProcessExecdEvent += process_execd;
 				backend.TargetOutputEvent += target_output;
 			}
 
@@ -825,6 +831,11 @@ namespace Mono.Debugger.Frontend
 			public void process_exited (Debugger debugger, Process process)
 			{
 				interpreter.ProcessExited (process);
+			}
+
+			public void process_execd (Debugger debugger, Process process)
+			{
+				interpreter.ProcessExecd (process);
 			}
 
 			public void target_exited (Debugger debugger)
