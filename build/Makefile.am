@@ -85,6 +85,7 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		-e 's^\@prefix\@^$(prefix)^g' \
 		-e 's^\@srcdir\@^$(srcdir)^g' \
 		-e 's^\@builddir\@^$(builddir)^g' \
+		-e 's^\@mono\@^$(MONO)^g' \
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 

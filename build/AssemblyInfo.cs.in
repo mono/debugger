@@ -27,6 +27,7 @@ namespace Mono.Debugger
 
 	internal class BuildInfo
 	{
+		public static string mono = "@mono@";
 		public static string srcdir = "@srcdir@";
 		public static string builddir = "@builddir@";
 	}

@@ -75,6 +75,12 @@ namespace Mono.Debugger.Tests
 			}
 		}
 
+		public static string MonoExecutable {
+			get {
+				return BuildInfo.mono;
+			}
+		}
+
 		[TestFixtureSetUp]
 		public void SetUp ()
 		{
