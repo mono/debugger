@@ -189,6 +189,7 @@ namespace Mono.Debugger.Tests
 
 		public void AssertTargetOutput (string line)
 		{
+			inferior_stdout.Wait ();
 			string output = inferior_stdout.ReadLine ();
 			if (output == null)
 				Assert.Fail ("No target output.");

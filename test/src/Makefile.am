@@ -2,6 +2,8 @@ MCS_FLAGS=-debug -unsafe
 
 AM_CFLAGS = -g -O0
 
+INCLUDES = -DTEST_SRCDIR=\"$(top_srcdir)/test/src\" -DTEST_BUILDDIR=\"`pwd`\"
+
 noinst_SCRIPTS = \
 	TestManagedTypes.exe TestInvocation.exe TestInheritance.exe \
 	TestDelegate.exe TestIndexer.exe TestEnum.exe \
@@ -18,7 +20,7 @@ EXTRA_DIST = \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
 	TestRestart.cs
 
-noinst_PROGRAMS = testnativefork
+noinst_PROGRAMS = testnativefork testnativeexec testnativechild
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<

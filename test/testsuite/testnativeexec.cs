@@ -8,15 +8,15 @@ using Mono.Debugger.Frontend;
 namespace Mono.Debugger.Tests
 {
 	[TestFixture]
-	public class testnativefork : TestSuite
+	public class testnativeexec : TestSuite
 	{
-		public testnativefork ()
-			: base ("testnativefork", "testnativefork.c")
+		public testnativeexec ()
+			: base ("testnativeexec", "testnativeexec.c")
 		{ }
 
-		const int line_main = 12;
-		const int line_waitpid = 19;
-		const int line_child = 15;
+		const int line_main = 13;
+		const int line_waitpid = 26;
+		const int line_child = 20;
 
 		[Test]
 		[Category("Fork")]
@@ -36,8 +36,13 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 			AssertExecute ("next");
 			AssertStopped (thread, "main", line_waitpid);
-			AssertExecute ("next");
+
 			AssertProcessExited (child.Process);
+			Thread execd_child = AssertProcessCreated ();
+
+			AssertExecute ("next");
+			AssertTargetOutput ("Hello World!");
+			AssertProcessExited (execd_child.Process);
 			AssertStopped (thread, "main", line_waitpid + 1);
 
 			AssertExecute ("continue");
@@ -69,8 +74,13 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("next");
 			AssertStopped (thread, "main", line_waitpid);
-			AssertExecute ("next");
+
 			AssertProcessExited (child.Process);
+			Thread execd_child = AssertProcessCreated ();
+
+			AssertExecute ("next");
+			AssertTargetOutput ("Hello World!");
+			AssertProcessExited (execd_child.Process);
 			AssertStopped (thread, "main", line_waitpid + 1);
 
 			AssertExecute ("continue");
@@ -93,6 +103,10 @@ namespace Mono.Debugger.Tests
 
 			Thread child = AssertProcessCreated ();
 			AssertProcessExited (child.Process);
+			Thread execd_child = AssertProcessCreated ();
+			AssertTargetOutput ("Hello World!");
+			AssertProcessExited (execd_child.Process);
+
 			AssertHitBreakpoint (thread, bpt_end, "main", line_waitpid + 1);
 
 			AssertExecute ("continue");
