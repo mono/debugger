@@ -57,6 +57,29 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int KlassGenericContainerOffset;
 		public readonly int FieldInfoSize;
 
+		public readonly int MonoDefaultsCorlibOffset;
+		public readonly int MonoDefaultsObjectOffset;
+		public readonly int MonoDefaultsByteOffset;
+		public readonly int MonoDefaultsVoidOffset;
+		public readonly int MonoDefaultsBooleanOffset;
+		public readonly int MonoDefaultsSByteOffset;
+		public readonly int MonoDefaultsInt16Offset;
+		public readonly int MonoDefaultsUInt16Offset;
+		public readonly int MonoDefaultsInt32Offset;
+		public readonly int MonoDefaultsUInt32Offset;
+		public readonly int MonoDefaultsIntOffset;
+		public readonly int MonoDefaultsUIntOffset;
+		public readonly int MonoDefaultsInt64Offset;
+		public readonly int MonoDefaultsUInt64Offset;
+		public readonly int MonoDefaultsSingleOffset;
+		public readonly int MonoDefaultsDoubleOffset;
+		public readonly int MonoDefaultsCharOffset;
+		public readonly int MonoDefaultsStringOffset;
+		public readonly int MonoDefaultsEnumOffset;
+		public readonly int MonoDefaultsArrayOffset;
+		public readonly int MonoDefaultsDelegateOffset;
+		public readonly int MonoDefaultsExceptionOffset;
+
 		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, ITargetMemoryAccess memory,
 					    TargetAddress address)
 		{
@@ -85,11 +108,34 @@ namespace Mono.Debugger.Languages.Mono
 			KlassGenericContainerOffset = reader.ReadInt32 ();
 			FieldInfoSize = reader.ReadInt32 ();
 
+			MonoDefaultsCorlibOffset = reader.ReadInt32 ();
+			MonoDefaultsObjectOffset = reader.ReadInt32 ();
+			MonoDefaultsByteOffset = reader.ReadInt32 ();
+			MonoDefaultsVoidOffset = reader.ReadInt32 ();
+			MonoDefaultsBooleanOffset = reader.ReadInt32 ();
+			MonoDefaultsSByteOffset = reader.ReadInt32 ();
+			MonoDefaultsInt16Offset = reader.ReadInt32 ();
+			MonoDefaultsUInt16Offset = reader.ReadInt32 ();
+			MonoDefaultsInt32Offset = reader.ReadInt32 ();
+			MonoDefaultsUInt32Offset = reader.ReadInt32 ();
+			MonoDefaultsIntOffset = reader.ReadInt32 ();
+			MonoDefaultsUIntOffset = reader.ReadInt32 ();
+			MonoDefaultsInt64Offset = reader.ReadInt32 ();
+			MonoDefaultsUInt64Offset = reader.ReadInt32 ();
+			MonoDefaultsSingleOffset = reader.ReadInt32 ();
+			MonoDefaultsDoubleOffset = reader.ReadInt32 ();
+			MonoDefaultsCharOffset = reader.ReadInt32 ();
+			MonoDefaultsStringOffset = reader.ReadInt32 ();
+			MonoDefaultsEnumOffset = reader.ReadInt32 ();
+			MonoDefaultsArrayOffset = reader.ReadInt32 ();
+			MonoDefaultsDelegateOffset = reader.ReadInt32 ();
+			MonoDefaultsExceptionOffset = reader.ReadInt32 ();
+
 			TargetReader mono_defaults = new TargetReader (
 				memory.ReadMemory (defaults_address, defaults_size).Contents, memory);
-			mono_defaults.ReadAddress ();
 
 			MonoLanguageBackend language = corlib.MonoLanguage;
+			mono_defaults.Offset = MonoDefaultsObjectOffset;
 			TargetAddress klass = mono_defaults.ReadAddress ();
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
 			Cecil.ITypeDefinition object_type = corlib.ModuleDefinition.Types ["System.Object"];
@@ -97,99 +143,110 @@ namespace Mono.Debugger.Languages.Mono
 			ObjectClass = new MonoClassType (corlib, object_type);
 			language.AddCoreType (ObjectClass, object_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsByteOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition byte_type = corlib.ModuleDefinition.Types ["System.Byte"];
 			ByteType = new TargetFundamentalType (language, byte_type.FullName, FundamentalKind.Byte, 1);
 			language.AddCoreType (ByteType, byte_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsVoidOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition void_type = corlib.ModuleDefinition.Types ["System.Void"];
 			VoidType = new MonoOpaqueType (corlib, void_type);
 			language.AddCoreType (VoidType, void_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsBooleanOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition bool_type = corlib.ModuleDefinition.Types ["System.Boolean"];
 			BooleanType = new TargetFundamentalType (language, bool_type.FullName, FundamentalKind.Boolean, 1);
 			language.AddCoreType (BooleanType, bool_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsSByteOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition sbyte_type = corlib.ModuleDefinition.Types ["System.SByte"];
 			SByteType = new TargetFundamentalType (language, sbyte_type.FullName, FundamentalKind.SByte, 1);
 			language.AddCoreType (SByteType, sbyte_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsInt16Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition short_type = corlib.ModuleDefinition.Types ["System.Int16"];
 			Int16Type = new TargetFundamentalType (language, short_type.FullName, FundamentalKind.Int16, 2);
 			language.AddCoreType (Int16Type, short_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsUInt16Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition ushort_type = corlib.ModuleDefinition.Types ["System.UInt16"];
 			UInt16Type = new TargetFundamentalType (language, ushort_type.FullName, FundamentalKind.UInt16, 2);
 			language.AddCoreType (UInt16Type, ushort_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsInt32Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition int_type = corlib.ModuleDefinition.Types ["System.Int32"];
 			Int32Type = new TargetFundamentalType (language, int_type.FullName, FundamentalKind.Int32, 4);
 			language.AddCoreType (Int32Type, int_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsUInt32Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition uint_type = corlib.ModuleDefinition.Types ["System.UInt32"];
 			UInt32Type = new TargetFundamentalType (language, uint_type.FullName, FundamentalKind.UInt32, 4);
 			language.AddCoreType (UInt32Type, uint_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsIntOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition intptr_type = corlib.ModuleDefinition.Types ["System.IntPtr"];
 			IntType = new TargetFundamentalType (language, intptr_type.FullName, FundamentalKind.IntPtr, 4);
 			language.AddCoreType (IntType, intptr_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsUIntOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition uintptr_type = corlib.ModuleDefinition.Types ["System.UIntPtr"];
 			UIntType = new TargetFundamentalType (language, uintptr_type.FullName, FundamentalKind.Object, 4);
 			language.AddCoreType (UIntType, uintptr_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsInt64Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition long_type = corlib.ModuleDefinition.Types ["System.Int64"];
 			Int64Type = new TargetFundamentalType (language, long_type.FullName, FundamentalKind.Int64, 8);
 			language.AddCoreType (Int64Type, long_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsUInt64Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition ulong_type = corlib.ModuleDefinition.Types ["System.UInt64"];
 			UInt64Type = new TargetFundamentalType (language, ulong_type.FullName, FundamentalKind.UInt64, 8);
 			language.AddCoreType (UInt64Type, ulong_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsSingleOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition float_type = corlib.ModuleDefinition.Types ["System.Single"];
 			SingleType = new TargetFundamentalType (language, float_type.FullName, FundamentalKind.Single, 4);
 			language.AddCoreType (SingleType, float_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsDoubleOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition double_type = corlib.ModuleDefinition.Types ["System.Double"];
 			DoubleType = new TargetFundamentalType (language, double_type.FullName, FundamentalKind.Double, 8);
 			language.AddCoreType (DoubleType, double_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsCharOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition char_type = corlib.ModuleDefinition.Types ["System.Char"];
 			CharType = new TargetFundamentalType (language, char_type.FullName, FundamentalKind.Char, 2);
 			language.AddCoreType (CharType, char_type, klass);
 
+			mono_defaults.Offset = MonoDefaultsStringOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition string_type = corlib.ModuleDefinition.Types ["System.String"];
 			StringType = new MonoStringType (
 				corlib, string_type.FullName, object_size, object_size + 4);
 			language.AddCoreType (StringType, string_type, klass);
 
-			// Skip a whole bunch of clases we don't care about
-			mono_defaults.Offset += 2 * corlib.TargetInfo.TargetAddressSize;
-
+			mono_defaults.Offset = MonoDefaultsDelegateOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			language.AddCoreType (DelegateType, delegate_type, klass);
 
-			// Skip a whole bunch of clases we don't care about
-			mono_defaults.Offset += 8 * corlib.TargetInfo.TargetAddressSize;
-
-			// and get to the Exception class
+			mono_defaults.Offset = MonoDefaultsExceptionOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.ITypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
 			ExceptionType = new MonoClassType (corlib, exception_type);

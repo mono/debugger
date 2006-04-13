@@ -1,5 +1,10 @@
 2006-04-13  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs: Use the new
+	`MonoDefaults' offsets.
+
+2006-04-13  Martin Baulig  <martin@ximian.com>
+
 	* backends/Process.cs
 	(Process.ChildExecd): Don't create a new process here.
 
