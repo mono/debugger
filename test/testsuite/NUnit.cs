@@ -406,20 +406,20 @@ namespace Mono.Debugger.Tests
 			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Failed to create process.");
+				Assert.Fail ("Failed to created process (received `{0}').", output);
 
 			Match match = process_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Failed to create process.");
+				Assert.Fail ("Failed to created process (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Failed to create process.");
+				Assert.Fail ("Failed to created process (received `{0}').", output);
 
 			match = thread_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Failed to create process.");
+				Assert.Fail ("Failed to created process (received `{0}').", output);
 
 			int id = Int32.Parse (match.Groups [4].Value);
 			return interpreter.GetThread (id);
@@ -430,11 +430,11 @@ namespace Mono.Debugger.Tests
 			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exit.");
+				Assert.Fail ("Process failed to exit (received `{0}').", output);
 
 			Match match = process_exited_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exit.");
+				Assert.Fail ("Process failed to exit (received `{0}').", output);
 
 			int id = Int32.Parse (match.Groups [1].Value);
 			Assert.AreEqual (id, process.ID,
@@ -447,29 +447,29 @@ namespace Mono.Debugger.Tests
 			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			Match match = process_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = process_execd_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = thread_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			int id = Int32.Parse (match.Groups [4].Value);
 			return interpreter.GetThread (id);
@@ -480,56 +480,56 @@ namespace Mono.Debugger.Tests
 			debugger_output.Wait ();
 			string output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			Match match = process_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = thread_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = process_exited_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = process_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = process_execd_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			debugger_output.Wait ();
 			output = debugger_output.ReadLine ();
 			if (output == null)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = thread_created_regex.Match (output);
 			if (!match.Success)
-				Assert.Fail ("Process failed to exec().");
+				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			int id = Int32.Parse (match.Groups [4].Value);
 			return interpreter.GetThread (id);
