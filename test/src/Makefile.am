@@ -20,7 +20,7 @@ EXTRA_DIST = \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
 	TestRestart.cs TestExec.cs TestChild.cs
 
-noinst_PROGRAMS = testnativefork testnativeexec testnativechild testnativeexec-2
+noinst_PROGRAMS = testnativefork testnativeexec testnativechild
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<
