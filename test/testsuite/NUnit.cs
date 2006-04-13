@@ -449,16 +449,7 @@ namespace Mono.Debugger.Tests
 			if (output == null)
 				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
-			Match match = process_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = process_execd_regex.Match (output);
+			Match match = process_execd_regex.Match (output);
 			if (!match.Success)
 				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
@@ -492,24 +483,6 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
 			match = thread_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = process_exited_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = process_created_regex.Match (output);
 			if (!match.Success)
 				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 

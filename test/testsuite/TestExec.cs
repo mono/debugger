@@ -18,6 +18,8 @@ namespace Mono.Debugger.Tests
 		const int line_main = 8;
 		const int line_main_2 = 10;
 
+		int bpt_main;
+
 		[Test]
 		[Category("Fork")]
 		public void NativeChild ()
@@ -28,7 +30,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(System.String[])", line_main);
-			int bpt_main = AssertBreakpoint (line_main_2);
+			bpt_main = AssertBreakpoint (line_main_2);
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main, "X.Main(System.String[])", line_main_2);
 
@@ -47,12 +49,12 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("NotWorking")]
+		[Category("Fork")]
 		public void ManagedChild ()
 		{
 			Interpreter.Options.InferiorArgs = new string [] {
 				BuildDirectory + "/TestExec.exe",
-				MonoExecutable,
+				MonoExecutable, "--inside-mdb",
 				BuildDirectory + "/TestChild.exe" };
 
 			Process process = Interpreter.Start ();
@@ -61,7 +63,6 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(System.String[])", line_main);
-			int bpt_main = AssertBreakpoint (line_main_2);
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main, "X.Main(System.String[])", line_main_2);
 
@@ -70,7 +71,7 @@ namespace Mono.Debugger.Tests
 			Thread child = AssertProcessForkedAndExecd ();
 			AssertStopped (thread, "X.Main(System.String[])", line_main_2 + 1);
 			AssertExecute ("next");
-			AssertTargetOutput ("Hello World!");
+			AssertTargetOutput ("Hello World");
 			AssertProcessExited (child.Process);
 			AssertStopped (thread, "X.Main(System.String[])", line_main_2 + 2);
 

@@ -37,7 +37,6 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("next");
 			AssertStopped (thread, "main", line_waitpid);
 
-			AssertProcessExited (child.Process);
 			Thread execd_child = AssertProcessExecd ();
 
 			AssertExecute ("next");
@@ -75,7 +74,6 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("next");
 			AssertStopped (thread, "main", line_waitpid);
 
-			AssertProcessExited (child.Process);
 			Thread execd_child = AssertProcessExecd ();
 
 			AssertExecute ("next");
@@ -101,9 +99,7 @@ namespace Mono.Debugger.Tests
 		        int bpt_end = AssertBreakpoint (line_waitpid + 1);
 			AssertExecute ("background");
 
-			Thread child = AssertProcessCreated ();
-			AssertProcessExited (child.Process);
-			Thread execd_child = AssertProcessExecd ();
+			Thread execd_child = AssertProcessForkedAndExecd ();
 			AssertTargetOutput ("Hello World!");
 			AssertProcessExited (execd_child.Process);
 

@@ -24,25 +24,29 @@ namespace Mono.Debugger.Backends
 		MonoDebuggerInfo debugger_info;
 		Hashtable engine_hash;
 		Inferior inferior;
+		bool stop_in_main;
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_set_notification (long address);
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
-							    Inferior inferior, bool attach)
+							    Inferior inferior, bool attach,
+							    bool stop_in_main)
 		{
 			TargetAddress info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
 			if (info.IsNull)
 				return null;
 
-			return new MonoThreadManager (thread_manager, inferior, info, attach);
+			return new MonoThreadManager (
+				thread_manager, inferior, info, attach, stop_in_main);
 		}
 
 		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
-					     TargetAddress info, bool attach)
+					     TargetAddress info, bool attach, bool stop_in_main)
 		{
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
+			this.stop_in_main = stop_in_main;
 
 			this.engine_hash = Hashtable.Synchronized (new Hashtable ());
 
@@ -126,16 +130,13 @@ namespace Mono.Debugger.Backends
 
 		int index;
 
-		public bool ThreadCreated (SingleSteppingEngine sse, Inferior inferior,
-					   Inferior caller_inferior)
+		internal void ThreadCreated (SingleSteppingEngine sse, Inferior inferior)
 		{
 			engine_hash.Add (sse.TID, sse);
 
 			++index;
 			if (index < 3)
 				sse.Thread.SetDaemon ();
-
-			return false;
 		}
 
 		internal void ThreadExited (SingleSteppingEngine engine)
@@ -218,7 +219,10 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					engine.ReachedMain (data);
+					if (stop_in_main)
+						engine.ReachedMain (data);
+					else
+						engine.Start (TargetAddress.Null);
 
 					inferior.Process.ReachedMain (inferior, engine.Thread, engine);
 					return true;

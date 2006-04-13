@@ -1,3 +1,8 @@
+2006-04-13  Martin Baulig  <martin@ximian.com>
+
+	* backends/Process.cs
+	(Process.ChildExecd): Don't create a new process here.
+
 2006-04-12  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/testnativeexec.cs: New test.

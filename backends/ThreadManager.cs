@@ -159,7 +159,7 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			if (!inferior.Process.Initialize (engine, inferior)) {
+			if (!inferior.Process.Initialize (engine, inferior, false)) {
 				if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
 				    (cevent.Argument != 0))
 					throw new InternalError (
