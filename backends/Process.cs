@@ -256,6 +256,24 @@ namespace Mono.Debugger
 
 		internal void ChildExecd (Inferior inferior)
 		{
+			if (!is_forked) {
+				if (bfd_container != null)
+					bfd_container.Dispose ();
+
+				if (languages != null)
+					foreach (ILanguageBackend lang in languages)
+						lang.Dispose();
+
+				if (symtab_manager != null)
+					symtab_manager.Dispose ();
+			}
+
+			module_manager.ModulesChanged -= modules_changed;
+			module_manager.BreakpointsChanged -= breakpoints_changed;
+
+			if (breakpoint_manager != null)
+				breakpoint_manager.Dispose ();
+
 			breakpoint_manager = new BreakpointManager ();
 			module_manager = new ModuleManager ();
 			source_factory = new SourceFileFactory ();
