@@ -292,7 +292,7 @@ namespace Mono.Debugger
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
 			initialized = is_forked = false;
 
-			// inferior.Dispose ();
+			inferior.Dispose ();
 
 			Initialize (new_thread, new_inferior, true);
 		}

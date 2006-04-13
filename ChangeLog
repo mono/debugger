@@ -1,5 +1,12 @@
 2006-04-13  Martin Baulig  <martin@ximian.com>
 
+	* backends/ProcessStart.cs
+	(ProcessStart.SetupEnvironment): Add a `MONO_INSIDE_MDB' 
+	environment variable; this is required if the target fork()s
+	another mono process.
+
+2006-04-13  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoLanguageBackend.cs: Use the new
 	`MonoDefaults' offsets.
 
