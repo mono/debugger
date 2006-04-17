@@ -68,7 +68,7 @@ namespace Mono.Debugger.Backends
 	//
 	//   See the `Thread' class for the "user interface".
 	// </summary>
-	internal class SingleSteppingEngine : ThreadBase
+	internal class SingleSteppingEngine : TargetAccess
 	{
 		// <summary>
 		//   This is invoked after compiling a trampoline - it returns whether or

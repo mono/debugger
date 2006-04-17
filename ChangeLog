@@ -1,5 +1,10 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadBase.cs: Renamed into TargetAccess.cs.
+	(ThreadBase): Renamed into `TargetAccess'.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs
 	(ITargetMemoryInfo): Make this interface internal.
 

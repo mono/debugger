@@ -20,12 +20,12 @@ namespace Mono.Debugger
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
-	public class Thread : ThreadBase
+	public class Thread : TargetAccess
 	{
 		internal Thread (SingleSteppingEngine engine)
 		{
 			this.engine = engine;
-			this.thread = engine;
+			this.target = engine;
 			this.id = engine.ThreadManager.NextThreadID;
 
 			this.manager = engine.ThreadManager;
@@ -45,14 +45,14 @@ namespace Mono.Debugger
 			this.target_memory_info = engine.TargetMemoryInfo;
 		}
 
-		internal Thread (ThreadBase thread, int pid)
+		internal Thread (TargetAccess target, int pid)
 		{
-			this.thread = thread;
-			this.id = thread.ThreadManager.NextThreadID;
+			this.target = target;
+			this.id = target.ThreadManager.NextThreadID;
 			this.pid = pid;
 
-			this.manager = thread.ThreadManager;
-			this.process = thread.Process;
+			this.manager = target.ThreadManager;
+			this.process = target.Process;
 
 			this.symtab_manager = process.SymbolTableManager;
 
@@ -61,15 +61,15 @@ namespace Mono.Debugger
 
 			operation_completed_event = new ST.ManualResetEvent (false);
 
-			this.target_info = thread.TargetInfo;
-			this.target_memory_info = thread.TargetMemoryInfo;
+			this.target_info = target.TargetInfo;
+			this.target_memory_info = target.TargetMemoryInfo;
 		}
 
 		bool is_daemon;
 		int id, pid;
 		long tid;
 		ThreadGroup tgroup;
-		ThreadBase thread;
+		TargetAccess target;
 		SingleSteppingEngine engine;
 		Process process;
 		ThreadManager manager;
@@ -84,7 +84,7 @@ namespace Mono.Debugger
 
 		protected internal Language NativeLanguage {
 			get {
-				check_thread ();
+				check_target ();
 				return process.BfdContainer.NativeLanguage;
 			}
 		}
@@ -100,10 +100,10 @@ namespace Mono.Debugger
 		// </summary>
 		public override TargetState State {
 			get {
-				if (thread == null)
+				if (target == null)
 					return TargetState.NO_TARGET;
 				else
-					return thread.State;
+					return target.State;
 			}
 		}
 
@@ -136,21 +136,21 @@ namespace Mono.Debugger
 
 		public override Architecture Architecture {
 			get {
-				check_thread ();
+				check_target ();
 				return target_memory_info.Architecture;
 			}
 		}
 
 		public override Process Process {
 			get {
-				check_thread ();
+				check_target ();
 				return process;
 			}
 		}
 
 		internal override ThreadManager ThreadManager {
 			get {
-				check_thread ();
+				check_target ();
 				return manager;
 			}
 		}
@@ -188,9 +188,9 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.NoTarget);
 		}
 
-		void check_thread ()
+		void check_target ()
 		{
-			if (thread == null)
+			if (target == null)
 				throw new TargetException (TargetError.NoTarget);
 		}
 
@@ -204,15 +204,15 @@ namespace Mono.Debugger
 		// </summary>
 		public override StackFrame CurrentFrame {
 			get {
-				check_thread ();
-				return thread.CurrentFrame;
+				check_target ();
+				return target.CurrentFrame;
 			}
 		}
 
 		public override TargetAddress CurrentFrameAddress {
 			get {
-				check_thread ();
-				return thread.CurrentFrameAddress;
+				check_target ();
+				return target.CurrentFrameAddress;
 			}
 		}
 
@@ -227,14 +227,14 @@ namespace Mono.Debugger
 		// </summary>
 		public override Backtrace GetBacktrace (int max_frames)
 		{
-			check_thread ();
-			return thread.GetBacktrace (max_frames);
+			check_target ();
+			return target.GetBacktrace (max_frames);
 		}
 
 		public Backtrace GetBacktrace ()
 		{
-			check_thread ();
-			Backtrace bt = thread.CurrentBacktrace;
+			check_target ();
+			Backtrace bt = target.CurrentBacktrace;
 			if (bt != null)
 				return bt;
 
@@ -243,15 +243,15 @@ namespace Mono.Debugger
 
 		public override Backtrace CurrentBacktrace {
 			get {
-				check_thread ();
-				return thread.CurrentBacktrace;
+				check_target ();
+				return target.CurrentBacktrace;
 			}
 		}
 
 		public override Registers GetRegisters ()
 		{
-			check_thread ();
-			return thread.GetRegisters ();
+			check_target ();
+			return target.GetRegisters ();
 		}
 
 		public override void SetRegisters (Registers registers)
@@ -506,20 +506,20 @@ namespace Mono.Debugger
 
 		public override int GetInstructionSize (TargetAddress address)
 		{
-			check_thread ();
-			return thread.GetInstructionSize (address);
+			check_target ();
+			return target.GetInstructionSize (address);
 		}
 
 		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
-			check_thread ();
-			return thread.DisassembleInstruction (method, address);
+			check_target ();
+			return target.DisassembleInstruction (method, address);
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
 		{
-			check_thread ();
-			return thread.DisassembleMethod (method);
+			check_target ();
+			return target.DisassembleMethod (method);
 		}
 
 		public void RuntimeInvoke (TargetFunctionType function,
@@ -688,8 +688,8 @@ namespace Mono.Debugger
 #region ITargetMemoryAccess implementation
 		void write_memory (TargetAddress address, byte[] buffer)
 		{
-			check_thread ();
-			thread.WriteBuffer (address, buffer);
+			check_target ();
+			target.WriteBuffer (address, buffer);
 		}
 
 		public override AddressDomain AddressDomain {
@@ -700,45 +700,45 @@ namespace Mono.Debugger
 
 		public override byte ReadByte (TargetAddress address)
 		{
-			check_thread ();
-			return thread.ReadByte (address);
+			check_target ();
+			return target.ReadByte (address);
 		}
 
 		public override int ReadInteger (TargetAddress address)
 		{
-			check_thread ();
-			return thread.ReadInteger (address);
+			check_target ();
+			return target.ReadInteger (address);
 		}
 
 		public override long ReadLongInteger (TargetAddress address)
 		{
-			check_thread ();
-			return thread.ReadLongInteger (address);
+			check_target ();
+			return target.ReadLongInteger (address);
 		}
 
 		public override TargetAddress ReadAddress (TargetAddress address)
 		{
-			check_thread ();
-			return thread.ReadAddress (address);
+			check_target ();
+			return target.ReadAddress (address);
 		}
 
 		public override string ReadString (TargetAddress address)
 		{
-			check_thread ();
-			return thread.ReadString (address);
+			check_target ();
+			return target.ReadString (address);
 		}
 
 		public override TargetBlob ReadMemory (TargetAddress address, int size)
 		{
-			check_thread ();
-			byte[] buffer = thread.ReadBuffer (address, size);
+			check_target ();
+			byte[] buffer = target.ReadBuffer (address, size);
 			return new TargetBlob (buffer, target_info);
 		}
 
 		public override byte[] ReadBuffer (TargetAddress address, int size)
 		{
-			check_thread ();
-			return thread.ReadBuffer (address, size);
+			check_target ();
+			return target.ReadBuffer (address, size);
 		}
 
 		public override bool CanWrite {
@@ -767,7 +767,7 @@ namespace Mono.Debugger
 
 		public override void WriteAddress (TargetAddress address, TargetAddress value)
 		{
-			check_thread ();
+			check_target ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (
 				target_info.TargetAddressSize, target_info);
 			writer.WriteAddress (value);
