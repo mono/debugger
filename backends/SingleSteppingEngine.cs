@@ -682,7 +682,7 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-		public override ITargetMemoryInfo TargetMemoryInfo {
+		internal override ITargetMemoryInfo TargetMemoryInfo {
 			get {
 				check_inferior ();
 				return inferior.TargetMemoryInfo;

@@ -663,7 +663,7 @@ namespace Mono.Debugger
 			get { return target_info; }
 		}
 
-		public override ITargetMemoryInfo TargetMemoryInfo {
+		internal override ITargetMemoryInfo TargetMemoryInfo {
 			get { return target_memory_info; }
 		}
 

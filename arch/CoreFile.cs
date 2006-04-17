@@ -146,7 +146,7 @@ namespace Mono.Debugger.Backends
 			get { return memory_info; }
 		}
 
-		protected class CoreFileThread : ThreadBase, ITargetMemoryAccess
+		protected class CoreFileThread : ThreadBase
 		{
 			public readonly int PID;
 			public readonly CoreFile CoreFile;
@@ -198,7 +198,7 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetInfo; }
 			}
 
-			public override ITargetMemoryInfo TargetMemoryInfo {
+			internal override ITargetMemoryInfo TargetMemoryInfo {
 				get { return CoreFile.TargetMemoryInfo; }
 			}
 

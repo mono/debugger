@@ -141,7 +141,7 @@ namespace Mono.Debugger.Frontend
 
 		public AddressDomain AddressDomain {
 			get {
-				return CurrentThread.TargetMemoryInfo.AddressDomain;
+				return CurrentThread.AddressDomain;
 			}
 		}
 
