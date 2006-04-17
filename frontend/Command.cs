@@ -455,7 +455,7 @@ namespace Mono.Debugger.Frontend
 				start = pexp.EvaluateAddress (context);
 			}
 
-			byte[] data = CurrentThread.TargetMemoryAccess.ReadBuffer (start, count);
+			byte[] data = CurrentThread.ReadBuffer (start, count);
 			context.Print (TargetBinaryReader.HexDump (start, data));
 			start += count;
 		}

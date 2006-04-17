@@ -814,8 +814,8 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
-								    TargetAddress address)
+			internal override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+								      TargetAddress address)
 			{
 				return file.LanguageBackend.GetTrampoline (memory, address);
 			}
@@ -1207,8 +1207,8 @@ namespace Mono.Debugger.Languages.Mono
 				get { return null; }
 			}
 
-			public override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
-								    TargetAddress address)
+			internal override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+								      TargetAddress address)
 			{
 				return Entry.File.LanguageBackend.GetTrampoline (memory, address);
 			}

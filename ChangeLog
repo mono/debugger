@@ -1,5 +1,10 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryAccess): Make this interface internal.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* classes/AddressDomain.cs
 	(AddressDomain): Make the .ctor internal.
 
