@@ -108,6 +108,12 @@ x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 st
 static ServerCommandError
 server_ptrace_get_frame (ServerHandle *handle, StackFrame *frame)
 {
+	ServerCommandError result;
+
+	result = x86_arch_get_registers (handle);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
 	frame->address = (guint64) INFERIOR_REG_RIP (handle->arch->current_regs);
 	frame->stack_pointer = (guint64) INFERIOR_REG_RSP (handle->arch->current_regs);
 	frame->frame_address = (guint64) INFERIOR_REG_RBP (handle->arch->current_regs);

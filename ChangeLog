@@ -1,3 +1,17 @@
+2006-04-17  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.AcquireGlobalThreadLock): Check the
+	`stop_event' and don't do anything if we just died.
+	(SingleSteppingEngine.Start): Set `main_method_stackptr' to the
+	current stack pointer.
+
+	* backends/server/x86_64-arch.c
+	(server_ptrace_get_frame): Call x86_arch_get_registers() first.
+
+	* backends/server/i386-arch.c
+	(server_ptrace_get_frame): Call x86_arch_get_registers() first.
+
 2006-04-13  Martin Baulig  <martin@ximian.com>
 
 	* backends/ProcessStart.cs

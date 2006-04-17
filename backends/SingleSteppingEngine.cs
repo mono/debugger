@@ -175,11 +175,16 @@ namespace Mono.Debugger.Backends
 					      "{0} received event {1} {2} ({3:x})",
 					      this, cevent, (NotificationType) cevent.Argument,
 					      status);
-			else
+			else if ((cevent.Type != Inferior.ChildEventType.CHILD_EXITED) &&
+				 (cevent.Type != Inferior.ChildEventType.CHILD_SIGNALED))
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} ({2:x}) at {3} while running {4}",
 					      this, cevent, status, inferior.CurrentFrame,
 					      current_operation);
+			else
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} ({2:x}) while running {3}",
+					      this, cevent, status, current_operation);
 
 			if (manager.HandleChildEvent (this, inferior, ref cevent))
 				return;
@@ -483,7 +488,9 @@ namespace Mono.Debugger.Backends
 
 		internal void Start (TargetAddress func)
 		{
-			is_main = true;
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			main_method_stackptr = iframe.StackPointer;
+
 			CommandResult result = new Thread.StepCommandResult (thread);
 			current_operation = new OperationRun (func, true, result);
 			current_operation.Execute (this);
@@ -758,12 +765,6 @@ namespace Mono.Debugger.Backends
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.FrameChanged, current_frame);
 					OperationCompleted (args);
-				}
-
-				try {
-					inferior.GetCurrentFrame ();
-				} catch (Exception ex) {
-					Console.WriteLine ("Couldn't get the current stack frame from inferior: {0}", ex);
 				}
 			}
 		}
@@ -1257,12 +1258,20 @@ namespace Mono.Debugger.Backends
 
 			has_thread_lock = true;
 			stopped = inferior.Stop (out stop_event);
+
+			if ((stop_event != null) &&
+			    ((stop_event.Type == Inferior.ChildEventType.CHILD_EXITED) ||
+			     ((stop_event.Type == Inferior.ChildEventType.CHILD_SIGNALED)))) {
+				manager.RequestWait ();
+				return;
+			}
+
 			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 
 			Report.Debug (DebugFlags.Threads,
-				      "{0} acquired thread lock: {1} {2} {3} {4}",
+				      "{0} acquired thread lock: {1} {2} {3} {4} {5}",
 				      this, stopped, stop_event, EndStackAddress,
-				      frame.StackPointer);
+				      frame.StackPointer, frame.Address);
 
 			if (!EndStackAddress.IsNull)
 				inferior.WriteAddress (EndStackAddress, frame.StackPointer);

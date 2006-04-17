@@ -147,14 +147,17 @@ namespace Mono.Debugger.Backends
 		void thread_created (TargetAddress data, long tid)
 		{
 			SingleSteppingEngine engine = (SingleSteppingEngine) engine_hash [tid];
-			engine.EndStackAddress = data;
+			if (engine != null)
+				engine.EndStackAddress = data;
 		}
 
 		void thread_exited (long tid)
 		{
 			SingleSteppingEngine engine = (SingleSteppingEngine) engine_hash [tid];
-			if (engine != null)
+			if (engine != null) {
 				engine.EndStackAddress = TargetAddress.Null;
+				engine_hash.Remove (engine.TID);
+			}
 		}
 
 		public void Attach (SingleSteppingEngine main_engine, CommandResult[] results)
