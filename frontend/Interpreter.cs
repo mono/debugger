@@ -418,8 +418,8 @@ namespace Mono.Debugger.Frontend
 		protected void ThreadCreated (Thread thread)
 		{
 			if (!thread.IsDaemon)
-				Print ("Process {0} created new thread @{1}.",
-				       PrintProcess (thread.Process), thread.ID);
+				Print ("Process #{0} created new thread @{1}.",
+				       thread.Process.ID, thread.ID);
 		}
 
 		public void Wait (Thread thread)
@@ -489,7 +489,7 @@ namespace Mono.Debugger.Frontend
 
 		protected void ProcessCreated (Process process)
 		{
-			Print ("Created new process {0}.", PrintProcess (process));
+			Print ("Created new process #{0}.", process.ID);
 			if (current_process == null) {
 				current_process = process;
 				current_thread = process.MainThread;
@@ -498,7 +498,7 @@ namespace Mono.Debugger.Frontend
 
 		protected void ProcessExited (Process process)
 		{
-			Print ("Process {0} exited.", PrintProcess (process));
+			Print ("Process #{0} exited.", process.ID);
 			if (process == main_process) {
 				session.MainProcessExited (process);
 				current_process = main_process = null;
@@ -511,7 +511,8 @@ namespace Mono.Debugger.Frontend
 
 		protected void ProcessExecd (Process process)
 		{
-			Print ("Process {0} exec()'d.", PrintProcess (process));
+			Print ("Process #{0} exec()'d: {1}", process.ID,
+			       PrintCommandLineArgs (process));
 		}
 
 		public Thread CurrentThread {
@@ -728,18 +729,28 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public string PrintCommandLineArgs (Process process)
+		{
+			StringBuilder sb = new StringBuilder ();
+			string[] args = process.CommandLineArguments;
+			int start = 0;
+			if ((args.Length > 1) && (args [0] == BuildInfo.mono)) {
+				if (args [1] == "--inside-mdb")
+					start = 2;
+				else
+					start = 1;
+			}
+			for (int i = start; i < args.Length; i++) {
+				if (i > start)
+					sb.Append (" ");
+				sb.Append (args [i]);
+			}
+			return sb.ToString ();
+		}
+
 		public string PrintProcess (Process process)
 		{
-			bool first = true;
-			StringBuilder sb = new StringBuilder ();
-			foreach (string arg in process.CommandLineArguments) {
-				if (first)
-					first = false;
-				else
-					sb.Append (" ");
-				sb.Append (arg);
-			}
-			string command_line = sb.ToString ();
+			string command_line = PrintCommandLineArgs (process);
 			if (command_line.Length > 70) {
 				command_line = command_line.Substring (0, 70);
 				command_line += " ...";
@@ -812,6 +823,7 @@ namespace Mono.Debugger.Frontend
 
 				backend.TargetExitedEvent += target_exited;
 				backend.ThreadCreatedEvent += thread_created;
+				backend.ThreadExitedEvent += thread_exited;
 				backend.ProcessCreatedEvent += process_created;
 				backend.ProcessExitedEvent += process_exited;
 				backend.ProcessExecdEvent += process_execd;
@@ -821,6 +833,11 @@ namespace Mono.Debugger.Frontend
 			public void thread_created (Debugger debugger, Thread thread)
 			{
 				interpreter.ThreadCreated (thread);
+			}
+
+			public void thread_exited (Debugger debugger, Thread thread)
+			{
+				interpreter.ThreadExited (thread);
 			}
 
 			public void process_created (Debugger debugger, Process process)
@@ -864,9 +881,6 @@ namespace Mono.Debugger.Frontend
 			public void target_event (Thread thread, TargetEventArgs args)
 			{
 				interpreter.Style.TargetEvent (thread, args);
-				if ((args.Type == TargetEventType.TargetExited) ||
-				    (args.Type == TargetEventType.TargetSignaled))
-					interpreter.ThreadExited (thread);
 			}
 		}
 	}

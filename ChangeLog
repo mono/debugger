@@ -1,5 +1,10 @@
 2006-04-17  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs: Cosmetic cleanups in the
+	process-related messages.
+
+2006-04-17  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.AcquireGlobalThreadLock): Check the
 	`stop_event' and don't do anything if we just died.

@@ -32,10 +32,10 @@ namespace Mono.Debugger.Tests
 		static Regex frame_regex = new Regex (@"^#([0-9]+): 0x[0-9A-Fa-f]+ in (.*)$");
 		static Regex func_source_regex = new Regex (@"^(.*) at (.*):([0-9]+)$");
 		static Regex func_offset_regex = new Regex (@"^(.*)\+0x([0-9A-Fa-f]+)$");
-		static Regex process_created_regex = new Regex (@"^Created new process #([0-9]+) \(([0-9]+):(.*)\)\.$");
-		static Regex thread_created_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) created new thread @([0-9]+)\.$");
-		static Regex process_execd_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) exec\(\)'d\.$");
-		static Regex process_exited_regex = new Regex (@"^Process #([0-9]+) \(([0-9]+):(.*)\) exited\.$");
+		static Regex process_created_regex = new Regex (@"^Created new process #([0-9]+)\.$");
+		static Regex thread_created_regex = new Regex (@"^Process #([0-9]+) created new thread @([0-9]+)\.$");
+		static Regex process_execd_regex = new Regex (@"^Process #([0-9]+) exec\(\)'d\: (.*)$");
+		static Regex process_exited_regex = new Regex (@"^Process #([0-9]+) exited\.$");
 
 
 		protected TestSuite (string application)
@@ -421,7 +421,7 @@ namespace Mono.Debugger.Tests
 			if (!match.Success)
 				Assert.Fail ("Failed to created process (received `{0}').", output);
 
-			int id = Int32.Parse (match.Groups [4].Value);
+			int id = Int32.Parse (match.Groups [2].Value);
 			return interpreter.GetThread (id);
 		}
 
@@ -462,7 +462,7 @@ namespace Mono.Debugger.Tests
 			if (!match.Success)
 				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
-			int id = Int32.Parse (match.Groups [4].Value);
+			int id = Int32.Parse (match.Groups [2].Value);
 			return interpreter.GetThread (id);
 		}
 
@@ -504,7 +504,7 @@ namespace Mono.Debugger.Tests
 			if (!match.Success)
 				Assert.Fail ("Process failed to exec() (received `{0}').", output);
 
-			int id = Int32.Parse (match.Groups [4].Value);
+			int id = Int32.Parse (match.Groups [2].Value);
 			return interpreter.GetThread (id);
 		}
 
