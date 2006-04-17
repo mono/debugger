@@ -2,8 +2,6 @@ using System;
 
 namespace Mono.Debugger
 {
-	public delegate void AddressDomainInvalidHandler (AddressDomain domain);
-
 	// <summary>
 	//   This is the "domain" of a TargetAddress - you cannot compare addresses from
 	//   different domains.  See TargetAddress.cs for details.
@@ -41,7 +39,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   `name' is just used in the error messages.
 		// </summary>
-		public AddressDomain (string name)
+		internal AddressDomain (string name)
 		{
 			this.id = ++next_id;
 			this.is_valid = true;
@@ -66,8 +64,6 @@ namespace Mono.Debugger
 			get { return is_valid; }
 		}
 
-		public event AddressDomainInvalidHandler InvalidEvent;
-
 		public override string ToString ()
 		{
 			return String.Format ("AddressDomain ({0}:{1})", ID, Name);
@@ -88,13 +84,7 @@ namespace Mono.Debugger
 		private void Dispose (bool disposing)
 		{
 			if (!this.disposed) {
-				if (disposing) {
-					if (InvalidEvent != null)
-						InvalidEvent (this);
-
-					is_valid = false;
-				}
-
+				this.is_valid = false;
 				this.disposed = true;
 			}
 		}
