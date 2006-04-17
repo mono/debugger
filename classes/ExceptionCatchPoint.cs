@@ -7,7 +7,7 @@ using Mono.Debugger.Languages;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public class ExceptionCatchPoint : Event
+	public sealed class ExceptionCatchPoint : Event
 	{
 		int handle = -1;
 
@@ -75,7 +75,7 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+		internal bool CheckException (Thread target, TargetAddress address)
 		{
 			TargetClassObject exc = exception.Language.CreateObject (target, address)
 				as TargetClassObject;

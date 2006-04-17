@@ -75,6 +75,7 @@ namespace Mono.Debugger.Backends
 		//   not we should enter that trampoline.
 		// </summary>
 		internal delegate bool TrampolineHandler (SingleSteppingEngine sse, Method method);
+		internal delegate bool CheckBreakpointHandler ();
 
 		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
 		{
@@ -86,8 +87,6 @@ namespace Mono.Debugger.Backends
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
 
 			PID = inferior.PID;
-
-			engine_stopped_event = new ManualResetEvent (false);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, Process process,
@@ -208,8 +207,6 @@ namespace Mono.Debugger.Backends
 			Inferior.ChildEventType message = cevent.Type;
 			int arg = (int) cevent.Argument;
 
-			bool exiting = false;
-
 			TargetEventArgs result = null;
 
 			if ((message == Inferior.ChildEventType.THROW_EXCEPTION) ||
@@ -283,8 +280,10 @@ namespace Mono.Debugger.Backends
 						arg = 0;
 						cevent = new Inferior.ChildEvent (
 							Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
-					} else
-						goto send_result;
+					} else {
+						ProcessChildEvent (cevent, result);
+						return;
+					}
 				}
 			}
 
@@ -303,10 +302,9 @@ namespace Mono.Debugger.Backends
 					Report.Debug (DebugFlags.SSE,
 						      "{0} now stepping over breakpoint", this);
 					return;
-				} else if (!child_breakpoint (arg)) {
+				} else if (!child_breakpoint (cevent, arg)) {
 					// we hit any breakpoint, but its handler told us
 					// to resume the target and continue.
-					do_continue ();
 					return;
 				}
 			}
@@ -338,12 +336,10 @@ namespace Mono.Debugger.Backends
 
 			case Inferior.ChildEventType.CHILD_SIGNALED:
 				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
-				exiting = true;
 				break;
 
 			case Inferior.ChildEventType.CHILD_EXITED:
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
-				exiting = true;	
 				break;
 
 			case Inferior.ChildEventType.CHILD_CALLBACK_COMPLETED:
@@ -356,10 +352,20 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
+			ProcessChildEvent (cevent, result);
+		}
+
+		protected void ProcessChildEvent (Inferior.ChildEvent cevent, TargetEventArgs result)
+		{
+			Inferior.ChildEventType message = cevent.Type;
+			int arg = (int) cevent.Argument;
+
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
-				if (is_main && !reached_main && !exiting) {
+				if (is_main && !reached_main &&
+				    (cevent.Type != Inferior.ChildEventType.CHILD_EXITED) &&
+				    (cevent.Type != Inferior.ChildEventType.CHILD_SIGNALED)) {
 					reached_main = true;
 
 					StackFrame ret_frame;
@@ -472,7 +478,6 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				engine_stopped = true;
-				engine_stopped_event.Set ();
 				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}",
 					      this, current_operation);
 				if (result != null)
@@ -564,7 +569,6 @@ namespace Mono.Debugger.Backends
 				}
 
 				engine_stopped = false;
-				engine_stopped_event.Reset ();
 			}
 		}
 
@@ -793,7 +797,7 @@ namespace Mono.Debugger.Backends
 		//   If we can't find a handler for the breakpoint, the default is to stop
 		//   the target and let the user decide what to do.
 		// </summary>
-		bool child_breakpoint (int index)
+		bool child_breakpoint (Inferior.ChildEvent cevent, int index)
 		{
 			// The inferior knows about breakpoints from all threads, so if this is
 			// zero, then no other thread has set this breakpoint.
@@ -801,14 +805,42 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (index);
-			if (bpt == null)
+			if (bpt == null) {
+				do_continue ();
 				return false;
+			}
 
 			bool remain_stopped;
-			if (bpt.BreakpointHandler (inferior, out remain_stopped))
-				return remain_stopped;
+			if (bpt.BreakpointHandler (inferior, out remain_stopped)) {
+				if (!remain_stopped) {
+					do_continue ();
+					return false;
+				} else
+					return true;
+			}
 
-			return bpt.CheckBreakpointHit (thread, inferior.CurrentFrame);
+			TargetAddress address = inferior.CurrentFrame;
+			CheckBreakpointHandler callback = new CheckBreakpointHandler (delegate {
+				return bpt.CheckBreakpointHit (thread, address);
+			});
+
+			callback.BeginInvoke (delegate (IAsyncResult result) {
+				bool remain_stopped = callback.EndInvoke (result);
+				child_hit_breakpoint_done (cevent, remain_stopped);
+			}, this);
+
+			return false;
+		}
+
+		void child_hit_breakpoint_done (Inferior.ChildEvent cevent, bool remain_stopped)
+		{
+			SendCommand (delegate {
+				if (remain_stopped)
+					ProcessChildEvent (cevent, null);
+				else
+					do_continue ();
+				return null;
+			});
 		}
 
 		bool step_over_breakpoint (TargetAddress until, bool trampoline, bool current)
@@ -846,12 +878,12 @@ namespace Mono.Debugger.Backends
 			if (current_operation is OperationRuntimeInvoke)
 				return false;
 
-			foreach (Event handle in exception_handlers.Values) {
+			foreach (ExceptionCatchPoint handle in exception_handlers.Values) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",
 					      this, handle.Name, exc);
 
-				if (!handle.CheckBreakpointHit (thread, exc))
+				if (!handle.CheckException (thread, exc))
 					continue;
 
 				Report.Debug (DebugFlags.SSE,
@@ -1730,7 +1762,6 @@ namespace Mono.Debugger.Backends
 		Hashtable exception_handlers;
 		Stack callback_stack;
 		bool engine_stopped;
-		ManualResetEvent engine_stopped_event;
 		bool stop_requested;
 		bool has_thread_lock;
 		bool is_main, reached_main;

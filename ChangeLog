@@ -1,3 +1,16 @@
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
+	* classes/ExceptionCatchPoint.cs
+	(ExceptionCatchPoint): Make this class sealed and rename
+	`CheckBreakpointHit' into `CheckException'.
+
+	* classes/Event.cs
+	(Event.CheckBreakpointHit): Moved into the `Breakpoint' class.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.child_breakpoint): Run
+	`breakpoint.CheckBreakpointHit()' asynchronously.
+
 2006-04-17  Martin Baulig  <martin@ximian.com>
 
 	Bump version number to 0.14 and require Mono >= 1.1.15.

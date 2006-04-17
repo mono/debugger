@@ -73,7 +73,16 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+		// <summary>
+		//   This method is called each time the breakpoint is hit.
+		//   It returns true if the target should remain stopped and false
+		//   if the breakpoint is to be ignored.
+		// </summary>
+		// <remarks>
+		//   The @target argument is *not* serializable and may not be used
+		//   anywhere outside this handler.
+		// </remarks>
+		public virtual bool CheckBreakpointHit (Thread target, TargetAddress address)
 		{
 			return true;
 		}
