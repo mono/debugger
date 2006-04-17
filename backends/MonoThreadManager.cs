@@ -309,7 +309,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Attach;
 		public readonly TargetAddress Initialize;
 
-		internal MonoDebuggerInfo (ITargetMemoryReader reader)
+		internal MonoDebuggerInfo (TargetReader reader)
 		{
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;

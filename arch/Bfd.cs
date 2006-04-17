@@ -95,9 +95,9 @@ namespace Mono.Debugger.Backends
 				return new TargetReader (data, bfd.info);
 			}
 
-			public ITargetMemoryReader GetReader (TargetAddress address)
+			public TargetReader GetReader (TargetAddress address)
 			{
-				ITargetMemoryReader reader = (ITargetMemoryReader) contents.Data;
+				TargetReader reader = (TargetReader) contents.Data;
 				reader.Offset = address.Address - vma;
 				return reader;
 			}
@@ -768,7 +768,7 @@ namespace Mono.Debugger.Backends
 			return maps;
 		}
 
-		public ITargetMemoryReader GetReader (TargetAddress address)
+		public TargetReader GetReader (TargetAddress address)
 		{
 			Section section = this [address.Address];
 			return section.GetReader (address);

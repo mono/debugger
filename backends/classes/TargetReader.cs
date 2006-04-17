@@ -86,7 +86,7 @@ namespace Mono.Debugger.Backends
 	}
 
 	[Serializable]
-	internal class TargetReader : ITargetMemoryReader
+	internal class TargetReader : ITargetMemoryInfo
 	{
 		byte[] data;
 		TargetBinaryReader reader;

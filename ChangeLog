@@ -1,5 +1,11 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryReader): Removed this interface; `TargetReader' is
+	the only class implementing it.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* classes/ExceptionCatchPoint.cs
 	(ExceptionCatchPoint): Make this class sealed and rename
 	`CheckBreakpointHit' into `CheckException'.

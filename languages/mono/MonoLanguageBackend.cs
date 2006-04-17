@@ -523,7 +523,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		// This method reads a portion of the data table (defn in mono-debug.h)
-		void read_data_table (ITargetMemoryAccess memory, ITargetMemoryReader header)
+		void read_data_table (ITargetMemoryAccess memory, TargetReader header)
 		{
 			int num_data_tables = header.ReadInteger ();
 			TargetAddress data_tables = header.ReadAddress ();
@@ -611,7 +611,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		void read_range_entry (ITargetMemoryReader reader)
+		void read_range_entry (TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
@@ -620,7 +620,7 @@ namespace Mono.Debugger.Languages.Mono
 			file.AddRangeEntry (reader, contents);
 		}
 
-		void read_class_entry (ITargetMemoryReader reader)
+		void read_class_entry (TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
@@ -637,7 +637,7 @@ namespace Mono.Debugger.Languages.Mono
 			file.AddClassEntry (reader, contents);
 		}
 
-		void read_wrapper_entry (ITargetMemoryAccess memory, ITargetMemoryReader reader)
+		void read_wrapper_entry (ITargetMemoryAccess memory, TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);

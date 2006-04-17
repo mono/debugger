@@ -45,57 +45,6 @@ namespace Mono.Debugger
 		}
 	}
 
-	public interface ITargetMemoryReader : ITargetMemoryInfo
-	{
-		// <summary>
-		//   Position in the underlying memory stream.
-		// </summary>
-		long Offset {
-			get; set;
-		}
-
-		// <summary>
-		//   Total size of this memory stream.
-		// </summary>
-		long Size {
-			get;
-		}
-
-		// <summary>
-		//   The full contents of this memory stream.
-		// </summary>
-		byte[] Contents {
-			get;
-		}
-
-		// <summary>
-		//   Get the underlying TargetBinaryReader.
-		// </summary>
-		TargetBinaryReader BinaryReader {
-			get;
-		}
-
-		// <summary>
-		//   Read a single byte from the target's address space at address @address.
-		// </summary>
-		byte ReadByte ();
-
-		// <summary>
-		//   Read an integer from the target's address space at address @address.
-		// </summary>
-		int ReadInteger ();
-
-		// <summary>
-		//   Read a long int from the target's address space at address @address.
-		// </summary>
-		long ReadLongInteger ();
-
-		// <summary>
-		//   Read an address from the target's address space at address @address.
-		// </summary>
-		TargetAddress ReadAddress ();
-	}
-
 	public interface ITargetMemoryAccess : ITargetMemoryInfo
 	{
 		ITargetMemoryInfo TargetMemoryInfo {

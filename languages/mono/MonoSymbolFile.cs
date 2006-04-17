@@ -330,7 +330,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return File != null; }
 		}
 
-		internal void AddRangeEntry (ITargetMemoryReader reader, byte[] contents)
+		internal void AddRangeEntry (TargetReader reader, byte[] contents)
 		{
 			MethodRangeEntry range = MethodRangeEntry.Create (this, reader, contents);
 			if (!range_hash.Contains (range.Index)) {
@@ -339,14 +339,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal void AddWrapperEntry (ITargetMemoryAccess memory, ITargetMemoryReader reader,
+		internal void AddWrapperEntry (ITargetMemoryAccess memory, TargetReader reader,
 					       byte[] contents)
 		{
 			WrapperEntry wrapper = WrapperEntry.Create (this, memory, reader, contents);
 			wrappers.Add (wrapper);
 		}
 
-		internal void AddClassEntry (ITargetMemoryReader reader, byte[] contents)
+		internal void AddClassEntry (TargetReader reader, byte[] contents)
 		{
 			ClassEntry entry = new ClassEntry (this, reader, contents);
 			class_entry_hash.Add (new TypeHashEntry (entry), entry);
@@ -1058,7 +1058,7 @@ namespace Mono.Debugger.Languages.Mono
 				this.contents = contents;
 			}
 
-			public static MethodRangeEntry Create (MonoSymbolFile file, ITargetMemoryReader reader,
+			public static MethodRangeEntry Create (MonoSymbolFile file, TargetReader reader,
 							       byte[] contents)
 			{
 				int domain = reader.BinaryReader.ReadInt32 ();
@@ -1120,7 +1120,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public static WrapperEntry Create (MonoSymbolFile file, ITargetMemoryAccess memory,
-							   ITargetMemoryReader reader, byte[] contents)
+							   TargetReader reader, byte[] contents)
 			{
 				int size = reader.BinaryReader.ReadInt32 ();
 				TargetAddress wrapper = reader.ReadAddress ();
@@ -1329,7 +1329,7 @@ namespace Mono.Debugger.Languages.Mono
 			public readonly TargetAddress KlassAddress;
 			readonly byte[] contents;
 
-			public ClassEntry (MonoSymbolFile file, ITargetMemoryReader reader, byte[] contents)
+			public ClassEntry (MonoSymbolFile file, TargetReader reader, byte[] contents)
 			{
 				this.File = file;
 				this.contents = contents;
