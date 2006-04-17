@@ -1,5 +1,9 @@
 2006-04-17  Martin Baulig  <martin@ximian.com>
 
+	Bump version number to 0.14 and require Mono >= 1.1.15.
+
+2006-04-17  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs: Cosmetic cleanups in the
 	process-related messages.
 
