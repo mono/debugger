@@ -1,5 +1,13 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/Inferior.cs
+	(Inferior.GetTargetInfo): New public static method.
+
+	* arch/CoreFile.cs: Don't create an Inferior here and make core
+	files work again.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadBase.cs: Renamed into TargetAccess.cs.
 	(ThreadBase): Renamed into `TargetAccess'.
 

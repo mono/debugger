@@ -58,11 +58,9 @@ namespace Mono.Debugger.Backends
 		Architecture arch;
 		AddressDomain address_domain;
 
-		internal TargetMemoryInfo (int target_int_size, int target_long_size,
-					   int target_address_size, bool is_bigendian,
-					   AddressDomain domain)
-			: base (target_int_size, target_long_size, target_address_size,
-				is_bigendian)
+		internal TargetMemoryInfo (TargetInfo info, AddressDomain domain)
+			: base (info.TargetIntegerSize, info.TargetLongIntegerSize,
+				info.TargetAddressSize, info.IsBigEndian)
 		{
 			this.address_domain = domain;
 		}

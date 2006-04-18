@@ -227,7 +227,8 @@ namespace Mono.Debugger.Backends
 					else
 						engine.Start (TargetAddress.Null);
 
-					inferior.Process.ReachedMain (inferior, engine.Thread, engine);
+					inferior.Process.ReachedMain ();
+					inferior.InitializeModules ();
 					return true;
 				}
 

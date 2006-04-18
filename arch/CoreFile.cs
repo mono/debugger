@@ -8,9 +8,7 @@ namespace Mono.Debugger.Backends
 {
 	internal class CoreFile : Process
 	{
-		ITargetInfo info;
-		ITargetMemoryInfo memory_info;
-		CoreFileThread main_thread;
+		TargetMemoryInfo info;
 		Bfd bfd, core_bfd;
 		string core_file;
 		string application;
@@ -18,32 +16,29 @@ namespace Mono.Debugger.Backends
 
 		public static CoreFile OpenCoreFile (ThreadManager manager, ProcessStart start)
 		{
-			CoreFile core = new CoreFile (manager, start);
-
-			Inferior inferior = Inferior.CreateInferior (manager, core, start);
-			core.OpenCoreFile (inferior, inferior.Bfd, start.CoreFile);
-
-			return core;
+			return new CoreFile (manager, start);
 		}
 
 		protected CoreFile (ThreadManager manager, ProcessStart start)
 			: base (manager, start)
-		{ }
-
-		private void OpenCoreFile (Inferior inferior, Bfd bfd, string core_file)
 		{
-			this.info = inferior.TargetInfo;
-			this.memory_info = inferior.TargetMemoryInfo;
-			this.bfd = bfd;
-			this.core_file = core_file;
-			this.application = bfd.FileName;
+			info = new TargetMemoryInfo (Inferior.GetTargetInfo (), manager.AddressDomain);
+
+			bfd = BfdContainer.AddFile (
+				info, start.TargetApplication, TargetAddress.Null,
+				start.LoadNativeSymbolTable, true);
+
+			info.Initialize (bfd.Architecture);
+
+			core_file = start.CoreFile;
+			application = bfd.FileName;
 
 			core_bfd = bfd.OpenCoreFile (core_file);
 
+#if FIXME
 			string crash_program = core_bfd.CrashProgram;
 			string[] crash_program_args = crash_program.Split (' ');
 
-#if FIXME
 			if (crash_program_args [0] != application)
 				throw new TargetException (
 					TargetError.CannotStartTarget,
@@ -68,9 +63,9 @@ namespace Mono.Debugger.Backends
 #endif
 
 			read_note_section ();
-			main_thread = (CoreFileThread) threads [0];
+			main_thread = ((CoreFileThread) threads [0]).Thread;
 
-			ReachedMain (inferior, main_thread.Thread, null);
+			ReachedMain ();
 			InitializeModules ();
 		}
 
@@ -143,7 +138,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public ITargetMemoryInfo TargetMemoryInfo {
-			get { return memory_info; }
+			get { return info; }
 		}
 
 		protected class CoreFileThread : TargetAccess

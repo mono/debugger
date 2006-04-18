@@ -22,7 +22,7 @@ namespace Mono.Debugger
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
 		ProcessStart start;
-		Thread main_thread;
+		protected Thread main_thread;
 		SingleSteppingEngine main_engine;
 		ArrayList languages;
 		Hashtable thread_hash;
@@ -200,13 +200,10 @@ namespace Mono.Debugger
 				ModulesChangedEvent ();
 		}
 
-		internal void ReachedMain (Inferior inferior, Thread thread,
-					   SingleSteppingEngine engine)
+		internal void ReachedMain ()
 		{
 			module_manager.UnLock ();
 			symtab_manager.Wait ();
-
-			inferior.InitializeModules ();
 		}
 
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)
@@ -314,7 +311,7 @@ namespace Mono.Debugger
 
 			Initialize (new_thread, new_inferior, true);
 		}
-		
+
 		protected void OnThreadCreatedEvent (Thread thread)
 		{
 			thread_hash.Add (thread.PID, thread);

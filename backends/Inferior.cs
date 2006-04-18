@@ -284,7 +284,7 @@ namespace Mono.Debugger.Backends
 		[DllImport("libglib-2.0-0.dll")]
 		protected extern static void g_free (IntPtr data);
 
-		protected void check_error (TargetError error)
+		protected static void check_error (TargetError error)
 		{
 			if (error == TargetError.None)
 				return;
@@ -577,6 +577,17 @@ namespace Mono.Debugger.Backends
 			return new ChildEvent (message, arg, data1, data2);
 		}
 
+		public static TargetInfo GetTargetInfo ()
+		{
+			int target_int_size, target_long_size, target_addr_size, is_bigendian;
+			check_error (mono_debugger_server_get_target_info
+				(out target_int_size, out target_long_size,
+				 out target_addr_size, out is_bigendian));
+
+			return new TargetInfo (target_int_size, target_long_size,
+					       target_addr_size, is_bigendian != 0);
+		}
+
 		protected void SetupInferior ()
 		{
 			IntPtr data = IntPtr.Zero;
@@ -591,16 +602,8 @@ namespace Mono.Debugger.Backends
 				g_free (data);
 			}
 
-			int target_int_size, target_long_size, target_addr_size, is_bigendian;
-			check_error (mono_debugger_server_get_target_info
-				(out target_int_size, out target_long_size,
-				 out target_addr_size, out is_bigendian));
-
-			target_info = new TargetInfo (target_int_size, target_long_size,
-						      target_addr_size, is_bigendian != 0);
-			target_memory_info = new TargetMemoryInfo (target_int_size, target_long_size,
-								   target_addr_size, is_bigendian != 0,
-								   address_domain);
+			target_info = GetTargetInfo ();
+			target_memory_info = new TargetMemoryInfo (target_info, address_domain);
 
 			try {
 				bfd = bfd_container.AddFile (
