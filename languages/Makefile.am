@@ -5,4 +5,5 @@ EXTRA_DIST = Language.cs TargetArrayObject.cs TargetArrayType.cs TargetClassObje
 	TargetFundamentalObject.cs TargetFundamentalType.cs TargetMember.cs TargetObject.cs \
 	TargetObjectKind.cs TargetObjectObject.cs TargetObjectType.cs TargetPointerObject.cs \
 	TargetPointerType.cs TargetType.cs TargetVariable.cs AbsoluteTargetLocation.cs \
-	BitfieldTargetLocation.cs ClientSuppliedTargetLocation.cs RelativeTargetLocation.cs
+	BitfieldTargetLocation.cs ClientSuppliedTargetLocation.cs RelativeTargetLocation.cs \
+	TargetLocation.cs
