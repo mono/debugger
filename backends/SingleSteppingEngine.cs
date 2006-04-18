@@ -2852,7 +2852,7 @@ namespace Mono.Debugger.Backends
 
 				if (!class_type.IsByRef) {
 					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
-						2 * inferior.TargetMemoryInfo.TargetAddressSize);
+						2 * inferior.TargetInfo.TargetAddressSize);
 					instance = (TargetClassObject) class_type.GetObject (new_loc);
 				}
 

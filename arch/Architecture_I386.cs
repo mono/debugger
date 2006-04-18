@@ -663,7 +663,7 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, ITargetMemoryInfo info,
+		internal override StackFrame CreateFrame (Thread thread, ITargetInfo info,
 							  Registers regs)
 		{
 			TargetAddress address = new TargetAddress (

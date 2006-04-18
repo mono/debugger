@@ -58,29 +58,6 @@ namespace Mono.Debugger.Backends
 	}
 
 	[Serializable]
-	internal class TargetMemoryInfo : TargetInfo, ITargetMemoryInfo
-	{
-		Architecture arch;
-
-		internal TargetMemoryInfo (TargetInfo info)
-			: base (info.TargetIntegerSize, info.TargetLongIntegerSize,
-				info.TargetAddressSize, info.IsBigEndian, info.AddressDomain)
-		{
-		}
-
-		internal void Initialize (Architecture arch)
-		{
-			this.arch = arch;
-		}
-
-		public Architecture Architecture {
-			get {
-				return arch;
-			}
-		}
-	}
-
-	[Serializable]
 	internal class TargetReader
 	{
 		byte[] data;

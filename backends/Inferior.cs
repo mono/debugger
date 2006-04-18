@@ -41,7 +41,6 @@ namespace Mono.Debugger.Backends
 		bool initialized;
 
 		TargetInfo target_info;
-		TargetMemoryInfo target_memory_info;
 		Architecture arch;
 
 		bool has_signals;
@@ -272,7 +271,6 @@ namespace Mono.Debugger.Backends
 			inferior.has_signals = has_signals;
 
 			inferior.target_info = target_info;
-			inferior.target_memory_info = target_memory_info;
 			inferior.bfd = bfd;
 
 			inferior.arch = inferior.bfd.Architecture;
@@ -603,7 +601,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			target_info = GetTargetInfo (address_domain);
-			target_memory_info = new TargetMemoryInfo (target_info);
 
 			try {
 				bfd = bfd_container.AddFile (
@@ -622,7 +619,6 @@ namespace Mono.Debugger.Backends
 			bfd_container.SetupInferior (this, bfd);
 
 			arch = bfd.Architecture;
-			target_memory_info.Initialize (arch);
 
 			bfd_disassembler = bfd.GetDisassembler (this);
 		}
@@ -704,12 +700,6 @@ namespace Mono.Debugger.Backends
 		public ITargetInfo TargetInfo {
 			get {
 				return target_info;
-			}
-		}
-
-		public ITargetMemoryInfo TargetMemoryInfo {
-			get {
-				return target_memory_info;
 			}
 		}
 

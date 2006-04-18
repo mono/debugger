@@ -8,7 +8,7 @@ namespace Mono.Debugger.Backends
 {
 	internal class CoreFile : Process
 	{
-		TargetMemoryInfo info;
+		TargetInfo info;
 		Bfd bfd, core_bfd;
 		string core_file;
 		string application;
@@ -22,13 +22,11 @@ namespace Mono.Debugger.Backends
 		protected CoreFile (ThreadManager manager, ProcessStart start)
 			: base (manager, start)
 		{
-			info = new TargetMemoryInfo (Inferior.GetTargetInfo (manager.AddressDomain));
+			info = Inferior.GetTargetInfo (manager.AddressDomain);
 
 			bfd = BfdContainer.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,
 				start.LoadNativeSymbolTable, true);
-
-			info.Initialize (bfd.Architecture);
 
 			core_file = start.CoreFile;
 			application = bfd.FileName;
@@ -137,10 +135,6 @@ namespace Mono.Debugger.Backends
 			get { return info; }
 		}
 
-		public ITargetMemoryInfo TargetMemoryInfo {
-			get { return info; }
-		}
-
 		protected class CoreFileThread : TargetAccess
 		{
 			public readonly int PID;
@@ -211,7 +205,7 @@ namespace Mono.Debugger.Backends
 				get {
 					if (current_frame == null)
 						current_frame = CoreFile.Architecture.CreateFrame (
-							Thread, CoreFile.TargetMemoryInfo, Registers);
+							Thread, CoreFile.TargetInfo, Registers);
 
 					return current_frame;
 				}
@@ -266,12 +260,12 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetInfo.IsBigEndian; }
 			}
 
-			public override Architecture Architecture {
-				get { return CoreFile.TargetMemoryInfo.Architecture; }
+			public override AddressDomain AddressDomain {
+				get { return CoreFile.TargetInfo.AddressDomain; }
 			}
 
-			public override AddressDomain AddressDomain {
-				get { return CoreFile.TargetMemoryInfo.AddressDomain; }
+			public override Architecture Architecture {
+				get { return CoreFile.Architecture; }
 			}
 
 			public override byte ReadByte (TargetAddress address)

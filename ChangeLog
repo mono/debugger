@@ -1,5 +1,13 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryInfo): Removed.
+
+	* backends/classes/TargetReader.cs
+	(TargetMemoryInfo): Removed.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/Thread.cs
 	(Thread.TargetMemoryAccess): Removed; just use `Thread' directly.
 
