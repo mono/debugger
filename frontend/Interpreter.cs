@@ -684,23 +684,16 @@ namespace Mono.Debugger.Frontend
 
 		public string GetFullPathByFilename (string filename)
 		{
-			Process process = CurrentProcess;
-			try {
-				process.ModuleManager.Lock ();
+			Module[] modules = CurrentProcess.Modules;
 
-				Module[] modules = process.Modules;
+			foreach (Module module in modules) {
+				if (!module.SymbolsLoaded)
+					continue;
 
-				foreach (Module module in modules) {
-					if (!module.SymbolsLoaded)
-						continue;
-
-					foreach (SourceFile source in module.Sources) {
-						if (filename.Equals (source.Name))
-							return source.FileName;
-					}
+				foreach (SourceFile source in module.Sources) {
+					if (filename.Equals (source.Name))
+						return source.FileName;
 				}
-			} finally {
-				process.ModuleManager.UnLock ();
 			}
 
 			return null;
@@ -718,6 +711,74 @@ namespace Mono.Debugger.Frontend
 					filename);
 
 			return path;
+		}
+
+		public Module[] GetModules (int[] indices)
+		{
+			int pos = 0;
+			Module[] retval = new Module [indices.Length];
+			Module[] modules = CurrentProcess.Modules;
+
+			foreach (int index in indices) {
+				if ((index < 0) || (index > modules.Length))
+					throw new ScriptingException ("No such module {0}.", index);
+
+				retval [pos++] = modules [index];
+			}
+
+			return retval;
+		}
+
+		public SourceFile[] GetSources (int[] indices)
+		{
+			Hashtable source_hash = new Hashtable ();
+			Module[] modules = CurrentProcess.Modules;
+
+			foreach (Module module in modules) {
+				if (!module.SymbolsLoaded)
+					continue;
+
+				foreach (SourceFile source in module.Sources)
+					source_hash.Add (source.ID, source);
+			}
+
+			int pos = 0;
+			SourceFile[] retval = new SourceFile [indices.Length];
+
+			foreach (int index in indices) {
+				SourceFile source = (SourceFile) source_hash [index];
+				if (source == null)
+					throw new ScriptingException (
+						"No such source file: {0}", index);
+
+				retval [pos++] = source;
+			}
+
+			return retval;
+		}
+
+		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)
+		{
+			foreach (Module module in modules) {
+				foreach (ModuleOperation operation in operations) {
+					switch (operation) {
+					case ModuleOperation.Ignore:
+						module.LoadSymbols = false;
+						break;
+					case ModuleOperation.UnIgnore:
+						module.LoadSymbols = true;
+						break;
+					case ModuleOperation.Step:
+						module.StepInto = true;
+						break;
+					case ModuleOperation.DontStep:
+						module.StepInto = false;
+						break;
+					default:
+						throw new InternalError ();
+					}
+				}
+			}
 		}
 
 		public Process[] Processes {

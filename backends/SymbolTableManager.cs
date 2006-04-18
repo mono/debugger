@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger.Backends;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	// <summary>
 	//   This class maintains the debugger's symbol tables.
 	// </summary>
-	public class SymbolTableManager : MarshalByRefObject, IDisposable
+	internal class SymbolTableManager : MarshalByRefObject, IDisposable
 	{
 		bool symtab_thread_exit;
 

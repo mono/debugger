@@ -4,12 +4,12 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	public delegate void ModulesChangedHandler ();
 	public delegate void BreakpointsChangedHandler ();
 
-	public class ModuleManager : MarshalByRefObject
+	internal class ModuleManager : MarshalByRefObject
 	{
 		Hashtable modules = new Hashtable ();
 

@@ -114,13 +114,13 @@ namespace Mono.Debugger
 			get { return breakpoint_manager; }
 		}
 
-		public ModuleManager ModuleManager {
+		internal ModuleManager ModuleManager {
 			get {
 				return module_manager;
 			}
 		}
 
-		public SymbolTableManager SymbolTableManager {
+		internal SymbolTableManager SymbolTableManager {
 			get {
 				return symtab_manager;
 			}

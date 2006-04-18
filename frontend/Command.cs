@@ -1443,7 +1443,18 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				context.ShowModules ();
+				Module[] modules = CurrentThread.Process.Modules;
+
+				context.Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
+				for (int i = 0; i < modules.Length; i++) {
+					Module module = modules [i];
+
+					context.Print ("{0,4} {1,5} {2,5} {3}",
+					       i,
+					       module.StepInto ? "y " : "n ",
+					       module.SymbolsLoaded ? "y " : "n ",
+					       module.Name);
+				}
 			}
 		}
 
@@ -1471,7 +1482,7 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				modules = context.GetModules (ids);
+				modules = context.Interpreter.GetModules (ids);
 				return modules != null;
 			}
 
@@ -1506,7 +1517,7 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				sources = context.GetSources (ids);
+				sources = context.Interpreter.GetSources (ids);
 				return sources != null;
 			}
 

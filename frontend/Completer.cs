@@ -235,7 +235,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				ArrayList method_list = new ArrayList ();
 				string[] namespaces = context.GetNamespaces();
-				Module[] modules = context.Modules;
+				Module[] modules = context.GetProcess ().Modules;
 
 				foreach (Module module in modules) {
 					if (!module.SymbolsLoaded || !module.SymbolTable.HasMethods)
