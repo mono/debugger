@@ -1,5 +1,10 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* classes/BreakpointHandle.cs: Moved into ../backends/.
+	* backends/BreakpointHandle.cs: Moved here from ../classes/.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* arch/Architecture.cs (Architecture): Make this internal.
 
 2006-04-18  Martin Baulig  <martin@ximian.com>

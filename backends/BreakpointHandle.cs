@@ -1,10 +1,6 @@
 using System;
-using System.Runtime.Serialization;
 
-using Mono.Debugger.Backends;
-using Mono.Debugger.Languages;
-
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	internal abstract class BreakpointHandle
 	{
