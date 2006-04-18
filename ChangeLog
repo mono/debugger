@@ -1,5 +1,11 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/Debugger.cs: Moved to ../classes/
+	* backends/Process.cs: Moved to ../classes/
+	* backends/Thread.cs: Moved to ../classes/
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* classes/SymbolTableManager.cs: Moved to ../backends/
 	* classes/ModuleManager.cs: Moved to ../backends/
 
