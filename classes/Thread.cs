@@ -406,6 +406,14 @@ namespace Mono.Debugger
 			Dispose ();
 		}
 
+		internal void Detach ()
+		{
+			operation_completed_event.Set ();
+			if (engine != null)
+				engine.Detach ();
+			Dispose ();
+		}
+
 		public void Stop ()
 		{
 			check_engine ();

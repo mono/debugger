@@ -12,6 +12,7 @@ namespace Mono.Debugger
 		NoTarget,
 		AlreadyHaveTarget,
 		CannotStartTarget,
+		CannotDetach,
 		NotStopped,
 		AlreadyStopped,
 		RecursiveCall,
@@ -62,6 +63,9 @@ namespace Mono.Debugger
 				return "Already have a program to debug.";
 			case TargetError.CannotStartTarget:
 				return "Cannot start target.";
+			case TargetError.CannotDetach:
+				return "Cannot detach from this target because we did not " +
+					"attach to it.";
 			case TargetError.NotStopped:
 				return "The target is currently running, but it must be " +
 					"stopped to perform the requested operation.";

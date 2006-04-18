@@ -29,6 +29,7 @@ namespace Mono.Debugger
 		Hashtable events;
 		ArrayList attach_results;
 
+		bool is_attached;
 		bool is_forked;
 		bool initialized;
 		ST.ManualResetEvent initialized_event;
@@ -59,6 +60,8 @@ namespace Mono.Debugger
 			: this (manager)
 		{
 			this.start = start;
+
+			is_attached = start.PID != 0;
 
 			breakpoint_manager = new BreakpointManager ();
 			module_manager = new ModuleManager ();
@@ -98,6 +101,10 @@ namespace Mono.Debugger
 
 		public int ID {
 			get { return id; }
+		}
+
+		public bool IsAttached {
+			get { return is_attached; }
 		}
 
 		internal ThreadManager ThreadManager {
@@ -396,6 +403,15 @@ namespace Mono.Debugger
 			for (int i = 0; i < threads.Length; i++)
 				threads [i].Kill ();
 
+			Dispose ();
+		}
+
+		public void Detach ()
+		{
+			if (!IsAttached)
+				throw new TargetException (TargetError.CannotDetach);
+
+			main_thread.Detach ();
 			Dispose ();
 		}
 

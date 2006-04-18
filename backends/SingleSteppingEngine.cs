@@ -156,6 +156,9 @@ namespace Mono.Debugger.Backends
 		// </remarks>
 		public void ProcessEvent (int status)
 		{
+			if (disposed)
+				return;
+
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
 			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} ({2:x})",
 				      this, cevent, status);
@@ -725,14 +728,25 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			lock (this) {
-				if (!engine_stopped)
-					OperationCompleted (
-						new TargetEventArgs (TargetEventType.TargetExited, 0));
-			}
+			inferior.SetSignal (inferior.SIGKILL, true);
+		}
 
-			if (inferior != null)
-				inferior.Kill ();
+		public void Detach ()
+		{
+			SendCommand (delegate {
+				if (!engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "{0} not stopped", this);
+					throw new TargetException (TargetError.NotStopped);
+				}
+
+				if (inferior != null) {
+					inferior.Detach ();
+					inferior.Dispose ();
+					inferior = null;
+				}
+				return null;
+			});
 		}
 
 		public void Stop ()
@@ -1491,6 +1505,7 @@ namespace Mono.Debugger.Backends
 		{
 			return (Backtrace) SendCommand (delegate {
 				if (!engine_stopped) {
+					Console.WriteLine ("GET BACKGRACE NOT STOPPED!");
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
 					throw new TargetException (TargetError.NotStopped);
@@ -1728,8 +1743,10 @@ namespace Mono.Debugger.Backends
 			// Check to see if Dispose has already been called.
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing && !disposed) {
-				if (inferior != null)
+				if (inferior != null) {
+					inferior.Kill ();
 					inferior.Dispose ();
+				}
 				inferior = null;
 			}
 

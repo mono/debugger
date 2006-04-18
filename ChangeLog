@@ -1,5 +1,24 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Kill): Send a SIGKILL to the target.
+	(SingleSteppingEngine.Dispose): Call `inferior.Kill()' if we still
+	have an inferior.
+
+	* classes/TargetException.cs
+	(TargetError.CannotDetach): New error.
+
+	* classes/Debugger.cs
+	(Debugger.Detach): New public method.
+
+	* classes/Process.cs
+	(Process.Detach): New public method.
+
+	* classes/Thread.cs
+	(Thread.Detach): New public method.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-ptrace.cs
 	(x86_ptrace_kill): Send a SIGKILL to the process before using
 	`ptrace (PTRACE_KILL)' so we actually kill it.

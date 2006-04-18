@@ -95,6 +95,28 @@ namespace Mono.Debugger
 			OnTargetExitedEvent ();
 		}
 
+		public void Detach ()
+		{
+			if (main_process == null)
+				throw new TargetException (TargetError.NoTarget);
+			else if (!main_process.IsAttached)
+				throw new TargetException (TargetError.CannotDetach);
+
+			main_process = null;
+
+			Process[] procs;
+			lock (process_hash.SyncRoot) {
+				procs = new Process [process_hash.Count];
+				process_hash.Values.CopyTo (procs, 0);
+			}
+
+			foreach (Process proc in procs) {
+				proc.Detach ();
+			}
+
+			OnTargetExitedEvent ();
+		}
+
 		public Process Run (DebuggerOptions options)
 		{
 			check_disposed ();
