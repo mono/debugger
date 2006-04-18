@@ -82,7 +82,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[TestFixtureSetUp]
-		public void SetUp ()
+		public virtual void SetUp ()
 		{
 			interpreter = new Interpreter (true, true, options);
 			interpreter.TargetOutputEvent += delegate (bool is_stderr, string line) {
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[TestFixtureTearDown]
-		public void TearDown ()
+		public virtual void TearDown ()
 		{
 			interpreter.Dispose ();
 			interpreter = null;

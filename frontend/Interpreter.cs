@@ -330,7 +330,8 @@ namespace Mono.Debugger.Frontend
 			if ((debugger != null) || (main_process != null))
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			Console.WriteLine ("Attaching to {0}", pid);
+			if (!IsScript)
+				Print ("Attaching to {0}", pid);
 
 			try {
 				debugger = new Debugger ();
