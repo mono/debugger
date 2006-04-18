@@ -1,5 +1,12 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/EventQueue.cs: New file; merged classes/Threading.cs
+	and backends/classes/EventQueue.cs here.
+
+	* classes/ObjectContainer.cs: Removed.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* classes/BreakpointHandle.cs: Moved into ../backends/.
 	* backends/BreakpointHandle.cs: Moved here from ../classes/.
 

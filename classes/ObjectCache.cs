@@ -3,11 +3,13 @@ using System.Threading;
 using System.Collections;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	public delegate object ObjectCacheFunc (object user_data);
 
-	public class ObjectCache : IDisposable
+	internal class ObjectCache : IDisposable
 	{
 		WeakReference weak_reference;
 		ObjectCacheFunc func;

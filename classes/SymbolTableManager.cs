@@ -3,6 +3,8 @@ using System.Collections;
 using ST = System.Threading;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	// <summary>
