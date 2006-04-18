@@ -586,6 +586,21 @@ namespace Mono.Debugger.Backends
 					       target_addr_size, is_bigendian != 0, domain);
 		}
 
+		public static string GetFileContents (string filename)
+		{
+			try {
+				StreamReader sr = File.OpenText (filename);
+				string contents = sr.ReadToEnd ();
+
+				sr.Close();
+
+				return contents;
+			}
+			catch {
+				return null;
+			}
+		}
+
 		protected void SetupInferior ()
 		{
 			IntPtr data = IntPtr.Zero;
@@ -1228,7 +1243,7 @@ namespace Mono.Debugger.Backends
 			// the current file position and System.IO will try to "fix" this
 			// by seeking back.
 			string mapfile = String.Format ("/proc/{0}/maps", child_pid);
-			string contents = Utils.GetFileContents (mapfile);
+			string contents = GetFileContents (mapfile);
 
 			if (contents == null)
 				return null;
