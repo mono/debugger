@@ -1,5 +1,9 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/TargetReader.cs: Moved here from backends/classes/.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/Inferior.cs
 	(Inferior.GetFileContents): New public static method; obsoletes
 	the `Utils' class form backends/classes/Utils.cs.
