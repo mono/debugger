@@ -1,5 +1,10 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryAccess): Removed all the writing methods.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetBinaryAccess.cs
 	(TargetInfo): Moved here from ../backends/classes/TargetReader.cs
 	and made it public.

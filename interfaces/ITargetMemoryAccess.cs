@@ -64,22 +64,6 @@ namespace Mono.Debugger
 
 		Registers GetRegisters ();
 
-		bool CanWrite {
-			get;
-		}
-
-		void WriteBuffer (TargetAddress address, byte[] buffer);
-
-		void WriteByte (TargetAddress address, byte value);
-
-		void WriteInteger (TargetAddress address, int value);
-
-		void WriteLongInteger (TargetAddress address, long value);
-
-		void WriteAddress (TargetAddress address, TargetAddress value);
-
-		void SetRegisters (Registers registers);
-
 		int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
 	}
 }
