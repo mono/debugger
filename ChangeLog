@@ -1,5 +1,14 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs
+	(ITargetMemoryInfo.AddressDomain): Moved into `ITargetInfo'.
+	(ITargetInfo.AddressDomain): Moved here from `ITargetMemoryInfo'.
+
+	* backends/classes/TargetReader.cs
+	(TargetReader): Don't implement `ITargetMemoryInfo'.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/Inferior.cs
 	(Inferior.GetTargetInfo): New public static method.
 

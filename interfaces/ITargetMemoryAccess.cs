@@ -32,15 +32,15 @@ namespace Mono.Debugger
 		bool IsBigEndian {
 			get;
 		}
+
+		AddressDomain AddressDomain {
+			get;
+		}
 	}
 
 	internal interface ITargetMemoryInfo : ITargetInfo
 	{
 		Architecture Architecture {
-			get;
-		}
-
-		AddressDomain AddressDomain {
 			get;
 		}
 	}

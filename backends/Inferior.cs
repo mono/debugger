@@ -577,7 +577,7 @@ namespace Mono.Debugger.Backends
 			return new ChildEvent (message, arg, data1, data2);
 		}
 
-		public static TargetInfo GetTargetInfo ()
+		public static TargetInfo GetTargetInfo (AddressDomain domain)
 		{
 			int target_int_size, target_long_size, target_addr_size, is_bigendian;
 			check_error (mono_debugger_server_get_target_info
@@ -585,7 +585,7 @@ namespace Mono.Debugger.Backends
 				 out target_addr_size, out is_bigendian));
 
 			return new TargetInfo (target_int_size, target_long_size,
-					       target_addr_size, is_bigendian != 0);
+					       target_addr_size, is_bigendian != 0, domain);
 		}
 
 		protected void SetupInferior ()
@@ -602,8 +602,8 @@ namespace Mono.Debugger.Backends
 				g_free (data);
 			}
 
-			target_info = GetTargetInfo ();
-			target_memory_info = new TargetMemoryInfo (target_info, address_domain);
+			target_info = GetTargetInfo (address_domain);
+			target_memory_info = new TargetMemoryInfo (target_info);
 
 			try {
 				bfd = bfd_container.AddFile (

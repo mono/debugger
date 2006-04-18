@@ -22,7 +22,7 @@ namespace Mono.Debugger.Backends
 		protected CoreFile (ThreadManager manager, ProcessStart start)
 			: base (manager, start)
 		{
-			info = new TargetMemoryInfo (Inferior.GetTargetInfo (), manager.AddressDomain);
+			info = new TargetMemoryInfo (Inferior.GetTargetInfo (manager.AddressDomain));
 
 			bfd = BfdContainer.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,

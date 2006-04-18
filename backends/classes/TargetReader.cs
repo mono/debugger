@@ -13,18 +13,17 @@ namespace Mono.Debugger.Backends
 		int target_long_size;
 		int target_address_size;
 		bool is_bigendian;
-
-		internal TargetInfo (int target_address_size)
-			: this (4, 8, target_address_size, false)
-		{ }
+		AddressDomain address_domain;
 
 		internal TargetInfo (int target_int_size, int target_long_size,
-				     int target_address_size, bool is_bigendian)
+				     int target_address_size, bool is_bigendian,
+				     AddressDomain domain)
 		{
 			this.target_int_size = target_int_size;
 			this.target_long_size = target_long_size;
 			this.target_address_size = target_address_size;
 			this.is_bigendian = is_bigendian;
+			this.address_domain = domain;
 		}
 
 		public int TargetIntegerSize {
@@ -50,30 +49,28 @@ namespace Mono.Debugger.Backends
 				return is_bigendian;
 			}
 		}
+
+		public AddressDomain AddressDomain {
+			get {
+				return address_domain;
+			}
+		}
 	}
 
 	[Serializable]
 	internal class TargetMemoryInfo : TargetInfo, ITargetMemoryInfo
 	{
 		Architecture arch;
-		AddressDomain address_domain;
 
-		internal TargetMemoryInfo (TargetInfo info, AddressDomain domain)
+		internal TargetMemoryInfo (TargetInfo info)
 			: base (info.TargetIntegerSize, info.TargetLongIntegerSize,
-				info.TargetAddressSize, info.IsBigEndian)
+				info.TargetAddressSize, info.IsBigEndian, info.AddressDomain)
 		{
-			this.address_domain = domain;
 		}
 
 		internal void Initialize (Architecture arch)
 		{
 			this.arch = arch;
-		}
-
-		public AddressDomain AddressDomain {
-			get {
-				return address_domain;
-			}
 		}
 
 		public Architecture Architecture {
@@ -84,7 +81,7 @@ namespace Mono.Debugger.Backends
 	}
 
 	[Serializable]
-	internal class TargetReader : ITargetMemoryInfo
+	internal class TargetReader
 	{
 		byte[] data;
 		TargetBinaryReader reader;
@@ -152,18 +149,6 @@ namespace Mono.Debugger.Backends
 		public bool IsBigEndian {
 			get {
 				return info.IsBigEndian;
-			}
-		}
-
-		public Architecture Architecture {
-			get {
-				return info.Architecture;
-			}
-		}
-
-		public AddressDomain AddressDomain {
-			get {
-				return info.AddressDomain;
 			}
 		}
 
