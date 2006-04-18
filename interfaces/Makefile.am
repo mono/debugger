@@ -1,2 +1,1 @@
-EXTRA_DIST = \
-	ISourceBuffer.cs ISymbolTable.cs ITargetMemoryAccess.cs ITargetNotification.cs
+EXTRA_DIST = ISymbolTable.cs ITargetNotification.cs

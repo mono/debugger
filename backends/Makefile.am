@@ -1,5 +1,7 @@
 SUBDIRS = server
 
-EXTRA_DIST = BreakpointManager.cs Debugger.cs ILanguageBackend.cs Inferior.cs \
-	MonoThreadManager.cs Process.cs ProcessStart.cs SingleSteppingEngine.cs \
-	StepFrame.cs ThreadBase.cs ThreadManager.cs Thread.cs
+EXTRA_DIST = \
+	BreakpointHandle.cs BreakpointManager.cs EventQueue.cs ILanguageBackend.cs \
+	Inferior.cs ModuleManager.cs MonoThreadManager.cs ProcessStart.cs \
+	SingleSteppingEngine.cs StepFrame.cs SymbolTableManager.cs TargetAccess.cs \
+	TargetMemoryAccess.cs TargetReader.cs ThreadManager.cs
