@@ -506,6 +506,7 @@ namespace Mono.Debugger.Backends
 
 				if (ST.Thread.CurrentThread != inferior_thread)
 					inferior_thread.Join ();
+				wait_thread.Abort ();
 				wait_thread.Join ();
 
 				Process[] procs = new Process [processes.Count];
