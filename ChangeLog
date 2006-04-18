@@ -1,5 +1,13 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/TargetMemoryAccess.cs
+	(TargetMemoryAccess.Architecture): Make this internal.
+
+	* backends/Thread.cs
+	(Thread.PrintRegisters): New public method.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ISourceBuffer.cs: Removed.
 	(ISourceBuffer): Removed this interface; `SourceBuffer' is the
 	only class implementing it.

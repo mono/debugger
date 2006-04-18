@@ -1060,7 +1060,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override Architecture Architecture {
+		internal override Architecture Architecture {
 			get {
 				check_disposed ();
 				return arch;

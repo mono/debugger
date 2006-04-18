@@ -264,7 +264,7 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetInfo.AddressDomain; }
 			}
 
-			public override Architecture Architecture {
+			internal override Architecture Architecture {
 				get { return CoreFile.Architecture; }
 			}
 

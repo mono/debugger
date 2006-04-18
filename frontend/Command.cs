@@ -1401,8 +1401,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				Architecture arch = CurrentThread.Architecture;
-				context.Print (arch.PrintRegisters (CurrentFrame));
+				context.Print (CurrentThread.PrintRegisters (CurrentFrame));
 			}
 		}
 

@@ -131,7 +131,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public override Architecture Architecture {
+		internal override Architecture Architecture {
 			get {
 				check_target ();
 				return target.Architecture;
@@ -634,6 +634,11 @@ namespace Mono.Debugger
 		{
 			check_engine ();
 			return engine.GetThreadID (mono_manager, debugger_info);
+		}
+
+		public string PrintRegisters (StackFrame frame)
+		{
+			return Architecture.PrintRegisters (frame);
 		}
 
 		public bool HasTarget {

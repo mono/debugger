@@ -638,7 +638,7 @@ namespace Mono.Debugger.Backends
 			get { return inferior; }
 		}
 
-		public override Architecture Architecture {
+		internal override Architecture Architecture {
 			get { return arch; }
 		}
 

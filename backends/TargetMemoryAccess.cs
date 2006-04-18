@@ -8,7 +8,7 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		public abstract Architecture Architecture {
+		internal abstract Architecture Architecture {
 			get;
 		}
 
