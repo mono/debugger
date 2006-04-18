@@ -54,7 +54,8 @@ namespace Mono.Debugger.Backends
 		int read_memory_func (long address, IntPtr data, int size)
 		{
 			try {
-				TargetAddress location = new TargetAddress (memory.AddressDomain, address);
+				TargetAddress location = new TargetAddress (
+					memory.TargetInfo.AddressDomain, address);
 				byte[] buffer = memory.ReadBuffer (location, size);
 				Marshal.Copy (buffer, 0, data, size);
 			} catch (Exception e) {
@@ -80,7 +81,8 @@ namespace Mono.Debugger.Backends
 
 		void print_address_func (long address)
 		{
-			TargetAddress maddress = new TargetAddress (memory.AddressDomain, address);
+			TargetAddress maddress = new TargetAddress (
+				memory.TargetInfo.AddressDomain, address);
 
 			if (current_method != null) {
 				try {
@@ -148,7 +150,7 @@ namespace Mono.Debugger.Backends
 				sb = new StringBuilder ();
 
 				address = new TargetAddress (
-					memory.AddressDomain, address.Address);
+					memory.TargetInfo.AddressDomain, address.Address);
 
 				string insn;
 				int insn_size;

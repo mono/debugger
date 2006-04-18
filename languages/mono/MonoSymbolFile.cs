@@ -208,15 +208,12 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
 		internal readonly ThreadManager ThreadManager;
-		internal readonly AddressDomain AddressDomain;
-		internal readonly ITargetInfo TargetInfo;
+		internal readonly TargetInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
 		internal readonly Architecture Architecture;
 		protected readonly Process process;
 		MonoSymbolTable symtab;
 		string name;
-		int address_size;
-		int int_size;
 
 		Hashtable range_hash;
 		ArrayList ranges;
@@ -232,15 +229,14 @@ namespace Mono.Debugger.Languages.Mono
 					 ITargetMemoryAccess memory, TargetAddress address)
 		{
 			this.MonoLanguage = language;
-			this.TargetInfo = memory;
+			this.TargetInfo = memory.TargetInfo;
 			this.Architecture = memory.Architecture;
 			this.process = process;
 
 			ThreadManager = process.ThreadManager;
-			AddressDomain = memory.AddressDomain;
 
-			address_size = TargetInfo.TargetAddressSize;
-			int_size = TargetInfo.TargetIntegerSize;
+			int address_size = TargetInfo.TargetAddressSize;
+			int int_size = TargetInfo.TargetIntegerSize;
 
 			ranges = new ArrayList ();
 			wrappers = new ArrayList ();
@@ -573,7 +569,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (!method.IsLoaded) {
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
-				method.Load (reader, AddressDomain);
+				method.Load (reader, TargetInfo.AddressDomain);
 			}
 
 			return method;

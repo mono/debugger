@@ -1,6 +1,11 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
 	* interfaces/ITargetMemoryAccess.cs
+	(ITargetInfo): Removed.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
+	* interfaces/ITargetMemoryAccess.cs
 	(ITargetMemoryAccess): Removed all the writing methods.
 
 2006-04-18  Martin Baulig  <martin@ximian.com>

@@ -3,42 +3,7 @@ using System.IO;
 
 namespace Mono.Debugger
 {
-	public interface ITargetInfo
-	{
-		// <summary>
-		//   Size of an address in the target.
-		// </summary>
-		int TargetAddressSize {
-			get;
-		}
-
-		// <summary>
-		//   Size of an integer in the target.
-		// </summary>
-		int TargetIntegerSize {
-			get;
-		}
-
-		// <summary>
-		//   Size of a long integer in the target.
-		// </summary>
-		int TargetLongIntegerSize {
-			get;
-		}
-
-		// <summary>
-		//   Whether this architecture is big-endian.
-		// </summary>
-		bool IsBigEndian {
-			get;
-		}
-
-		AddressDomain AddressDomain {
-			get;
-		}
-	}
-
-	internal interface ITargetMemoryAccess : ITargetInfo
+	internal interface ITargetMemoryAccess
 	{
 		TargetInfo TargetInfo {
 			get;

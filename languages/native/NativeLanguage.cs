@@ -13,9 +13,9 @@ namespace Mono.Debugger.Languages.Native
 		NativePointerType pointer_type;
 		NativeOpaqueType void_type;
 		NativeStringType string_type;
-		ITargetInfo info;
+		TargetInfo info;
 
-		public NativeLanguage (BfdContainer bfd_container, ITargetInfo info)
+		public NativeLanguage (BfdContainer bfd_container, TargetInfo info)
 		{
 			this.bfd_container = bfd_container;
 			this.info = info;
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return void_type; }
 		}
 
-		public override ITargetInfo TargetInfo {
+		public override TargetInfo TargetInfo {
 			get { return info; }
 		}
 

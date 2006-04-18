@@ -434,7 +434,8 @@ namespace Mono.Debugger
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				bfd_container.AddFile (thread, filename, TargetAddress.Null, true, false);
+				bfd_container.AddFile (thread.TargetInfo, filename,
+						       TargetAddress.Null, true, false);
 		}
 
 		internal MonoLanguageBackend MonoLanguage {

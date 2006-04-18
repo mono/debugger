@@ -16,7 +16,7 @@ namespace Mono.Debugger.Backends
 		IntPtr bfd;
 		protected Module module;
 		protected BfdContainer container;
-		protected ITargetInfo info;
+		protected TargetInfo info;
 		protected Bfd main_bfd;
 		protected Architecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
@@ -169,7 +169,7 @@ namespace Mono.Debugger.Backends
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, ITargetInfo info, string filename,
+		public Bfd (BfdContainer container, TargetInfo info, string filename,
 			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
 		{
 			this.container = container;
@@ -195,9 +195,9 @@ namespace Mono.Debugger.Backends
 			target = bfd_glue_get_target_name (bfd);
 			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
 				if (target == "elf32-i386")
-					arch = new Architecture_I386 (container.Process);
+					arch = new Architecture_I386 (container.Process, info);
 				else
-					arch = new Architecture_X86_64 (container.Process);
+					arch = new Architecture_X86_64 (container.Process, info);
 
 				if (!is_coredump) {
 					InternalSection text = GetSectionByName (".text", true);
@@ -336,7 +336,7 @@ namespace Mono.Debugger.Backends
 			if (section == null)
 				return false;
 
-			TargetAddress vma = new TargetAddress (target.AddressDomain, section.vma);
+			TargetAddress vma = new TargetAddress (info.AddressDomain, section.vma);
 
 			int size = (int) section.size;
 			byte[] dynamic = target.ReadBuffer (vma, size);
@@ -349,17 +349,17 @@ namespace Mono.Debugger.Backends
 				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
 				if (base_ptr == 0)
 					return false;
-				debug_base = new TargetAddress (target.AddressDomain, base_ptr);
+				debug_base = new TargetAddress (info.AddressDomain, base_ptr);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
 			}
 
-			int the_size = 2 * target.TargetLongIntegerSize +
-				3 * target.TargetAddressSize;
+			int the_size = 2 * info.TargetLongIntegerSize +
+				3 * info.TargetAddressSize;
 
 			TargetBlob blob = target.ReadMemory (debug_base, the_size);
-			TargetReader reader = new TargetReader (blob.Contents, target);
+			TargetReader reader = new TargetReader (blob.Contents, info);
 			if (reader.ReadLongInteger () != 1)
 				return false;
 
@@ -399,9 +399,9 @@ namespace Mono.Debugger.Backends
 			bool first = true;
 			TargetAddress map = first_link_map;
 			while (!map.IsNull) {
-				int the_size = 4 * target.TargetAddressSize;
+				int the_size = 4 * info.TargetAddressSize;
 				TargetBlob blob = target.ReadMemory (map, the_size);
-				TargetReader map_reader = new TargetReader (blob.Contents, target);
+				TargetReader map_reader = new TargetReader (blob.Contents, info);
 
 				TargetAddress l_addr = map_reader.ReadAddress ();
 				TargetAddress l_name = map_reader.ReadAddress ();
@@ -435,7 +435,7 @@ namespace Mono.Debugger.Backends
 					continue;
 				}
 
-				bfd = container.AddFile (target, name, l_addr, module.StepInto, true);
+				bfd = container.AddFile (info, name, l_addr, module.StepInto, true);
 				bfd.module_loaded (inferior, l_addr);
 			}
 		}
@@ -474,7 +474,7 @@ namespace Mono.Debugger.Backends
 					info.AddressDomain, BaseAddress.Address + address);
 		}
 
-		public ITargetInfo TargetInfo {
+		public TargetInfo TargetInfo {
 			get {
 				return info;
 			}
@@ -986,7 +986,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			is_start = true;
-			return memory.ReadAddress (got_start + 2 * memory.TargetAddressSize);
+			return memory.ReadAddress (got_start + 2 * info.TargetAddressSize);
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory)

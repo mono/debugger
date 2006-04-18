@@ -71,7 +71,7 @@ namespace Mono.Debugger.Backends
 			int size = header.ReadInt32 ();
 
 			TargetReader reader = new TargetReader (
-				inferior.ReadMemory (info, size), inferior);
+				inferior.ReadMemory (info, size), inferior.TargetInfo);
 			debugger_info = new MonoDebuggerInfo (reader);
 
 			if (attach)

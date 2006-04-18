@@ -4,7 +4,7 @@ using System.Text;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public sealed class TargetInfo : ITargetInfo
+	public sealed class TargetInfo
 	{
 		int target_int_size;
 		int target_long_size;
@@ -58,15 +58,15 @@ namespace Mono.Debugger
 	public sealed class TargetBlob
 	{
 		public readonly byte[] Contents;
-		public readonly ITargetInfo TargetInfo;
+		public readonly TargetInfo TargetInfo;
 
-		public TargetBlob (byte[] contents, ITargetInfo target_info)
+		public TargetBlob (byte[] contents, TargetInfo target_info)
 		{
 			this.Contents = contents;
 			this.TargetInfo = target_info;
 		}
 
-		public TargetBlob (int size, ITargetInfo target_info)
+		public TargetBlob (int size, TargetInfo target_info)
 		{
 			this.Contents = new byte [size];
 			this.TargetInfo = target_info;
@@ -106,7 +106,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ITargetInfo TargetInfo {
+		public TargetInfo TargetInfo {
 			get {
 				return blob.TargetInfo;
 			}

@@ -9,10 +9,20 @@ namespace Mono.Debugger
 	public abstract class Architecture : MarshalByRefObject
 	{
 		protected readonly Process process;
+		protected readonly TargetInfo TargetInfo;
 
-		protected Architecture (Process process)
+		protected Architecture (Process process, TargetInfo info)
 		{
 			this.process = process;
+			this.TargetInfo = info;
+		}
+
+		public AddressDomain AddressDomain {
+			get { return TargetInfo.AddressDomain; }
+		}
+
+		public int TargetAddressSize {
+			get { return TargetInfo.TargetAddressSize; }
 		}
 
 		// <summary>
@@ -118,8 +128,7 @@ namespace Mono.Debugger
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
 							       ITargetMemoryAccess memory);
 
-		internal abstract StackFrame CreateFrame (Thread thread, ITargetInfo info,
-							  Registers regs);
+		internal abstract StackFrame CreateFrame (Thread thread, Registers regs);
 
 		internal StackFrame CreateFrame (Thread thread, TargetAddress address,
 						 TargetAddress stack, TargetAddress frame_pointer,

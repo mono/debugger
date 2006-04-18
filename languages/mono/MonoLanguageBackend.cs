@@ -91,7 +91,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int defaults_size = reader.ReadInt32 ();
 			TargetAddress defaults_address = new TargetAddress (
-				memory.AddressDomain, reader.ReadAddress ());
+				memory.TargetInfo.AddressDomain, reader.ReadAddress ());
 
 			TypeSize = reader.ReadInt32 ();
 			ArrayTypeSize = reader.ReadInt32 ();
@@ -132,7 +132,8 @@ namespace Mono.Debugger.Languages.Mono
 			MonoDefaultsExceptionOffset = reader.ReadInt32 ();
 
 			TargetReader mono_defaults = new TargetReader (
-				memory.ReadMemory (defaults_address, defaults_size).Contents, memory);
+				memory.ReadMemory (defaults_address, defaults_size).Contents,
+				memory.TargetInfo);
 
 			MonoLanguageBackend language = corlib.MonoLanguage;
 			mono_defaults.Offset = MonoDefaultsObjectOffset;
@@ -305,7 +306,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return process.SourceFileFactory; }
 		}
 
-		public override ITargetInfo TargetInfo {
+		public override TargetInfo TargetInfo {
 			get { return corlib.TargetInfo; }
 		}
 
@@ -415,11 +416,11 @@ namespace Mono.Debugger.Languages.Mono
 			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
 			trampolines [0] = memory.ReadAddress (address);
-			address += memory.TargetAddressSize;
+			address += memory.TargetInfo.TargetAddressSize;
 			trampolines [1] = memory.ReadAddress (address);
-			address += memory.TargetAddressSize;
+			address += memory.TargetInfo.TargetAddressSize;
 			trampolines [2] = memory.ReadAddress (address);
-			address += 2 * memory.TargetAddressSize;
+			address += 2 * memory.TargetInfo.TargetAddressSize;
 			trampolines [3] = memory.ReadAddress (address);
 
 			symbol_files = new ArrayList ();
@@ -462,7 +463,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetAddress symtab_address = memory.ReadAddress (info.SymbolTable);
 			TargetReader header = new TargetReader (
-				memory.ReadMemory (symtab_address, info.SymbolTableSize), memory);
+				memory.ReadMemory (symtab_address, info.SymbolTableSize),
+				memory.TargetInfo);
 
 			long magic = header.BinaryReader.ReadInt64 ();
 			if (magic != MonoDebuggerInfo.DynamicMagic)
@@ -492,10 +494,10 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress symfiles_address = header.ReadAddress ();
 			int num_symbol_files = header.ReadInteger ();
 
-			symfiles_address += last_num_symbol_files * memory.TargetAddressSize;
+			symfiles_address += last_num_symbol_files * memory.TargetInfo.TargetAddressSize;
 			for (int i = last_num_symbol_files; i < num_symbol_files; i++) {
 				TargetAddress address = memory.ReadAddress (symfiles_address);
-				symfiles_address += memory.TargetAddressSize;
+				symfiles_address += memory.TargetInfo.TargetAddressSize;
 
 				try {
 					MonoSymbolFile symfile = new MonoSymbolFile (
@@ -534,11 +536,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (num_data_tables != last_num_data_tables) {
 				int old_offset = last_data_table_offset;
 
-				data_tables += last_num_data_tables * memory.TargetAddressSize;
+				data_tables += last_num_data_tables * memory.TargetInfo.TargetAddressSize;
 
 				for (int i = last_num_data_tables; i < num_data_tables; i++) {
 					TargetAddress old_table = memory.ReadAddress (data_tables);
-					data_tables += memory.TargetAddressSize;
+					data_tables += memory.TargetInfo.TargetAddressSize;
 
 					int old_size = memory.ReadInteger (old_table);
 					read_data_items (memory, old_table, old_offset, old_size);
@@ -576,14 +578,14 @@ namespace Mono.Debugger.Languages.Mono
 		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int start, int end)
 		{
 			TargetReader reader = new TargetReader (
-				memory.ReadMemory (address + start, end - start), memory);
+				memory.ReadMemory (address + start, end - start), memory.TargetInfo);
 
 			Report.Debug (DebugFlags.JitSymtab,
 				      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address, start, end,
 				      reader.BinaryReader.Position, reader.Size);
 
 			if (start == 0)
-				reader.BinaryReader.Position = memory.TargetAddressSize;
+				reader.BinaryReader.Position = memory.TargetInfo.TargetAddressSize;
 
 			while (reader.BinaryReader.Position + 4 < reader.Size) {
 				int item_size = reader.BinaryReader.ReadInt32 ();

@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 			Type.ElementType.SetObject (target, new_loc, obj);
 		}
 
-		int GetElementSize (ITargetInfo info)
+		int GetElementSize (TargetInfo info)
 		{
 			if (Type.ElementType.IsByRef)
 				return info.TargetAddressSize;

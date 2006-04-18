@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract ITargetInfo TargetInfo {
+		public abstract TargetInfo TargetInfo {
 			get;
 		}
 

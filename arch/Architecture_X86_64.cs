@@ -42,8 +42,8 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_X86_64 : Architecture
 	{
-		internal Architecture_X86_64 (Process process)
-			: base (process)
+		internal Architecture_X86_64 (Process process, TargetInfo info)
+			: base (process, info)
 		{ }
 
 		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
@@ -169,7 +169,7 @@ namespace Mono.Debugger.Backends
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
-			TargetAddress vtable_addr = new TargetAddress (target.AddressDomain, addr);
+			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr);
 			vtable_addr += disp;
 
 			if (dereference_addr)
@@ -197,7 +197,7 @@ namespace Mono.Debugger.Backends
 				long rbx = regs [(int) X86_64_Register.RBX].Value;
 
 				insn_size = 6;
-				return new TargetAddress (target.AddressDomain, rbx + offset);
+				return new TargetAddress (AddressDomain, rbx + offset);
 			}
 
 			insn_size = 0;
@@ -230,7 +230,7 @@ namespace Mono.Debugger.Backends
 			if (location + call_disp + 19 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (target.AddressDomain, method_info);
+			return new TargetAddress (AddressDomain, method_info);
 		}
 
 		public override string[] RegisterNames {
@@ -473,9 +473,9 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			TargetAddress rbp = new TargetAddress (
-				memory.AddressDomain, old_regs [(int) X86_64_Register.RBP]);
+				AddressDomain, old_regs [(int) X86_64_Register.RBP]);
 
-			int addr_size = memory.TargetAddressSize;
+			int addr_size = TargetAddressSize;
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
 
@@ -594,7 +594,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress new_rip = memory.ReadAddress (frame.StackPointer);
 				regs [(int) X86_64_Register.RIP].SetValue (frame.StackPointer, new_rip);
 
-				TargetAddress new_rsp = frame.StackPointer + memory.TargetAddressSize;
+				TargetAddress new_rsp = frame.StackPointer + TargetAddressSize;
 				TargetAddress new_rbp = frame.FrameAddress;
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
@@ -611,7 +611,7 @@ namespace Mono.Debugger.Backends
 			if (pos >= offset) {
 				Registers regs = CopyRegisters (frame.Registers);
 
-				int addr_size = memory.TargetAddressSize;
+				int addr_size = TargetAddressSize;
 				TargetAddress new_rbp = memory.ReadAddress (frame.StackPointer);
 				regs [(int) X86_64_Register.RBP].SetValue (frame.StackPointer, new_rbp);
 
@@ -652,7 +652,7 @@ namespace Mono.Debugger.Backends
 
 			TargetAddress rbp = frame.FrameAddress;
 
-			int addr_size = memory.TargetAddressSize;
+			int addr_size = TargetAddressSize;
 
 			Registers regs = CopyRegisters (frame.Registers);
 
@@ -713,11 +713,11 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetAddress rip = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress rsp = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress rbp = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
@@ -738,9 +738,9 @@ namespace Mono.Debugger.Backends
 		{
 			Registers regs = inferior.GetRegisters ();
 			TargetAddress rsp = new TargetAddress (
-				inferior.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress rip = inferior.ReadAddress (rsp);
-			rsp += inferior.TargetAddressSize;
+			rsp += TargetAddressSize;
 
 			regs [(int) X86_64_Register.RIP].SetValue (rip);
 			regs [(int) X86_64_Register.RSP].SetValue (rsp);
@@ -749,15 +749,14 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, ITargetInfo info,
-							  Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
-				info.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				info.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				info.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
 		}

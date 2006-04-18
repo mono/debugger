@@ -113,7 +113,7 @@ namespace Mono.Debugger.Backends
 		ArrayList aranges;
 		Hashtable pubnames;
 		Hashtable pubtypes;
-		ITargetInfo target_info;
+		TargetInfo target_info;
 		SourceFileFactory factory;
 
 		public DwarfReader (Bfd bfd, Module module, SourceFileFactory factory)
@@ -188,7 +188,7 @@ namespace Mono.Debugger.Backends
 				return false;
 		}
 
-		public ITargetInfo TargetInfo {
+		public TargetInfo TargetInfo {
 			get {
 				return target_info;
 			}
@@ -3627,7 +3627,7 @@ namespace Mono.Debugger.Backends
 			long location_constant;
 			bool use_constant;
 			TargetVariable variable;
-			ITargetInfo target_info;
+			TargetInfo target_info;
 			bool resolved;
 
 			protected bool DoResolve ()
@@ -3714,7 +3714,7 @@ namespace Mono.Debugger.Backends
 			bool resolved, ok;
 			DieType type_die;
 			TargetType type;
-			ITargetInfo target_info;
+			TargetInfo target_info;
 			int bit_offset, bit_size;
 			int offset;
 

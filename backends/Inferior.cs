@@ -604,7 +604,7 @@ namespace Mono.Debugger.Backends
 
 			try {
 				bfd = bfd_container.AddFile (
-					this, start.TargetApplication, TargetAddress.Null,
+					target_info, start.TargetApplication, TargetAddress.Null,
 					start.LoadNativeSymbolTable, true);
 			} catch (Exception e) {
 				if (error_handler != null)
@@ -616,7 +616,7 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			bfd_container.SetupInferior (this, bfd);
+			bfd_container.SetupInferior (target_info, bfd);
 
 			arch = bfd.Architecture;
 
@@ -1166,7 +1166,7 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress address, stack, frame;
 
-			internal StackFrame (ITargetInfo info, ServerStackFrame frame)
+			internal StackFrame (TargetInfo info, ServerStackFrame frame)
 			{
 				this.address = new TargetAddress (info.AddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);
@@ -1214,7 +1214,7 @@ namespace Mono.Debugger.Backends
 		public StackFrame GetCurrentFrame ()
 		{
 			ServerStackFrame frame = get_current_frame ();
-			return new StackFrame (this, frame);
+			return new StackFrame (target_info, frame);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()

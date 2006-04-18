@@ -205,7 +205,7 @@ namespace Mono.Debugger.Backends
 				get {
 					if (current_frame == null)
 						current_frame = CoreFile.Architecture.CreateFrame (
-							Thread, CoreFile.TargetInfo, Registers);
+							Thread, Registers);
 
 					return current_frame;
 				}
@@ -295,7 +295,7 @@ namespace Mono.Debugger.Backends
 
 			public override TargetBlob ReadMemory (TargetAddress address, int size)
 			{
-				return new TargetBlob (ReadBuffer (address, size), this);
+				return new TargetBlob (ReadBuffer (address, size), TargetInfo);
 			}
 
 			public override byte[] ReadBuffer (TargetAddress address, int size)

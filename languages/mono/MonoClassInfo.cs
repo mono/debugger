@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			size = info.ReadLeb128 ();
 			KlassAddress = new TargetAddress (
-				type.File.AddressDomain, info.ReadAddress ());
+				info.TargetInfo.AddressDomain, info.ReadAddress ());
 
 			type.File.MonoLanguage.AddClass (KlassAddress, type);
 

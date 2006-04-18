@@ -39,13 +39,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void SetupInferior (ITargetInfo info, Bfd main_bfd)
+		internal void SetupInferior (TargetInfo info, Bfd main_bfd)
 		{
 			this.main_bfd = main_bfd;
 			language = new NativeLanguage (this, info);
 		}
 
-		public Bfd AddFile (ITargetInfo memory, string filename,
+		public Bfd AddFile (TargetInfo memory, string filename,
 				    TargetAddress base_address, bool step_info, bool is_loaded)
 		{
 			check_disposed ();

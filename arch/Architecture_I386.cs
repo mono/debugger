@@ -31,8 +31,8 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_I386 : Architecture
 	{
-		internal Architecture_I386 (Process process)
-			: base (process)
+		internal Architecture_I386 (Process process, TargetInfo info)
+			: base (process, info)
 		{ }
 
 		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
@@ -127,7 +127,7 @@ namespace Mono.Debugger.Backends
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
-			TargetAddress vtable_addr = new TargetAddress (target.AddressDomain, addr);
+			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr);
 			vtable_addr += disp;
 
 			if (dereference_addr)
@@ -146,15 +146,15 @@ namespace Mono.Debugger.Backends
 			byte opcode2 = reader.ReadByte ();
 
 			if ((opcode == 0xff) && (opcode2 == 0x25)) {
-				insn_size = 2 + target.TargetAddressSize;
-				return new TargetAddress (target.AddressDomain, reader.ReadAddress ());
+				insn_size = 2 + TargetAddressSize;
+				return new TargetAddress (AddressDomain, reader.ReadAddress ());
 			} else if ((opcode == 0xff) && (opcode2 == 0xa3)) {
 				int offset = reader.ReadInt32 ();
 				Registers regs = target.GetRegisters ();
 				long ebx = regs [(int) I386Register.EBX].Value;
 
 				insn_size = 6;
-				return new TargetAddress (target.AddressDomain, ebx + offset);
+				return new TargetAddress (AddressDomain, ebx + offset);
 			}
 
 			insn_size = 0;
@@ -185,7 +185,7 @@ namespace Mono.Debugger.Backends
 			if (location + call_disp + 10 != trampoline_address)
 				return TargetAddress.Null;
 
-			return new TargetAddress (target.AddressDomain, method_info);
+			return new TargetAddress (AddressDomain, method_info);
 		}
 
 		public override string[] RegisterNames {
@@ -370,9 +370,9 @@ namespace Mono.Debugger.Backends
 			Registers regs = new Registers (old_regs);
 
 			TargetAddress ebp = new TargetAddress (
-				memory.AddressDomain, old_regs [(int) I386Register.EBP]);
+				AddressDomain, old_regs [(int) I386Register.EBP]);
 
-			int addr_size = memory.TargetAddressSize;
+			int addr_size = TargetAddressSize;
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
 			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
 
@@ -453,7 +453,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress new_eip = memory.ReadAddress (frame.StackPointer);
 				regs [(int) I386Register.EIP].SetValue (frame.StackPointer, new_eip);
 
-				TargetAddress new_esp = frame.StackPointer + memory.TargetAddressSize;
+				TargetAddress new_esp = frame.StackPointer + TargetAddressSize;
 				TargetAddress new_ebp = frame.FrameAddress;
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
@@ -469,7 +469,7 @@ namespace Mono.Debugger.Backends
 				Registers old_regs = frame.Registers;
 				Registers regs = new Registers (old_regs);
 
-				int addr_size = memory.TargetAddressSize;
+				int addr_size = TargetAddressSize;
 				TargetAddress new_ebp = memory.ReadAddress (frame.StackPointer);
 				regs [(int) I386Register.EBP].SetValue (frame.StackPointer, new_ebp);
 
@@ -624,7 +624,7 @@ namespace Mono.Debugger.Backends
 			if (new_frame != null)
 				return new_frame;
 
-			int addr_size = memory.TargetAddressSize;
+			int addr_size = TargetAddressSize;
 
 			Registers regs = new Registers (this);
 
@@ -652,9 +652,9 @@ namespace Mono.Debugger.Backends
 		{
 			Registers regs = inferior.GetRegisters ();
 			TargetAddress esp = new TargetAddress (
-				inferior.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+				AddressDomain, regs [(int) I386Register.ESP].GetValue ());
 			TargetAddress eip = inferior.ReadAddress (esp);
-			esp += inferior.TargetAddressSize;
+			esp += TargetAddressSize;
 
 			regs [(int) I386Register.EIP].SetValue (eip);
 			regs [(int) I386Register.ESP].SetValue (esp);
@@ -663,15 +663,14 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, ITargetInfo info,
-							  Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
-				info.AddressDomain, regs [(int) I386Register.EIP]);
+				AddressDomain, regs [(int) I386Register.EIP]);
 			TargetAddress stack_pointer = new TargetAddress (
-				info.AddressDomain, regs [(int) I386Register.ESP]);
+				AddressDomain, regs [(int) I386Register.ESP]);
 			TargetAddress frame_pointer = new TargetAddress (
-				info.AddressDomain, regs [(int) I386Register.EBP]);
+				AddressDomain, regs [(int) I386Register.EBP]);
 
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
 		}

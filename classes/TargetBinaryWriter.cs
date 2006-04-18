@@ -5,7 +5,7 @@ namespace Mono.Debugger
 {
 	public class TargetBinaryWriter : TargetBinaryAccess
 	{
-		public TargetBinaryWriter (int size, ITargetInfo target_info)
+		public TargetBinaryWriter (int size, TargetInfo target_info)
 			: base (new TargetBlob (size, target_info))
 		{ }
 
