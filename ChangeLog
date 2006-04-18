@@ -1,3 +1,9 @@
+2006-04-19  Martin Baulig  <martin@ximian.com>
+
+	* backends/ThreadManager.cs
+	(ThreadManager.start_wait_thread): Catch `ThreadAbortException'
+	and reset the abort.  See the comment in the source code.
+
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs (ProcessCommand): New public abstract class.

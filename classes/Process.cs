@@ -412,6 +412,9 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.CannotDetach);
 
 			main_thread.Detach ();
+
+			manager.Debugger.OnProcessExitedEvent (this);
+
 			Dispose ();
 		}
 

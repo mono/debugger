@@ -740,10 +740,12 @@ namespace Mono.Debugger.Backends
 					throw new TargetException (TargetError.NotStopped);
 				}
 
-				if (inferior != null) {
-					inferior.Detach ();
-					inferior.Dispose ();
-					inferior = null;
+				lock (this) {
+					if (inferior != null) {
+						inferior.Detach ();
+						inferior.Dispose ();
+						inferior = null;
+					}
 				}
 				return null;
 			});

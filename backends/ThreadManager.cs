@@ -371,73 +371,93 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.Threads, "Wait thread started: {0}",
 				      DebuggerWaitHandle.CurrentThread);
 
-			while (true) {
-				Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
-				wait_event.WaitOne ();
+			//
+			// NOTE: Dispose() intentionally uses
+			//          wait_thread.Abort ();
+			//          wait_thread.Join ();
+			//
+			// The Thread.Abort() is neccessary since we may be blocked in a
+			// waitpid().  In this case, the thread abort signal which is sent
+			// to the current thread will make the waitpid() abort with an EINTR,
+			// so we're not deadlocking here.
+			//
 
-				int pid, status;
-				if (abort_requested) {
-					Report.Debug (DebugFlags.Wait,
-						      "Wait thread abort requested");
-
-					//
-					// Reap all our children.
-					//
-
-					do {
-						pid = mono_debugger_server_global_wait (out status);
-						Report.Debug (DebugFlags.Wait,
-							      "Wait thread received event: {0} {1:x}",
-							      pid, status);
-					} while (pid > 0);
-
-					Report.Debug (DebugFlags.Wait,
-						      "Wait thread exiting");
-
-					return;
-				}
-
-				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
-
-				//
-				// Wait until we got an event from the target or a command from the user.
-				//
-
-				pid = mono_debugger_server_global_wait (out status);
-
-				Report.Debug (DebugFlags.Wait,
-					      "Wait thread received event: {0} {1:x}",
-					      pid, status);
-
-				if (abort_requested)
-					continue;
-
-				//
-				// Note: `pid' is basically just an unique number which identifies the
-				//       SingleSteppingEngine of this event.
-				//
-
-				if (pid > 0) {
-					SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
-					if (event_engine == null)
-						throw new InternalError ("Got event {0:x} for unknown pid {1}",
-									 status, pid);
-
-					engine_event.WaitOne ();
-
-					event_queue.Lock ();
-					engine_event.Reset ();
-
-					if (current_event != null)
-						throw new InternalError ();
-
-					current_event = event_engine;
-					current_event_status = status;
-
-					event_queue.Signal ();
-					event_queue.Unlock ();
-				}
+			try {
+				while (wait_thread_main ())
+					;
+			} catch (ST.ThreadAbortException) {
+				Report.Debug (DebugFlags.Threads, "Wait thread abort: {0}",
+					      DebuggerWaitHandle.CurrentThread);
+				ST.Thread.ResetAbort ();
 			}
+
+			Report.Debug (DebugFlags.Threads, "Wait thread exiting: {0}",
+				      DebuggerWaitHandle.CurrentThread);
+		}
+
+		bool wait_thread_main ()
+		{
+			Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
+			wait_event.WaitOne ();
+
+			int pid, status;
+			if (abort_requested) {
+				Report.Debug (DebugFlags.Wait,
+					      "Wait thread abort requested");
+
+				//
+				// Reap all our children.
+				//
+
+				do {
+					pid = mono_debugger_server_global_wait (out status);
+					Report.Debug (DebugFlags.Wait,
+						      "Wait thread received event: {0} {1:x}",
+						      pid, status);
+				} while (pid > 0);
+
+				return false;
+			}
+
+			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
+
+			//
+			// Wait until we got an event from the target or a command from the user.
+			//
+
+			pid = mono_debugger_server_global_wait (out status);
+
+			Report.Debug (DebugFlags.Wait,
+				      "Wait thread received event: {0} {1:x}",
+				      pid, status);
+
+			//
+			// Note: `pid' is basically just an unique number which identifies the
+			//       SingleSteppingEngine of this event.
+			//
+
+			if (abort_requested || (pid <= 0))
+				return true;
+
+			SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
+			if (event_engine == null)
+				throw new InternalError ("Got event {0:x} for unknown pid {1}",
+							 status, pid);
+
+			engine_event.WaitOne ();
+
+			event_queue.Lock ();
+			engine_event.Reset ();
+
+			if (current_event != null)
+				throw new InternalError ();
+
+			current_event = event_engine;
+			current_event_status = status;
+
+			event_queue.Signal ();
+			event_queue.Unlock ();
+			return true;
 		}
 
 		internal void RequestWait ()
