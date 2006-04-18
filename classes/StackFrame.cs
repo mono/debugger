@@ -78,11 +78,11 @@ namespace Mono.Debugger
 			this.value = value;
 
 			if (addr_on_stack.IsNull)
-				target.TargetMemoryAccess.SetRegisters (registers);
+				target.SetRegisters (registers);
 			else if (Size == target.TargetInfo.TargetIntegerSize)
-				target.TargetMemoryAccess.WriteInteger (addr_on_stack, (int) value);
+				target.WriteInteger (addr_on_stack, (int) value);
 			else
-				target.TargetMemoryAccess.WriteLongInteger (addr_on_stack, value);
+				target.WriteLongInteger (addr_on_stack, value);
 		}
 
 		public bool Valid {

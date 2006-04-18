@@ -460,7 +460,7 @@ namespace Mono.Debugger.Languages.Mono
 		public static TargetType ReadMonoClass (MonoLanguageBackend language,
 							Thread target, TargetAddress address)
 		{
-			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
+			TargetBlob blob = target.ReadMemory (
 				address, language.BuiltinTypes.KlassSize);
 			TargetReader reader = new TargetReader (blob, target.TargetInfo);
 
@@ -513,7 +513,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (eklass == null)
 					return null;
 
-				TargetBlob array_data = target.TargetMemoryAccess.ReadMemory (
+				TargetBlob array_data = target.ReadMemory (
 					byval_data_addr, language.BuiltinTypes.ArrayTypeSize);
 
 				TargetReader array_reader = new TargetReader (

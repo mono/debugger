@@ -652,10 +652,6 @@ namespace Mono.Debugger
 			get { return State == TargetState.STOPPED; }
 		}
 
-		internal ITargetMemoryAccess TargetMemoryAccess {
-			get { return this; }
-		}
-
 		public override ITargetInfo TargetInfo {
 			get { return target_info; }
 		}

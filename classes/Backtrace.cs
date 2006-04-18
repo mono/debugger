@@ -65,7 +65,7 @@ namespace Mono.Debugger
 		{
 			StackFrame new_frame = null;
 			try {
-				new_frame = last_frame.UnwindStack (target.TargetMemoryAccess, arch);
+				new_frame = last_frame.UnwindStack (target, arch);
 			} catch (TargetException) {
 			}
 

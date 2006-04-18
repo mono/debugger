@@ -27,7 +27,7 @@ namespace Mono.Debugger.Languages
 
 		internal virtual TargetBlob ReadMemory (Thread target, int size)
 		{
-			return target.TargetMemoryAccess.ReadMemory (Address, size);
+			return target.ReadMemory (Address, size);
 		}
 
 		// <summary>
@@ -40,12 +40,12 @@ namespace Mono.Debugger.Languages
 
 		internal virtual void WriteBuffer (Thread target, byte[] data)
 		{
-			target.TargetMemoryAccess.WriteBuffer (Address, data);
+			target.WriteBuffer (Address, data);
 		}
 
 		internal virtual void WriteAddress (Thread target, TargetAddress address)
 		{
-			target.TargetMemoryAccess.WriteAddress (Address, address);
+			target.WriteAddress (Address, address);
 		}
 
 		// <summary>
@@ -67,7 +67,7 @@ namespace Mono.Debugger.Languages
 
 		internal TargetLocation GetDereferencedLocation (Thread target)
 		{
-			TargetAddress address = target.TargetMemoryAccess.ReadAddress (Address);
+			TargetAddress address = target.ReadAddress (Address);
 			return new AbsoluteTargetLocation (address);
 		}
 

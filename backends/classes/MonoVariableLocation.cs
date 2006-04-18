@@ -47,7 +47,7 @@ namespace Mono.Debugger.Languages
 					target.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
-				address = target.TargetMemoryAccess.ReadAddress (address);
+				address = target.ReadAddress (address);
 			is_valid = true;
 		}
 
@@ -139,7 +139,7 @@ namespace Mono.Debugger.Languages
 				else
 					the_addr = address;
 
-				target.TargetMemoryAccess.WriteAddress (the_addr, new_address);
+				target.WriteAddress (the_addr, new_address);
 				update (target);
 			} else {
 				register.WriteRegister (target, new_address.Address);

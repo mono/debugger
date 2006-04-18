@@ -38,14 +38,14 @@ namespace Mono.Debugger.Languages.Mono
 			MonoLanguageBackend mono = type.File.MonoLanguage;
 
 			int offset = mono.BuiltinTypes.KlassInstanceSizeOffset;
-			size = target.TargetMemoryAccess.ReadInteger (klass_address + offset);
+			size = target.ReadInteger (klass_address + offset);
 
 			type.File.MonoLanguage.AddClass (KlassAddress, type);
 
 			debugger_info = mono.MonoDebuggerInfo;
 
 			if (type.ParentType != null) {
-				TargetAddress parent_klass = target.TargetMemoryAccess.ReadAddress (
+				TargetAddress parent_klass = target.ReadAddress (
 					klass_address + mono.BuiltinTypes.KlassParentOffset);
 				type.MonoParentType.ClassResolved (target, parent_klass);
 			}
@@ -70,10 +70,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
 
-			TargetAddress field_info = target.TargetMemoryAccess.ReadAddress (
+			TargetAddress field_info = target.ReadAddress (
 				KlassAddress + builtin.KlassFieldOffset);
 			int field_count = type.Fields.Length + type.StaticFields.Length;
-			TargetBinaryReader info = target.TargetMemoryAccess.ReadMemory (
+			TargetBinaryReader info = target.ReadMemory (
 				field_info, field_count * builtin.FieldInfoSize).GetReader ();
 
 			field_offsets = new int [field_count];
@@ -83,11 +83,11 @@ namespace Mono.Debugger.Languages.Mono
 				field_offsets [i] = info.ReadInt32 ();
 			}
 
-			TargetAddress method_info = target.TargetMemoryAccess.ReadAddress (
+			TargetAddress method_info = target.ReadAddress (
 				KlassAddress + builtin.KlassMethodsOffset);
-			int method_count = target.TargetMemoryAccess.ReadInteger (
+			int method_count = target.ReadInteger (
 				KlassAddress + builtin.KlassMethodCountOffset);
-			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
+			TargetBlob blob = target.ReadMemory (
 				method_info, method_count * target.TargetInfo.TargetAddressSize);
 
 			methods = new Hashtable ();
@@ -95,7 +95,7 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < method_count; i++) {
 				TargetAddress address = reader.ReadAddress ();
 
-				TargetBlob method_blob = target.TargetMemoryAccess.ReadMemory (
+				TargetBlob method_blob = target.ReadMemory (
 					address + 4, 4);
 				int token = method_blob.GetReader ().ReadInt32 ();
 				if (token == 0)
@@ -237,8 +237,8 @@ namespace Mono.Debugger.Languages.Mono
 			// dereferencing it once gives us the vtable, dereferencing it
 			// twice the class.
 			TargetAddress address;
-			address = target.TargetMemoryAccess.ReadAddress (location.Address);
-			address = target.TargetMemoryAccess.ReadAddress (address);
+			address = target.ReadAddress (location.Address);
+			address = target.ReadAddress (address);
 
 			TargetType current = type.File.MonoLanguage.GetClass (target, address);
 			return (MonoClassObject) current.GetObject (location);
