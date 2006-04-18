@@ -7,57 +7,6 @@ using Mono.Debugger.Backends;
 namespace Mono.Debugger.Backends
 {
 	[Serializable]
-	internal class TargetInfo : ITargetInfo
-	{
-		int target_int_size;
-		int target_long_size;
-		int target_address_size;
-		bool is_bigendian;
-		AddressDomain address_domain;
-
-		internal TargetInfo (int target_int_size, int target_long_size,
-				     int target_address_size, bool is_bigendian,
-				     AddressDomain domain)
-		{
-			this.target_int_size = target_int_size;
-			this.target_long_size = target_long_size;
-			this.target_address_size = target_address_size;
-			this.is_bigendian = is_bigendian;
-			this.address_domain = domain;
-		}
-
-		public int TargetIntegerSize {
-			get {
-				return target_int_size;
-			}
-		}
-
-		public int TargetLongIntegerSize {
-			get {
-				return target_long_size;
-			}
-		}
-
-		public int TargetAddressSize {
-			get {
-				return target_address_size;
-			}
-		}
-
-		public bool IsBigEndian {
-			get {
-				return is_bigendian;
-			}
-		}
-
-		public AddressDomain AddressDomain {
-			get {
-				return address_domain;
-			}
-		}
-	}
-
-	[Serializable]
 	internal class TargetReader
 	{
 		byte[] data;

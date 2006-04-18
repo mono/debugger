@@ -1,5 +1,14 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetBinaryAccess.cs
+	(TargetInfo): Moved here from ../backends/classes/TargetReader.cs
+	and made it public.
+
+	* backends/TargetAccess.cs
+	(TargetAccess.TargetInfo): Return a `TargetInfo'.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs
 	(ITargetMemoryInfo): Removed.
 

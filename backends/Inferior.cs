@@ -697,7 +697,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public ITargetInfo TargetInfo {
+		public TargetInfo TargetInfo {
 			get {
 				return target_info;
 			}

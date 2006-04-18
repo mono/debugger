@@ -684,7 +684,7 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-		public override ITargetInfo TargetInfo {
+		public override TargetInfo TargetInfo {
 			get {
 				check_inferior ();
 				return inferior.TargetInfo;

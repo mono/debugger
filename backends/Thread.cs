@@ -73,7 +73,7 @@ namespace Mono.Debugger
 		ThreadManager manager;
 		SymbolTableManager symtab_manager;
 		ST.ManualResetEvent operation_completed_event;
-		ITargetInfo target_info;
+		TargetInfo target_info;
 
 		public ST.WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -652,7 +652,7 @@ namespace Mono.Debugger
 			get { return State == TargetState.STOPPED; }
 		}
 
-		public override ITargetInfo TargetInfo {
+		public override TargetInfo TargetInfo {
 			get { return target_info; }
 		}
 

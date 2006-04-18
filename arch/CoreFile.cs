@@ -131,7 +131,7 @@ namespace Mono.Debugger.Backends
 			get { return bfd.Architecture; }
 		}
 
-		public ITargetInfo TargetInfo {
+		public TargetInfo TargetInfo {
 			get { return info; }
 		}
 
@@ -183,7 +183,7 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile; }
 			}
 
-			public override ITargetInfo TargetInfo {
+			public override TargetInfo TargetInfo {
 				get { return CoreFile.TargetInfo; }
 			}
 
