@@ -503,6 +503,12 @@ namespace Mono.Debugger.Backends
 			current_operation.Execute (this);
 		}
 
+		internal void Attached ()
+		{
+			frame_changed (inferior.CurrentFrame, null);
+			engine_stopped = true;
+		}
+
 		internal void ReachedMain (TargetAddress method)
 		{
 			CommandResult result = new Thread.StepCommandResult (thread);

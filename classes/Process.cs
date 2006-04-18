@@ -358,8 +358,12 @@ namespace Mono.Debugger
 					ThreadCreated (inferior, thread, true);
 				}
 
-				if (mono_manager == null)
+				if (mono_manager == null) {
+					ReachedMain ();
+					inferior.InitializeModules ();
+					engine.Attached ();
 					goto done;
+				}
 
 				attach_results = new ArrayList ();
 				foreach (Thread thread in thread_hash.Values)

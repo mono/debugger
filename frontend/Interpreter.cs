@@ -339,9 +339,7 @@ namespace Mono.Debugger.Frontend
 				new ThreadEventSink (this, debugger);
 
 				current_process = main_process = debugger.Attach (Options, pid);
-
 				current_thread = current_process.MainThread;
-				Wait (current_thread);
 
 				return current_process;
 			} catch (TargetException e) {
