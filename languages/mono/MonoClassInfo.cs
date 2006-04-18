@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
 				info.Position = i * builtin.FieldInfoSize +
-					2 * target.TargetMemoryInfo.TargetAddressSize;
+					2 * target.TargetInfo.TargetAddressSize;
 				field_offsets [i] = info.ReadInt32 ();
 			}
 
@@ -88,10 +88,10 @@ namespace Mono.Debugger.Languages.Mono
 			int method_count = target.TargetMemoryAccess.ReadInteger (
 				KlassAddress + builtin.KlassMethodCountOffset);
 			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
-				method_info, method_count * target.TargetMemoryInfo.TargetAddressSize);
+				method_info, method_count * target.TargetInfo.TargetAddressSize);
 
 			methods = new Hashtable ();
-			TargetReader reader = new TargetReader (blob.Contents, target.TargetMemoryInfo);
+			TargetReader reader = new TargetReader (blob.Contents, target.TargetInfo);
 			for (int i = 0; i < method_count; i++) {
 				TargetAddress address = reader.ReadAddress ();
 
@@ -123,7 +123,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int offset = GetFieldOffset (finfo);
 			if (!type.IsByRef)
-				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
+				offset -= 2 * target.TargetInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
@@ -142,7 +142,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int offset = GetFieldOffset (finfo);
 			if (!type.IsByRef)
-				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
+				offset -= 2 * target.TargetInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)

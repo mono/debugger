@@ -193,10 +193,6 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetInfo; }
 			}
 
-			internal override ITargetMemoryInfo TargetMemoryInfo {
-				get { return CoreFile.TargetMemoryInfo; }
-			}
-
 			public override Backtrace GetBacktrace (int max_frames)
 			{
 				current_backtrace = new Backtrace (CurrentFrame);

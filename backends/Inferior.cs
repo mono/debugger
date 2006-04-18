@@ -1176,7 +1176,7 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress address, stack, frame;
 
-			internal StackFrame (ITargetMemoryInfo info, ServerStackFrame frame)
+			internal StackFrame (ITargetInfo info, ServerStackFrame frame)
 			{
 				this.address = new TargetAddress (info.AddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);

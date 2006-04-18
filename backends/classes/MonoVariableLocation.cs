@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages
 				address = TargetAddress.Null;
 			else
 				address = new TargetAddress (
-					target.TargetMemoryInfo.AddressDomain, contents + regoffset);
+					target.AddressDomain, contents + regoffset);
 
 			if (is_byref && is_regoffset)
 				address = target.TargetMemoryAccess.ReadAddress (address);
@@ -102,10 +102,10 @@ namespace Mono.Debugger.Languages
 
 			long contents;
 
-			if (data.Length > target.TargetMemoryInfo.TargetIntegerSize)
+			if (data.Length > target.TargetInfo.TargetIntegerSize)
 				throw new InternalError ();
 
-			if (data.Length < target.TargetMemoryInfo.TargetIntegerSize) {
+			if (data.Length < target.TargetInfo.TargetIntegerSize) {
 				switch (data.Length) {
 				case 1: contents = data[0]; break;
 				case 2: contents = BitConverter.ToInt16 (data, 0); break;
@@ -114,9 +114,9 @@ namespace Mono.Debugger.Languages
 				  throw new InternalError ();
 				}
 			}
-			else if (target.TargetMemoryInfo.TargetIntegerSize == 4)
+			else if (target.TargetInfo.TargetIntegerSize == 4)
 				contents = BitConverter.ToInt32 (data, 0);
-			else if (target.TargetMemoryInfo.TargetIntegerSize == 8)
+			else if (target.TargetInfo.TargetIntegerSize == 8)
 				contents = BitConverter.ToInt64 (data, 0);
 			else
 				throw new InternalError ();
@@ -135,8 +135,7 @@ namespace Mono.Debugger.Languages
 				TargetAddress the_addr;
 				if (is_byref)
 					the_addr = new TargetAddress (
-						target.TargetMemoryInfo.AddressDomain,
-						register.Value + regoffset);
+						target.AddressDomain, register.Value + regoffset);
 				else
 					the_addr = address;
 

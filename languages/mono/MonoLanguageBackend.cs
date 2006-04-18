@@ -499,7 +499,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				try {
 					MonoSymbolFile symfile = new MonoSymbolFile (
-						this, process, memory, memory, address);
+						this, process, memory, address);
 					image_hash.Add (symfile.MonoImage, symfile);
 					symbol_files.Add (symfile);
 					assembly_hash.Add (symfile.Assembly, symfile);

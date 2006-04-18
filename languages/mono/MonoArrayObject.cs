@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			reader.Position = 2 * reader.TargetInfo.TargetAddressSize;
 			TargetAddress bounds_address = new TargetAddress (
-				target.TargetMemoryInfo.AddressDomain, reader.ReadAddress ());
+				target.AddressDomain, reader.ReadAddress ());
 			TargetBinaryReader breader = target.TargetMemoryAccess.ReadMemory (
 				bounds_address, 8 * Rank).GetReader ();
 

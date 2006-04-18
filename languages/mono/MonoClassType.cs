@@ -462,7 +462,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetBlob blob = target.TargetMemoryAccess.ReadMemory (
 				address, language.BuiltinTypes.KlassSize);
-			TargetReader reader = new TargetReader (blob, target.TargetMemoryInfo);
+			TargetReader reader = new TargetReader (blob, target.TargetInfo);
 
 			TargetAddress image = reader.ReadAddress ();
 			MonoSymbolFile file = language.GetImage (image);
@@ -517,7 +517,7 @@ namespace Mono.Debugger.Languages.Mono
 					byval_data_addr, language.BuiltinTypes.ArrayTypeSize);
 
 				TargetReader array_reader = new TargetReader (
-					array_data, target.TargetMemoryInfo);
+					array_data, target.TargetInfo);
 
 				array_reader.ReadAddress ();
 				int rank = array_reader.ReadByte ();

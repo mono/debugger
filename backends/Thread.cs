@@ -42,7 +42,6 @@ namespace Mono.Debugger
 			operation_completed_event = new ST.ManualResetEvent (false);
 
 			this.target_info = engine.TargetInfo;
-			this.target_memory_info = engine.TargetMemoryInfo;
 		}
 
 		internal Thread (TargetAccess target, int pid)
@@ -62,7 +61,6 @@ namespace Mono.Debugger
 			operation_completed_event = new ST.ManualResetEvent (false);
 
 			this.target_info = target.TargetInfo;
-			this.target_memory_info = target.TargetMemoryInfo;
 		}
 
 		bool is_daemon;
@@ -76,7 +74,6 @@ namespace Mono.Debugger
 		SymbolTableManager symtab_manager;
 		ST.ManualResetEvent operation_completed_event;
 		ITargetInfo target_info;
-		ITargetMemoryInfo target_memory_info;
 
 		public ST.WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -137,7 +134,7 @@ namespace Mono.Debugger
 		public override Architecture Architecture {
 			get {
 				check_target ();
-				return target_memory_info.Architecture;
+				return target.Architecture;
 			}
 		}
 
@@ -663,10 +660,6 @@ namespace Mono.Debugger
 			get { return target_info; }
 		}
 
-		internal override ITargetMemoryInfo TargetMemoryInfo {
-			get { return target_memory_info; }
-		}
-
 #region ITargetInfo implementation
 		public override int TargetAddressSize {
 			get { return target_info.TargetAddressSize; }
@@ -694,7 +687,7 @@ namespace Mono.Debugger
 
 		public override AddressDomain AddressDomain {
 			get {
-				return target_memory_info.AddressDomain;
+				return target_info.AddressDomain;
 			}
 		}
 

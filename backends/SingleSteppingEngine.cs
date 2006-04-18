@@ -684,13 +684,6 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-		internal override ITargetMemoryInfo TargetMemoryInfo {
-			get {
-				check_inferior ();
-				return inferior.TargetMemoryInfo;
-			}
-		}
-
 		public override ITargetInfo TargetInfo {
 			get {
 				check_inferior ();
@@ -715,7 +708,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override AddressDomain AddressDomain {
-			get { return TargetMemoryInfo.AddressDomain; }
+			get { return TargetInfo.AddressDomain; }
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()

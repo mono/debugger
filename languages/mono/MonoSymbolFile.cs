@@ -209,8 +209,9 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly C.MonoSymbolFile File;
 		internal readonly ThreadManager ThreadManager;
 		internal readonly AddressDomain AddressDomain;
-		internal readonly ITargetMemoryInfo TargetInfo;
+		internal readonly ITargetInfo TargetInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
+		internal readonly Architecture Architecture;
 		protected readonly Process process;
 		MonoSymbolTable symtab;
 		string name;
@@ -228,11 +229,11 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable method_index_hash;
 
 		internal MonoSymbolFile (MonoLanguageBackend language, Process process,
-					 ITargetMemoryInfo target_info, ITargetMemoryAccess memory,
-					 TargetAddress address)
+					 ITargetMemoryAccess memory, TargetAddress address)
 		{
 			this.MonoLanguage = language;
-			this.TargetInfo = target_info;
+			this.TargetInfo = memory;
+			this.Architecture = memory.Architecture;
 			this.process = process;
 
 			ThreadManager = process.ThreadManager;
@@ -312,10 +313,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override ILanguageBackend LanguageBackend {
 			get { return MonoLanguage; }
-		}
-
-		internal Architecture Architecture {
-			get { return TargetInfo.Architecture; }
 		}
 
 		public override bool SymbolsLoaded {

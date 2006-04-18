@@ -45,9 +45,9 @@ namespace Mono.Debugger
 		}
 	}
 
-	internal interface ITargetMemoryAccess : ITargetMemoryInfo
+	internal interface ITargetMemoryAccess : ITargetInfo
 	{
-		ITargetMemoryInfo TargetMemoryInfo {
+		Architecture Architecture {
 			get;
 		}
 

@@ -16,14 +16,6 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		internal abstract ITargetMemoryInfo TargetMemoryInfo {
-			get;
-		}
-
-		ITargetMemoryInfo ITargetMemoryAccess.TargetMemoryInfo {
-			get { return TargetMemoryInfo; }
-		}
-
 		public abstract TargetState State {
 			get;
 		}
