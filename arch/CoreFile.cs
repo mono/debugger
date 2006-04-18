@@ -241,7 +241,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			//
-			// ITargetMemoryAccess
+			// TargetMemoryAccess
 			//
 
 			public override int TargetIntegerSize {

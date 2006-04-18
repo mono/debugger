@@ -32,7 +32,7 @@ namespace Mono.Debugger.Backends
 			return cie_list;
 		}
 
-		public StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess target,
+		public StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess target,
 					       Architecture arch)
 		{
 			if (frame.TargetAddress.IsNull)
@@ -292,7 +292,7 @@ namespace Mono.Debugger.Backends
 				return value;
 			}
 
-			void GetValue (ITargetMemoryAccess target, Registers regs,
+			void GetValue (TargetMemoryAccess target, Registers regs,
 				       TargetAddress cfa, int reg, Column column)
 			{
 				switch (column.State) {
@@ -320,7 +320,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			void SetRegisters (Registers regs, ITargetMemoryAccess target,
+			void SetRegisters (Registers regs, TargetMemoryAccess target,
 					   Architecture arch, Column[] columns)
 			{
 				long cfa_addr = GetRegisterValue (regs, 1, columns [0]);
@@ -332,7 +332,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			public StackFrame Unwind (StackFrame frame, ITargetMemoryAccess target,
+			public StackFrame Unwind (StackFrame frame, TargetMemoryAccess target,
 						  Architecture arch)
 			{
 				Registers old_regs = frame.Registers;

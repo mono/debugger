@@ -79,7 +79,7 @@ namespace Mono.Debugger
 		//   Returns whether the instruction at target address @address is a `ret'
 		//   instruction.
 		// </summary>
-		internal abstract bool IsRetInstruction (ITargetMemoryAccess memory,
+		internal abstract bool IsRetInstruction (TargetMemoryAccess memory,
 							 TargetAddress address);
 
 		// <summary>
@@ -90,7 +90,7 @@ namespace Mono.Debugger
 		//   instructions.  This can be used to set a breakpoint immediately after
 		//   the function.
 		// </summary>
-		internal abstract TargetAddress GetCallTarget (ITargetMemoryAccess target,
+		internal abstract TargetAddress GetCallTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size);
 
@@ -102,7 +102,7 @@ namespace Mono.Debugger
 		//   instructions.  This can be used to set a breakpoint immediately after
 		//   the jump.
 		// </summary>
-		internal abstract TargetAddress GetJumpTarget (ITargetMemoryAccess target,
+		internal abstract TargetAddress GetJumpTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size);
 
@@ -111,7 +111,7 @@ namespace Mono.Debugger
 		//   If it's a trampoline, return the address of the corresponding method's
 		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
 		// </summary>
-		internal abstract TargetAddress GetTrampoline (ITargetMemoryAccess target,
+		internal abstract TargetAddress GetTrampoline (TargetMemoryAccess target,
 							       TargetAddress address,
 							       TargetAddress generic_trampoline_address);
 
@@ -122,11 +122,11 @@ namespace Mono.Debugger
 		internal abstract Registers CopyRegisters (Registers regs);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory,
+							  TargetMemoryAccess memory,
 							  byte[] code, int offset);
 
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
-							       ITargetMemoryAccess memory);
+							       TargetMemoryAccess memory);
 
 		internal abstract StackFrame CreateFrame (Thread thread, Registers regs);
 

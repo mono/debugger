@@ -35,13 +35,13 @@ namespace Mono.Debugger.Backends
 			: base (process, info)
 		{ }
 
-		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
+		internal override bool IsRetInstruction (TargetMemoryAccess memory,
 							 TargetAddress address)
 		{
 			return memory.ReadByte (address) == 0xc3;
 		}
 
-		internal override TargetAddress GetCallTarget (ITargetMemoryAccess target,
+		internal override TargetAddress GetCallTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size)
 		{
@@ -136,7 +136,7 @@ namespace Mono.Debugger.Backends
 				return vtable_addr;
 		}
 
-		internal override TargetAddress GetJumpTarget (ITargetMemoryAccess target,
+		internal override TargetAddress GetJumpTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size)
 		{
@@ -161,7 +161,7 @@ namespace Mono.Debugger.Backends
 			return TargetAddress.Null;
 		}
 
-		internal override TargetAddress GetTrampoline (ITargetMemoryAccess target,
+		internal override TargetAddress GetTrampoline (TargetMemoryAccess target,
 							       TargetAddress location,
 							       TargetAddress trampoline_address)
 		{
@@ -363,7 +363,7 @@ namespace Mono.Debugger.Backends
 			get { return 50; }
 		}
 
-		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
+		StackFrame unwind_method (StackFrame frame, TargetMemoryAccess memory, byte[] code,
 					  int pos, int offset)
 		{
 			Registers old_regs = frame.Registers;
@@ -428,7 +428,7 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 		}
 
-		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
+		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
 					  byte[] code, int offset)
 		{
 			int length = code.Length;
@@ -509,7 +509,7 @@ namespace Mono.Debugger.Backends
 			return regs;
 		}
 
-		StackFrame try_pthread_cond_timedwait (StackFrame frame, ITargetMemoryAccess memory)
+		StackFrame try_pthread_cond_timedwait (StackFrame frame, TargetMemoryAccess memory)
 		{
 			Symbol name = frame.Name;
 
@@ -567,7 +567,7 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame.Thread, eip, esp, ebp, regs);
 		}
 
-		StackFrame try_syscall_trampoline (StackFrame frame, ITargetMemoryAccess memory)
+		StackFrame try_syscall_trampoline (StackFrame frame, TargetMemoryAccess memory)
 		{
 			/*
 			 * This is a hack for system call trampolines on NPTL-enabled glibc's.
@@ -590,7 +590,7 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
 		}
 
-		StackFrame do_hacks (StackFrame frame, ITargetMemoryAccess memory)
+		StackFrame do_hacks (StackFrame frame, TargetMemoryAccess memory)
 		{
 			StackFrame new_frame;
 			try {
@@ -612,7 +612,7 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory,
 							  byte[] code, int offset)
 		{
 			if ((code != null) && (code.Length > 3))
@@ -643,7 +643,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,
-							       ITargetMemoryAccess memory)
+							       TargetMemoryAccess memory)
 		{
 			return null;
 		}

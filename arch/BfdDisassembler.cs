@@ -14,7 +14,7 @@ namespace Mono.Debugger.Backends
 		IntPtr dis;
 		IntPtr info;
 
-		ITargetMemoryAccess memory;
+		TargetMemoryAccess memory;
 		SymbolTableManager symtab_manager;
 
 		[DllImport("monodebuggerserver")]
@@ -31,7 +31,7 @@ namespace Mono.Debugger.Backends
 		PrintAddressHandler print_handler;
 
 		internal BfdDisassembler (SymbolTableManager symtab_manager,
-					  ITargetMemoryAccess memory, IntPtr dis, IntPtr info)
+					  TargetMemoryAccess memory, IntPtr dis, IntPtr info)
 		{
 			this.dis = dis;
 			this.info = info;

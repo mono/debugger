@@ -419,7 +419,7 @@ namespace Mono.Debugger
 			return mono_language;
 		}
 
-		internal void UpdateSymbolTable (ITargetMemoryAccess target)
+		internal void UpdateSymbolTable (TargetMemoryAccess target)
 		{
 			if (mono_language != null)
 				mono_language.Update (target);

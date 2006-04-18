@@ -46,13 +46,13 @@ namespace Mono.Debugger.Backends
 			: base (process, info)
 		{ }
 
-		internal override bool IsRetInstruction (ITargetMemoryAccess memory,
+		internal override bool IsRetInstruction (TargetMemoryAccess memory,
 							 TargetAddress address)
 		{
 			return memory.ReadByte (address) == 0xc3;
 		}
 
-		internal override TargetAddress GetCallTarget (ITargetMemoryAccess target,
+		internal override TargetAddress GetCallTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size)
 		{
@@ -178,7 +178,7 @@ namespace Mono.Debugger.Backends
 				return vtable_addr;
 		}
 
-		internal override TargetAddress GetJumpTarget (ITargetMemoryAccess target,
+		internal override TargetAddress GetJumpTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size)
 		{
@@ -204,7 +204,7 @@ namespace Mono.Debugger.Backends
 			return TargetAddress.Null;
 		}
 
-		internal override TargetAddress GetTrampoline (ITargetMemoryAccess target,
+		internal override TargetAddress GetTrampoline (TargetMemoryAccess target,
 							       TargetAddress location,
 							       TargetAddress trampoline_address)
 		{
@@ -463,7 +463,7 @@ namespace Mono.Debugger.Backends
 			return regs;
 		}
 
-		StackFrame unwind_method (StackFrame frame, ITargetMemoryAccess memory, byte[] code,
+		StackFrame unwind_method (StackFrame frame, TargetMemoryAccess memory, byte[] code,
 					  int pos, int offset)
 		{
 			Registers old_regs = frame.Registers;
@@ -570,7 +570,7 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
 		}
 
-		StackFrame read_prologue (StackFrame frame, ITargetMemoryAccess memory,
+		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
 					  byte[] code, int offset)
 		{
 			int length = code.Length;
@@ -644,7 +644,7 @@ namespace Mono.Debugger.Backends
 			return unwind_method (frame, memory, code, pos, offset);
 		}
 
-		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory,
 							  byte[] code, int offset)
 		{
 			if ((code != null) && (code.Length > 4))
@@ -670,7 +670,7 @@ namespace Mono.Debugger.Backends
 			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
 		}
 
-		StackFrame try_unwind_sigreturn (StackFrame frame, ITargetMemoryAccess memory)
+		StackFrame try_unwind_sigreturn (StackFrame frame, TargetMemoryAccess memory)
 		{
 			byte[] data = memory.ReadMemory (frame.TargetAddress, 9).Contents;
 
@@ -725,7 +725,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame frame,
-							       ITargetMemoryAccess memory)
+							       TargetMemoryAccess memory)
 		{
 			StackFrame new_frame = try_unwind_sigreturn (frame, memory);
 			if (new_frame != null)

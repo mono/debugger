@@ -320,7 +320,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal StackFrame UnwindStack (ITargetMemoryAccess memory, Architecture arch)
+		internal StackFrame UnwindStack (TargetMemoryAccess memory, Architecture arch)
 		{
 			if (parent_frame != null)
 				return parent_frame;

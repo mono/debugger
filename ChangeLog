@@ -1,5 +1,13 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetMemoryAccess.cs: Removed.
+	(ITargetMemoryAccess): Removed.
+
+	* backends/TargetMemoryAccess.cs: New file.
+	(TargetMemoryAccess): New public abstract class.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs
 	(ITargetInfo): Removed.
 

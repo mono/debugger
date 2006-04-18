@@ -16,7 +16,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void ChildOutputHandler (string output);
 
-	internal class Inferior : ITargetMemoryAccess, ITargetNotification, IDisposable
+	internal class Inferior : TargetMemoryAccess, ITargetNotification, IDisposable
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
@@ -688,7 +688,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		//
-		// ITargetMemoryAccess
+		// TargetMemoryAccess
 		//
 
 		public AddressDomain AddressDomain {
@@ -697,7 +697,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public TargetInfo TargetInfo {
+		public override TargetInfo TargetInfo {
 			get {
 				return target_info;
 			}
@@ -718,7 +718,7 @@ namespace Mono.Debugger.Backends
 			return data;
 		}
 
-		public byte[] ReadBuffer (TargetAddress address, int size)
+		public override byte[] ReadBuffer (TargetAddress address, int size)
 		{
 			check_disposed ();
 			if (size == 0)
@@ -734,7 +734,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public byte ReadByte (TargetAddress address)
+		public override byte ReadByte (TargetAddress address)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -746,7 +746,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int ReadInteger (TargetAddress address)
+		public override int ReadInteger (TargetAddress address)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -758,7 +758,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public long ReadLongInteger (TargetAddress address)
+		public override long ReadLongInteger (TargetAddress address)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -770,7 +770,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public TargetAddress ReadAddress (TargetAddress address)
+		public override TargetAddress ReadAddress (TargetAddress address)
 		{
 			check_disposed ();
 			TargetAddress res;
@@ -794,7 +794,7 @@ namespace Mono.Debugger.Backends
 				return res;
 		}
 
-		public string ReadString (TargetAddress address)
+		public override string ReadString (TargetAddress address)
 		{
 			check_disposed ();
 			StringBuilder sb = new StringBuilder ();
@@ -810,7 +810,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public TargetBlob ReadMemory (TargetAddress address, int size)
+		public override TargetBlob ReadMemory (TargetAddress address, int size)
 		{
 			check_disposed ();
 			byte [] retval = ReadBuffer (address, size);
@@ -906,7 +906,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int InsertBreakpoint (Breakpoint bpt, TargetAddress address)
+		public override int InsertBreakpoint (Breakpoint bpt, TargetAddress address)
 		{
 			return breakpoint_manager.InsertBreakpoint (this, bpt, address);
 		}
@@ -1060,7 +1060,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Architecture Architecture {
+		public override Architecture Architecture {
 			get {
 				check_disposed ();
 				return arch;
@@ -1073,7 +1073,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Registers GetRegisters ()
+		public override Registers GetRegisters ()
 		{
 			IntPtr buffer = IntPtr.Zero;
 			try {

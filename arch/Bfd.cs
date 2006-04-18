@@ -325,7 +325,7 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		bool read_dynamic_info (Inferior inferior, ITargetMemoryAccess target)
+		bool read_dynamic_info (Inferior inferior, TargetMemoryAccess target)
 		{
 			if (initialized)
 				return has_shlib_info;
@@ -380,7 +380,7 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		public void UpdateSharedLibraryInfo (Inferior inferior, ITargetMemoryAccess target)
+		public void UpdateSharedLibraryInfo (Inferior inferior, TargetMemoryAccess target)
 		{
 			// This fails if it's a statically linked executable.
 			try {
@@ -394,7 +394,7 @@ namespace Mono.Debugger.Backends
 			do_update_shlib_info (inferior, target);
 		}
 
-		void do_update_shlib_info (Inferior inferior, ITargetMemoryAccess target)
+		void do_update_shlib_info (Inferior inferior, TargetMemoryAccess target)
 		{
 			bool first = true;
 			TargetAddress map = first_link_map;
@@ -672,7 +672,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal BfdDisassembler GetDisassembler (ITargetMemoryAccess memory)
+		internal BfdDisassembler GetDisassembler (TargetMemoryAccess memory)
 		{
 			IntPtr dis = disassembler (bfd);
 
@@ -946,14 +946,14 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetAddress ILanguageBackend.GetTrampolineAddress (ITargetMemoryAccess memory,
+		TargetAddress ILanguageBackend.GetTrampolineAddress (TargetMemoryAccess memory,
 								     TargetAddress address,
 								     out bool is_start)
 		{
 			return GetTrampoline (memory, address, out is_start);
 		}
 
-		SourceMethod ILanguageBackend.GetTrampoline (ITargetMemoryAccess memory,
+		SourceMethod ILanguageBackend.GetTrampoline (TargetMemoryAccess memory,
 							     TargetAddress address)
 		{
 			return null;
@@ -963,7 +963,7 @@ namespace Mono.Debugger.Backends
 						    TargetAddress data, long arg)
 		{ }
 
-		public TargetAddress GetTrampoline (ITargetMemoryAccess memory,
+		public TargetAddress GetTrampoline (TargetMemoryAccess memory,
 						    TargetAddress address, out bool is_start)
 		{
 			if (!has_got || (address < plt_start) || (address > plt_end)) {
@@ -989,7 +989,7 @@ namespace Mono.Debugger.Backends
 			return memory.ReadAddress (got_start + 2 * info.TargetAddressSize);
 		}
 
-		internal override StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory)
+		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)
 		{
 			if ((frame.TargetAddress < StartAddress) || (frame.TargetAddress > EndAddress))
 				return null;

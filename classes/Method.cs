@@ -3,6 +3,7 @@ using System.Text;
 using System.Collections;
 
 using Mono.Debugger.Languages;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
@@ -120,7 +121,7 @@ namespace Mono.Debugger
 			this.wrapper_type = wrapper_type;
 		}
 
-		internal StackFrame UnwindStack (StackFrame frame, ITargetMemoryAccess memory,
+		internal StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory,
 						 Architecture arch)
 		{
 			if (!IsLoaded)
@@ -270,7 +271,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+		internal abstract SourceMethod GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
 
 		public TargetVariable GetVariableByName (string name)

@@ -49,11 +49,11 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		TargetAddress GetTrampolineAddress (ITargetMemoryAccess memory,
+		TargetAddress GetTrampolineAddress (TargetMemoryAccess memory,
 						    TargetAddress address,
 						    out bool is_start);
 
-		SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+		SourceMethod GetTrampoline (TargetMemoryAccess memory,
 					    TargetAddress address);
 
 		void Notification (Inferior inferior, NotificationType type,

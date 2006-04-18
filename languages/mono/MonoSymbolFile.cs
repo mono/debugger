@@ -226,7 +226,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable method_index_hash;
 
 		internal MonoSymbolFile (MonoLanguageBackend language, Process process,
-					 ITargetMemoryAccess memory, TargetAddress address)
+					 TargetMemoryAccess memory, TargetAddress address)
 		{
 			this.MonoLanguage = language;
 			this.TargetInfo = memory.TargetInfo;
@@ -332,7 +332,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal void AddWrapperEntry (ITargetMemoryAccess memory, TargetReader reader,
+		internal void AddWrapperEntry (TargetMemoryAccess memory, TargetReader reader,
 					       byte[] contents)
 		{
 			WrapperEntry wrapper = WrapperEntry.Create (this, memory, reader, contents);
@@ -622,7 +622,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal override StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory)
+							  TargetMemoryAccess memory)
 		{
 			return null;
 		}
@@ -807,7 +807,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			internal override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+			internal override SourceMethod GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
 				return file.LanguageBackend.GetTrampoline (memory, address);
@@ -1112,7 +1112,7 @@ namespace Mono.Debugger.Languages.Mono
 				this.LineNumbers = line_numbers;
 			}
 
-			public static WrapperEntry Create (MonoSymbolFile file, ITargetMemoryAccess memory,
+			public static WrapperEntry Create (MonoSymbolFile file, TargetMemoryAccess memory,
 							   TargetReader reader, byte[] contents)
 			{
 				int size = reader.BinaryReader.ReadInt32 ();
@@ -1200,7 +1200,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return null; }
 			}
 
-			internal override SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+			internal override SourceMethod GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
 				return Entry.File.LanguageBackend.GetTrampoline (memory, address);

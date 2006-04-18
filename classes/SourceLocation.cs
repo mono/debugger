@@ -2,6 +2,7 @@ using System;
 using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
@@ -233,7 +234,7 @@ namespace Mono.Debugger
 			//   The method has just been loaded, lookup the breakpoint
 			//   address and actually insert it.
 			// </summary>
-			void method_loaded (ITargetMemoryAccess target, SourceMethod source,
+			void method_loaded (TargetMemoryAccess target, SourceMethod source,
 					    object data)
 			{
 				load_handler = null;

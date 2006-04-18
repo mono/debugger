@@ -12,7 +12,7 @@ namespace Mono.Debugger
 {
 	public delegate void ModuleEventHandler (Module module);
 
-	internal delegate void MethodLoadedHandler (ITargetMemoryAccess target, SourceMethod method,
+	internal delegate void MethodLoadedHandler (TargetMemoryAccess target, SourceMethod method,
 						    object user_data);
 
 	internal interface ILoadHandler
@@ -68,7 +68,7 @@ namespace Mono.Debugger
 								    object user_data);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
-							  ITargetMemoryAccess memory);
+							  TargetMemoryAccess memory);
 
 		internal abstract void OnModuleChanged ();
 	}
@@ -345,7 +345,7 @@ namespace Mono.Debugger
 		}
 
 		internal StackFrame UnwindStack (StackFrame last_frame,
-						 ITargetMemoryAccess memory)
+						 TargetMemoryAccess memory)
 		{
 			return SymbolFile.UnwindStack (last_frame, memory);
 		}

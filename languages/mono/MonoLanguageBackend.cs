@@ -80,7 +80,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int MonoDefaultsDelegateOffset;
 		public readonly int MonoDefaultsExceptionOffset;
 
-		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, ITargetMemoryAccess memory,
+		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, TargetMemoryAccess memory,
 					    TargetAddress address)
 		{
 			this.Corlib = corlib;
@@ -411,7 +411,7 @@ namespace Mono.Debugger.Languages.Mono
 			return (MonoSymbolFile) image_hash [address];
 		}
 
-		void read_mono_debugger_info (ITargetMemoryAccess memory)
+		void read_mono_debugger_info (TargetMemoryAccess memory)
 		{
 			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
@@ -432,12 +432,12 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 #region symbol table management
-		internal void Update (ITargetMemoryAccess target)
+		internal void Update (TargetMemoryAccess target)
 		{
 			do_update_symbol_table (target);
 		}
 
-		void do_update_symbol_table (ITargetMemoryAccess memory)
+		void do_update_symbol_table (TargetMemoryAccess memory)
 		{
 			if (!initialized)
 				return;
@@ -459,7 +459,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		// This method reads the MonoDebuggerSymbolTable structure
 		// (struct definition is in mono-debug-debugger.h)
-		void do_update (ITargetMemoryAccess memory)
+		void do_update (TargetMemoryAccess memory)
 		{
 			TargetAddress symtab_address = memory.ReadAddress (info.SymbolTable);
 			TargetReader header = new TargetReader (
@@ -525,7 +525,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		// This method reads a portion of the data table (defn in mono-debug.h)
-		void read_data_table (ITargetMemoryAccess memory, TargetReader header)
+		void read_data_table (TargetMemoryAccess memory, TargetReader header)
 		{
 			int num_data_tables = header.ReadInteger ();
 			TargetAddress data_tables = header.ReadAddress ();
@@ -575,7 +575,7 @@ namespace Mono.Debugger.Languages.Mono
 			Wrapper
 		}
 
-		void read_data_items (ITargetMemoryAccess memory, TargetAddress address, int start, int end)
+		void read_data_items (TargetMemoryAccess memory, TargetAddress address, int start, int end)
 		{
 			TargetReader reader = new TargetReader (
 				memory.ReadMemory (address + start, end - start), memory.TargetInfo);
@@ -639,7 +639,7 @@ namespace Mono.Debugger.Languages.Mono
 			file.AddClassEntry (reader, contents);
 		}
 
-		void read_wrapper_entry (ITargetMemoryAccess memory, TargetReader reader)
+		void read_wrapper_entry (TargetMemoryAccess memory, TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
@@ -853,7 +853,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.RuntimeInvoke; }
 		}
 
-		public TargetAddress GetTrampolineAddress (ITargetMemoryAccess memory,
+		public TargetAddress GetTrampolineAddress (TargetMemoryAccess memory,
 							   TargetAddress address,
 							   out bool is_start)
 		{
@@ -892,7 +892,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.RunFinally; }
 		}
 
-		public SourceMethod GetTrampoline (ITargetMemoryAccess memory,
+		public SourceMethod GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
 			bool is_start;

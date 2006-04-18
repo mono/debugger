@@ -2,17 +2,13 @@ using System;
 
 namespace Mono.Debugger.Backends
 {
-	public abstract class TargetAccess : MarshalByRefObject, ITargetMemoryAccess
+	public abstract class TargetAccess : TargetMemoryAccess
 	{
 		internal abstract ThreadManager ThreadManager {
 			get;
 		}
 
 		public abstract Process Process {
-			get;
-		}
-
-		public abstract TargetInfo TargetInfo {
 			get;
 		}
 
@@ -65,33 +61,13 @@ namespace Mono.Debugger.Backends
 		// ITargetMemoryInfo
 		//
 
-		public abstract Architecture Architecture {
-			get;
-		}
-
 		public abstract AddressDomain AddressDomain {
 			get;
 		}
 
 		//
-		// ITargetMemoryAccess
+		// TargetMemoryAccess
 		//
-
-		public abstract byte ReadByte (TargetAddress address);
-
-		public abstract int ReadInteger (TargetAddress address);
-
-		public abstract long ReadLongInteger (TargetAddress address);
-
-		public abstract TargetAddress ReadAddress (TargetAddress address);
-
-		public abstract string ReadString (TargetAddress address);
-
-		public abstract TargetBlob ReadMemory (TargetAddress address, int size);
-
-		public abstract byte[] ReadBuffer (TargetAddress address, int size);
-
-		public abstract Registers GetRegisters ();
 
 		public abstract bool CanWrite {
 			get;
@@ -108,7 +84,5 @@ namespace Mono.Debugger.Backends
 		public abstract void WriteAddress (TargetAddress address, TargetAddress value);
 
 		public abstract void SetRegisters (Registers registers);
-
-		public abstract int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
 	}
 }

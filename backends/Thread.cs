@@ -674,7 +674,7 @@ namespace Mono.Debugger
 		}
 #endregion
 
-#region ITargetMemoryAccess implementation
+#region TargetMemoryAccess implementation
 		void write_memory (TargetAddress address, byte[] buffer)
 		{
 			check_target ();
