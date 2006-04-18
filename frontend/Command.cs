@@ -52,6 +52,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("down", typeof (DownCommand));
 			RegisterCommand ("kill", typeof (KillCommand));
 			RegisterAlias   ("k", typeof (KillCommand));
+			RegisterCommand ("detach", typeof (DetachCommand));
 			RegisterCommand ("set", typeof (SetCommand));
 			RegisterCommand ("show", typeof (ShowCommand));
 			RegisterCommand ("info", typeof (ShowCommand)); /* for gdb users */
@@ -222,6 +223,30 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public abstract class ProcessCommand : DebuggerCommand
+	{
+		int index = -1;
+		Process process;
+
+		public int Process {
+			get { return index; }
+			set { index = value; }
+		}
+
+		protected override bool DoResolveBase (ScriptingContext context)
+		{
+			if (!base.DoResolveBase (context))
+				return false;
+
+			context.CurrentProcess = process = context.Interpreter.GetProcess (index);
+			return true;
+		}
+
+		public Process CurrentProcess {
+			get { return process; }
+		}
+	}
+
 	public abstract class ThreadCommand : DebuggerCommand
 	{
 		int index = -1;
@@ -262,8 +287,10 @@ namespace Mono.Debugger.Frontend
 			if (!base.DoResolveBase (context))
 				return false;
 
+#if FIXME
 			if (!CurrentThread.IsStopped)
 				throw new TargetException (TargetError.NotStopped);
+#endif
 
 			backtrace = CurrentThread.GetBacktrace ();
 
@@ -1095,16 +1122,29 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class KillCommand : DebuggerCommand, IDocumentableCommand
+	public class KillCommand : ProcessCommand, IDocumentableCommand
 	{
 		protected override void DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.Kill ();
+			context.Interpreter.Kill (CurrentProcess);
 		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Running; } }
-		public string Description { get { return "Kill the program being debugged."; } }
+		public string Description { get { return "Kill the selected process."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class DetachCommand : ProcessCommand, IDocumentableCommand
+	{
+		protected override void DoExecute (ScriptingContext context)
+		{
+			context.Interpreter.Detach (CurrentProcess);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Running; } }
+		public string Description { get { return "Detach the selected process from the debugger."; } }
 		public string Documentation { get { return ""; } }
 	}
 
@@ -1439,11 +1479,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		private class ShowModulesCommand : ThreadCommand
+		private class ShowModulesCommand : ProcessCommand
 		{
 			protected override void DoExecute (ScriptingContext context)
 			{
-				Module[] modules = CurrentThread.Process.Modules;
+				Module[] modules = CurrentProcess.Modules;
 
 				context.Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
 				for (int i = 0; i < modules.Length; i++) {

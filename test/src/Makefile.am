@@ -10,7 +10,7 @@ noinst_SCRIPTS = \
 	TestRestart.exe TestNull.exe TestByRef.exe \
 	TestToString.exe TestObject.exe TestProperty.exe TestAbort.exe \
 	TestBreakpoint.exe TestNamespace.exe TestException.exe \
-	TestRestart.exe TestExec.exe TestChild.exe
+	TestRestart.exe TestExec.exe TestChild.exe TestAttach.exe
 
 EXTRA_DIST = \
 	TestManagedTypes.cs TestInvocation.cs TestInheritance.cs \
@@ -18,9 +18,10 @@ EXTRA_DIST = \
 	TestRestart.cs TestNull.cs TestByRef.cs \
 	TestToString.cs TestObject.cs TestProperty.cs TestAbort.cs \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
-	TestRestart.cs TestExec.cs TestChild.cs
+	TestRestart.cs TestExec.cs TestChild.cs TestAttach.cs
 
-noinst_PROGRAMS = testnativefork testnativeexec testnativechild
+noinst_PROGRAMS = \
+	testnativefork testnativeexec testnativechild testnativeattach
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<

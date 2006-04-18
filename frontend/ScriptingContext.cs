@@ -30,6 +30,7 @@ namespace Mono.Debugger.Frontend
 	public class ScriptingContext : MarshalByRefObject
 	{
 		Thread current_thread;
+		Process current_process;
 		StackFrame current_frame;
 		Interpreter interpreter;
 
@@ -42,21 +43,22 @@ namespace Mono.Debugger.Frontend
 			get { return interpreter; }
 		}
 
-		public Process GetProcess ()
-		{
-			if (current_thread == null)
-				throw new TargetException (TargetError.NoTarget);
-
-			Process process = current_thread.Process;
-			if (process == null)
-				throw new TargetException (TargetError.NoTarget);
-
-			return process;
-		}
-
 		public bool HasBackend {
 			get {
 				return interpreter.HasTarget;
+			}
+		}
+
+		public Process CurrentProcess {
+			get {
+				if (current_process == null)
+					throw new TargetException (TargetError.NoTarget);
+
+				return current_process;
+			}
+
+			set {
+				current_process = value;
 			}
 		}
 
@@ -68,7 +70,12 @@ namespace Mono.Debugger.Frontend
 				return current_thread;
 			}
 
-			set { current_thread = value; }
+			set {
+				current_thread = value;
+
+				if (value != null)
+					CurrentProcess = value.Process;
+			}
 		}
 
 		public StackFrame CurrentFrame {
@@ -79,7 +86,12 @@ namespace Mono.Debugger.Frontend
 				return current_frame;
 			}
 
-			set { current_frame = value; }
+			set {
+				current_frame = value;
+
+				if (value != null)
+					CurrentThread = value.Thread;
+			}
 		}
 
 		public StackFrame GetFrame (int number)
@@ -387,8 +399,7 @@ namespace Mono.Debugger.Frontend
 		public SourceLocation FindLocation (string file, int line)
 		{
 			string path = interpreter.GetFullPath (file);
-			Process process = GetProcess ();
-			SourceLocation location = process.FindLocation (path, line);
+			SourceLocation location = CurrentProcess.FindLocation (path, line);
 
 			if (location != null)
 				return location;
@@ -406,8 +417,7 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation FindMethod (string name)
 		{
-			Process process = GetProcess ();
-			return process.FindMethod (name);
+			return CurrentProcess.FindMethod (name);
 		}
 
 		public void ShowSources (Module module)
@@ -423,20 +433,18 @@ namespace Mono.Debugger.Frontend
 
 		public SourceBuffer FindFile (string filename)
 		{
-			Process process = GetProcess ();
-			return process.SourceFileFactory.FindFile (filename);
+			return CurrentProcess.SourceFileFactory.FindFile (filename);
 		}
 
 		public void LoadLibrary (Thread thread, string filename)
 		{
-			Process process = GetProcess ();
 			string pathname = Path.GetFullPath (filename);
 			if (!File.Exists (pathname))
 				throw new ScriptingException (
 					"No such file: `{0}'", pathname);
 
 			try {
-				process.LoadLibrary (thread, pathname);
+				CurrentProcess.LoadLibrary (thread, pathname);
 			} catch (TargetException ex) {
 				throw new ScriptingException (
 					"Cannot load library `{0}': {1}",

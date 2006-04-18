@@ -667,6 +667,30 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public void Kill (Process process)
+		{
+			if (process == main_process)
+				Kill ();
+			else
+				process.Kill ();
+		}
+
+		public void Detach ()
+		{
+			if (debugger != null) {
+				debugger.Detach ();
+				debugger = null;
+			}
+		}
+
+		public void Detach (Process process)
+		{
+			if (process == main_process)
+				Detach ();
+			else
+				process.Detach ();
+		}
+
 		protected void TargetExited ()
 		{
 			if (debugger != null) {

@@ -1,5 +1,11 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs (ProcessCommand): New public abstract class.
+	(DetachCommand): New command.  Note that we can only detach from a
+	process if we previously attached to it.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.Kill): Send a SIGKILL to the target.
 	(SingleSteppingEngine.Dispose): Call `inferior.Kill()' if we still
