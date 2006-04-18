@@ -227,7 +227,6 @@ classes/Makefile
 build/Makefile
 build/Mono.Debugger.dll.config
 backends/Makefile
-backends/classes/Makefile
 backends/server/Makefile
 languages/Makefile
 languages/mono/Makefile

@@ -1,5 +1,12 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* backends/classes/*TargetLocation.cs: Moved to languages/
+	* backends/classes/MonoVariableLocation: Moved to languages/mono/.
+
+	* backends/classes/: Removed.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/TargetReader.cs: Moved here from backends/classes/.
 
 2006-04-18  Martin Baulig  <martin@ximian.com>

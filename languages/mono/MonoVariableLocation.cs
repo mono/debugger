@@ -1,7 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Languages
+namespace Mono.Debugger.Languages.Mono
 {
 	// <summary>
 	//   The location of a variable.
