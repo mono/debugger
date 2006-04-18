@@ -89,7 +89,8 @@ namespace Mono.Debugger.Backends
 			{
 				InternalSection section = (InternalSection) user_data;
 
-				byte[] data = bfd.GetSectionContents (new IntPtr (section.section), true);
+				byte[] data = bfd.GetSectionContents (
+					bfd.ptr_from_address (section.section), true);
 				if (data == null)
 					throw new SymbolTableException ("Can't get bfd section {0}", name);
 				return new TargetReader (data, bfd.info);
@@ -440,6 +441,14 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		protected IntPtr ptr_from_address (long address)
+		{
+			if (info.TargetAddressSize == 8)
+				return new IntPtr (address);
+			else
+				return new IntPtr ((int) address);
+		}
+
 		public Bfd MainBfd {
 			get {
 				return main_bfd;
@@ -599,7 +608,7 @@ namespace Mono.Debugger.Backends
 			InternalSection section = GetSectionByName (".debug_frame", false);
 			if (section != null) {
 				byte[] contents = GetSectionContents (
-					new IntPtr (section.section), false);
+					ptr_from_address (section.section), false);
 				TargetBlob blob = new TargetBlob (contents, info);
 				frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, false);
@@ -608,7 +617,7 @@ namespace Mono.Debugger.Backends
 			section = GetSectionByName (".eh_frame", false);
 			if (section != null) {
 				byte[] contents = GetSectionContents (
-					new IntPtr (section.section), false);
+					ptr_from_address (section.section), false);
 				TargetBlob blob = new TargetBlob (contents, info);
 				eh_frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, true);
@@ -858,7 +867,7 @@ namespace Mono.Debugger.Backends
 					InternalSection isection = (InternalSection) Marshal.PtrToStructure (
 						ptr, typeof (InternalSection));
 					sections [i] = new Section (this, isection);
-					ptr = new IntPtr ((long) ptr + Marshal.SizeOf (isection));
+					ptr = ptr_from_address ((long) ptr + Marshal.SizeOf (isection));
 				}
 				has_sections = true;
 			} finally {
