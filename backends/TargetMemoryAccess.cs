@@ -1,6 +1,6 @@
 using System;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger
 {
 	public abstract class TargetMemoryAccess : MarshalByRefObject
 	{

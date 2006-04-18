@@ -114,7 +114,7 @@ namespace Mono.Debugger
 		Register[] regs;
 		bool from_current_frame;
 
-		public Registers (Architecture arch)
+		internal Registers (Architecture arch)
 		{
 			regs = new Register [arch.CountRegisters];
 			for (int i = 0; i < regs.Length; i++)
@@ -123,7 +123,7 @@ namespace Mono.Debugger
 					arch.RegisterSizes [i], false, 0);
 		}
 
-		public Registers (Architecture arch, long[] values)
+		internal Registers (Architecture arch, long[] values)
 		{
 			regs = new Register [arch.CountRegisters];
 			if (regs.Length != values.Length)
@@ -135,7 +135,7 @@ namespace Mono.Debugger
 			from_current_frame = true;
 		}
 
-		public Registers (Registers old_regs)
+		internal Registers (Registers old_regs)
 		{
 			regs = new Register [old_regs.regs.Length];
 			for (int i = 0; i < regs.Length; i++)
@@ -320,7 +320,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal StackFrame UnwindStack (TargetMemoryAccess memory, Architecture arch)
+		internal StackFrame UnwindStack (TargetMemoryAccess memory)
 		{
 			if (parent_frame != null)
 				return parent_frame;
@@ -328,7 +328,7 @@ namespace Mono.Debugger
 			StackFrame new_frame = null;
 			if (method != null) {
 				try {
-					new_frame = method.UnwindStack (this, memory, arch);
+					new_frame = method.UnwindStack (this, memory);
 				} catch (TargetException) {
 				}
 
@@ -346,7 +346,7 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			return arch.UnwindStack (this, memory, null, 0);
+			return memory.Architecture.UnwindStack (this, memory, null, 0);
 		}
 
 		public override string ToString ()

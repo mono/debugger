@@ -1,5 +1,9 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* arch/Architecture.cs (Architecture): Make this internal.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* backends/TargetMemoryAccess.cs
 	(TargetMemoryAccess.Architecture): Make this internal.
 

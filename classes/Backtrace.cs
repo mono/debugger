@@ -51,21 +51,20 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void GetBacktrace (Thread target, Architecture arch,
-					  TargetAddress until, int max_frames)
+		public void GetBacktrace (TargetMemoryAccess target, TargetAddress until,
+					  int max_frames)
 		{
-			while (TryUnwind (target, arch, until)) {
+			while (TryUnwind (target, until)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
 		}
 
-		public bool TryUnwind (Thread target, Architecture arch,
-				       TargetAddress until)
+		public bool TryUnwind (TargetMemoryAccess target, TargetAddress until)
 		{
 			StackFrame new_frame = null;
 			try {
-				new_frame = last_frame.UnwindStack (target, arch);
+				new_frame = last_frame.UnwindStack (target);
 			} catch (TargetException) {
 			}
 

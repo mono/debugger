@@ -192,7 +192,7 @@ namespace Mono.Debugger.Backends
 				current_backtrace = new Backtrace (CurrentFrame);
 
 				current_backtrace.GetBacktrace (
-					Thread, Architecture, TargetAddress.Null, max_frames);
+					this, TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			}

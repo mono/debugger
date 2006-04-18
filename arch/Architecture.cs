@@ -6,7 +6,7 @@ namespace Mono.Debugger
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
-	public abstract class Architecture : MarshalByRefObject
+	internal abstract class Architecture : MarshalByRefObject
 	{
 		protected readonly Process process;
 		protected readonly TargetInfo TargetInfo;
