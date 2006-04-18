@@ -1,5 +1,11 @@
 2006-04-18  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ISourceBuffer.cs: Removed.
+	(ISourceBuffer): Removed this interface; `SourceBuffer' is the
+	only class implementing it.
+
+2006-04-18  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ITargetMemoryAccess.cs: Removed.
 	(ITargetMemoryAccess): Removed.
 

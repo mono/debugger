@@ -281,7 +281,7 @@ namespace Mono.Debugger.Frontend
 				} else 
 					start = last_line;
 			} else {
-				ISourceBuffer buffer;
+				SourceBuffer buffer;
 
 				if (location.HasSourceFile) {
 					string filename = location.SourceFile.FileName;
@@ -550,7 +550,7 @@ namespace Mono.Debugger.Frontend
 				Print ("{0,4}  {1}", source.ID, source.FileName);
 		}
 
-		public ISourceBuffer FindFile (string filename)
+		public SourceBuffer FindFile (string filename)
 		{
 			Process process = GetProcess ();
 			return process.SourceFileFactory.FindFile (filename);

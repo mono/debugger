@@ -5,7 +5,7 @@ using System.Collections;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public class SourceBuffer : ISourceBuffer
+	public class SourceBuffer
 	{
 		string name;
 		string[] contents;

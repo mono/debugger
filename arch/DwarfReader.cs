@@ -2408,7 +2408,7 @@ namespace Mono.Debugger.Backends
 			DwarfTargetMethodSource msource;
 			int start_row, end_row;
 			LineNumber[] lines;
-			ISourceBuffer buffer;
+			SourceBuffer buffer;
 
 			public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
@@ -2466,7 +2466,7 @@ namespace Mono.Debugger.Backends
 				get { return source; }
 			}
 
-			public ISourceBuffer SourceBuffer {
+			public SourceBuffer SourceBuffer {
 				get { return buffer; }
 			}
 

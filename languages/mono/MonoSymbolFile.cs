@@ -982,7 +982,7 @@ namespace Mono.Debugger.Languages.Mono
 				LineEntry[] addresses = new LineEntry [lines.Count];
 				lines.CopyTo (addresses, 0);
 
-				ISourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
+				SourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
 				return new MethodSourceData (
 					start_row, end_row, addresses, source_method, buffer,
 					source_method.SourceFile.Module);

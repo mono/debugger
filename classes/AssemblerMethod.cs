@@ -32,7 +32,7 @@ namespace Mono.Debugger
 
 	public sealed class AssemblerMethod : MethodSource
 	{
-		ISourceBuffer buffer;
+		SourceBuffer buffer;
 		int start_row;
 		int end_row;
 		Module module;

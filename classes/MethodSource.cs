@@ -70,7 +70,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public ISourceBuffer SourceBuffer {
+		public SourceBuffer SourceBuffer {
 			get {
 				return SourceData.SourceBuffer;
 			}
@@ -193,16 +193,16 @@ namespace Mono.Debugger
 			public readonly int EndRow;
 			public readonly LineEntry[] Addresses;
 			public readonly SourceMethod SourceMethod;
-			public readonly ISourceBuffer SourceBuffer;
+			public readonly SourceBuffer SourceBuffer;
 			public readonly Module Module;
 
 			public MethodSourceData (int start, int end, LineEntry[] addresses,
-						 ISourceBuffer buffer, Module module)
+						 SourceBuffer buffer, Module module)
 				: this (start, end, addresses, null, buffer, module)
 			{ }
 
 			public MethodSourceData (int start, int end, LineEntry[] addresses,
-						 SourceMethod method, ISourceBuffer buffer,
+						 SourceMethod method, SourceBuffer buffer,
 						 Module module)
 			{
 				this.StartRow = start;

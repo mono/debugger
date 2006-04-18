@@ -10,10 +10,10 @@ namespace Mono.Debugger
 	{
 		Hashtable files = new Hashtable ();
 
-		public ISourceBuffer FindFile (string name)
+		public SourceBuffer FindFile (string name)
 		{
 			if (files.Contains (name))
-				return (ISourceBuffer) ((ObjectCache) files [name]).Data;
+				return (SourceBuffer) ((ObjectCache) files [name]).Data;
 
 			ObjectCache cache = (ObjectCache) files [name];
 			if (cache == null) {
@@ -21,7 +21,7 @@ namespace Mono.Debugger
 				files.Add (name, cache);
 			}
 
-			return (ISourceBuffer) cache.Data;
+			return (SourceBuffer) cache.Data;
 		}
 
 		public bool Exists (string name)
