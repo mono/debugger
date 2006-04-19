@@ -233,7 +233,7 @@ namespace Mono.Debugger.Backends
 			if ((mono_manager != null) && !do_attach)
 				mono_manager.ThreadCreated (new_thread, new_inferior);
 
-			OnThreadCreatedEvent (new_thread.Thread);
+			OnThreadCreatedEvent (new_thread);
 
 			if (!do_attach)
 				new_thread.Start (TargetAddress.Null);
@@ -259,7 +259,7 @@ namespace Mono.Debugger.Backends
 			manager.AddEngine (new_thread);
 
 			manager.Debugger.OnProcessCreatedEvent (new_process);
-			new_process.OnThreadCreatedEvent (new_thread.Thread);
+			new_process.OnThreadCreatedEvent (new_thread);
 
 			new_thread.Start (TargetAddress.Null);
 		}
@@ -302,9 +302,9 @@ namespace Mono.Debugger.Backends
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, inferior.PID, false, false);
 
-			Thread[] threads;
+			ThreadServant[] threads;
 			lock (thread_hash.SyncRoot) {
-				threads = new Thread [thread_hash.Count];
+				threads = new ThreadServant [thread_hash.Count];
 				thread_hash.Values.CopyTo (threads, 0);
 			}
 
@@ -313,7 +313,7 @@ namespace Mono.Debugger.Backends
 					threads [i].Kill ();
 			}
 
-			thread_hash [inferior.PID] = new_thread.Thread;
+			thread_hash [inferior.PID] = new_thread;
 
 			manager.ProcessExecd (new_thread);
 			manager.Debugger.OnProcessExecdEvent (this);
@@ -325,15 +325,15 @@ namespace Mono.Debugger.Backends
 			Initialize (new_thread, new_inferior, true);
 		}
 
-		protected void OnThreadCreatedEvent (Thread thread)
+		protected void OnThreadCreatedEvent (ThreadServant thread)
 		{
 			thread_hash.Add (thread.PID, thread);
-			manager.Debugger.OnThreadCreatedEvent (thread);
+			manager.Debugger.OnThreadCreatedEvent (thread.Client);
 		}
 
-		internal void OnThreadExitedEvent (Thread thread)
+		internal void OnThreadExitedEvent (ThreadServant thread)
 		{
-			manager.Debugger.OnThreadExitedEvent (thread);
+			manager.Debugger.OnThreadExitedEvent (thread.Client);
 			thread.Kill ();
 		}
 
@@ -358,9 +358,9 @@ namespace Mono.Debugger.Backends
 			this.main_engine = engine;
 
 			if (thread_hash.Contains (engine.PID))
-				thread_hash [engine.PID] = engine.Thread;
+				thread_hash [engine.PID] = engine;
 			else
-				thread_hash.Add (engine.PID, engine.Thread);
+				thread_hash.Add (engine.PID, engine);
 			main_thread_group.AddThread (engine.Thread.ID);
 
 			if ((start.PID != 0) && !is_exec) {
@@ -378,9 +378,11 @@ namespace Mono.Debugger.Backends
 					goto done;
 				}
 
+#if FIXME
 				attach_results = new ArrayList ();
-				foreach (Thread thread in thread_hash.Values)
+				foreach (ThreadServant thread in thread_hash.Values)
 					attach_results.Add (mono_manager.GetThreadID (thread));
+#endif
 			}
 
 			if (mono_manager != null) {
@@ -400,9 +402,9 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			Thread[] threads;
+			ThreadServant[] threads;
 			lock (thread_hash.SyncRoot) {
-				threads = new Thread [thread_hash.Count];
+				threads = new ThreadServant [thread_hash.Count];
 				thread_hash.Values.CopyTo (threads, 0);
 			}
 
@@ -431,8 +433,8 @@ namespace Mono.Debugger.Backends
 				Kill ();
 			} else {
 				thread_hash.Remove (engine.PID);
-				OnThreadExitedEvent (engine.Thread);
-				engine.Thread.Kill ();
+				OnThreadExitedEvent (engine);
+				engine.Kill ();
 			}
 
 			if (mono_manager != null)
@@ -516,8 +518,12 @@ namespace Mono.Debugger.Backends
 		public Thread[] Threads {
 			get {
 				lock (thread_hash.SyncRoot) {
-					Thread[] threads = new Thread [thread_hash.Count];
-					thread_hash.Values.CopyTo (threads, 0);
+					int count = thread_hash.Count;
+					Thread[] threads = new Thread [count];
+					ThreadServant[] servants = new ThreadServant [count];
+					thread_hash.Values.CopyTo (servants, 0);
+					for (int i = 0; i < count; i++)
+						threads [i] = servants [i].Client;
 					return threads;
 				}
 			}
@@ -534,10 +540,10 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.Threads,
 				      "Acquiring global thread lock: {0}", caller);
 			has_thread_lock = true;
-			foreach (Thread thread in thread_hash.Values) {
-				if (thread.Engine == caller)
+			foreach (ThreadServant thread in thread_hash.Values) {
+				if (thread == caller)
 					continue;
-				thread.Engine.AcquireThreadLock ();
+				thread.AcquireThreadLock ();
 			}
 			Report.Debug (DebugFlags.Threads,
 				      "Done acquiring global thread lock: {0}",
@@ -549,10 +555,10 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.Threads,
 				      "Releasing global thread lock: {0}", caller);
 				
-			foreach (Thread thread in thread_hash.Values) {
-				if (thread.Engine == caller)
+			foreach (ThreadServant thread in thread_hash.Values) {
+				if (thread == caller)
 					continue;
-				thread.Engine.ReleaseThreadLock ();
+				thread.ReleaseThreadLock ();
 			}
 			has_thread_lock = false;
 			thread_lock_mutex.Unlock ();

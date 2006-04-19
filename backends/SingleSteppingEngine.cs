@@ -101,8 +101,6 @@ namespace Mono.Debugger.Backends
 			is_main = true;
 
 			setup_engine ();
-
-			thread = new Thread (this);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
@@ -120,8 +118,6 @@ namespace Mono.Debugger.Backends
 			tid = inferior.TID;
 
 			setup_engine ();
-
-			thread = new Thread (this);
 		}
 
 		void setup_engine ()
@@ -702,6 +698,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 #endregion
+
+		internal void SetTID (long tid)
+		{
+			this.tid = tid;
+		}
 
 		public override TargetInfo TargetInfo {
 			get {
@@ -1290,7 +1291,7 @@ namespace Mono.Debugger.Backends
 		//   any notifications to the caller.  The currently running operation is
 		//   automatically resumed when ReleaseThreadLock() is called.
 		// </summary>
-		public void AcquireThreadLock ()
+		internal override void AcquireThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquiring thread lock", this);
@@ -1319,7 +1320,7 @@ namespace Mono.Debugger.Backends
 				manager.RequestWait ();
 		}
 
-		public void ReleaseThreadLock ()
+		internal override void ReleaseThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
 				      "{0} releasing thread lock: {1} {2}",
@@ -1711,7 +1712,7 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public object Invoke (TargetAccessDelegate func, object data)
+		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
 			return SendCommand (delegate {
 				return func (thread, data);
@@ -1741,7 +1742,6 @@ namespace Mono.Debugger.Backends
 		Inferior.ChildEvent stop_event;
 		Operation current_operation;
 
-		Thread thread;
 		Inferior inferior;
 		Architecture arch;
 		Disassembler disassembler;
@@ -1971,7 +1971,7 @@ namespace Mono.Debugger.Backends
 				      sse, data1, data2, Result);
 
 			sse.tid = data1;
-			sse.thread.SetTID (data1);
+			sse.SetTID (data1);
 			manager.SetThreadId (sse);
 			return true;
 		}

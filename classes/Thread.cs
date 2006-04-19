@@ -15,65 +15,21 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	using SSE = SingleSteppingEngine;
-
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
 	public class Thread : TargetAccess
 	{
-		internal Thread (SingleSteppingEngine engine)
+		internal Thread (ThreadServant servant, int id)
 		{
-			this.engine = engine;
-			this.target = engine;
-			this.id = engine.ThreadManager.NextThreadID;
-
-			this.manager = engine.ThreadManager;
-			this.process = engine.ProcessServant;
-
-			this.symtab_manager = process.SymbolTableManager;
-
-			this.pid = engine.PID;
-			this.tid = engine.TID;
-
-			tgroup = process.CreateThreadGroup ("@" + ID);
-			tgroup.AddThread (ID);
-
-			operation_completed_event = new ST.ManualResetEvent (false);
-
-			this.target_info = engine.TargetInfo;
+			this.id = id;
+			this.servant = servant;
+			this.operation_completed_event = new ST.ManualResetEvent (false);
 		}
 
-		internal Thread (TargetAccess target, int pid)
-		{
-			this.target = target;
-			this.id = target.ThreadManager.NextThreadID;
-			this.pid = pid;
-
-			this.manager = target.ThreadManager;
-			this.process = target.ProcessServant;
-
-			this.symtab_manager = process.SymbolTableManager;
-
-			tgroup = process.CreateThreadGroup ("@" + ID);
-			tgroup.AddThread (ID);
-
-			operation_completed_event = new ST.ManualResetEvent (false);
-
-			this.target_info = target.TargetInfo;
-		}
-
-		bool is_daemon;
-		int id, pid;
-		long tid;
-		ThreadGroup tgroup;
-		TargetAccess target;
-		SingleSteppingEngine engine;
-		ProcessServant process;
-		ThreadManager manager;
-		SymbolTableManager symtab_manager;
+		int id;
 		ST.ManualResetEvent operation_completed_event;
-		TargetInfo target_info;
+		ThreadServant servant;
 
 		public ST.WaitHandle WaitHandle {
 			get { return operation_completed_event; }
@@ -81,8 +37,8 @@ namespace Mono.Debugger
 
 		protected internal Language NativeLanguage {
 			get {
-				check_target ();
-				return process.BfdContainer.NativeLanguage;
+				check_servant ();
+				return servant.NativeLanguage;
 			}
 		}
 
@@ -97,17 +53,15 @@ namespace Mono.Debugger
 		// </summary>
 		public override TargetState State {
 			get {
-				if (target == null)
+				if (servant == null)
 					return TargetState.NO_TARGET;
 				else
-					return target.State;
+					return servant.State;
 			}
 		}
 
 		public int ID {
-			get {
-				return id;
-			}
+			get { return id; }
 		}
 
 		public string Name {
@@ -121,80 +75,63 @@ namespace Mono.Debugger
 
 		public int PID {
 			get {
-				return pid;
+				check_servant ();
+				return servant.PID;
 			}
 		}
 
 		public long TID {
 			get {
-				return tid;
+				check_servant ();
+				return servant.TID;
 			}
 		}
 
 		internal override Architecture Architecture {
 			get {
-				check_target ();
-				return target.Architecture;
+				check_servant ();
+				return servant.Architecture;
 			}
 		}
 
 		internal override ProcessServant ProcessServant {
 			get {
-				check_target ();
-				return process;
+				check_servant ();
+				return servant.ProcessServant;
 			}
 		}
 
 		public Process Process {
 			get {
-				check_target ();
-				return process.Client;
+				check_servant ();
+				return ProcessServant.Client;
 			}
 		}
 
 		internal override ThreadManager ThreadManager {
 			get {
-				check_target ();
-				return manager;
-			}
-		}
-
-		internal SingleSteppingEngine Engine {
-			get {
-				check_engine ();
-				return engine;
+				check_servant ();
+				return servant.ThreadManager;
 			}
 		}
 
 		public bool IsDaemon {
 			get {
-				return is_daemon;
+				check_servant ();
+				return servant.IsDaemon;
 			}
 		}
 
 		public ThreadGroup ThreadGroup {
-			get { return tgroup; }
+			get {
+				check_servant ();
+				return servant.ThreadGroup;
+			}
 		}
 
-		internal void SetDaemon ()
+		void check_servant ()
 		{
-			is_daemon = true;
-		}
-
-		internal void SetTID (long tid)
-		{
-			this.tid = tid;
-		}
-
-		void check_engine ()
-		{
-			if (engine == null)
-				throw new TargetException (TargetError.NoTarget);
-		}
-
-		void check_target ()
-		{
-			if (target == null)
+			if (servant == null)
 				throw new TargetException (TargetError.NoTarget);
 		}
 
@@ -208,15 +145,15 @@ namespace Mono.Debugger
 		// </summary>
 		public override StackFrame CurrentFrame {
 			get {
-				check_target ();
-				return target.CurrentFrame;
+				check_servant ();
+				return servant.CurrentFrame;
 			}
 		}
 
 		public override TargetAddress CurrentFrameAddress {
 			get {
-				check_target ();
-				return target.CurrentFrameAddress;
+				check_servant ();
+				return servant.CurrentFrameAddress;
 			}
 		}
 
@@ -231,14 +168,14 @@ namespace Mono.Debugger
 		// </summary>
 		public override Backtrace GetBacktrace (int max_frames)
 		{
-			check_target ();
-			return target.GetBacktrace (max_frames);
+			check_servant ();
+			return servant.GetBacktrace (max_frames);
 		}
 
 		public Backtrace GetBacktrace ()
 		{
-			check_target ();
-			Backtrace bt = target.CurrentBacktrace;
+			check_servant ();
+			Backtrace bt = servant.CurrentBacktrace;
 			if (bt != null)
 				return bt;
 
@@ -247,39 +184,39 @@ namespace Mono.Debugger
 
 		public override Backtrace CurrentBacktrace {
 			get {
-				check_target ();
-				return target.CurrentBacktrace;
+				check_servant ();
+				return servant.CurrentBacktrace;
 			}
 		}
 
 		public override Registers GetRegisters ()
 		{
-			check_target ();
-			return target.GetRegisters ();
+			check_servant ();
+			return servant.GetRegisters ();
 		}
 
 		public override void SetRegisters (Registers registers)
 		{
-			check_engine ();
-			engine.SetRegisters (registers);
+			check_servant ();
+			servant.SetRegisters (registers);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
 		{
-			check_engine ();
-			return engine.GetMemoryMaps ();
+			check_servant ();
+			return servant.GetMemoryMaps ();
 		}
 
 		public Method Lookup (TargetAddress address)
 		{
-			check_engine ();
-			return symtab_manager.Lookup (address);
+			check_servant ();
+			return servant.Lookup (address);
 		}
 
 		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			check_engine ();
-			return symtab_manager.SimpleLookup (address, exact_match);
+			check_servant ();
+			return servant.SimpleLookup (address, exact_match);
 		}
 
 		// <summary>
@@ -292,8 +229,8 @@ namespace Mono.Debugger
 		// </summary>
 		public Method CurrentMethod {
 			get {
-				check_engine ();
-				return engine.CurrentMethod;
+				check_servant ();
+				return servant.CurrentMethod;
 			}
 		}
 
@@ -303,9 +240,9 @@ namespace Mono.Debugger
 		public void StepInstruction ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.StepInstruction (new StepCommandResult (this));
+				servant.StepInstruction (new StepCommandResult (this));
 			}
 		}
 
@@ -315,9 +252,9 @@ namespace Mono.Debugger
 		public void StepNativeInstruction ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.StepNativeInstruction (new StepCommandResult (this));
+				servant.StepNativeInstruction (new StepCommandResult (this));
 			}
 		}
 
@@ -327,9 +264,9 @@ namespace Mono.Debugger
 		public void NextInstruction ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.NextInstruction (new StepCommandResult (this));
+				servant.NextInstruction (new StepCommandResult (this));
 			}
 		}
 
@@ -339,9 +276,9 @@ namespace Mono.Debugger
 		public void StepLine ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.StepLine (new StepCommandResult (this));
+				servant.StepLine (new StepCommandResult (this));
 			}
 		}
 
@@ -351,9 +288,9 @@ namespace Mono.Debugger
 		public void NextLine ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.NextLine (new StepCommandResult (this));
+				servant.NextLine (new StepCommandResult (this));
 			}
 		}
 
@@ -363,9 +300,9 @@ namespace Mono.Debugger
 		public void Finish ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.Finish (new StepCommandResult (this));
+				servant.Finish (new StepCommandResult (this));
 			}
 		}
 
@@ -375,9 +312,9 @@ namespace Mono.Debugger
 		public void FinishNative ()
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.FinishNative (new StepCommandResult (this));
+				servant.FinishNative (new StepCommandResult (this));
 			}
 		}
 
@@ -399,32 +336,32 @@ namespace Mono.Debugger
 		public void Continue (TargetAddress until, bool in_background)
 		{
 			lock (this) {
-				check_engine ();
+				check_servant ();
 				operation_completed_event.Reset ();
-				engine.Continue (until, in_background, new StepCommandResult (this));
+				servant.Continue (until, in_background, new StepCommandResult (this));
 			}
 		}
 
 		internal void Kill ()
 		{
 			operation_completed_event.Set ();
-			if (engine != null)
-				engine.Kill ();
+			if (servant != null)
+				servant.Kill ();
 			Dispose ();
 		}
 
 		internal void Detach ()
 		{
 			operation_completed_event.Set ();
-			if (engine != null)
-				engine.Detach ();
+			if (servant != null)
+				servant.Detach ();
 			Dispose ();
 		}
 
 		public void Stop ()
 		{
-			check_engine ();
-			engine.Stop ();
+			check_servant ();
+			servant.Stop ();
 		}
 
 		public void Wait ()
@@ -442,8 +379,8 @@ namespace Mono.Debugger
 		// </summary>
 		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
-			check_engine ();
-			return engine.InsertBreakpoint (breakpoint, address);
+			check_servant ();
+			return servant.InsertBreakpoint (breakpoint, address);
 		}
 
 		// <summary>
@@ -453,8 +390,8 @@ namespace Mono.Debugger
 		public void RemoveBreakpoint (int index)
 		{
 			check_disposed ();
-			if (engine != null)
-				engine.RemoveBreakpoint (index);
+			if (servant != null)
+				servant.RemoveBreakpoint (index);
 		}
 
 		// <summary>
@@ -468,8 +405,8 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.InsertBreakpoint (breakpoint, func);
+				check_servant ();
+				result = servant.InsertBreakpoint (breakpoint, func);
 			}
 
 			result.Wait ();
@@ -485,8 +422,8 @@ namespace Mono.Debugger
 		// </summary>
 		public int AddEventHandler (EventType type, Event handle)
 		{
-			check_engine ();
-			return engine.AddEventHandler (type, handle);
+			check_servant ();
+			return servant.AddEventHandler (type, handle);
 		}
 
 		// <summary>
@@ -496,20 +433,20 @@ namespace Mono.Debugger
 		public void RemoveEventHandler (int index)
 		{
 			check_disposed ();
-			if (engine != null)
-				engine.RemoveEventHandler (index);
+			if (servant != null)
+				servant.RemoveEventHandler (index);
 		}
 
 		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
-			check_engine ();
-			return engine.PrintObject (style, obj, format);
+			check_servant ();
+			return servant.PrintObject (style, obj, format);
 		}
 
 		public string PrintType (Style style, TargetType type)
 		{
-			check_engine ();
-			return engine.PrintType (style, type);
+			check_servant ();
+			return servant.PrintType (style, type);
 		}
 
 		//
@@ -518,20 +455,20 @@ namespace Mono.Debugger
 
 		public override int GetInstructionSize (TargetAddress address)
 		{
-			check_target ();
-			return target.GetInstructionSize (address);
+			check_servant ();
+			return servant.GetInstructionSize (address);
 		}
 
 		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
-			check_target ();
-			return target.DisassembleInstruction (method, address);
+			check_servant ();
+			return servant.DisassembleInstruction (method, address);
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
 		{
-			check_target ();
-			return target.DisassembleMethod (method);
+			check_servant ();
+			return servant.DisassembleMethod (method);
 		}
 
 		public void RuntimeInvoke (TargetFunctionType function,
@@ -542,8 +479,8 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.RuntimeInvoke (
+				check_servant ();
+				result = servant.RuntimeInvoke (
 					function, object_argument, param_objects, is_virtual, true);
 			}
 
@@ -558,8 +495,8 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.RuntimeInvoke (
+				check_servant ();
+				result = servant.RuntimeInvoke (
 					function, object_argument, param_objects, is_virtual, false);
 			}
 
@@ -580,8 +517,8 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, arg1, arg2);
+				check_servant ();
+				result = servant.CallMethod (method, arg1, arg2);
 			}
 
 			result.Wait ();
@@ -598,8 +535,8 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, method_arg, string_arg);
+				check_servant ();
+				result = servant.CallMethod (method, method_arg, string_arg);
 			}
 
 			result.Wait ();
@@ -612,10 +549,8 @@ namespace Mono.Debugger
 
 		internal object Invoke (TargetAccessDelegate func, object data)
 		{
-			if (engine.ThreadManager.InBackgroundThread)
-				return func (this, data);
-			else
-				return engine.ThreadManager.SendCommand (engine, func, data);
+			check_servant ();
+			return servant.Invoke (func, data);
 		}
 
 		public void Return (bool run_finally)
@@ -623,8 +558,8 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.Return (run_finally);
+				check_servant ();
+				result = servant.Return (run_finally);
 				if (result == null)
 					return;
 			}
@@ -637,18 +572,11 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_engine ();
-				result = engine.AbortInvocation ();
+				check_servant ();
+				result = servant.AbortInvocation ();
 			}
 
 			result.Wait ();
-		}
-
-		internal CommandResult GetThreadID (MonoThreadManager mono_manager,
-						    MonoDebuggerInfo debugger_info)
-		{
-			check_engine ();
-			return engine.GetThreadID (mono_manager, debugger_info);
 		}
 
 		public string PrintRegisters (StackFrame frame)
@@ -657,7 +585,7 @@ namespace Mono.Debugger
 		}
 
 		public bool HasTarget {
-			get { return engine != null; }
+			get { return servant != null; }
 		}
 
 		public bool CanRun {
@@ -673,85 +601,91 @@ namespace Mono.Debugger
 		}
 
 		public override TargetInfo TargetInfo {
-			get { return target_info; }
+			get {
+				check_servant ();
+				return servant.TargetInfo;
+			}
 		}
 
 #region ITargetInfo implementation
 		public override int TargetAddressSize {
-			get { return target_info.TargetAddressSize; }
+			get { return TargetInfo.TargetAddressSize; }
 		}
 
 		public override int TargetIntegerSize {
-			get { return target_info.TargetIntegerSize; }
+			get { return TargetInfo.TargetIntegerSize; }
 		}
 
 		public override int TargetLongIntegerSize {
-			get { return target_info.TargetLongIntegerSize; }
+			get { return TargetInfo.TargetLongIntegerSize; }
 		}
 
 		public override bool IsBigEndian {
-			get { return target_info.IsBigEndian; }
+			get { return TargetInfo.IsBigEndian; }
 		}
 #endregion
 
 #region TargetMemoryAccess implementation
 		void write_memory (TargetAddress address, byte[] buffer)
 		{
-			check_target ();
-			target.WriteBuffer (address, buffer);
+			check_servant ();
+			servant.WriteBuffer (address, buffer);
 		}
 
 		public override AddressDomain AddressDomain {
 			get {
-				return target_info.AddressDomain;
+				return TargetInfo.AddressDomain;
 			}
 		}
 
 		public override byte ReadByte (TargetAddress address)
 		{
-			check_target ();
-			return target.ReadByte (address);
+			check_servant ();
+			return servant.ReadByte (address);
 		}
 
 		public override int ReadInteger (TargetAddress address)
 		{
-			check_target ();
-			return target.ReadInteger (address);
+			check_servant ();
+			return servant.ReadInteger (address);
 		}
 
 		public override long ReadLongInteger (TargetAddress address)
 		{
-			check_target ();
-			return target.ReadLongInteger (address);
+			check_servant ();
+			return servant.ReadLongInteger (address);
 		}
 
 		public override TargetAddress ReadAddress (TargetAddress address)
 		{
-			check_target ();
-			return target.ReadAddress (address);
+			check_servant ();
+			return servant.ReadAddress (address);
 		}
 
 		public override string ReadString (TargetAddress address)
 		{
-			check_target ();
-			return target.ReadString (address);
+			check_servant ();
+			return servant.ReadString (address);
 		}
 
 		public override TargetBlob ReadMemory (TargetAddress address, int size)
 		{
-			check_target ();
-			byte[] buffer = target.ReadBuffer (address, size);
-			return new TargetBlob (buffer, target_info);
+			check_servant ();
+			byte[] buffer = servant.ReadBuffer (address, size);
+			return new TargetBlob (buffer, TargetInfo);
 		}
 
 		public override byte[] ReadBuffer (TargetAddress address, int size)
 		{
-			check_target ();
-			return target.ReadBuffer (address, size);
+			check_servant ();
+			return servant.ReadBuffer (address, size);
 		}
 
 		public override bool CanWrite {
-			get { return false; }
+			get {
+				check_servant ();
+				return servant.CanWrite;
+			}
 		}
 
 		public override void WriteBuffer (TargetAddress address, byte[] buffer)
@@ -776,9 +710,9 @@ namespace Mono.Debugger
 
 		public override void WriteAddress (TargetAddress address, TargetAddress value)
 		{
-			check_target ();
+			check_servant ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (
-				target_info.TargetAddressSize, target_info);
+				TargetInfo.TargetAddressSize, TargetInfo);
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
 		}
@@ -814,9 +748,9 @@ namespace Mono.Debugger
 
 		protected virtual void DoDispose ()
 		{
-			if (engine != null) {
-				engine.Dispose ();
-				engine = null;
+			if (servant != null) {
+				servant.Dispose ();
+				servant = null;
 
 				operation_completed_event.Set ();
 			}

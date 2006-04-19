@@ -81,7 +81,7 @@ namespace Mono.Debugger.Backends
 
 				int pid = Int32.Parse (section.name.Substring (5));
 				CoreFileThread thread = new CoreFileThread (this, pid);
-				OnThreadCreatedEvent (thread.Thread);
+				OnThreadCreatedEvent (thread);
 				threads.Add (thread);
 			}
 
@@ -151,7 +151,7 @@ namespace Mono.Debugger.Backends
 			{
 				this.pid = pid;
 				this.CoreFile = core;
-				this.Thread = new Thread (this, pid);
+				this.Thread = new Thread (this, ID);
 
 				this.Disassembler = core.CoreBfd.GetDisassembler (this);
 				this.Registers = read_registers ();
@@ -284,6 +284,21 @@ namespace Mono.Debugger.Backends
 			public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
 			{
 				return CoreFile.SymbolTableManager.SimpleLookup (address, exact_match);
+			}
+
+			internal override object Invoke (TargetAccessDelegate func, object data)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal override void AcquireThreadLock ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal override void ReleaseThreadLock ()
+			{
+				throw new InvalidOperationException ();
 			}
 
 			//

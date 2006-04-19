@@ -136,7 +136,7 @@ namespace Mono.Debugger.Backends
 
 			++index;
 			if (index < 3)
-				sse.Thread.SetDaemon ();
+				sse.SetDaemon ();
 		}
 
 		internal void ThreadExited (SingleSteppingEngine engine)
@@ -169,7 +169,7 @@ namespace Mono.Debugger.Backends
 
 		public CommandResult GetThreadID (Thread thread)
 		{
-			return thread.GetThreadID (this, debugger_info);
+			throw new InternalError ();
 		}
 
 		internal void SetThreadId (SingleSteppingEngine engine)

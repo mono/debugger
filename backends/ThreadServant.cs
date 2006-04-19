@@ -26,9 +26,12 @@ namespace Mono.Debugger.Backends
 
 			tgroup = process.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
+
+			thread = new Thread (this, ID);
 		}
 
 		protected readonly int id;
+		protected readonly Thread thread;
 		protected readonly ProcessServant process;
 		protected readonly ThreadManager manager;
 		protected readonly ThreadGroup tgroup;
@@ -55,6 +58,10 @@ namespace Mono.Debugger.Backends
 				else
 					return String.Format ("Thread @{0}", id);
 			}
+		}
+
+		public Thread Client {
+			get { return thread; }
 		}
 
 		public abstract int PID {
@@ -140,6 +147,8 @@ namespace Mono.Debugger.Backends
 
 		public abstract void Stop ();
 
+		internal abstract object Invoke (TargetAccessDelegate func, object data);
+
 		// <summary>
 		//   Insert a breakpoint at address @address.
 		//
@@ -177,6 +186,10 @@ namespace Mono.Debugger.Backends
 		//   been returned by AddEventHandler().
 		// </summary>
 		public abstract void RemoveEventHandler (int index);
+
+		internal abstract void AcquireThreadLock ();
+
+		internal abstract void ReleaseThreadLock ();
 
 		public abstract string PrintObject (Style style, TargetObject obj, DisplayFormat format);
 
