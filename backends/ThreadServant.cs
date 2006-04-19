@@ -13,77 +13,30 @@ using System.Runtime.Remoting.Messaging;
 using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
-	using SSE = SingleSteppingEngine;
-
-	[Serializable]
-	internal delegate object TargetAccessDelegate (Thread target, object user_data);
-
-	public class Thread : TargetAccess
+	internal abstract class ThreadServant : TargetAccess
 	{
-		internal Thread (SingleSteppingEngine engine)
+		protected ThreadServant (ThreadManager manager, ProcessServant process)
 		{
-			this.engine = engine;
-			this.target = engine;
-			this.id = engine.ThreadManager.NextThreadID;
+			this.manager = manager;
+			this.process = process;
 
-			this.manager = engine.ThreadManager;
-			this.process = engine.ProcessServant;
-
-			this.symtab_manager = process.SymbolTableManager;
-
-			this.pid = engine.PID;
-			this.tid = engine.TID;
+			this.id = manager.NextThreadID;
 
 			tgroup = process.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
-
-			operation_completed_event = new ST.ManualResetEvent (false);
-
-			this.target_info = engine.TargetInfo;
 		}
 
-		internal Thread (TargetAccess target, int pid)
-		{
-			this.target = target;
-			this.id = target.ThreadManager.NextThreadID;
-			this.pid = pid;
-
-			this.manager = target.ThreadManager;
-			this.process = target.ProcessServant;
-
-			this.symtab_manager = process.SymbolTableManager;
-
-			tgroup = process.CreateThreadGroup ("@" + ID);
-			tgroup.AddThread (ID);
-
-			operation_completed_event = new ST.ManualResetEvent (false);
-
-			this.target_info = target.TargetInfo;
-		}
+		protected readonly int id;
+		protected readonly ProcessServant process;
+		protected readonly ThreadManager manager;
+		protected readonly ThreadGroup tgroup;
 
 		bool is_daemon;
-		int id, pid;
-		long tid;
-		ThreadGroup tgroup;
-		TargetAccess target;
-		SingleSteppingEngine engine;
-		ProcessServant process;
-		ThreadManager manager;
-		SymbolTableManager symtab_manager;
-		ST.ManualResetEvent operation_completed_event;
-		TargetInfo target_info;
-
-		public ST.WaitHandle WaitHandle {
-			get { return operation_completed_event; }
-		}
 
 		protected internal Language NativeLanguage {
-			get {
-				check_target ();
-				return process.BfdContainer.NativeLanguage;
-			}
+			get { return process.BfdContainer.NativeLanguage; }
 		}
 
 		public override string ToString ()
@@ -91,23 +44,8 @@ namespace Mono.Debugger
 			return Name;
 		}
 
-		// <summary>
-		//   The single-stepping engine's target state.  This will be
-		//   TargetState.RUNNING while the engine is stepping.
-		// </summary>
-		public override TargetState State {
-			get {
-				if (target == null)
-					return TargetState.NO_TARGET;
-				else
-					return target.State;
-			}
-		}
-
 		public int ID {
-			get {
-				return id;
-			}
+			get { return id; }
 		}
 
 		public string Name {
@@ -119,57 +57,16 @@ namespace Mono.Debugger
 			}
 		}
 
-		public int PID {
-			get {
-				return pid;
-			}
+		public abstract int PID {
+			get;
 		}
 
-		public long TID {
-			get {
-				return tid;
-			}
-		}
-
-		internal override Architecture Architecture {
-			get {
-				check_target ();
-				return target.Architecture;
-			}
-		}
-
-		internal override ProcessServant ProcessServant {
-			get {
-				check_target ();
-				return process;
-			}
-		}
-
-		public Process Process {
-			get {
-				check_target ();
-				return process.Client;
-			}
-		}
-
-		internal override ThreadManager ThreadManager {
-			get {
-				check_target ();
-				return manager;
-			}
-		}
-
-		internal SingleSteppingEngine Engine {
-			get {
-				check_engine ();
-				return engine;
-			}
+		public abstract long TID {
+			get;
 		}
 
 		public bool IsDaemon {
-			get {
-				return is_daemon;
-			}
+			get { return is_daemon; }
 		}
 
 		public ThreadGroup ThreadGroup {
@@ -181,106 +78,11 @@ namespace Mono.Debugger
 			is_daemon = true;
 		}
 
-		internal void SetTID (long tid)
-		{
-			this.tid = tid;
-		}
+		public abstract TargetMemoryArea[] GetMemoryMaps ();
 
-		void check_engine ()
-		{
-			if (engine == null)
-				throw new TargetException (TargetError.NoTarget);
-		}
+		public abstract Method Lookup (TargetAddress address);
 
-		void check_target ()
-		{
-			if (target == null)
-				throw new TargetException (TargetError.NoTarget);
-		}
-
-		// <summary>
-		//   The current stack frame.  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The single stepping engine
-		//   automatically computes the current frame and current method each time
-		//   a stepping operation is completed.  This ensures that we do not
-		//   unnecessarily compute this several times if more than one client
-		//   accesses this property.
-		// </summary>
-		public override StackFrame CurrentFrame {
-			get {
-				check_target ();
-				return target.CurrentFrame;
-			}
-		}
-
-		public override TargetAddress CurrentFrameAddress {
-			get {
-				check_target ();
-				return target.CurrentFrameAddress;
-			}
-		}
-
-		// <summary>
-		//   The current stack frame.  May only be used when the engine is stopped
-		//   (State == TargetState.STOPPED).  The backtrace is generated on
-		//   demand, when this function is called.  However, the single stepping
-		//   engine will compute this only once each time a stepping operation is
-		//   completed.  This means that if you call this function several times
-		//   without doing any stepping operations in the meantime, you'll always
-		//   get the same backtrace.
-		// </summary>
-		public override Backtrace GetBacktrace (int max_frames)
-		{
-			check_target ();
-			return target.GetBacktrace (max_frames);
-		}
-
-		public Backtrace GetBacktrace ()
-		{
-			check_target ();
-			Backtrace bt = target.CurrentBacktrace;
-			if (bt != null)
-				return bt;
-
-			return GetBacktrace (-1);
-		}
-
-		public override Backtrace CurrentBacktrace {
-			get {
-				check_target ();
-				return target.CurrentBacktrace;
-			}
-		}
-
-		public override Registers GetRegisters ()
-		{
-			check_target ();
-			return target.GetRegisters ();
-		}
-
-		public override void SetRegisters (Registers registers)
-		{
-			check_engine ();
-			engine.SetRegisters (registers);
-		}
-
-		public TargetMemoryArea[] GetMemoryMaps ()
-		{
-			check_engine ();
-			return engine.GetMemoryMaps ();
-		}
-
-		public Method Lookup (TargetAddress address)
-		{
-			check_engine ();
-			return symtab_manager.Lookup (address);
-		}
-
-		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
-		{
-			check_engine ();
-			return symtab_manager.SimpleLookup (address, exact_match);
-		}
+		public abstract Symbol SimpleLookup (TargetAddress address, bool exact_match);
 
 		// <summary>
 		//   The current method  May only be used when the engine is stopped
@@ -290,149 +92,53 @@ namespace Mono.Debugger
 		//   unnecessarily compute this several times if more than one client
 		//   accesses this property.
 		// </summary>
-		public Method CurrentMethod {
-			get {
-				check_engine ();
-				return engine.CurrentMethod;
-			}
+		public abstract Method CurrentMethod {
+			get;
 		}
 
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public void StepInstruction ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.StepInstruction (new StepCommandResult (this));
-			}
-		}
+		public abstract void StepInstruction (CommandResult result);
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public void StepNativeInstruction ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.StepNativeInstruction (new StepCommandResult (this));
-			}
-		}
+		public abstract void StepNativeInstruction (CommandResult result);
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public void NextInstruction ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.NextInstruction (new StepCommandResult (this));
-			}
-		}
+		public abstract void NextInstruction (CommandResult result);
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public void StepLine ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.StepLine (new StepCommandResult (this));
-			}
-		}
+		public abstract void StepLine (CommandResult result);
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public void NextLine ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.NextLine (new StepCommandResult (this));
-			}
-		}
+		public abstract void NextLine (CommandResult result);
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public void Finish ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.Finish (new StepCommandResult (this));
-			}
-		}
+		public abstract void Finish (CommandResult result);
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public void FinishNative ()
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.FinishNative (new StepCommandResult (this));
-			}
-		}
+		public abstract void FinishNative (CommandResult result);
 
-		public void Continue ()
-		{
-			Continue (TargetAddress.Null, false);
-		}
+		public abstract void Continue (TargetAddress until, bool in_background,
+					       CommandResult result);
 
-		public void Continue (TargetAddress until)
-		{
-			Continue (until, false);
-		}
+		public abstract void Kill ();
 
-		public void Continue (bool in_background)
-		{
-			Continue (TargetAddress.Null, in_background);
-		}
+		public abstract void Detach ();
 
-		public void Continue (TargetAddress until, bool in_background)
-		{
-			lock (this) {
-				check_engine ();
-				operation_completed_event.Reset ();
-				engine.Continue (until, in_background, new StepCommandResult (this));
-			}
-		}
-
-		internal void Kill ()
-		{
-			operation_completed_event.Set ();
-			if (engine != null)
-				engine.Kill ();
-			Dispose ();
-		}
-
-		internal void Detach ()
-		{
-			operation_completed_event.Set ();
-			if (engine != null)
-				engine.Detach ();
-			Dispose ();
-		}
-
-		public void Stop ()
-		{
-			check_engine ();
-			engine.Stop ();
-		}
-
-		public void Wait ()
-		{
-			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.WaitOne ();
-			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
-		}
+		public abstract void Stop ();
 
 		// <summary>
 		//   Insert a breakpoint at address @address.
@@ -440,22 +146,14 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
-		{
-			check_engine ();
-			return engine.InsertBreakpoint (breakpoint, address);
-		}
+		public abstract override int InsertBreakpoint (Breakpoint breakpoint,
+							       TargetAddress address);
 
 		// <summary>
 		//   Remove breakpoint @index.  @index is the breakpoint number which has
 		//   been returned by InsertBreakpoint().
 		// </summary>
-		public void RemoveBreakpoint (int index)
-		{
-			check_disposed ();
-			if (engine != null)
-				engine.RemoveBreakpoint (index);
-		}
+		public abstract void RemoveBreakpoint (int index);
 
 		// <summary>
 		//   Insert a breakpoint at function @func.
@@ -463,19 +161,8 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.InsertBreakpoint (breakpoint, func);
-			}
-
-			result.Wait ();
-
-			return (int) result.Result;
-		}
+		public abstract CommandResult InsertBreakpoint (Breakpoint breakpoint,
+								TargetFunctionType func);
 
 		// <summary>
 		//   Add an event handler.
@@ -483,324 +170,70 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveEventHandler() to remove
 		//   the event handler.
 		// </summary>
-		public int AddEventHandler (EventType type, Event handle)
-		{
-			check_engine ();
-			return engine.AddEventHandler (type, handle);
-		}
+		public abstract int AddEventHandler (EventType type, Event handle);
 
 		// <summary>
 		//   Remove event handler @index.  @index is the event handler number which has
 		//   been returned by AddEventHandler().
 		// </summary>
-		public void RemoveEventHandler (int index)
-		{
-			check_disposed ();
-			if (engine != null)
-				engine.RemoveEventHandler (index);
-		}
+		public abstract void RemoveEventHandler (int index);
 
-		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
-		{
-			check_engine ();
-			return engine.PrintObject (style, obj, format);
-		}
+		public abstract string PrintObject (Style style, TargetObject obj, DisplayFormat format);
 
-		public string PrintType (Style style, TargetType type)
-		{
-			check_engine ();
-			return engine.PrintType (style, type);
-		}
+		public abstract string PrintType (Style style, TargetType type);
 
-		//
-		// Disassembling.
-		//
+		public abstract CommandResult RuntimeInvoke (TargetFunctionType function,
+							     TargetClassObject object_argument,
+							     TargetObject[] param_objects,
+							     bool is_virtual, bool debug);
 
-		public override int GetInstructionSize (TargetAddress address)
-		{
-			check_target ();
-			return target.GetInstructionSize (address);
-		}
+		public abstract CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
+							  TargetAddress arg2);
 
-		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
-		{
-			check_target ();
-			return target.DisassembleInstruction (method, address);
-		}
+		public abstract CommandResult CallMethod (TargetAddress method, long method_arg,
+							  string string_arg);
 
-		public override AssemblerMethod DisassembleMethod (Method method)
-		{
-			check_target ();
-			return target.DisassembleMethod (method);
-		}
+		public abstract CommandResult CallMethod (TargetAddress method, TargetAddress arg);
 
-		public void RuntimeInvoke (TargetFunctionType function,
-					   TargetClassObject object_argument,
-					   TargetObject[] param_objects,
-					   bool is_virtual)
-		{
-			CommandResult result;
+		public abstract CommandResult Return (bool run_finally);
 
-			lock (this) {
-				check_engine ();
-				result = engine.RuntimeInvoke (
-					function, object_argument, param_objects, is_virtual, true);
-			}
-
-			result.Wait ();
-		}
-
-		public TargetObject RuntimeInvoke (TargetFunctionType function,
-						   TargetClassObject object_argument,
-						   TargetObject[] param_objects,
-						   bool is_virtual, out string exc_message)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.RuntimeInvoke (
-					function, object_argument, param_objects, is_virtual, false);
-			}
-
-			result.Wait ();
-
-			RuntimeInvokeResult res = (RuntimeInvokeResult) result.Result;
-			if (res == null) {
-				exc_message = null;
-				return null;
-			}
-			exc_message = res.ExceptionMessage;
-			return res.ReturnObject;
-		}
-
-		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-						 TargetAddress arg2)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, arg1, arg2);
-			}
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (TargetAddress) result.Result;
-		}
-
-		public TargetAddress CallMethod (TargetAddress method, long method_arg,
-						 string string_arg)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.CallMethod (method, method_arg, string_arg);
-			}
-
-			result.Wait ();
-
-			if (result.Result == null)
-				throw new TargetException (TargetError.UnknownError);
-
-			return (TargetAddress) result.Result;
-		}
-
-		internal object Invoke (TargetAccessDelegate func, object data)
-		{
-			if (engine.ThreadManager.InBackgroundThread)
-				return func (this, data);
-			else
-				return engine.ThreadManager.SendCommand (engine, func, data);
-		}
-
-		public void Return (bool run_finally)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.Return (run_finally);
-				if (result == null)
-					return;
-			}
-
-			result.Wait ();
-		}
-
-		public void AbortInvocation ()
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_engine ();
-				result = engine.AbortInvocation ();
-			}
-
-			result.Wait ();
-		}
-
-		internal CommandResult GetThreadID (MonoThreadManager mono_manager,
-						    MonoDebuggerInfo debugger_info)
-		{
-			check_engine ();
-			return engine.GetThreadID (mono_manager, debugger_info);
-		}
+		public abstract CommandResult AbortInvocation ();
 
 		public string PrintRegisters (StackFrame frame)
 		{
 			return Architecture.PrintRegisters (frame);
 		}
 
-		public bool HasTarget {
-			get { return engine != null; }
+		public abstract bool CanRun {
+			get;
 		}
 
-		public bool CanRun {
-			get { return true; }
+		public abstract bool CanStep {
+			get;
 		}
 
-		public bool CanStep {
-			get { return true; }
+		public abstract bool IsStopped {
+			get;
 		}
 
-		public bool IsStopped {
-			get { return State == TargetState.STOPPED; }
-		}
-
-		public override TargetInfo TargetInfo {
-			get { return target_info; }
-		}
-
-#region ITargetInfo implementation
 		public override int TargetAddressSize {
-			get { return target_info.TargetAddressSize; }
+			get { return TargetInfo.TargetAddressSize; }
 		}
 
 		public override int TargetIntegerSize {
-			get { return target_info.TargetIntegerSize; }
+			get { return TargetInfo.TargetIntegerSize; }
 		}
 
 		public override int TargetLongIntegerSize {
-			get { return target_info.TargetLongIntegerSize; }
+			get { return TargetInfo.TargetLongIntegerSize; }
 		}
 
 		public override bool IsBigEndian {
-			get { return target_info.IsBigEndian; }
-		}
-#endregion
-
-#region TargetMemoryAccess implementation
-		void write_memory (TargetAddress address, byte[] buffer)
-		{
-			check_target ();
-			target.WriteBuffer (address, buffer);
+			get { return TargetInfo.IsBigEndian; }
 		}
 
 		public override AddressDomain AddressDomain {
-			get {
-				return target_info.AddressDomain;
-			}
-		}
-
-		public override byte ReadByte (TargetAddress address)
-		{
-			check_target ();
-			return target.ReadByte (address);
-		}
-
-		public override int ReadInteger (TargetAddress address)
-		{
-			check_target ();
-			return target.ReadInteger (address);
-		}
-
-		public override long ReadLongInteger (TargetAddress address)
-		{
-			check_target ();
-			return target.ReadLongInteger (address);
-		}
-
-		public override TargetAddress ReadAddress (TargetAddress address)
-		{
-			check_target ();
-			return target.ReadAddress (address);
-		}
-
-		public override string ReadString (TargetAddress address)
-		{
-			check_target ();
-			return target.ReadString (address);
-		}
-
-		public override TargetBlob ReadMemory (TargetAddress address, int size)
-		{
-			check_target ();
-			byte[] buffer = target.ReadBuffer (address, size);
-			return new TargetBlob (buffer, target_info);
-		}
-
-		public override byte[] ReadBuffer (TargetAddress address, int size)
-		{
-			check_target ();
-			return target.ReadBuffer (address, size);
-		}
-
-		public override bool CanWrite {
-			get { return false; }
-		}
-
-		public override void WriteBuffer (TargetAddress address, byte[] buffer)
-		{
-			write_memory (address, buffer);
-		}
-
-		public override void WriteByte (TargetAddress address, byte value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override void WriteInteger (TargetAddress address, int value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override void WriteLongInteger (TargetAddress address, long value)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override void WriteAddress (TargetAddress address, TargetAddress value)
-		{
-			check_target ();
-			TargetBinaryWriter writer = new TargetBinaryWriter (
-				target_info.TargetAddressSize, target_info);
-			writer.WriteAddress (value);
-			write_memory (address, writer.Contents);
-		}
-#endregion
-
-		internal class StepCommandResult : CommandResult
-		{
-			Thread thread;
-
-			public StepCommandResult (Thread thread)
-			{
-				this.thread = thread;
-			}
-
-			public override ST.WaitHandle CompletedEvent {
-				get { return thread.WaitHandle; }
-			}
-
-			public override void Completed ()
-			{
-				thread.operation_completed_event.Set ();
-			}
+			get { return TargetInfo.AddressDomain; }
 		}
 
 #region IDisposable implementation
@@ -809,17 +242,11 @@ namespace Mono.Debugger
 		protected void check_disposed ()
 		{
 			if (disposed)
-				throw new ObjectDisposedException ("Thread");
+				throw new ObjectDisposedException ("ThreadServant");
 		}
 
 		protected virtual void DoDispose ()
 		{
-			if (engine != null) {
-				engine.Dispose ();
-				engine = null;
-
-				operation_completed_event.Set ();
-			}
 		}
 
 		protected virtual void Dispose (bool disposing)
@@ -844,7 +271,7 @@ namespace Mono.Debugger
 		}
 #endregion
 
-		~Thread ()
+		~ThreadServant ()
 		{
 			Dispose (false);
 		}

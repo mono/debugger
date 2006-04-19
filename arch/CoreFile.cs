@@ -135,19 +135,21 @@ namespace Mono.Debugger.Backends
 			get { return info; }
 		}
 
-		protected class CoreFileThread : TargetAccess
+		protected class CoreFileThread : ThreadServant
 		{
-			public readonly int PID;
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
 			public readonly Registers Registers;
 			public readonly BfdDisassembler Disassembler;
 			Backtrace current_backtrace;
 			StackFrame current_frame;
+			Method current_method;
+			int pid;
 
 			public CoreFileThread (CoreFile core, int pid)
+				: base (core.ThreadManager, core)
 			{
-				this.PID = pid;
+				this.pid = pid;
 				this.CoreFile = core;
 				this.Thread = new Thread (this, pid);
 
@@ -187,6 +189,26 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetInfo; }
 			}
 
+			public override int PID {
+				get { return pid; }
+			}
+
+			public override long TID {
+				get { return -1; }
+			}
+
+			public override bool CanRun {
+				get { return false; }
+			}
+
+			public override bool CanStep {
+				get { return false; }
+			}
+
+			public override bool IsStopped {
+				get { return true; }
+			}
+
 			public override Backtrace GetBacktrace (int max_frames)
 			{
 				current_backtrace = new Backtrace (CurrentFrame);
@@ -208,6 +230,15 @@ namespace Mono.Debugger.Backends
 							Thread, Registers);
 
 					return current_frame;
+				}
+			}
+
+			public override Method CurrentMethod {
+				get {
+					if (current_method == null)
+						current_method = Lookup (CurrentFrameAddress);
+
+					return current_method;
 				}
 			}
 
@@ -240,25 +271,24 @@ namespace Mono.Debugger.Backends
 				return Disassembler.DisassembleMethod (method);
 			}
 
+			public override TargetMemoryArea[] GetMemoryMaps ()
+			{
+				throw new NotImplementedException ();
+			}
+
+			public override Method Lookup (TargetAddress address)
+			{
+				return CoreFile.SymbolTableManager.Lookup (address);
+			}
+
+			public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
+			{
+				return CoreFile.SymbolTableManager.SimpleLookup (address, exact_match);
+			}
+
 			//
 			// TargetMemoryAccess
 			//
-
-			public override int TargetIntegerSize {
-				get { return CoreFile.TargetInfo.TargetIntegerSize; }
-			}
-
-			public override int TargetLongIntegerSize {
-				get { return CoreFile.TargetInfo.TargetLongIntegerSize; }
-			}
-
-			public override int TargetAddressSize {
-				get { return CoreFile.TargetInfo.TargetAddressSize; }
-			}
-
-			public override bool IsBigEndian {
-				get { return CoreFile.TargetInfo.IsBigEndian; }
-			}
 
 			public override AddressDomain AddressDomain {
 				get { return CoreFile.TargetInfo.AddressDomain; }
@@ -338,6 +368,132 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void StepInstruction (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void StepNativeInstruction (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void NextInstruction (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void StepLine (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void NextLine (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void Finish (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void FinishNative (CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void Continue (TargetAddress until, bool in_background,
+						       CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void Kill ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void Detach ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void Stop ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult InsertBreakpoint (Breakpoint breakpoint,
+									TargetFunctionType func)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void RemoveBreakpoint (int index)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override int AddEventHandler (EventType type, Event handle)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void RemoveEventHandler (int index)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override string PrintObject (Style style, TargetObject obj,
+							    DisplayFormat format)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override string PrintType (Style style, TargetType type)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult RuntimeInvoke (TargetFunctionType function,
+								     TargetClassObject object_argument,
+								     TargetObject[] param_objects,
+								     bool is_virtual, bool debug)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult CallMethod (TargetAddress method,
+								  TargetAddress arg1,
+								  TargetAddress arg2)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult CallMethod (TargetAddress method,
+								  long method_arg,
+								  string string_arg)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult CallMethod (TargetAddress method,
+								  TargetAddress arg)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult Return (bool run_finally)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override CommandResult AbortInvocation ()
 			{
 				throw new InvalidOperationException ();
 			}

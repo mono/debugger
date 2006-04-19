@@ -1,5 +1,16 @@
 2006-04-19  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadServant.cs: New file.
+	(ThreadServant): New internal abstract class.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine): Derive from `ThreadServant'.
+
+	* arch/CoreFile.cs
+	(CoreFile.CoreFileThread): Derive from `ThreadServant'.
+
+2006-04-19  Martin Baulig  <martin@ximian.com>
+
 	Split `Process' into `Process' and `ProcessServant'.
 
 	* backends/ProcessServant.cs: New file.

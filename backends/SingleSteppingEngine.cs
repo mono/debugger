@@ -68,7 +68,7 @@ namespace Mono.Debugger.Backends
 	//
 	//   See the `Thread' class for the "user interface".
 	// </summary>
-	internal class SingleSteppingEngine : TargetAccess
+	internal class SingleSteppingEngine : ThreadServant
 	{
 		// <summary>
 		//   This is invoked after compiling a trampoline - it returns whether or
@@ -78,15 +78,14 @@ namespace Mono.Debugger.Backends
 		internal delegate bool CheckBreakpointHandler ();
 
 		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
+			: base (manager, inferior.Process)
 		{
-			this.manager = manager;
 			this.inferior = inferior;
-			this.process = inferior.Process;
 			this.start = inferior.ProcessStart;
 
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
 
-			PID = inferior.PID;
+			pid = inferior.PID;
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
@@ -97,22 +96,20 @@ namespace Mono.Debugger.Backends
 				inferior.Attach (start.PID, true);
 			else
 				inferior.Run (true);
-			PID = inferior.PID;
+			pid = inferior.PID;
 
 			is_main = true;
 
 			setup_engine ();
 
 			thread = new Thread (this);
-			ID = thread.ID;
-			Name = thread.Name;
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
 					     Inferior inferior, int pid, bool do_attach, bool is_main)
 			: this (manager, inferior)
 		{
-			this.PID = pid;
+			this.pid = pid;
 			this.is_main = is_main;
 
 			if (do_attach)
@@ -125,8 +122,6 @@ namespace Mono.Debugger.Backends
 			setup_engine ();
 
 			thread = new Thread (this);
-			ID = thread.ID;
-			Name = thread.Name;
 		}
 
 		void setup_engine ()
@@ -156,7 +151,7 @@ namespace Mono.Debugger.Backends
 		// </remarks>
 		public void ProcessEvent (int status)
 		{
-			if (disposed)
+			if (inferior == null)
 				return;
 
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
@@ -630,14 +625,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected Method Lookup (TargetAddress address)
+		public override Method Lookup (TargetAddress address)
 		{
 			process.UpdateSymbolTable (inferior);
-
 			return process.SymbolTableManager.Lookup (address);
 		}
 
-		protected Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			return process.SymbolTableManager.SimpleLookup (address, exact_match);
 		}
@@ -653,6 +647,26 @@ namespace Mono.Debugger.Backends
 
 		public Thread Thread {
 			get { return thread; }
+		}
+
+		public override int PID {
+			get { return pid; }
+		}
+
+		public override long TID {
+			get { return tid; }
+		}
+
+		public override bool CanRun {
+			get { return true; }
+		}
+
+		public override bool CanStep {
+			get { return true; }
+		}
+
+		public override bool IsStopped {
+			get { return State == TargetState.STOPPED; }
 		}
 
 		internal override ProcessServant ProcessServant {
@@ -671,7 +685,7 @@ namespace Mono.Debugger.Backends
 			get { return current_frame; }
 		}
 
-		public Method CurrentMethod {
+		public override Method CurrentMethod {
 			get { return current_method; }
 		}
 
@@ -687,10 +701,6 @@ namespace Mono.Debugger.Backends
 					return inferior.State;
 			}
 		}
-
-		public long TID {
-			get { return tid; }
-		}
 #endregion
 
 		public override TargetInfo TargetInfo {
@@ -700,38 +710,18 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override int TargetIntegerSize {
-			get { return TargetInfo.TargetIntegerSize; }
-		}
-
-		public override int TargetLongIntegerSize {
-			get { return TargetInfo.TargetLongIntegerSize; }
-		}
-
-		public override int TargetAddressSize {
-			get { return TargetInfo.TargetAddressSize; }
-		}
-
-		public override bool IsBigEndian {
-			get { return TargetInfo.IsBigEndian; }
-		}
-
-		public override AddressDomain AddressDomain {
-			get { return TargetInfo.AddressDomain; }
-		}
-
-		public TargetMemoryArea[] GetMemoryMaps ()
+		public override TargetMemoryArea[] GetMemoryMaps ()
 		{
 			check_inferior ();
 			return inferior.GetMemoryMaps ();
 		}
 
-		public void Kill ()
+		public override void Kill ()
 		{
 			inferior.SetSignal (inferior.SIGKILL, true);
 		}
 
-		public void Detach ()
+		public override void Detach ()
 		{
 			SendCommand (delegate {
 				if (!engine_stopped) {
@@ -751,7 +741,7 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public void Stop ()
+		public override void Stop ()
 		{
 			lock (this) {
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1}",
@@ -1371,70 +1361,71 @@ namespace Mono.Debugger.Backends
 
 #region SSE Commands
 
-		public void StepInstruction (CommandResult result)
+		public override void StepInstruction (CommandResult result)
 		{
 			StartOperation (new OperationStep (StepMode.SingleInstruction, result));
 		}
 
-		public void StepNativeInstruction (CommandResult result)
+		public override void StepNativeInstruction (CommandResult result)
 		{
 			StartOperation (new OperationStep (StepMode.NativeInstruction, result));
 		}
 
-		public void NextInstruction (CommandResult result)
+		public override void NextInstruction (CommandResult result)
 		{
 			StartOperation (new OperationStep (StepMode.NextInstruction, result));
 		}
 
-		public void StepLine (CommandResult result)
+		public override void StepLine (CommandResult result)
 		{
 			StartOperation (new OperationStep (StepMode.SourceLine, result));
 		}
 
-		public void NextLine (CommandResult result)
+		public override void NextLine (CommandResult result)
 		{
 			StartOperation (new OperationStep (StepMode.NextLine, result));
 		}
 
-		public void Finish (CommandResult result)
+		public override void Finish (CommandResult result)
 		{
 			StartOperation (new OperationFinish (false, result));
 		}
 
-		public void FinishNative (CommandResult result)
+		public override void FinishNative (CommandResult result)
 		{
 			StartOperation (new OperationFinish (true, result));
 		}
 
-		public void Continue (TargetAddress until, bool in_background, CommandResult result)
+		public override void Continue (TargetAddress until, bool in_background,
+					       CommandResult result)
 		{
 			StartOperation (new OperationRun (until, in_background, result));
 		}
 
-		public CommandResult RuntimeInvoke (TargetFunctionType function,
-						    TargetClassObject object_argument,
-						    TargetObject[] param_objects,
-						    bool is_virtual, bool debug)
+		public override CommandResult RuntimeInvoke (TargetFunctionType function,
+							     TargetClassObject object_argument,
+							     TargetObject[] param_objects,
+							     bool is_virtual, bool debug)
 		{
 			return StartOperation (new OperationRuntimeInvoke (
 				function, object_argument, param_objects, is_virtual, debug));
 		}
 
-		public CommandResult CallMethod (TargetAddress method, long method_argument,
-						 string string_argument)
+		public override CommandResult CallMethod (TargetAddress method, long method_argument,
+							  string string_argument)
 		{
 			return StartOperation (new OperationCallMethod (
 				method, method_argument, string_argument));
 		}
 
-		public CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
-						 TargetAddress arg2)
+		public override CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
+							  TargetAddress arg2)
 		{
 			return StartOperation (new OperationCallMethod (
 				method, arg1.Address, arg2.Address));
 		}
 
-		public CommandResult CallMethod (TargetAddress method, TargetAddress argument)
+		public override CommandResult CallMethod (TargetAddress method, TargetAddress argument)
 		{
 			return StartOperation (new OperationCallMethod (
 				method, argument.Address));
@@ -1460,7 +1451,7 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (parent_frame.Registers);
 		}
 
-		public CommandResult Return (bool run_finally)
+		public override CommandResult Return (bool run_finally)
 		{
 			return (CommandResult) SendCommand (delegate {
 				GetBacktrace (-1);
@@ -1485,7 +1476,7 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public CommandResult AbortInvocation ()
+		public override CommandResult AbortInvocation ()
 		{
 			return (CommandResult) SendCommand (delegate {
 				GetBacktrace (-1);
@@ -1563,7 +1554,7 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public void RemoveBreakpoint (int index)
+		public override void RemoveBreakpoint (int index)
 		{
 			SendCommand (delegate {
 				process.BreakpointManager.RemoveBreakpoint (inferior, index);
@@ -1571,13 +1562,14 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public CommandResult InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
+		public override CommandResult InsertBreakpoint (Breakpoint breakpoint,
+								TargetFunctionType func)
 		{
 			return StartOperation (new OperationInsertBreakpoint (breakpoint, func));
 		}
 
 		static int next_event_index = 0;
-		public int AddEventHandler (EventType type, Event handle)
+		public override int AddEventHandler (EventType type, Event handle)
 		{
 			if (type != EventType.CatchException)
 				throw new InternalError ();
@@ -1587,7 +1579,7 @@ namespace Mono.Debugger.Backends
 			return index;
 		}
 
-		public void RemoveEventHandler (int index)
+		public override void RemoveEventHandler (int index)
 		{
 			exception_handlers.Remove (index);
 		}
@@ -1704,14 +1696,15 @@ namespace Mono.Debugger.Backends
 			get { return true; }
 		}
 
-		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
+		public override string PrintObject (Style style, TargetObject obj,
+						    DisplayFormat format)
 		{
 			return (string) SendCommand (delegate {
 				return style.FormatObject (thread, obj, format);
 			});
 		}
 
-		public string PrintType (Style style, TargetType type)
+		public override string PrintType (Style style, TargetType type)
 		{
 			return (string) SendCommand (delegate {
 				return style.FormatType (thread, type);
@@ -1727,39 +1720,15 @@ namespace Mono.Debugger.Backends
 #endregion
 
 #region IDisposable implementation
-		~SingleSteppingEngine ()
+		protected override void DoDispose ()
 		{
-			Dispose (false);
-		}
-
-		private bool disposed = false;
-
-		private void check_disposed ()
-		{
-			if (disposed)
-				throw new ObjectDisposedException ("SingleSteppingEngine");
-		}
-
-		protected virtual void Dispose (bool disposing)
-		{
-			// Check to see if Dispose has already been called.
-			// If this is a call to Dispose, dispose all managed resources.
-			if (disposing && !disposed) {
-				if (inferior != null) {
-					inferior.Kill ();
-					inferior.Dispose ();
-				}
+			if (inferior != null) {
+				inferior.Kill ();
+				inferior.Dispose ();
 				inferior = null;
 			}
 
-			disposed = true;
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
+			base.DoDispose ();
 		}
 #endregion
 
@@ -1772,9 +1741,7 @@ namespace Mono.Debugger.Backends
 		Inferior.ChildEvent stop_event;
 		Operation current_operation;
 
-		ThreadManager manager;
 		Thread thread;
-		ProcessServant process;
 		Inferior inferior;
 		Architecture arch;
 		Disassembler disassembler;
@@ -1786,9 +1753,7 @@ namespace Mono.Debugger.Backends
 		bool has_thread_lock;
 		bool is_main, reached_main;
 		long tid;
-		public readonly string Name;
-		public readonly int ID;
-		public readonly int PID;
+		int pid;
 
 		int stepping_over_breakpoint;
 
