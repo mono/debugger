@@ -86,6 +86,12 @@ namespace Mono.Debugger.Backends
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
 
 			pid = inferior.PID;
+
+			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
+				      DebuggerWaitHandle.CurrentThread, this);
+
+			exception_handlers = new Hashtable ();
+			callback_stack = new Stack ();
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
@@ -99,8 +105,6 @@ namespace Mono.Debugger.Backends
 			pid = inferior.PID;
 
 			is_main = true;
-
-			setup_engine ();
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
@@ -116,20 +120,6 @@ namespace Mono.Debugger.Backends
 				inferior.Initialize (pid);
 
 			tid = inferior.TID;
-
-			setup_engine ();
-		}
-
-		void setup_engine ()
-		{
-			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
-				      DebuggerWaitHandle.CurrentThread, this);
-
-			arch = inferior.Architecture;
-			disassembler = inferior.Disassembler;
-
-			exception_handlers = new Hashtable ();
-			callback_stack = new Stack ();
 		}
 
 #region child event processing
@@ -364,7 +354,7 @@ namespace Mono.Debugger.Backends
 
 					StackFrame ret_frame;
 					try {
-						ret_frame = arch.UnwindStack (
+						ret_frame = inferior.Architecture.UnwindStack (
 							current_frame, inferior, null, 0);
 					} catch {
 						ret_frame = null;
@@ -638,7 +628,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal override Architecture Architecture {
-			get { return arch; }
+			get { return inferior.Architecture; }
 		}
 
 		public Thread Thread {
@@ -1086,7 +1076,8 @@ namespace Mono.Debugger.Backends
 
 			// Check whether this is a call instruction.
 			int insn_size;
-			TargetAddress call = arch.GetCallTarget (inferior, address, out insn_size);
+			TargetAddress call = inferior.Architecture.GetCallTarget (
+				inferior, address, out insn_size);
 
 			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2}", this,
 				      address, call);
@@ -1588,21 +1579,21 @@ namespace Mono.Debugger.Backends
 		public override int GetInstructionSize (TargetAddress address)
 		{
 			return (int) SendCommand (delegate {
-				return disassembler.GetInstructionSize (address);
+				return inferior.Disassembler.GetInstructionSize (address);
 			});
 		}
 
 		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			return (AssemblerLine) SendCommand (delegate {
-				return disassembler.DisassembleInstruction (method, address);
+				return inferior.Disassembler.DisassembleInstruction (method, address);
 			});
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
 		{
 			return (AssemblerMethod) SendCommand (delegate {
-				return disassembler.DisassembleMethod (method);
+				return inferior.Disassembler.DisassembleMethod (method);
 			});
 		}
 
@@ -1743,7 +1734,6 @@ namespace Mono.Debugger.Backends
 		Operation current_operation;
 
 		Inferior inferior;
-		Architecture arch;
 		Disassembler disassembler;
 		ProcessStart start;
 		Hashtable exception_handlers;
@@ -2060,7 +2050,7 @@ namespace Mono.Debugger.Backends
 
 			int insn_size;
 			TargetAddress current_frame = sse.inferior.CurrentFrame;
-			TargetAddress call = sse.arch.GetCallTarget (
+			TargetAddress call = sse.inferior.Architecture.GetCallTarget (
 				sse.inferior, current_frame, out insn_size);
 			if (call.IsNull) {
 				sse.inferior.Step ();
@@ -2331,7 +2321,7 @@ namespace Mono.Debugger.Backends
 			 * the specified step frame.
 			 */
 			int insn_size;
-			TargetAddress call = sse.arch.GetCallTarget (
+			TargetAddress call = sse.inferior.Architecture.GetCallTarget (
 				sse.inferior, current_frame, out insn_size);
 			if (call.IsNull) {
 				sse.do_step_native ();
@@ -3204,7 +3194,7 @@ namespace Mono.Debugger.Backends
 			 * the current method.
 			 */
 			int insn_size;
-			TargetAddress call = sse.arch.GetCallTarget (
+			TargetAddress call = sse.inferior.Architecture.GetCallTarget (
 				sse.inferior, current_frame, out insn_size);
 			if (!call.IsNull && CheckTrampoline (sse, call))
 				return false;
