@@ -13,11 +13,11 @@ namespace Mono.Debugger.Backends
 	{
 		Hashtable bfd_hash;
 		Hashtable type_hash;
-		Process process;
+		ProcessServant process;
 		NativeLanguage language;
 		Bfd main_bfd;
 
-		public BfdContainer (Process process)
+		public BfdContainer (ProcessServant process)
 		{
 			this.process = process;
 			this.bfd_hash = Hashtable.Synchronized (new Hashtable ());
@@ -28,7 +28,7 @@ namespace Mono.Debugger.Backends
 			get { return language; }
 		}
 
-		public Process Process {
+		public ProcessServant Process {
 			get { return process; }
 		}
 

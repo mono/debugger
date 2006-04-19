@@ -27,7 +27,7 @@ namespace Mono.Debugger.Backends
 
 		protected readonly BfdContainer bfd_container;
 		protected readonly SymbolTableCollection symtab_collection;
-		protected readonly Process process;
+		protected readonly ProcessServant process;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
 		protected readonly AddressDomain address_domain;
@@ -234,7 +234,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected Inferior (ThreadManager thread_manager, Process process,
+		protected Inferior (ThreadManager thread_manager, ProcessServant process,
 				    ProcessStart start, BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
 				    AddressDomain address_domain)
@@ -253,8 +253,8 @@ namespace Mono.Debugger.Backends
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
 		}
 
-		public static Inferior CreateInferior (ThreadManager thread_manager, Process process,
-						       ProcessStart start)
+		public static Inferior CreateInferior (ThreadManager thread_manager,
+						       ProcessServant process, ProcessStart start)
 		{
 			return new Inferior (
 				thread_manager, process, start, process.BreakpointManager, null,
@@ -462,7 +462,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Process Process {
+		public ProcessServant Process {
 			get {
 				return process;
 			}

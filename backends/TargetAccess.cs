@@ -8,7 +8,7 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		public abstract Process Process {
+		internal abstract ProcessServant ProcessServant {
 			get;
 		}
 

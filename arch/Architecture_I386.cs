@@ -31,7 +31,7 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_I386 : Architecture
 	{
-		internal Architecture_I386 (Process process, TargetInfo info)
+		internal Architecture_I386 (ProcessServant process, TargetInfo info)
 			: base (process, info)
 		{ }
 

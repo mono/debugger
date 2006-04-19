@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return "native"; }
 		}
 
-		public override Process Process {
+		internal override ProcessServant Process {
 			get { return bfd_container.Process; }
 		}
 

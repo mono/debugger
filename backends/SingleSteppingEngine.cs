@@ -89,7 +89,7 @@ namespace Mono.Debugger.Backends
 			PID = inferior.PID;
 		}
 
-		public SingleSteppingEngine (ThreadManager manager, Process process,
+		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
 					     ProcessStart start)
 			: this (manager, Inferior.CreateInferior (manager, process, start))
 		{
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Backends
 			Name = thread.Name;
 		}
 
-		public SingleSteppingEngine (ThreadManager manager, Process process,
+		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
 					     Inferior inferior, int pid, bool do_attach, bool is_main)
 			: this (manager, inferior)
 		{
@@ -655,7 +655,7 @@ namespace Mono.Debugger.Backends
 			get { return thread; }
 		}
 
-		public override Process Process {
+		internal override ProcessServant ProcessServant {
 			get { return process; }
 		}
 
@@ -1774,7 +1774,7 @@ namespace Mono.Debugger.Backends
 
 		ThreadManager manager;
 		Thread thread;
-		Process process;
+		ProcessServant process;
 		Inferior inferior;
 		Architecture arch;
 		Disassembler disassembler;

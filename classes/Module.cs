@@ -377,7 +377,7 @@ namespace Mono.Debugger
 				Process process = (Process) context.Context;
 
 				string name = info.GetString ("name");
-				Module module = process.ModuleManager.CreateModule (name);
+				Module module = process.Servant.ModuleManager.CreateModule (name);
 
 				module.name = info.GetString ("name");
 				module.load_symbols = info.GetBoolean ("load-symbols");

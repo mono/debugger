@@ -8,10 +8,10 @@ namespace Mono.Debugger
 	// </summary>
 	internal abstract class Architecture : MarshalByRefObject
 	{
-		protected readonly Process process;
+		protected readonly ProcessServant process;
 		protected readonly TargetInfo TargetInfo;
 
-		protected Architecture (Process process, TargetInfo info)
+		protected Architecture (ProcessServant process, TargetInfo info)
 		{
 			this.process = process;
 			this.TargetInfo = info;

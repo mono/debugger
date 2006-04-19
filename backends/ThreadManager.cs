@@ -98,14 +98,14 @@ namespace Mono.Debugger.Backends
 		SingleSteppingEngine current_event = null;
 		int current_event_status = 0;
 
-		public Process StartApplication (ProcessStart start)
+		public ProcessServant StartApplication (ProcessStart start)
 		{
-			Process process = CreateProcess (start);
+			ProcessServant process = CreateProcess (start);
 			process.WaitForApplication ();
 			return process;
 		}
 
-		public Process OpenCoreFile (ProcessStart start, out Thread[] threads)
+		public ProcessServant OpenCoreFile (ProcessStart start, out Thread[] threads)
 		{
 			this.start = start;
 
@@ -132,7 +132,7 @@ namespace Mono.Debugger.Backends
 			engine_hash.Add (engine.ID, engine);
 		}
 
-		internal void RemoveProcess (Process process)
+		internal void RemoveProcess (ProcessServant process)
 		{
 			processes.Remove (process);
 		}
@@ -201,7 +201,7 @@ namespace Mono.Debugger.Backends
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
-				engine.Process.KillThread (engine);
+				engine.ProcessServant.KillThread (engine);
 				return false;
 			}
 
@@ -244,7 +244,7 @@ namespace Mono.Debugger.Backends
 				return command.Result;
 		}
 
-		internal Process CreateProcess (ProcessStart start)
+		internal ProcessServant CreateProcess (ProcessStart start)
 		{
 			Command command = new Command (CommandType.CreateProcess, start);
 
@@ -264,7 +264,7 @@ namespace Mono.Debugger.Backends
 			if (command.Result is Exception)
 				throw (Exception) command.Result;
 			else
-				return (Process) command.Result;
+				return (ProcessServant) command.Result;
 		}
 
 		// <summary>
@@ -343,7 +343,7 @@ namespace Mono.Debugger.Backends
 			} else if (command.Type == CommandType.CreateProcess) {
 				try {
 					ProcessStart start = (ProcessStart) command.Data1;
-					Process process = new Process (this, start);
+					ProcessServant process = new ProcessServant (this, start);
 					SingleSteppingEngine sse = new SingleSteppingEngine (
 						this, process, start);
 
@@ -529,7 +529,7 @@ namespace Mono.Debugger.Backends
 				wait_thread.Abort ();
 				wait_thread.Join ();
 
-				Process[] procs = new Process [processes.Count];
+				ProcessServant[] procs = new ProcessServant [processes.Count];
 				processes.CopyTo (procs, 0);
 
 				for (int i = 0; i < procs.Length; i++)

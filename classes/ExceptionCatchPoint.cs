@@ -97,7 +97,7 @@ namespace Mono.Debugger
 		{
 			base.SetSessionData (info, process);
 
-			Language language = process.MonoLanguage;
+			Language language = process.Servant.MonoLanguage;
 			exception = language.LookupType (info.GetString ("exception"));
 		}
 	}

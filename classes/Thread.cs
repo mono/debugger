@@ -29,7 +29,7 @@ namespace Mono.Debugger
 			this.id = engine.ThreadManager.NextThreadID;
 
 			this.manager = engine.ThreadManager;
-			this.process = engine.Process;
+			this.process = engine.ProcessServant;
 
 			this.symtab_manager = process.SymbolTableManager;
 
@@ -51,7 +51,7 @@ namespace Mono.Debugger
 			this.pid = pid;
 
 			this.manager = target.ThreadManager;
-			this.process = target.Process;
+			this.process = target.ProcessServant;
 
 			this.symtab_manager = process.SymbolTableManager;
 
@@ -69,7 +69,7 @@ namespace Mono.Debugger
 		ThreadGroup tgroup;
 		TargetAccess target;
 		SingleSteppingEngine engine;
-		Process process;
+		ProcessServant process;
 		ThreadManager manager;
 		SymbolTableManager symtab_manager;
 		ST.ManualResetEvent operation_completed_event;
@@ -138,10 +138,17 @@ namespace Mono.Debugger
 			}
 		}
 
-		public override Process Process {
+		internal override ProcessServant ProcessServant {
 			get {
 				check_target ();
 				return process;
+			}
+		}
+
+		public Process Process {
+			get {
+				check_target ();
+				return process.Client;
 			}
 		}
 

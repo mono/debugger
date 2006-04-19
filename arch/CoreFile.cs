@@ -6,7 +6,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
-	internal class CoreFile : Process
+	internal class CoreFile : ProcessServant
 	{
 		TargetInfo info;
 		Bfd bfd, core_bfd;
@@ -179,7 +179,7 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.ThreadManager; }
 			}
 
-			public override Process Process {
+			internal override ProcessServant ProcessServant {
 				get { return CoreFile; }
 			}
 

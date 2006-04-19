@@ -269,13 +269,13 @@ namespace Mono.Debugger.Languages.Mono
 		int last_num_data_tables;
 		int last_data_table_offset;
 
-		Process process;
+		ProcessServant process;
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
 		bool initialized;
 		DebuggerMutex mutex;
 
-		public MonoLanguageBackend (Process process, MonoDebuggerInfo info)
+		public MonoLanguageBackend (ProcessServant process, MonoDebuggerInfo info)
 		{
 			this.process = process;
 			this.info = info;
@@ -298,7 +298,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return builtin_types; }
 		}
 
-		public override Process Process {
+		internal override ProcessServant Process {
 			get { return process; }
 		}
 

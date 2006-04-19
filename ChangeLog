@@ -1,5 +1,12 @@
 2006-04-19  Martin Baulig  <martin@ximian.com>
 
+	Split `Process' into `Process' and `ProcessServant'.
+
+	* backends/ProcessServant.cs: New file.
+	(ProcessServant): New internal class.
+
+2006-04-19  Martin Baulig  <martin@ximian.com>
+
 	Split `Debugger' into `Debugger' and `DebuggerServant'.
 
 	* backends/DebuggerServant.cs: New file.

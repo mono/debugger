@@ -8,12 +8,12 @@ namespace Mono.Debugger.Languages.Mono
 		VariableInfo info;
 		string name;
 		TargetType type;
-		Process process;
+		ProcessServant process;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
 		bool has_liveness_info, is_byref;
 
-		public MonoVariable (Process process, string name, TargetType type,
+		public MonoVariable (ProcessServant process, string name, TargetType type,
 				     bool is_local, bool is_byref, Method method,
 				     VariableInfo info, int start_scope_offset,
 				     int end_scope_offset)
@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoVariable (Process process, string name, TargetType type,
+		public MonoVariable (ProcessServant process, string name, TargetType type,
 				     bool is_local, bool is_byref, Method method,
 				     VariableInfo info)
 		{

@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
@@ -8,7 +9,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract Process Process {
+		internal abstract ProcessServant Process {
 			get;
 		}
 

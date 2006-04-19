@@ -21,7 +21,7 @@ namespace Mono.Debugger.Backends
 		Debugger client;
 		ThreadManager thread_manager;
 		Hashtable process_hash;
-		Process main_process;
+		ProcessServant main_process;
 
 		internal DebuggerServant (Debugger client)
 		{
@@ -38,10 +38,10 @@ namespace Mono.Debugger.Backends
 			get { return thread_manager; }
 		}
 
-		internal void OnProcessCreatedEvent (Process process)
+		internal void OnProcessCreatedEvent (ProcessServant process)
 		{
 			process_hash.Add (process, process);
-			client.OnProcessCreatedEvent (process);
+			client.OnProcessCreatedEvent (process.Client);
 		}
 
 		protected void OnTargetExitedEvent ()
@@ -49,19 +49,19 @@ namespace Mono.Debugger.Backends
 			client.OnTargetExitedEvent ();
 		}
 
-		internal void OnProcessExitedEvent (Process process)
+		internal void OnProcessExitedEvent (ProcessServant process)
 		{
 			process_hash.Remove (process);
-			client.OnProcessExitedEvent (process);
+			client.OnProcessExitedEvent (process.Client);
 
 			if (process == main_process) {
 				Kill ();
 			}
 		}
 
-		internal void OnProcessExecdEvent (Process process)
+		internal void OnProcessExecdEvent (ProcessServant process)
 		{
-			client.OnProcessExecdEvent (process);
+			client.OnProcessExecdEvent (process.Client);
 		}
 
 		internal void OnThreadCreatedEvent (Thread thread)
@@ -93,13 +93,13 @@ namespace Mono.Debugger.Backends
 		{
 			main_process = null;
 
-			Process[] procs;
+			ProcessServant[] procs;
 			lock (process_hash.SyncRoot) {
-				procs = new Process [process_hash.Count];
+				procs = new ProcessServant [process_hash.Count];
 				process_hash.Values.CopyTo (procs, 0);
 			}
 
-			foreach (Process proc in procs) {
+			foreach (ProcessServant proc in procs) {
 				proc.Kill ();
 			}
 
@@ -115,13 +115,13 @@ namespace Mono.Debugger.Backends
 
 			main_process = null;
 
-			Process[] procs;
+			ProcessServant[] procs;
 			lock (process_hash.SyncRoot) {
-				procs = new Process [process_hash.Count];
+				procs = new ProcessServant [process_hash.Count];
 				process_hash.Values.CopyTo (procs, 0);
 			}
 
-			foreach (Process proc in procs) {
+			foreach (ProcessServant proc in procs) {
 				proc.Detach ();
 			}
 
@@ -138,7 +138,7 @@ namespace Mono.Debugger.Backends
 			ProcessStart start = new ProcessStart (options);
 			main_process = thread_manager.StartApplication (start);
 			process_hash.Add (main_process, main_process);
-			return main_process;
+			return main_process.Client;
 		}
 
 		public Process Attach (DebuggerOptions options, int pid)
@@ -151,7 +151,7 @@ namespace Mono.Debugger.Backends
 			ProcessStart start = new ProcessStart (options, pid);
 			main_process = thread_manager.StartApplication (start);
 			process_hash.Add (main_process, main_process);
-			return main_process;
+			return main_process.Client;
 		}
 
 		public Process OpenCoreFile (DebuggerOptions options, string core_file,
@@ -165,14 +165,18 @@ namespace Mono.Debugger.Backends
 			ProcessStart start = new ProcessStart (options, core_file);
 			main_process = thread_manager.OpenCoreFile (start, out threads);
 			process_hash.Add (main_process, main_process);
-			return main_process;
+			return main_process.Client;
 		}
 
 		public Process[] Processes {
 			get {
 				lock (process_hash.SyncRoot) {
-					Process[] procs = new Process [process_hash.Count];
-					process_hash.Values.CopyTo (procs, 0);
+					int count = process_hash.Count;
+					Process[] procs = new Process [count];
+					ProcessServant[] servants = new ProcessServant [count];
+					process_hash.Values.CopyTo (servants, 0);
+					for (int i = 0; i < count; i++)
+						procs [i] = servants [i].Client;
 					return procs;
 				}
 			}

@@ -42,7 +42,7 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_X86_64 : Architecture
 	{
-		internal Architecture_X86_64 (Process process, TargetInfo info)
+		internal Architecture_X86_64 (ProcessServant process, TargetInfo info)
 			: base (process, info)
 		{ }
 

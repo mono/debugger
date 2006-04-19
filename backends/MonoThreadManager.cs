@@ -189,11 +189,11 @@ namespace Mono.Debugger.Backends
 
 				switch (type) {
 				case NotificationType.AcquireGlobalThreadLock:
-					engine.Process.AcquireGlobalThreadLock (engine);
+					engine.ProcessServant.AcquireGlobalThreadLock (engine);
 					break;
 
 				case NotificationType.ReleaseGlobalThreadLock:
-					engine.Process.ReleaseGlobalThreadLock (engine);
+					engine.ProcessServant.ReleaseGlobalThreadLock (engine);
 					break;
 
 				case NotificationType.ThreadCreated: {

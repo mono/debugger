@@ -1,4 +1,3 @@
-#if FIXME
 using System;
 using System.IO;
 using System.Collections;
@@ -14,6 +13,7 @@ namespace Mono.Debugger.Backends
 {
 	internal class ProcessServant : MarshalByRefObject
 	{
+		Process client;
 		ThreadManager manager;
 		BfdContainer bfd_container;
 		SymbolTableManager symtab_manager;
@@ -46,6 +46,7 @@ namespace Mono.Debugger.Backends
 		private ProcessServant (ThreadManager manager)
 		{
 			this.manager = manager;
+			this.client = new Process (manager.Debugger.Client, this);
 
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
@@ -78,7 +79,7 @@ namespace Mono.Debugger.Backends
 			bfd_container = new BfdContainer (this);
 		}
 
-		private ProcessServant (Process parent, int pid)
+		private ProcessServant (ProcessServant parent, int pid)
 			: this (parent.manager)
 		{
 			this.start = new ProcessStart (parent.ProcessStart, pid);
@@ -106,6 +107,10 @@ namespace Mono.Debugger.Backends
 
 		public bool IsAttached {
 			get { return is_attached; }
+		}
+
+		public Process Client {
+			get { return client; }
 		}
 
 		internal ThreadManager ThreadManager {
@@ -150,7 +155,7 @@ namespace Mono.Debugger.Backends
 			get { return main_thread; }
 		}
 
-		public Debugger Debugger {
+		public DebuggerServant Debugger {
 			get { return manager.Debugger; }
 		}
 
@@ -236,7 +241,7 @@ namespace Mono.Debugger.Backends
 
 		internal void ChildForked (Inferior inferior, int pid)
 		{
-			Process new_process = new Process (this, pid);
+			ProcessServant new_process = new ProcessServant (this, pid);
 
 			Inferior new_inferior = Inferior.CreateInferior (
 				manager, new_process, new_process.ProcessStart);
@@ -422,7 +427,7 @@ namespace Mono.Debugger.Backends
 		internal void KillThread (SingleSteppingEngine engine)
 		{
 			if (engine == main_engine) {
-				manager.Debugger.OnProcessExitedEvent (main_engine.Process);
+				manager.Debugger.OnProcessExitedEvent (main_engine.ProcessServant);
 				Kill ();
 			} else {
 				thread_hash.Remove (engine.PID);
@@ -654,68 +659,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		//
-		// Session management.
-		//
-
-		public void SaveSession (Stream stream, StreamingContextStates states )
-		{
-			StreamingContext context = new StreamingContext (
-				states, this);
-
-			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
-			BinaryFormatter formatter = new BinaryFormatter (ss, context);
-
-			SessionInfo info = new SessionInfo (this);
-			formatter.Serialize (stream, info);
-		}
-
-		public void LoadSession (Stream stream, StreamingContextStates states)
-		{
-			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, this);
-
-			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
-			BinaryFormatter formatter = new BinaryFormatter (ss, context);
-
-			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
-
-			foreach (Event handle in info.Events) {
-				events.Add (handle.Index, handle);
-				handle.Enable (main_thread);
-			}
-		}
-
-		[Serializable]
-		private class SessionInfo : ISerializable, IDeserializationCallback
-		{
-			public readonly Module[] Modules;
-			public readonly Event[] Events;
-
-			public SessionInfo (Process process)
-			{
-				this.Modules = process.Modules;
-				this.Events = process.Events;
-			}
-
-			public void GetObjectData (SerializationInfo info, StreamingContext context)
-			{
-				info.AddValue ("modules", Modules);
-				info.AddValue ("events", Events);
-			}
-
-			void IDeserializationCallback.OnDeserialization (object obj)
-			{ }
-
-			private SessionInfo (SerializationInfo info, StreamingContext context)
-			{
-				Modules = (Module []) info.GetValue (
-					"modules", typeof (Module []));
-				Events = (Event []) info.GetValue (
-					"events", typeof (Event []));
-			}
-		}
-
-		//
 		// IDisposable
 		//
 
@@ -781,4 +724,3 @@ namespace Mono.Debugger.Backends
 		}
 	}
 }
-#endif
