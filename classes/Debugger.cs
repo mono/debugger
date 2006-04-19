@@ -20,22 +20,13 @@ namespace Mono.Debugger
 	public delegate void ThreadEventHandler (Debugger debugger, Thread thread);
 	public delegate void ProcessEventHandler (Debugger debugger, Process process);
 
-	public class Debugger : MarshalByRefObject, IDisposable
+	public class Debugger : MarshalByRefObject
 	{
-		ThreadManager thread_manager;
-		Hashtable process_hash;
-		Process main_process;
+		DebuggerServant servant;
 
 		public Debugger ()
 		{
-			thread_manager = new ThreadManager (this);
-			process_hash = Hashtable.Synchronized (new Hashtable ());
-		}
-
-		internal ThreadManager ThreadManager {
-			get {
-				return thread_manager;
-			}
+			this.servant = new DebuggerServant (this);
 		}
 
 		public event TargetOutputHandler TargetOutputEvent;
@@ -50,12 +41,11 @@ namespace Mono.Debugger
 
 		internal void OnProcessCreatedEvent (Process process)
 		{
-			process_hash.Add (process, process);
 			if (ProcessCreatedEvent != null)
 				ProcessCreatedEvent (this, process);
 		}
 
-		protected void OnTargetExitedEvent ()
+		internal void OnTargetExitedEvent ()
 		{
 			if (TargetExitedEvent != null)
 				TargetExitedEvent (this);
@@ -63,98 +53,14 @@ namespace Mono.Debugger
 
 		internal void OnProcessExitedEvent (Process process)
 		{
-			process_hash.Remove (process);
 			if (ProcessExitedEvent != null)
 				ProcessExitedEvent (this, process);
-
-			if (process == main_process) {
-				Kill ();
-			}
 		}
 
 		internal void OnProcessExecdEvent (Process process)
 		{
 			if (ProcessExecdEvent != null)
 				ProcessExecdEvent (this, process);
-		}
-
-		public void Kill ()
-		{
-			main_process = null;
-
-			Process[] procs;
-			lock (process_hash.SyncRoot) {
-				procs = new Process [process_hash.Count];
-				process_hash.Values.CopyTo (procs, 0);
-			}
-
-			foreach (Process proc in procs) {
-				proc.Kill ();
-			}
-
-			OnTargetExitedEvent ();
-		}
-
-		public void Detach ()
-		{
-			if (main_process == null)
-				throw new TargetException (TargetError.NoTarget);
-			else if (!main_process.IsAttached)
-				throw new TargetException (TargetError.CannotDetach);
-
-			main_process = null;
-
-			Process[] procs;
-			lock (process_hash.SyncRoot) {
-				procs = new Process [process_hash.Count];
-				process_hash.Values.CopyTo (procs, 0);
-			}
-
-			foreach (Process proc in procs) {
-				proc.Detach ();
-			}
-
-			OnTargetExitedEvent ();
-		}
-
-		public Process Run (DebuggerOptions options)
-		{
-			check_disposed ();
-
-			if (main_process != null)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
-			ProcessStart start = new ProcessStart (options);
-			main_process = thread_manager.StartApplication (start);
-			process_hash.Add (main_process, main_process);
-			return main_process;
-		}
-
-		public Process Attach (DebuggerOptions options, int pid)
-		{
-			check_disposed ();
-
-			if (main_process != null)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
-			ProcessStart start = new ProcessStart (options, pid);
-			main_process = thread_manager.StartApplication (start);
-			process_hash.Add (main_process, main_process);
-			return main_process;
-		}
-
-		public Process OpenCoreFile (DebuggerOptions options, string core_file,
-					     out Thread[] threads)
-		{
-			check_disposed ();
-
-			if (main_process != null)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
-			ProcessStart start = new ProcessStart (options, core_file);
-			main_process = thread_manager.OpenCoreFile (start, out threads);
-			process_hash.Add (main_process, main_process);
-			return main_process;
 		}
 
 		internal void OnThreadCreatedEvent (Thread new_process)
@@ -175,30 +81,41 @@ namespace Mono.Debugger
 				TargetOutputEvent (is_stderr, line);
 		}
 
-		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
+		internal void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
-			try {
-				if (TargetEvent != null)
-					TargetEvent (sse.Thread, args);
-			} catch (Exception ex) {
-				Error ("{0} caught exception while sending {1}:\n{2}",
-				       sse, args, ex);
-			}
+			if (TargetEvent != null)
+				TargetEvent (thread, args);
 		}
+
+		public void Kill ()
+		{
+			servant.Kill ();
+		}
+
+		public void Detach ()
+		{
+			servant.Detach ();
+		}
+
+		public Process Run (DebuggerOptions options)
+		{
+			return servant.Run (options);
+		}
+
+		public Process Attach (DebuggerOptions options, int pid)
+		{
+			return servant.Attach (options, pid);
+		}
+
+		public Process OpenCoreFile (DebuggerOptions options, string core_file,
+					     out Thread[] threads)
+		{
+			return servant.OpenCoreFile (options, core_file, out threads);
+		}
+
 
 		public Process[] Processes {
-			get {
-				lock (process_hash.SyncRoot) {
-					Process[] procs = new Process [process_hash.Count];
-					process_hash.Values.CopyTo (procs, 0);
-					return procs;
-				}
-			}
-		}
-
-		public void Error (string message, params object[] args)
-		{
-			Console.WriteLine ("ERROR: " + String.Format (message, args));
+			get { return servant.Processes; }
 		}
 
 		//
@@ -210,7 +127,7 @@ namespace Mono.Debugger
 		private void check_disposed ()
 		{
 			if (disposed)
-				throw new ObjectDisposedException ("Debugger");
+				throw new ObjectDisposedException ("DebuggerServant");
 		}
 
 		protected virtual void Dispose (bool disposing)
@@ -225,12 +142,10 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				if (thread_manager != null) {
-					thread_manager.Dispose ();
-					thread_manager = null;
+				if (servant != null) {
+					servant.Dispose ();
+					servant = null;
 				}
-
-				ObjectCache.Shutdown ();
 			}
 		}
 

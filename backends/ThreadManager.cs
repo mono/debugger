@@ -19,7 +19,7 @@ namespace Mono.Debugger.Backends
 	{
 		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (500);
 
-		internal ThreadManager (Debugger backend)
+		internal ThreadManager (DebuggerServant backend)
 		{
 			this.backend = backend;
 
@@ -54,7 +54,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		ProcessStart start;
-		Debugger backend;
+		DebuggerServant backend;
 		DebuggerEventQueue event_queue;
 		ST.Thread inferior_thread;
 		ST.Thread wait_thread;
@@ -208,7 +208,7 @@ namespace Mono.Debugger.Backends
 			return retval;
 		}
 
-		public Debugger Debugger {
+		public DebuggerServant Debugger {
 			get { return backend; }
 		}
 

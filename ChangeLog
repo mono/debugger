@@ -1,5 +1,12 @@
 2006-04-19  Martin Baulig  <martin@ximian.com>
 
+	Split `Debugger' into `Debugger' and `DebuggerServant'.
+
+	* backends/DebuggerServant.cs: New file.
+	(DebuggerServant): New internal class.
+
+2006-04-19  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/testnativeattach.cs: New test.
 
 2006-04-19  Martin Baulig  <martin@ximian.com>

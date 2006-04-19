@@ -150,7 +150,7 @@ namespace Mono.Debugger
 		}
 
 		public Debugger Debugger {
-			get { return manager.Debugger; }
+			get { return manager.Debugger.Client; }
 		}
 
 		internal ProcessStart ProcessStart {

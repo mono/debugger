@@ -14,58 +14,45 @@ using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
-	public delegate void DebuggerEventHandler (Debugger debugger);
-	public delegate void ThreadEventHandler (Debugger debugger, Thread thread);
-	public delegate void ProcessEventHandler (Debugger debugger, Process process);
-
-	public class Debugger : MarshalByRefObject, IDisposable
+	internal class DebuggerServant : MarshalByRefObject, IDisposable
 	{
+		Debugger client;
 		ThreadManager thread_manager;
 		Hashtable process_hash;
 		Process main_process;
 
-		public Debugger ()
+		internal DebuggerServant (Debugger client)
 		{
+			this.client = client;
 			thread_manager = new ThreadManager (this);
 			process_hash = Hashtable.Synchronized (new Hashtable ());
 		}
 
-		internal ThreadManager ThreadManager {
-			get {
-				return thread_manager;
-			}
+		public Debugger Client {
+			get { return client; }
 		}
 
-		public event TargetOutputHandler TargetOutputEvent;
-		public event ThreadEventHandler ThreadCreatedEvent;
-		public event ThreadEventHandler ThreadExitedEvent;
-		public event ProcessEventHandler ProcessCreatedEvent;
-		public event ProcessEventHandler ProcessExitedEvent;
-		public event ProcessEventHandler ProcessExecdEvent;
-		public event DebuggerEventHandler TargetExitedEvent;
-		public event TargetEventHandler TargetEvent;
-		public event SymbolTableChangedHandler SymbolTableChanged;
+		internal ThreadManager ThreadManager {
+			get { return thread_manager; }
+		}
 
 		internal void OnProcessCreatedEvent (Process process)
 		{
 			process_hash.Add (process, process);
-			if (ProcessCreatedEvent != null)
-				ProcessCreatedEvent (this, process);
+			client.OnProcessCreatedEvent (process);
 		}
 
 		protected void OnTargetExitedEvent ()
 		{
-			if (TargetExitedEvent != null)
-				TargetExitedEvent (this);
+			client.OnTargetExitedEvent ();
 		}
 
 		internal void OnProcessExitedEvent (Process process)
 		{
 			process_hash.Remove (process);
-			if (ProcessExitedEvent != null)
-				ProcessExitedEvent (this, process);
+			client.OnProcessExitedEvent (process);
 
 			if (process == main_process) {
 				Kill ();
@@ -74,8 +61,32 @@ namespace Mono.Debugger
 
 		internal void OnProcessExecdEvent (Process process)
 		{
-			if (ProcessExecdEvent != null)
-				ProcessExecdEvent (this, process);
+			client.OnProcessExecdEvent (process);
+		}
+
+		internal void OnThreadCreatedEvent (Thread thread)
+		{
+			client.OnThreadCreatedEvent (thread);
+		}
+
+		internal void OnThreadExitedEvent (Thread thread)
+		{
+			client.OnThreadExitedEvent (thread);
+		}
+
+		internal void OnInferiorOutput (bool is_stderr, string line)
+		{
+			client.OnInferiorOutput (is_stderr, line);
+		}
+
+		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			try {
+				client.OnTargetEvent (sse.Thread, args);
+			} catch (Exception ex) {
+				Error ("{0} caught exception while sending {1}:\n{2}",
+				       sse, args, ex);
+			}
 		}
 
 		public void Kill ()
@@ -157,35 +168,6 @@ namespace Mono.Debugger
 			return main_process;
 		}
 
-		internal void OnThreadCreatedEvent (Thread new_process)
-		{
-			if (ThreadCreatedEvent != null)
-				ThreadCreatedEvent (this, new_process);
-		}
-
-		internal void OnThreadExitedEvent (Thread thread)
-		{
-			if (ThreadExitedEvent != null)
-				ThreadExitedEvent (this, thread);
-		}
-
-		internal void OnInferiorOutput (bool is_stderr, string line)
-		{
-			if (TargetOutputEvent != null)
-				TargetOutputEvent (is_stderr, line);
-		}
-
-		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
-		{
-			try {
-				if (TargetEvent != null)
-					TargetEvent (sse.Thread, args);
-			} catch (Exception ex) {
-				Error ("{0} caught exception while sending {1}:\n{2}",
-				       sse, args, ex);
-			}
-		}
-
 		public Process[] Processes {
 			get {
 				lock (process_hash.SyncRoot) {
@@ -241,7 +223,7 @@ namespace Mono.Debugger
 			GC.SuppressFinalize (this);
 		}
 
-		~Debugger ()
+		~DebuggerServant ()
 		{
 			Dispose (false);
 		}

@@ -1,3 +1,4 @@
+#if FIXME
 using System;
 using System.IO;
 using System.Collections;
@@ -9,9 +10,9 @@ using Mono.Debugger.Backends;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
-	public class Process : MarshalByRefObject
+	internal class ProcessServant : MarshalByRefObject
 	{
 		ThreadManager manager;
 		BfdContainer bfd_container;
@@ -42,7 +43,7 @@ namespace Mono.Debugger
 		int id = ++next_id;
 		static int next_id = 0;
 
-		private Process (ThreadManager manager)
+		private ProcessServant (ThreadManager manager)
 		{
 			this.manager = manager;
 
@@ -56,7 +57,7 @@ namespace Mono.Debugger
 			initialized_event = new ST.ManualResetEvent (false);
 		}
 
-		internal Process (ThreadManager manager, ProcessStart start)
+		internal ProcessServant (ThreadManager manager, ProcessStart start)
 			: this (manager)
 		{
 			this.start = start;
@@ -77,7 +78,7 @@ namespace Mono.Debugger
 			bfd_container = new BfdContainer (this);
 		}
 
-		private Process (Process parent, int pid)
+		private ProcessServant (Process parent, int pid)
 			: this (parent.manager)
 		{
 			this.start = new ProcessStart (parent.ProcessStart, pid);
@@ -774,9 +775,10 @@ namespace Mono.Debugger
 			GC.SuppressFinalize (this);
 		}
 
-		~Process ()
+		~ProcessServant ()
 		{
 			Dispose (false);
 		}
 	}
 }
+#endif
