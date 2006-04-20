@@ -198,9 +198,9 @@ namespace Mono.Debugger.Backends
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
+				engine.ProcessServant.KillThread (engine);
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
-				engine.ProcessServant.KillThread (engine);
 				return false;
 			}
 
@@ -343,8 +343,10 @@ namespace Mono.Debugger.Backends
 				try {
 					ProcessStart start = (ProcessStart) command.Data1;
 					ProcessServant process = new ProcessServant (this, start);
+
+					CommandResult result;
 					SingleSteppingEngine sse = new SingleSteppingEngine (
-						this, process, start);
+						this, process, start, out result);
 
 					thread_hash.Add (sse.PID, sse);
 					engine_hash.Add (sse.ID, sse);
@@ -439,9 +441,12 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
-			if (event_engine == null)
-				throw new InternalError ("Got event {0:x} for unknown pid {1}",
-							 status, pid);
+			if (event_engine == null) {
+				Console.WriteLine ("WARNING: Got event {0:x} for unknown pid {1}",
+						   status, pid);
+				wait_event.Set ();
+				return true;
+			}
 
 			engine_event.WaitOne ();
 

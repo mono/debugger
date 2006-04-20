@@ -1,5 +1,30 @@
 2006-04-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/ProcessServant.cs
+	(ProcessServant.MainThread): Changed type into `ThreadServant'.
+	(ProcessServant.Initialize): Major code cleanup in here; call
+	Inferior.InitializeProcess() if we're called the first time.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ctor): A SingleSteppingEngine is now created
+	with an operation - it's either executing `OperationStart' or
+	`OperationRun'; moved the `reached main' magic into `OperationStart'.
+	(SingleSteppingEngine.OperationStart): New operation.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): No longer read the TID from
+	the notification on `ThreadCreated' and `ThreadExited'; always use
+	the SingleSteppingEngine which received the notification.
+
+	* backends/server/Inferior.cs
+	(Inferior.InitializeProcess): New method; this needs to be called
+	the first time the target is stopped.
+	(Inferior.Initialize): Renamed into InitializeThread().
+	(Inferior.GlobalStop): Removed.
+	(Inferior.TID): Removed.
+
+2006-04-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86-linux-ptrace.c
 	(_server_ptrace_setup_inferior): Don't attempt to read the
 	registers and also don't call do_wait().  We may now be called

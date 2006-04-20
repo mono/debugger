@@ -22,7 +22,6 @@ namespace Mono.Debugger.Backends
 	{
 		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
-		Hashtable engine_hash;
 		Inferior inferior;
 		bool stop_in_main;
 
@@ -47,8 +46,6 @@ namespace Mono.Debugger.Backends
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
 			this.stop_in_main = stop_in_main;
-
-			this.engine_hash = Hashtable.Synchronized (new Hashtable ());
 
 			TargetBinaryReader header = inferior.ReadMemory (info, 16).GetReader ();
 			long magic = header.ReadInt64 ();
@@ -129,35 +126,10 @@ namespace Mono.Debugger.Backends
 		ILanguageBackend csharp_language;
 
 		int index;
-
-		internal void ThreadCreated (SingleSteppingEngine sse, Inferior inferior)
+		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
-			engine_hash.Add (sse.TID, sse);
-
-			++index;
-			if (index < 3)
+			if (++index < 3)
 				sse.SetDaemon ();
-		}
-
-		internal void ThreadExited (SingleSteppingEngine engine)
-		{
-			engine_hash.Remove (engine.TID);
-		}
-
-		void thread_created (TargetAddress data, long tid)
-		{
-			SingleSteppingEngine engine = (SingleSteppingEngine) engine_hash [tid];
-			if (engine != null)
-				engine.EndStackAddress = data;
-		}
-
-		void thread_exited (long tid)
-		{
-			SingleSteppingEngine engine = (SingleSteppingEngine) engine_hash [tid];
-			if (engine != null) {
-				engine.EndStackAddress = TargetAddress.Null;
-				engine_hash.Remove (engine.TID);
-			}
 		}
 
 		public void Attach (SingleSteppingEngine main_engine, CommandResult[] results)
@@ -170,11 +142,6 @@ namespace Mono.Debugger.Backends
 		public CommandResult GetThreadID (Thread thread)
 		{
 			throw new InternalError ();
-		}
-
-		internal void SetThreadId (SingleSteppingEngine engine)
-		{
-			engine_hash.Add (engine.TID, engine);
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
@@ -200,20 +167,18 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					thread_created (data, cevent.Data2);
+					engine.OnManagedThreadCreated (cevent.Data2, data);
 					break;
 				}
 
 				case NotificationType.ThreadExited:
-					thread_exited (cevent.Data2);
+					engine.OnManagedThreadExited ();
 					break;
 
 				case NotificationType.ThreadAbort:
 					break;
 
 				case NotificationType.InitializeThreadManager:
-					if (!engine_hash.Contains (cevent.Data1))
-						engine_hash.Add (cevent.Data1, engine);
 					csharp_language = inferior.Process.CreateDebuggerHandler (
 						debugger_info);
 					break;
@@ -223,9 +188,9 @@ namespace Mono.Debugger.Backends
 						inferior.AddressDomain, cevent.Data1);
 
 					if (stop_in_main)
-						engine.ReachedMain (data);
+						engine.ReachedManagedMain (data);
 					else
-						engine.Start (TargetAddress.Null);
+						engine.ReachedManagedMain (TargetAddress.Null);
 
 					inferior.Process.ReachedMain ();
 					inferior.InitializeModules ();

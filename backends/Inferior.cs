@@ -37,8 +37,8 @@ namespace Mono.Debugger.Backends
 		protected ChildOutputHandler stderr_handler;
 
 		int child_pid;
-		long tid;
 		bool initialized;
+		bool has_target;
 
 		TargetInfo target_info;
 		Architecture arch;
@@ -48,7 +48,7 @@ namespace Mono.Debugger.Backends
 
 		public bool HasTarget {
 			get {
-				return initialized;
+				return has_target;
 			}
 		}
 
@@ -59,21 +59,17 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public long TID {
-			get {
-				check_disposed ();
-				return tid;
-			}
-		}
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_initialize_process (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_initialize (IntPtr handle, int child_pid, out long tid);
+		static extern TargetError mono_debugger_server_initialize_thread (IntPtr handle, int child_pid);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, bool is_main, out long tid);
+		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, bool is_main);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_frame (IntPtr handle, out ServerStackFrame frame);
@@ -140,9 +136,6 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_stop (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_global_stop ();
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_stop_and_wait (IntPtr handle, out int status);
@@ -468,12 +461,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void Run (bool redirect_fds)
+		public int Run (bool redirect_fds)
 		{
-			if (initialized)
+			if (has_target)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			initialized = true;
+			has_target = true;
 
 			IntPtr error;
 
@@ -494,19 +487,39 @@ namespace Mono.Debugger.Backends
 					TargetError.CannotStartTarget, message);
 			}
 
+#if FIXME
+			initialized = true;
+
 			SetupInferior ();
 
 			change_target_state (TargetState.STOPPED, 0);
+#endif
+
+			return child_pid;
 		}
 
-		public void Initialize (int pid)
+		public void InitializeProcess ()
 		{
 			if (initialized)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			initialized = true;
 
-			check_error (mono_debugger_server_initialize (server_handle, pid, out tid));
+			check_error (mono_debugger_server_initialize_process (server_handle));
+
+			SetupInferior ();
+
+			change_target_state (TargetState.STOPPED, 0);
+		}
+
+		public void InitializeThread (int pid)
+		{
+			if (initialized)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			initialized = true;
+
+			check_error (mono_debugger_server_initialize_thread (server_handle, pid));
 			this.child_pid = pid;
 
 			SetupInferior ();
@@ -516,12 +529,12 @@ namespace Mono.Debugger.Backends
 
 		public void Attach (int pid, bool is_main)
 		{
-			if (initialized)
+			if (has_target)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			initialized = true;
+			has_target = true;
 
-			check_error (mono_debugger_server_attach (server_handle, pid, is_main, out tid));
+			check_error (mono_debugger_server_attach (server_handle, pid, is_main));
 			this.child_pid = pid;
 
 			string exe_file, cwd;
@@ -1017,11 +1030,6 @@ namespace Mono.Debugger.Backends
 			check_disposed ();
 			TargetError error = mono_debugger_server_stop (server_handle);
 			return error == TargetError.None;
-		}
-
-		public void GlobalStop ()
-		{
-			mono_debugger_server_global_stop ();
 		}
 
 		public void SetSignal (int signal, bool send_it)

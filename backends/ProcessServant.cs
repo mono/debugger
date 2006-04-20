@@ -23,12 +23,10 @@ namespace Mono.Debugger.Backends
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
 		ProcessStart start;
-		protected Thread main_thread;
-		SingleSteppingEngine main_engine;
+		protected ThreadServant main_thread;
 		ArrayList languages;
 		Hashtable thread_hash;
 		Hashtable events;
-		ArrayList attach_results;
 
 		bool is_attached;
 		bool is_forked;
@@ -151,7 +149,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Thread MainThread {
+		public ThreadServant MainThread {
 			get { return main_thread; }
 		}
 
@@ -224,19 +222,19 @@ namespace Mono.Debugger.Backends
 			Inferior new_inferior = inferior.CreateThread ();
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, this, new_inferior, pid, do_attach, false);
+				manager, this, new_inferior, pid);
 
 			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1}", pid, new_thread);
 
+			// Order is important: first add the new engine to the manager's hash table,
+			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
+			new_thread.StartThread ();
 
 			if ((mono_manager != null) && !do_attach)
-				mono_manager.ThreadCreated (new_thread, new_inferior);
+				mono_manager.ThreadCreated (new_thread);
 
 			OnThreadCreatedEvent (new_thread);
-
-			if (!do_attach)
-				new_thread.Start (TargetAddress.Null);
 		}
 
 		internal void ChildForked (Inferior inferior, int pid)
@@ -247,21 +245,21 @@ namespace Mono.Debugger.Backends
 				manager, new_process, new_process.ProcessStart);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, new_process, new_inferior, pid, false, false);
-
-			new_inferior.InitializeAfterFork ();
+				manager, new_process, new_inferior, pid);
 
 			Report.Debug (DebugFlags.Threads, "Child forked: {0} {1}", pid, new_thread);
 
-			new_process.main_thread = new_thread.Thread;
-			new_process.main_engine = new_thread;
+			new_process.main_thread = new_thread;
 
+			// Order is important: first add the new engine to the manager's hash table,
+			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
+			new_thread.StartThread ();
+
+			new_inferior.InitializeAfterFork ();
 
 			manager.Debugger.OnProcessCreatedEvent (new_process);
 			new_process.OnThreadCreatedEvent (new_thread);
-
-			new_thread.Start (TargetAddress.Null);
 		}
 
 		internal void ChildExecd (Inferior inferior)
@@ -300,7 +298,7 @@ namespace Mono.Debugger.Backends
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, this, new_inferior, inferior.PID, false, false);
+				manager, this, new_inferior, inferior.PID);
 
 			ThreadServant[] threads;
 			lock (thread_hash.SyncRoot) {
@@ -309,13 +307,15 @@ namespace Mono.Debugger.Backends
 			}
 
 			for (int i = 0; i < threads.Length; i++) {
-				if (threads [i].TID != inferior.TID)
+				if (threads [i].PID != inferior.PID)
 					threads [i].Kill ();
 			}
 
 			thread_hash [inferior.PID] = new_thread;
 
 			manager.ProcessExecd (new_thread);
+			new_thread.StartThread ();
+
 			manager.Debugger.OnProcessExecdEvent (this);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
 			initialized = is_forked = false;
@@ -323,6 +323,7 @@ namespace Mono.Debugger.Backends
 			inferior.Dispose ();
 
 			Initialize (new_thread, new_inferior, true);
+			new_inferior.Continue ();
 		}
 
 		protected void OnThreadCreatedEvent (ThreadServant thread)
@@ -348,14 +349,16 @@ namespace Mono.Debugger.Backends
 			if (initialized)
 				return true;
 
+			if (!is_exec)
+				inferior.InitializeProcess ();
+
 			initialized = true;
 			if (!is_forked || is_exec)
 				mono_manager = MonoThreadManager.Initialize (
 					manager, inferior, (start.PID != 0) && !is_exec,
 					!is_exec);
 
-			this.main_thread = engine.Thread;
-			this.main_engine = engine;
+			this.main_thread = engine;
 
 			if (thread_hash.Contains (engine.PID))
 				thread_hash [engine.PID] = engine;
@@ -375,29 +378,13 @@ namespace Mono.Debugger.Backends
 					ReachedMain ();
 					inferior.InitializeModules ();
 					engine.Attached ();
-					goto done;
+					initialized_event.Set ();
+					return false;
 				}
-
-#if FIXME
-				attach_results = new ArrayList ();
-				foreach (ThreadServant thread in thread_hash.Values)
-					attach_results.Add (mono_manager.GetThreadID (thread));
-#endif
 			}
 
-			if (mono_manager != null) {
-				inferior.Continue ();
-				goto done;
-			}
-
-			if (is_exec)
-				engine.Start (TargetAddress.Null);
-			else
-				engine.Start (inferior.MainMethodAddress);
-
-		done:
 			initialized_event.Set ();
-			return false;
+			return true;
 		}
 
 		public void Kill ()
@@ -428,17 +415,14 @@ namespace Mono.Debugger.Backends
 
 		internal void KillThread (SingleSteppingEngine engine)
 		{
-			if (engine == main_engine) {
-				manager.Debugger.OnProcessExitedEvent (main_engine.ProcessServant);
+			if (engine == main_thread) {
+				manager.Debugger.OnProcessExitedEvent (main_thread.ProcessServant);
 				Kill ();
 			} else {
 				thread_hash.Remove (engine.PID);
 				OnThreadExitedEvent (engine);
 				engine.Kill ();
 			}
-
-			if (mono_manager != null)
-				mono_manager.ThreadExited (engine);
 		}
 
 		// XXX This desperately needs to be renamed.

@@ -77,15 +77,11 @@ namespace Mono.Debugger.Backends
 		internal delegate bool TrampolineHandler (SingleSteppingEngine sse, Method method);
 		internal delegate bool CheckBreakpointHandler ();
 
-		protected SingleSteppingEngine (ThreadManager manager, Inferior inferior)
-			: base (manager, inferior.Process)
+		protected SingleSteppingEngine (ThreadManager manager, ProcessServant process,
+						ProcessStart start)
+			: base (manager, process)
 		{
-			this.inferior = inferior;
-			this.start = inferior.ProcessStart;
-
-			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
-
-			pid = inferior.PID;
+			this.start = start;
 
 			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
 				      DebuggerWaitHandle.CurrentThread, this);
@@ -95,31 +91,34 @@ namespace Mono.Debugger.Backends
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
-					     ProcessStart start)
-			: this (manager, Inferior.CreateInferior (manager, process, start))
+					     ProcessStart start, out CommandResult result)
+			: this (manager, process, start)
 		{
-			if (start.PID != 0)
-				inferior.Attach (start.PID, true);
-			else
-				inferior.Run (true);
-			pid = inferior.PID;
+			inferior = Inferior.CreateInferior (manager, process, start);
 
 			is_main = true;
+			pid = inferior.Run (true);
+			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
+
+			result = new Thread.StepCommandResult (thread);
+			current_operation = new OperationStart (result);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
-					     Inferior inferior, int pid, bool do_attach, bool is_main)
-			: this (manager, inferior)
+					     Inferior inferior, int pid)
+			: this (manager, process, inferior.ProcessStart)
 		{
+			this.inferior = inferior;
 			this.pid = pid;
-			this.is_main = is_main;
+		}
 
-			if (do_attach)
-				inferior.Attach (pid, false);
-			else
-				inferior.Initialize (pid);
+		public CommandResult StartThread ()
+		{
+			inferior.InitializeThread (pid);
 
-			tid = inferior.TID;
+			CommandResult result = new Thread.StepCommandResult (thread);
+			current_operation = new OperationRun (TargetAddress.Null, true, result);
+			return result;
 		}
 
 #region child event processing
@@ -477,31 +476,21 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void Start (TargetAddress func)
-		{
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-			main_method_stackptr = iframe.StackPointer;
-
-			CommandResult result = new Thread.StepCommandResult (thread);
-			current_operation = new OperationRun (func, true, result);
-			current_operation.Execute (this);
-		}
-
 		internal void Attached ()
 		{
 			frame_changed (inferior.CurrentFrame, null);
 			engine_stopped = true;
 		}
 
-		internal void ReachedMain (TargetAddress method)
+		internal void ReachedManagedMain (TargetAddress method)
 		{
-			CommandResult result = new Thread.StepCommandResult (thread);
-
-			is_main = true;
-			current_operation = new OperationInitialize (result);
-
-			TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
-			PushOperation (new OperationCompileMethod (compile, method, null));
+			if (!method.IsNull) {
+				TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
+				PushOperation (new OperationCompileMethod (compile, method, null));
+			} else {
+				current_operation = new OperationRun (TargetAddress.Null, true, null);
+				current_operation.Execute (this);
+			}
 		}
 
 		internal void Attach (MonoDebuggerInfo info)
@@ -510,6 +499,17 @@ namespace Mono.Debugger.Backends
 
 			this.is_main = true;
 			StartOperation (new OperationAttach (info, result));
+		}
+
+		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
+		{
+			this.tid = tid;
+			this.end_stack_address = end_stack_address;
+		}
+
+		internal void OnManagedThreadExited ()
+		{
+			this.end_stack_address = TargetAddress.Null;
 		}
 
 		internal CommandResult GetThreadID (MonoThreadManager manager, MonoDebuggerInfo info)
@@ -689,9 +689,8 @@ namespace Mono.Debugger.Backends
 		}
 #endregion
 
-		internal void SetTID (long tid)
-		{
-			this.tid = tid;
+		protected TargetAddress EndStackAddress {
+			get { return end_stack_address; }
 		}
 
 		public override TargetInfo TargetInfo {
@@ -1490,7 +1489,6 @@ namespace Mono.Debugger.Backends
 		{
 			return (Backtrace) SendCommand (delegate {
 				if (!engine_stopped) {
-					Console.WriteLine ("GET BACKGRACE NOT STOPPED!");
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
 					throw new TargetException (TargetError.NotStopped);
@@ -1747,7 +1745,7 @@ namespace Mono.Debugger.Backends
 
 		int stepping_over_breakpoint;
 
-		internal TargetAddress EndStackAddress;
+		TargetAddress end_stack_address = TargetAddress.Null;
 
 		TargetAddress main_method_stackptr = TargetAddress.Null;
 		TargetAddress main_method_retaddr = TargetAddress.Null;
@@ -1804,6 +1802,8 @@ namespace Mono.Debugger.Backends
 		public virtual void Execute (SingleSteppingEngine sse)
 		{
 			StartFrame = sse.inferior.CurrentFrame;
+			Report.Debug (DebugFlags.SSE, "{0} executing {1} at {2}",
+				      sse, this, StartFrame);
 			DoExecute (sse);
 		}
 
@@ -1816,7 +1816,7 @@ namespace Mono.Debugger.Backends
 
 		Operation child;
 
-		public virtual void PushOperation (SingleSteppingEngine sse, Operation op)
+		public void PushOperation (SingleSteppingEngine sse, Operation op)
 		{
 			if (child != null)
 				child.PushOperation (sse, op);
@@ -1903,6 +1903,47 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
+	protected class OperationStart : Operation
+	{
+		public OperationStart (CommandResult result)
+			: base (result)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{ }
+
+		bool initialized;
+
+		protected override EventResult DoProcessEvent (SingleSteppingEngine sse,
+							       Inferior inferior,
+							       Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} start: {1}", sse, cevent);
+
+			args = null;
+			if (cevent.Type != Inferior.ChildEventType.CHILD_STOPPED)
+				return EventResult.Completed;
+
+			if (sse.ProcessServant.MonoManager != null) {
+				if (!initialized) {
+					initialized = true;
+					inferior.Continue ();
+					return EventResult.Running;
+				} else
+					return EventResult.Completed;
+			}
+
+			sse.PushOperation (new OperationRun (inferior.MainMethodAddress, true, Result));
+			return EventResult.Running;
+		}
+	}
+
 	protected class OperationInitialize : Operation
 	{
 		public OperationInitialize (CommandResult result)
@@ -1961,8 +2002,8 @@ namespace Mono.Debugger.Backends
 				      sse, data1, data2, Result);
 
 			sse.tid = data1;
-			sse.SetTID (data1);
-			manager.SetThreadId (sse);
+			// sse.SetTID (data1);
+			// manager.SetThreadId (sse);
 			return true;
 		}
 	}
@@ -2079,12 +2120,6 @@ namespace Mono.Debugger.Backends
 
 				has_thread_lock = false;
 			}
-		}
-
-		public override void PushOperation (SingleSteppingEngine sse, Operation op)
-		{
-			// ReleaseThreadLock (sse);
-			base.PushOperation (sse, op);
 		}
 
 		protected override EventResult ProcessEvent (SingleSteppingEngine sse,

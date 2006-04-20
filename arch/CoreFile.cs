@@ -61,7 +61,7 @@ namespace Mono.Debugger.Backends
 #endif
 
 			read_note_section ();
-			main_thread = ((CoreFileThread) threads [0]).Thread;
+			main_thread = (CoreFileThread) threads [0];
 
 			ReachedMain ();
 			InitializeModules ();

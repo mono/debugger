@@ -38,7 +38,7 @@ namespace Mono.Debugger
 		}
 
 		public Thread MainThread {
-			get { return servant.MainThread; }
+			get { return servant.MainThread.Client; }
 		}
 
 		public bool IsManaged {
@@ -209,7 +209,7 @@ namespace Mono.Debugger
 
 			foreach (Event handle in info.Events) {
 				servant.AddEvent (handle);
-				handle.Enable (servant.MainThread);
+				handle.Enable (servant.MainThread.Client);
 			}
 		}
 
