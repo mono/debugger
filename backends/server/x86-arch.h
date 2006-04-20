@@ -30,9 +30,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 static ServerCommandError
 x86_arch_get_registers (ServerHandle *handle);
 
-static guint64
-x86_arch_get_tid (ServerHandle *handle);
-
 static ServerCommandError
 server_ptrace_init_after_fork (ServerHandle *handle);
 

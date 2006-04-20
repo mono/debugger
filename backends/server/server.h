@@ -97,9 +97,10 @@ struct InferiorVTable {
 
 	ServerHandle *        (* create_inferior)     (BreakpointManager  *bpm);
 
-	ServerCommandError    (* initialize)          (ServerHandle       *handle,
-						       guint32             pid,
-						       guint64            *tid);
+	ServerCommandError    (* initialize_process)  (ServerHandle       *handle);
+
+	ServerCommandError    (* initialize_thread)   (ServerHandle       *handle,
+						       guint32             pid);
 
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
 						       const gchar        *working_directory,
@@ -112,8 +113,7 @@ struct InferiorVTable {
 
 	ServerCommandError    (* attach)              (ServerHandle       *handle,
 						       guint32             pid,
-						       gboolean            is_main,
-						       guint64            *tid);
+						       gboolean            is_main);
 
 	ServerCommandError    (* detach)              (ServerHandle       *handle);
 
@@ -292,7 +292,6 @@ struct InferiorVTable {
 	 * Stop the target.
 	 */
 	ServerCommandError    (* stop)                (ServerHandle     *handle);
-	void                  (* global_stop)         (void);
 
 	/*
 	 * Send signal `sig' to the target the next time it is continued.
@@ -341,9 +340,11 @@ ServerHandle *
 mono_debugger_server_create_inferior      (BreakpointManager  *bpm);
 
 ServerCommandError
-mono_debugger_server_initialize           (ServerHandle       *handle,
-					   guint32             pid,
-					   guint64            *tid);
+mono_debugger_server_initialize_process   (ServerHandle       *handle);
+
+ServerCommandError
+mono_debugger_server_initialize_thread    (ServerHandle       *handle,
+					   guint32             pid);
 
 ServerCommandError
 mono_debugger_server_spawn                (ServerHandle       *handle,
@@ -358,8 +359,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
 					   guint32             pid,
-					   gboolean            is_main,
-					   guint64            *tid);
+					   gboolean            is_main);
 
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);
@@ -482,9 +482,6 @@ mono_debugger_server_set_registers       (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_stop                (ServerHandle        *handle);
-
-void
-mono_debugger_server_global_stop         (void);
 
 ServerCommandError
 mono_debugger_server_stop_and_wait       (ServerHandle        *handle,

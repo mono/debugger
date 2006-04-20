@@ -138,10 +138,6 @@ do_wait (int pid, guint32 *status)
 	return ret;
 }
 
-static int first_status = 0;
-static int first_ret = 0;
-
-static int global_pid = 0;
 static int stop_requested = 0;
 static int stop_status = 0;
 
@@ -149,12 +145,6 @@ static guint32
 server_ptrace_global_wait (guint32 *status_ret)
 {
 	int ret, status;
-
-	if (first_status) {
-		*status_ret = first_status;
-		first_status = 0;
-		return first_ret;
-	}
 
 	g_static_mutex_lock (&wait_mutex);
 	ret = do_wait (-1, &status);
@@ -205,12 +195,6 @@ server_ptrace_stop (ServerHandle *handle)
 	}
 
 	return COMMAND_ERROR_NONE;
-}
-
-static void
-server_ptrace_global_stop (void)
-{
-	kill (global_pid, SIGSTOP);
 }
 
 static ServerCommandError
@@ -283,41 +267,24 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 	return COMMAND_ERROR_NONE;
 }
 
-static void
-_server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main)
+static ServerCommandError
+_server_ptrace_setup_inferior (ServerHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
-	int status, ret;
-
-	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE) {
-		do {
-			ret = do_wait (handle->inferior->pid, &status);
-		} while (ret == 0);
-
-		if (is_main) {
-			g_assert (ret == handle->inferior->pid);
-			first_status = status;
-			first_ret = ret;
-		}
-	}
-
-	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE)
-		g_error ("Can't get registers");
 
 	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
 
-	if (handle->inferior->mem_fd < 0)
-		g_error (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
+	if (handle->inferior->mem_fd < 0) {
+		g_warning (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	}
 
 	g_free (filename);
-
-	if (!is_main) {
-		handle->inferior->tid = x86_arch_get_tid (handle);
-	}
+	return COMMAND_ERROR_NONE;
 }
 
-static gboolean
-_server_ptrace_setup_thread_manager (ServerHandle *handle)
+static ServerCommandError
+server_ptrace_initialize_process (ServerHandle *handle)
 {
 	int flags = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
 		PTRACE_O_TRACEEXEC;
@@ -325,12 +292,10 @@ _server_ptrace_setup_thread_manager (ServerHandle *handle)
 	if (ptrace (PTRACE_SETOPTIONS, handle->inferior->pid, 0, flags)) {
 		g_warning (G_STRLOC ": Can't PTRACE_SETOPTIONS %d: %s",
 			   handle->inferior->pid, g_strerror (errno));
-		return FALSE;
+		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
-	global_pid = handle->inferior->pid;
-
-	return TRUE;
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -352,10 +317,6 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 static void
 server_ptrace_global_init (void)
 {
-	first_status = 0;
-	first_ret = 0;
-
-	global_pid = 0;
 	stop_requested = 0;
 	stop_status = 0;
 }

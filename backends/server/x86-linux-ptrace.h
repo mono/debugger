@@ -30,18 +30,12 @@ server_ptrace_stop (ServerHandle *handle);
 static ServerCommandError
 server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status);
 
-static void
-_server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main);
-
-static gboolean
-_server_ptrace_setup_thread_manager (ServerHandle *handle);
+static ServerCommandError
+_server_ptrace_setup_inferior (ServerHandle *handle);
 
 static ServerCommandError
 server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo);
 
-static int
-do_wait (int pid, guint32 *status);
-
-#include "i386-ptrace.h"
+#include "x86-ptrace.h"
 
 #endif

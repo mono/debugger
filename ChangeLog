@@ -1,3 +1,32 @@
+2006-04-20  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86-linux-ptrace.c
+	(_server_ptrace_setup_inferior): Don't attempt to read the
+	registers and also don't call do_wait().  We may now be called
+	before the target is stopped.
+	(_server_ptrace_setup_thread_manager): Renamed into
+	server_ptrace_initialize_process(); we're now called from
+	ProcessServant.Initialize() after the managed `ThreadManager'
+	received the first event.
+	(server_ptrace_global_wait): `first_status' and `first_ret' is
+	gone; don't do anything special if we're called the first time.
+
+	* x86-ptrace.c (InferiorHandle): Removed `tid'; no longer attempt
+	to compute the TID here.
+
+	* x86-arch.h (x86_arch_get_tid): Removed.
+
+	* backends/server/server.h
+	(mono_debugger_server_initialize): Renamed into
+	mono_debugger_server_initialize_process() and removed the `tid'
+	argument.	
+	(mono_debugger_server_initialize_process): New function.
+	(mono_debugger_server_attach): Removed the `tid' argument.
+	(mono_debugger_server_global_stop): Removed.
+
+	* backends/server/x86-ptrace.h: New file; replaces i386-ptrace.h
+	and x86_64-ptrace.h.
+
 2006-04-19  Martin Baulig  <martin@ximian.com>
 
 	* backends/ThreadServant.cs: New file.

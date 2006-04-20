@@ -47,7 +47,6 @@ static guint32 io_thread (gpointer data);
 struct InferiorHandle
 {
 	guint32 pid;
-	guint64 tid;
 #ifdef __linux__
 	int mem_fd;
 #endif
@@ -309,6 +308,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	InferiorHandle *inferior = handle->inferior;
 	IOThreadData *io_data = g_new0 (IOThreadData, 1);
 	int fd[2], open_max, ret, len, i;
+	ServerCommandError result;
 
 	*error = NULL;
 
@@ -366,8 +366,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	}
 
 	inferior->pid = *child_pid;
-	_server_ptrace_setup_inferior (handle, TRUE);
-	_server_ptrace_setup_thread_manager (handle);
+
+	result = _server_ptrace_setup_inferior (handle);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
 
 	mono_thread_create (mono_get_root_domain (), io_thread, io_data);
 
@@ -375,22 +377,18 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 }
 
 static ServerCommandError
-server_ptrace_initialize (ServerHandle *handle, guint32 pid, guint64 *tid)
+server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 {
 	InferiorHandle *inferior = handle->inferior;
 
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
-	_server_ptrace_setup_inferior (handle, FALSE);
-
-	*tid = inferior->tid;
-
-	return COMMAND_ERROR_NONE;
+	return _server_ptrace_setup_inferior (handle);
 }
 
 static ServerCommandError
-server_ptrace_attach (ServerHandle *handle, guint32 pid, gboolean is_main, guint64 *tid)
+server_ptrace_attach (ServerHandle *handle, guint32 pid, gboolean is_main)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -403,13 +401,7 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid, gboolean is_main, guint
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
-	_server_ptrace_setup_inferior (handle, is_main);
-	if (is_main)
-		_server_ptrace_setup_thread_manager (handle);
-
-	*tid = -1;
-
-	return COMMAND_ERROR_NONE;
+	return _server_ptrace_setup_inferior (handle);
 }
 
 static void
@@ -492,7 +484,8 @@ extern void GC_end_blocking (void);
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_init,
 	server_ptrace_create_inferior,
-	server_ptrace_initialize,
+	server_ptrace_initialize_process,
+	server_ptrace_initialize_thread,
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,
@@ -522,7 +515,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_get_registers,
 	server_ptrace_set_registers,
 	server_ptrace_stop,
-	server_ptrace_global_stop,
 	server_ptrace_set_signal,
 	server_ptrace_kill,
 	server_ptrace_get_signal_info,

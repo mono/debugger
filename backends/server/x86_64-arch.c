@@ -166,18 +166,6 @@ x86_arch_get_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-guint64
-x86_arch_get_tid (ServerHandle *handle)
-{
-	guint64 start = INFERIOR_REG_RSP (handle->arch->current_regs) + 8;
-	guint64 tid;
-
-	if (server_ptrace_peek_word (handle, start, &tid) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't get tid");
-
-	return tid;
-}
-
 ChildStoppedAction
 x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			guint64 *callback_arg, guint64 *retval, guint64 *retval2)

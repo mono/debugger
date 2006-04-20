@@ -33,11 +33,7 @@ ServerCommandError _server_ptrace_get_registers (InferiorHandle *, INFERIOR_REGS
 ServerCommandError _server_ptrace_set_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
 ServerCommandError _server_ptrace_get_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
 ServerCommandError _server_ptrace_set_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
-void _server_ptrace_setup_inferior (ServerHandle *handle, gboolean is_main);
-gboolean _server_ptrace_has_thread_manager (ServerHandle *handle);
-gboolean _server_ptrace_setup_thread_manager (ServerHandle *handle);
 
-extern pthread_t mono_debugger_thread;
 extern int pending_sigint;
 
 #endif

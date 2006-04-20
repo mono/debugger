@@ -57,21 +57,30 @@ mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory
 }
 
 ServerCommandError
-mono_debugger_server_initialize (ServerHandle *handle, guint32 pid, guint64 *tid)
+mono_debugger_server_initialize_process (ServerHandle *handle)
 {
-	if (!global_vtable->initialize)
+	if (!global_vtable->initialize_process)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->initialize) (handle, pid, tid);
+	return (* global_vtable->initialize_process) (handle);
 }
 
 ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, guint32 pid, gboolean is_main, guint64 *tid)
+mono_debugger_server_initialize_thread (ServerHandle *handle, guint32 pid)
+{
+	if (!global_vtable->initialize_thread)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->initialize_thread) (handle, pid);
+}
+
+ServerCommandError
+mono_debugger_server_attach (ServerHandle *handle, guint32 pid, gboolean is_main)
 {
 	if (!global_vtable->attach)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->attach) (handle, pid, is_main, tid);
+	return (* global_vtable->attach) (handle, pid, is_main);
 }
 
 void
@@ -314,12 +323,6 @@ mono_debugger_server_stop (ServerHandle *handle)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->stop) (handle);
-}
-
-void
-mono_debugger_server_global_stop (void)
-{
-	(* global_vtable->global_stop) ();
 }
 
 ServerCommandError
