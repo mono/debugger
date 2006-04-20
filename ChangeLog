@@ -1,5 +1,13 @@
 2006-04-20  Martin Baulig  <martin@ximian.com>
 
+	* backends/Inferior.cs
+	(Inferior.Attach): Removed the `is_main' argument.
+
+	* backends/server/server.h
+	(mono_debugger_server_attach): Removed the `is_main' argument.
+
+2006-04-20  Martin Baulig  <martin@ximian.com>
+
 	* backends/ProcessServant.cs
 	(ProcessServant.MainThread): Changed type into `ThreadServant'.
 	(ProcessServant.Initialize): Major code cleanup in here; call

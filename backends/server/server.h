@@ -112,8 +112,7 @@ struct InferiorVTable {
 						       gchar             **error);
 
 	ServerCommandError    (* attach)              (ServerHandle       *handle,
-						       guint32             pid,
-						       gboolean            is_main);
+						       guint32             pid);
 
 	ServerCommandError    (* detach)              (ServerHandle       *handle);
 
@@ -358,8 +357,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 
 ServerCommandError
 mono_debugger_server_attach               (ServerHandle       *handle,
-					   guint32             pid,
-					   gboolean            is_main);
+					   guint32             pid);
 
 void
 mono_debugger_server_finalize             (ServerHandle       *handle);

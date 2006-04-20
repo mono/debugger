@@ -75,12 +75,12 @@ mono_debugger_server_initialize_thread (ServerHandle *handle, guint32 pid)
 }
 
 ServerCommandError
-mono_debugger_server_attach (ServerHandle *handle, guint32 pid, gboolean is_main)
+mono_debugger_server_attach (ServerHandle *handle, guint32 pid)
 {
 	if (!global_vtable->attach)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->attach) (handle, pid, is_main);
+	return (* global_vtable->attach) (handle, pid);
 }
 
 void

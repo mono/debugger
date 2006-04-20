@@ -69,7 +69,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid, bool is_main);
+		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_frame (IntPtr handle, out ServerStackFrame frame);
@@ -527,14 +527,14 @@ namespace Mono.Debugger.Backends
 			change_target_state (TargetState.STOPPED, 0);
 		}
 
-		public void Attach (int pid, bool is_main)
+		public void Attach (int pid)
 		{
 			if (has_target)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			has_target = true;
 
-			check_error (mono_debugger_server_attach (server_handle, pid, is_main));
+			check_error (mono_debugger_server_attach (server_handle, pid));
 			this.child_pid = pid;
 
 			string exe_file, cwd;

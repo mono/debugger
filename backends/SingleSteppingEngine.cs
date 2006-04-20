@@ -97,7 +97,11 @@ namespace Mono.Debugger.Backends
 			inferior = Inferior.CreateInferior (manager, process, start);
 
 			is_main = true;
-			pid = inferior.Run (true);
+			if (start.PID != 0) {
+				this.pid = start.PID;
+				inferior.Attach (pid);
+			} else
+				pid = inferior.Run (true);
 			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
 
 			result = new Thread.StepCommandResult (thread);

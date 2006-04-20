@@ -388,7 +388,7 @@ server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 }
 
 static ServerCommandError
-server_ptrace_attach (ServerHandle *handle, guint32 pid, gboolean is_main)
+server_ptrace_attach (ServerHandle *handle, guint32 pid)
 {
 	InferiorHandle *inferior = handle->inferior;
 
