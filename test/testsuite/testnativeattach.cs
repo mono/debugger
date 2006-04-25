@@ -1,5 +1,6 @@
 using System;
 using SD = System.Diagnostics;
+using ST = System.Threading;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -22,6 +23,7 @@ namespace Mono.Debugger.Tests
 			base.SetUp ();
 
 			child = SD.Process.Start (ExeFileName);
+			ST.Thread.Sleep (1000);
 		}
 
 		public override void TearDown ()
