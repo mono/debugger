@@ -155,6 +155,24 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public void RemoveAllBreakpoints (Inferior inferior)
+		{
+			Lock ();
+			try {
+				int[] indices = new int [breakpoints.Count];
+				breakpoints.Keys.CopyTo (indices, 0);
+
+				for (int i = 0; i < indices.Length; i++) {
+					int idx = indices [i];
+					Breakpoint bpt = (Breakpoint) breakpoints [idx];
+
+					RemoveBreakpoint (inferior, idx);
+				}
+			} finally {
+				Unlock ();
+			}
+		}
+
 		//
 		// IDisposable
 		//
