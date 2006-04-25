@@ -460,9 +460,8 @@ namespace Mono.Debugger.Languages.Mono
 		public static TargetType ReadMonoClass (MonoLanguageBackend language,
 							Thread target, TargetAddress address)
 		{
-			TargetBlob blob = target.ReadMemory (
-				address, language.BuiltinTypes.KlassSize);
-			TargetReader reader = new TargetReader (blob, target.TargetInfo);
+			TargetReader reader = new TargetReader (
+				target.ReadMemory (address, language.MonoMetadataInfo.KlassSize));
 
 			TargetAddress image = reader.ReadAddress ();
 			MonoSymbolFile file = language.GetImage (image);
@@ -473,18 +472,18 @@ namespace Mono.Debugger.Languages.Mono
 			if (file == null)
 				return null;
 
-			reader.Offset = language.BuiltinTypes.KlassTokenOffset;
+			reader.Offset = language.MonoMetadataInfo.KlassTokenOffset;
 			uint token = reader.BinaryReader.ReadUInt32 ();
 
-			reader.Offset = language.BuiltinTypes.KlassByValArgOffset;
+			reader.Offset = language.MonoMetadataInfo.KlassByValArgOffset;
 			TargetAddress byval_data_addr = reader.ReadAddress ();
 			reader.Offset += 2;
 			int type = reader.ReadByte ();
 
-			reader.Offset = language.BuiltinTypes.KlassGenericClassOffset;
+			reader.Offset = language.MonoMetadataInfo.KlassGenericClassOffset;
 			TargetAddress generic_class = reader.ReadAddress ();
 
-			reader.Offset = language.BuiltinTypes.KlassGenericContainerOffset;
+			reader.Offset = language.MonoMetadataInfo.KlassGenericContainerOffset;
 			TargetAddress generic_container = reader.ReadAddress ();
 
 			if (!generic_class.IsNull || !generic_container.IsNull)
@@ -514,10 +513,8 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 
 				TargetBlob array_data = target.ReadMemory (
-					byval_data_addr, language.BuiltinTypes.ArrayTypeSize);
-
-				TargetReader array_reader = new TargetReader (
-					array_data, target.TargetInfo);
+					byval_data_addr, language.MonoMetadataInfo.ArrayTypeSize);
+				TargetReader array_reader = new TargetReader (array_data);
 
 				array_reader.ReadAddress ();
 				int rank = array_reader.ReadByte ();

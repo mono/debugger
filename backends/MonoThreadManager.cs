@@ -67,19 +67,15 @@ namespace Mono.Debugger.Backends
 
 			int size = header.ReadInt32 ();
 
-			TargetReader reader = new TargetReader (
-				inferior.ReadMemory (info, size), inferior.TargetInfo);
-			debugger_info = new MonoDebuggerInfo (reader);
+			TargetReader reader = new TargetReader (inferior.ReadMemory (info, size));
+			debugger_info = new MonoDebuggerInfo (inferior, reader);
 
-			if (attach)
-				initialize_notifications (inferior);
-			else
-				notification_bpt = inferior.BreakpointManager.InsertBreakpoint (
-					inferior, new InitializeBreakpoint (this, debugger_info.Initialize),
-					debugger_info.Initialize);
+			notification_bpt = inferior.BreakpointManager.InsertBreakpoint (
+				inferior, new InitializeBreakpoint (this, debugger_info.Initialize),
+				debugger_info.Initialize);
 		}
 
-		int notification_bpt;
+		int notification_bpt = -1;
 
 		protected void initialize_notifications (Inferior inferior)
 		{
@@ -88,7 +84,10 @@ namespace Mono.Debugger.Backends
 
 			mono_debugger_server_set_notification (notification.Address);
 
-			inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
+			if (notification_bpt > 0) {
+				inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
+				notification_bpt = -1;
+			}
 		}
 
 		[Serializable]
@@ -125,23 +124,19 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_thread;
 		ILanguageBackend csharp_language;
 
+		internal MonoDebuggerInfo MonoDebuggerInfo {
+			get { return debugger_info; }
+		}
+
+		internal MonoMetadataInfo MonoMetadataInfo {
+			get { return debugger_info.MonoMetadataInfo; }
+		}
+
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
 			if (++index < 3)
 				sse.SetDaemon ();
-		}
-
-		public void Attach (SingleSteppingEngine main_engine, CommandResult[] results)
-		{
-			foreach (CommandResult result in results)
-				result.Wait ();
-			main_engine.Attach (debugger_info);
-		}
-
-		public CommandResult GetThreadID (Thread thread)
-		{
-			throw new InternalError ();
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
@@ -250,15 +245,14 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 55;
-		public const int  MaxDynamicVersion = 55;
+		public const int  MinDynamicVersion = 56;
+		public const int  MaxDynamicVersion = 56;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
 		public readonly TargetAddress MonoTrampolineCode;
 		public readonly TargetAddress SymbolTable;
 		public readonly int SymbolTableSize;
-		public readonly TargetAddress MetadataInfo;
 		public readonly TargetAddress CompileMethod;
 		public readonly TargetAddress GetVirtualMethod;
 		public readonly TargetAddress GetBoxedObjectMethod;
@@ -271,11 +265,14 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress LookupType;
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
-		public readonly TargetAddress GetThreadId;
+		public readonly TargetAddress GetCurrentThread;
 		public readonly TargetAddress Attach;
+		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 
-		internal MonoDebuggerInfo (TargetReader reader)
+		public readonly MonoMetadataInfo MonoMetadataInfo;
+
+		internal MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
 		{
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
@@ -286,7 +283,7 @@ namespace Mono.Debugger.Backends
 			NotificationAddress     = reader.ReadAddress ();
 			MonoTrampolineCode      = reader.ReadAddress ();
 			SymbolTable             = reader.ReadAddress ();
-			MetadataInfo            = reader.ReadAddress ();
+			TargetAddress metadata_info = reader.ReadAddress ();
 			CompileMethod           = reader.ReadAddress ();
 			GetVirtualMethod        = reader.ReadAddress ();
 			GetBoxedObjectMethod    = reader.ReadAddress ();
@@ -299,9 +296,12 @@ namespace Mono.Debugger.Backends
 			LookupType              = reader.ReadAddress ();
 			LookupAssembly          = reader.ReadAddress ();
 			RunFinally              = reader.ReadAddress ();
-			GetThreadId             = reader.ReadAddress ();
+			GetCurrentThread        = reader.ReadAddress ();
 			Attach                  = reader.ReadAddress ();
+			Detach                  = reader.ReadAddress ();
 			Initialize              = reader.ReadAddress ();
+
+			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
@@ -313,6 +313,110 @@ namespace Mono.Debugger.Backends
 				MonoTrampolineCode, SymbolTable, SymbolTableSize,
 				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
 				RuntimeInvoke);
+		}
+	}
+
+	internal class MonoMetadataInfo
+	{
+		public readonly int MonoDefaultsSize;
+		public readonly TargetAddress MonoDefaultsAddress;
+		public readonly int TypeSize;
+		public readonly int ArrayTypeSize;
+		public readonly int KlassSize;
+		public readonly int ThreadSize;
+
+		public readonly int ThreadTidOffset;
+		public readonly int ThreadStackPtrOffset;
+		public readonly int ThreadEndStackOffset;
+
+		public readonly int KlassInstanceSizeOffset;
+		public readonly int KlassParentOffset;
+		public readonly int KlassTokenOffset;
+		public readonly int KlassFieldOffset;
+		public readonly int KlassMethodsOffset;
+		public readonly int KlassMethodCountOffset;
+		public readonly int KlassThisArgOffset;
+		public readonly int KlassByValArgOffset;
+		public readonly int KlassGenericClassOffset;
+		public readonly int KlassGenericContainerOffset;
+		public readonly int FieldInfoSize;
+
+		public readonly int MonoDefaultsCorlibOffset;
+		public readonly int MonoDefaultsObjectOffset;
+		public readonly int MonoDefaultsByteOffset;
+		public readonly int MonoDefaultsVoidOffset;
+		public readonly int MonoDefaultsBooleanOffset;
+		public readonly int MonoDefaultsSByteOffset;
+		public readonly int MonoDefaultsInt16Offset;
+		public readonly int MonoDefaultsUInt16Offset;
+		public readonly int MonoDefaultsInt32Offset;
+		public readonly int MonoDefaultsUInt32Offset;
+		public readonly int MonoDefaultsIntOffset;
+		public readonly int MonoDefaultsUIntOffset;
+		public readonly int MonoDefaultsInt64Offset;
+		public readonly int MonoDefaultsUInt64Offset;
+		public readonly int MonoDefaultsSingleOffset;
+		public readonly int MonoDefaultsDoubleOffset;
+		public readonly int MonoDefaultsCharOffset;
+		public readonly int MonoDefaultsStringOffset;
+		public readonly int MonoDefaultsEnumOffset;
+		public readonly int MonoDefaultsArrayOffset;
+		public readonly int MonoDefaultsDelegateOffset;
+		public readonly int MonoDefaultsExceptionOffset;
+
+		public MonoMetadataInfo (TargetMemoryAccess memory, TargetAddress address)
+		{
+			int size = memory.ReadInteger (address);
+			TargetBinaryReader reader = memory.ReadMemory (address, size).GetReader ();
+			reader.ReadInt32 ();
+
+			MonoDefaultsSize = reader.ReadInt32 ();
+			MonoDefaultsAddress = new TargetAddress (
+				memory.TargetInfo.AddressDomain, reader.ReadAddress ());
+
+			TypeSize = reader.ReadInt32 ();
+			ArrayTypeSize = reader.ReadInt32 ();
+			KlassSize = reader.ReadInt32 ();
+			ThreadSize = reader.ReadInt32 ();
+
+			ThreadTidOffset = reader.ReadInt32 ();
+			ThreadStackPtrOffset = reader.ReadInt32 ();
+			ThreadEndStackOffset = reader.ReadInt32 ();
+
+			KlassInstanceSizeOffset = reader.ReadInt32 ();
+			KlassParentOffset = reader.ReadInt32 ();
+			KlassTokenOffset = reader.ReadInt32 ();
+			KlassFieldOffset = reader.ReadInt32 ();
+			KlassMethodsOffset = reader.ReadInt32 ();
+			KlassMethodCountOffset = reader.ReadInt32 ();
+			KlassThisArgOffset = reader.ReadInt32 ();
+			KlassByValArgOffset = reader.ReadInt32 ();
+			KlassGenericClassOffset = reader.ReadInt32 ();
+			KlassGenericContainerOffset = reader.ReadInt32 ();
+			FieldInfoSize = reader.ReadInt32 ();
+
+			MonoDefaultsCorlibOffset = reader.ReadInt32 ();
+			MonoDefaultsObjectOffset = reader.ReadInt32 ();
+			MonoDefaultsByteOffset = reader.ReadInt32 ();
+			MonoDefaultsVoidOffset = reader.ReadInt32 ();
+			MonoDefaultsBooleanOffset = reader.ReadInt32 ();
+			MonoDefaultsSByteOffset = reader.ReadInt32 ();
+			MonoDefaultsInt16Offset = reader.ReadInt32 ();
+			MonoDefaultsUInt16Offset = reader.ReadInt32 ();
+			MonoDefaultsInt32Offset = reader.ReadInt32 ();
+			MonoDefaultsUInt32Offset = reader.ReadInt32 ();
+			MonoDefaultsIntOffset = reader.ReadInt32 ();
+			MonoDefaultsUIntOffset = reader.ReadInt32 ();
+			MonoDefaultsInt64Offset = reader.ReadInt32 ();
+			MonoDefaultsUInt64Offset = reader.ReadInt32 ();
+			MonoDefaultsSingleOffset = reader.ReadInt32 ();
+			MonoDefaultsDoubleOffset = reader.ReadInt32 ();
+			MonoDefaultsCharOffset = reader.ReadInt32 ();
+			MonoDefaultsStringOffset = reader.ReadInt32 ();
+			MonoDefaultsEnumOffset = reader.ReadInt32 ();
+			MonoDefaultsArrayOffset = reader.ReadInt32 ();
+			MonoDefaultsDelegateOffset = reader.ReadInt32 ();
+			MonoDefaultsExceptionOffset = reader.ReadInt32 ();
 		}
 	}
 }

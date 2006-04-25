@@ -37,7 +37,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoLanguageBackend mono = type.File.MonoLanguage;
 
-			int offset = mono.BuiltinTypes.KlassInstanceSizeOffset;
+			int offset = mono.MonoMetadataInfo.KlassInstanceSizeOffset;
 			size = target.ReadInteger (klass_address + offset);
 
 			type.File.MonoLanguage.AddClass (KlassAddress, type);
@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (type.ParentType != null) {
 				TargetAddress parent_klass = target.ReadAddress (
-					klass_address + mono.BuiltinTypes.KlassParentOffset);
+					klass_address + mono.MonoMetadataInfo.KlassParentOffset);
 				type.MonoParentType.ClassResolved (target, parent_klass);
 			}
 
@@ -68,25 +68,25 @@ namespace Mono.Debugger.Languages.Mono
 				parent.do_initialize (target, data);
 			}
 
-			MonoBuiltinTypeInfo builtin = Type.File.MonoLanguage.BuiltinTypes;
+			MonoMetadataInfo metadata_info = Type.File.MonoLanguage.MonoMetadataInfo;
 
 			TargetAddress field_info = target.ReadAddress (
-				KlassAddress + builtin.KlassFieldOffset);
+				KlassAddress + metadata_info.KlassFieldOffset);
 			int field_count = type.Fields.Length + type.StaticFields.Length;
 			TargetBinaryReader info = target.ReadMemory (
-				field_info, field_count * builtin.FieldInfoSize).GetReader ();
+				field_info, field_count * metadata_info.FieldInfoSize).GetReader ();
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				info.Position = i * builtin.FieldInfoSize +
+				info.Position = i * metadata_info.FieldInfoSize +
 					2 * target.TargetInfo.TargetAddressSize;
 				field_offsets [i] = info.ReadInt32 ();
 			}
 
 			TargetAddress method_info = target.ReadAddress (
-				KlassAddress + builtin.KlassMethodsOffset);
+				KlassAddress + metadata_info.KlassMethodsOffset);
 			int method_count = target.ReadInteger (
-				KlassAddress + builtin.KlassMethodCountOffset);
+				KlassAddress + metadata_info.KlassMethodCountOffset);
 			TargetBlob blob = target.ReadMemory (
 				method_info, method_count * target.TargetInfo.TargetAddressSize);
 

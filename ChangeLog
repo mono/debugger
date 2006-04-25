@@ -1,5 +1,11 @@
 2006-04-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/MonoThreadManager.cs
+	(MonoMetadataInfo): New internal struct; splitted out from
+	`MonoBuiltinTypeInfo' in MonoLanguageBackend.cs.
+
+2006-04-25  Martin Baulig  <martin@ximian.com>
+
 	* arch/Architecture.cs
 	(Architecture.IsSyscallInstruction): New public abstract method.
 
