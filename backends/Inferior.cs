@@ -1379,8 +1379,10 @@ namespace Mono.Debugger.Backends
 				// If this is a call to Dispose,
 				// dispose all managed resources.
 				if (disposing) {
-					if (bfd_disassembler != null)
+					if (bfd_disassembler != null) {
 						bfd_disassembler.Dispose ();
+						bfd_disassembler = null;
+					}
 				}
 				
 				this.disposed = true;

@@ -679,10 +679,7 @@ namespace Mono.Debugger.Frontend
 
 		public void Detach ()
 		{
-			if (debugger != null) {
-				debugger.Detach ();
-				debugger = null;
-			}
+			debugger.Detach ();
 		}
 
 		public void Detach (Process process)

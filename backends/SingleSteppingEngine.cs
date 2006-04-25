@@ -732,6 +732,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			inferior.Detach ();
+			inferior.Dispose ();
 			inferior = null;
 
 			process.OnTargetDetached ();

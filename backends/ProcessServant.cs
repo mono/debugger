@@ -409,6 +409,7 @@ namespace Mono.Debugger.Backends
 				thread_hash.Remove (engine.PID);
 				OnThreadExitedEvent (engine);
 				engine.Kill ();
+				engine.Dispose ();
 			}
 		}
 
