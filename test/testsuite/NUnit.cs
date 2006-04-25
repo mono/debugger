@@ -247,6 +247,12 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Got unexpected debugger output `{0}'.", output);
 		}
 
+		public string ReadDebuggerOutput ()
+		{
+			debugger_output.Wait ();
+			return debugger_output.ReadLine ();
+		}
+
 		public void AssertFrame (string frame, int exp_index, string exp_func, int exp_line)
 		{
 			Match match = frame_regex.Match (frame);
@@ -298,7 +304,7 @@ namespace Mono.Debugger.Tests
 			int thread = Int32.Parse (match.Groups [1].Value);
 			string frame = match.Groups [2].Value;
 
-			if (thread != exp_thread.ID)
+			if ((exp_thread != null) && (thread != exp_thread.ID))
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
 
@@ -422,6 +428,21 @@ namespace Mono.Debugger.Tests
 			match = thread_created_regex.Match (output);
 			if (!match.Success)
 				Assert.Fail ("Failed to created process (received `{0}').", output);
+
+			int id = Int32.Parse (match.Groups [2].Value);
+			return interpreter.GetThread (id);
+		}
+
+		public Thread AssertThreadCreated ()
+		{
+			debugger_output.Wait ();
+			string output = debugger_output.ReadLine ();
+			if (output == null)
+				Assert.Fail ("Failed to created thread (received `{0}').", output);
+
+			Match match = thread_created_regex.Match (output);
+			if (!match.Success)
+				Assert.Fail ("Failed to created thread (received `{0}').", output);
 
 			int id = Int32.Parse (match.Groups [2].Value);
 			return interpreter.GetThread (id);
@@ -693,7 +714,7 @@ namespace Mono.Debugger.Tests
 
 					waiting = true;
 				}
-				wait_event.WaitOne ();
+				wait_event.WaitOne (50, false);
 			}
 
 			public string ReadLine ()

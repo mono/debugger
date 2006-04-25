@@ -33,7 +33,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("Fork")]
+		[Category("Attach")]
 		public void Main ()
 		{
 			Process process = Interpreter.Attach (child.Id);
@@ -53,7 +53,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("Fork")]
+		[Category("Attach")]
 		public void AttachAgain ()
 		{
 			Process process = Interpreter.Attach (child.Id);
@@ -73,7 +73,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("Fork")]
+		[Category("Attach")]
 		public void Kill ()
 		{
 			Process process = Interpreter.Attach (child.Id);
