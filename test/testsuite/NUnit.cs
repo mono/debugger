@@ -302,8 +302,10 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
 					     thread, frame, exp_thread.ID);
 
-			AssertFrame (exp_thread, exp_func, exp_line);
-			AssertFrame (frame, 0, exp_func, exp_line);
+			if (exp_func != null) {
+				AssertFrame (exp_thread, exp_func, exp_line);
+				AssertFrame (frame, 0, exp_func, exp_line);
+			}
 		}
 
 		public void AssertHitBreakpoint (Thread exp_thread, int exp_index,

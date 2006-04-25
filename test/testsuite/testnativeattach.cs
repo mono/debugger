@@ -39,6 +39,8 @@ namespace Mono.Debugger.Tests
 			Process process = Interpreter.Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
 
+			AssertStopped (process.MainThread, null, -1);
+
 			StackFrame frame = process.MainThread.CurrentFrame;
 			Assert.IsNotNull (frame);
 			Backtrace bt = process.MainThread.GetBacktrace (-1);
@@ -57,6 +59,8 @@ namespace Mono.Debugger.Tests
 			Process process = Interpreter.Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
 
+			AssertStopped (process.MainThread, null, -1);
+
 			StackFrame frame = process.MainThread.CurrentFrame;
 			Assert.IsNotNull (frame);
 			Backtrace bt = process.MainThread.GetBacktrace (-1);
@@ -74,6 +78,8 @@ namespace Mono.Debugger.Tests
 		{
 			Process process = Interpreter.Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
+
+			AssertStopped (process.MainThread, null, -1);
 
 			StackFrame frame = process.MainThread.CurrentFrame;
 			Assert.IsNotNull (frame);
