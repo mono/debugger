@@ -695,11 +695,11 @@ namespace Mono.Debugger.Frontend
 
 		protected void TargetExited ()
 		{
-			if (debugger != null) {
-				debugger.Dispose ();
-				debugger = null;
-			}
+			ThreadPool.QueueUserWorkItem (delegate (object state) {
+				((Debugger) state).Dispose ();
+			}, debugger);
 
+			debugger = null;
 			main_process = current_process = null;
 			current_thread = null;
 

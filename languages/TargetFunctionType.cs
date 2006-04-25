@@ -52,7 +52,7 @@ namespace Mono.Debugger.Languages
 
 		protected abstract void GetSessionData (SerializationInfo info);
 
-		protected abstract object SetSessionData (SerializationInfo info, Process process);
+		protected abstract object SetSessionData (SerializationInfo info);
 
 		protected internal class SessionSurrogate : ISerializationSurrogate
 		{
@@ -68,7 +68,7 @@ namespace Mono.Debugger.Languages
 						     ISurrogateSelector selector)
 			{
 				TargetFunctionType type = (TargetFunctionType) obj;
-				return type.SetSessionData (info, (Process) context.Context);
+				return type.SetSessionData (info);
 			}
 		}
 	}

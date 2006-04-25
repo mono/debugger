@@ -374,10 +374,10 @@ namespace Mono.Debugger
 						     StreamingContext context,
 						     ISurrogateSelector selector)
 			{
-				Process process = (Process) context.Context;
+				ProcessServant process = (ProcessServant) context.Context;
 
 				string name = info.GetString ("name");
-				Module module = process.Servant.ModuleManager.CreateModule (name);
+				Module module = process.ModuleManager.CreateModule (name);
 
 				module.name = info.GetString ("name");
 				module.load_symbols = info.GetBoolean ("load-symbols");

@@ -95,7 +95,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotSupportedException ();
 		}
 
-		protected override object SetSessionData (SerializationInfo info, Process process)
+		protected override object SetSessionData (SerializationInfo info)
 		{
 			throw new NotSupportedException ();
 		}

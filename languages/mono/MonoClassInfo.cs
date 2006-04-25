@@ -58,7 +58,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (initialized)
 				return;
 
-			target.Invoke (do_initialize, null);
+			target.ThreadServant.Invoke (do_initialize, null);
 		}
 
 		object do_initialize (Thread target, object data)

@@ -22,11 +22,21 @@ namespace Mono.Debugger
 
 	public class Debugger : MarshalByRefObject
 	{
+		AppDomain domain;
 		DebuggerServant servant;
 
 		public Debugger ()
 		{
-			this.servant = new DebuggerServant (this);
+			domain = AppDomain.CreateDomain ("mdb");
+
+			ObjectHandle oh = domain.CreateInstance (
+				Assembly.GetExecutingAssembly ().FullName,
+				typeof (DebuggerServant).FullName, false,
+				BindingFlags.Instance | BindingFlags.NonPublic,
+				null, new object [] { this },
+				null, null, null);
+
+			servant = (DebuggerServant) oh.Unwrap ();
 		}
 
 		public event TargetOutputHandler TargetOutputEvent;
@@ -38,6 +48,16 @@ namespace Mono.Debugger
 		public event DebuggerEventHandler TargetExitedEvent;
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
+
+		internal Process CreateProcess (ProcessServant servant)
+		{
+			return new Process (this, servant);
+		}
+
+		internal Thread CreateThread (ThreadServant servant, int id)
+		{
+			return new Thread (servant, id);
+		}
 
 		internal void OnProcessCreatedEvent (Process process)
 		{
@@ -89,6 +109,7 @@ namespace Mono.Debugger
 
 		public void Kill ()
 		{
+			check_disposed ();
 			servant.Kill ();
 		}
 
@@ -145,6 +166,11 @@ namespace Mono.Debugger
 				if (servant != null) {
 					servant.Dispose ();
 					servant = null;
+				}
+
+				if (domain != null) {
+					AppDomain.Unload (domain);
+					domain = null;
 				}
 			}
 		}

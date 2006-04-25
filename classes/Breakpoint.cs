@@ -104,13 +104,13 @@ namespace Mono.Debugger
 			this.address = address;
 		}
 
-		protected override void GetSessionData (SerializationInfo info)
+		internal override void GetSessionData (SerializationInfo info)
 		{
 			base.GetSessionData (info);
 			info.AddValue ("location", location);
 		}
 
-		protected override void SetSessionData (SerializationInfo info, Process process)
+		internal override void SetSessionData (SerializationInfo info, ProcessServant process)
 		{
 			base.SetSessionData (info, process);
 			location = (SourceLocation) info.GetValue ("location", typeof (SourceLocation));

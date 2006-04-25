@@ -44,7 +44,7 @@ namespace Mono.Debugger.Backends
 		private ProcessServant (ThreadManager manager)
 		{
 			this.manager = manager;
-			this.client = new Process (manager.Debugger.Client, this);
+			this.client = manager.Debugger.Client.CreateProcess (this);
 
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
@@ -552,6 +552,68 @@ namespace Mono.Debugger.Backends
 			thread_lock_mutex.Unlock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock: {0}", caller);
+		}
+
+		//
+		// Session management.
+		//
+
+		public void SaveSession (Stream stream, StreamingContextStates states )
+		{
+			StreamingContext context = new StreamingContext (
+				states, this);
+
+			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
+			BinaryFormatter formatter = new BinaryFormatter (ss, context);
+
+			SessionInfo info = new SessionInfo (this);
+			formatter.Serialize (stream, info);
+		}
+
+		public void LoadSession (Stream stream, StreamingContextStates states)
+		{
+			StreamingContext context = new StreamingContext (
+				StreamingContextStates.Persistence, this);
+
+			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
+			BinaryFormatter formatter = new BinaryFormatter (ss, context);
+
+			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
+
+			foreach (Event handle in info.Events) {
+				AddEvent (handle);
+				handle.Enable (MainThread.Client);
+			}
+		}
+
+		[Serializable]
+		private class SessionInfo : ISerializable, IDeserializationCallback
+		{
+			public readonly Module[] Modules;
+			public readonly Event[] Events;
+
+			public SessionInfo (ProcessServant process)
+			{
+				this.Modules = process.Modules;
+				this.Events = process.Events;
+			}
+
+			public void GetObjectData (SerializationInfo info, StreamingContext context)
+			{
+				info.AddValue ("modules", Modules);
+				info.AddValue ("events", Events);
+			}
+
+			void IDeserializationCallback.OnDeserialization (object obj)
+			{ }
+
+			private SessionInfo (SerializationInfo info, StreamingContext context)
+			{
+				Modules = (Module []) info.GetValue (
+					"modules", typeof (Module []));
+				Events = (Event []) info.GetValue (
+					"events", typeof (Event []));
+			}
 		}
 
 		//

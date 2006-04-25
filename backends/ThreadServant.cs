@@ -27,7 +27,7 @@ namespace Mono.Debugger.Backends
 			tgroup = process.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
 
-			thread = new Thread (this, ID);
+			thread = process.Debugger.Client.CreateThread (this, ID);
 		}
 
 		protected readonly int id;

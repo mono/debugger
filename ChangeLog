@@ -1,5 +1,14 @@
 2006-04-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/Process.cs
+	(Process.SaveSession, Process.LoadSession): Moved the session
+	handling into the `ProcessServant'.
+
+	* classes/Debugger.cs
+	(Debugger.ctor): Create the `DebuggerServant' in another appdomain.
+
+2006-04-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.StartThread): Added `do_attach' argument.
 	(SingleSteppingEngine.GetThreadID): Removed.

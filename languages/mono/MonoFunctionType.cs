@@ -121,7 +121,7 @@ namespace Mono.Debugger.Languages.Mono
 			info.AddValue ("token", token);
 		}
 
-		protected override object SetSessionData (SerializationInfo info, Process process)
+		protected override object SetSessionData (SerializationInfo info)
 		{
 			Module module = (Module) info.GetValue ("module", typeof (Module));
 			string klass = info.GetString ("klass");

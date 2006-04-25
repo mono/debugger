@@ -3,6 +3,8 @@ using System.Collections;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	// <summary>
@@ -96,7 +98,7 @@ namespace Mono.Debugger
 						     StreamingContext context,
 						     ISurrogateSelector selector)
 			{
-				Process process = (Process) context.Context;
+				ProcessServant process = (ProcessServant) context.Context;
 
 				string name = info.GetString ("name");
 				return process.ThreadGroupByName (name);

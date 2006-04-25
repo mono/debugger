@@ -115,6 +115,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal ThreadServant ThreadServant {
+			get {
+				check_servant ();
+				return servant;
+			}
+		}
+
 		public bool IsDaemon {
 			get {
 				check_servant ();
@@ -545,12 +552,6 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.UnknownError);
 
 			return (TargetAddress) result.Result;
-		}
-
-		internal object Invoke (TargetAccessDelegate func, object data)
-		{
-			check_servant ();
-			return servant.Invoke (func, data);
 		}
 
 		public void Return (bool run_finally)

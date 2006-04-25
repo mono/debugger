@@ -11,7 +11,7 @@ namespace Mono.Debugger
 	//   Instances of this class are normally created as the result of a user action
 	//   such as a method lookup.
 	// </summary>
-	public class SourceLocation : IDeserializationCallback
+	public class SourceLocation : MarshalByRefObject, IDeserializationCallback
 	{
 		Module module;
 		SourceMethod source;
@@ -168,7 +168,7 @@ namespace Mono.Debugger
 				info.AddValue ("type", "unknown");
 		}
 
-		protected virtual void SetSessionData (SerializationInfo info, Process process)
+		protected virtual void SetSessionData (SerializationInfo info)
 		{
 			string type = info.GetString ("type");
 			if (type == "source") {
@@ -197,7 +197,7 @@ namespace Mono.Debugger
 						     ISurrogateSelector selector)
 			{
 				SourceLocation location = (SourceLocation) obj;
-				location.SetSessionData (info, (Process) context.Context);
+				location.SetSessionData (info);
 				return location;
 			}
 		}

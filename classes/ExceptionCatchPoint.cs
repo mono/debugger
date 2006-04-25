@@ -87,17 +87,17 @@ namespace Mono.Debugger
 
 		TargetType exception;
 
-		protected override void GetSessionData (SerializationInfo info)
+		internal override void GetSessionData (SerializationInfo info)
 		{
 			base.GetSessionData (info);
 			info.AddValue ("exception", exception.Name);
 		}
 
-		protected override void SetSessionData (SerializationInfo info, Process process)
+		internal override void SetSessionData (SerializationInfo info, ProcessServant process)
 		{
 			base.SetSessionData (info, process);
 
-			Language language = process.Servant.MonoLanguage;
+			Language language = process.MonoLanguage;
 			exception = language.LookupType (info.GetString ("exception"));
 		}
 	}

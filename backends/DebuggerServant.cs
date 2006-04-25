@@ -104,7 +104,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			OnTargetExitedEvent ();
-			Dispose ();
 		}
 
 		public void Detach ()

@@ -9,7 +9,7 @@ namespace Mono.Debugger
 		CatchException
 	}
 
-	public abstract class Event
+	public abstract class Event : MarshalByRefObject
 	{
 		// <summary>
 		//   An automatically generated unique index for this event.
@@ -62,14 +62,14 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		protected virtual void GetSessionData (SerializationInfo info)
+		internal virtual void GetSessionData (SerializationInfo info)
 		{
 			info.AddValue ("index", index);
 			info.AddValue ("group", group);
 			info.AddValue ("name", name);
 		}
 
-		protected virtual void SetSessionData (SerializationInfo info, Process process)
+		internal virtual void SetSessionData (SerializationInfo info, ProcessServant process)
 		{
 			index = info.GetInt32 ("index");
 			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
@@ -90,7 +90,7 @@ namespace Mono.Debugger
 						     ISurrogateSelector selector)
 			{
 				Event handle = (Event) obj;
-				handle.SetSessionData (info, (Process) context.Context);
+				handle.SetSessionData (info, (ProcessServant) context.Context);
 				if ((context.State & StreamingContextStates.File) != 0)
 					handle.index = Event.GetNextEventIndex ();
 				return handle;
