@@ -714,7 +714,7 @@ namespace Mono.Debugger.Tests
 
 					waiting = true;
 				}
-				wait_event.WaitOne (50, false);
+				wait_event.WaitOne (2500, false);
 			}
 
 			public string ReadLine ()
