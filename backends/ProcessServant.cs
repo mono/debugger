@@ -229,7 +229,7 @@ namespace Mono.Debugger.Backends
 			// Order is important: first add the new engine to the manager's hash table,
 			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
-			new_thread.StartThread ();
+			new_thread.StartThread (do_attach);
 
 			if ((mono_manager != null) && !do_attach)
 				mono_manager.ThreadCreated (new_thread);
@@ -254,7 +254,7 @@ namespace Mono.Debugger.Backends
 			// Order is important: first add the new engine to the manager's hash table,
 			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
-			new_thread.StartThread ();
+			new_thread.StartThread (false);
 
 			new_inferior.InitializeAfterFork ();
 
@@ -314,7 +314,7 @@ namespace Mono.Debugger.Backends
 			thread_hash [inferior.PID] = new_thread;
 
 			manager.ProcessExecd (new_thread);
-			new_thread.StartThread ();
+			new_thread.StartThread (false);
 
 			manager.Debugger.OnProcessExecdEvent (this);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
@@ -343,11 +343,11 @@ namespace Mono.Debugger.Backends
 			initialized_event.WaitOne ();
 		}
 
-		internal bool Initialize (SingleSteppingEngine engine, Inferior inferior,
+		internal void Initialize (SingleSteppingEngine engine, Inferior inferior,
 					  bool is_exec)
 		{
 			if (initialized)
-				return true;
+				return;
 
 			if (!is_exec)
 				inferior.InitializeProcess ();
@@ -373,18 +373,9 @@ namespace Mono.Debugger.Backends
 						continue;
 					ThreadCreated (inferior, thread, true);
 				}
-
-				if (mono_manager == null) {
-					ReachedMain ();
-					inferior.InitializeModules ();
-					engine.Attached ();
-					initialized_event.Set ();
-					return false;
-				}
 			}
 
 			initialized_event.Set ();
-			return true;
 		}
 
 		public void Kill ()
@@ -407,22 +398,24 @@ namespace Mono.Debugger.Backends
 				throw new TargetException (TargetError.CannotDetach);
 
 			main_thread.Detach ();
-
-			manager.Debugger.OnProcessExitedEvent (this);
-
-			Dispose ();
 		}
 
 		internal void KillThread (SingleSteppingEngine engine)
 		{
 			if (engine == main_thread) {
-				manager.Debugger.OnProcessExitedEvent (main_thread.ProcessServant);
+				manager.Debugger.OnProcessExitedEvent (this);
 				Kill ();
 			} else {
 				thread_hash.Remove (engine.PID);
 				OnThreadExitedEvent (engine);
 				engine.Kill ();
 			}
+		}
+
+		internal void OnTargetDetached ()
+		{
+			manager.Debugger.OnProcessExitedEvent (this);
+			Dispose ();
 		}
 
 		// XXX This desperately needs to be renamed.
@@ -497,6 +490,17 @@ namespace Mono.Debugger.Backends
 			}
 
 			return null;
+		}
+
+		internal ThreadServant[] ThreadServants {
+			get {
+				lock (thread_hash.SyncRoot) {
+					int count = thread_hash.Count;
+					ThreadServant[] servants = new ThreadServant [count];
+					thread_hash.Values.CopyTo (servants, 0);
+					return servants;
+				}
+			}
 		}
 
 		public Thread[] Threads {

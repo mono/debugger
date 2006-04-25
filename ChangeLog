@@ -1,5 +1,20 @@
 2006-04-25  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.StartThread): Added `do_attach' argument.
+	(SingleSteppingEngine.GetThreadID): Removed.
+	(SingleSteppingEngine.Attached): Removed.
+	(SingleSteppingEngine.Attach): Removed.
+	(SingleSteppingEngine.Detach): When detaching from a managed
+	application, start an `OperationDetach'.
+	(OperationDetach): New operation.
+	(OperationGetThreadId): Renamed into `OperationGetCurrentThread'.
+
+	* backends/ThreadServant.cs
+	(ThreadServant.DetachThread): New internal abstract method.
+
+2006-04-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/BreakpointManager.cs
 	(BreakpointManager.RemoveAllBreakpoints): New public method.
 

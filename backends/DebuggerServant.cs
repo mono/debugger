@@ -104,6 +104,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			OnTargetExitedEvent ();
+			Dispose ();
 		}
 
 		public void Detach ()
@@ -112,8 +113,6 @@ namespace Mono.Debugger.Backends
 				throw new TargetException (TargetError.NoTarget);
 			else if (!main_process.IsAttached)
 				throw new TargetException (TargetError.CannotDetach);
-
-			main_process = null;
 
 			ProcessServant[] procs;
 			lock (process_hash.SyncRoot) {
@@ -124,8 +123,6 @@ namespace Mono.Debugger.Backends
 			foreach (ProcessServant proc in procs) {
 				proc.Detach ();
 			}
-
-			OnTargetExitedEvent ();
 		}
 
 		public Process Run (DebuggerOptions options)

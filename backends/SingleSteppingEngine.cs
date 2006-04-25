@@ -95,14 +95,15 @@ namespace Mono.Debugger.Backends
 			: this (manager, process, start)
 		{
 			inferior = Inferior.CreateInferior (manager, process, start);
+			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
 
 			is_main = true;
 			if (start.PID != 0) {
 				this.pid = start.PID;
 				inferior.Attach (pid);
-			} else
+			} else {
 				pid = inferior.Run (true);
-			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
+			}
 
 			result = new Thread.StepCommandResult (thread);
 			current_operation = new OperationStart (result);
@@ -116,12 +117,18 @@ namespace Mono.Debugger.Backends
 			this.pid = pid;
 		}
 
-		public CommandResult StartThread ()
+		public CommandResult StartThread (bool do_attach)
 		{
-			inferior.InitializeThread (pid);
+			if (do_attach)
+				inferior.Attach (pid);
+			else
+				inferior.InitializeThread (pid);
 
 			CommandResult result = new Thread.StepCommandResult (thread);
-			current_operation = new OperationRun (TargetAddress.Null, true, result);
+			if (do_attach)
+				current_operation = new OperationInitialize (result);
+			else
+				current_operation = new OperationRun (result);
 			return result;
 		}
 
@@ -480,12 +487,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void Attached ()
-		{
-			frame_changed (inferior.CurrentFrame, null);
-			engine_stopped = true;
-		}
-
 		internal void ReachedManagedMain (TargetAddress method)
 		{
 			if (!method.IsNull) {
@@ -497,14 +498,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void Attach (MonoDebuggerInfo info)
-		{
-			CommandResult result = new Thread.StepCommandResult (thread);
-
-			this.is_main = true;
-			StartOperation (new OperationAttach (info, result));
-		}
-
 		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
 		{
 			this.tid = tid;
@@ -514,14 +507,6 @@ namespace Mono.Debugger.Backends
 		internal void OnManagedThreadExited ()
 		{
 			this.end_stack_address = TargetAddress.Null;
-		}
-
-		internal CommandResult GetThreadID (MonoThreadManager manager, MonoDebuggerInfo info)
-		{
-			CommandResult result = new SimpleCommandResult ();
-			current_operation = new OperationGetThreadId (manager, info, result);
-			current_operation.Execute (this);
-			return result;
 		}
 
 		void set_registers (Registers registers)
@@ -724,15 +709,41 @@ namespace Mono.Debugger.Backends
 					throw new TargetException (TargetError.NotStopped);
 				}
 
-				lock (this) {
-					if (inferior != null) {
-						inferior.Detach ();
-						inferior.Dispose ();
-						inferior = null;
-					}
+				process.AcquireGlobalThreadLock (this);
+				process.BreakpointManager.RemoveAllBreakpoints (inferior);
+
+				if (process.MonoManager != null) {
+					CommandResult result = new Thread.StepCommandResult (thread);
+					StartOperation (new OperationDetach (result));
+				} else {
+					DoDetach ();
 				}
 				return null;
 			});
+		}
+
+		protected void DoDetach ()
+		{
+			foreach (ThreadServant servant in process.ThreadServants) {
+				if (servant == this)
+					continue;
+
+				servant.DetachThread ();
+			}
+
+			inferior.Detach ();
+			inferior = null;
+
+			process.OnTargetDetached ();
+		}
+
+		internal override void DetachThread ()
+		{
+			if (inferior != null) {
+				inferior.Detach ();
+				inferior.Dispose ();
+				inferior = null;
+			}
 		}
 
 		public override void Stop ()
@@ -1928,13 +1939,24 @@ namespace Mono.Debugger.Backends
 							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} start: {1}", sse, cevent);
+				      "{0} start: {1} {2}", sse, cevent,
+				      sse.ProcessServant.IsAttached);
 
 			args = null;
 			if (cevent.Type != Inferior.ChildEventType.CHILD_STOPPED)
 				return EventResult.Completed;
 
+			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
+				inferior.Step ();
+				return EventResult.Running;
+			}
+
 			if (sse.ProcessServant.MonoManager != null) {
+				if (sse.ProcessServant.IsAttached) {
+					sse.PushOperation (new OperationAttach (null));
+					return EventResult.Running;
+				}
+
 				if (!initialized) {
 					initialized = true;
 					inferior.Continue ();
@@ -1942,6 +1964,9 @@ namespace Mono.Debugger.Backends
 				} else
 					return EventResult.Completed;
 			}
+
+			if (sse.ProcessServant.IsAttached)
+				return EventResult.Completed;
 
 			sse.PushOperation (new OperationRun (inferior.MainMethodAddress, true, Result));
 			return EventResult.Running;
@@ -1967,26 +1992,29 @@ namespace Mono.Debugger.Backends
 							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} initialize ({1})", this,
+				      "{0} initialize ({1})", sse,
 				      DebuggerWaitHandle.CurrentThread);
 
 			args = null;
+			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
+				inferior.Step ();
+				return EventResult.Running;
+			}
+
+			if (sse.ProcessServant.MonoManager != null) {
+				sse.PushOperation (new OperationGetCurrentThread (null));
+				return EventResult.Running;
+			}
+
 			return EventResult.Completed;
 		}
 	}
 
-	protected class OperationGetThreadId : OperationCallback
+	protected class OperationGetCurrentThread : OperationCallback
 	{
-		MonoThreadManager manager;
-		MonoDebuggerInfo info;
-
-		public OperationGetThreadId (MonoThreadManager manager, MonoDebuggerInfo info,
-					     CommandResult result)
+		public OperationGetCurrentThread (CommandResult result)
 			: base (result)
-		{
-			this.manager = manager;
-			this.info = info;
-		}
+		{ }
 
 		public override bool IsSourceOperation {
 			get { return false; }
@@ -1994,7 +2022,8 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
-			sse.inferior.CallMethod (info.GetThreadId, 0, 0, ID);
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			sse.inferior.CallMethod (info.GetCurrentThread, 0, 0, ID);
 		}
 
 		protected override bool CallbackCompleted (SingleSteppingEngine sse,
@@ -2002,25 +2031,34 @@ namespace Mono.Debugger.Backends
 							   long data1, long data2)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} get thread ID: {1:x} {2:x} {3}",
+				      "{0} get current thread: {1:x} {2:x} {3}",
 				      sse, data1, data2, Result);
 
-			sse.tid = data1;
-			// sse.SetTID (data1);
-			// manager.SetThreadId (sse);
+			RestoreStack (sse);
+
+			if (data1 == 0) {
+				sse.PushOperation (new OperationRun (null));
+				return false;
+			}
+
+			TargetAddress thread = new TargetAddress (inferior.AddressDomain, data1);
+			MonoMetadataInfo info = sse.ProcessServant.MonoManager.MonoMetadataInfo;
+			TargetReader reader = new TargetReader (
+				inferior.ReadMemory (thread, info.ThreadSize));
+
+			reader.Offset = info.ThreadTidOffset;
+			long tid = reader.BinaryReader.ReadInt64 ();
+
+			sse.OnManagedThreadCreated (tid, thread + info.ThreadEndStackOffset);
 			return true;
 		}
 	}
 
 	protected class OperationAttach : OperationCallback
 	{
-		MonoDebuggerInfo info;
-
-		public OperationAttach (MonoDebuggerInfo info, CommandResult result)
+		public OperationAttach (CommandResult result)
 			: base (result)
-		{
-			this.info = info;
-		}
+		{ }
 
 		public override bool IsSourceOperation {
 			get { return false; }
@@ -2028,6 +2066,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
 			sse.inferior.CallMethod (info.Attach, 0, 0, ID);
 		}
 
@@ -2043,6 +2082,46 @@ namespace Mono.Debugger.Backends
 			sse.process.ReachedMain ();
 			inferior.InitializeModules ();
 			return true;
+		}
+	}
+
+	protected class OperationDetach : OperationCallback
+	{
+		public OperationDetach (CommandResult result)
+			: base (result)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected override void DoExecute (SingleSteppingEngine sse)
+		{
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			sse.inferior.CallMethod (info.Detach, 0, 0, ID);
+		}
+
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   Inferior.ChildEvent cevent,
+							   out TargetEventArgs args,
+							   out EventResult result)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} detach done: {1} {2}",
+				      sse, cevent, Result);
+
+			sse.DoDetach ();
+
+			args = new TargetEventArgs (TargetEventType.TargetExited, 0);
+			result = EventResult.Completed;
+			return true;
+		}
+
+		protected override bool CallbackCompleted (SingleSteppingEngine sse,
+							   Inferior inferior,
+							   long data1, long data2)
+		{
+			throw new InternalError ();
 		}
 	}
 
@@ -2456,6 +2535,15 @@ namespace Mono.Debugger.Backends
 			this.in_background = in_background;
 		}
 
+		public OperationRun (bool in_background, CommandResult result)
+			: this (TargetAddress.Null, in_background, result)
+		{ }
+
+		public OperationRun (CommandResult result)
+			: this (TargetAddress.Null, true, result)
+		{ }
+
+
 		public bool InBackground {
 			get { return in_background; }
 		}
@@ -2632,8 +2720,9 @@ namespace Mono.Debugger.Backends
 				goto out_frame_changed;
 			}
 
-			if (!CallbackCompleted (sse, inferior, cevent.Data1, cevent.Data2))
-				return EventResult.Running;
+			EventResult result;
+			if (CallbackCompleted (sse, inferior, cevent, out args, out result))
+				return result;
 
 			if (stack_data != null) {
 				sse.restore_stack (stack_data);
@@ -2645,6 +2734,23 @@ namespace Mono.Debugger.Backends
 			args = new TargetEventArgs (
 				TargetEventType.TargetStopped, 0, sse.current_frame);
 			return EventResult.Completed;
+		}
+
+		protected virtual bool CallbackCompleted (SingleSteppingEngine sse,
+							  Inferior inferior,
+							  Inferior.ChildEvent cevent,
+							  out TargetEventArgs args,
+							  out EventResult result)
+		{
+			if (!CallbackCompleted (sse, inferior, cevent.Data1, cevent.Data2)) {
+				args = null;
+				result = EventResult.Running;
+				return true;
+			}
+
+			args = null;
+			result = EventResult.CompletedCallback;
+			return false;
 		}
 
 		protected abstract bool CallbackCompleted (SingleSteppingEngine sse,

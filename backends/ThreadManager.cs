@@ -158,15 +158,7 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			if (!inferior.Process.Initialize (engine, inferior, false)) {
-				if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) ||
-				    (cevent.Argument != 0))
-					throw new InternalError (
-						"Received unexpected initial child event {0}",
-						cevent);
-
-				return true;
-			}
+			inferior.Process.Initialize (engine, inferior, false);
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
 				inferior.Process.ThreadCreated (inferior, (int) cevent.Argument, false);

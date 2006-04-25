@@ -22,8 +22,8 @@ namespace Mono.Debugger.Backends
 			this.data = data;
 		}
 
-		internal TargetReader (TargetBlob data, TargetInfo info)
-			: this (data.Contents, info)
+		internal TargetReader (TargetBlob data)
+			: this (data.Contents, data.TargetInfo)
 		{ }
 
 		public long Offset {

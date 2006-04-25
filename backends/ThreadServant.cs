@@ -145,6 +145,8 @@ namespace Mono.Debugger.Backends
 
 		public abstract void Detach ();
 
+		internal abstract void DetachThread ();
+
 		public abstract void Stop ();
 
 		internal abstract object Invoke (TargetAccessDelegate func, object data);
