@@ -295,6 +295,7 @@ namespace Mono.Debugger.Backends
 					callback_arg));
 			} catch {
 				change_target_state (old_state);
+				throw;
 			}
 		}
 
@@ -310,6 +311,7 @@ namespace Mono.Debugger.Backends
 					arg2, callback_arg));
 			} catch {
 				change_target_state (old_state);
+				throw;
 			}
 		}
 
@@ -323,6 +325,7 @@ namespace Mono.Debugger.Backends
 					server_handle, method.Address, arg1, callback_arg));
 			} catch {
 				change_target_state (old_state);
+				throw;
 			}
 		}
 
@@ -982,6 +985,7 @@ namespace Mono.Debugger.Backends
 				check_error (mono_debugger_server_step (server_handle));
 			} catch {
 				change_target_state (old_state);
+				throw;
 			}
 		}
 
@@ -993,6 +997,7 @@ namespace Mono.Debugger.Backends
 				check_error (mono_debugger_server_continue (server_handle));
 			} catch {
 				change_target_state (old_state);
+				throw;
 			}
 		}
 
