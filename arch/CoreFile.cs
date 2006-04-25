@@ -438,6 +438,11 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
+			internal override void DetachThread ()
+			{
+				throw new InvalidOperationException ();
+			}
+
 			public override void Stop ()
 			{
 				throw new InvalidOperationException ();

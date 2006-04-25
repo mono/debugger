@@ -83,6 +83,13 @@ namespace Mono.Debugger
 							 TargetAddress address);
 
 		// <summary>
+		//   Returns whether the instruction at target address @address is a `syscall'
+		//   instruction.
+		// </summary>
+		internal abstract bool IsSyscallInstruction (TargetMemoryAccess memory,
+							     TargetAddress address);
+
+		// <summary>
 		//   Check whether the instruction at target address @address is a `call'
 		//   instruction and returns the destination of the call or TargetAddress.Null.
 		//

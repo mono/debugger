@@ -1,3 +1,8 @@
+2006-04-25  Martin Baulig  <martin@ximian.com>
+
+	* arch/Architecture.cs
+	(Architecture.IsSyscallInstruction): New public abstract method.
+
 2006-04-20  Martin Baulig  <martin@ximian.com>
 
 	* backends/Inferior.cs
