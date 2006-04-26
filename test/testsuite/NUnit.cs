@@ -52,6 +52,11 @@ namespace Mono.Debugger.Tests
 
 			options = CreateOptions (ExeFileName, args);
 
+			if (options.HasDebugFlags)
+				Report.Initialize (options.DebugOutput, options.DebugFlags);
+			else
+				Report.Initialize ();
+
 			debugger_output = new LineReader ();
 			inferior_stdout = new LineReader ();
 			inferior_stderr = new LineReader ();

@@ -67,8 +67,11 @@ namespace Mono.Debugger
 
 		internal void OnTargetExitedEvent ()
 		{
-			if (TargetExitedEvent != null)
-				TargetExitedEvent (this);
+			ThreadPool.QueueUserWorkItem (delegate {
+				Dispose ();
+				if (TargetExitedEvent != null)
+					TargetExitedEvent (this);
+			});
 		}
 
 		internal void OnProcessExitedEvent (Process process)

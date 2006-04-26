@@ -42,7 +42,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("Test")]
+		[Category("Attach")]
 		public void Main ()
 		{
 			Process process = Interpreter.Attach (child.Id);
@@ -62,13 +62,9 @@ namespace Mono.Debugger.Tests
 			if (bt.Count < 1)
 				Assert.Fail ("Cannot get backtrace.");
 
-			Report.Debug (DebugFlags.NUnit, "Detaching!");
-
 			process.Detach ();
-			Report.Debug (DebugFlags.NUnit, "Detached!");
 			AssertProcessExited (process);
 			AssertTargetExited ();
-			Report.Debug (DebugFlags.NUnit, "Detached and exited!");
 		}
 
 		[Test]
