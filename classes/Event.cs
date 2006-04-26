@@ -90,9 +90,10 @@ namespace Mono.Debugger
 						     ISurrogateSelector selector)
 			{
 				Event handle = (Event) obj;
-				handle.SetSessionData (info, (ProcessServant) context.Context);
-				if ((context.State & StreamingContextStates.File) != 0)
-					handle.index = Event.GetNextEventIndex ();
+				ProcessServant process = (ProcessServant) context.Context;
+				handle.SetSessionData (info, process);
+				if ((context.State & StreamingContextStates.Persistence) != 0)
+					handle.index = GetNextEventIndex ();
 				return handle;
 			}
 		}
@@ -113,7 +114,7 @@ namespace Mono.Debugger
 
 		protected Event (string name, ThreadGroup group)
 		{
-			this.index = ++next_event_index;
+			this.index = GetNextEventIndex ();
 			this.name = name;
 			this.group = group;
 

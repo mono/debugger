@@ -1,3 +1,18 @@
+2006-04-26  Martin Baulig  <martin@ximian.com>
+
+	* arch/bfdglue.h (BfdGlueSection): Removed.
+
+	* arch/bfdglue.c (bfd_glue_get_sections): Removed.
+	(bfd_glue_get_first_section): New function.
+	(bfd_glue_get_next_section): New function.
+	(bfd_glue_get_section_name): New function.
+	(bfd_glue_get_section_vma): New function.
+	(bfd_glue_get_section_size): New function.
+	(bfd_glue_get_section_flags): New function.
+
+	* arch/Bfd.cs (Bfd.InternalSection): Removed.
+	(Bfd.Section): Operate directly on the `asection *' pointer.
+
 2006-04-25  Martin Baulig  <martin@ximian.com>
 
 	* classes/Process.cs

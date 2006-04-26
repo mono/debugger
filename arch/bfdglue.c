@@ -190,7 +190,7 @@ bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info
 }
 
 gboolean
-bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, guint64 offset,
+bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section,
 			       gpointer *data, guint32 *size)
 {
 	gboolean retval;
@@ -202,14 +202,47 @@ bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, gu
 
 	*data = g_malloc0 (*size);
 
-	retval = bfd_get_section_contents (abfd, section, *data, offset, *size);
-	if (!retval)
+	retval = bfd_get_section_contents (abfd, section, *data, 0, *size);
+	if (!retval) {
 		g_free (*data);
+		*data = NULL;
+	}
+
 	return retval;
 }
 
-static void
-fill_section (BfdGlueSection *section, asection *p, int idx)
+asection *
+bfd_glue_get_first_section (bfd *abfd)
+{
+	return abfd->sections;
+}
+
+asection *
+bfd_glue_get_next_section (asection *p)
+{
+	return p->next;
+}
+
+guint64
+bfd_glue_get_section_vma (asection *p)
+{
+	return p->vma;
+}
+
+gchar *
+bfd_glue_get_section_name (asection *p)
+{
+	return g_strdup (p->name);
+}
+
+guint64
+bfd_glue_get_section_size (asection *p)
+{
+	return p->_raw_size;
+}
+
+BfdGlueSectionFlags
+bfd_glue_get_section_flags (asection *p)
 {
 	BfdGlueSectionFlags flags = 0;
 
@@ -220,45 +253,7 @@ fill_section (BfdGlueSection *section, asection *p, int idx)
 	if (p->flags & SEC_READONLY)
 		flags |= SECTION_FLAGS_READONLY;
 
-	section->index = idx;
-	section->vma = p->vma;
-	section->size = p->_raw_size;
-	section->flags = flags;
-	section->section = GPOINTER_TO_UINT (p);
-	section->name = p->name;
-}
-
-gboolean
-bfd_glue_get_sections (bfd *abfd, BfdGlueSection **sections, guint32 *count_ret)
-{
-	int count = 0;
-	asection *p;
-
-	for (p = abfd->sections; p != NULL; p = p->next)
-		count++;
-
-	*count_ret = count;
-	*sections = g_new0 (BfdGlueSection, count);
-
-	for (p = abfd->sections, count = 0; p != NULL; p = p->next, count++)
-		fill_section (&((*sections) [count]), p, count);
-
-	return TRUE;
-}
-
-gboolean
-bfd_glue_get_section_by_name (bfd *abfd, const char *name, BfdGlueSection **section)
-{
-	asection *p = bfd_get_section_by_name (abfd, name);
-
-	if (!p)
-		return FALSE;
-
-	*section = g_new0 (BfdGlueSection, 1);
-
-	fill_section (*section, p, 0);
-
-	return TRUE;
+	return flags;
 }
 
 gchar *

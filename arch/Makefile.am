@@ -6,10 +6,6 @@ libmonodebuggerbfdglue_la_SOURCES = \
 	bfdglue.c		\
 	bfdglue.h
 
-noinst_PROGRAMS = testbfd
-
-testbfd_LDADD = libmonodebuggerbfdglue.la
-
 libmonodebuggerbfdglue_la_LIBADD = opcodes/libopcodes.la bfd/libbfd.la @BASE_DEPENDENCIES_LIBS@
 libmonodebuggerbfdglue_la_LDFLAGS = -no-undefined -module -export-dynamic -shared
 

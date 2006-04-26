@@ -48,49 +48,33 @@ namespace Mono.Debugger.Backends
 			ReadOnly = 4
 		};
 
-		[StructLayout(LayoutKind.Sequential)]
-		internal class InternalSection
-		{
-			public readonly int index;
-			public readonly int flags;
-			public readonly long vma;
-			public readonly long size;
-			public readonly long section;
-			public readonly string name;
-
-			public override string ToString ()
-			{
-				return String.Format ("Section [{0}:{1:x}:{2:x}:{3:x}:{4:x}]",
-						      index, flags, vma, size, section);
-			}
-		}
-
 		internal class Section
 		{
 			public readonly Bfd bfd;
+			public readonly IntPtr section;
 			public readonly string name;
 			public readonly long vma;
 			public readonly long size;
 			public readonly SectionFlags flags;
 			public readonly ObjectCache contents;
 
-			internal Section (Bfd bfd, InternalSection section)
+			internal Section (Bfd bfd, IntPtr section)
 			{
 				this.bfd = bfd;
-				this.name = section.name;
-				this.vma = section.vma;
-				this.size = section.size;
-				this.flags = (SectionFlags) section.flags;
+				this.section = section;
+
+				this.name = bfd_glue_get_section_name (section);
+				this.vma = bfd_glue_get_section_vma (section);
+				this.size = bfd_glue_get_section_size (section);
+				this.flags = bfd_glue_get_section_flags (section);
+
 				contents = new ObjectCache (
 					new ObjectCacheFunc (get_section_contents), section, 5);
 			}
 
 			object get_section_contents (object user_data)
 			{
-				InternalSection section = (InternalSection) user_data;
-
-				byte[] data = bfd.GetSectionContents (
-					bfd.ptr_from_address (section.section), true);
+				byte[] data = bfd.GetSectionContents (section, true);
 				if (data == null)
 					throw new SymbolTableException ("Can't get bfd section {0}", name);
 				return new TargetReader (data, bfd.info);
@@ -147,13 +131,25 @@ namespace Mono.Debugger.Backends
 		extern static int bfd_glue_get_dynamic_symbols (IntPtr bfd, out IntPtr symtab);
 
 		[DllImport("monodebuggerserver")]
-		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, long offset, out IntPtr data, out int size);
+		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, out IntPtr data, out int size);
 
 		[DllImport("monodebuggerserver")]
-		extern static bool bfd_glue_get_sections (IntPtr bfd, out IntPtr sections, out int count);
+		extern static IntPtr bfd_glue_get_first_section (IntPtr bfd);
 
 		[DllImport("monodebuggerserver")]
-		extern static bool bfd_glue_get_section_by_name (IntPtr bfd, string name, out IntPtr section);
+		extern static IntPtr bfd_glue_get_next_section (IntPtr section);
+
+		[DllImport("monodebuggerserver")]
+		extern static long bfd_glue_get_section_vma (IntPtr section);
+
+		[DllImport("monodebuggerserver")]
+		extern static string bfd_glue_get_section_name (IntPtr section);
+
+		[DllImport("monodebuggerserver")]
+		extern static long bfd_glue_get_section_size (IntPtr section);
+
+		[DllImport("monodebuggerserver")]
+		extern static SectionFlags bfd_glue_get_section_flags (IntPtr section);
 
 		[DllImport("monodebuggerserver")]
 		extern static long bfd_glue_elfi386_locate_base (IntPtr bfd, IntPtr data, int size);
@@ -201,7 +197,7 @@ namespace Mono.Debugger.Backends
 					arch = new Architecture_X86_64 (container.Process, info);
 
 				if (!is_coredump) {
-					InternalSection text = GetSectionByName (".text", true);
+					Section text = GetSectionByName (".text", true);
 
 					if (!base_address.IsNull)
 						start_address = new TargetAddress (
@@ -221,8 +217,8 @@ namespace Mono.Debugger.Backends
 				if (DwarfReader.IsSupported (this))
 					has_debugging_info = true;
 
-				InternalSection plt_section = GetSectionByName (".plt", false);
-				InternalSection got_section = GetSectionByName (".got", false);
+				Section plt_section = GetSectionByName (".plt", false);
+				Section got_section = GetSectionByName (".got", false);
 				if ((plt_section != null) && (got_section != null)) {
 					plt_start = new TargetAddress (
 						info.AddressDomain,
@@ -333,7 +329,7 @@ namespace Mono.Debugger.Backends
 
 			initialized = true;
 
-			InternalSection section = GetSectionByName (".dynamic", false);
+			Section section = GetSectionByName (".dynamic", false);
 			if (section == null)
 				return false;
 
@@ -439,14 +435,6 @@ namespace Mono.Debugger.Backends
 				bfd = container.AddFile (info, name, l_addr, module.StepInto, true);
 				bfd.module_loaded (inferior, l_addr);
 			}
-		}
-
-		protected IntPtr ptr_from_address (long address)
-		{
-			if (info.TargetAddressSize == 8)
-				return new IntPtr (address);
-			else
-				return new IntPtr ((int) address);
 		}
 
 		public Bfd MainBfd {
@@ -605,10 +593,9 @@ namespace Mono.Debugger.Backends
 		void create_frame_reader ()
 		{
 			long vma_base = base_address.IsNull ? 0 : base_address.Address;
-			InternalSection section = GetSectionByName (".debug_frame", false);
+			Section section = GetSectionByName (".debug_frame", false);
 			if (section != null) {
-				byte[] contents = GetSectionContents (
-					ptr_from_address (section.section), false);
+				byte[] contents = GetSectionContents (section.section, false);
 				TargetBlob blob = new TargetBlob (contents, info);
 				frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, false);
@@ -616,8 +603,7 @@ namespace Mono.Debugger.Backends
 
 			section = GetSectionByName (".eh_frame", false);
 			if (section != null) {
-				byte[] contents = GetSectionContents (
-					ptr_from_address (section.section), false);
+				byte[] contents = GetSectionContents (section.section, false);
 				TargetBlob blob = new TargetBlob (contents, info);
 				eh_frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, true);
@@ -810,16 +796,13 @@ namespace Mono.Debugger.Backends
 			IntPtr data;
 			int size;
 
-			if (!bfd_glue_get_section_contents (bfd, section, raw_section, 0, out data, out size))
+			if (!bfd_glue_get_section_contents (bfd, section, raw_section, out data, out size))
 				return null;
 
-			try {
-				byte[] retval = new byte [size];
-				Marshal.Copy (data, retval, 0, size);
-				return retval;
-			} finally {
-				g_free (data);
-			}
+			byte[] retval = new byte [size];
+			Marshal.Copy (data, retval, 0, size);
+			g_free (data);
+			return retval;
 		}
 
 		public bool HasSection (string name)
@@ -827,23 +810,18 @@ namespace Mono.Debugger.Backends
 			return GetSectionByName (name, false) != null;
 		}
 
-		InternalSection GetSectionByName (string name, bool throw_exc)
+		Section GetSectionByName (string name, bool throw_exc)
 		{
-			IntPtr data = IntPtr.Zero;
-			try {
-				if (!bfd_glue_get_section_by_name (bfd, name, out data)) {
-					if (throw_exc)
-						throw new SymbolTableException (
-							"Can't get bfd section {0}", name);
-					else
-						return null;
-				}
-
-				return (InternalSection) Marshal.PtrToStructure (
-					data, typeof (InternalSection));
-			} finally {
-				g_free (data);
+			IntPtr section = bfd_get_section_by_name (bfd, name);
+			if (section == IntPtr.Zero) {
+				if (throw_exc)
+					throw new SymbolTableException (
+						"Can't get bfd section {0}", name);
+				else
+					return null;
 			}
+
+			return new Section (this, section);
 		}
 
 		bool has_sections = false;
@@ -854,25 +832,19 @@ namespace Mono.Debugger.Backends
 			if (has_sections)
 				return;
 
-			IntPtr data = IntPtr.Zero;
-			try {
-				int count;
-				if (!bfd_glue_get_sections (bfd, out data, out count))
-					throw new SymbolTableException ("Can't get bfd sections");
+			ArrayList list = new ArrayList ();
+			IntPtr asection = bfd_glue_get_first_section (bfd);
+			while (asection != IntPtr.Zero) {
+				Section section = new Section (this, asection);
+				list.Add (section);
 
-				sections = new Section [count];
-
-				IntPtr ptr = data;
-				for (int i = 0; i < count; i++) {
-					InternalSection isection = (InternalSection) Marshal.PtrToStructure (
-						ptr, typeof (InternalSection));
-					sections [i] = new Section (this, isection);
-					ptr = ptr_from_address ((long) ptr + Marshal.SizeOf (isection));
-				}
-				has_sections = true;
-			} finally {
-				g_free (data);
+				asection = bfd_glue_get_next_section (asection);
 			}
+
+			sections = new Section [list.Count];
+			list.CopyTo (sections, 0);
+
+			has_sections = true;
 		}
 
 		public Module Module {

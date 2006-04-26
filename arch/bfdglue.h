@@ -44,15 +44,6 @@ typedef enum {
 	SECTION_FLAGS_READONLY	= 4
 } BfdGlueSectionFlags;
 
-typedef struct {
-	guint32 index;
-	guint32 flags;
-	guint64 vma;
-	guint64 size;
-	guint64 section;
-	gchar *name;
-} BfdGlueSection;
-
 extern bfd *
 bfd_glue_openr (const char *filename, const char *target);
 
@@ -67,14 +58,26 @@ extern int
 bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info, guint64 address);
 
 extern gboolean
-bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section, guint64 offset,
+bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section,
 			       gpointer *data, guint32 *size);
 
-extern gboolean
-bfd_glue_get_sections (bfd *abfd, BfdGlueSection **sections, guint32 *count);
+extern guint64
+bfd_glue_get_section_vma (asection *p);
 
-extern gboolean
-bfd_glue_get_section_by_name (bfd *abfd, const char *name, BfdGlueSection **section);
+extern gchar *
+bfd_glue_get_section_name (asection *p);
+
+extern guint64
+bfd_glue_get_section_size (asection *p);
+
+extern BfdGlueSectionFlags
+bfd_glue_get_section_flags (asection *p);
+
+extern asection *
+bfd_glue_get_first_section (bfd *abfd);
+
+extern asection *
+bfd_glue_get_next_section (asection *p);
 
 extern gchar *
 bfd_glue_core_file_failing_command (bfd *abfd);

@@ -109,8 +109,8 @@ namespace Mono.Debugger
 
 		public void Kill ()
 		{
-			check_disposed ();
-			servant.Kill ();
+			if (servant != null)
+				servant.Kill ();
 		}
 
 		public void Detach ()
