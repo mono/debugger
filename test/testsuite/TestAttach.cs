@@ -22,8 +22,15 @@ namespace Mono.Debugger.Tests
 		{
 			base.SetUp ();
 
-			child = SD.Process.Start (MonoExecutable, "--debug " + ExeFileName);
-			ST.Thread.Sleep (1000);
+			SD.ProcessStartInfo start = new SD.ProcessStartInfo (
+				MonoExecutable, "--debug " + ExeFileName);
+
+			start.UseShellExecute = false;
+			start.RedirectStandardOutput = true;
+			start.RedirectStandardError = true;
+
+			child = SD.Process.Start (start);
+			child.StandardOutput.ReadLine ();
 		}
 
 		public override void TearDown ()
@@ -35,7 +42,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("Attach")]
+		[Category("Test")]
 		public void Main ()
 		{
 			Process process = Interpreter.Attach (child.Id);
@@ -55,9 +62,13 @@ namespace Mono.Debugger.Tests
 			if (bt.Count < 1)
 				Assert.Fail ("Cannot get backtrace.");
 
+			Report.Debug (DebugFlags.NUnit, "Detaching!");
+
 			process.Detach ();
+			Report.Debug (DebugFlags.NUnit, "Detached!");
 			AssertProcessExited (process);
 			AssertTargetExited ();
+			Report.Debug (DebugFlags.NUnit, "Detached and exited!");
 		}
 
 		[Test]

@@ -1,5 +1,14 @@
 2006-04-26  Martin Baulig  <martin@ximian.com>
 
+	* classes/Report.cs (Report.ReportWriter): Make this field public
+	and don't initialize it.
+
+	* backends/DebuggerServant.cs
+	(DebuggerServant.ctor): Added `ReportWriter' argument and assign
+	it to `Report.ReportWriter'.
+
+2006-04-26  Martin Baulig  <martin@ximian.com>
+
 	* arch/bfdglue.h (BfdGlueSection): Removed.
 
 	* arch/bfdglue.c (bfd_glue_get_sections): Removed.

@@ -23,9 +23,10 @@ namespace Mono.Debugger.Backends
 		Hashtable process_hash;
 		ProcessServant main_process;
 
-		internal DebuggerServant (Debugger client)
+		internal DebuggerServant (Debugger client, ReportWriter writer)
 		{
 			this.client = client;
+			Report.ReportWriter = writer;
 			thread_manager = new ThreadManager (this);
 			process_hash = Hashtable.Synchronized (new Hashtable ());
 		}

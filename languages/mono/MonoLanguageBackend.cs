@@ -368,7 +368,8 @@ namespace Mono.Debugger.Languages.Mono
 			} catch (ThreadAbortException) {
 				return;
 			} catch (Exception e) {
-				Console.WriteLine ("Can't update symbol table: {0}", e);
+				Console.WriteLine ("Can't update symbol table: {0} {1} {2}",
+						   memory, e, Environment.StackTrace);
 				return;
 			} finally {
 				process.ModuleManager.UnLock ();

@@ -21,12 +21,13 @@ namespace Mono.Debugger
 		SymbolTable		= 512,
 		SourceFiles		= 1024,
 		DwarfReader             = 2048,
-		Remoting		= 4096
+		Remoting		= 4096,
+		NUnit			= 8192
 	}
 
 	public static class Report
 	{
-		private static ReportWriter ReportWriter = new ReportWriter ();
+		public static ReportWriter ReportWriter;
 
 		public static void Initialize ()
 		{

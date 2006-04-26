@@ -22,8 +22,14 @@ namespace Mono.Debugger.Tests
 		{
 			base.SetUp ();
 
-			child = SD.Process.Start (ExeFileName);
-			ST.Thread.Sleep (1000);
+			SD.ProcessStartInfo start = new SD.ProcessStartInfo (ExeFileName);
+
+			start.UseShellExecute = false;
+			start.RedirectStandardOutput = true;
+			start.RedirectStandardError = true;
+
+			child = SD.Process.Start (start);
+			child.StandardOutput.ReadLine ();
 		}
 
 		public override void TearDown ()

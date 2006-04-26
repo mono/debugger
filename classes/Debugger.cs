@@ -33,7 +33,7 @@ namespace Mono.Debugger
 				Assembly.GetExecutingAssembly ().FullName,
 				typeof (DebuggerServant).FullName, false,
 				BindingFlags.Instance | BindingFlags.NonPublic,
-				null, new object [] { this },
+				null, new object [] { this, Report.ReportWriter },
 				null, null, null);
 
 			servant = (DebuggerServant) oh.Unwrap ();

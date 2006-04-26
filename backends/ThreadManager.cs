@@ -520,6 +520,9 @@ namespace Mono.Debugger.Backends
 				if (inferior_thread == null)
 					return;
 
+				Report.Debug (DebugFlags.Wait,
+					      "Thread manager dispose");
+
 				if (ST.Thread.CurrentThread != inferior_thread)
 					inferior_thread.Join ();
 				wait_thread.Abort ();
