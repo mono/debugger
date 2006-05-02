@@ -70,7 +70,7 @@ namespace Mono.Debugger.Tests
 
 		public DebuggerEvent Wait ()
 		{
-			for (int i = 0; i < 2; i++) {
+			for (int i = 0; i < 3; i++) {
 				lock (queue.SyncRoot) {
 					if (queue.Count > 0)
 						return (DebuggerEvent) queue.Dequeue ();
