@@ -697,7 +697,10 @@ namespace Mono.Debugger.Backends
 
 		public override void Kill ()
 		{
-			inferior.SetSignal (inferior.SIGKILL, true);
+			SendCommand (delegate {
+				inferior.Kill ();
+				return null;
+			});
 		}
 
 		public override void Detach ()
