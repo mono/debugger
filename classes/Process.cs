@@ -195,6 +195,11 @@ namespace Mono.Debugger
 			servant.LoadSession (stream, states);
 		}
 
+		public override string ToString ()
+		{
+			return String.Format ("Process #{0}", ID);
+		}
+
 		//
 		// IDisposable
 		//
