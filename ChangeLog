@@ -1,5 +1,15 @@
 2006-05-02  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(Command.Execute): Changed return type from `void' to `object'.
+	(Command.DoExecute): Likewise.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.Error): Removed; throw a `ScriptingException'
+	instead.
+
+2006-05-02  Martin Baulig  <martin@ximian.com>
+
 	* backends/DebuggerServant.cs
 	(DebuggerServant.OnThreadCreatedEvent): Don't send the event for
 	daemon threads.

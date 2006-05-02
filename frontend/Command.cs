@@ -119,7 +119,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public abstract void Execute (Engine e);
+		public abstract object Execute (Engine e);
 
 		public virtual void Repeat (Engine e)
 		{
@@ -148,7 +148,7 @@ namespace Mono.Debugger.Frontend
 		private bool Error;
 		private ScriptingContext context;
 
-		public override void Execute (Engine e)
+		public override object Execute (Engine e)
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
@@ -157,11 +157,11 @@ namespace Mono.Debugger.Frontend
 
 				if (!Resolve (context)) {
 					Error = true;
-					return;
+					return null;
 				}
 			}
 
-			Execute (context);
+			return Execute (context);
 		}
 
 		public override void Repeat (Engine e)
@@ -172,10 +172,8 @@ namespace Mono.Debugger.Frontend
 
 		protected Expression ParseExpression (ScriptingContext context)
 		{
-			if (Argument == "") {
-				context.Error ("Argument expected");
-				return null;
-			}
+			if (Argument == "")
+				throw new ScriptingException ("Argument expected");
 
 			return DoParseExpression (context, Argument);
 		}
@@ -187,12 +185,12 @@ namespace Mono.Debugger.Frontend
 
 			Expression expr = parser.Parse (arg);
 			if (expr == null)
-				context.Error ("Cannot parse arguments");
+				throw new ScriptingException ("Cannot parse arguments");
 
 			return expr;
 		}
 
-		protected abstract void DoExecute (ScriptingContext context);
+		protected abstract object DoExecute (ScriptingContext context);
 
 		protected virtual bool DoResolveBase (ScriptingContext context)
 		{
@@ -201,10 +199,8 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual bool DoResolve (ScriptingContext context)
 		{
-			if (Argument != "") {
-				context.Error ("This command doesn't take any arguments");
-				return false;
-			}
+			if (Argument != "")
+				throw new ScriptingException ("This command doesn't take any arguments");
 
 			return true;
 		}
@@ -217,9 +213,9 @@ namespace Mono.Debugger.Frontend
 			return DoResolve (context);
 		}
 
-		public void Execute (ScriptingContext context)
+		public object Execute (ScriptingContext context)
 		{
-			DoExecute (context);
+			return DoExecute (context);
 		}
 	}
 
@@ -372,23 +368,24 @@ namespace Mono.Debugger.Frontend
 			return expression != null;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
-			Execute (context, expression, format);
+			return Execute (context, expression, format);
 		}
 
-		protected abstract void Execute (ScriptingContext context,
-						 Expression expression, DisplayFormat format);
+		protected abstract string Execute (ScriptingContext context,
+						   Expression expression, DisplayFormat format);
 	}
 
 	public class PrintExpressionCommand : PrintCommand, IDocumentableCommand
 	{
-		protected override void Execute (ScriptingContext context,
-						 Expression expression, DisplayFormat format)
+		protected override string Execute (ScriptingContext context,
+						   Expression expression, DisplayFormat format)
 		{
 			object retval = expression.Evaluate (context);
 			string text = context.FormatObject (retval, format);
 			context.Print (text);
+			return text;
 		}
 
 		// IDocumentableCommand
@@ -399,12 +396,13 @@ namespace Mono.Debugger.Frontend
 
 	public class PrintTypeCommand : PrintCommand, IDocumentableCommand
 	{
-		protected override void Execute (ScriptingContext context,
-						 Expression expression, DisplayFormat format)
+		protected override string Execute (ScriptingContext context,
+						   Expression expression, DisplayFormat format)
 		{
 			TargetType type = expression.EvaluateType (context);
 			string text = context.FormatType (type);
 			context.Print (text);
+			return text;
 		}
 
 		// IDocumentableCommand
@@ -435,9 +433,10 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			invocation.Invoke (context, true);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -470,7 +469,7 @@ namespace Mono.Debugger.Frontend
 			return expression != null;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (!Repeating) {
 				PointerExpression pexp = expression as PointerExpression;
@@ -485,6 +484,7 @@ namespace Mono.Debugger.Frontend
 			byte[] data = CurrentThread.ReadBuffer (start, count);
 			context.Print (TargetBinaryReader.HexDump (start, data));
 			start += count;
+			return data;
 		}
 
 		// IDocumentableCommand
@@ -495,12 +495,13 @@ namespace Mono.Debugger.Frontend
 
 	public class PrintFrameCommand : FrameCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (context.Interpreter.IsScript)
 				context.Print (CurrentFrame);
 			else
 				context.Interpreter.Style.PrintFrame (context, CurrentFrame);
+			return CurrentFrame;
 		}
 
 		// IDocumentableCommand
@@ -552,7 +553,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 	
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			Thread thread = CurrentThread;
 
@@ -566,7 +567,7 @@ namespace Mono.Debugger.Frontend
 				AssemblerMethod asm = CurrentThread.DisassembleMethod (method);
 				foreach (AssemblerLine insn in asm.Lines)
 					context.Interpreter.PrintInstruction (insn);
-				return;
+				return null;
 			}
 
 			if (!Repeating && (expression != null)) {
@@ -585,20 +586,19 @@ namespace Mono.Debugger.Frontend
 					if (i > 0)
 						break;
 
-					context.Error ("Reached end of current method.");
-					return;
+					throw new ScriptingException ("Reached end of current method.");
 				}
 
 				line = thread.DisassembleInstruction (method, address);
-				if (line == null) {
-					context.Error ("Cannot disassemble instruction at " +
-						       "address {0}.", address);
-					return;
-				}
+				if (line == null)
+					throw new ScriptingException (
+						"Cannot disassemble instruction at address {0}.",
+						address);
 
 				context.Interpreter.PrintInstruction (line);
 				address += line.InstructionSize;
 			}
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -611,15 +611,14 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Args != null && Args.Count != 1) {
-				context.Error ("This command requires either zero or one argument");
-				return false;
-			}
+			if (Args != null && Args.Count != 1)
+				throw new ScriptingException (
+					"This command requires either zero or one argument");
 
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (Args == null) {
 				Console.WriteLine ("No executable file.");
@@ -630,6 +629,7 @@ namespace Mono.Debugger.Frontend
 				Console.WriteLine ("Executable file: {0}.",
 						   context.Interpreter.Options.File);
 			}
+			return null;
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -647,17 +647,18 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Argument != "") {
-				context.Error ("This command doesn't take any arguments");
-				return false;
-			}
+			if (Argument != "")
+				throw new ScriptingException (
+					"This command doesn't take any arguments");
+
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
-			Console.WriteLine ("Working directory: {0}.",
-					   context.Interpreter.Options.WorkingDirectory);
+			string pwd = context.Interpreter.Options.WorkingDirectory;
+			context.Print ("Working directory: {0}.", pwd);
+			return pwd;
 		}
 
 		// IDocumentableCommand
@@ -670,14 +671,14 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Args == null) {
-				context.Error ("Argument required (new working directory).");
-				return false;
-			}
+			if (Args == null)
+				throw new ScriptingException (
+					"Argument required (new working directory).");
+
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			try {
 				string new_dir;
@@ -695,11 +696,10 @@ namespace Mono.Debugger.Frontend
 				Environment.CurrentDirectory = new_dir;
 				context.Interpreter.Options.WorkingDirectory = new_dir;
 
-				Console.WriteLine ("Working directory {0}.",
-						   context.Interpreter.Options.WorkingDirectory);
-			}
-			catch {
-				Console.WriteLine ("{0}: No such file or directory.", Argument);
+				context.Print ("Working directory {0}.", new_dir);
+				return new_dir;
+			} catch {
+				throw new ScriptingException ("{0}: No such file or directory.", Argument);
 			}
 		}
 
@@ -733,7 +733,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			Thread thread;
 			if (index >= 0)
@@ -743,6 +743,7 @@ namespace Mono.Debugger.Frontend
 
 			context.Interpreter.CurrentThread = thread;
 			context.Print (thread);
+			return thread;
 		}
 
 		// IDocumentableCommand
@@ -757,9 +758,10 @@ namespace Mono.Debugger.Frontend
 
 	public class BackgroundThreadCommand : ThreadCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			CurrentThread.Continue (true);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -775,11 +777,12 @@ namespace Mono.Debugger.Frontend
 
 	public class StopThreadCommand : ThreadCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			CurrentThread.Stop ();
 			if (context.Interpreter.IsSynchronous)
 				context.Interpreter.Wait (CurrentThread);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -790,12 +793,13 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class SteppingCommand : ThreadCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			context.ResetCurrentSourceCode ();
 			DoStep (context);
 			if (context.Interpreter.IsSynchronous)
 				context.Interpreter.Wait (CurrentThread);
+			return null;
 
 		}
 
@@ -913,7 +917,7 @@ namespace Mono.Debugger.Frontend
 			set { max_frames = value; }
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			Backtrace backtrace = CurrentThread.GetBacktrace (max_frames);
 			context.ResetCurrentSourceCode ();
@@ -922,6 +926,8 @@ namespace Mono.Debugger.Frontend
 				string prefix = i == backtrace.CurrentFrameIndex ? "(*)" : "   ";
 				context.Print ("{0} {1}", prefix, backtrace [i]);
 			}
+
+			return backtrace;
 		}
 
 		// IDocumentableCommand
@@ -941,20 +947,18 @@ namespace Mono.Debugger.Frontend
 					try {
 						increment = (int) UInt32.Parse ((string)Args[0]);;
 					} catch {
-						context.Print ("Argument must be a positive integer");
-						return false;
+						throw new ScriptingException (
+							"Argument must be a positive integer");
 					}
-				}
-				else {
-					context.Error ("At most one argument expected");
-					return false;
+				} else {
+					throw new ScriptingException ("At most one argument expected");
 				}
 			}
 
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			Backtrace backtrace = CurrentThread.GetBacktrace ();
 			try {
@@ -963,6 +967,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Can't go up any further.");
 			}
 			context.Interpreter.Style.PrintFrame (context, backtrace.CurrentFrame);
+			return backtrace.CurrentFrame;
 		}
 
 		// IDocumentableCommand
@@ -982,20 +987,18 @@ namespace Mono.Debugger.Frontend
 					try {
 						decrement = (int) UInt32.Parse ((string)Args[0]);;
 					} catch {
-						context.Print ("Argument must be a positive integer");
-						return false;
+						throw new ScriptingException (
+							"Argument must be a positive integer");
 					}
-				}
-				else {
-					context.Error ("At most one argument expected");
-					return false;
+				} else {
+					throw new ScriptingException ("At most one argument expected");
 				}
 			}
 
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			Backtrace backtrace = CurrentThread.GetBacktrace ();
 			try {
@@ -1004,6 +1007,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Can't go down any further.");
 			}
 			context.Interpreter.Style.PrintFrame (context, backtrace.CurrentFrame);
+			return backtrace.CurrentFrame;
 		}
 
 		// IDocumentableCommand
@@ -1036,7 +1040,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (Args != null) {
 				string[] cmd_args = (string []) Args.ToArray (typeof (string));
@@ -1048,7 +1052,7 @@ namespace Mono.Debugger.Frontend
 				context.Interpreter.Options.InferiorArgs = cmd_args;
 			}
 
-			context.Interpreter.Start ();
+			return context.Interpreter.Start ();
 		}
 
 		// IDocumentableCommand
@@ -1074,11 +1078,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			int pid = Int32.Parse ((string) Args [0]);
 
-			context.Interpreter.Attach (pid);
+			return context.Interpreter.Attach (pid);
 		}
 
 		// IDocumentableCommand
@@ -1111,9 +1115,9 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
-			context.Interpreter.OpenCoreFile ((string) Args [0]);
+			return context.Interpreter.OpenCoreFile ((string) Args [0]);
 		}
 
 		// IDocumentableCommand
@@ -1124,9 +1128,10 @@ namespace Mono.Debugger.Frontend
 
 	public class KillCommand : ProcessCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			context.Interpreter.Kill (CurrentProcess);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -1137,9 +1142,10 @@ namespace Mono.Debugger.Frontend
 
 	public class DetachCommand : ProcessCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			context.Interpreter.Detach (CurrentProcess);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -1165,9 +1171,10 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			context.Interpreter.Exit ();
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -1212,10 +1219,8 @@ namespace Mono.Debugger.Frontend
 
 			Type subcommand_type = (Type)subcommand_type_hash[(string) Args[0]];
 
-			if (subcommand_type == null) {
-				context.Error ("Syntax error");
-				return false;
-			}
+			if (subcommand_type == null)
+				throw new ScriptingException ("Syntax error");
 
 			subcommand = (DebuggerCommand) Activator.CreateInstance (subcommand_type);
 
@@ -1227,9 +1232,9 @@ namespace Mono.Debugger.Frontend
 			return subcommand.Resolve (context);
 		}
 	  
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
-			subcommand.Execute (context);
+			return subcommand.Execute (context);
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -1296,10 +1301,11 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				if (lang != null)
 					context.Interpreter.CurrentLang = lang;
+				return null;
 			}
 		}
 
@@ -1318,11 +1324,12 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.Style = style;
 				context.Print ("Current style interface: {0}",
 					       context.Interpreter.Style.Name);
+				return null;
 			}
 
 			public override void Complete (Engine e, string text, int start, int end)
@@ -1354,9 +1361,9 @@ namespace Mono.Debugger.Frontend
 				return expr != null;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
-				expr.Evaluate (context);
+				return expr.Evaluate (context);
 			}
 		}
 
@@ -1376,12 +1383,12 @@ namespace Mono.Debugger.Frontend
 			return base.DoResolve (context);
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{	  	
 			if (assign != null)
-				assign.Execute (context);
+				return assign.Execute (context);
 			else
-				base.DoExecute (context);
+				return base.DoExecute (context);
 		}
 
 		// IDocumentableCommand
@@ -1395,7 +1402,7 @@ namespace Mono.Debugger.Frontend
 #region show subcommands
 		private class ShowProcessesCommand : DebuggerCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				bool printed_something = false;
 				Process[] processes = context.Interpreter.Processes;
@@ -1409,12 +1416,13 @@ namespace Mono.Debugger.Frontend
 						       context.Interpreter.PrintProcess (process));
 					printed_something = true;
 				}
+				return null;
 			}
 		}
 
 		private class ShowThreadsCommand : DebuggerCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				int current_id = -1;
 				if (context.Interpreter.HasCurrentThread)
@@ -1434,20 +1442,24 @@ namespace Mono.Debugger.Frontend
 
 				if (!printed_something)
 					context.Print ("No target.");
+
+				return null;
 			}
 		}
 
 		private class ShowRegistersCommand : FrameCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
-				context.Print (CurrentThread.PrintRegisters (CurrentFrame));
+				string regs = CurrentThread.PrintRegisters (CurrentFrame);
+				context.Print (regs);
+				return regs;
 			}
 		}
 
 		private class ShowParametersCommand : FrameCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				if (CurrentFrame.Method == null)
 					throw new ScriptingException (
@@ -1459,12 +1471,14 @@ namespace Mono.Debugger.Frontend
 						var, CurrentFrame);
 					context.Interpreter.Print (msg);
 				}
+
+				return null;
 			}
 		}
 
 		private class ShowLocalsCommand : FrameCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				if (CurrentFrame.Method == null)
 					throw new ScriptingException (
@@ -1476,12 +1490,14 @@ namespace Mono.Debugger.Frontend
 						var, CurrentFrame);
 					context.Interpreter.Print (msg);
 				}
+
+				return null;
 			}
 		}
 
 		private class ShowModulesCommand : ProcessCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				Module[] modules = CurrentProcess.Modules;
 
@@ -1495,6 +1511,8 @@ namespace Mono.Debugger.Frontend
 					       module.SymbolsLoaded ? "y " : "n ",
 					       module.Name);
 				}
+
+				return null;
 			}
 		}
 
@@ -1526,10 +1544,12 @@ namespace Mono.Debugger.Frontend
 				return modules != null;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				foreach (Module module in modules)
 					context.ShowSources (module);
+
+				return null;
 			}
 		}
 
@@ -1561,48 +1581,54 @@ namespace Mono.Debugger.Frontend
 				return sources != null;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				foreach (SourceFile source in sources)
 					context.PrintMethods (source);
+
+				return null;
 			}
 		}
 
 		private class ShowBreakpointsCommand : DebuggerCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.ShowBreakpoints ();
+				return null;
 			}
 		}
 
 		private class ShowThreadGroupsCommand : DebuggerCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.ShowThreadGroups ();
+				return null;
 			}
 		}
 
 		private class ShowFrameCommand : FrameCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Print ("Stack level {0}, stack pointer at {1}, " +
 					       "frame pointer at {2}.", CurrentFrame.Level,
 					       CurrentFrame.StackPointer,
 					       CurrentFrame.FrameAddress);
+				return null;
 			}
 		}
 
 		private class ShowLangCommand : FrameCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				// if lang == auto, we should print out what it currently is, ala gdb's
 				// The current source language is "auto; currently c".
 				context.Print ("The current source language is \"{0}\".",
 					       CurrentFrame.Language.Name);
+				return null;
 			}
 		}
 
@@ -1613,10 +1639,11 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Print ("Current style interface: {0}",
 					       context.Interpreter.Style.Name);
+				return null;
 			}
 		}
 
@@ -1639,7 +1666,7 @@ namespace Mono.Debugger.Frontend
 				return expression != null;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				TargetVariable var = expression.EvaluateVariable (context);
 
@@ -1650,6 +1677,8 @@ namespace Mono.Debugger.Frontend
 				else
 					context.Print ("{0} is a variable of type {1}",
 						       var.Name, var.Type.Name);
+
+				return null;
 			}
 		}
 #endregion
@@ -1697,9 +1726,10 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.CreateThreadGroup (Argument);
+				return null;
 			}
 		}
 
@@ -1716,9 +1746,10 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.DeleteThreadGroup (Argument);
+				return null;
 			}
 		}
 
@@ -1752,17 +1783,19 @@ namespace Mono.Debugger.Frontend
 				return threads != null;
 			}
 
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.AddToThreadGroup (name, threads);
+				return null;
 			}
 		}
 
 		private class ThreadGroupRemoveCommand : ThreadGroupAddCommand
 		{
-			protected override void DoExecute (ScriptingContext context)
+			protected override object DoExecute (ScriptingContext context)
 			{
 				context.Interpreter.AddToThreadGroup (name, threads);
+				return null;
 			}
 		}
 #endregion
@@ -1805,16 +1838,17 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointEnableCommand : EventHandleCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
 				handle.Enable (CurrentThread);
-			}
-			else {
+			} else {
 				// enable all breakpoints
 				foreach (Event h in CurrentThread.Process.Events)
 					h.Enable (CurrentThread);
 			}
+
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -1825,16 +1859,17 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointDisableCommand : EventHandleCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
 				handle.Disable (CurrentThread);
-			}
-			else {
+			} else {
 				// enable all breakpoints
 				foreach (Event h in CurrentThread.Process.Events)
 					h.Disable (CurrentThread);
 			}
+
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -1845,7 +1880,7 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointDeleteCommand : EventHandleCommand, IDocumentableCommand
 	{
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
 				CurrentThread.Process.DeleteEvent (CurrentThread, handle);
@@ -1853,15 +1888,17 @@ namespace Mono.Debugger.Frontend
 				Event[] hs = CurrentThread.Process.Events;
 
 				if (hs.Length == 0)
-					return;
+					return null;
 
 				if (!context.Interpreter.Query ("Delete all breakpoints?"))
-					return;
+					return null;
 
 				// delete all breakpoints
 				foreach (Event h in CurrentThread.Process.Events)
 					CurrentThread.Process.DeleteEvent (CurrentThread, h);
 			}
+
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -1926,8 +1963,7 @@ namespace Mono.Debugger.Frontend
 				try {
 					line = (int) UInt32.Parse (Argument.Substring (pos+1));
 				} catch {
-					context.Error ("Expected filename:line");
-					return false;
+					throw new ScriptingException ("Expected filename:line");
 				}
 
 				location = context.FindLocation (filename, line);
@@ -1971,13 +2007,13 @@ namespace Mono.Debugger.Frontend
 				return base.DoResolve (context);
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (Repeating)
 				context.ListSourceCode (null, Lines * (reverse ? -1 : 1));
-			else {
+			else
 				context.ListSourceCode (location, Lines * (reverse ? -1 : 1));
-			}
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -2021,22 +2057,13 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			bool resolved = false;
-
-			try {
-				resolved = base.DoResolve (context);
-			} catch (ScriptingException ex) {
-				context.Error (ex);
-				return false;
-			}
+			bool resolved = base.DoResolve (context);
 
 			if (!resolved)
 				resolved = ResolveMethod (context);
 
-			if (!resolved) {
-				context.Error ("No such method: `{0}'", Argument);
-				return false;
-			}
+			if (!resolved)
+				throw new ScriptingException ("No such method: `{0}'", Argument);
 
 			tgroup = context.Interpreter.GetThreadGroup (Group, false);
 
@@ -2046,21 +2073,23 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (location != null) {
 				int index = context.Interpreter.InsertBreakpoint (
 					context.CurrentThread, tgroup, domain, location);
 				context.Print ("Breakpoint {0} at {1}", index, location.Name);
+				return index;
 			} else if (func != null) {
 				if (domain != 0) {
-					context.Error ("Can't insert function breakpoints in " +
-						       "other appdomains.");
-					return;
+					throw new ScriptingException (
+						"Can't insert function breakpoints in " +
+						"other application domains.");
 				}
 				int index = context.Interpreter.InsertBreakpoint (
 					context.CurrentThread, tgroup, func);
 				context.Print ("Breakpoint {0} at {1}", index, func.Name);
+				return index;
 			} else {
 				throw new ScriptingException ("Cannot insert breakpoint.");
 			}
@@ -2141,11 +2170,12 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
 				CurrentThread, tgroup, type);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
+			return index;
 		}
 
 		// IDocumentableCommand
@@ -2179,7 +2209,7 @@ namespace Mono.Debugger.Frontend
 			return expression != null;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			object retval = expression.Evaluate (context);
 			switch (mode) {
@@ -2187,6 +2217,7 @@ namespace Mono.Debugger.Frontend
 				context.Dump (retval);
 				break;
 			}
+			return retval;
 		}
 
 		// IDocumentableCommand
@@ -2199,17 +2230,16 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((Args == null) || (Args.Count != 1)) {
-				context.Error ("Filename argument expected");
-				return false;
-			}
+			if ((Args == null) || (Args.Count != 1))
+				throw new ScriptingException ("Filename argument expected");
 
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			context.LoadLibrary (CurrentThread, Argument);
+			return null;
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -2231,7 +2261,7 @@ namespace Mono.Debugger.Frontend
 
 	public class HelpCommand : Command, IDocumentableCommand
 	{
-		public override void Execute (Engine e)
+		public override object Execute (Engine e)
 		{
 			if (Args == null || Args.Count == 0) {
 				Console.WriteLine ("List of families of commands:\n");
@@ -2243,8 +2273,7 @@ namespace Mono.Debugger.Frontend
 				Console.WriteLine ("\n" + 
 						   "Type \"help\" followed by a class name for a list of commands in that family.\n" +
 						   "Type \"help\" followed by a command name for full documentation.\n");
-			}
-			else {
+			} else {
 				string[] args = (string []) Args.ToArray (typeof (string));
 				int family_index = -1;
 				int i;
@@ -2262,7 +2291,7 @@ namespace Mono.Debugger.Frontend
 
 					if (cmds == null) {
 						Console.WriteLine ("No commands exist in that family");
-						return;
+						return null;
 					}
 
 					/* we're printing out a command family */
@@ -2289,8 +2318,7 @@ namespace Mono.Debugger.Frontend
 					else {
 						Console.WriteLine ("No documentation for command \"{0}\".", args[0]);
 					}
-				}
-				else if (args[0] == "aliases") {
+				} else if (args[0] == "aliases") {
 					foreach (string cmd_name in e.Aliases.Keys) {
 						Type cmd_type = (Type) e.Aliases[cmd_name];
 						if (cmd_type.GetInterface ("IDocumentableCommand") != null) {
@@ -2299,11 +2327,12 @@ namespace Mono.Debugger.Frontend
 							Console.WriteLine ("{0} -- {1}", cmd_name, c.Description);
 						}
 					}
-				}
-				else {
+				} else {
 					Console.WriteLine ("Undefined command \"{0}\".  try \"help\".", args[0]);
 				}
 			}
+
+			return null;
 		}
 
                 public override void Complete (Engine e, string text, int start, int end) {
@@ -2320,11 +2349,12 @@ namespace Mono.Debugger.Frontend
 
 	public class AboutCommand : Command, IDocumentableCommand
 	{
-		public override void Execute (Engine e)
+		public override object Execute (Engine e)
 		{
 			Console.WriteLine ("Mono Debugger (C) 2003, 2004 Novell, Inc.\n" +
 					   "Written by Martin Baulig (martin@ximian.com)\n" +
 					   "        and Chris Toshok (toshok@ximian.com)\n");
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -2357,7 +2387,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			TargetAddress address = pexpr.EvaluateAddress (context);
 
@@ -2367,6 +2397,7 @@ namespace Mono.Debugger.Frontend
 			else
 				context.Print ("Found method containing address {0}: {1}",
 					       address, symbol);
+			return symbol;
 		}
 
 		// IDocumentableCommand
@@ -2404,12 +2435,13 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (Invocation)
 				CurrentThread.AbortInvocation ();
 			else
 				CurrentThread.Return (true);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -2422,18 +2454,17 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((Args == null) || (Args.Count != 1)) {
-				context.Error ("Filename argument required");
-				return false;
-			}
+			if ((Args == null) || (Args.Count != 1))
+				throw new ScriptingException ("Filename argument required");
 
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			using (FileStream fs = new FileStream ((string) Args [0], FileMode.Create))
 				context.Interpreter.SaveSession (fs);
+			return null;
 		}
 
 		// IDocumentableCommand
@@ -2446,15 +2477,13 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if ((Args == null) || (Args.Count != 1)) {
-				context.Error ("Filename argument required");
-				return false;
-			}
+			if ((Args == null) || (Args.Count != 1))
+				throw new ScriptingException ("Filename argument required");
 
 			return true;
 		}
 
-		protected override void DoExecute (ScriptingContext context)
+		protected override object DoExecute (ScriptingContext context)
 		{
 			if (context.HasBackend)
 				throw new ScriptingException ("Already have a target.");
@@ -2464,6 +2493,7 @@ namespace Mono.Debugger.Frontend
 			} catch {
 				throw new ScriptingException ("Can't load session from `{0}'", Args [0]);
 			}
+			return null;
 		}
 
 		// IDocumentableCommand

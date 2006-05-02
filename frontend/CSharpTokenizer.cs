@@ -180,8 +180,8 @@ namespace Mono.Debugger.Frontend.CSharp
 					goto default;
 				return v;
 			default:
-				context.Error ("Unrecognized escape sequence in " + (char)d);
-				return d;
+				throw new ScriptingException (
+					"Unrecognized escape sequence in " + (char)d);
 			}
 			GetChar ();
 			return v;
@@ -486,9 +486,9 @@ namespace Mono.Debugger.Frontend.CSharp
 
 			if (keyword == -1 || quoted){
 				val = ids;
-				if (ids.Length > 512){
-					context.Error ("Identifier too long (limit is 512 chars)");
-				}
+				if (ids.Length > 512)
+					throw new ScriptingException (
+						"Identifier too long (limit is 512 chars)");
 				return Token.IDENTIFIER;
 			}
 
@@ -514,7 +514,7 @@ namespace Mono.Debugger.Frontend.CSharp
 
 				if (c == '\n'){
 					if (!quoted)
-						context.Error ("Newline in constant");
+						throw new ScriptingException ("Newline in constant");
 					col = 0;
 				} else
 					col++;
@@ -527,8 +527,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				string_builder.Append ((char) c);
 			}
 
-			context.Error ("Unterminated string literal");
-			return Token.EOF;
+			throw new ScriptingException ("Unterminated string literal");
 		}
 
 		private int consume_quoted_identifier ()
@@ -551,8 +550,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				id_builder.Append ((char) c);
 			}
 
-			context.Error ("Unterminated quoted identifier");
-			return Token.EOF;
+			throw new ScriptingException ("Unterminated quoted identifier");
 		}
 
 		public int xtoken ()

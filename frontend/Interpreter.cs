@@ -17,9 +17,7 @@ using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	public delegate void DebuggerOutputHandler (string text);
-
-	public sealed class Interpreter : MarshalByRefObject, IDisposable
+	public class Interpreter : MarshalByRefObject, IDisposable
 	{
 		DebuggerSession session;
 
@@ -220,13 +218,9 @@ namespace Mono.Debugger.Frontend
 			Error (ex.Message);
 		}
 
-		public void Print (string message)
+		public virtual void Print (string message)
 		{
-			if (DebuggerOutputEvent != null)
-				DebuggerOutputEvent (message + "\n");
-			else {
-				Report.Print ("{0}\n", message);
-			}
+			Report.Print ("{0}\n", message);
 		}
 
 		public void Print (string format, params object[] args)
@@ -415,13 +409,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void ThreadCreated (Thread thread)
-		{
-			if (!thread.IsDaemon)
-				Print ("Process #{0} created new thread @{1}.",
-				       thread.Process.ID, thread.ID);
-		}
-
 		public void Wait (Thread thread)
 		{
 			if (thread == null)
@@ -479,15 +466,21 @@ namespace Mono.Debugger.Frontend
 			return handle;
 		}
 
-		protected void ThreadExited (Thread thread)
+		protected virtual void OnThreadCreated (Thread thread)
 		{
-			if (!thread.IsDaemon && (thread != thread.Process.MainThread))
+			Print ("Process #{0} created new thread @{1}.",
+			       thread.Process.ID, thread.ID);
+		}
+
+		protected virtual void OnThreadExited (Thread thread)
+		{
+			if (thread != thread.Process.MainThread)
 				Print ("Thread @{0} exited.", thread.ID);
 			if (thread == current_thread)
 				current_thread = null;
 		}
 
-		protected void ProcessCreated (Process process)
+		protected virtual void OnProcessCreated (Process process)
 		{
 			Print ("Created new process #{0}.", process.ID);
 			if (current_process == null) {
@@ -496,7 +489,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void ProcessExited (Process process)
+		protected virtual void OnProcessExited (Process process)
 		{
 			Print ("Process #{0} exited.", process.ID);
 			if (process == main_process) {
@@ -509,10 +502,34 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void ProcessExecd (Process process)
+		protected virtual void OnProcessExecd (Process process)
 		{
 			Print ("Process #{0} exec()'d: {1}", process.ID,
 			       PrintCommandLineArgs (process));
+		}
+
+		protected virtual void OnTargetEvent (Thread thread, TargetEventArgs args)
+		{
+			Style.TargetEvent (thread, args);
+		}
+
+		protected virtual void OnTargetOutput (bool is_stderr, string line)
+		{
+			if (!IsScript) {
+				if (is_stderr)
+					Report.Error (line);
+				else
+					Report.Print (line);
+			}
+		}
+
+		protected virtual void OnTargetExited ()
+		{
+			debugger = null;
+			main_process = current_process = null;
+			current_thread = null;
+
+			Print ("Target exited.");
 		}
 
 		public Thread CurrentThread {
@@ -690,15 +707,6 @@ namespace Mono.Debugger.Frontend
 				process.Detach ();
 		}
 
-		protected void TargetExited ()
-		{
-			debugger = null;
-			main_process = current_process = null;
-			current_thread = null;
-
-			Print ("Target exited.");
-		}
-
 		public string GetFullPathByFilename (string filename)
 		{
 			Module[] modules = CurrentProcess.Modules;
@@ -837,23 +845,6 @@ namespace Mono.Debugger.Frontend
 					      process.MainThread.PID, command_line);
 		}
 
-		public event TargetOutputHandler TargetOutputEvent;
-		public event DebuggerOutputHandler DebuggerOutputEvent;
-
-		protected void TargetOutput (bool is_stderr, string line)
-		{
-			if (TargetOutputEvent != null)
-				TargetOutputEvent (is_stderr, line);
-
-			if (!IsScript) {
-				if (is_stderr)
-					Report.Error (line);
-				else
-					Report.Print (line);
-			}
-		}
-
-
 		//
 		// IDisposable
 		//
@@ -895,52 +886,52 @@ namespace Mono.Debugger.Frontend
 		{
 			Interpreter interpreter;
 
-			public InterpreterEventSink (Interpreter interpreter, Debugger backend)
+			public InterpreterEventSink (Interpreter interpreter, Debugger debugger)
 			{
 				this.interpreter = interpreter;
 
-				backend.TargetExitedEvent += target_exited;
-				backend.ThreadCreatedEvent += thread_created;
-				backend.ThreadExitedEvent += thread_exited;
-				backend.ProcessCreatedEvent += process_created;
-				backend.ProcessExitedEvent += process_exited;
-				backend.ProcessExecdEvent += process_execd;
-				backend.TargetOutputEvent += target_output;
+				debugger.TargetExitedEvent += target_exited;
+				debugger.ThreadCreatedEvent += thread_created;
+				debugger.ThreadExitedEvent += thread_exited;
+				debugger.ProcessCreatedEvent += process_created;
+				debugger.ProcessExitedEvent += process_exited;
+				debugger.ProcessExecdEvent += process_execd;
+				debugger.TargetOutputEvent += target_output;
 			}
 
 			public void thread_created (Debugger debugger, Thread thread)
 			{
-				interpreter.ThreadCreated (thread);
+				interpreter.OnThreadCreated (thread);
 			}
 
 			public void thread_exited (Debugger debugger, Thread thread)
 			{
-				interpreter.ThreadExited (thread);
+				interpreter.OnThreadExited (thread);
 			}
 
 			public void process_created (Debugger debugger, Process process)
 			{
-				interpreter.ProcessCreated (process);
+				interpreter.OnProcessCreated (process);
 			}
 
 			public void process_exited (Debugger debugger, Process process)
 			{
-				interpreter.ProcessExited (process);
+				interpreter.OnProcessExited (process);
 			}
 
 			public void process_execd (Debugger debugger, Process process)
 			{
-				interpreter.ProcessExecd (process);
+				interpreter.OnProcessExecd (process);
 			}
 
 			public void target_exited (Debugger debugger)
 			{
-				interpreter.TargetExited ();
+				interpreter.OnTargetExited ();
 			}
 
 			public void target_output (bool is_stderr, string line)
 			{
-				interpreter.TargetOutput (is_stderr, line);
+				interpreter.OnTargetOutput (is_stderr, line);
 			}
 		}
 
@@ -953,12 +944,12 @@ namespace Mono.Debugger.Frontend
 			{
 				this.interpreter = interpreter;
 
-				debugger.TargetEvent += new TargetEventHandler (target_event);
+				debugger.TargetEvent += target_event;
 			}
 
 			public void target_event (Thread thread, TargetEventArgs args)
 			{
-				interpreter.Style.TargetEvent (thread, args);
+				interpreter.OnTargetEvent (thread, args);
 			}
 		}
 	}

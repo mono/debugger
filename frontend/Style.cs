@@ -71,8 +71,9 @@ namespace Mono.Debugger.Frontend
 				if (insn != null)
 					context.Interpreter.PrintInstruction (insn);
 				else
-					context.Error ("Cannot disassemble instruction at address {0}.",
-						       frame.TargetAddress);
+					throw new ScriptingException (
+						"Cannot disassemble instruction at address {0}.",
+						frame.TargetAddress);
 			}
 		}
 

@@ -157,21 +157,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void Error (string message)
-		{
-			interpreter.Error (message);
-		}
-
-		public void Error (string format, params object[] args)
-		{
-			interpreter.Error (String.Format (format, args));
-		}
-
-		public void Error (ScriptingException ex)
-		{
-			interpreter.Error (ex);
-		}
-
 		public void Print (string message)
 		{
 			interpreter.Print (message);

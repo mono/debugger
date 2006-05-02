@@ -302,8 +302,7 @@ public Expression Parse (string text)
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//
-		current_context.Error (lexer.Location + "  : Parsing error ");
-		return null;
+		throw new ScriptingException (lexer.Location + "  : Parsing error ");
 	}
 }
 
