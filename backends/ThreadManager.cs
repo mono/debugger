@@ -179,8 +179,9 @@ namespace Mono.Debugger.Backends
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 			    (cevent.Argument == inferior.SIGCHLD)) {
-				inferior.Continue ();
-				return true;
+				cevent = new Inferior.ChildEvent (
+					Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
+				return false;
 			}
 
 			bool retval = false;

@@ -67,12 +67,14 @@ namespace Mono.Debugger.Backends
 
 		internal void OnThreadCreatedEvent (Thread thread)
 		{
-			client.OnThreadCreatedEvent (thread);
+			if (!thread.IsDaemon)
+				client.OnThreadCreatedEvent (thread);
 		}
 
 		internal void OnThreadExitedEvent (Thread thread)
 		{
-			client.OnThreadExitedEvent (thread);
+			if (!thread.IsDaemon)
+				client.OnThreadExitedEvent (thread);
 		}
 
 		internal void OnInferiorOutput (bool is_stderr, string line)
@@ -83,6 +85,10 @@ namespace Mono.Debugger.Backends
 		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
 		{
 			try {
+				if (sse.Thread.IsDaemon &&
+				    ((args.Type == TargetEventType.TargetExited) ||
+				     (args.Type == TargetEventType.TargetSignaled)))
+					return;
 				client.OnTargetEvent (sse.Thread, args);
 			} catch (Exception ex) {
 				Error ("{0} caught exception while sending {1}:\n{2}",

@@ -1,3 +1,12 @@
+2006-05-02  Martin Baulig  <martin@ximian.com>
+
+	* backends/DebuggerServant.cs
+	(DebuggerServant.OnThreadCreatedEvent): Don't send the event for
+	daemon threads.
+	(DebuggerServant.OnThreadExitedEvent): Likewise.
+	(DebuggerServant.OnTargetEvent): Don't send a `TargetExited' or
+	`TargetSignaled' event for daemon threads.
+
 2006-04-26  Martin Baulig  <martin@ximian.com>
 
 	* classes/Report.cs (Report.ReportWriter): Make this field public
