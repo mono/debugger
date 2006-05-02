@@ -3,7 +3,6 @@ using System.IO;
 using System.Collections;
 using ST = System.Threading;
 using System.Text;
-using System.Text.RegularExpressions;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -12,31 +11,153 @@ using Mono.Debugger.Frontend;
 
 namespace Mono.Debugger.Tests
 {
+	public enum DebuggerEventType {
+		TargetEvent,
+		ThreadCreated,
+		ThreadExited,
+		ProcessCreated,
+		ProcessExecd,
+		ProcessExited,
+		TargetExited
+	}
+
+	public class DebuggerEvent {
+		public readonly DebuggerEventType Type;
+		public readonly object Data;
+		public readonly object Data2;
+
+		public DebuggerEvent (DebuggerEventType type)
+			: this (type, null, null)
+		{ }
+
+		public DebuggerEvent (DebuggerEventType type, object data)
+			: this (type, data, null)
+		{ }
+
+		public DebuggerEvent (DebuggerEventType type, object data, object data2)
+		{
+			this.Type = type;
+			this.Data = data;
+			this.Data2 = data2;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[{0}:{1}:{2}]", Type, Data, Data2);
+		}
+	}
+
+	public class NUnitInterpreter : Interpreter
+	{
+		internal NUnitInterpreter (DebuggerOptions options, LineReader inferior_stdout,
+					   LineReader inferior_stderr)
+			: base (true, true, options)
+		{
+			this.inferior_stdout = inferior_stdout;
+			this.inferior_stderr = inferior_stderr;
+
+			queue = Queue.Synchronized (new Queue ());
+			wait_event = new ST.ManualResetEvent (false);
+		}
+
+		Queue queue;
+		ST.ManualResetEvent wait_event;
+		LineReader inferior_stdout, inferior_stderr;
+
+		public bool HasEvent {
+			get { return queue.Count > 0; }
+		}
+
+		public DebuggerEvent Wait ()
+		{
+			for (int i = 0; i < 2; i++) {
+				lock (queue.SyncRoot) {
+					if (queue.Count > 0)
+						return (DebuggerEvent) queue.Dequeue ();
+
+					wait_event.Reset ();
+				}
+
+				wait_event.WaitOne (2500, false);
+			}
+
+			return null;
+		}
+
+		protected void AddEvent (DebuggerEvent e)
+		{
+			lock (queue.SyncRoot) {
+				queue.Enqueue (e);
+				wait_event.Set ();
+			}
+		}
+
+		protected override void OnTargetEvent (Thread thread, TargetEventArgs args)
+		{
+			base.OnTargetEvent (thread, args);
+			AddEvent (new DebuggerEvent (DebuggerEventType.TargetEvent, thread, args));
+		}
+
+		protected override void OnThreadCreated (Thread thread)
+		{
+			base.OnThreadCreated (thread);
+			AddEvent (new DebuggerEvent (DebuggerEventType.ThreadCreated, thread));
+		}
+
+		protected override void OnThreadExited (Thread thread)
+		{
+			base.OnThreadExited (thread);
+			AddEvent (new DebuggerEvent (DebuggerEventType.ThreadExited, thread));
+		}
+
+		protected override void OnProcessCreated (Process process)
+		{
+			base.OnProcessCreated (process);
+			AddEvent (new DebuggerEvent (DebuggerEventType.ProcessCreated, process));
+		}
+
+		protected override void OnProcessExited (Process process)
+		{
+			base.OnProcessExited (process);
+			AddEvent (new DebuggerEvent (DebuggerEventType.ProcessExited, process));
+		}
+
+		protected override void OnProcessExecd (Process process)
+		{
+			base.OnProcessExecd (process);
+			AddEvent (new DebuggerEvent (DebuggerEventType.ProcessExecd, process));
+		}
+
+		protected override void OnTargetExited ()
+		{
+			base.OnTargetExited ();
+			AddEvent (new DebuggerEvent (DebuggerEventType.TargetExited));
+		}
+
+		protected override void OnTargetOutput (bool is_stderr, string line)
+		{
+			base.OnTargetOutput (is_stderr, line);
+			if (is_stderr)
+				inferior_stderr.Add (line);
+			else
+				inferior_stdout.Add (line);
+		}
+
+		public override void Print (string message)
+		{
+		}
+	}
+
 	public abstract class TestSuite
 	{
 		DebuggerOptions options;
-		Interpreter interpreter;
+		NUnitInterpreter interpreter;
 		DebuggerEngine engine;
 		LineParser parser;
-		LineReader debugger_output;
 		LineReader inferior_stdout, inferior_stderr;
 
 		public readonly string ExeFileName;
 		public readonly string FileName;
-
-		static Regex breakpoint_regex = new Regex (@"^Breakpoint ([0-9]+) at ([^\n\r]+)$");
-		static Regex catchpoint_regex = new Regex (@"^Inserted catch point ([0-9]+) for ([^\n\r]+)$");
-		static Regex stopped_regex = new Regex (@"^Thread @([0-9]+) stopped at ([^\n\r]+)\.$");
-		static Regex hit_breakpoint_regex = new Regex (@"^Thread @([0-9]+) hit breakpoint ([0-9]+) at ([^\n\r]+)\.$");
-		static Regex caught_exception_regex = new Regex (@"^Thread @([0-9]+) caught exception at ([^\n\r]+)\.$");
-		static Regex frame_regex = new Regex (@"^#([0-9]+): 0x[0-9A-Fa-f]+ in (.*)$");
-		static Regex func_source_regex = new Regex (@"^(.*) at (.*):([0-9]+)$");
-		static Regex func_offset_regex = new Regex (@"^(.*)\+0x([0-9A-Fa-f]+)$");
-		static Regex process_created_regex = new Regex (@"^Created new process #([0-9]+)\.$");
-		static Regex thread_created_regex = new Regex (@"^Process #([0-9]+) created new thread @([0-9]+)\.$");
-		static Regex process_execd_regex = new Regex (@"^Process #([0-9]+) exec\(\)'d\: (.*)$");
-		static Regex process_exited_regex = new Regex (@"^Process #([0-9]+) exited\.$");
-
 
 		protected TestSuite (string application)
 			: this (application + ".exe", application + ".cs")
@@ -52,17 +173,16 @@ namespace Mono.Debugger.Tests
 
 			options = CreateOptions (ExeFileName, args);
 
-			if (options.HasDebugFlags)
-				Report.Initialize (options.DebugOutput, options.DebugFlags);
-			else
-				Report.Initialize ();
-
-			debugger_output = new LineReader ();
 			inferior_stdout = new LineReader ();
 			inferior_stderr = new LineReader ();
 		}
 
-		public Interpreter Interpreter {
+		static TestSuite ()
+		{
+			Report.Initialize ();
+		}
+
+		public NUnitInterpreter Interpreter {
 			get { return interpreter; }
 		}
 
@@ -89,17 +209,7 @@ namespace Mono.Debugger.Tests
 		[TestFixtureSetUp]
 		public virtual void SetUp ()
 		{
-			interpreter = new Interpreter (true, true, options);
-			interpreter.TargetOutputEvent += delegate (bool is_stderr, string line) {
-				if (is_stderr)
-					inferior_stderr.Add (line);
-				else
-					inferior_stdout.Add (line);
-			};
-
-			interpreter.DebuggerOutputEvent += delegate (string text) {
-				debugger_output.Add (text);
-			};
+			interpreter = new NUnitInterpreter (options, inferior_stdout, inferior_stderr);
 
 			engine = new DebuggerEngine (interpreter);
 			parser = new LineParser (engine);
@@ -126,7 +236,7 @@ namespace Mono.Debugger.Tests
 			return options;
 		}
 
-		public void AssertExecute (string text)
+		public object AssertExecute (string text)
 		{
 			parser.Reset ();
 			parser.Append (text);
@@ -135,16 +245,19 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("No such command: `{0}'", text);
 
 			try {
-				command.Execute (engine);
+				return command.Execute (engine);
 			} catch (ScriptingException ex) {
 				Assert.Fail ("Failed to execute command `{0}': {1}.",
 					     text, ex.Message);
+				return null;
 			} catch (TargetException ex) {
 				Assert.Fail ("Failed to execute command `{0}': {1}.",
 					     text, ex.Message);
+				return null;
 			} catch (Exception ex) {
 				Assert.Fail ("Caught exception while executing command `{0}': {1}",
 					     text, ex);
+				return null;
 			}
 		}
 
@@ -233,140 +346,37 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Got unexpected target output `{0}'.", output);
 		}
 
-		public void AssertDebuggerOutput (string line)
-		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("No debugger output.");
-
-			Assert.AreEqual (line, output,
-					 "Expected debugger output `{0}', but got `{1}'.",
-					 line, output);
-		}
-
-		public void AssertNoDebuggerOutput ()
-		{
-			string output;
-			while ((output = debugger_output.ReadLine ()) != null)
-				Assert.Fail ("Got unexpected debugger output `{0}'.", output);
-		}
-
-		public string ReadDebuggerOutput ()
-		{
-			debugger_output.Wait ();
-			return debugger_output.ReadLine ();
-		}
-
-		public void AssertFrame (string frame, int exp_index, string exp_func, int exp_line)
-		{
-			Match match = frame_regex.Match (frame);
-			if (!match.Success)
-				Assert.Fail ("Received unknown stack frame `{0}'.", frame);
-
-			int index = Int32.Parse (match.Groups [1].Value);
-			string func = match.Groups [2].Value;
-
-			Match source_match = func_source_regex.Match (func);
-			if (!source_match.Success)
-				Assert.Fail ("Received unknown stack frame `{0}'.", frame);
-
-			func = source_match.Groups [1].Value;
-			string file = source_match.Groups [2].Value;
-			int line = Int32.Parse (source_match.Groups [3].Value);
-
-			Match offset_match = func_offset_regex.Match (func);
-			if (offset_match != null)
-				func = offset_match.Groups [1].Value;
-
-			if (index != exp_index)
-				Assert.Fail ("Received frame {0}, but expected {1}.", index, exp_index);
-
-			if (file != FileName)
-				Assert.Fail ("Target stopped in {0}, but expected {1}.",
-					     file, FileName);
-
-			if (func != exp_func)
-				Assert.Fail ("Target stopped in function `{0}', but expected `{1}'.",
-					     func, exp_func);
-
-			if (line != exp_line)
-				Assert.Fail ("Target stopped in line {0}, but expected {1}.",
-					     line, exp_line);
-		}
-
 		public void AssertStopped (Thread exp_thread, string exp_func, int exp_line)
 		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Target not stopped.");
+			TargetEventArgs args = AssertTargetEvent (
+				exp_thread, TargetEventType.TargetStopped);
 
-			Match match = stopped_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Target not stopped (received `{0}').", output);
+			if ((int) args.Data != 0)
+				Assert.Fail ("Received event {0} while waiting for {1} to stop.",
+					     args, exp_thread);
 
-			int thread = Int32.Parse (match.Groups [1].Value);
-			string frame = match.Groups [2].Value;
-
-			if ((exp_thread != null) && (thread != exp_thread.ID))
-				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
-					     thread, frame, exp_thread.ID);
-
-			if (exp_func != null) {
+			if (exp_func != null)
 				AssertFrame (exp_thread, exp_func, exp_line);
-				AssertFrame (frame, 0, exp_func, exp_line);
-			}
 		}
 
 		public void AssertHitBreakpoint (Thread exp_thread, int exp_index,
 						 string exp_func, int exp_line)
 		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Target not stopped.");
+			TargetEventArgs args = AssertTargetEvent (
+				exp_thread, TargetEventType.TargetHitBreakpoint);
 
-			Match match = hit_breakpoint_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Target not stopped.");
-
-			int thread = Int32.Parse (match.Groups [1].Value);
-			int index = Int32.Parse (match.Groups [2].Value);
-			string frame = match.Groups [3].Value;
-
-			if (thread != exp_thread.ID)
-				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
-					     thread, frame, exp_thread.ID);
-
+			int index = (int) args.Data;
 			if ((exp_index != -1) && (index != exp_index))
 				Assert.Fail ("Thread {0} hit breakpoint {1}, but expected {2}.",
-					     thread, index, exp_index);
+					     exp_thread, index, exp_index);
 
 			AssertFrame (exp_thread, exp_func, exp_line);
-			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
 		public void AssertCaughtException (Thread exp_thread, string exp_func, int exp_line)
 		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Target not stopped.");
-
-			Match match = caught_exception_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Target not stopped.");
-
-			int thread = Int32.Parse (match.Groups [1].Value);
-			string frame = match.Groups [2].Value;
-
-			if (thread != exp_thread.ID)
-				Assert.Fail ("Thread {0} stopped at {1}, but expected thread {2} to stop.",
-					     thread, frame, exp_thread.ID);
-
+			AssertTargetEvent (exp_thread, TargetEventType.Exception);
 			AssertFrame (exp_thread, exp_func, exp_line);
-			AssertFrame (frame, 0, exp_func, exp_line);
 		}
 
 		public int AssertBreakpoint (int location)
@@ -376,170 +386,71 @@ namespace Mono.Debugger.Tests
 
 		public int AssertBreakpoint (string location)
 		{
-			AssertNoDebuggerOutput ();
-			AssertExecute ("break " + location);
-
-			string output = debugger_output.ReadLine ();
-			if (output == null) {
+			object result = AssertExecute ("break " + location);
+			if (result == null) {
 				Assert.Fail ("Failed to insert breakpoint.");
 				return -1;
 			}
 
-			Match match = breakpoint_regex.Match (output);
-			if (!match.Success) {
-				Assert.Fail ("Failed to insert breakpoint.");
-				return -1;
-			}
-
-			return Int32.Parse (match.Groups [1].Value);
+			return (int) result;
 		}
 
 		public int AssertCatchpoint (string location)
 		{
-			AssertNoDebuggerOutput ();
-			AssertExecute ("catch " + location);
-
-			string output = debugger_output.ReadLine ();
-			if (output == null) {
+			object result = AssertExecute ("catch " + location);
+			if (result == null) {
 				Assert.Fail ("Failed to insert catchpoint.");
 				return -1;
 			}
 
-			Match match = catchpoint_regex.Match (output);
-			if (!match.Success) {
-				Assert.Fail ("Failed to insert catchpoint.");
-				return -1;
-			}
-
-			return Int32.Parse (match.Groups [1].Value);
+			return (int) result;
 		}
 
 		public Thread AssertProcessCreated ()
 		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Failed to created process (received `{0}').", output);
-
-			Match match = process_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Failed to created process (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Failed to created process (received `{0}').", output);
-
-			match = thread_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Failed to created process (received `{0}').", output);
-
-			int id = Int32.Parse (match.Groups [2].Value);
-			return interpreter.GetThread (id);
+			AssertEvent (DebuggerEventType.ProcessCreated);
+			DebuggerEvent ee = AssertEvent (DebuggerEventType.ThreadCreated);
+			return (Thread) ee.Data;
 		}
 
 		public Thread AssertThreadCreated ()
 		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Failed to created thread (received `{0}').", output);
-
-			Match match = thread_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Failed to created thread (received `{0}').", output);
-
-			int id = Int32.Parse (match.Groups [2].Value);
-			return interpreter.GetThread (id);
+			DebuggerEvent te = AssertEvent (DebuggerEventType.ThreadCreated);
+			return (Thread) te.Data;
 		}
 
-		public void AssertProcessExited (Process process)
+		public void AssertProcessExited (Process exp_process)
 		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exit (received `{0}').", output);
+			DebuggerEvent e = AssertEvent (DebuggerEventType.ProcessExited);
+			Process process = (Process) e.Data;
 
-			Match match = process_exited_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exit (received `{0}').", output);
-
-			int id = Int32.Parse (match.Groups [1].Value);
-			Assert.AreEqual (id, process.ID,
-					 "Process {0} exited, but expected process {1} to exit.",
-					 id, process.ID);
-		}
-
-		public Thread AssertProcessExecd ()
-		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			Match match = process_execd_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = thread_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			int id = Int32.Parse (match.Groups [2].Value);
-			return interpreter.GetThread (id);
-		}
-
-		public Thread AssertProcessForkedAndExecd ()
-		{
-			debugger_output.Wait ();
-			string output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			Match match = process_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = thread_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = process_execd_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			debugger_output.Wait ();
-			output = debugger_output.ReadLine ();
-			if (output == null)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			match = thread_created_regex.Match (output);
-			if (!match.Success)
-				Assert.Fail ("Process failed to exec() (received `{0}').", output);
-
-			int id = Int32.Parse (match.Groups [2].Value);
-			return interpreter.GetThread (id);
+			if (process != exp_process)
+				Assert.Fail ("Process {0} exited, but expected process {1} to exit.",
+					     process.ID, exp_process.ID);
 		}
 
 		public void AssertTargetExited ()
 		{
-			AssertDebuggerOutput ("Target exited.");
-			AssertNoDebuggerOutput ();
+			while (true) {
+				DebuggerEvent e = Interpreter.Wait ();
+				if (e == null)
+					Assert.Fail ("Time-out while waiting for target to exit.");
+
+				if (e.Type == DebuggerEventType.TargetExited)
+					break;
+				else if ((e.Type == DebuggerEventType.ThreadExited) ||
+					 (e.Type == DebuggerEventType.ProcessExited))
+					continue;
+				else if (e.Type == DebuggerEventType.TargetEvent) {
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+					if ((args.Type == TargetEventType.TargetExited) ||
+					    (args.Type == TargetEventType.TargetSignaled))
+						continue;
+				}
+
+				Assert.Fail ("Received event {0} while waiting for target to exit.", e);
+			}
+
 			AssertNoTargetOutput ();
 		}
 
@@ -679,57 +590,140 @@ namespace Mono.Debugger.Tests
 					     expression, text, exp_result);
 		}
 
-		private class LineReader
+		public DebuggerEvent AssertEvent ()
 		{
-			string current_line = "";
-			Queue lines = new Queue ();
+			DebuggerEvent e = Interpreter.Wait ();
+			if (e == null)
+				Assert.Fail ("Time-out while waiting for debugger event.");
 
-			bool waiting;
-			ST.AutoResetEvent wait_event = new ST.AutoResetEvent (false);
+			return e;
+		}
 
-			public void Add (string text)
-			{
-				lock (this) {
-				again:
-					int pos = text.IndexOf ('\n');
-					if (pos < 0)
-						current_line += text;
-					else {
-						current_line += text.Substring (0, pos);
-						lines.Enqueue (current_line);
-						current_line = "";
-						text = text.Substring (pos + 1);
-						if (text.Length > 0)
-							goto again;
+		public DebuggerEvent AssertEvent (DebuggerEventType type)
+		{
+			DebuggerEvent e = AssertEvent ();
+			if (e.Type != type)
+				Assert.Fail ("Received event {0}, but expected {1}.", e, type);
+
+			return e;
+		}
+
+		public TargetEventArgs AssertTargetEvent (Thread thread, TargetEventType type)
+		{
+			DebuggerEvent e = AssertEvent ();
+			if (e.Type != DebuggerEventType.TargetEvent)
+				Assert.Fail ("Received event {0}, but expected {1}.", e, type);
+
+			if ((thread != null) && (e.Data != thread))
+				Assert.Fail ("Received event {0} while waiting for {1} in thread {2}.",
+					     e, type, thread);
+
+			TargetEventArgs args = (TargetEventArgs) e.Data2;
+			if (args.Type != type)
+				Assert.Fail ("Received event {0} while waiting for {1} in thread {2}.",
+					     e, type, thread);
+
+			return args;
+		}
+
+		public void AssertTargetExited (Process process)
+		{
+			bool target_event = false;
+			bool process_exited = false;
+			bool thread_exited = false;
+
+			while (true) {
+				DebuggerEvent e = Interpreter.Wait ();
+				if (e == null)
+					Assert.Fail ("Time-out while waiting for target to exit.");
+
+				if (e.Type == DebuggerEventType.TargetExited)
+					break;
+				if (e.Type == DebuggerEventType.ThreadExited) {
+					if (e.Data == process.MainThread)
+						thread_exited = true;
+					continue;
+				} else if (e.Type == DebuggerEventType.ProcessExited) {
+					if (e.Data == process)
+						process_exited = true;
+					continue;
+				} else if (e.Type == DebuggerEventType.TargetEvent) {
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+					if ((args.Type == TargetEventType.TargetExited) ||
+					    (args.Type == TargetEventType.TargetSignaled)) {
+						if (e.Data == process.MainThread)
+							target_event = true;
+						continue;
 					}
-
-					if (!waiting)
-						return;
 				}
 
-				waiting = false;
-				wait_event.Set ();
+				Assert.Fail ("Received event {0} while waiting for target to exit.", e);
 			}
 
-			public void Wait ()
-			{
-				lock (this) {
-					if (lines.Count > 0)
-						return;
+			if (!target_event)
+				Assert.Fail ("Did not receive `TargetEventType.TargetExited' event " +
+					     "while waiting for target to exit.");
+#if FIXME
+			if (!process_exited)
+				Assert.Fail ("Did not receive `ProcessExitedEvent' while waiting for " +
+					     "target to exit.");
+			if (!thread_exited)
+				Assert.Fail ("Did not receive `ThreadExitedEvent' while waiting for " +
+					     "target to exit.");
+#endif
+		}
+	}
 
-					waiting = true;
+	internal class LineReader
+	{
+		string current_line = "";
+		Queue lines = new Queue ();
+
+		bool waiting;
+		ST.AutoResetEvent wait_event = new ST.AutoResetEvent (false);
+
+		public void Add (string text)
+		{
+			lock (this) {
+			again:
+				int pos = text.IndexOf ('\n');
+				if (pos < 0)
+					current_line += text;
+				else {
+					current_line += text.Substring (0, pos);
+					lines.Enqueue (current_line);
+					current_line = "";
+					text = text.Substring (pos + 1);
+					if (text.Length > 0)
+						goto again;
 				}
-				wait_event.WaitOne (2500, false);
+
+				if (!waiting)
+					return;
 			}
 
-			public string ReadLine ()
-			{
-				lock (this) {
-					if (lines.Count < 1)
-						return null;
-					else
-						return (string) lines.Dequeue ();
-				}
+			waiting = false;
+			wait_event.Set ();
+		}
+
+		public void Wait ()
+		{
+			lock (this) {
+				if (lines.Count > 0)
+					return;
+
+				waiting = true;
+			}
+			wait_event.WaitOne (2500, false);
+		}
+
+		public string ReadLine ()
+		{
+			lock (this) {
+				if (lines.Count < 1)
+					return null;
+				else
+					return (string) lines.Dequeue ();
 			}
 		}
 	}

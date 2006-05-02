@@ -83,7 +83,9 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "base.Hello", "(System.String) \"Hello World\"");
 			AssertPrint (thread, "Virtual ()", "(System.Int32) 2");
 
-			AssertExecute ("kill");
+			AssertExecute ("continue");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
 		}
 	}
 }

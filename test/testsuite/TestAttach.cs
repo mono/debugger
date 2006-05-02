@@ -114,7 +114,7 @@ namespace Mono.Debugger.Tests
 			if (bt.Count < 1)
 				Assert.Fail ("Cannot get backtrace.");
 
-			Interpreter.Kill ();
+			process.Kill ();
 			AssertTargetExited ();
 			child.WaitForExit ();
 		}

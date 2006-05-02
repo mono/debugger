@@ -10,11 +10,8 @@ main (void)
 	int status;
 
 	pid = fork ();
-	if (pid == 0) {
-		sleep (1);
-		sleep (1);
+	if (pid == 0)
 		exit (0);
-	}
 
 	ret = waitpid (pid, &status, 0);
 	return 0;

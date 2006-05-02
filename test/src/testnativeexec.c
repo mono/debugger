@@ -16,8 +16,6 @@ main (void)
 		const char *argv [2] = { filename, NULL };
 		int ret;
 
-		sleep (1);
-		sleep (1);
 		ret = execl (filename, filename, NULL);
 		fprintf (stderr, "ERROR: %d - %d (%s)\n", ret, errno, strerror (errno));
 		return 0;

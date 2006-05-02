@@ -14,9 +14,9 @@ namespace Mono.Debugger.Tests
 			: base ("testnativeexec", "testnativeexec.c")
 		{ }
 
-		const int line_main = 13;
-		const int line_waitpid = 26;
-		const int line_child = 20;
+		const int LineMain = 13;
+		const int LineWaitpid = 24;
+		const int LineChild = 19;
 
 		[Test]
 		[Category("Fork")]
@@ -27,24 +27,133 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "main", line_main);
+			AssertStopped (thread, "main", LineMain);
 			AssertExecute ("next");
 
 			Thread child = AssertProcessCreated ();
-			AssertStopped (thread, "main", line_main + 1);
+
+			bool exited = false;
+			bool thread_created = false;
+			bool child_exited = false;
+			bool execd = false;
+			bool stopped = false;
+
+			Thread execd_child = null;
+
+			while (!exited || !child_exited || !stopped || !execd || !thread_created) {
+				DebuggerEvent e = AssertEvent ();
+
+				if (e.Type == DebuggerEventType.ProcessExited) {
+					if ((Process) e.Data == child.Process) {
+						child_exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ProcessExecd) {
+					if ((Process) e.Data == child.Process) {
+						execd = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadCreated) {
+					execd_child = (Thread) e.Data;
+					thread_created = true;
+					continue;
+				} else if (e.Type == DebuggerEventType.TargetEvent) {
+					Thread e_thread = (Thread) e.Data;
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+
+					if ((e_thread == thread) &&
+					    (args.Type == TargetEventType.TargetStopped)) {
+						stopped = true;
+						continue;
+					} else if ((e_thread == execd_child) &&
+						   (args.Type == TargetEventType.TargetExited)) {
+						exited = true;
+						continue;
+					}
+				}
+
+				Assert.Fail ("Received unexpected event {0}", e);
+			}
+
+			AssertFrame (thread, "main", LineMain + 1);
 
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 			AssertExecute ("next");
-			AssertStopped (thread, "main", line_waitpid);
-
-			Thread execd_child = AssertProcessExecd ();
+			AssertStopped (thread, "main", LineWaitpid);
 
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World!");
-			AssertProcessExited (execd_child.Process);
-			AssertStopped (thread, "main", line_waitpid + 1);
+			AssertStopped (thread, "main", LineWaitpid + 1);
 
 			AssertExecute ("continue");
+			AssertProcessExited (thread.Process);
+			AssertTargetExited ();
+		}
+
+
+		[Test]
+		[Category("Fork")]
+		public void Continue ()
+		{
+			Process process = Interpreter.Start ();
+			Assert.IsFalse (process.IsManaged);
+			Assert.IsTrue (process.MainThread.IsStopped);
+			Thread thread = process.MainThread;
+
+			AssertStopped (thread, "main", LineMain);
+			AssertExecute ("next");
+
+			Thread child = AssertProcessCreated ();
+
+			bool exited = false;
+			bool thread_created = false;
+			bool child_exited = false;
+			bool execd = false;
+			bool stopped = false;
+
+			Thread execd_child = null;
+
+			while (!exited || !child_exited || !stopped || !execd || !thread_created) {
+				DebuggerEvent e = AssertEvent ();
+
+				if (e.Type == DebuggerEventType.ProcessExited) {
+					if ((Process) e.Data == child.Process) {
+						child_exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ProcessExecd) {
+					if ((Process) e.Data == child.Process) {
+						execd = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadCreated) {
+					execd_child = (Thread) e.Data;
+					thread_created = true;
+					continue;
+				} else if (e.Type == DebuggerEventType.TargetEvent) {
+					Thread e_thread = (Thread) e.Data;
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+
+					if ((e_thread == thread) &&
+					    (args.Type == TargetEventType.TargetStopped)) {
+						stopped = true;
+						continue;
+					} else if ((e_thread == execd_child) &&
+						   (args.Type == TargetEventType.TargetExited)) {
+						exited = true;
+						continue;
+					}
+				}
+
+				Assert.Fail ("Received unexpected event {0}", e);
+			}
+
+			AssertFrame (thread, "main", LineMain + 1);
+
+			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
+			AssertExecute ("continue");
+
+			AssertTargetOutput ("Hello World!");
 			AssertProcessExited (thread.Process);
 			AssertTargetExited ();
 		}
@@ -58,52 +167,94 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "main", line_main);
-		        int child_bpt = AssertBreakpoint ("-group global " + line_child);
+			AssertStopped (thread, "main", LineMain);
+		        int child_bpt = AssertBreakpoint ("-group global " + LineChild);
 			AssertExecute ("next");
 
 			Thread child = AssertProcessCreated ();
-			AssertStopped (thread, "main", line_main + 1);
-			AssertHitBreakpoint (child, child_bpt, "main", line_child);
+
+			bool child_stopped = false;
+			bool stopped = false;
+
+			while (!child_stopped || !stopped) {
+				DebuggerEvent e = AssertEvent ();
+
+				if (e.Type != DebuggerEventType.TargetEvent)
+					Assert.Fail ("Received unexpected event {0}", e);
+
+				Thread e_thread = (Thread) e.Data;
+				TargetEventArgs args = (TargetEventArgs) e.Data2;
+
+				if ((e_thread == thread) &&
+				    (args.Type == TargetEventType.TargetStopped)) {
+					stopped = true;
+					continue;
+				} else if ((e_thread == child) &&
+					   (args.Type == TargetEventType.TargetHitBreakpoint) &&
+					   ((int) args.Data == child_bpt)) {
+					child_stopped = true;
+					continue;
+				}
+
+				Assert.Fail ("Received unexpected event {0}", e);
+			}
+
+			AssertFrame (thread, "main", LineMain + 1);
+			AssertFrame (child, "main", LineChild);
 
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 			AssertPrint (child, "pid", "(pid_t) 0");
 
 			AssertExecute ("background -thread " + child.ID);
-
 			AssertExecute ("next");
-			AssertStopped (thread, "main", line_waitpid);
 
-			Thread execd_child = AssertProcessExecd ();
+			Thread execd_child = null;
+			bool exited = false;
+			bool child_execd = false;
+			bool child_exited = false;
+			bool thread_created = false;
+			stopped = false;
+
+			while (!exited || !stopped || !child_execd || !thread_created || !child_exited) {
+				DebuggerEvent e = AssertEvent ();
+
+				if (e.Type == DebuggerEventType.ProcessExited) {
+					if ((Process) e.Data == child.Process) {
+						exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ProcessExecd) {
+					if ((Process) e.Data == child.Process) {
+						child_execd = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadCreated) {
+					execd_child = (Thread) e.Data;
+					thread_created = true;
+					continue;
+				} else if (e.Type == DebuggerEventType.TargetEvent) {
+					Thread e_thread = (Thread) e.Data;
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+
+					if ((e_thread == thread) &&
+					    (args.Type == TargetEventType.TargetStopped)) {
+						stopped = true;
+						continue;
+					} else if ((e_thread == execd_child) &&
+						   (args.Type == TargetEventType.TargetExited)) {
+						child_exited = true;
+						continue;
+					}
+				}
+
+				Assert.Fail ("Received unexpected event {0}", e);
+			}
+
+			AssertFrame (thread, "main", LineWaitpid);
 
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World!");
-			AssertProcessExited (execd_child.Process);
-			AssertStopped (thread, "main", line_waitpid + 1);
-
-			AssertExecute ("continue");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
-		}
-
-		[Test]
-		[Category("Fork")]
-		public void Continue ()
-		{
-			Process process = Interpreter.Start ();
-			Assert.IsFalse (process.IsManaged);
-			Assert.IsTrue (process.MainThread.IsStopped);
-			Thread thread = process.MainThread;
-
-			AssertStopped (thread, "main", line_main);
-		        int bpt_end = AssertBreakpoint (line_waitpid + 1);
-			AssertExecute ("background");
-
-			Thread execd_child = AssertProcessForkedAndExecd ();
-			AssertTargetOutput ("Hello World!");
-			AssertProcessExited (execd_child.Process);
-
-			AssertHitBreakpoint (thread, bpt_end, "main", line_waitpid + 1);
+			AssertStopped (thread, "main", LineWaitpid + 1);
 
 			AssertExecute ("continue");
 			AssertProcessExited (thread.Process);

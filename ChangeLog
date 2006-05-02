@@ -1,5 +1,14 @@
 2006-05-02  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/NUnit.cs
+	(DebuggerEvent): New public class.
+	(DebuggerEventType): New public enum.
+	(NUnitInterpreter): New public class; derive from `Interpreter'.
+	(TestSuite): Rewrite the testsuite: instead of parsing the
+	debugger output we're now listening directly for the events.
+
+2006-05-02  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(Command.Execute): Changed return type from `void' to `object'.
 	(Command.DoExecute): Likewise.
