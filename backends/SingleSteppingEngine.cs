@@ -370,7 +370,7 @@ namespace Mono.Debugger.Backends
 						ret_frame = null;
 					}
 
-					if (ret_frame != null) {
+					if (!process.IsAttached && (ret_frame != null)) {
 						main_method_stackptr = ret_frame.StackPointer;
 						main_method_retaddr = ret_frame.TargetAddress;
 					}
