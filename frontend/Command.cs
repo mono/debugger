@@ -152,13 +152,11 @@ namespace Mono.Debugger.Frontend
 		{
 			DebuggerEngine engine = (DebuggerEngine) e;
 
-			if (!Repeating || Error) {
-				context = new ScriptingContext (engine.Interpreter);
+			context = new ScriptingContext (engine.Interpreter);
 
-				if (!Resolve (context)) {
-					Error = true;
-					return null;
-				}
+			if (!Resolve (context)) {
+				Error = true;
+				return null;
 			}
 
 			return Execute (context);
