@@ -45,7 +45,7 @@ namespace Mono.Debugger.Backends
 			client.OnProcessCreatedEvent (process.Client);
 		}
 
-		protected void OnTargetExitedEvent ()
+		internal void OnTargetExitedEvent ()
 		{
 			client.OnTargetExitedEvent ();
 		}
@@ -55,9 +55,8 @@ namespace Mono.Debugger.Backends
 			process_hash.Remove (process);
 			client.OnProcessExitedEvent (process.Client);
 
-			if (process == main_process) {
-				Kill ();
-			}
+			if (process_hash.Count == 0)
+				OnTargetExitedEvent ();
 		}
 
 		internal void OnProcessExecdEvent (ProcessServant process)
@@ -109,8 +108,6 @@ namespace Mono.Debugger.Backends
 			foreach (ProcessServant proc in procs) {
 				proc.Kill ();
 			}
-
-			OnTargetExitedEvent ();
 		}
 
 		public void Detach ()

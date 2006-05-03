@@ -43,14 +43,21 @@ namespace Mono.Debugger.Tests
 			bool execd = false;
 			bool stopped = false;
 			bool thread_created = false;
+			bool thread_exited = false;
 			bool child_exited = false;
 
-			while (!stopped || !thread_created || !exited || !execd || !child_exited) {
+			while (!stopped || !thread_created || !exited || !execd ||
+			       !child_exited || !thread_exited) {
 				DebuggerEvent e = AssertEvent ();
 
 				if (e.Type == DebuggerEventType.ProcessExited) {
 					if ((Process) e.Data == child.Process) {
 						child_exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadExited) {
+					if ((Thread) e.Data == execd_child) {
+						thread_exited = true;
 						continue;
 					}
 				} else if (e.Type == DebuggerEventType.ProcessExecd) {
@@ -86,8 +93,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main(System.String[])", line_main_2 + 2);
 
 			AssertExecute ("continue");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 
 		[Test]
@@ -117,13 +123,20 @@ namespace Mono.Debugger.Tests
 			bool stopped = false;
 			bool thread_created = false;
 			bool child_exited = false;
+			bool thread_exited = false;
 
-			while (!stopped || !thread_created || !exited || !execd || !child_exited) {
+			while (!stopped || !thread_created || !exited || !execd ||
+			       !child_exited || !thread_exited) {
 				DebuggerEvent e = AssertEvent ();
 
 				if (e.Type == DebuggerEventType.ProcessExited) {
 					if ((Process) e.Data == child.Process) {
 						child_exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadExited) {
+					if ((Thread) e.Data == execd_child) {
+						thread_exited = true;
 						continue;
 					}
 				} else if (e.Type == DebuggerEventType.ProcessExecd) {
@@ -159,8 +172,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main(System.String[])", line_main_2 + 2);
 
 			AssertExecute ("continue");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 	}
 }

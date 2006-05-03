@@ -1,3 +1,27 @@
+2006-05-03  Martin Baulig  <martin@ximian.com>
+
+	* backends/Inferior.cs (Inferior.Kill): Check errors.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OnThreadExited): New internal method; we're
+	called from the ThreadManager when the target exited.
+	(SingleSteppingEngine.Kill): Correctly implement this.
+	(SingleSteppingEngine.Dispose): Correctly implement this.
+	(SingleSteppingEngine.DoDispose): Don't call `inferior.Kill ()'.
+
+	* backends/ProcessServant.cs
+	(ProcessServant.OnThreadExitedEvent): Call OnProcessExited() if
+	the last thread exited.
+	(ProcessServant.KillThread): Removed.
+
+	* backends/DebuggerServant.cs
+	(DebuggerServant.OnProcessExitedEvent): Call OnTargetExitedEvent()
+	if the last process exited.
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_kill): Don't send a SIGKILL to the target; just use
+	`ptrace (PTRACE_KILL)'.
+
 2006-05-02  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/NUnit.cs

@@ -130,8 +130,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Martin.Baulig.Hello");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 	}
 }

@@ -47,8 +47,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Done");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 	}
 }

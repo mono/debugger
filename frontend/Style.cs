@@ -123,6 +123,8 @@ namespace Mono.Debugger.Frontend
 				if ((int) args.Data != 0)
 					interpreter.Print ("{0} exited with exit code {1}.",
 							   thread.Name, (int) args.Data);
+				else
+					interpreter.Print ("{0} exited normally.", thread.Name);
 				break;
 
 			case TargetEventType.TargetSignaled:

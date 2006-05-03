@@ -1057,8 +1057,8 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			if (!disposed)
-				mono_debugger_server_kill (server_handle);
+			check_disposed ();
+			check_error (mono_debugger_server_kill (server_handle));
 		}
 
 		public TargetAddress CurrentFrame {

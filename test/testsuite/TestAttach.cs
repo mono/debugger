@@ -63,8 +63,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Cannot get backtrace.");
 
 			process.Detach ();
-			AssertProcessExited (process);
-			AssertTargetExited ();
+			AssertTargetExited (process);
 		}
 
 		[Test]
@@ -89,8 +88,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Cannot get backtrace.");
 
 			process.Detach ();
-			AssertProcessExited (process);
-			AssertTargetExited ();
+			AssertTargetExited (process);
 		}
 
 		[Test]
@@ -115,7 +113,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Cannot get backtrace.");
 
 			process.Kill ();
-			AssertTargetExited ();
+			AssertTargetExited (process);
 			child.WaitForExit ();
 		}
 	}

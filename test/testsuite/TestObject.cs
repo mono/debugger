@@ -49,8 +49,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Bar");
 			AssertTargetOutput ("0x12345678");
 			AssertTargetOutput ("0x12345678");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 	}
 }

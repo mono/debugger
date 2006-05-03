@@ -191,10 +191,10 @@ namespace Mono.Debugger.Backends
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				engine.ProcessServant.KillThread (engine);
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
-				return false;
+				engine.OnThreadExited (cevent);
+				return true;
 			}
 
 			return retval;

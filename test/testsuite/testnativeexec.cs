@@ -35,17 +35,24 @@ namespace Mono.Debugger.Tests
 			bool exited = false;
 			bool thread_created = false;
 			bool child_exited = false;
+			bool thread_exited = false;
 			bool execd = false;
 			bool stopped = false;
 
 			Thread execd_child = null;
 
-			while (!exited || !child_exited || !stopped || !execd || !thread_created) {
+			while (!exited || !child_exited || !stopped || !execd || !thread_created ||
+			       !thread_exited) {
 				DebuggerEvent e = AssertEvent ();
 
 				if (e.Type == DebuggerEventType.ProcessExited) {
 					if ((Process) e.Data == child.Process) {
 						child_exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadExited) {
+					if ((Thread) e.Data == execd_child) {
+						thread_exited = true;
 						continue;
 					}
 				} else if (e.Type == DebuggerEventType.ProcessExecd) {
@@ -86,8 +93,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "main", LineWaitpid + 1);
 
 			AssertExecute ("continue");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 
 
@@ -108,17 +114,24 @@ namespace Mono.Debugger.Tests
 			bool exited = false;
 			bool thread_created = false;
 			bool child_exited = false;
+			bool thread_exited = false;
 			bool execd = false;
 			bool stopped = false;
 
 			Thread execd_child = null;
 
-			while (!exited || !child_exited || !stopped || !execd || !thread_created) {
+			while (!exited || !child_exited || !stopped || !execd || !thread_created ||
+			       !thread_exited) {
 				DebuggerEvent e = AssertEvent ();
 
 				if (e.Type == DebuggerEventType.ProcessExited) {
 					if ((Process) e.Data == child.Process) {
 						child_exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadExited) {
+					if ((Thread) e.Data == execd_child) {
+						thread_exited = true;
 						continue;
 					}
 				} else if (e.Type == DebuggerEventType.ProcessExecd) {
@@ -154,8 +167,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 
 			AssertTargetOutput ("Hello World!");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 
 		[Test]
@@ -213,14 +225,21 @@ namespace Mono.Debugger.Tests
 			bool child_execd = false;
 			bool child_exited = false;
 			bool thread_created = false;
+			bool thread_exited = false;
 			stopped = false;
 
-			while (!exited || !stopped || !child_execd || !thread_created || !child_exited) {
+			while (!exited || !stopped || !child_execd || !thread_created ||
+			       !child_exited || !thread_exited) {
 				DebuggerEvent e = AssertEvent ();
 
 				if (e.Type == DebuggerEventType.ProcessExited) {
 					if ((Process) e.Data == child.Process) {
 						exited = true;
+						continue;
+					}
+				} else if (e.Type == DebuggerEventType.ThreadExited) {
+					if ((Thread) e.Data == execd_child) {
+						thread_exited = true;
 						continue;
 					}
 				} else if (e.Type == DebuggerEventType.ProcessExecd) {
@@ -257,8 +276,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "main", LineWaitpid + 1);
 
 			AssertExecute ("continue");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 	}
 }

@@ -663,14 +663,14 @@ namespace Mono.Debugger.Tests
 			if (!target_event)
 				Assert.Fail ("Did not receive `TargetEventType.TargetExited' event " +
 					     "while waiting for target to exit.");
-#if FIXME
 			if (!process_exited)
 				Assert.Fail ("Did not receive `ProcessExitedEvent' while waiting for " +
 					     "target to exit.");
 			if (!thread_exited)
 				Assert.Fail ("Did not receive `ThreadExitedEvent' while waiting for " +
 					     "target to exit.");
-#endif
+
+			AssertNoTargetOutput ();
 		}
 	}
 

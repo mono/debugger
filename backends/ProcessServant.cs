@@ -334,8 +334,11 @@ namespace Mono.Debugger.Backends
 
 		internal void OnThreadExitedEvent (ThreadServant thread)
 		{
+			thread_hash.Remove (thread.PID);
 			manager.Debugger.OnThreadExitedEvent (thread.Client);
-			thread.Kill ();
+
+			if (thread_hash.Count == 0)
+				manager.Debugger.OnProcessExitedEvent (this);
 		}
 
 		internal void WaitForApplication ()
@@ -380,15 +383,7 @@ namespace Mono.Debugger.Backends
 
 		public void Kill ()
 		{
-			ThreadServant[] threads;
-			lock (thread_hash.SyncRoot) {
-				threads = new ThreadServant [thread_hash.Count];
-				thread_hash.Values.CopyTo (threads, 0);
-			}
-
-			for (int i = 0; i < threads.Length; i++)
-				threads [i].Kill ();
-
+			main_thread.Kill ();
 			Dispose ();
 		}
 
@@ -398,19 +393,6 @@ namespace Mono.Debugger.Backends
 				throw new TargetException (TargetError.CannotDetach);
 
 			main_thread.Detach ();
-		}
-
-		internal void KillThread (SingleSteppingEngine engine)
-		{
-			if (engine == main_thread) {
-				manager.Debugger.OnProcessExitedEvent (this);
-				Kill ();
-			} else {
-				thread_hash.Remove (engine.PID);
-				OnThreadExitedEvent (engine);
-				engine.Kill ();
-				engine.Dispose ();
-			}
 		}
 
 		internal void OnTargetDetached ()

@@ -58,8 +58,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "Martin.Baulig.Foo.Print ()", "(System.String) \"Boston\"");
 
 			AssertExecute ("continue");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 		}
 	}
 }

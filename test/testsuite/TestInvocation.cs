@@ -70,8 +70,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello: 9");
 			AssertTargetOutput ("Static Hello: 9");
 			AssertTargetOutput ("Static Hello: 9");
-			AssertProcessExited (thread.Process);
-			AssertTargetExited ();
+			AssertTargetExited (thread.Process);
 
 		}
 	}

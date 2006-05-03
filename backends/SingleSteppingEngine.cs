@@ -474,8 +474,8 @@ namespace Mono.Debugger.Backends
 		{
 			lock (this) {
 				engine_stopped = true;
-				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}",
-					      this, current_operation);
+				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}: {2}",
+					      this, current_operation, result);
 				if (result != null)
 					manager.Debugger.SendTargetEvent (this, result);
 				if (current_operation != null) {
@@ -507,6 +507,20 @@ namespace Mono.Debugger.Backends
 		internal void OnManagedThreadExited ()
 		{
 			this.end_stack_address = TargetAddress.Null;
+		}
+
+		internal void OnThreadExited (Inferior.ChildEvent cevent)
+		{
+			TargetEventArgs result;
+			int arg = (int) cevent.Argument;
+			if (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)
+				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
+			else
+				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
+			OperationCompleted (result);
+
+			process.OnThreadExitedEvent (this);
+			Dispose ();
 		}
 
 		void set_registers (Registers registers)
@@ -715,30 +729,18 @@ namespace Mono.Debugger.Backends
 				process.AcquireGlobalThreadLock (this);
 				process.BreakpointManager.RemoveAllBreakpoints (inferior);
 
-				if (process.MonoManager != null) {
-					CommandResult result = new Thread.StepCommandResult (thread);
-					StartOperation (new OperationDetach (result));
-				} else {
+				if (process.MonoManager != null)
+					StartOperation (new OperationDetach ());
+				else
 					DoDetach ();
-				}
 				return null;
 			});
 		}
 
 		protected void DoDetach ()
 		{
-			foreach (ThreadServant servant in process.ThreadServants) {
-				if (servant == this)
-					continue;
-
+			foreach (ThreadServant servant in process.ThreadServants)
 				servant.DetachThread ();
-			}
-
-			inferior.Detach ();
-			inferior.Dispose ();
-			inferior = null;
-
-			process.OnTargetDetached ();
 		}
 
 		internal override void DetachThread ()
@@ -748,6 +750,10 @@ namespace Mono.Debugger.Backends
 				inferior.Dispose ();
 				inferior = null;
 			}
+
+			OperationCompleted (new TargetEventArgs (TargetEventType.TargetExited, 0));
+			process.OnThreadExitedEvent (this);
+			Dispose ();
 		}
 
 		public override void Stop ()
@@ -1732,7 +1738,6 @@ namespace Mono.Debugger.Backends
 		protected override void DoDispose ()
 		{
 			if (inferior != null) {
-				inferior.Kill ();
 				inferior.Dispose ();
 				inferior = null;
 			}
@@ -2091,8 +2096,8 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationDetach : OperationCallback
 	{
-		public OperationDetach (CommandResult result)
-			: base (result)
+		public OperationDetach ()
+			: base ()
 		{ }
 
 		public override bool IsSourceOperation {
@@ -2116,8 +2121,8 @@ namespace Mono.Debugger.Backends
 
 			sse.DoDetach ();
 
-			args = new TargetEventArgs (TargetEventType.TargetExited, 0);
-			result = EventResult.Completed;
+			args = null;
+			result = EventResult.CompletedCallback;
 			return true;
 		}
 
