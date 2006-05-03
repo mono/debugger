@@ -182,13 +182,14 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
+					inferior.InitializeModules ();
+
 					if (stop_in_main)
 						engine.ReachedManagedMain (data);
 					else
 						engine.ReachedManagedMain (TargetAddress.Null);
 
 					inferior.Process.ReachedMain ();
-					inferior.InitializeModules ();
 					return true;
 				}
 

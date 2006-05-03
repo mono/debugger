@@ -1,5 +1,11 @@
 2006-05-03  Martin Baulig  <martin@ximian.com>
 
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Fix a race condition: call
+	`inferior.InitializeModules ()' before resuming the target.
+
+2006-05-03  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs (DebuggerCommand.Execute): Always resolve
 	the command before executing it; also when repeating it.
 
