@@ -24,9 +24,12 @@ namespace Mono.Debugger
 	{
 		AppDomain domain;
 		DebuggerServant servant;
+		ManualResetEvent kill_event;
 
 		public Debugger ()
 		{
+			kill_event = new ManualResetEvent (false);
+
 			domain = AppDomain.CreateDomain ("mdb");
 
 			ObjectHandle oh = domain.CreateInstance (
@@ -71,6 +74,7 @@ namespace Mono.Debugger
 				Dispose ();
 				if (TargetExitedEvent != null)
 					TargetExitedEvent (this);
+				kill_event.Set ();
 			});
 		}
 
@@ -112,8 +116,10 @@ namespace Mono.Debugger
 
 		public void Kill ()
 		{
-			if (servant != null)
+			if (servant != null) {
 				servant.Kill ();
+				kill_event.WaitOne ();
+			}
 		}
 
 		public void Detach ()

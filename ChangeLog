@@ -1,5 +1,10 @@
 2006-05-03  Martin Baulig  <martin@ximian.com>
 
+	* classes/Debugger.cs
+	(Debugger.Kill): Wait for the target to exit before returning.
+
+2006-05-03  Martin Baulig  <martin@ximian.com>
+
 	* backends/MonoThreadManager.cs
 	(MonoThreadManager.HandleChildEvent): Fix a race condition: call
 	`inferior.InitializeModules ()' before resuming the target.
