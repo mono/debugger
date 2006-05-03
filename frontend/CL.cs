@@ -180,8 +180,20 @@ namespace Mono.Debugger.Frontend
 
 		public void Repeat ()
 		{
-			if (last_command != null)
+			if (last_command == null)
+				return;
+			try {
 				last_command.Repeat (this);
+			} catch (ThreadAbortException) {
+			} catch (ScriptingException ex) {
+				Interpreter.Error (ex);
+			} catch (TargetException ex) {
+				Interpreter.Error (ex);
+			} catch (Exception ex) {
+				Interpreter.Error (
+					"Caught exception while executing command {0}: {1}",
+					this, ex);
+			}
 		}
 	}
 
