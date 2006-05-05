@@ -59,6 +59,7 @@ namespace Mono.Debugger
 		public string RemoteMono = null;
 	}
 
+	[Serializable]
 	public class DebuggerSession
 	{
 		public readonly DebuggerOptions Options;
