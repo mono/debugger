@@ -262,60 +262,6 @@ namespace Mono.Debugger.Frontend
 			PrintMethods (source.Methods);
 		}
 
-		int last_line = -1;
-		string[] current_source_code = null;
-
-		public void ListSourceCode (SourceLocation location, int count)
-		{
-			int start;
-
-			if ((location == null) && (current_source_code == null))
-				location = CurrentLocation;
-			if (location == null) {
-				if (count < 0){
-					start = System.Math.Max (last_line + 2 * count, 0);
-					count = -count;
-				} else 
-					start = last_line;
-			} else {
-				SourceBuffer buffer;
-
-				if (location.HasSourceFile) {
-					string filename = location.SourceFile.FileName;
-					buffer = FindFile (filename);
-					if (buffer == null)
-						throw new ScriptingException (
-							"Cannot find source file `{0}'", filename);
-				} else
-					throw new ScriptingException (
-						"Current location doesn't have any source code.");
-
-				current_source_code = buffer.Contents;
-
-				if (count < 0)
-					start = System.Math.Max (location.Line + 2, 0);
-				else 
-					start = System.Math.Max (location.Line - 2, 0);
-			}
-
-			last_line = System.Math.Min (start + count, current_source_code.Length);
-
-			if (start > last_line){
-				int t = start;
-				start = last_line;
-				last_line = t;
-			}
-
-			for (int line = start; line < last_line; line++)
-				interpreter.Print (String.Format ("{0,4} {1}", line + 1, current_source_code [line]));
-		}
-
-		public void ResetCurrentSourceCode ()
-		{
-			current_source_code = null;
-			last_line = -1;
-		}
-
 		public void Dump (object obj)
 		{
 			if (obj == null)

@@ -1,3 +1,14 @@
+2006-05-05  Martin Baulig  <martin@ximian.com>
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.ListSourceCode): Removed; moved the
+	functionality into `ListCommand'.
+
+	* frontend/Command.cs
+	(SourceCommand.Location): New public property.
+	(SourceCommand.DoResolve): Make sure we have a valid `Location'.
+	(ListCommand.DoExecute): Moved the functionality here.
+
 2006-05-03  Martin Baulig  <martin@ximian.com>
 
 	* classes/Debugger.cs

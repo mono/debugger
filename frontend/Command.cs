@@ -793,7 +793,6 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override object DoExecute (ScriptingContext context)
 		{
-			context.ResetCurrentSourceCode ();
 			DoStep (context);
 			if (context.Interpreter.IsSynchronous)
 				context.Interpreter.Wait (CurrentThread);
@@ -918,7 +917,6 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			Backtrace backtrace = CurrentThread.GetBacktrace (max_frames);
-			context.ResetCurrentSourceCode ();
 
 			for (int i = 0; i < backtrace.Count; i++) {
 				string prefix = i == backtrace.CurrentFrameIndex ? "(*)" : "   ";
@@ -1908,7 +1906,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class SourceCommand : FrameCommand
 	{
 		LocationType type = LocationType.Method;
-		protected SourceLocation location;
+		SourceLocation location;
 
 		public bool Get {
 			get { return type == LocationType.PropertyGetter; }
@@ -1935,6 +1933,15 @@ namespace Mono.Debugger.Frontend
 			set { type = LocationType.DelegateInvoke; }
 		}
 
+		public SourceLocation Location {
+			get {
+				if (location == null)
+					throw new ScriptingException ("Location is invalid.");
+
+				return location;
+			}
+		}
+
 		protected TargetFunctionType EvaluateMethod (ScriptingContext context)
 		{
 			Expression expr = ParseExpression (context);
@@ -1947,7 +1954,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				return expr.EvaluateMethod (context, type, null);
-			} catch (ScriptingException ex) {
+			} catch (ScriptingException) {
 				return null;
 			}
 		}
@@ -1968,8 +1975,10 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			if (Argument == "")
-				return true;
+			if (Argument == "") {
+				location = context.CurrentLocation;
+				return location != null;
+			}
 
 			try {
 				line = (int) UInt32.Parse (Argument);
@@ -1999,20 +2008,56 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			if (Repeating){
-				return true;
-			} else
-				return base.DoResolve (context);
+			return base.DoResolve (context);
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			if (Repeating)
-				context.ListSourceCode (null, Lines * (reverse ? -1 : 1));
-			else
-				context.ListSourceCode (location, Lines * (reverse ? -1 : 1));
+			int count = Lines * (reverse ? -1 : 1);
+			if (!Repeating) {
+				SourceBuffer buffer;
+
+				if (Location.HasSourceFile) {
+					string filename = Location.SourceFile.FileName;
+					buffer = context.FindFile (filename);
+					if (buffer == null)
+						throw new ScriptingException (
+							"Cannot find source file `{0}'", filename);
+				} else
+					throw new ScriptingException (
+						"Current location doesn't have any source code.");
+
+				current_source_code = buffer.Contents;
+
+				if (count < 0)
+					last_line = System.Math.Max (Location.Line + 2, 0);
+				else 
+					last_line = System.Math.Max (Location.Line - 2, 0);
+			}
+
+			int start;
+			if (count < 0){
+				start = System.Math.Max (last_line + 2 * count, 0);
+				count = -count;
+			} else 
+				start = last_line;
+
+			last_line = System.Math.Min (start + count, current_source_code.Length);
+
+			if (start > last_line){
+				int t = start;
+				start = last_line;
+				last_line = t;
+			}
+
+			for (int line = start; line < last_line; line++)
+				context.Print ("{0,4} {1}", line + 1, current_source_code [line]);
+
 			return null;
 		}
+
+		int last_line = -1;
+		string[] current_source_code = null;
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Files; } }
@@ -2065,20 +2110,12 @@ namespace Mono.Debugger.Frontend
 
 			tgroup = context.Interpreter.GetThreadGroup (Group, false);
 
-			if ((location == null) && (func == null))
-				location = context.CurrentLocation;
-
 			return true;
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			if (location != null) {
-				int index = context.Interpreter.InsertBreakpoint (
-					context.CurrentThread, tgroup, domain, location);
-				context.Print ("Breakpoint {0} at {1}", index, location.Name);
-				return index;
-			} else if (func != null) {
+			if (func != null) {
 				if (domain != 0) {
 					throw new ScriptingException (
 						"Can't insert function breakpoints in " +
@@ -2089,7 +2126,10 @@ namespace Mono.Debugger.Frontend
 				context.Print ("Breakpoint {0} at {1}", index, func.Name);
 				return index;
 			} else {
-				throw new ScriptingException ("Cannot insert breakpoint.");
+				int index = context.Interpreter.InsertBreakpoint (
+					context.CurrentThread, tgroup, domain, Location);
+				context.Print ("Breakpoint {0} at {1}", index, Location.Name);
+				return index;
 			}
 		}
 
@@ -2236,10 +2276,7 @@ namespace Mono.Debugger.Frontend
 				if (!resolved)
 					throw new ScriptingException ("No such method: `{0}'", Argument);
 
-				if ((location == null) && (func == null))
-					location = context.CurrentLocation;
-
-				if ((location == null) || !location.HasSourceFile)
+				if (!Location.HasSourceFile)
 					throw new ScriptingException ("Location invalid.");
 
 				return true;
@@ -2247,7 +2284,7 @@ namespace Mono.Debugger.Frontend
 
 			protected override object DoExecute (ScriptingContext context)
 			{
-				Method method = location.Method.GetMethod (0);
+				Method method = Location.Method.GetMethod (0);
 				if ((method == null) || !method.HasSource)
 					throw new ScriptingException ("Location invalid.");
 
