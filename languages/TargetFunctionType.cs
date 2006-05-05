@@ -12,6 +12,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract bool IsConstructor {
+			get;
+		}
+
 		public abstract bool HasReturnValue {
 			get;
 		}

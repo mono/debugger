@@ -53,6 +53,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return method_info.IsStatic; }
 		}
 
+		public override bool IsConstructor {
+			get { return method_info.IsConstructor; }
+		}
+
 		public override TargetType ReturnType {
 			get { return return_type; }
 		}

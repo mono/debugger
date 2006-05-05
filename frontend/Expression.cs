@@ -2524,7 +2524,7 @@ namespace Mono.Debugger.Frontend
 
 			TargetClassObject instance = mg.InstanceObject;
 
-			if (!method.IsStatic && (instance == null))
+			if (!method.IsStatic && !method.IsConstructor && (instance == null))
 				throw new ScriptingException (
 					"Cannot invoke instance method `{0}' with a type reference.",
 					Name);

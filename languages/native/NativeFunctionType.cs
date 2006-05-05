@@ -30,6 +30,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return true; }
 		}
 
+		public override bool IsConstructor {
+			get { return false; }
+		}
+
 		public override bool HasFixedSize {
 			get { return true; }
 		}

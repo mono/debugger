@@ -1,6 +1,14 @@
 2006-05-05  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetFunctionType.cs
+	(TargetFunctionType.IsConstructor): New public property.
+
+	* frontend/Expression.cs
+	(InvocationExpression.DoInvoke): Make invoking ctors work.
+
+2006-05-05  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetFunctionType.cs
 	(TargetFunctionType.IsStatic): New public property.
 
 	* frontend/Expression.cs
