@@ -2187,40 +2187,90 @@ namespace Mono.Debugger.Frontend
 						"in that particular stack frame"; } }
 	}
 
-	public class DumpCommand : FrameCommand, IDocumentableCommand
+	public class DumpCommand : NestedCommand, IDocumentableCommand
 	{
-		Expression expression;
-		string mode = "object";
-
-		public string Mode {
-			get { return mode; }
-			set { mode = value; }
-		}
-
-		protected override bool DoResolve (ScriptingContext context)
+		protected class DumpObjectCommand : FrameCommand, IDocumentableCommand
 		{
-			expression = ParseExpression (context);
-			if (expression == null)
-				return false;
+			Expression expression;
 
-			expression = expression.Resolve (context);
-			return expression != null;
-		}
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				expression = ParseExpression (context);
+				if (expression == null)
+					return false;
 
-		protected override object DoExecute (ScriptingContext context)
-		{
-			object retval = expression.Evaluate (context);
-			switch (mode) {
-			case "object":
-				context.Dump (retval);
-				break;
+				expression = expression.Resolve (context);
+				return expression != null;
 			}
-			return retval;
+
+			protected override object DoExecute (ScriptingContext context)
+			{
+				object retval = expression.Evaluate (context);
+				context.Dump (retval);
+				return retval;
+			}
+
+			// IDocumentableCommand
+			public CommandFamily Family { get { return CommandFamily.Internal; } }
+			public string Description { get { return "Dump detailed information about an expression."; } }
+			public string Documentation { get { return ""; } }
 		}
+
+		protected class DumpLineNumberTableCommand : SourceCommand, IDocumentableCommand
+		{
+			TargetFunctionType func;
+
+			bool ResolveMethod (ScriptingContext context)
+			{
+				func = EvaluateMethod (context);
+				return func != null;
+			}
+
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				bool resolved = base.DoResolve (context);
+
+				if (!resolved)
+					resolved = ResolveMethod (context);
+
+				if (!resolved)
+					throw new ScriptingException ("No such method: `{0}'", Argument);
+
+				if ((location == null) && (func == null))
+					location = context.CurrentLocation;
+
+				if ((location == null) || !location.HasSourceFile)
+					throw new ScriptingException ("Location invalid.");
+
+				return true;
+			}
+
+			protected override object DoExecute (ScriptingContext context)
+			{
+				Method method = location.Method.GetMethod (0);
+				if ((method == null) || !method.HasSource)
+					throw new ScriptingException ("Location invalid.");
+
+				method.Source.DumpLineNumbers ();
+				return null;
+			}
+
+			// IDocumentableCommand
+			public CommandFamily Family { get { return CommandFamily.Internal; } }
+			public string Description { get { return "Dump the line number table."; } }
+			public string Documentation { get { return ""; } }
+		}
+
+		public DumpCommand ()
+		{
+			RegisterSubcommand ("object", typeof (DumpObjectCommand));
+			RegisterSubcommand ("lnt", typeof (DumpLineNumberTableCommand));
+		}
+
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Internal; } }
-		public string Description { get { return "Dump detailed information about an expression."; } }
+		public string Description { get { return "Dump stuff."; } }
 		public string Documentation { get { return ""; } }
 	}
 

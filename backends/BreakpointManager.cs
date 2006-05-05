@@ -78,6 +78,7 @@ namespace Mono.Debugger.Backends
 					_manager, address.Address);
 				if (info == IntPtr.Zero) {
 					index = 0;
+					is_enabled = false;
 					return null;
 				}
 

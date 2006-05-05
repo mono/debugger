@@ -1014,6 +1014,35 @@ namespace Mono.Debugger.Languages.Mono
 				list.CopyTo (retval, 0);
 				return retval;
 			}
+
+			public override void DumpLineNumbers ()
+			{
+				base.DumpLineNumbers ();
+
+				Console.WriteLine ();
+				Console.WriteLine ("Symfile Line Numbers:");
+				Console.WriteLine ("---------------------");
+
+				for (int i = 0; i < method.NumLineNumbers; i++) {
+					C.LineNumberEntry lne = method.LineNumbers [i];
+
+					Console.WriteLine ("{0,4} {1,4} {2,4:x}", i,
+							   lne.Row, lne.Offset);
+				}
+
+				Console.WriteLine ("---------------------");
+
+				Console.WriteLine ();
+				Console.WriteLine ("JIT Line Numbers:");
+				Console.WriteLine ("-----------------");
+				for (int i = 0; i < line_numbers.Length; i++) {
+					JitLineNumberEntry lne = line_numbers [i];
+
+					Console.WriteLine ("{0,4} {1,4:x} {2,4:x}", i, lne.Offset,
+							   imethod.StartAddress + lne.Address);
+				}
+				Console.WriteLine ("-----------------");
+			}
 		}
 
 		private struct MethodHashEntry

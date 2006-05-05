@@ -172,7 +172,7 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public void DumpLineNumbers ()
+		public virtual void DumpLineNumbers ()
 		{
 			Console.WriteLine ("--------");
 			Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0} {1}",

@@ -421,6 +421,10 @@ namespace Mono.Debugger.Languages.Mono
 				try {
 					MonoSymbolFile symfile = new MonoSymbolFile (
 						this, process, memory, address);
+
+					if (assembly_by_name.Contains (symfile.Assembly.Name.FullName))
+						continue;
+
 					image_hash.Add (symfile.MonoImage, symfile);
 					symbol_files.Add (symfile);
 					assembly_hash.Add (symfile.Assembly, symfile);
