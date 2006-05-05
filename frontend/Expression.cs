@@ -2458,7 +2458,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			method_expr = method_expr.Resolve (context);
+			method_expr = method_expr.ResolveMethod (context);
 			if (method_expr == null)
 				return null;
 
@@ -2503,8 +2503,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
-									 LocationType type,
-									 Expression[] types)
+									LocationType type,
+									Expression[] types)
 		{
 			return method_expr.EvaluateMethod (context, type, types);
 		}
@@ -2523,6 +2523,11 @@ namespace Mono.Debugger.Frontend
 			}
 
 			TargetClassObject instance = mg.InstanceObject;
+
+			if (!method.IsStatic && (instance == null))
+				throw new ScriptingException (
+					"Cannot invoke instance method `{0}' with a type reference.",
+					Name);
 
 			try {
 				if (debug) {

@@ -281,10 +281,8 @@ namespace Mono.Debugger.Frontend
 			if (!base.DoResolveBase (context))
 				return false;
 
-#if FIXME
 			if (!CurrentThread.IsStopped)
 				throw new TargetException (TargetError.NotStopped);
-#endif
 
 			backtrace = CurrentThread.GetBacktrace ();
 
@@ -1978,12 +1976,8 @@ namespace Mono.Debugger.Frontend
 			if (expr == null)
 				return false;
 
-			TargetFunctionType func = expr.EvaluateMethod (context, type, null);
-			if (func == null)
-				return false;
-
-			location = new SourceLocation (func);
-			return true;
+			location = expr.EvaluateSource (context, type, null);
+			return location != null;
 		}
 	}
 

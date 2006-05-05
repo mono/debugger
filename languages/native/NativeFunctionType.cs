@@ -26,6 +26,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return Language.TargetInfo.TargetAddressSize; }
 		}
 
+		public override bool IsStatic {
+			get { return true; }
+		}
+
 		public override bool HasFixedSize {
 			get { return true; }
 		}

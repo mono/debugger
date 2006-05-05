@@ -8,6 +8,10 @@ namespace Mono.Debugger.Languages
 			: base (language, TargetObjectKind.Function)
 		{ }
 
+		public abstract bool IsStatic {
+			get;
+		}
+
 		public abstract bool HasReturnValue {
 			get;
 		}

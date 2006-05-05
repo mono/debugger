@@ -264,8 +264,8 @@ namespace Mono.Debugger
 			//   The method has just been loaded, lookup the breakpoint
 			//   address and actually insert it.
 			// </summary>
-			void method_loaded (TargetMemoryAccess target, SourceMethod source,
-					    object data)
+			public void method_loaded (TargetMemoryAccess target,
+						   SourceMethod source, object data)
 			{
 				load_handler = null;
 

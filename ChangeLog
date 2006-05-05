@@ -1,5 +1,16 @@
 2006-05-05  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.IsStatic): New public property.
+
+	* frontend/Expression.cs
+	(InvocationExpression.DoResolve): Use `method_expr.ResolveMethod()'
+	since we may be called from SourceLocation.DoResolve()'.
+	(InvocationExpression.DoInvoke): Don't allow invoking instance
+	methods with a type reference.
+
+2006-05-05  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceLocation.cs
 	(SourceLocation.HasMethod): New public property.
 	(SourceLocation.Function): New public property.
