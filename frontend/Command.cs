@@ -1942,23 +1942,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected TargetFunctionType EvaluateMethod (ScriptingContext context)
-		{
-			Expression expr = ParseExpression (context);
-			if (expr == null)
-				return null;
-
-			expr = expr.ResolveMethod (context);
-			if (expr == null)
-				return null;
-
-			try {
-				return expr.EvaluateMethod (context, type, null);
-			} catch (ScriptingException) {
-				return null;
-			}
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			int line;
@@ -1982,12 +1965,25 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				line = (int) UInt32.Parse (Argument);
+				location = context.FindLocation (context.CurrentLocation, line);
+				return location != null;
 			} catch {
-				return false;
 			}
 
-			location = context.FindLocation (context.CurrentLocation, line);
-			return location != null;
+			Expression expr = ParseExpression (context);
+			if (expr == null)
+				return false;
+
+			expr = expr.ResolveMethod (context);
+			if (expr == null)
+				return false;
+
+			TargetFunctionType func = expr.EvaluateMethod (context, type, null);
+			if (func == null)
+				return false;
+
+			location = new SourceLocation (func);
+			return true;
 		}
 	}
 
@@ -2079,7 +2075,6 @@ namespace Mono.Debugger.Frontend
 	{
 		string group;
 		int domain = 0;
-		TargetFunctionType func;
 		ThreadGroup tgroup;
 
 		public string Group {
@@ -2092,38 +2087,27 @@ namespace Mono.Debugger.Frontend
 			set { domain = value; }
 		}
 
-		bool ResolveMethod (ScriptingContext context)
-		{
-			func = EvaluateMethod (context);
-			return func != null;
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			bool resolved = base.DoResolve (context);
-
-			if (!resolved)
-				resolved = ResolveMethod (context);
-
 			if (!resolved)
 				throw new ScriptingException ("No such method: `{0}'", Argument);
 
 			tgroup = context.Interpreter.GetThreadGroup (Group, false);
-
 			return true;
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			if (func != null) {
-				if (domain != 0) {
+			if (Location.HasFunction) {
+				if (domain != 0)
 					throw new ScriptingException (
 						"Can't insert function breakpoints in " +
 						"other application domains.");
-				}
+
 				int index = context.Interpreter.InsertBreakpoint (
-					context.CurrentThread, tgroup, func);
-				context.Print ("Breakpoint {0} at {1}", index, func.Name);
+					context.CurrentThread, tgroup, Location.Function);
+				context.Print ("Breakpoint {0} at {1}", index, Location.Name);
 				return index;
 			} else {
 				int index = context.Interpreter.InsertBreakpoint (
@@ -2258,21 +2242,9 @@ namespace Mono.Debugger.Frontend
 
 		protected class DumpLineNumberTableCommand : SourceCommand, IDocumentableCommand
 		{
-			TargetFunctionType func;
-
-			bool ResolveMethod (ScriptingContext context)
-			{
-				func = EvaluateMethod (context);
-				return func != null;
-			}
-
 			protected override bool DoResolve (ScriptingContext context)
 			{
 				bool resolved = base.DoResolve (context);
-
-				if (!resolved)
-					resolved = ResolveMethod (context);
-
 				if (!resolved)
 					throw new ScriptingException ("No such method: `{0}'", Argument);
 

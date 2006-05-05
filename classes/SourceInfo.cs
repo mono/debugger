@@ -61,7 +61,7 @@ namespace Mono.Debugger
 					return new SourceLocation (method, line);
 			}
 
-			return null;
+			return new SourceLocation (this, line);
 		}
 
 		public SourceFile (Module module, string filename)

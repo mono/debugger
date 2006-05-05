@@ -166,6 +166,9 @@ namespace Mono.Debugger
 		public Event InsertBreakpoint (Thread target, ThreadGroup group, int domain,
 					       SourceLocation location)
 		{
+			if (!location.HasMethod && !location.HasFunction)
+				throw new TargetException (TargetError.LocationInvalid);
+
 			return servant.InsertBreakpoint (target, group, domain, location);
 		}
 

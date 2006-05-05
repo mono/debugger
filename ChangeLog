@@ -1,5 +1,24 @@
 2006-05-05  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceLocation.cs
+	(SourceLocation.HasMethod): New public property.
+	(SourceLocation.Function): New public property.
+	(SourceLocation.ctor): Add a ctor taking a `SourceFile' and a
+	line number.
+
+	* classes/SourceInfo.cs
+	(SourceInfo.FindLine): Allow line numbers outside methods; return
+	a `SourceLocation' without a method in this case.
+
+	* frontend/Command.cs
+	(SourceCommand.DoResolve): If the argument is now a valid number,
+	try parsing it as an expression and create a function location.
+	(SourceCommand.EvaluateMethod): Removed.
+	(BreakCommand.DoExecute): If we're a function breakpoint,
+	`Location.HasFunction' is true.
+
+2006-05-05  Martin Baulig  <martin@ximian.com>
+
 	* frontend/ScriptingContext.cs
 	(ScriptingContext.ListSourceCode): Removed; moved the
 	functionality into `ListCommand'.

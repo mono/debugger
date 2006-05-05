@@ -14,6 +14,7 @@ namespace Mono.Debugger
 	public class SourceLocation : MarshalByRefObject, IDeserializationCallback
 	{
 		Module module;
+		SourceFile file;
 		SourceMethod source;
 		TargetFunctionType function;
 		int line;
@@ -23,6 +24,10 @@ namespace Mono.Debugger
 		}
 
 		public bool HasSourceFile {
+			get { return file != null; }
+		}
+
+		public bool HasMethod {
 			get { return source != null; }
 		}
 
@@ -35,16 +40,25 @@ namespace Mono.Debugger
 				if (!HasSourceFile)
 					throw new InvalidOperationException ();
 
-				return source.SourceFile;
+				return file;
 			}
 		}
 
 		public SourceMethod Method {
 			get {
-				if (!HasSourceFile)
+				if (!HasMethod)
 					throw new InvalidOperationException ();
 
 				return source;
+			}
+		}
+
+		public TargetFunctionType Function {
+			get {
+				if (!HasFunction)
+					throw new InvalidOperationException ();
+
+				return function;
 			}
 		}
 
@@ -75,11 +89,16 @@ namespace Mono.Debugger
 		public SourceLocation (SourceMethod source, int line)
 		{
 			this.module = source.SourceFile.Module;
+			this.file = source.SourceFile;
 			this.source = source;
 			this.line = line;
+		}
 
-			if (source == null)
-				throw new InvalidOperationException ();
+		public SourceLocation (SourceFile file, int line)
+		{
+			this.module = file.Module;
+			this.file = file;
+			this.line = line;
 		}
 
 		public SourceLocation (TargetFunctionType function)
@@ -87,6 +106,7 @@ namespace Mono.Debugger
 			this.function = function;
 			this.module = function.Module;
 			this.source = function.Source;
+			this.file = function.Source.SourceFile;
 			this.line = -1;
 		}
 
@@ -103,7 +123,7 @@ namespace Mono.Debugger
 			}
 
 			if (source == null)
-				return null;
+				throw new TargetException (TargetError.LocationInvalid);
 
 			TargetAddress address = GetAddress (domain);
 			if (!address.IsNull) {
@@ -152,6 +172,8 @@ namespace Mono.Debugger
 				this.source = function.Source;
 			} else if (source != null) {
 				this.module = source.SourceFile.Module;
+			} else if (file != null) {
+				this.module = file.Module;
 			}
 		}
 
@@ -164,6 +186,10 @@ namespace Mono.Debugger
 				info.AddValue ("type", "source");
 				info.AddValue ("source", source);
 				info.AddValue ("line", line);
+			} else if (file != null) {
+				info.AddValue ("type", "file");
+				info.AddValue ("file", file);
+				info.AddValue ("line", line);
 			} else
 				info.AddValue ("type", "unknown");
 		}
@@ -174,6 +200,10 @@ namespace Mono.Debugger
 			if (type == "source") {
 				source = (SourceMethod) info.GetValue (
 					"source", typeof (SourceMethod));
+				line = info.GetInt32 ("line");
+			} else if (type == "file") {
+				file = (SourceFile) info.GetValue (
+					"file", typeof (SourceFile));
 				line = info.GetInt32 ("line");
 			} else if (type == "function") {
 				function = (TargetFunctionType) info.GetValue (
