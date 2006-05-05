@@ -142,11 +142,7 @@ namespace Mono.Debugger.Frontend
 			if (func == null)
 				return null;
 
-			SourceMethod source = func.Source;
-			if (source == null)
-				return null;
-
-			return new SourceLocation (source);
+			return new SourceLocation (func);
 		}
 
 		public SourceLocation EvaluateSource (ScriptingContext context, LocationType type,
@@ -1500,6 +1496,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		protected override TargetType DoEvaluateType (ScriptingContext context)
+		{
+			return Member.Type;
+		}
+
 		public TargetFunctionType ResolveDelegate (ScriptingContext context)
 		{
 			MethodGroupExpression mg = InvocationExpression.ResolveDelegate (
@@ -1511,8 +1512,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected override TargetFunctionType DoEvaluateMethod (ScriptingContext context,
-									 LocationType type,
-									 Expression[] types)
+									LocationType type,
+									Expression[] types)
 		{
 			switch (type) {
 			case LocationType.PropertyGetter:
@@ -2025,6 +2026,32 @@ namespace Mono.Debugger.Frontend
 			return TryCurrentCast (context, target, sobj, target_type);
 		}
 
+		static bool TryParentCast (ScriptingContext context,
+					   TargetClassType source_type,
+					   TargetClassType target_type)
+		{
+			if (source_type == target_type)
+				return true;
+
+			if (!source_type.HasParent)
+				return false;
+
+			return TryParentCast (context, source_type.ParentType, target_type);
+		}
+
+		public static bool TryCast (ScriptingContext context, TargetType source,
+					    TargetClassType target_type)
+		{
+			if (source == target_type)
+				return true;
+
+			TargetClassType stype = Convert.ToClassType (source);
+			if (stype == null)
+				return false;
+
+			return TryParentCast (context, stype, target_type);
+		}
+
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			TargetType target_type = target.EvaluateType (context);
@@ -2429,17 +2456,24 @@ namespace Mono.Debugger.Frontend
 		public static MethodGroupExpression ResolveDelegate (ScriptingContext context,
 								     Expression expr)
 		{
-			TargetClassObject sobj = Convert.ToClassObject (
-				context.CurrentThread, expr.EvaluateObject (context));
-			if (sobj == null)
+			TargetClassType ctype = Convert.ToClassType (expr.EvaluateType (context));
+			if (ctype == null)
 				return null;
 
-			TargetClassType delegate_type = sobj.Type.Language.DelegateType;
-			if (CastExpression.TryCast (context, sobj, delegate_type) == null)
+			TargetClassObject cobj;
+			try {
+				cobj = Convert.ToClassObject (
+					context.CurrentThread, expr.EvaluateObject (context));
+			} catch {
+				cobj = null;
+			}
+
+			TargetClassType delegate_type = ctype.Language.DelegateType;
+			if (!CastExpression.TryCast (context, ctype, delegate_type))
 				return null;
 
 			TargetFunctionType invoke = null;
-			foreach (TargetMethodInfo method in sobj.Type.Methods) {
+			foreach (TargetMethodInfo method in ctype.Methods) {
 				if (method.Name == "Invoke") {
 					invoke = method.Type;
 					break;
@@ -2452,7 +2486,7 @@ namespace Mono.Debugger.Frontend
 			TargetFunctionType[] methods = new TargetFunctionType[] { invoke };
 
 			MethodGroupExpression mg = new MethodGroupExpression (
-				sobj.Type, sobj, "Invoke", methods, true, false);
+				ctype, cobj, "Invoke", methods, true, false);
 			return mg;
 		}
 

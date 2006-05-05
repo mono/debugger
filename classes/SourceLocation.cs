@@ -107,7 +107,10 @@ namespace Mono.Debugger
 			this.function = function;
 			this.module = function.Module;
 			this.source = function.Source;
-			this.file = function.Source.SourceFile;
+
+			if (source != null)
+				file = source.SourceFile;
+
 			this.line = -1;
 		}
 
