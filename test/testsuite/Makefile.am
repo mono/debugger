@@ -4,5 +4,5 @@ EXTRA_DIST = \
 	TestIndexer.cs TestInheritance.cs TestInvocation.cs \
 	TestManagedTypes.cs TestNamespace.cs TestNull.cs TestObject.cs \
 	TestProperty.cs TestToString.cs testnativefork.cs testnativeexec.cs \
-	TestAttach.cs testnativeattach.cs
+	TestAttach.cs TestMethodLookup.cs testnativeattach.cs
 
