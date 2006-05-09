@@ -1,3 +1,31 @@
+2006-05-09  Martin Baulig  <martin@ximian.com>
+
+	The big method lookup cleanup :-)
+
+	* frontend/Expression.cs (LocationType): Added `Constructor'.
+	(Expression.EvaluateSource): Removed.
+	(Expression.DoEvaluateSource): Removed.
+	(Expression.ResolveMethod): Added a `LocationType' argument and
+	return a `MethodExpression'.
+	(Expression.DoResolveMethod): Likewise; return null by default.
+	(SimpleNameExpression.DoResolveMethod): Handle all the different
+	kinds of method lookups here.
+	(MethodExpression): New public abstract class.
+	(MethodExpression.EvaluateSource): New public abstract method; use
+	this instead of `Expression.EvaluateSource()'.
+	(MethodGroupExpression): Derive from `MethodExpression'.
+	(MethodGroupExpression.DoResolveMethod): Add support for the
+	different LocationType's here.
+	(InvocationExpression): Derive from `MethodExpression'.
+
+	* frontend/Command.cs
+	(SourceCommand.Ctor): Added `-ctor' argument to lookup ctors.
+	(SourceCommand.DoResolve): We now use `Expression.ResolveMethod()'
+	to get a `MethodExpression' and then call EvaluateSource() on it.
+
+	* test/src/testsuite/TestMethodLookup.cs: New test.  This test is
+	really huge and should cover all the cases.
+
 2006-05-05  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetFunctionType.cs

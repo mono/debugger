@@ -1906,6 +1906,11 @@ namespace Mono.Debugger.Frontend
 		LocationType type = LocationType.Method;
 		SourceLocation location;
 
+		public bool Ctor {
+			get { return type == LocationType.Constructor; }
+			set { type = LocationType.Constructor; }
+		}
+
 		public bool Get {
 			get { return type == LocationType.PropertyGetter; }
 			set { type = LocationType.PropertyGetter; }
@@ -1972,11 +1977,11 @@ namespace Mono.Debugger.Frontend
 			if (expr == null)
 				return false;
 
-			expr = expr.ResolveMethod (context);
-			if (expr == null)
+			MethodExpression mexpr = expr.ResolveMethod (context, type);
+			if (mexpr == null)
 				return false;
 
-			location = expr.EvaluateSource (context, type, null);
+			location = mexpr.EvaluateSource (context);
 			return location != null;
 		}
 	}
@@ -2017,7 +2022,10 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException (
 						"Current location doesn't have any source code.");
 
-				current_source_code = buffer.Contents;
+				source_code = buffer.Contents;
+
+				if (Location.HasMethod)
+					count = Location.Method.EndRow - Location.Method.StartRow + 2;
 
 				if (count < 0)
 					last_line = System.Math.Max (Location.Line + 2, 0);
@@ -2032,7 +2040,7 @@ namespace Mono.Debugger.Frontend
 			} else 
 				start = last_line;
 
-			last_line = System.Math.Min (start + count, current_source_code.Length);
+			last_line = System.Math.Min (start + count, source_code.Length);
 
 			if (start > last_line){
 				int t = start;
@@ -2040,14 +2048,18 @@ namespace Mono.Debugger.Frontend
 				last_line = t;
 			}
 
-			for (int line = start; line < last_line; line++)
-				context.Print ("{0,4} {1}", line + 1, current_source_code [line]);
+			StringBuilder sb = new StringBuilder ();
+			for (int line = start; line < last_line; line++) {
+				string text = String.Format ("{0,4} {1}", line+1, source_code [line]);
+				context.Print (text);
+				sb.Append (text);
+			}
 
-			return null;
+			return sb.ToString ();
 		}
 
 		int last_line = -1;
-		string[] current_source_code = null;
+		string[] source_code = null;
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Files; } }

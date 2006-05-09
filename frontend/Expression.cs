@@ -12,6 +12,7 @@ namespace Mono.Debugger.Frontend
 	public enum LocationType
 	{
 		Method,
+		Constructor,
 		DelegateInvoke,
 		PropertyGetter,
 		PropertySetter,
@@ -135,48 +136,15 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected virtual SourceLocation DoEvaluateSource (ScriptingContext context,
-								   LocationType type, Expression[] types)
-		{
-			TargetFunctionType func = DoEvaluateMethod (context, type, types);
-			if (func == null)
-				return null;
-
-			return new SourceLocation (func);
-		}
-
-		public SourceLocation EvaluateSource (ScriptingContext context, LocationType type,
-						      Expression [] types)
-		{
-			if (!resolved)
-				throw new InvalidOperationException (
-					String.Format (
-						"Some clown tried to evaluate the " +
-						"unresolved expression `{0}'", Name));
-
-			try {
-				SourceLocation location = DoEvaluateSource (context, type, types);
-				if (location == null)
-					throw new ScriptingException (
-						"Expression `{0}' is not a method", Name);
-
-				return location;
-			} catch (LocationInvalidException ex) {
-				throw new ScriptingException (
-					"Location of variable `{0}' is invalid: {1}",
-					Name, ex.Message);
-			}
-		}
-
 		protected virtual TargetFunctionType DoEvaluateMethod (ScriptingContext context,
-									LocationType type,
-									Expression[] types)
+								       LocationType type,
+								       Expression[] types)
 		{
 			return null;
 		}
 
 		public TargetFunctionType EvaluateMethod (ScriptingContext context,
-							   LocationType type, Expression [] types)
+							  LocationType type, Expression [] types)
 		{
 			if (!resolved)
 				throw new InvalidOperationException (
@@ -255,14 +223,15 @@ namespace Mono.Debugger.Frontend
 			return expr;
 		}
 
-		protected virtual Expression DoResolveMethod (ScriptingContext context)
+		protected virtual MethodExpression DoResolveMethod (ScriptingContext context,
+								    LocationType type)
 		{
-			return DoResolve (context);
+			return null;
 		}
 
-		public Expression ResolveMethod (ScriptingContext context)
+		public MethodExpression ResolveMethod (ScriptingContext context, LocationType type)
 		{
-			Expression expr = DoResolveMethod (context);
+			MethodExpression expr = DoResolveMethod (context, type);
 			if (expr == null)
 				throw new ScriptingException (
 					"Expression `{0}' is not a method.", Name);
@@ -712,15 +681,6 @@ namespace Mono.Debugger.Frontend
 			resolved = true;
 			return this;
 		}
-
-		protected override SourceLocation DoEvaluateSource (ScriptingContext context,
-								    LocationType type, Expression[] types)
-		{
-			if (types != null)
-				return null;
-
-			return location;
-		}
 	}
 
 	public class SimpleNameExpression : Expression
@@ -759,25 +719,24 @@ namespace Mono.Debugger.Frontend
 			if (member == null)
 				return null;
 
-			if (member.IsInstance && !method.HasThis)
-				throw new ScriptingException (
-					"Cannot use instance member `{0}' or current class " +
-					"in static context.", full_name);
-
 			return member;
 		}
 
-		Expression Lookup (ScriptingContext context, StackFrame frame)
+		MemberExpression Lookup (ScriptingContext context, StackFrame frame)
 		{
+			MemberExpression member = LookupMember (context, frame, name);
+			if (member != null)
+				return member;
+
 			string[] namespaces = context.GetNamespaces (frame);
 			if (namespaces == null)
 				return null;
 
 			foreach (string ns in namespaces) {
 				string full_name = MakeFQN (ns, name);
-				Expression expr = LookupMember (context, frame, full_name);
-				if (expr != null)
-					return expr;
+				member = LookupMember (context, frame, full_name);
+				if (member != null)
+					return member;
 			}
 
 			return null;
@@ -792,11 +751,7 @@ namespace Mono.Debugger.Frontend
 					return new VariableAccessExpression (var);
 			}
 
-			Expression expr = LookupMember (context, frame, name);
-			if (expr != null)
-				return expr;
-
-			expr = Lookup (context, frame);
+			Expression expr = Lookup (context, frame);
 			if (expr != null)
 				return expr;
 
@@ -809,6 +764,33 @@ namespace Mono.Debugger.Frontend
 				return expr;
 
 			throw new ScriptingException ("No symbol `{0}' in current context.", Name);
+		}
+
+		protected override MethodExpression DoResolveMethod (ScriptingContext context,
+								     LocationType type)
+		{
+			StackFrame frame = context.CurrentFrame;
+
+			MemberExpression member;
+			if (type == LocationType.Constructor) {
+				Expression texpr = ResolveType (context);
+				if (texpr == null)
+					return null;
+
+				TargetClassType ctype = texpr.EvaluateType (context) as TargetClassType;
+				if (ctype == null)
+					return null;
+
+				member = StructAccessExpression.FindMember (
+					frame.Thread, ctype, null, ".ctor", false, true);
+			} else {
+				member = Lookup (context, frame);
+			}
+
+			if (member != null)
+				return member.ResolveMethod (context, type);
+
+			return DoResolve (context) as MethodExpression;
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -992,9 +974,29 @@ namespace Mono.Debugger.Frontend
 			return ResolveMemberAccess (context, false);
 		}
 
-		protected override Expression DoResolveMethod (ScriptingContext context)
+		protected override MethodExpression DoResolveMethod (ScriptingContext context,
+								     LocationType type)
 		{
-			return ResolveMemberAccess (context, true);
+			MemberExpression member;
+			if (type == LocationType.Constructor) {
+				Expression texpr = ResolveType (context);
+				if (texpr == null)
+					return null;
+
+				TargetClassType ctype = texpr.EvaluateType (context) as TargetClassType;
+				if (ctype == null)
+					return null;
+
+				member = StructAccessExpression.FindMember (
+					context.CurrentFrame.Thread, ctype, null, ".ctor", false, true);
+			} else {
+				member = ResolveMemberAccess (context, true);
+			}
+
+			if (member != null)
+				return member.ResolveMethod (context, type);
+
+			return null;
 		}
 
 		protected override Expression DoResolveType (ScriptingContext context)
@@ -1033,7 +1035,34 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class MethodGroupExpression : MemberExpression
+	public abstract class MethodExpression : MemberExpression
+	{
+		protected abstract SourceLocation DoEvaluateSource (ScriptingContext context);
+
+		public SourceLocation EvaluateSource (ScriptingContext context)
+		{
+			if (!resolved)
+				throw new InvalidOperationException (
+					String.Format (
+						"Some clown tried to evaluate the " +
+						"unresolved expression `{0}'", Name));
+
+			try {
+				SourceLocation location = DoEvaluateSource (context);
+				if (location == null)
+					throw new ScriptingException (
+						"Expression `{0}' is not a method", Name);
+
+				return location;
+			} catch (LocationInvalidException ex) {
+				throw new ScriptingException (
+					"Location of variable `{0}' is invalid: {1}",
+					Name, ex.Message);
+			}
+		}
+	}
+
+	public class MethodGroupExpression : MethodExpression
 	{
 		protected readonly TargetClassType stype;
 		protected readonly TargetClassObject instance;
@@ -1075,6 +1104,12 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
+		protected override MethodExpression DoResolveMethod (ScriptingContext context,
+								     LocationType type)
+		{
+			return this;
+		}
+
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
 			throw new ScriptingException ("Expression `{0}' is a method, not a " +
@@ -1105,6 +1140,15 @@ namespace Mono.Debugger.Frontend
 				return func;
 
 			return context.Interpreter.QueryMethod (methods);
+		}
+
+		protected override SourceLocation DoEvaluateSource (ScriptingContext context)
+		{
+			if (methods.Length == 1)
+				return new SourceLocation ((TargetFunctionType) methods [0]);
+
+			throw new ScriptingException (
+				"Ambiguous method `{0}'; need to use full name", Name);
 		}
 
 		public TargetFunctionType OverloadResolve (ScriptingContext context,
@@ -1379,6 +1423,63 @@ namespace Mono.Debugger.Frontend
 		protected override Expression DoResolve (ScriptingContext context)
 		{
 			return this;
+		}
+
+		protected MethodGroupExpression CreateMethodGroup (TargetFunctionType func)
+		{
+			return new MethodGroupExpression (
+				func.DeclaringType, instance, func.Name,
+				new TargetFunctionType[] { func },
+				!func.IsStatic, func.IsStatic);
+		}
+
+		protected override MethodExpression DoResolveMethod (ScriptingContext context,
+								     LocationType type)
+		{
+			switch (type) {
+			case LocationType.PropertyGetter:
+			case LocationType.PropertySetter:
+				TargetPropertyInfo property = Member as TargetPropertyInfo;
+				if (property == null)
+					return null;
+
+				if (type == LocationType.PropertyGetter) {
+					if (!property.CanRead)
+						throw new ScriptingException (
+							"Property {0} doesn't have a getter.", Name);
+					return CreateMethodGroup (property.Getter);
+				} else {
+					if (!property.CanWrite)
+						throw new ScriptingException (
+							"Property {0} doesn't have a setter.", Name);
+					return CreateMethodGroup (property.Setter);
+				}
+
+			case LocationType.EventAdd:
+			case LocationType.EventRemove:
+				TargetEventInfo ev = Member as TargetEventInfo;
+				if (ev == null)
+					return null;
+
+				if (type == LocationType.EventAdd)
+					return CreateMethodGroup (ev.Add);
+				else
+					return CreateMethodGroup (ev.Remove);
+
+			case LocationType.Method:
+			case LocationType.DelegateInvoke:
+				TargetMethodInfo method = Member as TargetMethodInfo;
+				if (method != null)
+					return CreateMethodGroup (method.Type);
+
+				return InvocationExpression.ResolveDelegate (context, this);
+
+			default:
+				return null;
+			}
+
+
+			return null;
 		}
 
 		protected TargetObject GetField (Thread target, TargetFieldInfo field)
@@ -2431,22 +2532,22 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class InvocationExpression : Expression
+	public class InvocationExpression : MethodExpression
 	{
-		Expression method_expr;
+		Expression expr;
 		Expression[] arguments;
-		MethodGroupExpression mg;
+		MethodGroupExpression method_expr;
 		string name;
 
 		TargetType[] argtypes;
 		TargetFunctionType method;
 
-		public InvocationExpression (Expression method_expr, Expression[] arguments)
+		public InvocationExpression (Expression expr, Expression[] arguments)
 		{
-			this.method_expr = method_expr;
+			this.expr = expr;
 			this.arguments = arguments;
 
-			name = String.Format ("{0} ()", method_expr.Name);
+			name = String.Format ("{0} ()", expr.Name);
 		}
 
 		public override string Name {
@@ -2490,19 +2591,35 @@ namespace Mono.Debugger.Frontend
 			return mg;
 		}
 
-		protected override Expression DoResolve (ScriptingContext context)
+		public override TargetClassObject InstanceObject {
+			get { return method_expr.InstanceObject; }
+		}
+
+		public override bool IsInstance {
+			get { return method_expr.IsInstance; }
+		}
+
+		public override bool IsStatic {
+			get { return method_expr.IsStatic; }
+		}
+
+		protected override MethodExpression DoResolveMethod (ScriptingContext context,
+								     LocationType type)
 		{
-			method_expr = method_expr.ResolveMethod (context);
+			method_expr = (MethodGroupExpression) expr.ResolveMethod (context, type);
 			if (method_expr == null)
 				return null;
 
-			mg = method_expr as MethodGroupExpression;
-			if (mg == null)
-				mg = ResolveDelegate (context, method_expr);
+			resolved = true;
+			return this;
+		}
 
-			if (mg == null)
-				throw new ScriptingException (
-					"Expression `{0}' is not a method.", Name);
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			method_expr = (MethodGroupExpression) expr.ResolveMethod (
+				context, LocationType.Method);
+			if (method_expr == null)
+				return null;
 
 			argtypes = new TargetType [arguments.Length];
 
@@ -2514,7 +2631,7 @@ namespace Mono.Debugger.Frontend
 				argtypes [i] = arguments [i].EvaluateType (context);
 			}
 
-			method = mg.OverloadResolve (context, argtypes);
+			method = method_expr.OverloadResolve (context, argtypes);
 
 			resolved = true;
 			return this;
@@ -2543,6 +2660,26 @@ namespace Mono.Debugger.Frontend
 			return method_expr.EvaluateMethod (context, type, types);
 		}
 
+		protected override SourceLocation DoEvaluateSource (ScriptingContext context)
+		{
+			Expression[] types = new Expression [arguments.Length];
+			TargetType[] argtypes = new TargetType [types.Length];
+
+			for (int i = 0; i < arguments.Length; i++) {
+				types [i] = arguments [i].ResolveType (context);
+				argtypes [i] = types [i].EvaluateType (context);
+			}
+
+			TargetFunctionType func = method_expr.OverloadResolve (context, argtypes);
+			if (func != null)
+				return new SourceLocation (func);
+
+			return null;
+
+			throw new ScriptingException (
+				"Ambiguous method `{0}'; need to use full name", Name);
+		}
+
 		protected TargetObject DoInvoke (ScriptingContext context, bool debug)
 		{
 			TargetObject[] args = new TargetObject [arguments.Length];
@@ -2556,12 +2693,12 @@ namespace Mono.Debugger.Frontend
 					context, args [i], method.ParameterTypes [i]);
 			}
 
-			TargetClassObject instance = mg.InstanceObject;
+			TargetClassObject instance = method_expr.InstanceObject;
 
 			if (!method.IsStatic && !method.IsConstructor && (instance == null))
 				throw new ScriptingException (
 					"Cannot invoke instance method `{0}' with a type reference.",
-					Name);
+					method.Name);
 
 			try {
 				if (debug) {
@@ -2576,7 +2713,8 @@ namespace Mono.Debugger.Frontend
 
 				string exc_message;
 				TargetObject retval = context.CurrentThread.RuntimeInvoke (
-					method, mg.InstanceObject, objs, true, out exc_message);
+					method, method_expr.InstanceObject, objs, true,
+					out exc_message);
 
 				if (exc_message != null)
 					throw new ScriptingException (
