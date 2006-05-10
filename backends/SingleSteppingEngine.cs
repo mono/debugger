@@ -1361,8 +1361,7 @@ namespace Mono.Debugger.Backends
 				if (manager.HandleChildEvent (this, inferior, ref cevent))
 					return;
 				ProcessChildEvent (cevent);
-			} else
-				do_continue ();
+			}
 		}
 
 		void inferior_output_handler (bool is_stderr, string line)
