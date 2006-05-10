@@ -1,5 +1,13 @@
 2006-05-10  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerOptions.JitArguments): New public field.
+
+	* frontend/Main.cs: Add `-jit-arg' command line argument to pass
+	additional arguments to the inferior `mono'.
+
+2006-05-10  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86_64-arch.c: Use proper alignment when calling
 	methods.
 

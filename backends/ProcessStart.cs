@@ -77,20 +77,17 @@ namespace Mono.Debugger.Backends
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
-				string[] start_argv;
+				ArrayList start_argv = new ArrayList ();
+				start_argv.Add (mono_path);
+				start_argv.Add ("--inside-mdb");
 				if (options.JitOptimizations != "")
-					start_argv = new string[] {
-						mono_path, "--inside-mdb",
-						"--optimize=" + options.JitOptimizations
-					};
-				else
-					start_argv = new string[] {
-						mono_path, "--inside-mdb"
-					};
+					start_argv.Add ("--optimize=" + options.JitOptimizations);
+				if (options.JitArguments != null)
+					start_argv.AddRange (options.JitArguments);
 
-				this.argv = new string [options.InferiorArgs.Length + start_argv.Length];
+				this.argv = new string [options.InferiorArgs.Length + start_argv.Count];
 				start_argv.CopyTo (this.argv, 0);
-				options.InferiorArgs.CopyTo (this.argv, start_argv.Length);
+				options.InferiorArgs.CopyTo (this.argv, start_argv.Count);
 			} else {
 				LoadNativeSymbolTable = true;
 				IsNative = true;

@@ -28,6 +28,8 @@ namespace Mono.Debugger
 		 * process */
 		public string JitOptimizations = "";
 
+		public string[] JitArguments = null;
+
 		/* The inferior process's working directory */
 		public string WorkingDirectory = Environment.CurrentDirectory;
 

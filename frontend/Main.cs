@@ -230,6 +230,23 @@ namespace Mono.Debugger.Frontend
 				debug_options.JitOptimizations = value;
 				return true;
 
+			case "-jit-arg":
+				value = GetValue (ref args, ref i, ms_value);
+				if (ms_value == null) {
+					Usage ();
+					Environment.Exit (1);
+				}
+				if (debug_options.JitArguments != null) {
+					string[] old = debug_options.JitArguments;
+					string[] new_args = new string [old.Length + 1];
+					old.CopyTo (new_args, 0);
+					new_args [old.Length] = value;
+					debug_options.JitArguments = new_args;
+				} else {
+					debug_options.JitArguments = new string[] { value };
+				}
+				return true;
+
 			case "-fullname":
 			case "-f":
 				if (ms_value != null) {
