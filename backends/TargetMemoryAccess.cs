@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	public abstract class TargetMemoryAccess : MarshalByRefObject
+	public abstract class TargetMemoryAccess : DebuggerMarshalByRefObject
 	{
 		public abstract TargetInfo TargetInfo {
 			get;

@@ -16,7 +16,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backends
 {
-	internal class DebuggerServant : MarshalByRefObject, IDisposable
+	internal class DebuggerServant : DebuggerMarshalByRefObject, IDisposable
 	{
 		Debugger client;
 		ThreadManager thread_manager;

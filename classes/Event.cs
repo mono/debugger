@@ -9,7 +9,7 @@ namespace Mono.Debugger
 		CatchException
 	}
 
-	public abstract class Event : MarshalByRefObject
+	public abstract class Event : DebuggerMarshalByRefObject
 	{
 		// <summary>
 		//   An automatically generated unique index for this event.

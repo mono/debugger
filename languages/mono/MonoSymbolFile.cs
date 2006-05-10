@@ -896,7 +896,7 @@ namespace Mono.Debugger.Languages.Mono
 					load_handlers = null;
 			}
 
-			protected sealed class HandlerData : MarshalByRefObject, ILoadHandler
+			protected sealed class HandlerData : DebuggerMarshalByRefObject, ILoadHandler
 			{
 				public readonly MonoMethod Method;
 				public readonly MethodLoadedHandler Handler;

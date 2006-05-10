@@ -3,7 +3,7 @@ using System;
 namespace Mono.Debugger.Languages
 {
 	[Serializable]
-	public abstract class TargetMemberInfo : MarshalByRefObject
+	public abstract class TargetMemberInfo : DebuggerMarshalByRefObject
 	{
 		public readonly TargetType Type;
 		public readonly string Name;

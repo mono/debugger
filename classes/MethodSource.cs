@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public abstract class MethodSource : MarshalByRefObject
+	public abstract class MethodSource : DebuggerMarshalByRefObject
 	{
 		SourceFile file;
 		string name;

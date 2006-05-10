@@ -11,7 +11,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
-	public class Process : MarshalByRefObject
+	public class Process : DebuggerMarshalByRefObject
 	{
 		Debugger debugger;
 		ProcessServant servant;

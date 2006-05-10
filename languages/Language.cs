@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
-	public abstract class Language : MarshalByRefObject
+	public abstract class Language : DebuggerMarshalByRefObject
 	{
 		public abstract string Name {
 			get;

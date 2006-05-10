@@ -17,7 +17,7 @@ using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	public class Interpreter : MarshalByRefObject, IDisposable
+	public class Interpreter : DebuggerMarshalByRefObject, IDisposable
 	{
 		DebuggerSession session;
 
@@ -882,7 +882,7 @@ namespace Mono.Debugger.Frontend
 			Dispose (false);
 		}
 
-		protected class InterpreterEventSink : MarshalByRefObject
+		protected class InterpreterEventSink : DebuggerMarshalByRefObject
 		{
 			Interpreter interpreter;
 

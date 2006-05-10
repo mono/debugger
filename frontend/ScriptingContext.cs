@@ -27,7 +27,7 @@ namespace Mono.Debugger.Frontend
 		DontStep
 	}
 
-	public class ScriptingContext : MarshalByRefObject
+	public class ScriptingContext : DebuggerMarshalByRefObject
 	{
 		Thread current_thread;
 		Process current_process;

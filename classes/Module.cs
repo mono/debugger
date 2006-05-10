@@ -24,7 +24,7 @@ namespace Mono.Debugger
 		void Remove ();
 	}
 
-	internal abstract class SymbolFile : MarshalByRefObject
+	internal abstract class SymbolFile : DebuggerMarshalByRefObject
 	{
 		public abstract string FullName {
 			get;
@@ -80,7 +80,7 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public sealed class Module : MarshalByRefObject
+	public sealed class Module : DebuggerMarshalByRefObject
 	{
 		string name;
 		[NonSerialized]

@@ -1,5 +1,13 @@
 2006-05-10  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerMarshalByRefObject.cs
+	(DebuggerMarshalByRefObject): New public class; we now use this
+	everywhere instead of `MarshalByRefObject'.
+	(DebuggerMarshalByRefObject.InitializeLifeTimeService): Override
+	this and return null.
+
+2006-05-10  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs (BinaryOperator): Make this work again.
 
 	* frontend/CSharpExpressionParser.jay: Add support for binary

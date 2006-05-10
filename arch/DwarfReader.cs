@@ -90,7 +90,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	internal class DwarfReader : MarshalByRefObject
+	internal class DwarfReader : DebuggerMarshalByRefObject
 	{
 		protected Bfd bfd;
 		protected Module module;
@@ -2935,13 +2935,11 @@ namespace Mono.Debugger.Backends
 					else
 						return FundamentalKind.Char;
 
-
 				case DwarfBaseTypeEncoding.unsigned_char:
 					if (byte_size == 1)
 						return FundamentalKind.Byte;
 					else
 						return FundamentalKind.Char;
-					break;
 
 				case DwarfBaseTypeEncoding.normal_float:
 					if (byte_size <= 4)

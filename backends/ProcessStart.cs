@@ -6,7 +6,7 @@ using System.Collections.Specialized;
 
 namespace Mono.Debugger.Backends
 {
-	internal sealed class ProcessStart : MarshalByRefObject
+	internal sealed class ProcessStart : DebuggerMarshalByRefObject
 	{
 		public readonly int PID;
 		public readonly string CoreFile;

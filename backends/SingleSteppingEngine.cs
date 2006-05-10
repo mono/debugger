@@ -1782,7 +1782,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 
 #region Nested SSE classes
-		internal sealed class StackData : MarshalByRefObject
+		internal sealed class StackData : DebuggerMarshalByRefObject
 		{
 			public readonly Method Method;
 			public readonly TargetAddress Address;
@@ -3500,7 +3500,7 @@ namespace Mono.Debugger.Backends
 		public string ExceptionMessage;
 	}
 
-	internal abstract class CommandResult : MarshalByRefObject
+	internal abstract class CommandResult : DebuggerMarshalByRefObject
 	{
 		public object Result;
 

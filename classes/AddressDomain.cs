@@ -34,7 +34,7 @@ namespace Mono.Debugger
 	//   This is intentionally a class and not a struct - we must always pass this by
 	//   reference and not by value.
 	// </remarks>
-	public sealed class AddressDomain : MarshalByRefObject, IDisposable
+	public sealed class AddressDomain : DebuggerMarshalByRefObject, IDisposable
 	{
 		// <summary>
 		//   `name' is just used in the error messages.

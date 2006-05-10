@@ -11,7 +11,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backends
 {
-	internal class ProcessServant : MarshalByRefObject
+	internal class ProcessServant : DebuggerMarshalByRefObject
 	{
 		Process client;
 		ThreadManager manager;

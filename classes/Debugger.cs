@@ -20,7 +20,7 @@ namespace Mono.Debugger
 	public delegate void ThreadEventHandler (Debugger debugger, Thread thread);
 	public delegate void ProcessEventHandler (Debugger debugger, Process process);
 
-	public class Debugger : MarshalByRefObject
+	public class Debugger : DebuggerMarshalByRefObject
 	{
 		AppDomain domain;
 		DebuggerServant servant;

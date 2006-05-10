@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
 {
-	public class Backtrace : MarshalByRefObject
+	public class Backtrace : DebuggerMarshalByRefObject
 	{
 		StackFrame last_frame;
 		ArrayList frames;

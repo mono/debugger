@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetType : MarshalByRefObject
+	public abstract class TargetType : DebuggerMarshalByRefObject
 	{
 		protected readonly Language language;
 		protected readonly TargetObjectKind kind;

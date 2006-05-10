@@ -9,7 +9,7 @@ using Mono.Debugger.Languages.Native;
 
 namespace Mono.Debugger.Backends
 {
-	internal class BfdContainer : MarshalByRefObject, IDisposable
+	internal class BfdContainer : DebuggerMarshalByRefObject, IDisposable
 	{
 		Hashtable bfd_hash;
 		Hashtable type_hash;

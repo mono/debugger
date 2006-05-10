@@ -10,7 +10,7 @@ namespace Mono.Debugger.Backends
 	// <summary>
 	//   This class maintains the debugger's symbol tables.
 	// </summary>
-	internal class SymbolTableManager : MarshalByRefObject, IDisposable
+	internal class SymbolTableManager : DebuggerMarshalByRefObject, IDisposable
 	{
 		bool symtab_thread_exit;
 

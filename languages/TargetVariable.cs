@@ -5,7 +5,7 @@ namespace Mono.Debugger.Languages
 	// <summary>
 	//   This interface provides information about a variable in the target application.
 	// </summary>
-	public abstract class TargetVariable : MarshalByRefObject
+	public abstract class TargetVariable : DebuggerMarshalByRefObject
 	{
 		public abstract string Name {
 			get;

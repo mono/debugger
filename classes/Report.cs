@@ -70,7 +70,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public class ReportWriter : MarshalByRefObject
+	public class ReportWriter : DebuggerMarshalByRefObject
 	{
 		int flags;
 		string file;

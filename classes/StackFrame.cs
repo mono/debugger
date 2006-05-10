@@ -178,7 +178,7 @@ namespace Mono.Debugger
 	}
 
 	[Serializable]
-	public sealed class StackFrame : MarshalByRefObject
+	public sealed class StackFrame : DebuggerMarshalByRefObject
 	{
 		protected readonly TargetAddress address;
 		protected readonly TargetAddress stack_pointer;

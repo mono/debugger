@@ -15,7 +15,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
-	internal class ThreadManager : MarshalByRefObject
+	internal class ThreadManager : DebuggerMarshalByRefObject
 	{
 		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (500);
 

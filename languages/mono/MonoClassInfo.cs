@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassInfo : MarshalByRefObject
+	internal class MonoClassInfo : DebuggerMarshalByRefObject
 	{
 		protected readonly MonoClassType type;
 		protected readonly int size;

@@ -9,7 +9,7 @@ namespace Mono.Debugger.Backends
 	public delegate void ModulesChangedHandler ();
 	public delegate void BreakpointsChangedHandler ();
 
-	internal class ModuleManager : MarshalByRefObject
+	internal class ModuleManager : DebuggerMarshalByRefObject
 	{
 		Hashtable modules = new Hashtable ();
 

@@ -15,7 +15,7 @@ namespace Mono.Debugger
 	//   not the other way around.  If you insert a breakpoint on a location, the debugger will
 	//   automatically compute the actual address once the corresponding method has been loaded.
 	// </summary>
-	public class SourceAddress : MarshalByRefObject
+	public class SourceAddress : DebuggerMarshalByRefObject
 	{
 		MethodSource source;
 		int row;
