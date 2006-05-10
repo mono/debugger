@@ -5,7 +5,6 @@ lib_LTLIBRARIES = libmonodebuggerserver.la
 EXTRA_libmonodebuggerserver_la_SOURCES = \
 	i386-arch.c			\
 	i386-arch.h			\
-	i386-ptrace.h			\
 	i386-win32.c			\
 	i386-win32.h			\
 	x86-arch.h			\
@@ -13,7 +12,8 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 	x86_64-arch.c			\
 	x86-linux-ptrace.c		\
 	x86-linux-ptrace.h		\
-	x86-ptrace.c
+	x86-ptrace.c			\
+	x86-ptrace.h
 
 if PLATFORM_POWERPC
 platform_sources = powerpc-darwin.c
@@ -28,9 +28,7 @@ libmonodebuggerserver_la_SOURCES = \
 	breakpoints.c		\
 	breakpoints.h		\
 	mutex.c			\
-	mutex.h			\
-	remoting.c		\
-	remoting.h
+	mutex.h
 
 libmonodebuggerserver_la_LIBADD = \
 	@SERVER_DEPENDENCIES_LIBS@ \
