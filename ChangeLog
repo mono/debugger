@@ -1,5 +1,9 @@
 2006-05-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/remoting.[ch]: Removed.
+
+2006-05-11  Martin Baulig  <martin@ximian.com>
+
 	* arch/Architecture.cs
 	(Architecture.AdjustReturnAddress): New protected method; adjust
 	the return address, so we report the line of the call and not the
