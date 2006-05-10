@@ -1,5 +1,12 @@
 2006-05-10  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs (BinaryOperator): Make this work again.
+
+	* frontend/CSharpExpressionParser.jay: Add support for binary
+	operators.
+
+2006-05-10  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerSession.cs
 	(DebuggerOptions.JitArguments): New public field.
 

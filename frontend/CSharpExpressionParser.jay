@@ -111,7 +111,23 @@ primary_expression
 	  {
 		$$ = new AssignmentExpression ((Expression) $1, (Expression) $3);
 	  }
-	;	
+	| expression PLUS expression
+	  {
+		$$ = new BinaryOperator (BinaryOperator.Kind.Plus, (Expression) $1, (Expression) $3);
+	  }
+	| expression MINUS expression
+	  {
+		$$ = new BinaryOperator (BinaryOperator.Kind.Plus, (Expression) $1, (Expression) $3);
+	  }
+	| expression STAR expression
+	  {
+		$$ = new BinaryOperator (BinaryOperator.Kind.Mult, (Expression) $1, (Expression) $3);
+	  }
+	| expression DIV expression
+	  {
+		$$ = new BinaryOperator (BinaryOperator.Kind.Div, (Expression) $1, (Expression) $3);
+	  }
+	;
 
 constant
 	: TRUE

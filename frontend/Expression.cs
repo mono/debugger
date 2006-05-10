@@ -1234,7 +1234,6 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-#if FIXME
 	// So you can extend this by just creating a subclass
 	// of BinaryOperator that implements DoEvaluate and
 	// a constructor, but you'll need to add a new rule to
@@ -1247,7 +1246,7 @@ namespace Mono.Debugger.Frontend
 	// like supporting "a" + "b" = "ab", then larger changes would
 	// be needed.
 
-	public class BinaryOperator : Expression
+	public class BinaryOperator : PointerExpression
 	{
 		public enum Kind { Mult, Plus, Minus, Div };
 
@@ -1261,34 +1260,96 @@ namespace Mono.Debugger.Frontend
 			this.right = right;
 		}
 
-		protected object DoEvaluate (ScriptingContext context, object lobj, object robj)
+		public override string Name {
+			get {
+				string op;
+				switch (kind) {
+				case Kind.Mult:
+					op = "*";
+					break;
+				case Kind.Plus:
+					op = "+";
+					break;
+				case Kind.Minus:
+					op = "-";
+					break;
+				case Kind.Div:
+					op = "/";
+					break;
+				default:
+					throw new InternalError ();
+				}
+				return left.Name + op + right.Name;
+			}
+		}
+
+		protected long DoEvaluate (ScriptingContext context, long lvalue, long rvalue)
 		{
 			switch (kind) {
 			case Kind.Mult:
-				return (int) lobj * (int) robj;
+				return lvalue * rvalue;
 			case Kind.Plus:
-				return (int) lobj + (int) robj;
+				return lvalue + rvalue;
 			case Kind.Minus:
-				return (int) lobj - (int) robj;
+				return lvalue - rvalue;
 			case Kind.Div:
-				return (int) lobj / (int) robj;
+				return lvalue / rvalue;
 			}
 
 			throw new ScriptingException ("Unknown binary operator kind: {0}", kind);
 		}
 
+		private long GetValue (ScriptingContext context, Expression expr)
+		{
+			object val = expr.Evaluate (context);
+			if (val is int)
+				return (long) (int) val;
+			else if (val is uint)
+				return (long) (uint) val;
+			else if (val is ulong)
+				return (long) (ulong) val;
+			else if (val is long)
+				return (long) val;
+			else if (val is TargetPointerObject) {
+				TargetPointerObject pobj = (TargetPointerObject) val;
+				return pobj.Address.Address;
+			} else
+				throw new ScriptingException ("Cannot evaluate expression `{0}'", expr);
+		}
+
+		protected override object DoEvaluate (ScriptingContext context)
+		{
+			long lvalue = GetValue (context, left);
+			long rvalue = GetValue (context, right);
+
+			try {
+				long retval = DoEvaluate (context, lvalue, rvalue);
+				return new NumberExpression (retval);
+			} catch {
+				throw new ScriptingException ("Cannot evaluate expression `{0}'", Name);
+			}
+		}
+
+		public override TargetAddress EvaluateAddress (ScriptingContext context)
+		{
+			NumberExpression result = (NumberExpression) Evaluate (context);
+			return result.EvaluateAddress (context);
+		}
+
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			object lobj, robj;
+			left = left.Resolve (context);
+			if (left == null)
+				return null;
 
-			lobj = left.Resolve (context);
-			robj = right.Resolve (context);
+			right = right.Resolve (context);
+			if (right == null)
+				return null;
 
-			// Console.WriteLine ("bin eval: {0} ({1}) and {2} ({3})", lobj, lobj.GetType(), robj, robj.GetType());
-			return DoEvaluate (context, lobj, robj);
+			resolved = true;
+			return this;
 		}
 	}
-#endif
 
 	public class TypeOfExpression : Expression
 	{
