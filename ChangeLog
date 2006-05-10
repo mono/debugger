@@ -1,3 +1,8 @@
+2006-05-10  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86_64-arch.c: Use proper alignment when calling
+	methods.
+
 2006-05-09  Martin Baulig  <martin@ximian.com>
 
 	The big method lookup cleanup :-)
