@@ -517,9 +517,9 @@ namespace Mono.Debugger.Frontend
 		{
 			if (!IsScript) {
 				if (is_stderr)
-					Report.Error (line);
+					Report.Error ("{0}", line);
 				else
-					Report.Print (line);
+					Report.Print ("{0}", line);
 			}
 		}
 
