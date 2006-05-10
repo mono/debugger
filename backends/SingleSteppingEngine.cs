@@ -1143,6 +1143,14 @@ namespace Mono.Debugger.Backends
 			inferior.Continue ();
 		}
 
+		void remove_temporary_breakpoint ()
+		{
+			if (temp_breakpoint_id != 0) {
+				inferior.RemoveBreakpoint (temp_breakpoint_id);
+				temp_breakpoint_id = 0;
+			}
+		}
+
 		void do_step_native ()
 		{
 			if (step_over_breakpoint (TargetAddress.Null, false, true))
@@ -2417,6 +2425,9 @@ namespace Mono.Debugger.Backends
 
 		protected override bool TrampolineHandler (SingleSteppingEngine sse, Method method)
 		{
+			if (StepMode == StepMode.SingleInstruction)
+				return true;
+
 			if (method == null)
 				return false;
 
@@ -3289,6 +3300,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute (SingleSteppingEngine sse)
 		{
+			sse.remove_temporary_breakpoint ();
 			sse.do_continue (ip);
 		}
 
@@ -3297,6 +3309,10 @@ namespace Mono.Debugger.Backends
 							       Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} processing OperationException at {1}: {2} {3} {4}",
+				      sse, inferior.CurrentFrame, ip, exc, unhandled);
+				      
 			if (unhandled) {
 				sse.frame_changed (inferior.CurrentFrame, null);
 				sse.current_frame.SetExceptionObject (exc);

@@ -313,8 +313,9 @@ namespace Mono.Debugger
 		internal void SetExceptionObject (TargetAddress exc)
 		{
 			try {
-				if (Language != null)
-					exc_object = Language.CreateObject (thread, exc);
+				Language lang = thread.ThreadServant.ProcessServant.MonoLanguage;
+				if (lang != null)
+					exc_object = lang.CreateObject (thread, exc);
 			} catch {
 				exc_object = null;
 			}
