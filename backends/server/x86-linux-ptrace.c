@@ -70,6 +70,8 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 		if (ret < 0) {
 			if (errno == EINTR)
 				continue;
+			else if (errno == ESRCH)
+				return COMMAND_ERROR_NOT_STOPPED;
 			else if (errno == EIO)
 				return COMMAND_ERROR_MEMORY_ACCESS;
 			g_message (G_STRLOC ": %lx - can't read target memory of %d at "
