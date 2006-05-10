@@ -313,7 +313,7 @@ namespace Mono.Debugger.Frontend
 				session.MainProcessReachedMain (current_process);
 
 				return current_process;
-			} catch (TargetException e) {
+			} catch (TargetException) {
 				Kill ();
 				throw;
 			}
@@ -338,7 +338,7 @@ namespace Mono.Debugger.Frontend
 				Wait (current_thread);
 
 				return current_process;
-			} catch (TargetException e) {
+			} catch (TargetException) {
 				Kill ();
 				throw;
 			}
@@ -364,7 +364,7 @@ namespace Mono.Debugger.Frontend
 				current_thread = current_process.MainThread;
 
 				return current_process;
-			} catch (TargetException e) {
+			} catch (TargetException) {
 				Kill ();
 				throw;
 			}
@@ -400,7 +400,7 @@ namespace Mono.Debugger.Frontend
 					StreamingContextStates.File);
 
 				return current_process;
-			} catch (TargetException e) {
+			} catch (TargetException) {
 				Kill ();
 				throw;
 			} catch (Exception ex) {

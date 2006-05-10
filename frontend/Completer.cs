@@ -187,8 +187,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				fs_entries = Directory.GetFileSystemEntries (dir, file_prefix + "*");
-			}
-			catch (Exception e) {
+			} catch {
 				GnuReadLine.SetCompletionMatches (null);
 				return;
 			}
@@ -230,8 +229,6 @@ namespace Mono.Debugger.Frontend
 
 		public void SymbolCompleter (ScriptingContext context, string text, int start, int end)
 		{
-			DebuggerEngine de = engine as DebuggerEngine;
-
 			try {
 				ArrayList method_list = new ArrayList ();
 				string[] namespaces = context.GetNamespaces();
@@ -279,8 +276,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				GnuReadLine.SetCompletionMatches (methods);
-			}
-			catch (Exception e) {
+			} catch {
 				GnuReadLine.SetCompletionMatches (null);
 			}
 		}

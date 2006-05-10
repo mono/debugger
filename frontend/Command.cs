@@ -1398,7 +1398,6 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override object DoExecute (ScriptingContext context)
 			{
-				bool printed_something = false;
 				Process[] processes = context.Interpreter.Processes;
 				if ((processes.Length > 0) && !context.Interpreter.HasCurrentProcess)
 					context.Interpreter.CurrentProcess = processes [0];
@@ -1408,7 +1407,6 @@ namespace Mono.Debugger.Frontend
 
 					context.Print ("{0} Process {1}", prefix,
 						       context.Interpreter.PrintProcess (process));
-					printed_something = true;
 				}
 				return null;
 			}

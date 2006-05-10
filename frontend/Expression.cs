@@ -1477,9 +1477,6 @@ namespace Mono.Debugger.Frontend
 			default:
 				return null;
 			}
-
-
-			return null;
 		}
 
 		protected TargetObject GetField (Thread target, TargetFieldInfo field)
@@ -1917,7 +1914,7 @@ namespace Mono.Debugger.Frontend
 				int[] int_indices = GetIntIndices (target, context);
 				try {
 					return aobj.GetElement (target, int_indices);
-				} catch (ArgumentException ex) {
+				} catch (ArgumentException) {
 					throw new ScriptingException (
 						"Index of array expression `{0}' out of bounds.",
 						expr.Name);
@@ -1996,7 +1993,7 @@ namespace Mono.Debugger.Frontend
 				int[] int_indices = GetIntIndices (target, context);
 				try {
 					aobj.SetElement (target, int_indices, right);
-				} catch (ArgumentException ex) {
+				} catch (ArgumentException) {
 					throw new ScriptingException (
 						"Index of array expression `{0}' out of bounds.",
 						expr.Name);
@@ -2675,9 +2672,6 @@ namespace Mono.Debugger.Frontend
 				return new SourceLocation (func);
 
 			return null;
-
-			throw new ScriptingException (
-				"Ambiguous method `{0}'; need to use full name", Name);
 		}
 
 		protected TargetObject DoInvoke (ScriptingContext context, bool debug)
