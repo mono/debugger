@@ -670,6 +670,31 @@ namespace Mono.Debugger.Backends
 			inferior.SetRegisters (regs);
 		}
 
+		protected override TargetAddress AdjustReturnAddress (Thread thread,
+								      TargetAddress address)
+		{
+			TargetBinaryReader reader = thread.ReadMemory (address-7, 7).GetReader ();
+
+			byte[] code = reader.ReadBuffer (7);
+			if (code [2] == 0xe8)
+				return address-5;
+
+			if ((code [1] == 0xff) &&
+			    ((code [2] & 0x38) == 0x10) && ((code [2] >> 6) == 2))
+				return address-6;
+			else if ((code [4] == 0xff) &&
+				 ((code [5] & 0x38) == 0x10) && ((code [5] >> 6) == 1))
+				return address-3;
+			else if ((code [5] == 0xff) &&
+				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 3))
+				return address-2;
+			else if ((code [5] == 0xff) &&
+				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 0))
+				return address-2;
+
+			return address;
+		}
+
 		internal override StackFrame CreateFrame (Thread thread, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (

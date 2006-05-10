@@ -27,7 +27,6 @@ namespace Mono.Debugger.Tests
 			const int line_hello = 13;
 			const int line_hello_2 = 20;
 			const int line_hello_3 = 22;
-			const int line_hello_4 = 23;
 
 			AssertStopped (thread, "X.Main()", line_main);
 
@@ -87,7 +86,7 @@ namespace Mono.Debugger.Tests
 					     bt.Count, 4);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
-			AssertFrame (bt [1], 1, "X.Hello(System.Int32)", line_hello_4);
+			AssertFrame (bt [1], 1, "X.Hello(System.Int32)", line_hello_3);
 			AssertInternalFrame (bt [2], 2);
 			AssertFrame (bt [3], 3, "X.Main()", line_main);
 

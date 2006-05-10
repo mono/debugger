@@ -137,12 +137,22 @@ namespace Mono.Debugger
 
 		internal abstract StackFrame CreateFrame (Thread thread, Registers regs);
 
+		protected abstract TargetAddress AdjustReturnAddress (Thread thread,
+								      TargetAddress address);
+
 		internal StackFrame CreateFrame (Thread thread, TargetAddress address,
 						 TargetAddress stack, TargetAddress frame_pointer,
 						 Registers regs)
 		{
-			if (address.IsNull)
+			if ((address.IsNull) || (address.Address == 0))
 				return null;
+
+			TargetAddress old_address = address;
+			try {
+				address = AdjustReturnAddress (thread, old_address);
+			} catch {
+				address = old_address;
+			}
 
 			Method method = process.SymbolTableManager.Lookup (address);
 			if (method != null)

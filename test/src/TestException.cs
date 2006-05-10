@@ -2,7 +2,7 @@ using System;
 
 public class X
 {
-	public void Test ()
+	public virtual void Test ()
 	{
 		throw new InvalidOperationException ();
 	}

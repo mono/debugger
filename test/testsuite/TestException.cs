@@ -14,6 +14,11 @@ namespace Mono.Debugger.Tests
 			: base ("TestException")
 		{ }
 
+		const int LineException = 7;
+		const int LineMain = 12;
+		const int LineTry = 14;
+		const int LineMain2 = 19;
+
 		[Test]
 		[Category("ManagedTypes")]
 		public void Main ()
@@ -23,22 +28,27 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			const int line_exception = 7;
-			const int line_main = 12;
-			const int line_main_2 = 19;
-
-			AssertStopped (thread, "X.Main()", line_main);
+			AssertStopped (thread, "X.Main()", LineMain);
 			AssertCatchpoint ("InvalidOperationException");
-			int bpt_main_2 = AssertBreakpoint (line_main_2);
+			int bpt_main_2 = AssertBreakpoint (LineMain2);
 			AssertExecute ("continue");
 
-			AssertCaughtException (thread, "X.Test()", line_exception);
+			AssertCaughtException (thread, "X.Test()", LineException);
 			AssertNoTargetOutput ();
+
+			Backtrace bt = thread.GetBacktrace (-1);
+			if (bt.Count != 2)
+				Assert.Fail ("Backtrace has {0} frames, but expected {1}.",
+					     bt.Count, 2);
+
+			AssertFrame (bt [0], 0, "X.Test()", LineException);
+			AssertFrame (bt [1], 1, "X.Main()", LineTry);
+
 			AssertExecute ("continue");
 			AssertTargetOutput ("EXCEPTION: System.InvalidOperationException");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
+			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", LineMain2);
 			AssertPrintException (thread, "x.Test()",
 					      "Invocation of `x.Test ()' raised an exception: " +
 					      "System.InvalidOperationException: Operation is not " +
