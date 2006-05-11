@@ -17,7 +17,7 @@ namespace Mono.Debugger.Backends
 {
 	internal class ThreadManager : DebuggerMarshalByRefObject
 	{
-		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (500);
+		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (5000);
 
 		internal ThreadManager (DebuggerServant backend)
 		{

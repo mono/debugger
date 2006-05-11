@@ -195,6 +195,8 @@ namespace Mono.Debugger.Backends
 
 				case NotificationType.WrapperMain:
 				case NotificationType.MainExited:
+					inferior.Process.Kill ();
+					return true;
 					break;
 
 				case NotificationType.UnhandledException:

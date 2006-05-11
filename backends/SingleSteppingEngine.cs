@@ -329,7 +329,10 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case Inferior.ChildEventType.CHILD_SIGNALED:
-				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
+				if (killed)
+					result = new TargetEventArgs (TargetEventType.TargetExited, 0);
+				else
+					result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
 				break;
 
 			case Inferior.ChildEventType.CHILD_EXITED:
@@ -513,7 +516,9 @@ namespace Mono.Debugger.Backends
 		{
 			TargetEventArgs result;
 			int arg = (int) cevent.Argument;
-			if (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)
+			if (killed)
+				result = new TargetEventArgs (TargetEventType.TargetExited, 0);
+			else if (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)
 				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
 			else
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
@@ -711,6 +716,7 @@ namespace Mono.Debugger.Backends
 
 		public override void Kill ()
 		{
+			killed = true;
 			SendCommand (delegate {
 				inferior.Kill ();
 				return null;
@@ -1771,6 +1777,7 @@ namespace Mono.Debugger.Backends
 		bool stop_requested;
 		bool has_thread_lock;
 		bool is_main, reached_main;
+		bool killed;
 		long tid;
 		int pid;
 

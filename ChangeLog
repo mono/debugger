@@ -1,5 +1,18 @@
 2006-05-11  Martin Baulig  <martin@ximian.com>
 
+	* backends/ThreadManager.cs
+	(ThreadManager.WaitTimeout): Increase to 5 seconds.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OnThreadExited): Use `TargetExited' and not
+	`TargetSignaled' if we were previously Kill()ed.
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Kill the target on
+	`NotificationType.MainExited'.	
+
+2006-05-11  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.Start): Properly handle errors.
 	(Interpreter.Attach): Likewise.
