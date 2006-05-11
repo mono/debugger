@@ -74,9 +74,6 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 				return COMMAND_ERROR_NOT_STOPPED;
 			else if (errno == EIO)
 				return COMMAND_ERROR_MEMORY_ACCESS;
-			g_message (G_STRLOC ": %lx - can't read target memory of %d at "
-				   "address %08Lx : %s", pthread_self (),
-				   handle->inferior->pid, (long long) start, g_strerror (errno));
 			return COMMAND_ERROR_MEMORY_ACCESS;
 		}
 

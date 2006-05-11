@@ -1802,19 +1802,30 @@ namespace Mono.Debugger.Frontend
 					result = null;
 				}
 
-				if (result == null)
-					throw new ScriptingException (
-						"Cannot dereference `{0}'.", expr.Name);
-
-				return result;
+				if (result != null)
+					return result;
 			}
 
 			TargetClassObject cobj = obj as TargetClassObject;
 			if (current_ok && (cobj != null))
 				return cobj;
 
+			PointerExpression pexpr = expr as PointerExpression;
+			if (pexpr != null) {
+				TargetAddress address = pexpr.EvaluateAddress (context);
+				TargetAddress result;
+				try {
+					result = context.CurrentThread.ReadAddress (address);
+					return context.CurrentFrame.Language.CreatePointer (
+						context.CurrentFrame, result);
+				} catch {
+					throw new ScriptingException ("Cannot dereference `{0}'.",
+								      expr.Name);
+				}
+			}
+
 			throw new ScriptingException (
-				"Expression `{0}' is not a pointer type.", expr.Name);
+				"Expression `{0}' is not a pointer.", expr.Name);
 		}
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
@@ -1824,6 +1835,8 @@ namespace Mono.Debugger.Frontend
 				obj = (long) (int) obj;
 			if (obj is long)
 				return new TargetAddress (context.AddressDomain, (long) obj);
+			else if (obj is PointerExpression)
+				return ((PointerExpression) obj).EvaluateAddress (context);
 
 			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj == null)
