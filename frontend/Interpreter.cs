@@ -314,7 +314,8 @@ namespace Mono.Debugger.Frontend
 
 				return current_process;
 			} catch (TargetException) {
-				Kill ();
+				debugger.Dispose ();
+				debugger = null;
 				throw;
 			}
 		}
@@ -339,7 +340,8 @@ namespace Mono.Debugger.Frontend
 
 				return current_process;
 			} catch (TargetException) {
-				Kill ();
+				debugger.Dispose ();
+				debugger = null;
 				throw;
 			}
 		}
@@ -365,7 +367,8 @@ namespace Mono.Debugger.Frontend
 
 				return current_process;
 			} catch (TargetException) {
-				Kill ();
+				debugger.Dispose ();
+				debugger = null;
 				throw;
 			}
 		}
@@ -401,10 +404,8 @@ namespace Mono.Debugger.Frontend
 
 				return current_process;
 			} catch (TargetException) {
-				Kill ();
-				throw;
-			} catch (Exception ex) {
-				Console.WriteLine ("FUCK: {0}", ex);
+				debugger.Dispose ();
+				debugger = null;
 				throw;
 			}
 		}

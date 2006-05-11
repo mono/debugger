@@ -83,16 +83,21 @@ namespace Mono.Debugger.Frontend
 		{
 			command_thread.Start ();
 
-			if (interpreter.Options.StartTarget)
-				interpreter.Start ();
+			try {
+				if (interpreter.Options.StartTarget)
+					interpreter.Start ();
 
-			main_thread.Start ();
-			main_thread.Join ();
-		}
-
-		public void Exit ()
-		{
-			interpreter.Exit ();
+				main_thread.Start ();
+				main_thread.Join ();
+			} catch (ScriptingException ex) {
+				interpreter.Error (ex);
+			} catch (TargetException ex) {
+				interpreter.Error (ex);
+			} catch (Exception ex) {
+				interpreter.Error ("ERROR: {0}", ex);
+			} finally {
+				interpreter.Exit ();
+			}
 		}
 
 		public string ReadInput (bool is_complete)
@@ -425,13 +430,7 @@ namespace Mono.Debugger.Frontend
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (
 				is_terminal, options);
 
-			try {
-				interpreter.RunMainLoop ();
-			} catch (Exception ex) {
-				Console.WriteLine ("EX: {0}", ex);
-			} finally {
-				interpreter.Exit ();
-			}
+			interpreter.RunMainLoop ();
 		}
 	}
 }

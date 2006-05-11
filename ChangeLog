@@ -1,5 +1,15 @@
 2006-05-11  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.Start): Properly handle errors.
+	(Interpreter.Attach): Likewise.
+	(Interpreter.OpenCoreFile): Likewise.
+
+	* frontend/Main.cs
+	(CommandLineInterpreter.RunMainLoop): Properly handle errors.
+
+2006-05-11  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/remoting.[ch]: Removed.
 
 2006-05-11  Martin Baulig  <martin@ximian.com>
