@@ -11,7 +11,7 @@ noinst_SCRIPTS = \
 	TestToString.exe TestObject.exe TestProperty.exe TestAbort.exe \
 	TestBreakpoint.exe TestNamespace.exe TestException.exe \
 	TestRestart.exe TestExec.exe TestChild.exe TestAttach.exe \
-	TestMethodLookup.cs
+	TestMethodLookup.exe
 
 EXTRA_DIST = \
 	TestManagedTypes.cs TestInvocation.cs TestInheritance.cs \
