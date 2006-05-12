@@ -15,7 +15,7 @@ namespace Mono.Debugger
 	public class DebuggerOptions
 	{
 		/* The executable file we're debugging */
-		public string File = "";
+		public string File = null;
 
 		/* argv[1...n] for the inferior process */
 		public string[] InferiorArgs = null;

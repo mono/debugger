@@ -1,5 +1,15 @@
 2006-05-12  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs (FileCommand): Added error checking.
+	(SetCommand.SetArgsCommand): Added `set args' command.
+	(SetCommand.DoResolve): Properly handle the subcommands.
+
+	* backends/ProcessStart.cs
+	(ProcessStart.cs): `Options.InferiorArgs' no longer contains the
+	target application; use `Options.File' for that.
+
+2006-05-12  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Bump version number to 0.20.
 
 	* NEWS: Updated NEWS.

@@ -66,6 +66,8 @@ namespace Mono.Debugger.Backends
 				throw new ArgumentException ();
 			if ((options.File == null) || (options.File == ""))
 				throw new ArgumentException ();
+			if (options.InferiorArgs == null)
+				throw new ArgumentException ();
 
 			this.options = options;
 			this.cwd = options.WorkingDirectory;
@@ -73,7 +75,7 @@ namespace Mono.Debugger.Backends
 			string mono_path = options.MonoPath != null ?
 				options.MonoPath : MonoPath;
 
-			if (IsMonoAssembly (options.InferiorArgs [0])) {
+			if (IsMonoAssembly (options.File)) {
 				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
@@ -85,17 +87,30 @@ namespace Mono.Debugger.Backends
 				if (options.JitArguments != null)
 					start_argv.AddRange (options.JitArguments);
 
-				this.argv = new string [options.InferiorArgs.Length + start_argv.Count];
+				this.argv = new string [options.InferiorArgs.Length + start_argv.Count + 1];
 				start_argv.CopyTo (this.argv, 0);
-				options.InferiorArgs.CopyTo (this.argv, start_argv.Count);
+				argv [start_argv.Count] = options.File;
+				options.InferiorArgs.CopyTo (this.argv, start_argv.Count + 1);
 			} else {
 				LoadNativeSymbolTable = true;
 				IsNative = true;
 
-				this.argv = options.InferiorArgs;
+				this.argv = new string [options.InferiorArgs.Length + 1];
+				argv [0] = options.File;
+				options.InferiorArgs.CopyTo (this.argv, 1);
 			}
 
-			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
+			if (!File.Exists (options.File))
+				throw new TargetException (TargetError.CannotStartTarget,
+							   "No such file or directory: `{0}'",
+							   options.File);
+
+			try {
+				base_dir = GetFullPath (Path.GetDirectoryName (options.File));
+			} catch {
+				throw new TargetException (TargetError.CannotStartTarget,
+							   "Invalid directory: `{0}'", options.File);
+			}
 
 			SetupEnvironment ();
 		}

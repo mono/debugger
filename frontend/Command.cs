@@ -619,13 +619,17 @@ namespace Mono.Debugger.Frontend
 			if (Args == null) {
 				Console.WriteLine ("No executable file.");
 				context.Interpreter.Options.File = null;
+				return null;
 			}
-			else {
-				context.Interpreter.Options.File = (string)Args[0];
-				Console.WriteLine ("Executable file: {0}.",
-						   context.Interpreter.Options.File);
-			}
-			return null;
+
+			string file = (string) Args [0];
+			if (!File.Exists (file))
+				throw new TargetException (TargetError.CannotStartTarget,
+							   "No such file or directory: `{0}'", file);
+
+			context.Interpreter.Options.File = file;
+			Console.WriteLine ("Executable file: {0}.", file);
+			return file;
 		}
 
                 public override void Complete (Engine e, string text, int start, int end)
@@ -1303,6 +1307,28 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		private class SetArgsCommand : DebuggerCommand
+		{
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				return true;
+			}
+
+			protected override object DoExecute (ScriptingContext context)
+			{
+				string[] args;
+				if (Args == null)
+					args = new string [0];
+				else {
+					args = new string [Args.Count];
+					Args.CopyTo (args, 0);
+				}
+
+				context.Interpreter.Options.InferiorArgs = args;
+				return args;
+			}
+		}
+
 		private class SetStyleCommand : DebuggerCommand
 		{
 			StyleBase style;
@@ -1363,13 +1389,14 @@ namespace Mono.Debugger.Frontend
 
 		public SetCommand ()
 		{
+			RegisterSubcommand ("args", typeof (SetArgsCommand));
 			RegisterSubcommand ("lang", typeof (SetLangCommand));
 			RegisterSubcommand ("style", typeof (SetStyleCommand));
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (Argument != "") {
+			if (Argument.IndexOf ('=') > 0) {
 				assign = new AssignmentCommand (Argument);
 				return assign.Resolve (context);
 			}

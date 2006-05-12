@@ -297,7 +297,7 @@ namespace Mono.Debugger.Frontend
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			if (!IsScript)
-				Print ("Starting program: {0}",
+				Print ("Starting program: {0} {1}", Options.File,
 				       String.Join (" ", Options.InferiorArgs));
 
 			try {

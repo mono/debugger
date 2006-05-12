@@ -360,12 +360,11 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (args_follow) {
-				string[] argv = new string [args.Length - i];
-				Array.Copy (args, i, argv, 0, args.Length - i);
+				string[] argv = new string [args.Length - i - 1];
+				Array.Copy (args, i + 1, argv, 0, args.Length - i - 1);
 				options.InferiorArgs = argv;
 			} else {
-				options.InferiorArgs = new string [1];
-				options.InferiorArgs [0] = options.File;
+				options.InferiorArgs = new string [0];
 			}
 
 			return options;
