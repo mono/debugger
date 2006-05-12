@@ -3,8 +3,8 @@ May 12th, 2006 - Martin Baulig
 
 Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 
-- This version of the debugger requires Mono 1.1.15.
-  Of course, you can also use the latest Mono from SVN.
+- This version of the debugger requires the latest Mono from SVN;
+  it won't work with the Mono 1.1.15 release.
 
 - We now preserve breakpoints across different invocations of
   the same target.
