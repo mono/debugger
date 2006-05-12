@@ -229,9 +229,7 @@ namespace Mono.Debugger.Tests
 
 			options.IsScript = true;
 			options.File = application;
-			options.InferiorArgs = new string [args.Length + 1];
-			options.InferiorArgs [0] = options.File;
-			args.CopyTo (options.InferiorArgs, 1);
+			options.InferiorArgs = args;
 
 			return options;
 		}
