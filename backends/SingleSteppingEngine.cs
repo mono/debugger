@@ -2646,7 +2646,7 @@ namespace Mono.Debugger.Backends
 					      sse, until);
 			}
 
-			sse.do_step_native ();
+			sse.do_next_native ();
 		}
 
 		protected override bool ResumeOperation (SingleSteppingEngine sse)

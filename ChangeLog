@@ -1,5 +1,11 @@
 2006-05-12  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(OperationFinish.DoExecte): Use `do_next_native()', not
+	`do_step_native().	
+
+2006-05-12  Martin Baulig  <martin@ximian.com>
+
 	* NEWS: Update: we need the latest Mono from SVN; just realized
 	that 1.1.15 is too old and does not work.
 
