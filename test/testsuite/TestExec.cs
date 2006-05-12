@@ -100,9 +100,10 @@ namespace Mono.Debugger.Tests
 		[Category("Fork")]
 		public void ManagedChild ()
 		{
+			Interpreter.Options.File = BuildDirectory + "/TestExec.exe";
 			Interpreter.Options.InferiorArgs = new string [] {
-				BuildDirectory + "/TestExec.exe",
-				MonoExecutable, BuildDirectory + "/TestChild.exe" };
+				MonoExecutable, BuildDirectory + "/TestChild.exe"
+			};
 
 			Process process = Interpreter.Start ();
 			Assert.IsTrue (process.IsManaged);
