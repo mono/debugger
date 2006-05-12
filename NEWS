@@ -1,5 +1,27 @@
+May 12th, 2006 - Martin Baulig
+------------------------------
+
+Released version 0.20 "Bruxelles" of the Mono Debugger :-)
+
+- This version of the debugger requires Mono 1.1.15.
+  Of course, you can also use the latest Mono from SVN.
+
+- We now preserve breakpoints across different invocations of
+  the same target.
+
+- Big API cleanups.
+
+- Cleaned up method lookups; there's a very complex test for them
+  in test/testsuite/TestMethodLookup.cs.
+
+- Fixed line numbers in stack traces.
+
+- Unfortunately, a `make check' now requires even more memory
+  than before; I'm still investigating the issue.
+  I'm currently using `ulimit -Sm 1000000 -Sv 1000000'.
+
 April 10th, 2006 - Martin Baulig
--------------------------------
+--------------------------------
 
 Released version 0.13 "Luxemburg" of the Mono Debugger :-)
 

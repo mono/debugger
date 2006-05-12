@@ -1,3 +1,9 @@
+2006-05-12  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Bump version number to 0.20.
+
+	* NEWS: Updated NEWS.
+
 2006-05-11  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs
