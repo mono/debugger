@@ -70,6 +70,7 @@ namespace Mono.Debugger.Backends
 
 		DebuggerMutex command_mutex;
 		bool abort_requested;
+		bool waiting;
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_global_init ();
@@ -215,6 +216,9 @@ namespace Mono.Debugger.Backends
 		internal object SendCommand (SingleSteppingEngine sse, TargetAccessDelegate target,
 					     object user_data)
 		{
+			Report.Debug (DebugFlags.SSE, "{0} send command: {1} {2} {3}",
+				      sse, target, user_data, Environment.StackTrace);
+
 			Command command = new Command (sse, target, user_data);
 
 			if (!engine_event.WaitOne (WaitTimeout, false))
@@ -313,7 +317,7 @@ namespace Mono.Debugger.Backends
 				}
 
 				engine_event.Set ();
-				wait_event.Set ();
+				RequestWait ();
 			}
 
 			if (command == null)
@@ -345,7 +349,7 @@ namespace Mono.Debugger.Backends
 					engine_hash.Add (sse.ID, sse);
 					processes.Add (process);
 
-					wait_event.Set ();
+					RequestWait ();
 
 					command.Result = process;
 				} catch (ST.ThreadAbortException) {
@@ -393,6 +397,7 @@ namespace Mono.Debugger.Backends
 		{
 			Report.Debug (DebugFlags.Wait, "Wait thread sleeping");
 			wait_event.WaitOne ();
+			waiting = true;
 
 			int pid, status;
 			if (abort_requested) {
@@ -437,7 +442,8 @@ namespace Mono.Debugger.Backends
 			if (event_engine == null) {
 				Console.WriteLine ("WARNING: Got event {0:x} for unknown pid {1}",
 						   status, pid);
-				wait_event.Set ();
+				waiting = false;
+				RequestWait ();
 				return true;
 			}
 
@@ -446,19 +452,25 @@ namespace Mono.Debugger.Backends
 			event_queue.Lock ();
 			engine_event.Reset ();
 
-			if (current_event != null)
+			if (current_event != null) {
+				Console.WriteLine ("FUCK: {0}", Environment.StackTrace);
 				throw new InternalError ();
+			}
 
 			current_event = event_engine;
 			current_event_status = status;
+
+			waiting = false;
 
 			event_queue.Signal ();
 			event_queue.Unlock ();
 			return true;
 		}
 
-		internal void RequestWait ()
+		private void RequestWait ()
 		{
+			if (waiting)
+				throw new InternalError ();
 			wait_event.Set ();
 		}
 
@@ -479,7 +491,9 @@ namespace Mono.Debugger.Backends
 					return;
 
 				abort_requested = true;
-				wait_event.Set();
+#if FIXME
+				RequestWait ();
+#endif
 				event_queue.Signal();
 				disposed = true;
 			}

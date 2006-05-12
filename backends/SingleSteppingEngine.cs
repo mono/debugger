@@ -848,27 +848,12 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetAddress address = inferior.CurrentFrame;
-			CheckBreakpointHandler callback = new CheckBreakpointHandler (delegate {
-				return bpt.CheckBreakpointHit (thread, address);
-			});
+			if (!bpt.CheckBreakpointHit (thread, address)) {
+				do_continue ();
+				return false;
+			}
 
-			callback.BeginInvoke (delegate (IAsyncResult result) {
-				bool remain_stopped = callback.EndInvoke (result);
-				child_hit_breakpoint_done (cevent, remain_stopped);
-			}, this);
-
-			return false;
-		}
-
-		void child_hit_breakpoint_done (Inferior.ChildEvent cevent, bool remain_stopped)
-		{
-			SendCommand (delegate {
-				if (remain_stopped)
-					ProcessChildEvent (cevent, null);
-				else
-					do_continue ();
-				return null;
-			});
+			return true;
 		}
 
 		bool step_over_breakpoint (TargetAddress until, bool trampoline, bool current)
@@ -1328,12 +1313,13 @@ namespace Mono.Debugger.Backends
 			has_thread_lock = true;
 			stopped = inferior.Stop (out stop_event);
 
+			Report.Debug (DebugFlags.Threads,
+				      "{0} acquiring thread lock #1", this, stopped, stop_event);
+
 			if ((stop_event != null) &&
 			    ((stop_event.Type == Inferior.ChildEventType.CHILD_EXITED) ||
-			     ((stop_event.Type == Inferior.ChildEventType.CHILD_SIGNALED)))) {
-				manager.RequestWait ();
+			     ((stop_event.Type == Inferior.ChildEventType.CHILD_SIGNALED))))
 				return;
-			}
 
 			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 
@@ -1344,9 +1330,6 @@ namespace Mono.Debugger.Backends
 
 			if (!EndStackAddress.IsNull)
 				inferior.WriteAddress (EndStackAddress, frame.StackPointer);
-
-			if (stop_event != null)
-				manager.RequestWait ();
 		}
 
 		internal override void ReleaseThreadLock ()
@@ -1741,6 +1724,9 @@ namespace Mono.Debugger.Backends
 
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
+			Report.Debug (DebugFlags.SSE, "{0} invoke: {1} {2} {3}",
+				      this, func, data, Environment.StackTrace);
+
 			return SendCommand (delegate {
 				return func (thread, data);
 			});

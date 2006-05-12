@@ -1,5 +1,24 @@
 2006-05-12  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86-linux-ptrace.c
+	(server_ptrace_global_wait): Restart the waiting on `stop_requested'.
+	(server_ptrace_stop_and_wait): Fix a race condition;
+	server_ptrace_global_wait() is now automatically restarted; also
+	return the SIGSTOP which we expect.
+
+	* backends/ThreadManager.cs
+	(ThreadManager.RequestWait): Make this private and protect against
+	being called multiple times; use RequestWait() everywhere instead
+	of setting the `wait_event' directly to avoid race conditions.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.child_breakpoint): Call `bpt.CheckBreakpointHit()'
+	directly rather than using an async handler.
+	(SingleSteppingEngine.AcquireThreadLock): Don't call
+	`manager.RequestWait()'.
+
+2006-05-12  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationFinish.DoExecte): Use `do_next_native()', not
 	`do_step_native().	

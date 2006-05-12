@@ -118,6 +118,7 @@ _server_ptrace_get_dr (InferiorHandle *handle, int regnum, unsigned *value)
 
 GStaticMutex wait_mutex = G_STATIC_MUTEX_INIT;
 GStaticMutex wait_mutex_2 = G_STATIC_MUTEX_INIT;
+GStaticMutex wait_mutex_3 = G_STATIC_MUTEX_INIT;
 
 static int
 do_wait (int pid, guint32 *status)
@@ -151,22 +152,32 @@ server_ptrace_global_wait (guint32 *status_ret)
 {
 	int ret, status;
 
+ again:
 	g_static_mutex_lock (&wait_mutex);
 	ret = do_wait (-1, &status);
 	if (ret <= 0)
 		goto out;
 
 #if DEBUG_WAIT
-	g_message (G_STRLOC ": global wait finished: %d - %x - %d",
-		   ret, status, stop_requested);
+	g_message (G_STRLOC ": global wait finished: %d - %x", ret, status);
 #endif
 
 	g_static_mutex_lock (&wait_mutex_2);
+
+#if DEBUG_WAIT
+	g_message (G_STRLOC ": global wait finished #1: %d - %x - %d",
+		   ret, status, stop_requested);
+#endif
+
 	if (ret == stop_requested) {
+		*status_ret = 0;
 		stop_status = status;
 		g_static_mutex_unlock (&wait_mutex_2);
 		g_static_mutex_unlock (&wait_mutex);
-		return 0;
+
+		g_static_mutex_lock (&wait_mutex_3);
+		g_static_mutex_unlock (&wait_mutex_3);
+		goto again;
 	}
 	g_static_mutex_unlock (&wait_mutex_2);
 
@@ -225,6 +236,8 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 		return result;
 	}
 
+	g_static_mutex_lock (&wait_mutex_3);
+
 	stop_requested = handle->inferior->pid;
 	g_static_mutex_unlock (&wait_mutex_2);
 
@@ -240,6 +253,7 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 		*status = stop_status;
 		stop_requested = stop_status = 0;
 		g_static_mutex_unlock (&wait_mutex);
+		g_static_mutex_unlock (&wait_mutex_3);
 		return COMMAND_ERROR_NONE;
 	}
 
@@ -256,18 +270,13 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 #endif
 	} while (ret == 0);
 	g_static_mutex_unlock (&wait_mutex);
+	g_static_mutex_unlock (&wait_mutex_3);
 
 	/*
 	 * Should never happen.
 	 */
 	if (ret < 0)
 		return COMMAND_ERROR_NO_TARGET;
-
-	/*
-	 * We expect a SIGSTOP, so don't explicitly report it.
-	 */
-	if (WIFSTOPPED (*status) && (WSTOPSIG (*status) == SIGSTOP))
-		*status = 0;
 
 	return COMMAND_ERROR_NONE;
 }
