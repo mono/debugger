@@ -59,6 +59,26 @@ namespace Mono.Debugger
 
 		public string RemoteHost = null;
 		public string RemoteMono = null;
+
+		Hashtable user_environment;
+
+		public Hashtable UserEnvironment {
+			get { return user_environment; }
+		}
+
+		public void SetEnvironment (string name, string value)
+		{
+			if (user_environment == null)
+				user_environment = new Hashtable ();
+
+			if (user_environment.Contains (name)) {
+				if (value == null)
+					user_environment.Remove (name);
+				else
+					user_environment [name] = value;
+			} else if (value != null)
+				user_environment.Add (name, value);
+		}
 	}
 
 	[Serializable]

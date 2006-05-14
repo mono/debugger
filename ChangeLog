@@ -1,3 +1,17 @@
+2006-05-15  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(SetCommand.SetEnvironmentCommand): Added "set env" command to set
+	environment variables.
+
+	* classes/DebuggerSession.cs
+	(DebuggerOptions.UserEnvironment): New public property.
+	(DebuggerOptions.SetEnvironment): New public method.
+
+	* backends/ProcessStart.cs
+	(ProcessStart.UserEnvironment): Removed; retrieve it from the
+	`DebuggerOptions'.
+
 2006-05-12  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86-linux-ptrace.c

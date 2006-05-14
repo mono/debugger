@@ -10,7 +10,6 @@ namespace Mono.Debugger.Backends
 	{
 		public readonly int PID;
 		public readonly string CoreFile;
-		public readonly string[] UserEnvironment;
 		public readonly bool IsNative;
 		public readonly bool LoadNativeSymbolTable = true;
 
@@ -180,18 +179,10 @@ namespace Mono.Debugger.Backends
 
 		void AddUserEnvironment (Hashtable hash)
 		{
-			if (UserEnvironment == null)
+			if (options.UserEnvironment == null)
 				return;
-			foreach (string line in UserEnvironment) {
-				int pos = line.IndexOf ('=');
-				if (pos < 0)
-					throw new ArgumentException ();
-
-				string name = line.Substring (0, pos);
-				string value = line.Substring (pos + 1);
-
-				hash.Add (name, value);
-			}
+			foreach (string name in options.UserEnvironment.Keys)
+				hash.Add (name, (string) options.UserEnvironment [name]);
 		}
 
 		void add_env_path (Hashtable hash, string name, string value)
@@ -206,8 +197,7 @@ namespace Mono.Debugger.Backends
 		protected void SetupEnvironment ()
 		{
 			Hashtable hash = new Hashtable ();
-			if (UserEnvironment != null)
-				AddUserEnvironment (hash);
+			AddUserEnvironment (hash);
 
 			IDictionary env_vars = System.Environment.GetEnvironmentVariables ();
 			foreach (string var in env_vars.Keys) {

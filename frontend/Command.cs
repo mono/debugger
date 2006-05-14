@@ -1329,6 +1329,31 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		private class SetEnvironmentCommand : DebuggerCommand
+		{
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				if (Args == null)
+					throw new ScriptingException (
+						"Invalid argument: Need name of environment variable");
+
+				if ((Args.Count < 1) || (Args.Count > 2))
+					throw new ScriptingException (
+						"Invalid argument: Expected `VARIABLE VALUE'");
+
+				return true;
+			}
+
+			protected override object DoExecute (ScriptingContext context)
+			{
+				string var = (string) Args [0];
+				string value = Args.Count == 2 ? (string) Args [1] : null;
+
+				context.Interpreter.Options.SetEnvironment (var, value);
+				return null;
+			}
+		}
+
 		private class SetStyleCommand : DebuggerCommand
 		{
 			StyleBase style;
@@ -1389,6 +1414,7 @@ namespace Mono.Debugger.Frontend
 
 		public SetCommand ()
 		{
+			RegisterSubcommand ("env", typeof (SetEnvironmentCommand));
 			RegisterSubcommand ("args", typeof (SetArgsCommand));
 			RegisterSubcommand ("lang", typeof (SetLangCommand));
 			RegisterSubcommand ("style", typeof (SetStyleCommand));
