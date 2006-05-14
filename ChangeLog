@@ -1,5 +1,14 @@
 2006-05-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceLocation.cs
+	(SourceLocation.HasLine): New public property.
+
+	* frontend/Command.cs
+	(ListCommand.DoExecute): Only display the whole method if we
+	didn't specify a line.
+
+2006-05-15  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(SetCommand.SetEnvironmentCommand): Added "set env" command to set
 	environment variables.

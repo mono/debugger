@@ -2039,7 +2039,7 @@ namespace Mono.Debugger.Frontend
 
 	public class ListCommand : SourceCommand, IDocumentableCommand
 	{
-		int lines = 10;
+		int lines = 20;
 		bool reverse = false;
 		
 		public int Lines {
@@ -2075,7 +2075,7 @@ namespace Mono.Debugger.Frontend
 
 				source_code = buffer.Contents;
 
-				if (Location.HasMethod)
+				if (Location.HasMethod && !Location.HasLine)
 					count = Location.Method.EndRow - Location.Method.StartRow + 2;
 
 				if (count < 0)

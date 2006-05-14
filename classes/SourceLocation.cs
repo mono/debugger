@@ -32,6 +32,10 @@ namespace Mono.Debugger
 			get { return source != null; }
 		}
 
+		public bool HasLine {
+			get { return line != -1; }
+		}
+
 		public bool HasFunction {
 			get { return function != null; }
 		}
