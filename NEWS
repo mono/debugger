@@ -16,6 +16,9 @@ Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 
 - Fixed line numbers in stack traces.
 
+- Added experimental support for hardware watchpoints - I needed
+  them to track down a race condition.
+
 - Unfortunately, a `make check' now requires even more memory
   than before; I'm still investigating the issue.
   I'm currently using `ulimit -Sm 1000000 -Sv 1000000'.
