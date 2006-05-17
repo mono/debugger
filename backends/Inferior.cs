@@ -117,7 +117,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_insert_hw_breakpoint (IntPtr handle, out int index, long address, out int breakpoint);
+		static extern TargetError mono_debugger_server_insert_hw_breakpoint (IntPtr handle, HardwareBreakpointType type, out int index, long address, out int breakpoint);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_remove_breakpoint (IntPtr handle, int breakpoint);
@@ -181,6 +181,13 @@ namespace Mono.Debugger.Backends
 			UNHANDLED_EXCEPTION,
 			THROW_EXCEPTION,
 			HANDLE_EXCEPTION
+		}
+
+		internal enum HardwareBreakpointType {
+			NONE = 0,
+			EXECUTE,
+			READ,
+			WRITE
 		}
 
 		internal delegate void ChildEventHandler (ChildEventType message, int arg);
@@ -415,7 +422,8 @@ namespace Mono.Debugger.Backends
 		{
 			int retval;
 			TargetError result = mono_debugger_server_insert_hw_breakpoint (
-				server_handle, out index, address.Address, out retval);
+				server_handle, HardwareBreakpointType.NONE, out index,
+				address.Address, out retval);
 			if (result == TargetError.None)
 				return retval;
 			else if (fallback &&
@@ -432,6 +440,16 @@ namespace Mono.Debugger.Backends
 		{
 			check_error (mono_debugger_server_remove_breakpoint (
 				server_handle, breakpoint));
+		}
+
+		public int InsertHardwareWatchPoint (TargetAddress address,
+						     HardwareBreakpointType type,
+						     out int index)
+		{
+			int retval;
+			check_error (mono_debugger_server_insert_hw_breakpoint (
+				server_handle, type, out index, address.Address, out retval));
+			return retval;
 		}
 
 		public void EnableBreakpoint (int breakpoint)
@@ -1234,8 +1252,7 @@ namespace Mono.Debugger.Backends
 			ServerStackFrame frame;
 			TargetError result = mono_debugger_server_get_frame (
 				server_handle, out frame);
-			if (result != TargetError.None)
-				throw new TargetException (TargetError.NoStack);
+			check_error (result);
 			return frame;
 		}
 

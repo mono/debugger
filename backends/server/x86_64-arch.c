@@ -23,7 +23,7 @@ struct ArchInfo
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	int saved_signal;
 	GPtrArray *rti_stack;
-	unsigned dr_control, dr_status;
+	guint64 dr_control, dr_status;
 	int dr_regs [DR_NADDR];
 };
 
@@ -375,7 +375,12 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 	address = (guint64) breakpoint->address;
 
 	if (breakpoint->dr_index >= 0) {
-		X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
+		if (breakpoint->type == HARDWARE_BREAKPOINT_READ)
+			X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_READ | DR_LEN_8);
+		else if (breakpoint->type == HARDWARE_BREAKPOINT_WRITE)
+			X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_WRITE | DR_LEN_8);
+		else
+			X86_DR_SET_RW_LEN (arch, breakpoint->dr_index, DR_RW_EXECUTE | DR_LEN_1);
 		X86_DR_LOCAL_ENABLE (arch, breakpoint->dr_index);
 
 		result = _server_ptrace_set_dr (inferior, breakpoint->dr_index, address);
@@ -554,7 +559,7 @@ find_free_hw_register (ServerHandle *handle, guint32 *idx)
 }
 
 static ServerCommandError
-server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
+server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 type, guint32 *idx,
 				    guint64 address, guint32 *bhandle)
 {
 	BreakpointInfo *breakpoint;
@@ -572,6 +577,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 		return result;
 
 	breakpoint = g_new0 (BreakpointInfo, 1);
+	breakpoint->type = (HardwareBreakpointType) type;
 	breakpoint->address = address;
 	breakpoint->refcount = 1;
 	breakpoint->id = mono_debugger_breakpoint_manager_get_next_id ();
@@ -651,6 +657,21 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 	mono_debugger_breakpoint_manager_unlock ();
 
 	return COMMAND_ERROR_NONE;	
+}
+
+static void
+x86_arch_remove_hardware_breakpoints (ServerHandle *handle)
+{
+	int i;
+
+	for (i = 0; i < DR_NADDR; i++) {
+		X86_DR_DISABLE (handle->arch, i);
+
+		_server_ptrace_set_dr (handle->inferior, i, 0L);
+		_server_ptrace_set_dr (handle->inferior, DR_CONTROL, handle->arch->dr_control);
+
+		handle->arch->dr_regs [i] = 0;
+	}
 }
 
 static ServerCommandError

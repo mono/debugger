@@ -87,7 +87,7 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 }
 
 static ServerCommandError
-_server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned value)
+_server_ptrace_set_dr (InferiorHandle *handle, int regnum, guint64 value)
 {
 	errno = 0;
 	ptrace (PTRACE_POKEUSER, handle->pid, offsetof (struct user, u_debugreg [regnum]), value);
@@ -101,7 +101,7 @@ _server_ptrace_set_dr (InferiorHandle *handle, int regnum, unsigned value)
 
 
 static ServerCommandError
-_server_ptrace_get_dr (InferiorHandle *handle, int regnum, unsigned *value)
+_server_ptrace_get_dr (InferiorHandle *handle, int regnum, guint64 *value)
 {
 	int ret;
 
@@ -385,14 +385,14 @@ server_ptrace_get_threads (ServerHandle *handle, guint32 *count, guint32 **threa
 
 static ServerCommandError
 server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **cwd,
-			       guint32 **nargs, gchar ***cmdline_args)
+			       guint32 *nargs, gchar **cmdline_args)
 {
 	gchar *exe_filename = g_strdup_printf ("/proc/%d/exe", handle->inferior->pid);
 	gchar *cwd_filename = g_strdup_printf ("/proc/%d/cwd", handle->inferior->pid);
 	gchar *cmdline_filename = g_strdup_printf ("/proc/%d/cmdline", handle->inferior->pid);
 	char buffer [BUFSIZ];
 	GPtrArray *array;
-	gchar *cmdline;
+	gchar *cmdline, **ptr;
 	gsize pos, len;
 	int i;
 
@@ -437,10 +437,10 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 	}
 
 	*nargs = array->len;
-	*cmdline_args = g_new0 (gchar *, array->len + 1);
+	*cmdline_args = ptr = g_new0 (gchar *, array->len + 1);
 
 	for (i = 0; i < array->len; i++)
-		(*cmdline_args) [i] = g_ptr_array_index (array, i);
+		ptr  [i] = g_ptr_array_index (array, i);
 
 	g_free (cwd_filename);
 	g_free (exe_filename);

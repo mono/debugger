@@ -1,3 +1,33 @@
+2006-05-17  Martin Baulig  <martin@ximian.com>
+
+	* backends/Inferior.cs
+	(Inferior.HardwareBreakpointType): New internal enum.
+	(Inferior.InsertHardwareWatchPoint): New public method.
+
+	* backends/server/x86-linux-ptrace.c
+	(_server_ptrace_set_dr): Use `guint64' for the `value' arg.
+	(_server_ptrace_get_dr): Likewise.
+	(server_ptrace_get_application): Fix compiler warnings.
+
+	* backends/server/x86-arch.h
+	(x86_arch_remove_hardware_breakpoints): New public function.
+
+	* backends/server/x86_64-arch.c
+	(ArchInfo): Use `guint64' for `dr_control' and `dr_status'.
+
+	* backends/server/x86-ptrace.cs
+	(server_ptrace_dispatch_event): Remove all hardware breakpoints if
+	we stopped the first time.
+
+	* backends/server/server.h
+	(mono_debugger_server_insert_hw_breakpoint): Added `guint32 type'
+	argument which is a `HardwareBreakpointType'.
+
+	* backends/server/breakpoints.h
+	(HardwareBreakpointType): New enum typedef.
+	(BreakpointInfo): Added `HardwareBreakpointType type' field to
+	support hardware watchpoints.
+
 2006-05-15  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceLocation.cs

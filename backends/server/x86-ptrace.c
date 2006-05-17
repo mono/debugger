@@ -52,7 +52,7 @@ struct InferiorHandle
 #endif
 	int last_signal;
 	int output_fd [2], error_fd [2];
-	int is_thread;
+	int is_thread, is_initialized;
 };
 
 typedef struct
@@ -213,6 +213,11 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		guint64 callback_arg, retval, retval2;
 		ChildStoppedAction action;
 
+		if (!handle->inferior->is_initialized) {
+			x86_arch_remove_hardware_breakpoints (handle);
+			handle->inferior->is_initialized = TRUE;
+		}
+
 		action = x86_arch_child_stopped (handle, WSTOPSIG (status),
 						 &callback_arg, &retval, &retval2);
 
@@ -285,6 +290,7 @@ server_ptrace_create_inferior (BreakpointManager *bpm)
 	handle->bpm = bpm;
 	handle->inferior = g_new0 (InferiorHandle, 1);
 	handle->arch = x86_arch_initialize ();
+
 	return handle;
 }
 

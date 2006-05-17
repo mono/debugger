@@ -20,6 +20,9 @@ static void
 x86_arch_finalize (ArchInfo *arch);
 
 static void
+x86_arch_remove_hardware_breakpoints (ServerHandle *handle);
+
+static void
 x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 start,
 						guint32 size, gpointer buffer);
 

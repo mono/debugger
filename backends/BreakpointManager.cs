@@ -114,7 +114,28 @@ namespace Mono.Debugger.Backends
 						"Already have breakpoint {0} at address {1}.",
 						old.Index, address);
 
-				index = inferior.InsertBreakpoint (address);
+				int dr_index = -1;
+				switch (breakpoint.Type) {
+				case BreakpointType.Breakpoint:
+					index = inferior.InsertBreakpoint (address);
+					break;
+
+				case BreakpointType.WatchRead:
+					index = inferior.InsertHardwareWatchPoint (
+						address, Inferior.HardwareBreakpointType.READ,
+						out dr_index);
+					break;
+
+				case BreakpointType.WatchWrite:
+					index = inferior.InsertHardwareWatchPoint (
+						address, Inferior.HardwareBreakpointType.WRITE,
+						out dr_index);
+					break;
+
+				default:
+					throw new InternalError ();
+				}
+
 				breakpoints.Add (index, breakpoint);
 				return index;
 			} finally {

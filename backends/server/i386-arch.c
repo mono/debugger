@@ -743,6 +743,21 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 	return result;
 }
 
+static void
+x86_arch_remove_hardware_breakpoints (ServerHandle *handle)
+{
+	int i;
+
+	for (i = 0; i < DR_NADDR; i++) {
+		X86_DR_DISABLE (handle->arch, i);
+
+		_server_ptrace_set_dr (handle->inferior, i, 0L);
+		_server_ptrace_set_dr (handle->inferior, DR_CONTROL, handle->arch->dr_control);
+
+		handle->arch->dr_regs [i] = 0;
+	}
+}
+
 static ServerCommandError
 server_ptrace_init_after_fork (ServerHandle *handle)
 {
@@ -779,7 +794,7 @@ find_free_hw_register (ServerHandle *handle, guint32 *idx)
 }
 
 static ServerCommandError
-server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
+server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 type, guint32 *idx,
 				    guint64 address, guint32 *bhandle)
 {
 	BreakpointInfo *breakpoint;
@@ -798,6 +813,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx,
 
 	mono_debugger_breakpoint_manager_lock ();
 	breakpoint = g_new0 (BreakpointInfo, 1);
+	breakpoint->type = (HardwareBreakpointType) type;
 	breakpoint->address = address;
 	breakpoint->refcount = 1;
 	breakpoint->id = mono_debugger_breakpoint_manager_get_next_id ();

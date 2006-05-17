@@ -261,14 +261,14 @@ mono_debugger_server_insert_breakpoint (ServerHandle *handle, guint64 address, g
 }
 
 ServerCommandError
-mono_debugger_server_insert_hw_breakpoint (ServerHandle *handle, guint32 *idx, guint64 address,
-					   guint32 *breakpoint)
+mono_debugger_server_insert_hw_breakpoint (ServerHandle *handle, guint32 type, guint32 *idx,
+					   guint64 address, guint32 *breakpoint)
 {
 	if (!global_vtable->insert_hw_breakpoint)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->insert_hw_breakpoint) (
-		handle, idx, address, breakpoint);
+		handle, type, idx, address, breakpoint);
 }
 
 ServerCommandError

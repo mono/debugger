@@ -11,7 +11,15 @@ typedef struct {
 	GHashTable *breakpoint_by_addr;
 } BreakpointManager;
 
+typedef enum {
+	HARDWARE_BREAKPOINT_NONE = 0,
+	HARDWARE_BREAKPOINT_EXECUTE,
+	HARDWARE_BREAKPOINT_READ,
+	HARDWARE_BREAKPOINT_WRITE
+} HardwareBreakpointType;
+
 typedef struct {
+	HardwareBreakpointType type;
 	int id;
 	int refcount;
 	int enabled;
