@@ -151,16 +151,24 @@ namespace Mono.Debugger.Backends
 
 				switch (type) {
 				case NotificationType.AcquireGlobalThreadLock:
+					Report.Debug (DebugFlags.Threads,
+						      "{0} received notification {1}", engine, type);
 					engine.ProcessServant.AcquireGlobalThreadLock (engine);
 					break;
 
 				case NotificationType.ReleaseGlobalThreadLock:
+					Report.Debug (DebugFlags.Threads,
+						      "{0} received notification {1}", engine, type);
 					engine.ProcessServant.ReleaseGlobalThreadLock (engine);
 					break;
 
 				case NotificationType.ThreadCreated: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
+
+					Report.Debug (DebugFlags.Threads,
+						      "{0} created managed thread: {1:x} {2}",
+						      engine, cevent.Data2, data);
 
 					engine.OnManagedThreadCreated (cevent.Data2, data);
 					break;
@@ -195,8 +203,6 @@ namespace Mono.Debugger.Backends
 
 				case NotificationType.WrapperMain:
 				case NotificationType.MainExited:
-					inferior.Process.Kill ();
-					return true;
 					break;
 
 				case NotificationType.UnhandledException:
