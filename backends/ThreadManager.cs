@@ -216,9 +216,6 @@ namespace Mono.Debugger.Backends
 		internal object SendCommand (SingleSteppingEngine sse, TargetAccessDelegate target,
 					     object user_data)
 		{
-			Report.Debug (DebugFlags.SSE, "{0} send command: {1} {2} {3}",
-				      sse, target, user_data, Environment.StackTrace);
-
 			Command command = new Command (sse, target, user_data);
 
 			if (!engine_event.WaitOne (WaitTimeout, false))

@@ -476,6 +476,7 @@ namespace Mono.Debugger.Backends
 		void OperationCompleted (TargetEventArgs result)
 		{
 			lock (this) {
+				remove_temporary_breakpoint ();
 				engine_stopped = true;
 				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}: {2}",
 					      this, current_operation, result);
@@ -1724,9 +1725,6 @@ namespace Mono.Debugger.Backends
 
 		internal override object Invoke (TargetAccessDelegate func, object data)
 		{
-			Report.Debug (DebugFlags.SSE, "{0} invoke: {1} {2} {3}",
-				      this, func, data, Environment.StackTrace);
-
 			return SendCommand (delegate {
 				return func (thread, data);
 			});
@@ -2628,8 +2626,8 @@ namespace Mono.Debugger.Backends
 				until = frame.StackPointer;
 
 				Report.Debug (DebugFlags.SSE,
-					      "{0} starting finish native until {1}",
-					      sse, until);
+					      "{0} starting finish native until {1} {2}",
+					      sse, until, sse.temp_breakpoint_id);
 			}
 
 			sse.do_next_native ();
