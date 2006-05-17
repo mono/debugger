@@ -4,6 +4,13 @@ using System.Runtime.Serialization;
 
 namespace Mono.Debugger
 {
+	[Serializable]
+	public enum BreakpointType {
+		Breakpoint,
+		WatchRead,
+		WatchWrite
+	}
+
 	// <summary>
 	//   This is an abstract base class which is implemented by the user interface to
 	//   hold the user's settings for a breakpoint.
@@ -12,8 +19,13 @@ namespace Mono.Debugger
 	{
 		BreakpointHandle handle;
 		SourceLocation location;
+		BreakpointType type;
 		TargetAddress address = TargetAddress.Null;
 		int domain;
+
+		public BreakpointType Type {
+			get { return type; }
+		}
 
 		public SourceLocation Location {
 			get { return location; }
@@ -28,11 +40,24 @@ namespace Mono.Debugger
 			if (handle != null)
 				return;
 
-			if (!address.IsNull) {
+			switch (type) {
+			case BreakpointType.Breakpoint:
+				if (!address.IsNull) {
+					int breakpoint_id = target.InsertBreakpoint (this, address);
+					handle = new SimpleBreakpointHandle (this, breakpoint_id);
+				} else if (location != null)
+					handle = location.InsertBreakpoint (target, this, domain);
+				break;
+
+			case BreakpointType.WatchRead:
+			case BreakpointType.WatchWrite:
 				int breakpoint_id = target.InsertBreakpoint (this, address);
 				handle = new SimpleBreakpointHandle (this, breakpoint_id);
-			} else if (location != null)
-				handle = location.InsertBreakpoint (target, this, domain);
+				break;
+
+			default:
+				throw new InternalError ();
+			}
 		}
 
 		public override void Disable (Thread target)
@@ -96,23 +121,34 @@ namespace Mono.Debugger
 			: base (location.Name, group)
 		{
 			this.location = location;
+			this.type = BreakpointType.Breakpoint;
 		}
 
 		internal Breakpoint (string name, ThreadGroup group, TargetAddress address)
 			: base (name, group)
 		{
 			this.address = address;
+			this.type = BreakpointType.Breakpoint;
+		}
+
+		internal Breakpoint (TargetAddress address, BreakpointType type)
+			: base (address.ToString (), ThreadGroup.Global)
+		{
+			this.address = address;
+			this.type = type;
 		}
 
 		internal override void GetSessionData (SerializationInfo info)
 		{
 			base.GetSessionData (info);
+			info.AddValue ("type", type);
 			info.AddValue ("location", location);
 		}
 
 		internal override void SetSessionData (SerializationInfo info, ProcessServant process)
 		{
 			base.SetSessionData (info, process);
+			type = (BreakpointType) info.GetValue ("type", typeof (BreakpointType));
 			location = (SourceLocation) info.GetValue ("location", typeof (SourceLocation));
 		}
 	}

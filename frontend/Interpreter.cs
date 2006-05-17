@@ -679,6 +679,14 @@ namespace Mono.Debugger.Frontend
 			return handle.Index;
 		}
 
+		public int InsertHardwareWatchPoint (Thread target, TargetAddress address)
+		{
+			Event handle = target.Process.InsertHardwareWatchPoint (
+				target, address, BreakpointType.WatchWrite);
+			handle.Enable (target);
+			return handle.Index;
+		}
+
 		public void Kill ()
 		{
 			if (debugger != null) {

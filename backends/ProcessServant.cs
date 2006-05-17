@@ -697,6 +697,14 @@ namespace Mono.Debugger.Backends
 			return handle;
 		}
 
+		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
+						       BreakpointType type)
+		{
+			Event handle = new Breakpoint (address, type);
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
 		//
 		// IDisposable
 		//

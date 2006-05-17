@@ -1,5 +1,23 @@
 2006-05-17  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.InsertHardwareWatchPoint): New public method.
+
+	* frontend/Command.cs
+	(WatchCommand): New command.
+
+	* classes/Breakpoint.cs
+	(BreakpointType): New public enum.
+	(Breakpoint.Type): New public property.
+
+	* classes/Process.cs
+	(Process.InsertHardwareWatchPoint): New public method.
+
+	* backends/ProcessServant.cs
+	(ProcessServant.InsertHardwareWatchPoint): New public method.
+
+2006-05-17  Martin Baulig  <martin@ximian.com>
+
 	* backends/Inferior.cs
 	(Inferior.HardwareBreakpointType): New internal enum.
 	(Inferior.InsertHardwareWatchPoint): New public method.

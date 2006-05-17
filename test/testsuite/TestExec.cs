@@ -91,6 +91,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World!");
 			AssertStopped (thread, "X.Main(System.String[])", line_main_2 + 2);
+			AssertPrint (thread, "process.ExitCode", "(System.Int32) 0");
 
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);
@@ -171,6 +172,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World");
 			AssertStopped (thread, "X.Main(System.String[])", line_main_2 + 2);
+			AssertPrint (thread, "process.ExitCode", "(System.Int32) 0");
 
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);

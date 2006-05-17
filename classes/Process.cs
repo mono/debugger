@@ -184,6 +184,12 @@ namespace Mono.Debugger
 			return servant.InsertExceptionCatchPoint (target, group, exception);
 		}
 
+		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
+						       BreakpointType type)
+		{
+			return servant.InsertHardwareWatchPoint (target, address, type);
+		}
+
 		//
 		// Session management.
 		//

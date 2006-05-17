@@ -65,6 +65,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("break", typeof (BreakCommand));
 			RegisterAlias   ("b", typeof (BreakCommand));
 			RegisterCommand ("catch", typeof (CatchCommand));
+			RegisterCommand ("watch", typeof (WatchCommand));
 			RegisterCommand ("quit", typeof (QuitCommand));
 			RegisterAlias   ("q", typeof (QuitCommand));
 			RegisterCommand ("dump", typeof (DumpCommand));
@@ -2266,6 +2267,48 @@ namespace Mono.Debugger.Frontend
 						"execution of the program to stop at the point where\n" +
 						"the exception is thrown, so you can examine locals\n" +
 						"in that particular stack frame"; } }
+	}
+
+	public class WatchCommand : FrameCommand, IDocumentableCommand
+	{
+		Expression expression;
+		TargetAddress address;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Repeating)
+				return true;
+
+			expression = ParseExpression (context);
+			if (expression == null)
+				return false;
+
+			expression = expression.Resolve (context);
+			return expression != null;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			if (!Repeating) {
+				PointerExpression pexp = expression as PointerExpression;
+				if (pexp == null)
+					throw new ScriptingException (
+						"Expression `{0}' is not a pointer.",
+						expression.Name);
+
+				address = pexp.EvaluateAddress (context);
+			}
+
+			int index = context.Interpreter.InsertHardwareWatchPoint (CurrentThread, address);
+			context.Print ("Hardware watchpoint {0} at {1}", index, address);
+			return index;
+
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Catchpoints; } }
+		public string Description { get { return "Insert a hardware watchpoint."; } }
+		public string Documentation { get { return ""; } }
 	}
 
 	public class DumpCommand : NestedCommand, IDocumentableCommand

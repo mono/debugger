@@ -78,6 +78,14 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		public string Print ()
+		{
+			StringBuilder sb = new StringBuilder ();
+			foreach (StackFrame frame in frames)
+				sb.Append (String.Format ("{0}\n", frame));
+			return sb.ToString ();
+		}
+
 		internal void AddFrame (StackFrame new_frame)
 		{
 			new_frame.SetLevel (frames.Count);
