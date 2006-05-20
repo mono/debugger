@@ -1,5 +1,9 @@
 2006-05-20  Martin Baulig  <martin@ximian.com>
 
+	* arch/DwarfFrameReader.cs: More 64-bit updates.
+
+2006-05-20  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(SourceCommand.DoResolve): Also lookup native methods.
 	(BreakCommand): Add `-global' argument as a shortcut for

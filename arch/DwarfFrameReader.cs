@@ -48,7 +48,7 @@ namespace Mono.Debugger.Backends
 					break;
 				long end_pos = reader.Position + length;
 
-				int cie_pointer = reader.ReadInt32 ();
+				long cie_pointer = reader.ReadOffset ();
 				bool is_cie;
 				if (is_ehframe)
 					is_cie = cie_pointer == 0;
@@ -61,12 +61,13 @@ namespace Mono.Debugger.Backends
 				}
 
 				if (is_ehframe)
-					cie_pointer = (int) reader.Position - cie_pointer - 4;
+					cie_pointer = reader.Position - cie_pointer -
+						target.TargetInfo.TargetAddressSize;
 
 				CIE cie = find_cie (cie_pointer);
 
-				long initial = ReadEncodedValue (reader, cie.Encoding);
-				long range = ReadEncodedValue (reader, cie.Encoding & 0x0f);
+				long initial = reader.ReadAddress ();
+				long range = reader.ReadAddress ();
 
 				TargetAddress start = new TargetAddress (
 					target.TargetInfo.AddressDomain, initial);
@@ -372,7 +373,7 @@ namespace Mono.Debugger.Backends
 			int code_alignment;
 			int data_alignment;
 			int return_register;
-		  //			bool has_z_augmentation;
+			// bool has_z_augmentation;
 			byte encoding = (byte) DW_EH_PE.udata4;
 			Column[] columns;
 
@@ -453,7 +454,7 @@ namespace Mono.Debugger.Backends
 				for (int pos = 0; pos < augmentation.Length; pos++) {
 					if (augmentation [pos] == 'z') {
 						reader.ReadLeb128 ();
-						//						has_z_augmentation = true;
+						// has_z_augmentation = true;
 						continue;
 					}
 
