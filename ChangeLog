@@ -1,5 +1,11 @@
 2006-05-20  Martin Baulig  <martin@ximian.com>
 
+	* arch/DwarfReader.cs
+	(DwarfReader.DwarfTargetVariable.GetLocation): Add support for
+	location lists.	
+
+2006-05-20  Martin Baulig  <martin@ximian.com>
+
 	* arch/DwarfFrameReader.cs: More 64-bit updates.
 
 2006-05-20  Martin Baulig  <martin@ximian.com>
