@@ -2025,15 +2025,21 @@ namespace Mono.Debugger.Frontend
 			} catch {
 			}
 
-			Expression expr = ParseExpression (context);
-			if (expr == null)
-				return false;
+			MethodExpression mexpr;
+			try {
+				Expression expr = ParseExpression (context);
+				if (expr == null)
+					return false;
 
-			MethodExpression mexpr = expr.ResolveMethod (context, type);
-			if (mexpr == null)
-				return false;
+				mexpr = expr.ResolveMethod (context, type);
+			} catch {
+				mexpr = null;
+			}
 
-			location = mexpr.EvaluateSource (context);
+			if (mexpr != null)
+				location = mexpr.EvaluateSource (context);
+			else
+				location = context.FindMethod (Argument);
 			return location != null;
 		}
 	}
@@ -2132,12 +2138,18 @@ namespace Mono.Debugger.Frontend
 	public class BreakCommand : SourceCommand, IDocumentableCommand
 	{
 		string group;
+		bool global;
 		int domain = 0;
 		ThreadGroup tgroup;
 
 		public string Group {
 			get { return group; }
 			set { group = value; }
+		}
+
+		public bool Global {
+			get { return global; }
+			set { global = value; }
 		}
 
 		public int Domain {
@@ -2151,7 +2163,16 @@ namespace Mono.Debugger.Frontend
 			if (!resolved)
 				throw new ScriptingException ("No such method: `{0}'", Argument);
 
-			tgroup = context.Interpreter.GetThreadGroup (Group, false);
+			if (global) {
+				if (Group != null)
+					throw new ScriptingException (
+						"Cannot use both -group and -global.");
+
+				tgroup = ThreadGroup.Global;
+			} else {
+				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+			}
+
 			return true;
 		}
 
