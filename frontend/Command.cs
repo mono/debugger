@@ -2083,7 +2083,7 @@ namespace Mono.Debugger.Frontend
 				source_code = buffer.Contents;
 
 				if (Location.HasMethod && !Location.HasLine)
-					count = Location.Method.EndRow - Location.Method.StartRow + 2;
+					count = Location.Method.EndRow - Location.Method.StartRow + 4;
 
 				if (count < 0)
 					last_line = System.Math.Max (Location.Line + 2, 0);
