@@ -361,6 +361,41 @@ server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 }
 
 static ServerCommandError
+server_ptrace_push_registers (ServerHandle *handle, guint64 *new_rsp)
+{
+	ArchInfo *arch = handle->arch;
+	ServerCommandError result;
+
+	INFERIOR_REG_RSP (arch->current_regs) -= sizeof (arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	*new_rsp = INFERIOR_REG_RSP (arch->current_regs);
+
+	result = server_ptrace_write_memory (
+		handle, *new_rsp, sizeof (arch->current_regs), &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_pop_registers (ServerHandle *handle)
+{
+	ArchInfo *arch = handle->arch;
+	ServerCommandError result;
+
+	INFERIOR_REG_RSP (arch->current_regs) += sizeof (arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
 do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;

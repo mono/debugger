@@ -321,6 +321,11 @@ struct InferiorVTable {
 						       gchar           **cmdline_args);
 
 	ServerCommandError    (* init_after_fork)     (ServerHandle      *handle);
+
+	ServerCommandError    (* push_registers)      (ServerHandle      *handle,
+						       guint64           *new_rsp);
+
+	ServerCommandError    (* pop_registers)       (ServerHandle      *handle);
 };
 
 /*
@@ -516,6 +521,13 @@ mono_debugger_server_get_application     (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_init_after_fork     (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_push_registers      (ServerHandle        *handle,
+					  guint64             *new_rsp);
+
+ServerCommandError
+mono_debugger_server_pop_registers       (ServerHandle        *handle);
 
 /* POSIX semaphores */
 

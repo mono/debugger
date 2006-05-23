@@ -202,6 +202,19 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		case PTRACE_EVENT_EXEC:
 			return MESSAGE_CHILD_EXECD;
 
+		case PTRACE_EVENT_EXIT: {
+			int exitcode;
+
+			if (ptrace (PTRACE_GETEVENTMSG, handle->inferior->pid, 0, &exitcode)) {
+				g_warning (G_STRLOC ": %d - %s", handle->inferior->pid,
+					   g_strerror (errno));
+				return FALSE;
+			}
+
+			*arg = 0;
+			return MESSAGE_CHILD_EXITED;
+		}
+
 		default:
 			g_warning (G_STRLOC ": Received unknown wait result %x on child %d",
 				   status, handle->inferior->pid);
@@ -526,5 +539,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_set_notification,
 	server_ptrace_get_threads,
 	server_ptrace_get_application,
-	server_ptrace_init_after_fork
+	server_ptrace_init_after_fork,
+	server_ptrace_push_registers,
+	server_ptrace_pop_registers
 };

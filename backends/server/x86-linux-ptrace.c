@@ -301,7 +301,7 @@ static ServerCommandError
 server_ptrace_initialize_process (ServerHandle *handle)
 {
 	int flags = PTRACE_O_TRACECLONE | PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK |
-		PTRACE_O_TRACEEXEC;
+		PTRACE_O_TRACEEXEC | PTRACE_O_TRACEEXIT;
 
 	if (ptrace (PTRACE_SETOPTIONS, handle->inferior->pid, 0, flags)) {
 		g_warning (G_STRLOC ": Can't PTRACE_SETOPTIONS %d: %s",

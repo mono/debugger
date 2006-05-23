@@ -1322,15 +1322,17 @@ namespace Mono.Debugger.Backends
 			     ((stop_event.Type == Inferior.ChildEventType.CHILD_SIGNALED))))
 				return;
 
+			TargetAddress new_rsp = inferior.PushRegisters ();
+
 			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 
 			Report.Debug (DebugFlags.Threads,
-				      "{0} acquired thread lock: {1} {2} {3} {4} {5}",
+				      "{0} acquired thread lock: {1} {2} {3} {4}",
 				      this, stopped, stop_event, EndStackAddress,
-				      frame.StackPointer, frame.Address);
+				      new_rsp);
 
 			if (!EndStackAddress.IsNull)
-				inferior.WriteAddress (EndStackAddress, frame.StackPointer);
+				inferior.WriteAddress (EndStackAddress, new_rsp);
 		}
 
 		internal override void ReleaseThreadLock ()
@@ -1340,6 +1342,8 @@ namespace Mono.Debugger.Backends
 				      this, stopped, stop_event);
 
 			has_thread_lock = false;
+
+			inferior.PopRegisters ();
 
 			// If the target was already stopped, there's nothing to do for us.
 			if (!stopped)

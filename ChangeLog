@@ -1,3 +1,31 @@
+2006-05-23  Martin Baulig  <martin@ximian.com>
+
+	* backends/Inferior.cs
+	(Inferior.PushRegisters): New public method.
+	(Inferior.PopRegisters): New public method.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.AcquireThreadLock): Call
+	inferior.PushRegisters() to push all registers onto the stack so
+	the GC will see them.
+	(SingleSteppingEngine.ReleaseThreadLock): Call
+	inferior.PopRegisters() to remove them from the stack again.
+
+	* backends/server/x86-linux-ptrace.c
+	(server_ptrace_initialize_process): Add `PTRACE_O_TRACEEXIT'.
+
+	* backends/server/x86_64-arch.c
+	(server_ptrace_push_registers): New method.
+	(server_ptrace_pop_registers): New method.
+
+	* backends/server/i386-arch.c
+	(server_ptrace_push_registers): New method.
+	(server_ptrace_pop_registers): New method.
+
+	* backends/server/library.c
+	(mono_debugger_server_push_registers): New public method.
+	(mono_debugger_server_pop_registers): New public method.
+
 2006-05-20  Martin Baulig  <martin@ximian.com>
 
 	* arch/DwarfReader.cs

@@ -396,6 +396,24 @@ mono_debugger_server_init_after_fork (ServerHandle *handle)
 	return (* global_vtable->init_after_fork) (handle);
 }
 
+ServerCommandError
+mono_debugger_server_push_registers (ServerHandle *handle, guint64 *new_rsp)
+{
+	if (!global_vtable->push_registers)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->push_registers) (handle, new_rsp);
+}
+
+ServerCommandError
+mono_debugger_server_pop_registers (ServerHandle *handle)
+{
+	if (!global_vtable->pop_registers)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->pop_registers) (handle);
+}
+
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;
 static int pending_sigint = 0;
