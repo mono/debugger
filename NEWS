@@ -1,6 +1,7 @@
-May 12th, 2006 - Martin Baulig
+May 22nd, 2006 - Martin Baulig
 ------------------------------
 
+[The release is postponed due to a pending critical bug]
 Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 
 - This version of the debugger requires the latest Mono from SVN;
@@ -13,6 +14,9 @@ Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 
 - Cleaned up method lookups; there's a very complex test for them
   in test/testsuite/TestMethodLookup.cs.
+
+- Fixed a very old GC bug which was preventing us from running
+  xsp inside the debugger.
 
 - Fixed line numbers in stack traces.
 
