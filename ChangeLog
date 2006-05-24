@@ -1,5 +1,9 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	Released version 0.20 "Bruxelles" of the Mono Debugger :-)
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/library.c
 	(mono_debugger_server_set_notification): This is no longer a
 	"static" method - different processes may have different
