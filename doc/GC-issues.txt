@@ -1,0 +1,101 @@
+Garbage Collection outside the Debugger:
+========================================
+
+When running outside the debugger, stopping/starting the world for a
+collection works like this:
+
+* Thread A decides that it wants to do a collection.
+* A sends a special signal to all other threads.
+* The signal handler writes its current stack pointer into a special
+  field (`stack_ptr' in the `thread_stop_info'), signals thread A that
+  it's ready and then blocks on a semaphore until thread A wakes it up
+  again.
+* Thread A waits until all threads have signaled that they're ready.
+* After that, A iterates over all threads and pushes their stacks.
+  Since there is no way of accessing another thread's registers, it
+  needs to use the `stack_ptr'.
+* When done, A signals all other threads to wake up.
+
+Garbage Collection when running inside the Debugger:
+====================================================
+
+When running inside the debugger, the debugger needs to keep control
+about all stopping and starting of the target - in particular, the
+debugger might have stopped some random thread for whatever reason, so
+the signal-based approach would lock forever.
+
+In addition to that, the debugger also needs to "stop the world" in
+some situations which'd interfer with the GC's world stopping, too.
+
+Because of this, we use an additional approach when running inside the
+debugger - in pthread_stop_world.c, there is a `gc_thread_vtable' - it
+is set in debug-debugger.c to override the stop/start world methods.
+
+It works like this:
+
+* Thread A tells the debugger that it wants to do a collection
+  (via the `stop_world' function in the vtable).
+
+* The debugger stops all threads (if they aren't already stopped).
+
+* After that, the debugger pushes all registers onto the stack and
+  writes the new stack pointer into the `stack_ptr' field.
+
+* When thread A returns from the notification, it iterates over all
+  threads and pushes the stacks just like it does when running outside
+  the debugger.
+
+  The only difference is that the `stack_ptr' is now set by the
+  debugger instead of a signal handler.
+
+  Note that this is not the thread's "real" stack pointer - the
+  debugger reserves a small area below $rsp and saves all registers
+  there, so the GC will see them.
+
+* When done, thread A tells the debugger that it's done with the
+  collection (via the `start_world' function in the vtable).
+
+* The debugger restores all the stack pointers and resumes all
+  threads - the important point is that the debugger exactly restores
+  the state before the "thread lock" - ie. a thread which was
+  previously stopped will remain stopped and a thread which was
+  previosly running will be resumed.
+
+This "thread lock" mechanism is the same one which is also used
+internally by the debugger if it needs to stop the world.
+
+Creating and terminating threads:
+=================================
+
+Since the debugger is now responsible for updating the `stack_ptr'
+field, the GC must tell the debugger about each newly created managed
+thread and the address of its corresponding `stack_ptr' field.
+
+This is done with the `thread_created' function in the vtable.
+
+It is important to do this while still holding the allocation lock -
+otherwise a collection might happen before the debugger knows about it.
+
+Note that we don't need to inform the debugger about unmanaged
+threads - it already gets a notification from the operating system
+about thread creation and exit.
+
+We also need to tell the debugger about exiting threads before freeing
+the structure in which the `stack_ptr' field lives.  Otherwise, the
+debugger might try to write into that memory after it's already freed.
+
+Attaching:
+==========
+
+When attaching to a managed process, all managed threads have already
+been created, but the debugger asn't been informed about them yet.
+
+This is done in GC_mono_debugger_add_all_threads() - it just calls the
+`thread_created' function in the vtable for each managed thread.
+
+Again, no need to do this for unmanaged threads, the debugger already
+knows about them from the operating system.
+
+
+Last changed May 24th, 2006
+Martin Baulig

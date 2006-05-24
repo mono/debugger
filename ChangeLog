@@ -1,5 +1,10 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* doc/GC-issues.txt: Added document describing the interface
+	between the debugger and the GC.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 
 2006-05-24  Martin Baulig  <martin@ximian.com>
