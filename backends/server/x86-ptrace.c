@@ -212,7 +212,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			}
 
 			*arg = 0;
-			return MESSAGE_CHILD_EXITED;
+			return MESSAGE_CHILD_CALLED_EXIT;
 		}
 
 		default:

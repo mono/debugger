@@ -1,3 +1,12 @@
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/server.h
+	(ServerStatusMessageType): Added `MESSAGE_CHILD_CALLED_EXIT'.
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Use `MESSAGE_CHILD_CALLED_EXIT'
+	for `PTRACE_EVENT_EXIT'.
+
 2006-05-23  Martin Baulig  <martin@ximian.com>
 
 	* backends/Inferior.cs
