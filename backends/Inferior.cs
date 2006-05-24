@@ -171,6 +171,9 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_pop_registers (IntPtr handle);
 
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_set_notification (IntPtr handle, long address);
+
 		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
@@ -1223,6 +1226,11 @@ namespace Mono.Debugger.Backends
 		{
 			pushed_regs = false;
 			check_error (mono_debugger_server_pop_registers (server_handle));
+		}
+
+		internal void SetNotificationAddress (TargetAddress notification)
+		{
+			mono_debugger_server_set_notification (server_handle, notification.Address);
 		}
 
 		internal struct ServerStackFrame

@@ -22,11 +22,9 @@ namespace Mono.Debugger.Backends
 	{
 		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
+		TargetAddress notification_address = TargetAddress.Null;
 		Inferior inferior;
 		bool stop_in_main;
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_set_notification (long address);
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
 							    Inferior inferior, bool attach,
@@ -79,10 +77,8 @@ namespace Mono.Debugger.Backends
 
 		protected void initialize_notifications (Inferior inferior)
 		{
-			TargetAddress notification = inferior.ReadAddress (
-				debugger_info.NotificationAddress);
-
-			mono_debugger_server_set_notification (notification.Address);
+			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
+			inferior.SetNotificationAddress (notification_address);
 
 			if (notification_bpt > 0) {
 				inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
@@ -135,6 +131,7 @@ namespace Mono.Debugger.Backends
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
+			sse.Inferior.SetNotificationAddress (notification_address);
 			if (++index < 3)
 				sse.SetDaemon ();
 		}

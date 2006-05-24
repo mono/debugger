@@ -1,5 +1,25 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/library.c
+	(mono_debugger_server_set_notification): This is no longer a
+	"static" method - different processes may have different
+	notification addresses, so we need to make this per-target.
+
+	* backends/server/x86-ptrace.c
+	(InferiorHandle): Added `guint64 nofification_address'; replaces
+	the static variable in x86_64-arch.c/i386-arch.c.
+	(server_ptrace_set_notification): Moved here from x86_64-arch.c.
+
+	* backends/Inferior.cs
+	(Inferior.SetNotificationAddress): New internal method; call
+	mono_debugger_server_set_notification().
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.ThreadCreated): Call SetNotificationAddress()
+	on each newly created inferior.	
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* arch/bfdglue.c
 	(bfd_glue_get_section_size): Added `raw_size' argument.
 	(bfd_glue_get_section_contents): Take a pre-alloced buffer as

@@ -362,10 +362,10 @@ mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo **sinfo)
 }
 
 void
-mono_debugger_server_set_notification (guint64 notification)
+mono_debugger_server_set_notification (ServerHandle *handle, guint64 notification)
 {
 	if (global_vtable->set_notification)
-		return (* global_vtable->set_notification) (notification);
+		return (* global_vtable->set_notification) (handle,notification);
 }
 
 ServerCommandError

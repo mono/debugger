@@ -53,6 +53,7 @@ struct InferiorHandle
 	int last_signal;
 	int output_fd [2], error_fd [2];
 	int is_thread, is_initialized;
+	guint64 notification_address;
 };
 
 typedef struct
@@ -478,6 +479,12 @@ server_ptrace_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
 	else
 		handle->inferior->last_signal = sig;
 	return COMMAND_ERROR_NONE;
+}
+
+static void
+server_ptrace_set_notification (ServerHandle *handle, guint64 addr)
+{
+	handle->inferior->notification_address = addr;
 }
 
 extern void GC_start_blocking (void);
