@@ -1,5 +1,11 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Clear the `csharp_language' on
+	`NofitifactionType.FinalizeManagedCode'.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Check whether the Mono we're using is recent enough.
 
 2006-05-24  Martin Baulig  <martin@ximian.com>

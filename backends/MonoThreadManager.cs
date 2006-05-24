@@ -223,6 +223,10 @@ namespace Mono.Debugger.Backends
 						0, cevent.Data1, cevent.Data2);
 					return false;
 
+				case NotificationType.FinalizeManagedCode:
+					csharp_language = null;
+					break;
+
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
