@@ -190,25 +190,9 @@ bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info
 }
 
 gboolean
-bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section,
-			       gpointer *data, guint32 *size)
+bfd_glue_get_section_contents (bfd *abfd, asection *section, gpointer data, guint32 size)
 {
-	gboolean retval;
-
-	if (raw_section)
-		*size = section->_raw_size;
-	else
-		*size = section->_cooked_size;
-
-	*data = g_malloc0 (*size);
-
-	retval = bfd_get_section_contents (abfd, section, *data, 0, *size);
-	if (!retval) {
-		g_free (*data);
-		*data = NULL;
-	}
-
-	return retval;
+	return bfd_get_section_contents (abfd, section, data, 0, size);
 }
 
 asection *
@@ -235,10 +219,10 @@ bfd_glue_get_section_name (asection *p)
 	return g_strdup (p->name);
 }
 
-guint64
-bfd_glue_get_section_size (asection *p)
+guint32
+bfd_glue_get_section_size (asection *p, gboolean raw_section)
 {
-	return p->_raw_size;
+	return raw_section ? p->_raw_size : p->_cooked_size;
 }
 
 BfdGlueSectionFlags

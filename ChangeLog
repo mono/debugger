@@ -1,5 +1,12 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* arch/bfdglue.c
+	(bfd_glue_get_section_size): Added `raw_size' argument.
+	(bfd_glue_get_section_contents): Take a pre-alloced buffer as
+	argument rather than allocating it here.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/ProcessServant.cs
 	(ProcessServant.Kill): Don't call Dispose().
 

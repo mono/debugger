@@ -58,8 +58,7 @@ extern int
 bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info, guint64 address);
 
 extern gboolean
-bfd_glue_get_section_contents (bfd *abfd, asection *section, int raw_section,
-			       gpointer *data, guint32 *size);
+bfd_glue_get_section_contents (bfd *abfd, asection *section, gpointer data, guint32 size);
 
 extern guint64
 bfd_glue_get_section_vma (asection *p);
@@ -67,8 +66,8 @@ bfd_glue_get_section_vma (asection *p);
 extern gchar *
 bfd_glue_get_section_name (asection *p);
 
-extern guint64
-bfd_glue_get_section_size (asection *p);
+extern guint32
+bfd_glue_get_section_size (asection *p, gboolean raw_section);
 
 extern BfdGlueSectionFlags
 bfd_glue_get_section_flags (asection *p);
