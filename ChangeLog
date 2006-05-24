@@ -1,5 +1,9 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Check whether the Mono we're using is recent enough.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(BreakCommand.DoResolve): If our base class'es DoResolve() failed,
 	try resolving the expression as an address.
