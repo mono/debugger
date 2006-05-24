@@ -1,5 +1,14 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* backends/ProcessServant.cs
+	(ProcessServant.Kill): Don't call Dispose().
+
+	* backends/server/x86-linux-ptrace.c
+	(server_ptrace_initialize_process): Don't use PTRACE_O_TRACEEXIT;
+	we don't need this.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/MonoThreadManager.cs
 	(MonoThreadManager.HandleChildEvent): Clear the `csharp_language' on
 	`NofitifactionType.FinalizeManagedCode'.

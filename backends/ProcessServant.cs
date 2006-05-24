@@ -384,7 +384,6 @@ namespace Mono.Debugger.Backends
 		public void Kill ()
 		{
 			main_thread.Kill ();
-			Dispose ();
 		}
 
 		public void Detach ()
