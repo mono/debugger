@@ -689,6 +689,14 @@ namespace Mono.Debugger.Backends
 			return handle;
 		}
 
+		public Event InsertBreakpoint (Thread target, ThreadGroup group,
+					       TargetAddress address)
+		{
+			Event handle = new Breakpoint (address.ToString (), group, address);
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
 		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 							TargetType exception)
 		{

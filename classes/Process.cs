@@ -173,6 +173,12 @@ namespace Mono.Debugger
 		}
 
 		public Event InsertBreakpoint (Thread target, ThreadGroup group,
+					       TargetAddress address)
+		{
+			return servant.InsertBreakpoint (target, group, address);
+		}
+
+		public Event InsertBreakpoint (Thread target, ThreadGroup group,
 					       TargetFunctionType func)
 		{
 			return servant.InsertBreakpoint (target, group, func);

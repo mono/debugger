@@ -1,5 +1,19 @@
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(BreakCommand.DoResolve): If our base class'es DoResolve() failed,
+	try resolving the expression as an address.
+
+	* frontend/Interpreter.cs
+	(Interpreter.InsertBreakpoint): Added overloaded version which
+	takes a `TargetAddress'.
+
+	* classes/Process.cs
+	(Process.InsertBreakpoint): Added overloaded version which takes a
+	`TargetAddress'.	
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/server.h
 	(ServerStatusMessageType): Added `MESSAGE_CHILD_CALLED_EXIT'.
 
