@@ -130,7 +130,7 @@ do_wait (int pid, guint32 *status)
 #endif
 	ret = waitpid (pid, status, WUNTRACED | __WALL | __WCLONE);
 #if DEBUG_WAIT
-	g_message (G_STRLOC ": do_wait (%d) finished: %d - %x", pid, ret, status);
+	g_message (G_STRLOC ": do_wait (%d) finished: %d - %x", pid, ret, *status);
 #endif
 	if (ret < 0) {
 		if (errno == EINTR)
