@@ -18,6 +18,8 @@ Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 - Fixed a very old GC bug which was preventing us from running
   xsp inside the debugger.
 
+- Fixed a very old race condition which was causing crashes at exit.
+
 - Fixed line numbers in stack traces.
 
 - Added experimental support for hardware watchpoints - I needed
