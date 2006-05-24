@@ -663,6 +663,15 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public int InsertBreakpoint (Thread target, ThreadGroup group,
+					     TargetAddress address)
+		{
+			Event handle = target.Process.InsertBreakpoint (
+				target, group, address);
+			handle.Enable (target);
+			return handle.Index;
+		}
+
+		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     TargetFunctionType func)
 		{
 			Event handle = target.Process.InsertBreakpoint (target, group, func);

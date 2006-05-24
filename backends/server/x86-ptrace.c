@@ -53,6 +53,7 @@ struct InferiorHandle
 	int last_signal;
 	int output_fd [2], error_fd [2];
 	int is_thread, is_initialized;
+	guint64 notification_address;
 };
 
 typedef struct
@@ -201,6 +202,19 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 
 		case PTRACE_EVENT_EXEC:
 			return MESSAGE_CHILD_EXECD;
+
+		case PTRACE_EVENT_EXIT: {
+			int exitcode;
+
+			if (ptrace (PTRACE_GETEVENTMSG, handle->inferior->pid, 0, &exitcode)) {
+				g_warning (G_STRLOC ": %d - %s", handle->inferior->pid,
+					   g_strerror (errno));
+				return FALSE;
+			}
+
+			*arg = 0;
+			return MESSAGE_CHILD_CALLED_EXIT;
+		}
 
 		default:
 			g_warning (G_STRLOC ": Received unknown wait result %x on child %d",
@@ -467,6 +481,12 @@ server_ptrace_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+server_ptrace_set_notification (ServerHandle *handle, guint64 addr)
+{
+	handle->inferior->notification_address = addr;
+}
+
 extern void GC_start_blocking (void);
 extern void GC_end_blocking (void);
 
@@ -526,5 +546,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_set_notification,
 	server_ptrace_get_threads,
 	server_ptrace_get_application,
-	server_ptrace_init_after_fork
+	server_ptrace_init_after_fork,
+	server_ptrace_push_registers,
+	server_ptrace_pop_registers
 };

@@ -22,11 +22,9 @@ namespace Mono.Debugger.Backends
 	{
 		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
+		TargetAddress notification_address = TargetAddress.Null;
 		Inferior inferior;
 		bool stop_in_main;
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_set_notification (long address);
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
 							    Inferior inferior, bool attach,
@@ -79,10 +77,8 @@ namespace Mono.Debugger.Backends
 
 		protected void initialize_notifications (Inferior inferior)
 		{
-			TargetAddress notification = inferior.ReadAddress (
-				debugger_info.NotificationAddress);
-
-			mono_debugger_server_set_notification (notification.Address);
+			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
+			inferior.SetNotificationAddress (notification_address);
 
 			if (notification_bpt > 0) {
 				inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
@@ -135,6 +131,7 @@ namespace Mono.Debugger.Backends
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
+			sse.Inferior.SetNotificationAddress (notification_address);
 			if (++index < 3)
 				sse.SetDaemon ();
 		}
@@ -223,6 +220,10 @@ namespace Mono.Debugger.Backends
 						0, cevent.Data1, cevent.Data2);
 					return false;
 
+				case NotificationType.FinalizeManagedCode:
+					csharp_language = null;
+					break;
+
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
@@ -254,8 +255,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 56;
-		public const int  MaxDynamicVersion = 56;
+		public const int  MinDynamicVersion = 57;
+		public const int  MaxDynamicVersion = 57;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;

@@ -43,6 +43,7 @@ typedef enum {
 	MESSAGE_CHILD_CREATED_THREAD,
 	MESSAGE_CHILD_FORKED,
 	MESSAGE_CHILD_EXECD,
+	MESSAGE_CHILD_CALLED_EXIT,
 	MESSAGE_CHILD_NOTIFICATION
 } ServerStatusMessageType;
 
@@ -308,7 +309,8 @@ struct InferiorVTable {
 	ServerCommandError    (* get_signal_info)     (ServerHandle     *handle,
 						       SignalInfo      **sinfo);
 
-	void                  (* set_notification)    (guint64           notification);
+	void                  (* set_notification)    (ServerHandle     *handle,
+						       guint64           notification);
 
 	ServerCommandError    (* get_threads)         (ServerHandle     *handle,
 						       guint32          *count,
@@ -321,6 +323,11 @@ struct InferiorVTable {
 						       gchar           **cmdline_args);
 
 	ServerCommandError    (* init_after_fork)     (ServerHandle      *handle);
+
+	ServerCommandError    (* push_registers)      (ServerHandle      *handle,
+						       guint64           *new_rsp);
+
+	ServerCommandError    (* pop_registers)       (ServerHandle      *handle);
 };
 
 /*
@@ -500,7 +507,8 @@ mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo         **sinfo);
 
 void
-mono_debugger_server_set_notification    (guint64              notification);
+mono_debugger_server_set_notification    (ServerHandle        *handle,
+					  guint64              notification);
 
 ServerCommandError
 mono_debugger_server_get_threads         (ServerHandle        *handle,
@@ -516,6 +524,13 @@ mono_debugger_server_get_application     (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_init_after_fork     (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_push_registers      (ServerHandle        *handle,
+					  guint64             *new_rsp);
+
+ServerCommandError
+mono_debugger_server_pop_registers       (ServerHandle        *handle);
 
 /* POSIX semaphores */
 

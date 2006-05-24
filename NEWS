@@ -1,4 +1,4 @@
-May 12th, 2006 - Martin Baulig
+May 24th, 2006 - Martin Baulig
 ------------------------------
 
 Released version 0.20 "Bruxelles" of the Mono Debugger :-)
@@ -14,6 +14,13 @@ Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 - Cleaned up method lookups; there's a very complex test for them
   in test/testsuite/TestMethodLookup.cs.
 
+- Lots of stability improvements.
+
+- Fixed a very old GC bug which was preventing us from running
+  xsp inside the debugger.
+
+- Fixed a very old race condition which was causing crashes at exit.
+
 - Fixed line numbers in stack traces.
 
 - Added experimental support for hardware watchpoints - I needed
@@ -22,6 +29,8 @@ Released version 0.20 "Bruxelles" of the Mono Debugger :-)
 - Unfortunately, a `make check' now requires even more memory
   than before; I'm still investigating the issue.
   I'm currently using `ulimit -Sm 1000000 -Sv 1000000'.
+
+- The next releases will be "Dublin", "Sidney" and "Cologne".
 
 April 10th, 2006 - Martin Baulig
 --------------------------------

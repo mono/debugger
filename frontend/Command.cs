@@ -1,3 +1,4 @@
+
 using System;
 using System.Text;
 using System.IO;
@@ -2025,15 +2026,21 @@ namespace Mono.Debugger.Frontend
 			} catch {
 			}
 
-			Expression expr = ParseExpression (context);
-			if (expr == null)
-				return false;
+			MethodExpression mexpr;
+			try {
+				Expression expr = ParseExpression (context);
+				if (expr == null)
+					return false;
 
-			MethodExpression mexpr = expr.ResolveMethod (context, type);
-			if (mexpr == null)
-				return false;
+				mexpr = expr.ResolveMethod (context, type);
+			} catch {
+				mexpr = null;
+			}
 
-			location = mexpr.EvaluateSource (context);
+			if (mexpr != null)
+				location = mexpr.EvaluateSource (context);
+			else
+				location = context.FindMethod (Argument);
 			return location != null;
 		}
 	}
@@ -2077,7 +2084,7 @@ namespace Mono.Debugger.Frontend
 				source_code = buffer.Contents;
 
 				if (Location.HasMethod && !Location.HasLine)
-					count = Location.Method.EndRow - Location.Method.StartRow + 2;
+					count = Location.Method.EndRow - Location.Method.StartRow + 4;
 
 				if (count < 0)
 					last_line = System.Math.Max (Location.Line + 2, 0);
@@ -2132,12 +2139,19 @@ namespace Mono.Debugger.Frontend
 	public class BreakCommand : SourceCommand, IDocumentableCommand
 	{
 		string group;
+		bool global;
 		int domain = 0;
 		ThreadGroup tgroup;
+		TargetAddress address = TargetAddress.Null;
 
 		public string Group {
 			get { return group; }
 			set { group = value; }
+		}
+
+		public bool Global {
+			get { return global; }
+			set { global = value; }
 		}
 
 		public int Domain {
@@ -2147,17 +2161,45 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			bool resolved = base.DoResolve (context);
-			if (!resolved)
-				throw new ScriptingException ("No such method: `{0}'", Argument);
+			if (global) {
+				if (Group != null)
+					throw new ScriptingException (
+						"Cannot use both -group and -global.");
 
-			tgroup = context.Interpreter.GetThreadGroup (Group, false);
-			return true;
+				tgroup = ThreadGroup.Global;
+			} else {
+				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+			}
+
+			bool resolved = base.DoResolve (context);
+			if (resolved)
+				return true;
+
+			try {
+				PointerExpression pexpr = ParseExpression (context) as PointerExpression;
+				if (pexpr != null) {
+					address = pexpr.EvaluateAddress (context);
+					return true;
+				}
+			} catch {
+			}
+
+			throw new ScriptingException ("No such method: `{0}'", Argument);
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			if (Location.HasFunction) {
+			if (!address.IsNull) {
+				if (domain != 0)
+					throw new ScriptingException (
+						"Can't specifcy an appdomain when inserting a " +
+						"breakpoint on an address");
+
+				int index = context.Interpreter.InsertBreakpoint (
+					context.CurrentThread, tgroup, address);
+				context.Print ("Breakpoint {0} at {1}", index, address);
+				return index;
+			} else if (Location.HasFunction) {
 				if (domain != 0)
 					throw new ScriptingException (
 						"Can't insert function breakpoints in " +

@@ -38,8 +38,6 @@ typedef struct
 	guint64 callback_argument;
 } RuntimeInvokeData;
 
-static guint64 notification_address;
-
 ArchInfo *
 x86_arch_initialize (void)
 {
@@ -57,12 +55,6 @@ x86_arch_finalize (ArchInfo *arch)
 	g_free (arch->saved_regs);
      	g_free (arch->saved_fpregs);
 	g_free (arch);
-}
-
-static void
-server_ptrace_set_notification (guint64 addr)
-{
-	notification_address = addr;
 }
 
 static ServerCommandError
@@ -177,7 +169,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	x86_arch_get_registers (handle);
 
-	if (INFERIOR_REG_RIP (arch->current_regs) - 1 == notification_address) {
+	if (INFERIOR_REG_RIP (arch->current_regs) - 1 == inferior->notification_address) {
 		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
 		*retval = INFERIOR_REG_RSI (arch->current_regs);
 		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
@@ -358,6 +350,41 @@ server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 	INFERIOR_REG_GS (arch->current_regs) = values [DEBUGGER_REG_GS];
 
 	return _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+}
+
+static ServerCommandError
+server_ptrace_push_registers (ServerHandle *handle, guint64 *new_rsp)
+{
+	ArchInfo *arch = handle->arch;
+	ServerCommandError result;
+
+	INFERIOR_REG_RSP (arch->current_regs) -= sizeof (arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	*new_rsp = INFERIOR_REG_RSP (arch->current_regs);
+
+	result = server_ptrace_write_memory (
+		handle, *new_rsp, sizeof (arch->current_regs), &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_pop_registers (ServerHandle *handle)
+{
+	ArchInfo *arch = handle->arch;
+	ServerCommandError result;
+
+	INFERIOR_REG_RSP (arch->current_regs) += sizeof (arch->current_regs);
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError

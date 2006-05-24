@@ -1,3 +1,121 @@
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	Released version 0.20 "Bruxelles" of the Mono Debugger :-)
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/library.c
+	(mono_debugger_server_set_notification): This is no longer a
+	"static" method - different processes may have different
+	notification addresses, so we need to make this per-target.
+
+	* backends/server/x86-ptrace.c
+	(InferiorHandle): Added `guint64 nofification_address'; replaces
+	the static variable in x86_64-arch.c/i386-arch.c.
+	(server_ptrace_set_notification): Moved here from x86_64-arch.c.
+
+	* backends/Inferior.cs
+	(Inferior.SetNotificationAddress): New internal method; call
+	mono_debugger_server_set_notification().
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.ThreadCreated): Call SetNotificationAddress()
+	on each newly created inferior.	
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* arch/bfdglue.c
+	(bfd_glue_get_section_size): Added `raw_size' argument.
+	(bfd_glue_get_section_contents): Take a pre-alloced buffer as
+	argument rather than allocating it here.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/ProcessServant.cs
+	(ProcessServant.Kill): Don't call Dispose().
+
+	* backends/server/x86-linux-ptrace.c
+	(server_ptrace_initialize_process): Don't use PTRACE_O_TRACEEXIT;
+	we don't need this.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Clear the `csharp_language' on
+	`NofitifactionType.FinalizeManagedCode'.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Check whether the Mono we're using is recent enough.
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(BreakCommand.DoResolve): If our base class'es DoResolve() failed,
+	try resolving the expression as an address.
+
+	* frontend/Interpreter.cs
+	(Interpreter.InsertBreakpoint): Added overloaded version which
+	takes a `TargetAddress'.
+
+	* classes/Process.cs
+	(Process.InsertBreakpoint): Added overloaded version which takes a
+	`TargetAddress'.	
+
+2006-05-24  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/server.h
+	(ServerStatusMessageType): Added `MESSAGE_CHILD_CALLED_EXIT'.
+
+	* backends/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Use `MESSAGE_CHILD_CALLED_EXIT'
+	for `PTRACE_EVENT_EXIT'.
+
+2006-05-23  Martin Baulig  <martin@ximian.com>
+
+	* backends/Inferior.cs
+	(Inferior.PushRegisters): New public method.
+	(Inferior.PopRegisters): New public method.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.AcquireThreadLock): Call
+	inferior.PushRegisters() to push all registers onto the stack so
+	the GC will see them.
+	(SingleSteppingEngine.ReleaseThreadLock): Call
+	inferior.PopRegisters() to remove them from the stack again.
+
+	* backends/server/x86-linux-ptrace.c
+	(server_ptrace_initialize_process): Add `PTRACE_O_TRACEEXIT'.
+
+	* backends/server/x86_64-arch.c
+	(server_ptrace_push_registers): New method.
+	(server_ptrace_pop_registers): New method.
+
+	* backends/server/i386-arch.c
+	(server_ptrace_push_registers): New method.
+	(server_ptrace_pop_registers): New method.
+
+	* backends/server/library.c
+	(mono_debugger_server_push_registers): New public method.
+	(mono_debugger_server_pop_registers): New public method.
+
+2006-05-20  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfReader.cs
+	(DwarfReader.DwarfTargetVariable.GetLocation): Add support for
+	location lists.	
+
+2006-05-20  Martin Baulig  <martin@ximian.com>
+
+	* arch/DwarfFrameReader.cs: More 64-bit updates.
+
+2006-05-20  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(SourceCommand.DoResolve): Also lookup native methods.
+	(BreakCommand): Add `-global' argument as a shortcut for
+	`-group global'.
+
 2006-05-17  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Interpreter.cs

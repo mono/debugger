@@ -384,7 +384,6 @@ namespace Mono.Debugger.Backends
 		public void Kill ()
 		{
 			main_thread.Kill ();
-			Dispose ();
 		}
 
 		public void Detach ()
@@ -685,6 +684,14 @@ namespace Mono.Debugger.Backends
 					       TargetFunctionType func)
 		{
 			Event handle = new Breakpoint (group, new SourceLocation (func));
+			events.Add (handle.Index, handle);
+			return handle;
+		}
+
+		public Event InsertBreakpoint (Thread target, ThreadGroup group,
+					       TargetAddress address)
+		{
+			Event handle = new Breakpoint (address.ToString (), group, address);
 			events.Add (handle.Index, handle);
 			return handle;
 		}

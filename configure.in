@@ -216,6 +216,21 @@ AC_CHECK_FUNCS(strlcpy strlcat)
 
 CHECK_READLINE
 
+AC_MSG_CHECKING([Whether your Mono is working])
+old_CFLAGS=$cflags
+CFLAGS=$WRAPPER_CFLAGS
+AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
+], [
+#if MONO_DEBUGGER_VERSION < 57
+#error "Your mono is too old for this version of the debugger."
+#endif
+], mono_working=yes, mono_working=no)
+AC_MSG_RESULT($mono_working)
+CFLAGS=$old_CFLAGS
+if test x$mono_working != xyes; then
+   AC_MSG_ERROR([*** Your Mono is too old for this version of the debugger.])
+fi
+
 AM_CONDITIONAL(DISABLED, false)
 
 AC_OUTPUT([

@@ -39,6 +39,7 @@ namespace Mono.Debugger.Backends
 		int child_pid;
 		bool initialized;
 		bool has_target;
+		bool pushed_regs;
 
 		TargetInfo target_info;
 		Architecture arch;
@@ -164,6 +165,15 @@ namespace Mono.Debugger.Backends
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_init_after_fork (IntPtr handle);
 
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_push_registers (IntPtr handle, out long new_rsp);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_pop_registers (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_set_notification (IntPtr handle, long address);
+
 		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
@@ -177,6 +187,7 @@ namespace Mono.Debugger.Backends
 			CHILD_CREATED_THREAD,
 			CHILD_FORKED,
 			CHILD_EXECD,
+			CHILD_CALLED_EXIT,
 			CHILD_NOTIFICATION,
 			UNHANDLED_EXCEPTION,
 			THROW_EXCEPTION,
@@ -1065,6 +1076,8 @@ namespace Mono.Debugger.Backends
 		public void Detach ()
 		{
 			check_disposed ();
+			if (pushed_regs)
+				mono_debugger_server_pop_registers (server_handle);
 			check_error (mono_debugger_server_detach (server_handle));
 		}
 
@@ -1199,6 +1212,25 @@ namespace Mono.Debugger.Backends
 		{
 			check_error (mono_debugger_server_init_after_fork (server_handle));
 			breakpoint_manager.InitializeAfterFork (this);
+		}
+
+		public TargetAddress PushRegisters ()
+		{
+			long new_rsp;
+			check_error (mono_debugger_server_push_registers (server_handle, out new_rsp));
+			pushed_regs = true;
+			return new TargetAddress (AddressDomain, new_rsp);
+		}
+
+		public void PopRegisters ()
+		{
+			pushed_regs = false;
+			check_error (mono_debugger_server_pop_registers (server_handle));
+		}
+
+		internal void SetNotificationAddress (TargetAddress notification)
+		{
+			mono_debugger_server_set_notification (server_handle, notification.Address);
 		}
 
 		internal struct ServerStackFrame

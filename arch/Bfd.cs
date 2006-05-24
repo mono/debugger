@@ -65,7 +65,7 @@ namespace Mono.Debugger.Backends
 
 				this.name = bfd_glue_get_section_name (section);
 				this.vma = bfd_glue_get_section_vma (section);
-				this.size = bfd_glue_get_section_size (section);
+				this.size = bfd_glue_get_section_size (section, true);
 				this.flags = bfd_glue_get_section_flags (section);
 
 				contents = new ObjectCache (
@@ -131,7 +131,7 @@ namespace Mono.Debugger.Backends
 		extern static int bfd_glue_get_dynamic_symbols (IntPtr bfd, out IntPtr symtab);
 
 		[DllImport("monodebuggerserver")]
-		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, bool raw_section, out IntPtr data, out int size);
+		extern static bool bfd_glue_get_section_contents (IntPtr bfd, IntPtr section, IntPtr data, int size);
 
 		[DllImport("monodebuggerserver")]
 		extern static IntPtr bfd_glue_get_first_section (IntPtr bfd);
@@ -146,7 +146,7 @@ namespace Mono.Debugger.Backends
 		extern static string bfd_glue_get_section_name (IntPtr section);
 
 		[DllImport("monodebuggerserver")]
-		extern static long bfd_glue_get_section_size (IntPtr section);
+		extern static int bfd_glue_get_section_size (IntPtr section, bool raw_section);
 
 		[DllImport("monodebuggerserver")]
 		extern static SectionFlags bfd_glue_get_section_flags (IntPtr section);
@@ -793,16 +793,18 @@ namespace Mono.Debugger.Backends
 
 		byte[] GetSectionContents (IntPtr section, bool raw_section)
 		{
-			IntPtr data;
-			int size;
-
-			if (!bfd_glue_get_section_contents (bfd, section, raw_section, out data, out size))
-				return null;
-
-			byte[] retval = new byte [size];
-			Marshal.Copy (data, retval, 0, size);
-			g_free (data);
-			return retval;
+			int size = bfd_glue_get_section_size (section, raw_section);
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (size);
+				if (!bfd_glue_get_section_contents (bfd, section, data, size))
+					return null;
+				byte[] retval = new byte [size];
+				Marshal.Copy (data, retval, 0, size);
+				return retval;
+			} finally {
+				Marshal.FreeHGlobal (data);
+			}
 		}
 
 		public bool HasSection (string name)

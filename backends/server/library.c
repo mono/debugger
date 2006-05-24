@@ -362,10 +362,10 @@ mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo **sinfo)
 }
 
 void
-mono_debugger_server_set_notification (guint64 notification)
+mono_debugger_server_set_notification (ServerHandle *handle, guint64 notification)
 {
 	if (global_vtable->set_notification)
-		return (* global_vtable->set_notification) (notification);
+		return (* global_vtable->set_notification) (handle,notification);
 }
 
 ServerCommandError
@@ -394,6 +394,24 @@ mono_debugger_server_init_after_fork (ServerHandle *handle)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->init_after_fork) (handle);
+}
+
+ServerCommandError
+mono_debugger_server_push_registers (ServerHandle *handle, guint64 *new_rsp)
+{
+	if (!global_vtable->push_registers)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->push_registers) (handle, new_rsp);
+}
+
+ServerCommandError
+mono_debugger_server_pop_registers (ServerHandle *handle)
+{
+	if (!global_vtable->pop_registers)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->pop_registers) (handle);
 }
 
 static gboolean initialized = FALSE;
