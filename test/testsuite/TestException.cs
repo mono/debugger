@@ -53,7 +53,8 @@ namespace Mono.Debugger.Tests
 					      "Invocation of `x.Test ()' raised an exception: " +
 					      "System.InvalidOperationException: Operation is not " +
 					      "valid due to the current state of the object\n" +
-					      "in [0x00005] (at " + FileName + ":8) X:Test ()");
+					      "  at X.Test () [0x00000] in " + FileName + ":" +
+					      LineException + " ");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Done");

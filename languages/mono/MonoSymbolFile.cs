@@ -1038,8 +1038,8 @@ namespace Mono.Debugger.Languages.Mono
 				for (int i = 0; i < line_numbers.Length; i++) {
 					JitLineNumberEntry lne = line_numbers [i];
 
-					Console.WriteLine ("{0,4} {1,4:x} {2,4:x}", i, lne.Offset,
-							   imethod.StartAddress + lne.Address);
+					Console.WriteLine ("{0,4} {1,4:x} {2,4:x} {3,4:x}", i, lne.Offset,
+							   lne.Address, imethod.StartAddress + lne.Address);
 				}
 				Console.WriteLine ("-----------------");
 			}

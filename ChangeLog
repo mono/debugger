@@ -1,3 +1,9 @@
+2006-05-30  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86_64-arch.c
+	(server_ptrace_push_registers): Don't corrup the red zone.
+	(server_ptrace_call_method_*): Likewise.
+
 2006-05-24  Martin Baulig  <martin@ximian.com>
 
 	* doc/GC-issues.txt: Added document describing the interface
