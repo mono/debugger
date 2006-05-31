@@ -412,12 +412,7 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			public override void Finish (CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void FinishNative (CommandResult result)
+			public override void Finish (bool native, CommandResult result)
 			{
 				throw new InvalidOperationException ();
 			}

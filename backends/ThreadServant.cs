@@ -131,12 +131,7 @@ namespace Mono.Debugger.Backends
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public abstract void Finish (CommandResult result);
-
-		// <summary>
-		//   Continue until leaving the current method.
-		// </summary>
-		public abstract void FinishNative (CommandResult result);
+		public abstract void Finish (bool native, CommandResult result);
 
 		public abstract void Continue (TargetAddress until, bool in_background,
 					       CommandResult result);

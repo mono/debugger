@@ -897,10 +897,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override CommandResult DoStep (ScriptingContext context)
 		{
-			if (Native)
-				return CurrentThread.FinishNative ();
-			else
-				return CurrentThread.Finish ();
+			return CurrentThread.Finish (Native);
 		}
 
 		// IDocumentableCommand

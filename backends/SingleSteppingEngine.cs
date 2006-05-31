@@ -1403,14 +1403,9 @@ namespace Mono.Debugger.Backends
 			StartOperation (new OperationStep (StepMode.NextLine, result));
 		}
 
-		public override void Finish (CommandResult result)
+		public override void Finish (bool native, CommandResult result)
 		{
-			StartOperation (new OperationFinish (false, result));
-		}
-
-		public override void FinishNative (CommandResult result)
-		{
-			StartOperation (new OperationFinish (true, result));
+			StartOperation (new OperationFinish (native, result));
 		}
 
 		public override void Continue (TargetAddress until, bool in_background,

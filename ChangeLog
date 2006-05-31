@@ -1,5 +1,13 @@
 2006-05-31  Martin Baulig  <martin@ximian.com>
 
+	* classes/Thread.cs
+	(Thread): Merge `Finish' and `FinishNative'.
+
+	* backends/ThreadServant.cs
+	(ThreadServant): Merge `Finish' and `FinishNative'.
+
+2006-05-31  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(SteppingCommand.DoStep): Return a `CommandResult'.
 

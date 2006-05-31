@@ -314,27 +314,13 @@ namespace Mono.Debugger
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public CommandResult Finish ()
+		public CommandResult Finish (bool native)
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
 				CommandResult result = new StepCommandResult (this);
-				servant.Finish (result);
-				return result;
-			}
-		}
-
-		// <summary>
-		//   Continue until leaving the current method.
-		// </summary>
-		public CommandResult FinishNative ()
-		{
-			lock (this) {
-				check_servant ();
-				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
-				servant.FinishNative (result);
+				servant.Finish (native, result);
 				return result;
 			}
 		}
