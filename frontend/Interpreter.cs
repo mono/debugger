@@ -410,6 +410,21 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public void Wait (CommandResult result)
+		{
+			if (result == null)
+				return;
+
+			WaitHandle[] handles = new WaitHandle [2];
+			handles [0] = interrupt_event;
+			handles [1] = result.CompletedEvent;
+
+			WaitHandle.WaitAny (handles);
+
+			if (result.Result is Exception)
+				throw (Exception) result.Result;
+		}
+
 		public void Wait (Thread thread)
 		{
 			if (thread == null)

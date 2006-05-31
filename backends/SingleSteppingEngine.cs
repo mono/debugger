@@ -3495,24 +3495,6 @@ namespace Mono.Debugger.Backends
 		public string ExceptionMessage;
 	}
 
-	internal abstract class CommandResult : DebuggerMarshalByRefObject
-	{
-		public object Result;
-
-		public abstract WaitHandle CompletedEvent {
-			get;
-		}
-
-		public abstract void Completed ();
-
-		public void Wait ()
-		{
-			CompletedEvent.WaitOne ();
-			if (Result is Exception)
-				throw (Exception) Result;
-		}
-	}
-
 	internal class SimpleCommandResult : CommandResult
 	{
 		ManualResetEvent completed_event = new ManualResetEvent (false);

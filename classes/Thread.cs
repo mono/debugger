@@ -244,108 +244,124 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public void StepInstruction ()
+		public CommandResult StepInstruction ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.StepInstruction (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.StepInstruction (result);
+				return result;
 			}
 		}
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public void StepNativeInstruction ()
+		public CommandResult StepNativeInstruction ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.StepNativeInstruction (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.StepNativeInstruction (result);
+				return result;
 			}
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public void NextInstruction ()
+		public CommandResult NextInstruction ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.NextInstruction (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.NextInstruction (result);
+				return result;
 			}
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public void StepLine ()
+		public CommandResult StepLine ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.StepLine (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.StepLine (result);
+				return result;
 			}
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public void NextLine ()
+		public CommandResult NextLine ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.NextLine (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.NextLine (result);
+				return result;
 			}
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public void Finish ()
+		public CommandResult Finish ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.Finish (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.Finish (result);
+				return result;
 			}
 		}
 
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public void FinishNative ()
+		public CommandResult FinishNative ()
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				servant.FinishNative (new StepCommandResult (this));
+				CommandResult result = new StepCommandResult (this);
+				servant.FinishNative (result);
+				return result;
 			}
 		}
 
-		public void Continue ()
+		public CommandResult Continue ()
 		{
-			Continue (TargetAddress.Null, false);
+			return Continue (TargetAddress.Null, false);
 		}
 
-		public void Continue (TargetAddress until)
+		public CommandResult Continue (TargetAddress until)
 		{
-			Continue (until, false);
+			return Continue (until, false);
 		}
 
-		public void Continue (bool in_background)
+		public CommandResult Continue (bool in_background)
 		{
-			Continue (TargetAddress.Null, in_background);
+			return Continue (TargetAddress.Null, in_background);
 		}
 
-		public void Continue (TargetAddress until, bool in_background)
+		public CommandResult Continue (TargetAddress until, bool in_background)
 		{
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
+				CommandResult result = new StepCommandResult (this);
 				servant.Continue (until, in_background, new StepCommandResult (this));
+				return result;
 			}
 		}
 
@@ -782,6 +798,24 @@ namespace Mono.Debugger
 		~Thread ()
 		{
 			Dispose (false);
+		}
+	}
+
+	public abstract class CommandResult : DebuggerMarshalByRefObject
+	{
+		public object Result;
+
+		public abstract ST.WaitHandle CompletedEvent {
+			get;
+		}
+
+		public abstract void Completed ();
+
+		public void Wait ()
+		{
+			CompletedEvent.WaitOne ();
+			if (Result is Exception)
+				throw (Exception) Result;
 		}
 	}
 }

@@ -1,3 +1,27 @@
+2006-05-31  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(SteppingCommand.DoStep): Return a `CommandResult'.
+
+	* frontend/Interpreter.cs
+	(Interpreter.Wait): Added overloaded version which takes a
+	`CommandResult'; check for exceptions.
+
+	* backends/SingleSteppingEngine.cs
+	(CommandResult): Moved to classes/Thread.cs and made public.
+
+	* classes/Thread.cs (CommandResult): Moved here from
+	SingleSteppingEngine.cs and made public.	
+	(Thread.StepInstruction): Return a `CommandResult'.
+	(Thread.StepNativeInstruction): Likewise.
+	(Thread.NextInstruction): Likewise.
+	(Thread.StepLine): Likewise.
+	(Thread.NextLine): Likewise.
+	(Thread.Finish): Likewise.
+	(Thread.FinishNative): Likewise.
+	(Thread.Continue): Likewise.
+	(Thread.FinishNative): Likewise.
+
 2006-05-30  Martin Baulig  <martin@ximian.com>
 
 	* backends/server/x86_64-arch.c
