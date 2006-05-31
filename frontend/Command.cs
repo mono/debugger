@@ -1478,7 +1478,7 @@ namespace Mono.Debugger.Frontend
 						       context.Interpreter.PrintProcess (process));
 					foreach (Thread proc in process.Threads) {
 						string prefix = proc.ID == current_id ? "(*)" : "   ";
-						context.Print ("  {0} {1} ({2}:{3:x}) {4}", prefix, proc,
+						context.Print ("{0} {1} ({2}:{3:x}) {4}", prefix, proc,
 							       proc.PID, proc.TID, proc.State);
 						printed_something = true;
 					}
