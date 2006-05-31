@@ -124,33 +124,46 @@ namespace Mono.Debugger
 
 		public void Detach ()
 		{
+			check_servant ();
 			servant.Detach ();
 		}
 
 		public Process Run (DebuggerOptions options)
 		{
+			check_servant ();
 			return servant.Run (options);
 		}
 
 		public Process Attach (DebuggerOptions options, int pid)
 		{
+			check_servant ();
 			return servant.Attach (options, pid);
 		}
 
 		public Process OpenCoreFile (DebuggerOptions options, string core_file,
 					     out Thread[] threads)
 		{
+			check_servant ();
 			return servant.OpenCoreFile (options, core_file, out threads);
 		}
 
 
 		public Process[] Processes {
-			get { return servant.Processes; }
+			get {
+				check_servant ();
+				return servant.Processes;
+			}
 		}
 
 		//
 		// IDisposable
 		//
+
+		void check_servant ()
+		{
+			if (servant == null)
+				throw new TargetException (TargetError.NoTarget);
+		}
 
 		private bool disposed = false;
 
