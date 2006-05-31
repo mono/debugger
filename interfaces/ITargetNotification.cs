@@ -16,37 +16,37 @@ namespace Mono.Debugger
 		// <summary>
 		//   There is no target to debug.
 		// </summary>
-		NO_TARGET,
+		NoTarget,
 
 		// <summary>
 		//   The debugger is busy doing some things.
 		// </summary>
-		BUSY,
+		Busy,
 
 		// <summary>
 		//   The target is running.
 		// </summary>
-		RUNNING,
+		Running,
 
 		// <summary>
 		//   The target is stopped.
 		// </summary>
-		STOPPED,
+		Stopped,
 
 		// <summary>
 		//   The target has exited.
 		// </summary>
-		EXITED,
+		Exited,
 
 		// <summary>
 		//   Undebuggable daemon thread.
 		// </summary>
-		DAEMON,
+		Daemon,
 
 		// <summary>
 		//   This is a core file.
 		// </summary>
-		CORE_FILE,
+		CoreFile,
 
 		LAST
 	}

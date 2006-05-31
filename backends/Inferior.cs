@@ -306,7 +306,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 
-			TargetState old_state = change_target_state (TargetState.BUSY);
+			TargetState old_state = change_target_state (TargetState.Busy);
 			try {
 				check_error (mono_debugger_server_call_method (
 					server_handle, method.Address, data1, data2,
@@ -322,7 +322,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 
-			TargetState old_state = change_target_state (TargetState.RUNNING);
+			TargetState old_state = change_target_state (TargetState.Running);
 			try {
 				check_error (mono_debugger_server_call_method_1 (
 					server_handle, method.Address, arg1,
@@ -337,7 +337,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 
-			TargetState old_state = change_target_state (TargetState.RUNNING);
+			TargetState old_state = change_target_state (TargetState.Running);
 			try {
 				check_error (mono_debugger_server_call_method_2 (
 					server_handle, method.Address, arg1, callback_arg));
@@ -519,14 +519,6 @@ namespace Mono.Debugger.Backends
 					TargetError.CannotStartTarget, message);
 			}
 
-#if FIXME
-			initialized = true;
-
-			SetupInferior ();
-
-			change_target_state (TargetState.STOPPED, 0);
-#endif
-
 			return child_pid;
 		}
 
@@ -541,7 +533,7 @@ namespace Mono.Debugger.Backends
 
 			SetupInferior ();
 
-			change_target_state (TargetState.STOPPED, 0);
+			change_target_state (TargetState.Stopped, 0);
 		}
 
 		public void InitializeThread (int pid)
@@ -556,7 +548,7 @@ namespace Mono.Debugger.Backends
 
 			SetupInferior ();
 
-			change_target_state (TargetState.STOPPED, 0);
+			change_target_state (TargetState.Stopped, 0);
 		}
 
 		public void Attach (int pid)
@@ -577,7 +569,7 @@ namespace Mono.Debugger.Backends
 
 			SetupInferior ();
 
-			change_target_state (TargetState.STOPPED, 0);
+			change_target_state (TargetState.Stopped, 0);
 		}
 
 		void child_execd ()
@@ -602,14 +594,14 @@ namespace Mono.Debugger.Backends
 			switch (message) {
 			case ChildEventType.CHILD_EXITED:
 			case ChildEventType.CHILD_SIGNALED:
-				change_target_state (TargetState.EXITED);
+				change_target_state (TargetState.Exited);
 				break;
 
 			case ChildEventType.CHILD_CALLBACK:
 			case ChildEventType.CHILD_CALLBACK_COMPLETED:
 			case ChildEventType.CHILD_STOPPED:
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
-				change_target_state (TargetState.STOPPED);
+				change_target_state (TargetState.Stopped);
 				break;
 
 			case ChildEventType.CHILD_EXECD:
@@ -978,7 +970,7 @@ namespace Mono.Debugger.Backends
 		public event TargetOutputHandler TargetOutput;
 		public event StateChangedHandler StateChanged;
 
-		TargetState target_state = TargetState.NO_TARGET;
+		TargetState target_state = TargetState.NoTarget;
 		public TargetState State {
 			get {
 				check_disposed ();
@@ -1009,7 +1001,7 @@ namespace Mono.Debugger.Backends
 		{
 			check_disposed ();
 
-			TargetState old_state = change_target_state (TargetState.RUNNING);
+			TargetState old_state = change_target_state (TargetState.Running);
 			try {
 				check_error (mono_debugger_server_step (server_handle));
 			} catch {
@@ -1021,7 +1013,7 @@ namespace Mono.Debugger.Backends
 		public void Continue ()
 		{
 			check_disposed ();
-			TargetState old_state = change_target_state (TargetState.RUNNING);
+			TargetState old_state = change_target_state (TargetState.Running);
 			try {
 				check_error (mono_debugger_server_continue (server_handle));
 			} catch {

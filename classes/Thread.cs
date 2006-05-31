@@ -54,7 +54,7 @@ namespace Mono.Debugger
 		public override TargetState State {
 			get {
 				if (servant == null)
-					return TargetState.NO_TARGET;
+					return TargetState.NoTarget;
 				else
 					return servant.State;
 			}
@@ -600,7 +600,7 @@ namespace Mono.Debugger
 		}
 
 		public bool IsStopped {
-			get { return State == TargetState.STOPPED; }
+			get { return State == TargetState.Stopped; }
 		}
 
 		public override TargetInfo TargetInfo {

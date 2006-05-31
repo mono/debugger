@@ -1,5 +1,10 @@
 2006-05-31  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ITargetNotification.cs
+	(TargetState): Don't use all-capital letters.
+
+2006-05-31  Martin Baulig  <martin@ximian.com>
+
 	* classes/Thread.cs
 	(Thread): Merge `Finish' and `FinishNative'.
 

@@ -220,7 +220,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override TargetState State {
-				get { return TargetState.STOPPED; }
+				get { return TargetState.CoreFile; }
 			}
 
 			public override StackFrame CurrentFrame {
