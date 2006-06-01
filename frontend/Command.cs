@@ -744,7 +744,8 @@ namespace Mono.Debugger.Frontend
 				thread = context.Interpreter.CurrentThread;
 
 			context.Interpreter.CurrentThread = thread;
-			context.Print (thread);
+			context.Print ("{0} ({1}:{2:x}) {3}", thread,
+				       thread.PID, thread.TID, thread.State);
 			return thread;
 		}
 
