@@ -9,6 +9,7 @@ namespace Mono.Debugger
 		None			= 0,
 
 		UnknownError		= 1,
+		InternalError,
 		NoTarget,
 		AlreadyHaveTarget,
 		CannotStartTarget,
