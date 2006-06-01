@@ -2137,7 +2137,7 @@ namespace Mono.Debugger.Frontend
 	public class BreakCommand : SourceCommand, IDocumentableCommand
 	{
 		string group;
-		bool global;
+		bool global, local;
 		int domain = 0;
 		ThreadGroup tgroup;
 		TargetAddress address = TargetAddress.Null;
@@ -2152,6 +2152,11 @@ namespace Mono.Debugger.Frontend
 			set { global = value; }
 		}
 
+		public bool Local {
+			get { return local; }
+			set { local = value; }
+		}
+
 		public int Domain {
 			get { return domain; }
 			set { domain = value; }
@@ -2160,13 +2165,25 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (global) {
+				if (local)
+					throw new ScriptingException (
+						"Cannot use both -local and -global.");
+
 				if (Group != null)
 					throw new ScriptingException (
 						"Cannot use both -group and -global.");
 
 				tgroup = ThreadGroup.Global;
-			} else {
+			} else if (local) {
+				if (Group != null)
+					throw new ScriptingException (
+						"Cannot use both -group and -local.");
+
 				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+			} else if (Group != null) {
+				tgroup = context.Interpreter.GetThreadGroup (Group, false);
+			} else {
+				tgroup = ThreadGroup.Global;
 			}
 
 			bool resolved = base.DoResolve (context);

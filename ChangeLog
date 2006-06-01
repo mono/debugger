@@ -1,5 +1,11 @@
 2006-06-01  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(BreakCommand): Added `-local' argument; change default behaviour
+	to `-global'.
+
+2006-06-01  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86_64-arch.c
 	(server_ptrace_push_registers): Properly align the stack.
 	(server_ptrace_call_method_*): Likewise.
