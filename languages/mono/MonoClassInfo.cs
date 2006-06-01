@@ -241,6 +241,9 @@ namespace Mono.Debugger.Languages.Mono
 			address = target.ReadAddress (address);
 
 			TargetType current = type.File.MonoLanguage.GetClass (target, address);
+			if (current == null)
+				return null;
+
 			return (MonoClassObject) current.GetObject (location);
 		}
 	}
