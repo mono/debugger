@@ -180,7 +180,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-		        int child_bpt = AssertBreakpoint ("-group global " + LineChild);
+		        int child_bpt = AssertBreakpoint ("-global " + LineChild);
 			AssertExecute ("next");
 
 			Thread child = AssertProcessCreated ();

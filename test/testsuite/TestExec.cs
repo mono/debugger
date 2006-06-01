@@ -30,7 +30,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(System.String[])", line_main);
-			bpt_main = AssertBreakpoint (line_main_2);
+			bpt_main = AssertBreakpoint ("-local " + line_main_2);
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main, "X.Main(System.String[])", line_main_2);
 
