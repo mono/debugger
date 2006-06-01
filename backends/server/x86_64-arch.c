@@ -17,7 +17,7 @@
 
 struct ArchInfo
 {
-	long call_address;
+	guint64 call_address;
 	guint64 callback_argument;
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
@@ -33,11 +33,11 @@ typedef struct
 {
 	INFERIOR_REGS_TYPE *saved_regs;
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
-	int saved_signal;
-	long call_address;
-	long exc_address;
-	gboolean debug;
+	guint64 call_address;
+	guint64 exc_address;
 	guint64 callback_argument;
+	gboolean debug;
+	int saved_signal;
 } RuntimeInvokeData;
 
 ArchInfo *
