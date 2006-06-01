@@ -26,6 +26,7 @@ struct ArchInfo
 	int saved_signal;
 	GPtrArray *rti_stack;
 	guint64 dr_control, dr_status;
+	guint64 pushed_regs_rsp;
 	int dr_regs [DR_NADDR];
 };
 
@@ -360,7 +361,14 @@ server_ptrace_push_registers (ServerHandle *handle, guint64 *new_rsp)
 	ArchInfo *arch = handle->arch;
 	ServerCommandError result;
 
-	INFERIOR_REG_RSP (arch->current_regs) -= AMD64_RED_ZONE_SIZE + sizeof (arch->current_regs);
+	if (arch->pushed_regs_rsp)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	arch->pushed_regs_rsp = INFERIOR_REG_RSP (arch->current_regs);
+
+	INFERIOR_REG_RSP (arch->current_regs) -= AMD64_RED_ZONE_SIZE + sizeof (arch->current_regs) + 16;
+	INFERIOR_REG_RSP (arch->current_regs) &= 0xfffffffffffffff0L;
+
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -381,7 +389,12 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	ArchInfo *arch = handle->arch;
 	ServerCommandError result;
 
-	INFERIOR_REG_RSP (arch->current_regs) += AMD64_RED_ZONE_SIZE + sizeof (arch->current_regs);
+	if (!arch->pushed_regs_rsp)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	INFERIOR_REG_RSP (arch->current_regs) = arch->pushed_regs_rsp;
+	arch->pushed_regs_rsp = 0;
+
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -720,7 +733,8 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size;
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
+	new_rsp &= 0xfffffffffffffff0L;
 
 	*((guint64 *) code) = new_rsp + 16;
 	*((guint64 *) (code+8)) = callback_argument;
@@ -774,7 +788,8 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size;
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
+	new_rsp &= 0xfffffffffffffff0L;
 
 	*((guint64 *) code) = new_rsp + 16;
 	*((guint64 *) (code+8)) = callback_argument;
@@ -817,7 +832,8 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size;
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
+	new_rsp &= 0xfffffffffffffff0L;
 
 	*((guint64 *) code) = new_rsp + size - 1;
 	*((guint64 *) (code+8)) = INFERIOR_REG_RAX (arch->current_regs);
@@ -891,7 +907,9 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	if (arch->saved_regs)
 		return COMMAND_ERROR_RECURSIVE_CALL;
 
-	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size;
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
+	new_rsp &= 0xfffffffffffffff0L;
+
 	blob_start = new_rsp + static_size;
 
 	for (i = 0; i < num_params; i++) {

@@ -1,3 +1,17 @@
+2006-06-01  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/x86_64-arch.c
+	(server_ptrace_push_registers): Properly align the stack.
+	(server_ptrace_call_method_*): Likewise.
+
+2006-06-01  Martin Baulig  <martin@ximian.com>
+
+	* backends/server/server.h
+	(ServerCommandError): Add `COMMAND_ERROR_INTERNAL_ERROR'.
+
+	* classes/TargetException.cs
+	(TargetError): Added `InternalError'.
+
 2006-05-31  Martin Baulig  <martin@ximian.com>
 
 	* classes/Debugger.cs: Added error checking.
