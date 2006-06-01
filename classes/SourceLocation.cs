@@ -180,6 +180,7 @@ namespace Mono.Debugger
 				this.source = function.Source;
 			} else if (source != null) {
 				this.module = source.SourceFile.Module;
+				this.file = source.SourceFile;
 			} else if (file != null) {
 				this.module = file.Module;
 			}

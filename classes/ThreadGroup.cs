@@ -101,7 +101,12 @@ namespace Mono.Debugger
 				ProcessServant process = (ProcessServant) context.Context;
 
 				string name = info.GetString ("name");
-				return process.ThreadGroupByName (name);
+				if (name == "system")
+					return ThreadGroup.System;
+				else if (name == "global")
+					return ThreadGroup.Global;
+				else
+					return process.ThreadGroupByName (name);
 			}
 		}
 	}
