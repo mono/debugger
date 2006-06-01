@@ -1,5 +1,11 @@
 2006-06-01  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine): Correctly handle the THROW_EXCEPTION /
+	HANDLE_EXCEPTION notification.
+
+2006-06-01  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(BreakCommand): Added `-local' argument; change default behaviour
 	to `-global'.

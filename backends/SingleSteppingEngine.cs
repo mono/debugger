@@ -205,28 +205,32 @@ namespace Mono.Debugger.Backends
 
 			if ((message == Inferior.ChildEventType.THROW_EXCEPTION) ||
 			    (message == Inferior.ChildEventType.HANDLE_EXCEPTION)) {
-				TargetAddress stack = new TargetAddress (
+				TargetAddress info = new TargetAddress (
 					inferior.AddressDomain, cevent.Data1);
 				TargetAddress ip = new TargetAddress (
 					manager.AddressDomain, cevent.Data2);
 
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received exception: {1} {2} {3}",
-					      this, message, stack, ip);
+					      this, message, info, ip);
+
+				TargetAddress stack = inferior.ReadAddress (info);
+				TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
 
 				bool stop_on_exc;
 				if (message == Inferior.ChildEventType.THROW_EXCEPTION)
-					stop_on_exc = throw_exception (stack, ip);
+					stop_on_exc = throw_exception (stack, exc, ip);
 				else
-					stop_on_exc = handle_exception (stack, ip);
+					stop_on_exc = handle_exception (stack, exc, ip);
 
 				Report.Debug (DebugFlags.SSE,
-					      "{0} {1}stopping at exception ({2}:{3}) - {4} - {5}",
-					      this, stop_on_exc ? "" : "not ", stack, ip,
+					      "{0} {1}stopping at exception ({2}:{3}:{4}) - {5} - {6}",
+					      this, stop_on_exc ? "" : "not ", stack, exc, ip,
 					      current_operation, temp_breakpoint_id);
 
 				if (stop_on_exc) {
-					PushOperation (new OperationException (ip, stack, false));
+					inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
+					PushOperation (new OperationException (ip, exc, false));
 					return;
 				}
 
@@ -877,10 +881,8 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		bool throw_exception (TargetAddress info, TargetAddress ip)
+		bool throw_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
 		{
-			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
-
 			Report.Debug (DebugFlags.SSE,
 				      "{0} throwing exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
@@ -903,18 +905,14 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.SSE,
 					      "{0} stopped on exception {1} at {2}", this, exc, ip);
 
-				inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
 				return true;
 			}
 
 			return false;
 		}
 
-		bool handle_exception (TargetAddress info, TargetAddress ip)
+		bool handle_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
 		{
-			TargetAddress stack = inferior.ReadAddress (info);
-			TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
-
 			Report.Debug (DebugFlags.SSE,
 				      "{0} handling exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
