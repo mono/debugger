@@ -1,0 +1,278 @@
+Debugging Multi-Threaded Applications:
+======================================
+
+This document describes how a debugger debugs multi-threaded
+applications.
+
+First of all, let me clarify a few terms:
+
+* Whole-Process Debugging:
+
+  This means that all stepping operations operate on the debuggee as
+  a whole, ie. all its threads.  A debuggee is always either fully
+  stopped or fully running.
+
+* Per-Thread Debugging:
+
+  This means that each stepping operation operates on one single
+  thread.  Each thread can be individually stopped and resumed and
+  while one thread is stopped in the debugger, other threads may still
+  be running.
+
+* A thread being suspended ...
+
+  means that a thread is in some state where it's only consuming very
+  little CPU time and waiting for a resume request.
+
+  Note that the thread is not necessarily stopped.
+
+  This can for instance be implemented by having the thread block on a
+  mutex inside a signal handler.
+
+* A thread being stopped ...
+
+  means that a thread is physically stopped on the OS level.
+
+  A thread enters this state if it either receives a SIGSTOP or when
+  being debugged by a debugger.
+
+* Stepping Operation
+
+  A high-level stepping operation which is initiated by the user, such
+  as "step one source line", for instance.
+
+* Stepping Command
+
+  One native OS-level stepping command - such as PTRACE_SINGLESTEP or
+  PTRACE_CONTINUE.  Each stepping operation consists of one ore more
+  stepping commands.
+
+Basic Concepts of a Debugger:
+-----------------------------
+
+* Single-Stepping:
+
+  On the OS level, there are just two different modes of single
+  stepping: step one machine instruction (called `step-insn' in this
+  document) or continue until hitting a breakpoint or receiving a
+  signal (called `continue' in this document).
+
+  More advanced stepping operations such as stepping by source lines,
+  are built on top of these basic stepping operations - in the Mono
+  Debugger, this is done in the SingleSteppingEngine (SSE).
+
+Linux, ptrace() and the Mono Debugger:
+--------------------------------------
+
+Note that on Linux, a thread may not ptrace() any of its sibling's
+children - ie. only the thread which initially fork()ed the debuggee
+may access it - other threads may not even access the debuggee's
+memory.  On the other hand, waitpid() may wait on any children created
+by the current process.
+
+Because of this, the Mono Debugger uses two threads:
+
+The "wait thread" does nothing but blocking on a waitpid() and the
+"engine thread" performs all stepping operations.  The engine thread
+also contains the debugger's main loop: it receives events from both
+the wait thread and the user - each time the user issues a command,
+it's sent to the engine thread and each time the debuggee stops, the
+wait thread also sends an event to the engine thread.
+
+Unfortunately, this limitation of the Linux kernel complicates a lot
+of things in the debugger - even simple operations such as getting a
+stack trace must go through the debugger's main loop.
+
+Whole-Process Debugging vs. Per-Thread Debugging - User Interface:
+------------------------------------------------------------------
+
+First of all, there is no such thing called whole-process debugging on
+Linux - per-thread debugging is the natural way of doing things here.
+
+Debuggers, such as gdb, which want to use this debugging model need to
+emulate it on top of the existing OS API.
+
+On Linux, we're using the ptrace() and wait() system calls to debug
+stuff and they operate on threads - more precisely: on Linux, there's a
+1:1 mapping between a thread and a kernel task (aka LWP).  This
+especially means that if any thread hits a breakpoint, receives a
+signal or completed a step-instruction, the Linux kernel does *not*
+stop any of the other threads - and the debugger just gets a wait()
+notification for this single thread.  Then, it's up to the debugger to
+decide what it wants to do with the other threads - leave them running
+or stop them all.
+
+From a user perspective, whole-process debugging means that after
+issuing a stepping command such as "step source line" or "continue",
+the debugger resumes all of the debuggee's threads, waits until any of
+them stops and then stops them all before giving control back to the
+user.
+
+There are two important things to keep in mind:
+
+* Although the debugger always resumes all threads, the stepping
+  command still needs a thread argument.
+
+  This is quite obvious - in case of a "step one source line" command,
+  for instance, the debugger needs to know which source line the user
+  means.
+
+* The debugger stops as soon as any of the debuggee's threads stops.
+
+  This has a very unpleasant side effect - if you're single-stepping
+  through a function which is called frequently from different
+  threads, the debugger may stop in another thread than the one you
+  were single-stepping in.
+
+  This happens very often if you set breakpoints inside library
+  functions such as Console.WriteLine().
+
+  To make things worse, the thread you're actually interested in might get
+  stopped in some internal libc or runtime function, making it hard to
+  resume your original single-stepping session.
+
+  However, this mode has its advantages if the debugger has a GUI:
+  whenever the target stops, the GUI can display stack traces from all
+  threads.
+
+On the other hand, per-thread debugging looks like this from a user
+point of view:
+
+Whenever you issue a stepping command, the debugger just performs this
+particular operation - it doesn't do anything to any other thread.  If
+any other thread stops while performing this operation, the debugger
+informs the user, but it does not interrupt the operation.
+
+One important thing to know about the Mono Debugger's CLI is that
+hitting Control-C will immediately present you a command prompt, but
+it won't interrupt the current stepping operation - you need to
+manually issue a "stop" command to do that.
+
+This means that you can run high-level operations such as "next" in
+the background.
+
+Imagine for instance that you issued a "next" command - telling the
+debugger to step until the next source line, but to step over any
+method calls - when another thread hits a breakpoint.  Now, the
+debugger displays that event, but it's up to you to decide whether you
+want to wait for the completion of the "next" or have a look at that
+other thread right now.
+
+Of course, that's just applicable to a CLI - a GUI doesn't wait for
+any stepping operations to complete.
+
+From the debugger's point of view:
+----------------------------------
+
+Now let's have a look at how things work from the debugger's
+perspective ...
+
+While performing a high-level stepping operation (such as "step one
+source line", for instance), several iterations of the debugger's main
+loop are run - each performing one single OS-level stepping command
+(PTRACE_SINGLESTEP / PTRACE_CONTINUE).
+
+In both threading models - whole-process and per-thread - the debugger
+uses waitpid() to block on all of the debuggee's threads, so it gets
+an event if any of them stops.
+
+However, as already pointed out earlier, if you get a waitpid() event
+for some thread, only that thread is stopped - so for the whole-process
+model, the debugger must explicitly stop all the other threads.  Also,
+the debugger most explicitly resume all the other threads on each
+stepping command.
+
+In the per-thread model, this is not necessary - the debugger doesn't
+care about the other threads and leaves them alone.
+
+Sounds easy so far ?  Well, things are a lot more complicated ... you
+have to decide which threading model you want when initially designing
+a debugger as this will influence a lot of its internals:
+
+* Stopping a thread sounds easy, but in fact it's not - Linux doesn't
+  have any API for that.
+
+  To stop a thread, you must sent it a SIGSTOP and wait until it is
+  actually stopped - more precisely: you can't just send that signal
+  and go, you must explicitly wait() on the thread before you can
+  access its registers or memory.
+
+* There's a fundamental difference in how the debugger's main loop
+  needs to be designed - the whole-process threading model, all
+  threads have to be stopped and restarted for each operation, while
+  in the per-thread model, this only happens in some very rare corner
+  cases.
+
+* Breakpoints and stepping over them is a science of its own -
+  especially if you want to do it right.
+
+  The key point here is that in some cases, we explicitly do *not*
+  want any other thread to be running.
+
+* The debugger may need to execute code in the debuggee - for instance
+  when invoking a property accessor or a managed ToString() method.
+
+  This would cause major headaches in the whole-process model:
+
+  You do not want such an operation to have any side-effects on other
+  threads - more precisely: each time a thread is resumed, its stack
+  frame obviously gets invalid.
+
+  What happens if your application has two threads A and B, both are
+  stopped in user code and your debugger's GUI wants to display their
+  variables.  Now if the GUI calls ToString() on any of A's variables,
+  resuming B would make its stack frame and thus its variables invalid.
+
+  This means than when doing runtime-invoke, the debugger would still
+  need to use the per-thread model - leading to the confusing
+  situation where sometimes all threads are running and sometimes not.
+
+* Of course, stopping and restarting threads is a very expensive
+  operation - it'd be a very bad idea to do this for each stepping
+  command as one stepping operation may consist of more than 100
+  commands.
+
+  But this also implies that the whole-process model could also be
+  built on top of the per-thread model by the debugger's user
+  interface.
+
+Advantages of the Per-Thread debugging model:
+---------------------------------------------
+
+* If all of your threads are stopped, you can do a runtime-invoke in
+  one of them without making any other thread's stack frame invalid.
+
+  This can be very helpful if you want to inspect local variables in
+  all your threads and this involves calling property accessors or
+  ToString() methods.
+
+* When debugging library functions such as Console.WriteLine(), it can
+  be very helpful if your debugging session always "stays in the
+  current thread" while debugging; ie. you type "next" and the
+  debugger won't stop until that "next" is complete.
+
+* When debugging multi-threaded GUI applications, it might be
+  desirable to keep the gtk# main-loop running while debugging, so
+  your gtk# will continue redrawing and your GUI won't freeze.
+
+* A GUI can still implement the whole-process threading model on top
+  of this one if it wants.
+
+Summary:
+--------
+
+Both threading models have their advantages, but which one too choose
+is a design decision which must be made when you start to write a
+debugger - switching to a later time is not possible without rewriting
+substancial pieces of code.
+
+However, the per-thread debugging model is very flexible and it's also
+what's native on Linux, ie. the API which is provided by the Linux
+kernel.
+
+Also, user interfaces may implement the whole-process threading model
+on top of the per-thread one.
+
+
+Last changed June 9th, 2006
+Martin Baulig <martin@ximian.com>
