@@ -273,6 +273,56 @@ kernel.
 Also, user interfaces may implement the whole-process threading model
 on top of the per-thread one.
 
+Func-eval (aka "runtime-invoke") and nested break states:
+=========================================================
+
+Mike Stall has some interesting comments about func-eval in his blog:
+http://blogs.msdn.com/jmstall/archive/2005/03/23/400794.aspx
+
+Now let's have a look at how things are handled in the Mono Debugger.
+
+First of all, the Mono Debugger has two ways of doing a funceval:
+either as part of a `print' or with the `call' command.
+
+When done as part of a `print', the debugger always blocks on the
+completion of the funceval and prints its result.  It does not stop on
+any breakpoints and if the funceval throws an exception, the exception
+object is displayed.
+
+A `call' command, on the other hand, stops on the first line of the
+method and lets you single-step through it.  While single-stepping
+through it, all breakpoints are hit just as normal.  When done, you
+can just `continue' out of the funceval - the debugger stops on its
+completion.
+
+If a `print' is hanging, you can just interrupt it by pressing
+Control-C - this will give you a command prompt and you can then use
+`stop' to stop the target.
+
+To abort a funceval, use `return -invocation'.
+
+Internally, this is done by throwing a fatal exception which is then
+caught by the mono_object_runtime_invoke().  Note that you can't abort
+a funceval if it's blocking inside native code.
+
+* The debugger neither stops nor resumes any other threads, a funceval
+  only affects the current thread.
+
+  It's up to the user to decide what to do with the other threads
+  before requesting the funceval.
+
+* Regarding breakpoints: the debugger skips all breakpoints if the
+  funceval is part of a `print' and treats them normally if it's part
+  of a `call'.
+
+* If the funceval hangs, use Control-C to get a command prompt, then
+  `stop' to stop the target and after that you can either debug why
+  it's hanging or use `return -invocation' to abort it.
+
+* Funcevals may be nested an infinite number of times.
+  You may also mix `call's and interrupted `print's.
+
+
 
 Last changed June 9th, 2006
 Martin Baulig <martin@ximian.com>
