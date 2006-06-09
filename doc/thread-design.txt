@@ -255,6 +255,9 @@ Advantages of the Per-Thread debugging model:
   desirable to keep the gtk# main-loop running while debugging, so
   your gtk# will continue redrawing and your GUI won't freeze.
 
+  See also
+  http://blogs.msdn.com/jmstall/archive/2005/12/07/funceval_message_pump.aspx
+
 * A GUI can still implement the whole-process threading model on top
   of this one if it wants.
 
@@ -322,6 +325,74 @@ a funceval if it's blocking inside native code.
 * Funcevals may be nested an infinite number of times.
   You may also mix `call's and interrupted `print's.
 
+Some random notes from Mike Stall's blog:
+=========================================
+
+* `detach' must check for nested break state; ie. pending funcevals.
+
+* Check anonymous methods:
+  http://blogs.msdn.com/jmstall/archive/2005/09/28/friendly_anonymous_method.aspx
+
+* #line:
+  http://blogs.msdn.com/jmstall/archive/2005/08/03/line_directive_caveats.aspx
+
+* That's just so funny:
+  http://blogs.msdn.com/jmstall/archive/2005/08/01/sofie_race_condition.aspx
+
+* Very important:  "Source-level step-in is not well defined"
+  http://blogs.msdn.com/jmstall/archive/2005/07/26/stepin_is_not_well_defined.aspx
+
+  Also: "Just my Code"
+  http://blogs.msdn.com/jmstall/archive/2004/12/31/344832.aspx
+
+* This is just interesting to read - we already do the right thing in mdb :-)
+  http://blogs.msdn.com/jmstall/archive/2005/06/23/SourceStepping_Hybrid.aspx
+
+* #line hidden and 0xFeeFee sequence points:
+  http://blogs.msdn.com/jmstall/archive/2005/06/19/FeeFee_SequencePoints.aspx
+
+* Stepping over breakpoints:
+
+  Well, I call this evil:
+  http://blogs.msdn.com/jmstall/archive/2004/12/28/339756.aspx
+
+  Note that they're also running their debugger in the same process
+  while mdb is a true native debugger running out-of-proc.
+
+  The fundamental problem with stepping over a breakpoint is that you
+  can't just remove the breakpoint since this could cause a race
+  condition where another thread might slip through.
+
+  What they're doing is copying the current instruction to an auxilary
+  buffer, modifying %rip to that auxilary buffer and doing a single
+  instruction step.
+
+  My question is how can this ever work on the x86_64 where addresses
+  may be relative to %rip - for instance `lea -7(%rip),%r11' which is
+  used in JIT trampolines.
+
+  What mdb does is acquiring a "thread lock" - that is stopping all
+  other threads, removing the breakpoint, single-step one instruction
+  and then releasing the thread lock.  This "thread lock" is the same
+  thing which is also done if the GC needs to stop the world while
+  running inside the debugger.
+
+  Note that this is only required for user-defined breakpoints - if
+  the debugger needs to insert a breakpoint internally, for instance
+  as part of a `next', I'll try to insert a hardware breakpoint first
+  (so no other threads will hit it) and if that fails fall back to a
+  software breakpoint.
+
+* We're doing this right:
+  http://blogs.msdn.com/jmstall/archive/2004/12/31/344832.aspx
+
+* Interesting: "Debugger's aren't supposed to change behavior"
+  http://blogs.msdn.com/jmstall/archive/2004/10/02/236942.aspx
+
+  An important point is that we still requite -O=shared while running
+  in the debugger, though some progress has been made to eliminate
+  that.  I think I should spent some time to improve multi-appdomain
+  debugging support so we can run without -O=shared by default.
 
 
 Last changed June 9th, 2006
