@@ -14,6 +14,17 @@ namespace Mono.Debugger.Tests
 			: base ("TestInvocation")
 		{ }
 
+		const int LineTest = 31;
+		const int LineTestStatic = 39;
+		const int LineBreakpointTest = 46;
+		const int LineMain = 50;
+		const int LineMain2 = 54;
+
+		int bpt_test;
+		int bpt_test_static;
+		int bpt_bpt_test;
+		int bpt_main;
+
 		[Test]
 		[Category("ManagedTypes")]
 		public void Main ()
@@ -23,12 +34,13 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main()", 47);
-			int bpt = AssertBreakpoint ("31");
+			AssertStopped (thread, "X.Main()", LineMain);
+			bpt_test = AssertBreakpoint (LineTest);
+			bpt_main = AssertBreakpoint (LineMain2);
 			AssertExecute ("continue");
 
-			AssertHitBreakpoint (thread, bpt,
-					     "X.Test(System.Int32,System.String)", 31);
+			AssertHitBreakpoint (thread, bpt_test,
+					     "X.Test(System.Int32,System.String)", LineTest);
 
 			AssertPrint (thread, "a", "(System.Int32) 5");
 			AssertPrint (thread, "Hello (4)", "(System.Int32) 16");
@@ -50,7 +62,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello: 4");
 			AssertTargetOutput ("Static Hello: 16");
 
-			bpt = AssertBreakpoint ("39");
+			bpt_test_static = AssertBreakpoint (LineTestStatic);
 			AssertExecute ("continue");
 
 			AssertTargetOutput ("Foo: 5");
@@ -58,8 +70,8 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello: 5");
 			AssertTargetOutput ("Static Hello: 5");
 
-			AssertHitBreakpoint (thread, bpt,
-					     "X.TestStatic(X,System.Int32,System.String)", 39);
+			AssertHitBreakpoint (thread, bpt_test_static,
+					     "X.TestStatic(X,System.Int32,System.String)", LineTestStatic);
 
 			AssertPrint (thread, "a", "(System.Int32) 9");
 			AssertPrint (thread, "b", "(System.String) \"Boston\"");
@@ -70,6 +82,25 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello: 9");
 			AssertTargetOutput ("Static Hello: 9");
 			AssertTargetOutput ("Static Hello: 9");
+
+			AssertHitBreakpoint (thread, bpt_main,
+					     "X.Main()", LineMain2);
+
+			bpt_bpt_test = AssertBreakpoint ("BreakpointTest");
+			AssertExecute ("call BreakpointTest ()");
+
+			AssertHitBreakpoint (thread, bpt_bpt_test,
+					     "X.BreakpointTest()", LineBreakpointTest);
+
+			AssertExecute ("continue");
+			AssertStopped (thread, "X.Main()", LineMain2);
+			AssertExecute ("continue");
+
+			AssertHitBreakpoint (thread, bpt_bpt_test,
+					     "X.BreakpointTest()", LineBreakpointTest);
+
+			AssertExecute ("continue");
+
 			AssertTargetExited (thread.Process);
 
 		}

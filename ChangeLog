@@ -1,3 +1,11 @@
+2006-06-12  Martin Baulig  <martin@ximian.com>
+
+	* backends/SingleSteppingEngine.cs
+	(OperationRuntimeInvoke.DoProcessEvent): Also push the rti frame
+	if we hit a breakpoint at the invoke method.
+
+	* test/testsuite/TestInvocation.cs: Added testcase for that.
+
 2006-06-01  Martin Baulig  <martin@ximian.com>
 
 	* backends/SingleSteppingEngine.cs

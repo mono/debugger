@@ -3051,16 +3051,15 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.SSE,
 					      "{0} hit breakpoint {1} at {2} during runtime-invoke",
 					      sse, cevent.Argument, inferior.CurrentFrame);
-
-				args = null;
-				if (Debug)
-					return EventResult.Completed;
-				else {
-					sse.do_continue ();
-					return EventResult.Running;
-				}
 			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 				   (cevent.Argument == 0)) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} stopped at {1} during runtime-invoke",
+					      sse, inferior.CurrentFrame);
+			}
+
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) ||
+			    (cevent.Type == Inferior.ChildEventType.CHILD_STOPPED)) {
 				if (inferior.CurrentFrame == invoke) {
 					Report.Debug (DebugFlags.SSE,
 						      "{0} stopped at invoke method {1}",
@@ -3068,10 +3067,6 @@ namespace Mono.Debugger.Backends
 
 					PushRuntimeInvoke (sse, inferior);
 					pushed_rti_frame = true;
-				} else {
-					Report.Debug (DebugFlags.SSE,
-						      "{0} stopped at {1} during runtime-invoke",
-						      sse, inferior.CurrentFrame);
 				}
 
 				args = null;

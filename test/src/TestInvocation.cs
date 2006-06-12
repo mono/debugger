@@ -42,11 +42,15 @@ public class X
 		StaticHello (a);
 	}
 
+	public static void BreakpointTest ()
+	{ }
+
 	public static void Main ()
 	{
 		X x = new X ();
 		x.Test (5, "Hello World");
 		TestStatic (x, 9, "Boston");
 		StaticHello (9);
+		BreakpointTest ();
 	}
 }
