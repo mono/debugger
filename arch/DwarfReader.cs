@@ -2670,6 +2670,11 @@ namespace Mono.Debugger.Backends
 				get { return type; }
 			}
 
+			public override bool IsInScope (TargetAddress address)
+			{
+				return true;
+			}
+
 			public override bool IsAlive (TargetAddress address)
 			{
 				return true;

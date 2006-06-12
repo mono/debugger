@@ -746,7 +746,8 @@ namespace Mono.Debugger.Frontend
 		{
 			StackFrame frame = context.CurrentFrame;
 			if (frame.Method != null) {
-				TargetVariable var = frame.Method.GetVariableByName (name);
+				TargetVariable var = frame.Method.GetVariableByName (
+					frame.TargetAddress, name);
 				if (var != null)
 					return new VariableAccessExpression (var);
 			}

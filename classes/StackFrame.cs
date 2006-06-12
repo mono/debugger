@@ -283,7 +283,7 @@ namespace Mono.Debugger
 			get {
 				ArrayList list = new ArrayList ();
 				foreach (TargetVariable local in Method.Locals) {
-					if (local.IsAlive (TargetAddress))
+					if (local.IsInScope (TargetAddress))
 						list.Add (local);
 				}
 				TargetVariable[] retval = new TargetVariable [list.Count];

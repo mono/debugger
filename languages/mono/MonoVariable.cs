@@ -52,6 +52,9 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 			this.is_byref = is_byref;
 
+			start_scope = method.StartAddress;
+			end_scope = method.EndAddress;
+
 			if (info.HasLivenessInfo) {
 				start_liveness = method.StartAddress + info.BeginLiveness;
 				end_liveness = method.StartAddress + info.EndLiveness;
@@ -90,6 +93,11 @@ namespace Mono.Debugger.Languages.Mono
 					frame.Thread, true, register, info.Offset, is_byref);
 			else
 				return null;
+		}
+
+		public override bool IsInScope (TargetAddress address)
+		{
+			return (address >= start_scope) && (address <= end_scope);
 		}
 
 		public override bool IsAlive (TargetAddress address)

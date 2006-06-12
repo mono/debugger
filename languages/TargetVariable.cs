@@ -16,6 +16,12 @@ namespace Mono.Debugger.Languages
 		}
 
 		// <summary>
+		//   Checks whether the variable is accessible in the lexical scope around
+		//   address @address, but without actually trying to access the variable.
+		// </summary>
+		public abstract bool IsInScope (TargetAddress address);
+
+		// <summary>
 		//   Checks whether the variable is alive at @address, but without actually
 		//   trying to access the variable.  The implementation just checks the data
 		//   from the symbol file and - if appropriate - from the JIT to find out

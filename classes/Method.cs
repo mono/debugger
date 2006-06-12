@@ -273,10 +273,10 @@ namespace Mono.Debugger
 		internal abstract SourceMethod GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
 
-		public TargetVariable GetVariableByName (string name)
+		public TargetVariable GetVariableByName (TargetAddress address, string name)
 		{
 			foreach (TargetVariable var in Locals) {
-				if (var.Name == name)
+				if ((var.Name == name) && var.IsInScope (address))
 					return var;
 			}
 

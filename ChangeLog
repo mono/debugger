@@ -1,5 +1,18 @@
 2006-06-12  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetVariable.cs
+	(TargetVariable.IsInScope): New public abstract method.
+
+	* classes/Method.cs
+	(Method.GetVariableByName): Added `TargetAddress address' argument
+	and check whether the variable is actually in scope.
+
+	* classes/StackFrame.cs
+	(StackFrame.Locals): Use `local.IsInScope()' rather than
+	`local.IsAlive()'.	
+
+2006-06-12  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationRuntimeInvoke.DoProcessEvent): Also push the rti frame
 	if we hit a breakpoint at the invoke method.
