@@ -1,5 +1,23 @@
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Make this a `DebuggerMarshalByRefObject'.
+
+	* classes/Debugger.cs
+	(Debugger.Run): Take a `DebuggerSession' argument instead of a
+	`DebuggerOptions' one.
+	(Debugger.Attach, Debugger.OpenCoreFile): Likewise.
+
+	* backends/DebuggerServant.cs
+	(DebuggerServabt.Run): Take a `DebuggerSession' argument instead
+	of a `DebuggerOptions' one.
+	(DebuggerServant.Attach, Debugger.OpenCoreFile): Likewise.
+
+	* backends/ProcessServant.cs
+	(ProcessServant.Session): New public property.
+
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
 	* classes/Module.cs
 	(Module.BreakpointsChangedEvent): Removed.
 

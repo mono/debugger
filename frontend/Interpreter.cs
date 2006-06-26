@@ -314,7 +314,7 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Run (Options);
+				current_process = main_process = debugger.Run (session);
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
@@ -342,7 +342,7 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Attach (Options, pid);
+				current_process = main_process = debugger.Attach (session, pid);
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
 
@@ -369,7 +369,7 @@ namespace Mono.Debugger.Frontend
 
 				Thread[] threads;
 				current_process = main_process = debugger.OpenCoreFile (
-					Options, core_file, out threads);
+					session, core_file, out threads);
 
 				current_thread = current_process.MainThread;
 
@@ -402,7 +402,7 @@ namespace Mono.Debugger.Frontend
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Run (Options);
+				current_process = main_process = debugger.Run (session);
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);

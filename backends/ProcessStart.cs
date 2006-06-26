@@ -18,6 +18,7 @@ namespace Mono.Debugger.Backends
 		string[] argv;
 		string[] envp;
 		DebuggerOptions options;
+		DebuggerSession session;
 
 		public static string MonoPath;
 
@@ -59,18 +60,20 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal ProcessStart (DebuggerOptions options)
+		internal ProcessStart (DebuggerSession session)
 		{
-			if (options == null)
+			if (session == null)
 				throw new ArgumentException ();
+
+			this.session = session;
+			this.options = session.Options;
+			
 			if ((options.File == null) || (options.File == ""))
 				throw new ArgumentException ();
 			if (options.InferiorArgs == null)
 				throw new ArgumentException ();
 
-			this.options = options;
-			this.cwd = options.WorkingDirectory;
-
+			cwd = options.WorkingDirectory;
 			string mono_path = options.MonoPath != null ?
 				options.MonoPath : MonoPath;
 
@@ -114,17 +117,18 @@ namespace Mono.Debugger.Backends
 			SetupEnvironment ();
 		}
 
-		internal ProcessStart (DebuggerOptions options, int pid)
+		internal ProcessStart (DebuggerSession session, int pid)
 		{
-			this.options = options;
+			this.session = session;
+			this.options = session.Options;
 			this.PID = pid;
 
 			LoadNativeSymbolTable = true;
 			IsNative = true;
 		}
 
-		internal ProcessStart (DebuggerOptions options, string core_file)
-			: this (options)
+		internal ProcessStart (DebuggerSession session, string core_file)
+			: this (session)
 		{
 			this.CoreFile = core_file;
 		}
@@ -133,6 +137,7 @@ namespace Mono.Debugger.Backends
 		{
 			this.PID = pid;
 
+			this.session = parent.session;
 			this.options = parent.options;
 			this.cwd = parent.cwd;
 			this.argv = parent.argv;
@@ -151,6 +156,10 @@ namespace Mono.Debugger.Backends
 			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
 
 			SetupEnvironment ();
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
 		}
 
 		public DebuggerOptions Options {

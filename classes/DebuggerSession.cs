@@ -79,7 +79,7 @@ namespace Mono.Debugger
 	}
 
 	[Serializable]
-	public class DebuggerSession
+	public class DebuggerSession : DebuggerMarshalByRefObject
 	{
 		public readonly DebuggerOptions Options;
 		byte[] session_data;

@@ -135,33 +135,33 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Process Run (DebuggerOptions options)
+		public Process Run (DebuggerSession session)
 		{
 			check_disposed ();
 
 			if (main_process != null)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			ProcessStart start = new ProcessStart (options);
+			ProcessStart start = new ProcessStart (session);
 			main_process = thread_manager.StartApplication (start);
 			process_hash.Add (main_process, main_process);
 			return main_process.Client;
 		}
 
-		public Process Attach (DebuggerOptions options, int pid)
+		public Process Attach (DebuggerSession session, int pid)
 		{
 			check_disposed ();
 
 			if (main_process != null)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			ProcessStart start = new ProcessStart (options, pid);
+			ProcessStart start = new ProcessStart (session, pid);
 			main_process = thread_manager.StartApplication (start);
 			process_hash.Add (main_process, main_process);
 			return main_process.Client;
 		}
 
-		public Process OpenCoreFile (DebuggerOptions options, string core_file,
+		public Process OpenCoreFile (DebuggerSession session, string core_file,
 					     out Thread[] threads)
 		{
 			check_disposed ();
@@ -169,7 +169,7 @@ namespace Mono.Debugger.Backends
 			if (main_process != null)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
-			ProcessStart start = new ProcessStart (options, core_file);
+			ProcessStart start = new ProcessStart (session, core_file);
 
 			main_process = thread_manager.OpenCoreFile (start, out threads);
 			process_hash.Add (main_process, main_process);

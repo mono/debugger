@@ -23,6 +23,7 @@ namespace Mono.Debugger.Backends
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
 		ProcessStart start;
+		DebuggerSession session;
 		protected ThreadServant main_thread;
 		ArrayList languages;
 		Hashtable thread_hash;
@@ -60,6 +61,7 @@ namespace Mono.Debugger.Backends
 			: this (manager)
 		{
 			this.start = start;
+			this.session = start.Session;
 
 			is_attached = start.PID != 0;
 
@@ -80,6 +82,7 @@ namespace Mono.Debugger.Backends
 			: this (parent.manager)
 		{
 			this.start = new ProcessStart (parent.ProcessStart, pid);
+			this.session = parent.session;
 
 			this.is_forked = true;
 			this.initialized = true;
@@ -107,6 +110,10 @@ namespace Mono.Debugger.Backends
 
 		public Process Client {
 			get { return client; }
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
 		}
 
 		internal ThreadManager ThreadManager {

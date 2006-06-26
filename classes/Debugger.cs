@@ -128,23 +128,23 @@ namespace Mono.Debugger
 			servant.Detach ();
 		}
 
-		public Process Run (DebuggerOptions options)
+		public Process Run (DebuggerSession session)
 		{
 			check_servant ();
-			return servant.Run (options);
+			return servant.Run (session);
 		}
 
-		public Process Attach (DebuggerOptions options, int pid)
+		public Process Attach (DebuggerSession session, int pid)
 		{
 			check_servant ();
-			return servant.Attach (options, pid);
+			return servant.Attach (session, pid);
 		}
 
-		public Process OpenCoreFile (DebuggerOptions options, string core_file,
+		public Process OpenCoreFile (DebuggerSession session, string core_file,
 					     out Thread[] threads)
 		{
 			check_servant ();
-			return servant.OpenCoreFile (options, core_file, out threads);
+			return servant.OpenCoreFile (session, core_file, out threads);
 		}
 
 
