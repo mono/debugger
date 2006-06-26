@@ -1,5 +1,17 @@
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
+	* classes/Module.cs
+	(Module.BreakpointsChangedEvent): Removed.
+
+	* backends/ModuleManager.cs
+	(BreakpointChangedHandler): Removed.
+	(ModuleManager.BreakpointsChanged): Removed.
+
+	* backends/ProcessServant.cs
+	(ProcessServant.BreakpointsChangedEvent): Removed.
+
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerConfiguration.cs: New file.
 	(DebuggerConfiguration): New public class.
 

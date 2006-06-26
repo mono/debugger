@@ -328,12 +328,6 @@ namespace Mono.Debugger
 		// </summary>
 		public event ModuleEventHandler SymbolsUnLoadedEvent;
 
-		// <summary>
-		//   This event is emitted when adding or removing a breakpoint or
-		//   enabling/disabling a breakpoint.
-		// </summary>
-		public event ModuleEventHandler BreakpointsChangedEvent;
-
 		internal void OnSymbolsLoadedEvent ()
 		{
 			if (SymbolsLoadedEvent != null)
@@ -350,12 +344,6 @@ namespace Mono.Debugger
 		{
 			if (symfile != null)
 				symfile.OnModuleChanged ();
-		}
-
-		protected internal void OnBreakpointsChangedEvent ()
-		{
-			if (BreakpointsChangedEvent != null)
-				BreakpointsChangedEvent (this);
 		}
 
 		public SourceFile[] Sources {

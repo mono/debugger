@@ -68,7 +68,6 @@ namespace Mono.Debugger.Backends
 			source_factory = new SourceFileFactory ();
 
 			module_manager.ModulesChanged += modules_changed;
-			module_manager.BreakpointsChanged += breakpoints_changed;
 
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent += modules_reloaded;
@@ -90,7 +89,6 @@ namespace Mono.Debugger.Backends
 			source_factory = parent.source_factory;
 
 			module_manager.ModulesChanged += modules_changed;
-			module_manager.BreakpointsChanged += breakpoints_changed;
 
 			symtab_manager = parent.symtab_manager;
 			symtab_manager.ModulesChangedEvent += modules_reloaded;
@@ -187,18 +185,11 @@ namespace Mono.Debugger.Backends
 		}
 
 		public event ModulesChangedHandler ModulesChangedEvent;
-		public event BreakpointsChangedHandler BreakpointsChangedEvent;
 
 		void modules_changed ()
 		{
 			check_disposed ();
 			symtab_manager.SetModules (module_manager.Modules);
-		}
-
-		void breakpoints_changed ()
-		{
-			if (BreakpointsChangedEvent != null)
-				BreakpointsChangedEvent ();
 		}
 
 		void modules_reloaded (object sender, Module[] modules)
@@ -273,7 +264,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			module_manager.ModulesChanged -= modules_changed;
-			module_manager.BreakpointsChanged -= breakpoints_changed;
 
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
@@ -283,7 +273,6 @@ namespace Mono.Debugger.Backends
 			source_factory = new SourceFileFactory ();
 
 			module_manager.ModulesChanged += modules_changed;
-			module_manager.BreakpointsChanged += breakpoints_changed;
 
 			symtab_manager = new SymbolTableManager ();
 			symtab_manager.ModulesChangedEvent += modules_reloaded;

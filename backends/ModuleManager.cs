@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 namespace Mono.Debugger.Backends
 {
 	public delegate void ModulesChangedHandler ();
-	public delegate void BreakpointsChangedHandler ();
 
 	internal class ModuleManager : DebuggerMarshalByRefObject
 	{
@@ -61,7 +60,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		public event ModulesChangedHandler ModulesChanged;
-		public event BreakpointsChangedHandler BreakpointsChanged;
 
 		public Module[] Modules {
 			get {
@@ -73,7 +71,6 @@ namespace Mono.Debugger.Backends
 
 		int locked = 0;
 		bool needs_module_update = false;
-		bool needs_breakpoint_update = false;
 
 		public void Lock ()
 		{
@@ -89,20 +86,11 @@ namespace Mono.Debugger.Backends
 				needs_module_update = false;
 				OnModulesChanged ();
 			}
-			if (needs_breakpoint_update) {
-				needs_breakpoint_update = false;
-				OnBreakpointsChanged ();
-			}
 		}
 
 		void module_changed (Module module)
 		{
 			OnModulesChanged ();
-		}
-
-		void breakpoints_changed (Module module)
-		{
-			OnBreakpointsChanged ();
 		}
 
 		protected virtual void OnModulesChanged ()
@@ -116,17 +104,6 @@ namespace Mono.Debugger.Backends
 				ModulesChanged ();
 		}
 
-		protected virtual void OnBreakpointsChanged ()
-		{
-			if (locked > 0) {
-				needs_breakpoint_update = true;
-				return;
-			}
-
-			if (BreakpointsChanged != null)
-				BreakpointsChanged ();
-		}
-
 		[Serializable]
 		protected class ModuleEventSink
 		{
@@ -138,17 +115,11 @@ namespace Mono.Debugger.Backends
 
 				module.SymbolsLoadedEvent += OnModuleChanged;
 				module.SymbolsUnLoadedEvent += OnModuleChanged;
-				module.BreakpointsChangedEvent += OnBreakpointsChanged;
 			}
 
 			public void OnModuleChanged (Module module)
 			{
 				Manager.module_changed (module);
-			}
-
-			public void OnBreakpointsChanged (Module module)
-			{
-				Manager.breakpoints_changed (module);
 			}
 		}
 	}
