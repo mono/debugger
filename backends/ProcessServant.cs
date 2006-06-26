@@ -69,10 +69,7 @@ namespace Mono.Debugger.Backends
 			module_manager = new ModuleManager (manager.Debugger);
 			source_factory = new SourceFileFactory ();
 
-			module_manager.ModulesChanged += modules_changed;
-
-			symtab_manager = new SymbolTableManager ();
-			symtab_manager.ModulesChangedEvent += modules_reloaded;
+			symtab_manager = new SymbolTableManager (module_manager);
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
@@ -91,10 +88,7 @@ namespace Mono.Debugger.Backends
 			module_manager = parent.module_manager;
 			source_factory = parent.source_factory;
 
-			module_manager.ModulesChanged += modules_changed;
-
 			symtab_manager = parent.symtab_manager;
-			symtab_manager.ModulesChangedEvent += modules_reloaded;
 
 			languages = parent.languages;
 			bfd_container = parent.bfd_container;
@@ -191,20 +185,6 @@ namespace Mono.Debugger.Backends
 			get { return start.CommandLineArguments; }
 		}
 
-		public event ModulesChangedHandler ModulesChangedEvent;
-
-		void modules_changed ()
-		{
-			check_disposed ();
-			symtab_manager.SetModules (module_manager.Modules);
-		}
-
-		void modules_reloaded (object sender, Module[] modules)
-		{
-			if (ModulesChangedEvent != null)
-				ModulesChangedEvent ();
-		}
-
 		internal void ReachedMain ()
 		{
 			module_manager.UnLock ();
@@ -270,8 +250,6 @@ namespace Mono.Debugger.Backends
 					symtab_manager.Dispose ();
 			}
 
-			module_manager.ModulesChanged -= modules_changed;
-
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
 
@@ -279,10 +257,7 @@ namespace Mono.Debugger.Backends
 			module_manager = new ModuleManager (manager.Debugger);
 			source_factory = new SourceFileFactory ();
 
-			module_manager.ModulesChanged += modules_changed;
-
-			symtab_manager = new SymbolTableManager ();
-			symtab_manager.ModulesChangedEvent += modules_reloaded;
+			symtab_manager = new SymbolTableManager (module_manager);
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);

@@ -1,5 +1,12 @@
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
+	* backends/SymbolTableManager.cs
+	(SymbolTableManager): Removed all the module code.
+	(SymbolTableManager.SetModules): Removed.
+	(SymbolTableManager.Modules): Removed.
+
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerSession.cs
 	(DebuggerSession): Make this a `DebuggerMarshalByRefObject'.
 
