@@ -362,7 +362,6 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
-			process.ModuleManager.Lock ();
 			try {
 				do_update (memory);
 			} catch (ThreadAbortException) {
@@ -371,8 +370,6 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("Can't update symbol table: {0} {1} {2}",
 						   memory, e, Environment.StackTrace);
 				return;
-			} finally {
-				process.ModuleManager.UnLock ();
 			}
 			Report.Debug (DebugFlags.JitSymtab, "Done updating symbol table");
 		}

@@ -1,5 +1,17 @@
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ctor): Added `DebuggerConfiguration' argument.
+	(DebuggerSession.Config): New public readonly field.
+	(DebuggerSession): Moved the module management code here from
+	`ModuleManager'.
+
+	* backends/ModuleManager.cs: Removed.
+	(ModuleManager): Moved all the functionality into
+	`DebuggerSession'.	
+
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
 	* backends/SymbolTableManager.cs
 	(SymbolTableManager): Removed all the module code.
 	(SymbolTableManager.SetModules): Removed.

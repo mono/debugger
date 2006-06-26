@@ -17,7 +17,6 @@ namespace Mono.Debugger.Backends
 		ThreadManager manager;
 		BfdContainer bfd_container;
 		SymbolTableManager symtab_manager;
-		ModuleManager module_manager;
 		SourceFileFactory source_factory;
 		MonoLanguageBackend mono_language;
 		MonoThreadManager mono_manager;
@@ -66,10 +65,9 @@ namespace Mono.Debugger.Backends
 			is_attached = start.PID != 0;
 
 			breakpoint_manager = new BreakpointManager ();
-			module_manager = new ModuleManager (manager.Debugger);
 			source_factory = new SourceFileFactory ();
 
-			symtab_manager = new SymbolTableManager (module_manager);
+			symtab_manager = new SymbolTableManager (session);
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
@@ -85,7 +83,6 @@ namespace Mono.Debugger.Backends
 			this.initialized = true;
 
 			breakpoint_manager = new BreakpointManager (parent.breakpoint_manager);
-			module_manager = parent.module_manager;
 			source_factory = parent.source_factory;
 
 			symtab_manager = parent.symtab_manager;
@@ -122,12 +119,6 @@ namespace Mono.Debugger.Backends
 
 		internal BreakpointManager BreakpointManager {
 			get { return breakpoint_manager; }
-		}
-
-		internal ModuleManager ModuleManager {
-			get {
-				return module_manager;
-			}
 		}
 
 		internal SymbolTableManager SymbolTableManager {
@@ -187,7 +178,6 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedMain ()
 		{
-			module_manager.UnLock ();
 			symtab_manager.Wait ();
 		}
 
@@ -254,10 +244,9 @@ namespace Mono.Debugger.Backends
 				breakpoint_manager.Dispose ();
 
 			breakpoint_manager = new BreakpointManager ();
-			module_manager = new ModuleManager (manager.Debugger);
 			source_factory = new SourceFileFactory ();
 
-			symtab_manager = new SymbolTableManager (module_manager);
+			symtab_manager = new SymbolTableManager (session);
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
@@ -409,7 +398,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public Module[] Modules {
-			get { return module_manager.Modules; }
+			get { return session.Modules; }
 		}
 
 		public SourceLocation FindLocation (string file, int line)

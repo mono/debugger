@@ -55,7 +55,7 @@ namespace Mono.Debugger.Frontend
 			this.config = config;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
-			this.session = new DebuggerSession (options);
+			this.session = new DebuggerSession (config, options);
 			this.engine = new DebuggerEngine (this);
 
 			interrupt_event = new ManualResetEvent (false);

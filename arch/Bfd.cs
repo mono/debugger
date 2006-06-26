@@ -237,9 +237,9 @@ namespace Mono.Debugger.Backends
 
 			entry_point = this ["main"];
 
-			module = container.Process.ModuleManager.GetModule (filename);
+			module = container.Process.Session.GetModule (filename);
 			if (module == null) {
-				module = container.Process.ModuleManager.CreateModule (filename, this);
+				module = container.Process.Session.CreateModule (filename, this);
 				OnModuleChanged ();
 			} else {
 				module.LoadModule (this);

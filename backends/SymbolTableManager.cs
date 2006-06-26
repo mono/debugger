@@ -12,7 +12,7 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class SymbolTableManager : DebuggerMarshalByRefObject, IDisposable
 	{
-		ModuleManager module_manager;
+		DebuggerSession session;
 		bool symtab_thread_exit;
 
 		ST.Thread symtab_thread;
@@ -20,11 +20,11 @@ namespace Mono.Debugger.Backends
 		ST.ManualResetEvent update_completed_event;
 		bool symtab_update_in_progress;
 
-		internal SymbolTableManager (ModuleManager module_manager)
+		internal SymbolTableManager (DebuggerSession session)
 		{
-			this.module_manager = module_manager;
+			this.session = session;
 
-			module_manager.ModulesChanged += modules_changed;
+			session.ModulesChanged += OnModulesChanged;
 
 			symtab_reload_event = new ST.AutoResetEvent (false);
 			update_completed_event = new ST.ManualResetEvent (true);
@@ -68,7 +68,7 @@ namespace Mono.Debugger.Backends
 			if (symtab_thread != null)
 				update_completed_event.WaitOne ();
 
-			Module[] current_modules = module_manager.Modules;
+			Module[] current_modules = session.Modules;
 			foreach (Module module in current_modules) {
 				Symbol name = module.SimpleLookup (address, exact_match);
 				if (name != null)
@@ -78,7 +78,7 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		void modules_changed ()
+		public void OnModulesChanged (DebuggerSession session)
 		{
 			lock (this) {
 				symtab_reload_event.Set ();
@@ -122,7 +122,7 @@ namespace Mono.Debugger.Backends
 				SymbolTableCollection symtabs = new SymbolTableCollection ();
 				symtabs.Lock ();
 
-				Module[] current_modules = module_manager.Modules;
+				Module[] current_modules = session.Modules;
 				foreach (Module module in current_modules) {
 					if (!module.SymbolsLoaded || !module.LoadSymbols)
 						continue;
@@ -165,7 +165,7 @@ namespace Mono.Debugger.Backends
 						symtab_reload_event.Set ();
 						symtab_thread = null;
 
-						module_manager.ModulesChanged -= modules_changed;
+						session.ModulesChanged -= OnModulesChanged;
 					}
 				}
 				

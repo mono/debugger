@@ -181,7 +181,7 @@ namespace Mono.Debugger
 		bool has_load_symbols, load_symbols;
 		bool has_step_into, step_into;
 
-		internal Module (ModuleManager manager, ModuleGroup group, string name, SymbolFile symfile)
+		internal Module (ModuleGroup group, string name, SymbolFile symfile)
 			: base (name)
 		{
 			this.group = group;
@@ -466,7 +466,7 @@ namespace Mono.Debugger
 				ModuleGroup group = process.Debugger.Configuration.GetModuleGroup (gname);
 
 				string name = info.GetString ("name");
-				Module module = process.ModuleManager.CreateModule (name, group);
+				Module module = process.Session.CreateModule (name, group);
 
 				module.name = info.GetString ("name");
 				module.has_load_symbols = info.GetBoolean ("has-load-symbols");

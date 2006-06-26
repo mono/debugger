@@ -78,22 +78,112 @@ namespace Mono.Debugger
 		}
 	}
 
+	public delegate void ModulesChangedHandler (DebuggerSession session);
+
 	[Serializable]
 	public class DebuggerSession : DebuggerMarshalByRefObject
 	{
+		public readonly DebuggerConfiguration Config;
 		public readonly DebuggerOptions Options;
 		byte[] session_data;
+		Hashtable modules;
 
-		public DebuggerSession (DebuggerOptions options)
+		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options)
 		{
+			this.Config = config;
 			this.Options = options;
+			modules = Hashtable.Synchronized (new Hashtable ());
 		}
+
+		//
+		// Modules.
+		//
+
+		public Module GetModule (string name)
+		{
+			return (Module) modules [name];
+		}
+
+		internal Module CreateModule (string name, ModuleGroup group)
+		{
+			Module module = (Module) modules [name];
+			if (module != null)
+				return module;
+
+			module = new Module (group, name, null);
+			modules.Add (name, module);
+
+			new ModuleEventSink (this, module);
+			OnModulesChanged ();
+
+			return module;
+		}
+
+		internal Module CreateModule (string name, SymbolFile symfile)
+		{
+			if (symfile == null)
+				throw new NullReferenceException ();
+
+			Module module = (Module) modules [name];
+			if (module != null)
+				return module;
+
+			ModuleGroup group = Config.GetModuleGroup (symfile);
+
+			module = new Module (group, name, symfile);
+			modules.Add (name, module);
+
+			new ModuleEventSink (this, module);
+			OnModulesChanged ();
+
+			return module;
+		}
+
+		public event ModulesChangedHandler ModulesChanged;
+
+		public Module[] Modules {
+			get {
+				Module[] retval = new Module [modules.Values.Count];
+				modules.Values.CopyTo (retval, 0);
+				return retval;
+			}
+		}
+
+		protected virtual void OnModulesChanged ()
+		{
+			if (ModulesChanged != null)
+				ModulesChanged (this);
+		}
+
+		[Serializable]
+		protected class ModuleEventSink
+		{
+			public readonly DebuggerSession Session;
+
+			public ModuleEventSink (DebuggerSession session, Module module)
+			{
+				this.Session = session;
+
+				module.SymbolsLoadedEvent += OnModuleChanged;
+				module.SymbolsUnLoadedEvent += OnModuleChanged;
+			}
+
+			public void OnModuleChanged (Module module)
+			{
+				Session.OnModulesChanged ();
+			}
+		}
+
+		//
+		// Session management.
+		//
 
 		public void MainProcessExited (Process process)
 		{
 			using (MemoryStream stream = new MemoryStream ()) {
 				process.SaveSession (stream, StreamingContextStates.Persistence);
 				session_data = stream.ToArray ();
+				modules = Hashtable.Synchronized (new Hashtable ());
 			}
 		}
 

@@ -268,9 +268,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			name = Assembly.Name.FullName;
 
-			Module = process.ModuleManager.GetModule (name);
+			Module = process.Session.GetModule (name);
 			if (Module == null) {
-				Module = process.ModuleManager.CreateModule (name, this);
+				Module = process.Session.CreateModule (name, this);
 			} else {
 				Module.LoadModule (this);
 			}
