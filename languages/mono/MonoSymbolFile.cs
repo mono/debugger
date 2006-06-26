@@ -270,8 +270,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			Module = process.ModuleManager.GetModule (name);
 			if (Module == null) {
-				Module = new Module (name, this);
-				process.ModuleManager.AddModule (Module);
+				Module = process.ModuleManager.CreateModule (name, this);
 			} else {
 				Module.LoadModule (this);
 			}
@@ -295,6 +294,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return symtab; }
 		}
 
+		public override bool IsNative {
+			get { return false; }
+		}
+
 		public string Name {
 			get { return name; }
 		}
@@ -312,7 +315,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool SymbolsLoaded {
-			get { return Module.LoadSymbols; }
+			get { return File != null; }
 		}
 
 		public override SourceFile[] Sources {

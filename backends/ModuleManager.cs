@@ -11,10 +11,13 @@ namespace Mono.Debugger.Backends
 
 	internal class ModuleManager : DebuggerMarshalByRefObject
 	{
-		Hashtable modules = new Hashtable ();
+		DebuggerServant backend;
+		Hashtable modules;
 
-		internal ModuleManager ()
+		internal ModuleManager (DebuggerServant backend)
 		{
+			this.backend = backend;
+			modules = Hashtable.Synchronized (new Hashtable ());
 		}
 
 		public Module GetModule (string name)
@@ -22,23 +25,38 @@ namespace Mono.Debugger.Backends
 			return (Module) modules [name];
 		}
 
-		public void AddModule (Module module)
-		{
-			modules.Add (module.Name, module);
-
-			new ModuleEventSink (this, module);
-
-			module_changed (module);
-		}
-
-		internal Module CreateModule (string name)
+		internal Module CreateModule (string name, ModuleGroup group)
 		{
 			Module module = (Module) modules [name];
 			if (module != null)
 				return module;
 
-			module = new Module (name);
+			module = new Module (this, group, name, null);
 			modules.Add (name, module);
+
+			new ModuleEventSink (this, module);
+			module_changed (module);
+
+			return module;
+		}
+
+		internal Module CreateModule (string name, SymbolFile symfile)
+		{
+			if (symfile == null)
+				throw new NullReferenceException ();
+
+			Module module = (Module) modules [name];
+			if (module != null)
+				return module;
+
+			ModuleGroup group = backend.Configuration.GetModuleGroup (symfile);
+
+			module = new Module (this, group, name, symfile);
+			modules.Add (name, module);
+
+			new ModuleEventSink (this, module);
+			module_changed (module);
+
 			return module;
 		}
 

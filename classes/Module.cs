@@ -26,6 +26,10 @@ namespace Mono.Debugger
 
 	internal abstract class SymbolFile : DebuggerMarshalByRefObject
 	{
+		public abstract bool IsNative {
+			get;
+		}
+
 		public abstract string FullName {
 			get;
 		}
@@ -73,6 +77,94 @@ namespace Mono.Debugger
 		internal abstract void OnModuleChanged ();
 	}
 
+	public abstract class ModuleBase : DebuggerMarshalByRefObject
+	{
+		protected string name;
+		protected int id;
+		private static int next_id;
+
+		protected ModuleBase (string name)
+		{
+			this.name = name;
+			this.id = ++next_id;
+		}
+
+		public int ID {
+			get { return id; }
+		}
+
+		public string Name {
+			get { return name; }
+		}
+
+		public abstract bool HideFromUser {
+			get; set;
+		}
+
+		public abstract bool LoadSymbols {
+			get; set;
+		}
+
+		public abstract bool StepInto {
+			get; set;
+		}
+
+		protected virtual string MyToString ()
+		{
+			return "";
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1}:{2}:{3}:{4}{5})", GetType (), name,
+					      HideFromUser ? "hide" : "nohide",
+					      LoadSymbols ? "load" : "noload",
+					      StepInto ? "step" : "nostep", MyToString ());
+		}
+	}
+
+	public class ModuleGroup : ModuleBase
+	{
+		string regexp;
+		bool hide_from_user;
+		bool load_symbols;
+		bool step_into;
+
+		public string Regexp {
+			get { return regexp; }
+			set { regexp = value; }
+		}
+
+		public override bool HideFromUser {
+			get { return hide_from_user; }
+			set { hide_from_user = value; }
+		}
+
+		public override bool LoadSymbols {
+			get { return load_symbols; }
+			set { load_symbols = value; }
+		}
+
+		public override bool StepInto {
+			get { return step_into; }
+			set { step_into = value; }
+		}
+
+		internal ModuleGroup (string name)
+			: this (name, false, false, false)
+		{
+		}
+
+		internal ModuleGroup (string name, bool hide_from_user, bool load_symbols,
+				      bool step_into)
+			: base (name)
+		{
+			this.hide_from_user = hide_from_user;
+			this.load_symbols = load_symbols;
+			this.step_into = step_into;
+		}
+	}
+
 	// <summary>
 	//   A module is either a shared library (containing unmanaged code) or a dll
 	//   (containing managed code).
@@ -80,28 +172,19 @@ namespace Mono.Debugger
 	//   A module maintains all the breakpoints and controls whether to enter methods
 	//   while single-stepping.
 	// </summary>
-	public sealed class Module : DebuggerMarshalByRefObject
+	public sealed class Module : ModuleBase
 	{
-		string name;
+		ModuleGroup group;
 		[NonSerialized]
 		SymbolFile symfile;
-		bool load_symbols;
-		bool step_into;
-		int id;
-		static int next_id;
+		bool has_hide_from_user, hide_from_user;
+		bool has_load_symbols, load_symbols;
+		bool has_step_into, step_into;
 
-		internal Module (string name)
+		internal Module (ModuleManager manager, ModuleGroup group, string name, SymbolFile symfile)
+			: base (name)
 		{
-			this.name = name;
-			this.id = ++next_id;
-
-			load_symbols = true;
-			step_into = true;
-		}
-
-		internal Module (string name, SymbolFile symfile)
-			: this (name)
-		{
+			this.group = group;
 			this.symfile = symfile;
 		}
 
@@ -128,11 +211,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		// <summary>
-		//   This is the name which should be displayed to the user.
-		// </summary>
-		public string Name {
-			get { return name; }
+		public ModuleGroup ModuleGroup {
+			get { return group; }
 		}
 
 		// <summary>
@@ -143,9 +223,7 @@ namespace Mono.Debugger
 		//     InvalidOperationException - if IsLoaded was false.
 		// </summary>
 		public string FullName {
-			get {
-				return SymbolFile.FullName;
-			}
+			get { return SymbolFile.FullName; }
 		}
 
 		// <summary>
@@ -174,15 +252,16 @@ namespace Mono.Debugger
 		//   module, but you'll see nothing but an address in the backtrace and
 		//   you won't see any source code.
 		// </summary>
-		public bool LoadSymbols {
+		public override bool LoadSymbols {
 			get {
-				return load_symbols;
+				return has_load_symbols ? load_symbols : group.LoadSymbols;
 			}
 
 			set {
-				if (load_symbols == value)
+				if (has_load_symbols && (load_symbols == value))
 					return;
 
+				has_load_symbols = true;
 				load_symbols = value;
 				OnModuleChanged ();
 			}
@@ -200,16 +279,32 @@ namespace Mono.Debugger
 		//   information in the backtrace, but the debugger will never enter
 		//   unmanaged methods while single-stepping.
 		// </summary>
-		public bool StepInto {
+		public override bool StepInto {
 			get {
-				return step_into;
+				return has_step_into ? step_into : group.StepInto;
 			}
 
 			set {
-				if (step_into == value)
+				if (has_step_into && (step_into == value))
 					return;
 
+				has_step_into = true;
 				step_into = value;
+				OnModuleChanged ();
+			}
+		}
+
+		public override bool HideFromUser {
+			get {
+				return has_hide_from_user ? hide_from_user : group.HideFromUser;
+			}
+
+			set {
+				if (has_hide_from_user && (hide_from_user == value))
+					return;
+
+				has_hide_from_user = true;
+				hide_from_user = value;
 				OnModuleChanged ();
 			}
 		}
@@ -350,11 +445,9 @@ namespace Mono.Debugger
 			return SymbolFile.UnwindStack (last_frame, memory);
 		}
 
-		public override string ToString ()
+		protected override string MyToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5}:{6})",
-					      GetType (), id, Name, IsLoaded, SymbolsLoaded, StepInto,
-					      LoadSymbols);
+			return String.Format (":{0}:{1}", IsLoaded, SymbolsLoaded);
 		}
 
 		internal sealed class SessionSurrogate : ISerializationSurrogate
@@ -364,10 +457,15 @@ namespace Mono.Debugger
 			{
 				Module module = (Module) obj;
 
-				info.AddValue ("type", module.GetType ().Name);
 				info.AddValue ("name", module.Name);
-				info.AddValue ("load-symbols", module.LoadSymbols);
-				info.AddValue ("step-into", module.StepInto);
+				info.AddValue ("group", module.ModuleGroup.Name);
+
+				info.AddValue ("has-load-symbols", module.has_load_symbols);
+				info.AddValue ("load-symbols", module.load_symbols);
+				info.AddValue ("has-step-into", module.has_step_into);
+				info.AddValue ("step-into", module.step_into);
+				info.AddValue ("has-hide-from-user", module.has_hide_from_user);
+				info.AddValue ("hide-from-user", module.hide_from_user);
 			}
 
 			public object SetObjectData (object obj, SerializationInfo info,
@@ -376,12 +474,19 @@ namespace Mono.Debugger
 			{
 				ProcessServant process = (ProcessServant) context.Context;
 
+				string gname = info.GetString ("group");
+				ModuleGroup group = process.Debugger.Configuration.GetModuleGroup (gname);
+
 				string name = info.GetString ("name");
-				Module module = process.ModuleManager.CreateModule (name);
+				Module module = process.ModuleManager.CreateModule (name, group);
 
 				module.name = info.GetString ("name");
+				module.has_load_symbols = info.GetBoolean ("has-load-symbols");
 				module.load_symbols = info.GetBoolean ("load-symbols");
+				module.has_step_into = info.GetBoolean ("has-step-into");
 				module.step_into = info.GetBoolean ("step-into");
+				module.has_hide_from_user = info.GetBoolean ("has-hide-from-user");
+				module.hide_from_user = info.GetBoolean ("hide-from-user");
 
 				return module;
 			}

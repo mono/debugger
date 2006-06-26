@@ -1,4 +1,5 @@
 using System;
+using System.Configuration;
 using ST = System.Threading;
 using System.Runtime.InteropServices;
 
@@ -29,15 +30,16 @@ namespace Mono.Debugger.Frontend
 			mono_debugger_server_static_init ();
 		}
 
-		internal CommandLineInterpreter (bool is_interactive, DebuggerOptions options)
+		internal CommandLineInterpreter (bool is_interactive, DebuggerConfiguration config,
+						 DebuggerOptions options)
 		{
 			if (options.HasDebugFlags)
 				Report.Initialize (options.DebugOutput, options.DebugFlags);
 			else
 				Report.Initialize ();
 
-			interpreter = new Interpreter (true, is_interactive, options);
-			engine = new DebuggerEngine (interpreter);
+			interpreter = new Interpreter (true, is_interactive, config, options);
+			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
 
 			if (is_interactive)
@@ -422,12 +424,15 @@ namespace Mono.Debugger.Frontend
 		{
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
+			DebuggerConfiguration config = new DebuggerConfiguration ();
+			config.LoadConfiguration ();
+
 			DebuggerOptions options = ParseCommandLine (args);
 
 			Console.WriteLine ("Mono Debugger");
 
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (
-				is_terminal, options);
+				is_terminal, config, options);
 
 			interpreter.RunMainLoop ();
 		}

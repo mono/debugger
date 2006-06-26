@@ -84,7 +84,12 @@ namespace Mono.Debugger.Frontend
 			}
 
 			Command c = (Command) Activator.CreateInstance (t);
-			PropertyInfo [] pi = t.GetProperties ();
+			return ParseArguments (c, args);
+		}
+
+		public Command ParseArguments (Command c, ArrayList args)
+		{
+			PropertyInfo [] pi = c.GetType ().GetProperties ();
 
 			int num_args = args != null ? args.Count : 0;
 			for (int i = 0; i < num_args; i++){
@@ -144,7 +149,7 @@ namespace Mono.Debugger.Frontend
 			next:
 				;
 			}
-			
+
 			return c;
 		}
 

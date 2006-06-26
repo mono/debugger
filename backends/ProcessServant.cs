@@ -64,7 +64,7 @@ namespace Mono.Debugger.Backends
 			is_attached = start.PID != 0;
 
 			breakpoint_manager = new BreakpointManager ();
-			module_manager = new ModuleManager ();
+			module_manager = new ModuleManager (manager.Debugger);
 			source_factory = new SourceFileFactory ();
 
 			module_manager.ModulesChanged += modules_changed;
@@ -195,8 +195,6 @@ namespace Mono.Debugger.Backends
 			symtab_manager.SetModules (module_manager.Modules);
 		}
 
-		Module[] current_modules = null;
-
 		void breakpoints_changed ()
 		{
 			if (BreakpointsChangedEvent != null)
@@ -205,8 +203,6 @@ namespace Mono.Debugger.Backends
 
 		void modules_reloaded (object sender, Module[] modules)
 		{
-			current_modules = modules;
-
 			if (ModulesChangedEvent != null)
 				ModulesChangedEvent ();
 		}
@@ -283,7 +279,7 @@ namespace Mono.Debugger.Backends
 				breakpoint_manager.Dispose ();
 
 			breakpoint_manager = new BreakpointManager ();
-			module_manager = new ModuleManager ();
+			module_manager = new ModuleManager (manager.Debugger);
 			source_factory = new SourceFileFactory ();
 
 			module_manager.ModulesChanged += modules_changed;
@@ -442,12 +438,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public Module[] Modules {
-			get {
-				if (current_modules != null)
-					return current_modules;
-
-				return new Module [0];
-			}
+			get { return module_manager.Modules; }
 		}
 
 		public SourceLocation FindLocation (string file, int line)

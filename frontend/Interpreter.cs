@@ -19,7 +19,9 @@ namespace Mono.Debugger.Frontend
 {
 	public class Interpreter : DebuggerMarshalByRefObject, IDisposable
 	{
+		DebuggerConfiguration config;
 		DebuggerSession session;
+		DebuggerEngine engine;
 
 		Debugger debugger;
 		Process main_process;
@@ -48,11 +50,13 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public Interpreter (bool is_synchronous, bool is_interactive,
-				    DebuggerOptions options)
+				    DebuggerConfiguration config, DebuggerOptions options)
 		{
+			this.config = config;
 			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 			this.session = new DebuggerSession (options);
+			this.engine = new DebuggerEngine (this);
 
 			interrupt_event = new ManualResetEvent (false);
 
@@ -94,6 +98,10 @@ namespace Mono.Debugger.Frontend
 				current_style = value;
 				current_style.Reset ();
 			}
+		}
+
+		public DebuggerEngine DebuggerEngine {
+			get { return engine; }
 		}
 
 		public Process CurrentProcess {
@@ -301,7 +309,7 @@ namespace Mono.Debugger.Frontend
 				       String.Join (" ", Options.InferiorArgs));
 
 			try {
-				debugger = new Debugger ();
+				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -329,7 +337,7 @@ namespace Mono.Debugger.Frontend
 				Print ("Attaching to {0}", pid);
 
 			try {
-				debugger = new Debugger ();
+				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -354,7 +362,7 @@ namespace Mono.Debugger.Frontend
 			Console.WriteLine ("Loading core file {0}", core_file);
 
 			try {
-				debugger = new Debugger ();
+				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -389,7 +397,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				BinaryFormatter formatter = new BinaryFormatter ();
 				session = (DebuggerSession) formatter.Deserialize (stream);
-				debugger = new Debugger ();
+				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);

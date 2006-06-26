@@ -26,7 +26,7 @@ namespace Mono.Debugger
 		DebuggerServant servant;
 		ManualResetEvent kill_event;
 
-		public Debugger ()
+		public Debugger (DebuggerConfiguration config)
 		{
 			kill_event = new ManualResetEvent (false);
 
@@ -36,7 +36,7 @@ namespace Mono.Debugger
 				Assembly.GetExecutingAssembly ().FullName,
 				typeof (DebuggerServant).FullName, false,
 				BindingFlags.Instance | BindingFlags.NonPublic,
-				null, new object [] { this, Report.ReportWriter },
+				null, new object [] { this, Report.ReportWriter, config },
 				null, null, null);
 
 			servant = (DebuggerServant) oh.Unwrap ();

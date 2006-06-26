@@ -49,9 +49,9 @@ namespace Mono.Debugger.Tests
 
 	public class NUnitInterpreter : Interpreter
 	{
-		internal NUnitInterpreter (DebuggerOptions options, LineReader inferior_stdout,
-					   LineReader inferior_stderr)
-			: base (true, true, options)
+		internal NUnitInterpreter (DebuggerConfiguration config, DebuggerOptions options,
+					   LineReader inferior_stdout, LineReader inferior_stderr)
+			: base (true, true, config, options)
 		{
 			this.inferior_stdout = inferior_stdout;
 			this.inferior_stderr = inferior_stderr;
@@ -150,6 +150,7 @@ namespace Mono.Debugger.Tests
 
 	public abstract class TestSuite
 	{
+		DebuggerConfiguration config;
 		DebuggerOptions options;
 		NUnitInterpreter interpreter;
 		DebuggerEngine engine;
@@ -171,6 +172,7 @@ namespace Mono.Debugger.Tests
 			ExeFileName = Path.GetFullPath (builddir + exe_file);
 			FileName = Path.GetFullPath (srcdir + src_file);
 
+			config = new DebuggerConfiguration ();
 			options = CreateOptions (ExeFileName, args);
 
 			inferior_stdout = new LineReader ();
@@ -209,9 +211,10 @@ namespace Mono.Debugger.Tests
 		[TestFixtureSetUp]
 		public virtual void SetUp ()
 		{
-			interpreter = new NUnitInterpreter (options, inferior_stdout, inferior_stderr);
+			interpreter = new NUnitInterpreter (
+				config, options, inferior_stdout, inferior_stderr);
 
-			engine = new DebuggerEngine (interpreter);
+			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
 		}
 

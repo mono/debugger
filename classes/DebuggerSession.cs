@@ -57,9 +57,6 @@ namespace Mono.Debugger
 		/* non-null if the user specified the -mono command line argument */
 		public string MonoPath = null;
 
-		public string RemoteHost = null;
-		public string RemoteMono = null;
-
 		Hashtable user_environment;
 
 		public Hashtable UserEnvironment {

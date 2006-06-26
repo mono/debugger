@@ -239,8 +239,7 @@ namespace Mono.Debugger.Backends
 
 			module = container.Process.ModuleManager.GetModule (filename);
 			if (module == null) {
-				module = new Module (filename, this);
-				container.Process.ModuleManager.AddModule (module);
+				module = container.Process.ModuleManager.CreateModule (filename, this);
 				OnModuleChanged ();
 			} else {
 				module.LoadModule (this);
@@ -474,6 +473,12 @@ namespace Mono.Debugger.Backends
 		public TargetInfo TargetInfo {
 			get {
 				return info;
+			}
+		}
+
+		public override bool IsNative {
+			get {
+				return true;
 			}
 		}
 

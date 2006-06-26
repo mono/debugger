@@ -1,3 +1,19 @@
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs: New file.
+	(DebuggerConfiguration): New public class.
+
+	* classes/Debugger.cs
+	(Debugger.ctor): Added `DebuggerConfiguration' argument.
+
+	* classes/Module.cs
+	(SymbolFile.IsNative): New public property.
+	(ModuleBase): New public abstract base class.
+	(Module): Derive from `ModuleBase'.
+	(Module.ModuleGroup): New public property.
+	(Module.HideFromUser): New public property.
+	(ModuleGroup): New public class.
+
 2006-06-12  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetVariable.cs

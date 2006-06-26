@@ -19,13 +19,16 @@ namespace Mono.Debugger.Backends
 	internal class DebuggerServant : DebuggerMarshalByRefObject, IDisposable
 	{
 		Debugger client;
+		DebuggerConfiguration config;
 		ThreadManager thread_manager;
 		Hashtable process_hash;
 		ProcessServant main_process;
 
-		internal DebuggerServant (Debugger client, ReportWriter writer)
+		internal DebuggerServant (Debugger client, ReportWriter writer,
+					  DebuggerConfiguration config)
 		{
 			this.client = client;
+			this.config = config;
 			Report.ReportWriter = writer;
 			thread_manager = new ThreadManager (this);
 			process_hash = Hashtable.Synchronized (new Hashtable ());
@@ -33,6 +36,10 @@ namespace Mono.Debugger.Backends
 
 		public Debugger Client {
 			get { return client; }
+		}
+
+		public DebuggerConfiguration Configuration {
+			get { return config; }
 		}
 
 		internal ThreadManager ThreadManager {

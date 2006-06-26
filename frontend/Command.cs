@@ -1226,7 +1226,11 @@ namespace Mono.Debugger.Frontend
 			for (int i = 1; i < Args.Count; i++)
 				new_args.Add (Args [i]);
 
-			subcommand.Args = new_args;
+			DebuggerEngine engine = context.Interpreter.DebuggerEngine;
+			subcommand = (DebuggerCommand) engine.ParseArguments (subcommand, new_args);
+			if (subcommand == null)
+				return false;
+
 			return subcommand.Resolve (context);
 		}
 	  
@@ -1542,19 +1546,31 @@ namespace Mono.Debugger.Frontend
 
 		private class ShowModulesCommand : ProcessCommand
 		{
+			bool all;
+
+			public bool All {
+				get { return all; }
+				set { all = value; }
+			}
+
 			protected override object DoExecute (ScriptingContext context)
 			{
 				Module[] modules = CurrentProcess.Modules;
 
-				context.Print ("{0,4} {1,5} {2,5} {3}", "Id", "step?", "sym?", "Name");
+				context.Print ("{0,4}  {4,-8} {1,5} {2,5} {3}",
+					       "Id", "step?", "sym?", "Name", "Group");
+
 				for (int i = 0; i < modules.Length; i++) {
 					Module module = modules [i];
 
-					context.Print ("{0,4} {1,5} {2,5} {3}",
+					if (!all && module.HideFromUser)
+						continue;
+
+					context.Print ("{0,4}  {4,-8} {1,5} {2,5} {3}",
 					       i,
 					       module.StepInto ? "y " : "n ",
 					       module.SymbolsLoaded ? "y " : "n ",
-					       module.Name);
+					       module.Name, module.ModuleGroup.Name);
 				}
 
 				return null;
