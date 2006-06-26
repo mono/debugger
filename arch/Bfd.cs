@@ -11,7 +11,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : SymbolFile, ISymbolContainer, ILanguageBackend, IDisposable
+	internal class Bfd : SymbolFile, ISymbolContainer, ILanguageBackend
 	{
 		IntPtr bfd;
 		protected Module module;
@@ -646,7 +646,6 @@ namespace Mono.Debugger.Backends
 
 			if (dwarf != null) {
 				has_debugging_info = true;
-				module.OnSymbolsLoadedEvent ();
 			}
 		}
 
@@ -659,10 +658,7 @@ namespace Mono.Debugger.Backends
 			eh_frame_reader = null;
 
 			dwarf_loaded = false;
-			if (dwarf != null) {
-				dwarf = null;
-				module.OnSymbolsUnLoadedEvent ();
-			}
+			dwarf = null;
 		}
 
 		internal override void OnModuleChanged ()
@@ -856,7 +852,7 @@ namespace Mono.Debugger.Backends
 			has_sections = true;
 		}
 
-		public Module Module {
+		public override Module Module {
 			get {
 				return module;
 			}
@@ -1061,9 +1057,7 @@ namespace Mono.Debugger.Backends
 
 			if (dwarf != null) {
 				dwarf.ModuleLoaded ();
-
 				has_debugging_info = true;
-				module.OnSymbolsLoadedEvent ();
 			}
 
 			foreach (LoadHandlerData data in load_handlers.Keys)
@@ -1217,36 +1211,11 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		protected virtual void Dispose (bool disposing)
+		protected override void DoDispose ()
 		{
-			// Check to see if Dispose has already been called.
-			if (!this.disposed) {
-				this.disposed = true;
-
-				// Release unmanaged resources
-				lock (this) {
-					bfd_close (bfd);
-					bfd = IntPtr.Zero;
-				}
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~Bfd ()
-		{
-			Dispose (false);
+			bfd_close (bfd);
+			bfd = IntPtr.Zero;
+			base.DoDispose ();
 		}
 	}
 }

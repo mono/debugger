@@ -198,9 +198,8 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoSymbolFile : SymbolFile, IDisposable
+	internal class MonoSymbolFile : SymbolFile
 	{
-		internal readonly Module Module;
 		internal readonly int Index;
 		internal readonly Cecil.IAssemblyDefinition Assembly;
 		internal readonly Cecil.IModuleDefinition ModuleDefinition;
@@ -213,6 +212,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly Architecture Architecture;
 		protected readonly ProcessServant process;
 		MonoSymbolTable symtab;
+		Module module;
 		string name;
 
 		Hashtable range_hash;
@@ -268,11 +268,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			name = Assembly.Name.FullName;
 
-			Module = process.Session.GetModule (name);
-			if (Module == null) {
-				Module = process.Session.CreateModule (name, this);
+			module = process.Session.GetModule (name);
+			if (module == null) {
+				module = process.Session.CreateModule (name, this);
 			} else {
-				Module.LoadModule (this);
+				module.LoadModule (this);
 			}
 
 			process.SymbolTableManager.AddSymbolFile (this);
@@ -290,6 +290,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected ArrayList WrapperEntries {
 			get { return wrappers; }
+		}
+
+		public override Module Module {
+			get { return module; }
 		}
 
 		public override ISymbolTable SymbolTable {
@@ -635,30 +639,11 @@ namespace Mono.Debugger.Languages.Mono
 		internal override void OnModuleChanged ()
 		{ }
 
-		private bool disposed = false;
-
-		private void Dispose (bool disposing)
+		protected override void DoDispose ()
 		{
-			if (!this.disposed) {
-				if (disposing) {
-					if (File != null)
-						File.Dispose ();
-				}
-			}
-
-			this.disposed = true;
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~MonoSymbolFile ()
-		{
-			Dispose (false);
+			if (File != null)
+				File.Dispose ();
+			base.DoDispose ();
 		}
 
 		protected class MonoMethod : Method

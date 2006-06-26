@@ -1,5 +1,17 @@
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ModulesChanged): Removed.
+
+	* classes/Module.cs
+	(SymbolFile): Implement IDisposable.
+	(SymbolFile.Module): New public abstract property.
+	(SymbolFile.DoDispose): New protected virtual method; call
+	`Module.UnLoadModule()'.	
+	(Module.UnLoadModule): New internal method.
+
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
 	* backends/SymbolTableManager.cs
 	(SymbolTableManager): Completely rewrite and simplify this;
 	instead of maintaining a `SymbolTableCollection' in a separate

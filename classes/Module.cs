@@ -24,8 +24,12 @@ namespace Mono.Debugger
 		void Remove ();
 	}
 
-	internal abstract class SymbolFile : DebuggerMarshalByRefObject
+	internal abstract class SymbolFile : DebuggerMarshalByRefObject, IDisposable
 	{
+		public abstract Module Module {
+			get;
+		}
+
 		public abstract bool IsNative {
 			get;
 		}
@@ -75,6 +79,44 @@ namespace Mono.Debugger
 							  TargetMemoryAccess memory);
 
 		internal abstract void OnModuleChanged ();
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		protected virtual void DoDispose ()
+		{
+			Module.UnLoadModule ();
+		}
+
+		private void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing)
+				DoDispose ();
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~SymbolFile ()
+		{
+			Dispose (false);
+		}
 	}
 
 	public abstract class ModuleBase : DebuggerMarshalByRefObject
@@ -192,6 +234,11 @@ namespace Mono.Debugger
 		{
 			this.symfile = symfile;
 			OnModuleChanged ();
+		}
+
+		internal void UnLoadModule ()
+		{
+			this.symfile = null;
 		}
 
 		public Language Language {
@@ -316,28 +363,6 @@ namespace Mono.Debugger
 		// </summary>
 		public bool HasDebuggingInfo {
 			get { return SymbolFile.HasDebuggingInfo; }
-		}
-
-		// <summary>
-		//   This event is emitted when the module's symbol tables are loaded.
-		// </summary>
-		public event ModuleEventHandler SymbolsLoadedEvent;
-
-		// <summary>
-		//   This event is emitted when the module's symbol tables are unloaded.
-		// </summary>
-		public event ModuleEventHandler SymbolsUnLoadedEvent;
-
-		internal void OnSymbolsLoadedEvent ()
-		{
-			if (SymbolsLoadedEvent != null)
-				SymbolsLoadedEvent (this);
-		}
-
-		internal void OnSymbolsUnLoadedEvent ()
-		{
-			if (SymbolsUnLoadedEvent != null)
-				SymbolsUnLoadedEvent (this);
 		}
 
 		protected void OnModuleChanged ()
