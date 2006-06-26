@@ -1,5 +1,20 @@
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
+	* backends/SymbolTableManager.cs
+	(SymbolTableManager): Completely rewrite and simplify this;
+	instead of maintaining a `SymbolTableCollection' in a separate
+	thread, directly implement `ISymbolTable' and iterate over an
+	array of `SymbolFile's.
+
+	* classes/SourceInfo.cs
+	(SourceFile): Override GetHashCode() and Equals().
+
+	* classes/Module.cs
+	(Module.RegisterLoadHandler): Removed; call it on the `SymbolFile'
+	instead.	
+
+2006-06-26  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerSession.cs
 	(DebuggerSession.ctor): Added `DebuggerConfiguration' argument.
 	(DebuggerSession.Config): New public readonly field.

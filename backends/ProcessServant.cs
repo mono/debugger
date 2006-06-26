@@ -176,11 +176,6 @@ namespace Mono.Debugger.Backends
 			get { return start.CommandLineArguments; }
 		}
 
-		internal void ReachedMain ()
-		{
-			symtab_manager.Wait ();
-		}
-
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)
 		{
 			Inferior new_inferior = inferior.CreateThread ();

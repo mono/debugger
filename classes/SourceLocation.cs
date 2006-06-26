@@ -253,7 +253,7 @@ namespace Mono.Debugger
 			{
 				this.domain = domain;
 
-				load_handler = location.Module.RegisterLoadHandler (
+				load_handler = location.Module.SymbolFile.RegisterLoadHandler (
 					target, location.Method, method_loaded, location);
 			}
 

@@ -383,7 +383,6 @@ namespace Mono.Debugger.Backends
 					}
 
 					if (!process.IsManaged) {
-						process.ReachedMain ();
 						inferior.InitializeModules ();
 					}
 				}
@@ -2083,7 +2082,6 @@ namespace Mono.Debugger.Backends
 				      sse, data1, data2, Result);
 
 			RestoreStack (sse);
-			sse.process.ReachedMain ();
 			inferior.InitializeModules ();
 			return true;
 		}

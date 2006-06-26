@@ -274,6 +274,8 @@ namespace Mono.Debugger.Languages.Mono
 			} else {
 				Module.LoadModule (this);
 			}
+
+			process.SymbolTableManager.AddSymbolFile (this);
 		}
 
 		public override string ToString ()

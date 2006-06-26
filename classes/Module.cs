@@ -404,29 +404,6 @@ namespace Mono.Debugger
 			get { return SymbolFile.SymbolTable; }
 		}
 
-		// <summary>
-		//   Registers a delegate to be invoked when the method is loaded.
-		//   This is an expensive operation and must not be used in a GUI to get
-		//   a notification when the `IsLoaded' field changed.
-		//
-		//   This is an expensive operation, registering too many load handlers
-		//   may slow that target down, so do not use this in the user interface
-		//   to get any notifications when a method is loaded or something like
-		//   this.  It's just intended to insert breakpoints.
-		//
-		//   To unregister the delegate, dispose the returned IDisposable.
-		//
-		//   Throws:
-		//     InvalidOperationException - IsDynamic was false or IsLoaded was true
-		// </summary>
-		internal ILoadHandler RegisterLoadHandler (Thread target,
-							   SourceMethod method,
-							   MethodLoadedHandler handler,
-							   object user_data)
-		{
-			return SymbolFile.RegisterLoadHandler (target, method, handler, user_data);
-		}
-
 		internal StackFrame UnwindStack (StackFrame last_frame,
 						 TargetMemoryAccess memory)
 		{

@@ -63,7 +63,6 @@ namespace Mono.Debugger.Backends
 			read_note_section ();
 			main_thread = (CoreFileThread) threads [0];
 
-			ReachedMain ();
 			InitializeModules ();
 		}
 

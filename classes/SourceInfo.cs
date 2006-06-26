@@ -71,6 +71,20 @@ namespace Mono.Debugger
 			this.filename = filename;
 		}
 
+		public override int GetHashCode ()
+		{
+			return id;
+		}
+
+		public override bool Equals (object o)
+		{
+			SourceFile file = o as SourceFile;
+			if (file == null)
+				return false;
+
+			return (id == file.id) && (filename == file.filename) && (module == file.module);
+		}
+
 		string filename;
 		Module module;
 		int id;

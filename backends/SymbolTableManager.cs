@@ -10,67 +10,44 @@ namespace Mono.Debugger.Backends
 	// <summary>
 	//   This class maintains the debugger's symbol tables.
 	// </summary>
-	internal class SymbolTableManager : DebuggerMarshalByRefObject, IDisposable
+	internal class SymbolTableManager : DebuggerMarshalByRefObject, ISymbolTable, IDisposable
 	{
 		DebuggerSession session;
-		bool symtab_thread_exit;
-
-		ST.Thread symtab_thread;
-		ST.AutoResetEvent symtab_reload_event;
-		ST.ManualResetEvent update_completed_event;
-		bool symtab_update_in_progress;
+		ArrayList symbol_files;
 
 		internal SymbolTableManager (DebuggerSession session)
 		{
 			this.session = session;
-
-			session.ModulesChanged += OnModulesChanged;
-
-			symtab_reload_event = new ST.AutoResetEvent (false);
-			update_completed_event = new ST.ManualResetEvent (true);
-			symtab_thread = new ST.Thread (new ST.ThreadStart (symtab_thread_start));
-			symtab_thread.IsBackground = true;
-			symtab_thread.Start ();
+			this.symbol_files = ArrayList.Synchronized (new ArrayList ());
 		}
 
-		// <summary>
-		//   Whether an update is currently in progress.
-		// </summary>
-		internal bool SymbolTableUpdateInProgress {
-			get {
-				lock (this) {
-					return symtab_update_in_progress;
-				}
-			}
-		}
-
-		public void Wait ()
+		internal void AddSymbolFile (SymbolFile symfile)
 		{
-			if (symtab_thread != null) {
-				update_completed_event.WaitOne ();
-			}
+			symbol_files.Add (symfile);
 		}
+
+		//
+		// ISymbolLookup
+		//
 
 		public Method Lookup (TargetAddress address)
 		{
-			if (symtab_thread != null)
-				update_completed_event.WaitOne ();
+			foreach (SymbolFile symfile in symbol_files) {
+				if (!symfile.SymbolsLoaded)
+					continue;
 
-			lock (this) {
-				if (current_symtab == null)
-					return null;
-				return current_symtab.Lookup (address);
+				Method method = symfile.SymbolTable.Lookup (address);
+				if (method != null)
+					return method;
 			}
+
+			return null;
 		}
 
 		public Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
-			if (symtab_thread != null)
-				update_completed_event.WaitOne ();
-
-			Module[] current_modules = session.Modules;
-			foreach (Module module in current_modules) {
-				Symbol name = module.SimpleLookup (address, exact_match);
+			foreach (SymbolFile symfile in symbol_files) {
+				Symbol name = symfile.SimpleLookup (address, exact_match);
 				if (name != null)
 					return name;
 			}
@@ -78,71 +55,50 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		public void OnModulesChanged (DebuggerSession session)
-		{
-			lock (this) {
-				symtab_reload_event.Set ();
-				update_completed_event.Reset ();
-				symtab_update_in_progress = true;
-			}
+		//
+		// ISymbolContainer
+		//
+
+		bool ISymbolContainer.IsContinuous {
+			get { return false; }
+		}
+
+		TargetAddress ISymbolContainer.StartAddress {
+			get { throw new InvalidOperationException (); }
+		}
+
+		TargetAddress ISymbolContainer.EndAddress {
+			get { throw new InvalidOperationException (); }
 		}
 
 		//
-		// The following fields are shared between the two threads !
+		// ISymbolTable
 		//
-		ISymbolTable current_symtab = null;
 
-		// <summary>
-		//   This thread reloads the symbol tables in the background.
-		// </summary>
-
-		void symtab_thread_start ()
-		{
-			Report.Debug (DebugFlags.Threads, "Symtab thread started: {0}",
-				      DebuggerWaitHandle.CurrentThread);
-
-			symtab_thread_main ();
-
-			update_completed_event.Set ();
-			symtab_update_in_progress = false;
-			symtab_thread = null;
+		bool ISymbolTable.HasRanges {
+			get { return false; }
 		}
 
-		void symtab_thread_main ()
-		{
-			while (true) {
-				symtab_reload_event.WaitOne ();
-
-				if (symtab_thread_exit)
-					return;
-
-				// Updating the symbol tables doesn't take that long and they're also
-				// needed by the SingleSteppingEngine, so let's do this first.
-
-				SymbolTableCollection symtabs = new SymbolTableCollection ();
-				symtabs.Lock ();
-
-				Module[] current_modules = session.Modules;
-				foreach (Module module in current_modules) {
-					if (!module.SymbolsLoaded || !module.LoadSymbols)
-						continue;
-
-					ISymbolTable symtab = module.SymbolTable;
-					symtabs.AddSymbolTable (symtab);
-				}
-
-				symtabs.UnLock ();
-
-				lock (this) {
-					current_symtab = symtabs;
-					// We need to clear this event as soon as we're done updating
-					// the symbol tables since the main thread may be waiting in
-					// the `SymbolTable' accessor.
-					symtab_update_in_progress = false;
-					update_completed_event.Set ();
-				}
-			}
+		ISymbolRange[] ISymbolTable.SymbolRanges {
+			get { throw new InvalidOperationException (); }
 		}
+
+		bool ISymbolTable.HasMethods {
+			get { return false; }
+		}
+
+		Method[] ISymbolTable.Methods {
+			get { throw new InvalidOperationException (); }
+		}
+
+		bool ISymbolTable.IsLoaded {
+			get { return true; }
+		}
+
+		void ISymbolTable.UpdateSymbolTable ()
+		{ }
+
+		public event SymbolTableChangedHandler SymbolTableChanged;
 
 		//
 		// IDisposable
@@ -160,13 +116,7 @@ namespace Mono.Debugger.Backends
 		{
 			if (!this.disposed) {
 				if (disposing) {
-					if (symtab_thread != null) {
-						symtab_thread_exit = true;
-						symtab_reload_event.Set ();
-						symtab_thread = null;
-
-						session.ModulesChanged -= OnModulesChanged;
-					}
+					symbol_files = ArrayList.Synchronized (new ArrayList ());
 				}
 				
 				this.disposed = true;

@@ -193,8 +193,6 @@ namespace Mono.Debugger.Backends
 						engine.ReachedManagedMain (data);
 					else
 						engine.ReachedManagedMain (TargetAddress.Null);
-
-					inferior.Process.ReachedMain ();
 					return true;
 				}
 

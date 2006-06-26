@@ -244,6 +244,8 @@ namespace Mono.Debugger.Backends
 			} else {
 				module.LoadModule (this);
 			}
+
+			container.Process.SymbolTableManager.AddSymbolFile (this);
 		}
 
 		public Bfd OpenCoreFile (string core_file)
