@@ -14,15 +14,18 @@ namespace Mono.Debugger
 	public class Process : DebuggerMarshalByRefObject
 	{
 		Debugger debugger;
+		DebuggerSession session;
 		ProcessServant servant;
 
 		int id = ++next_id;
 		static int next_id = 0;
 
-		internal Process (Debugger debugger, ProcessServant servant)
+		internal Process (Debugger debugger, ProcessServant servant,
+				  DebuggerSession session)
 		{
 			this.debugger = debugger;
 			this.servant = servant;
+			this.session = session;
 		}
 
 		public int ID {
@@ -31,6 +34,10 @@ namespace Mono.Debugger
 
 		public Debugger Debugger {
 			get { return debugger; }
+		}
+
+		public DebuggerSession Session {
+			get { return session; }
 		}
 
 		internal ProcessServant Servant {
@@ -106,108 +113,6 @@ namespace Mono.Debugger
 
 		public Thread[] Threads {
 			get { return servant.Threads; }
-		}
-
-		//
-		// Thread Groups
-		//
-
-		public ThreadGroup CreateThreadGroup (string name)
-		{
-			return servant.CreateThreadGroup (name);
-		}
-
-		public void DeleteThreadGroup (string name)
-		{
-			servant.DeleteThreadGroup (name);
-		}
-
-		public bool ThreadGroupExists (string name)
-		{
-			return servant.ThreadGroupExists (name);
-		}
-
-		public ThreadGroup[] ThreadGroups {
-			get { return servant.ThreadGroups; }
-		}
-
-		public ThreadGroup ThreadGroupByName (string name)
-		{
-			return servant.ThreadGroupByName (name);
-		}
-
-		public ThreadGroup MainThreadGroup {
-			get { return servant.MainThreadGroup; }
-		}
-
-		//
-		// Events
-		//
-
-		public Event[] Events {
-			get { return servant.Events; }
-		}
-
-		public Event GetEvent (int index)
-		{
-			return servant.GetEvent (index);
-		}
-
-		internal void AddEvent (Event handle)
-		{
-			servant.AddEvent (handle);
-		}
-
-		public void DeleteEvent (Thread thread, Event handle)
-		{
-			servant.DeleteEvent (thread, handle);
-		}
-
-		public Event InsertBreakpoint (Thread target, ThreadGroup group, int domain,
-					       SourceLocation location)
-		{
-			if (!location.HasMethod && !location.HasFunction)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			return servant.InsertBreakpoint (target, group, domain, location);
-		}
-
-		public Event InsertBreakpoint (Thread target, ThreadGroup group,
-					       TargetAddress address)
-		{
-			return servant.InsertBreakpoint (target, group, address);
-		}
-
-		public Event InsertBreakpoint (Thread target, ThreadGroup group,
-					       TargetFunctionType func)
-		{
-			return servant.InsertBreakpoint (target, group, func);
-		}
-
-		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							TargetType exception)
-		{
-			return servant.InsertExceptionCatchPoint (target, group, exception);
-		}
-
-		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
-						       BreakpointType type)
-		{
-			return servant.InsertHardwareWatchPoint (target, address, type);
-		}
-
-		//
-		// Session management.
-		//
-
-		public void SaveSession (Stream stream, StreamingContextStates states)
-		{
-			servant.SaveSession (stream, states);
-		}
-
-		public void LoadSession (Stream stream, StreamingContextStates states)
-		{
-			servant.LoadSession (stream, states);
 		}
 
 		public override string ToString ()

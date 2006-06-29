@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger.Backends
 {
-	internal abstract class BreakpointHandle
+	internal abstract class BreakpointHandle : DebuggerMarshalByRefObject
 	{
 		public readonly Breakpoint Breakpoint;
 

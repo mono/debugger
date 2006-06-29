@@ -1,10 +1,15 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Configuration;
 using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Xml;
+using System.Xml.XPath;
+using System.Data;
+using System.Data.Common;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
@@ -85,14 +90,26 @@ namespace Mono.Debugger
 	{
 		public readonly DebuggerConfiguration Config;
 		public readonly DebuggerOptions Options;
-		byte[] session_data;
-		Hashtable modules;
 
-		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options)
+		private readonly Hashtable modules;
+		private readonly Hashtable events;
+		private readonly Hashtable thread_groups;
+		private readonly ThreadGroup main_thread_group;
+
+		private DebuggerSession (DebuggerConfiguration config)
 		{
 			this.Config = config;
-			this.Options = options;
+
 			modules = Hashtable.Synchronized (new Hashtable ());
+			events = Hashtable.Synchronized (new Hashtable ());
+			thread_groups = Hashtable.Synchronized (new Hashtable ());
+			main_thread_group = CreateThreadGroup ("main");
+		}
+
+		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options)
+			: this (config)
+		{
+			this.Options = options;
 		}
 
 		//
@@ -142,79 +159,234 @@ namespace Mono.Debugger
 		}
 
 		//
+		// Thread Groups
+		//
+
+		public ThreadGroup CreateThreadGroup (string name)
+		{
+			lock (thread_groups) {
+				ThreadGroup group = (ThreadGroup) thread_groups [name];
+				if (group != null)
+					return group;
+
+				group = ThreadGroup.CreateThreadGroup (name);
+				thread_groups.Add (name, group);
+				return group;
+			}
+		}
+
+		public void DeleteThreadGroup (string name)
+		{
+			thread_groups.Remove (name);
+		}
+
+		public bool ThreadGroupExists (string name)
+		{
+			return thread_groups.Contains (name);
+		}
+
+		public ThreadGroup[] ThreadGroups {
+			get {
+				lock (thread_groups) {
+					ThreadGroup[] retval = new ThreadGroup [thread_groups.Values.Count];
+					thread_groups.Values.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+		}
+
+		public ThreadGroup ThreadGroupByName (string name)
+		{
+			return (ThreadGroup) thread_groups [name];
+		}
+
+		public ThreadGroup MainThreadGroup {
+			get { return main_thread_group; }
+		}
+
+		//
+		// Events
+		//
+
+		public Event[] Events {
+			get {
+				Event[] handles = new Event [events.Count];
+				events.Values.CopyTo (handles, 0);
+				return handles;
+			}
+		}
+
+		public Event GetEvent (int index)
+		{
+			return (Event) events [index];
+		}
+
+		internal void AddEvent (Event handle)
+		{
+			events.Add (handle.Index, handle);
+		}
+
+		public void DeleteEvent (Thread thread, Event handle)
+		{
+			handle.Remove (thread);
+			events.Remove (handle.Index);
+		}
+
+		//
+		// Events
+		//
+
+		public Event InsertBreakpoint (Thread target, ThreadGroup group, int domain,
+					       SourceLocation location)
+		{
+			if (!location.HasMethod && !location.HasFunction)
+				throw new TargetException (TargetError.LocationInvalid);
+
+			Event handle = new Breakpoint (group, location);
+			AddEvent (handle);
+			return handle;
+		}
+
+		public Event InsertBreakpoint (Thread target, ThreadGroup group,
+					       TargetAddress address)
+		{
+			Event handle = new Breakpoint (address.ToString (), group, address);
+			AddEvent (handle);
+			return handle;
+		}
+
+		public Event InsertBreakpoint (Thread target, ThreadGroup group,
+					       TargetFunctionType func)
+		{
+			Event handle = new Breakpoint (group, new SourceLocation (func));
+			AddEvent (handle);
+			return handle;
+		}
+
+		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
+							TargetType exception)
+		{
+			Event handle = new ExceptionCatchPoint (group, exception);
+			AddEvent (handle);
+			return handle;
+		}
+
+		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
+						       BreakpointType type)
+		{
+			Event handle = new Breakpoint (address, type);
+			AddEvent (handle);
+			return handle;
+		}
+
+		//
 		// Session management.
 		//
 
-		public void MainProcessExited (Process process)
+		public void SaveSession (Stream stream)
 		{
-			using (MemoryStream stream = new MemoryStream ()) {
-				process.SaveSession (stream, StreamingContextStates.Persistence);
-				session_data = stream.ToArray ();
+			DataSet ds = new DataSet ("DebuggerSession");
+
+			Assembly ass = Assembly.GetExecutingAssembly ();
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+				ds.ReadXmlSchema (schema);
+
+			DataTable group_table = ds.Tables ["ModuleGroup"];
+			foreach (ModuleGroup group in Config.ModuleGroups) {
+				DataRow row = group_table.NewRow ();
+				group.GetSessionData (row);
+				group_table.Rows.Add (row);
+			}
+
+			DataTable module_table = ds.Tables ["Module"];
+			foreach (Module module in Modules) {
+				DataRow row = module_table.NewRow ();
+				module.GetSessionData (row);
+				module_table.Rows.Add (row);
+			}
+
+			DataTable thread_group_table = ds.Tables ["ThreadGroup"];
+			foreach (ThreadGroup group in ThreadGroups) {
+				DataRow row = thread_group_table.NewRow ();
+				row ["name"] = group.Name;
+				thread_group_table.Rows.Add (row);
+			}
+
+			DataTable event_table = ds.Tables ["Event"];
+			foreach (Event e in Events) {
+				DataRow row = event_table.NewRow ();
+				e.GetSessionData (row);
+				event_table.Rows.Add (row);
+			}
+
+			ds.WriteXml (stream);
+		}
+
+		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
+					Stream stream)
+			: this (config)
+		{
+			this.Options = options;
+
+			DataSet ds = new DataSet ("DebuggerSession");
+
+			Assembly ass = Assembly.GetExecutingAssembly ();
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+				ds.ReadXmlSchema (schema);
+
+			XmlDataDocument doc = new XmlDataDocument (ds);
+
+			ds.ReadXml (stream, XmlReadMode.IgnoreSchema);
+
+			DataTable module_table = ds.Tables ["Module"];
+			foreach (DataRow row in module_table.Rows) {
+				string name = (string) row ["name"];
+				Module module = (Module) modules [name];
+				if (module == null) {
+					string gname = (string) row ["group"];
+					ModuleGroup group = Config.GetModuleGroup (gname);
+					module = new Module (group, name, null);
+					modules.Add (name, module);
+				}
+
+				module.SetSessionData (row);
+			}
+
+			Hashtable locations = new Hashtable ();
+			DataTable location_table = ds.Tables ["Location"];
+			foreach (DataRow row in location_table.Rows) {
+				long index = (long) row ["id"];
+				locations.Add (index, new SourceLocation (this, row));
+			}
+
+			DataTable event_table = ds.Tables ["Event"];
+			foreach (DataRow row in event_table.Rows) {
+				if ((string) row ["type"] != "Mono.Debugger.Breakpoint")
+					continue;
+
+				string gname = (string) row ["group"];
+				ThreadGroup group;
+				if (gname == "system")
+					group = ThreadGroup.System;
+				else if (gname == "global")
+					group = ThreadGroup.Global;
+				else
+					group = CreateThreadGroup (gname);
+
+				SourceLocation location = (SourceLocation) locations [(long) row ["location"]];
+				Breakpoint bpt = new Breakpoint (group, location);
+				AddEvent (bpt);
 			}
 		}
+
+		//
+		// Session management.
+		//
 
 		public void MainProcessReachedMain (Process process)
 		{
-			if (session_data == null)
-				return;
-
-			using (MemoryStream stream = new MemoryStream (session_data)) {
-				process.LoadSession (stream, StreamingContextStates.Persistence);
-			}
-		}
-
-		//
-		// Private stuff.
-		//
-
-		internal static ISurrogateSelector CreateSurrogateSelector (StreamingContext context)
-		{
-			return new SurrogateSelector ();
-		}
-
-		private class SurrogateSelector : ISurrogateSelector
-		{
-			void ISurrogateSelector.ChainSelector (ISurrogateSelector selector)
-			{
-				throw new NotImplementedException ();
-			}
-
-			ISurrogateSelector ISurrogateSelector.GetNextSelector()
-			{
-				throw new NotImplementedException ();
-			}
-
-			ISerializationSurrogate ISurrogateSelector.GetSurrogate (
-				Type type, StreamingContext context, out ISurrogateSelector selector)
-			{
-				if (type == typeof (Module)) {
-					selector = this;
-					return new Module.SessionSurrogate ();
-				}
-
-				if (type == typeof (ThreadGroup)) {
-					selector = this;
-					return new ThreadGroup.SessionSurrogate ();
-				}
-
-				if (type.IsSubclassOf (typeof (Event))) {
-					selector = this;
-					return new Event.SessionSurrogate ();
-				}
-
-				if ((type == typeof (SourceLocation)) ||
-				    type.IsSubclassOf (typeof (SourceLocation))) {
-					selector = this;
-					return new SourceLocation.SessionSurrogate ();
-				}
-
-				if (type.IsSubclassOf (typeof (TargetFunctionType))) {
-					selector = this;
-					return new TargetFunctionType.SessionSurrogate ();
-				}
-
-				selector = null;
-				return null;
+			foreach (Event e in events.Values) {
+				e.Enable (process.MainThread);
 			}
 		}
 	}

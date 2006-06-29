@@ -22,6 +22,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return name; }
 		}
 
+		public override string FullName {
+			get { return name; }
+		}
+
 		public override int Size {
 			get { return Language.TargetInfo.TargetAddressSize; }
 		}
@@ -90,20 +94,6 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override TargetAddress GetMethodAddress (Thread target)
-		{
-			throw new NotSupportedException ();
-		}
-
-		//
-		// Session handling.
-		//
-
-		protected override void GetSessionData (SerializationInfo info)
-		{
-			throw new NotSupportedException ();
-		}
-
-		protected override object SetSessionData (SerializationInfo info)
 		{
 			throw new NotSupportedException ();
 		}

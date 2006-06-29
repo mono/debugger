@@ -568,6 +568,11 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
+		public override TargetFunctionType LookupMethod (string class_name, string method_name)
+		{
+			return null;
+		}
+
 		public override SourceMethod FindMethod (string name)
 		{
 			if (dwarf != null)

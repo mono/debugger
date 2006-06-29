@@ -167,7 +167,7 @@ namespace Mono.Debugger.Backends
 
 					if (bpt.ThreadGroup.IsGlobal) {
 						Breakpoint new_bpt = bpt.Clone (idx);
-						inferior.Process.AddEvent (new_bpt);
+						inferior.Process.Session.AddEvent (new_bpt);
 					} else if (!bpt.ThreadGroup.IsSystem) {
 						RemoveBreakpoint (inferior, idx);
 					}

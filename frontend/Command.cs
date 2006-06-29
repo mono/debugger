@@ -1905,7 +1905,7 @@ namespace Mono.Debugger.Frontend
 				handle.Enable (CurrentThread);
 			} else {
 				// enable all breakpoints
-				foreach (Event h in CurrentThread.Process.Events)
+				foreach (Event h in CurrentThread.Process.Session.Events)
 					h.Enable (CurrentThread);
 			}
 
@@ -1926,7 +1926,7 @@ namespace Mono.Debugger.Frontend
 				handle.Disable (CurrentThread);
 			} else {
 				// enable all breakpoints
-				foreach (Event h in CurrentThread.Process.Events)
+				foreach (Event h in CurrentThread.Process.Session.Events)
 					h.Disable (CurrentThread);
 			}
 
@@ -1944,9 +1944,9 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				CurrentThread.Process.DeleteEvent (CurrentThread, handle);
+				CurrentThread.Process.Session.DeleteEvent (CurrentThread, handle);
 			} else {
-				Event[] hs = CurrentThread.Process.Events;
+				Event[] hs = CurrentThread.Process.Session.Events;
 
 				if (hs.Length == 0)
 					return null;
@@ -1955,8 +1955,8 @@ namespace Mono.Debugger.Frontend
 					return null;
 
 				// delete all breakpoints
-				foreach (Event h in CurrentThread.Process.Events)
-					CurrentThread.Process.DeleteEvent (CurrentThread, h);
+				foreach (Event h in CurrentThread.Process.Session.Events)
+					CurrentThread.Process.Session.DeleteEvent (CurrentThread, h);
 			}
 
 			return null;

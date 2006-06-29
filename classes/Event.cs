@@ -1,6 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
+using System.Data;
 
 namespace Mono.Debugger
 {
@@ -62,40 +63,13 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		internal virtual void GetSessionData (SerializationInfo info)
+		internal virtual void GetSessionData (DataRow row)
 		{
-			info.AddValue ("index", index);
-			info.AddValue ("group", group);
-			info.AddValue ("name", name);
-		}
-
-		internal virtual void SetSessionData (SerializationInfo info, ProcessServant process)
-		{
-			index = info.GetInt32 ("index");
-			group = (ThreadGroup) info.GetValue ("group", typeof (ThreadGroup));
-			name = info.GetString ("name");
-		}
-
-		protected internal class SessionSurrogate : ISerializationSurrogate
-		{
-			public virtual void GetObjectData (object obj, SerializationInfo info,
-							   StreamingContext context)
-			{
-				Event handle = (Event) obj;
-				handle.GetSessionData (info);
-			}
-
-			public object SetObjectData (object obj, SerializationInfo info,
-						     StreamingContext context,
-						     ISurrogateSelector selector)
-			{
-				Event handle = (Event) obj;
-				ProcessServant process = (ProcessServant) context.Context;
-				handle.SetSessionData (info, process);
-				if ((context.State & StreamingContextStates.Persistence) != 0)
-					handle.index = GetNextEventIndex ();
-				return handle;
-			}
+			row ["index"] = index;
+			row ["name"] = name;
+			row ["group"] = group.Name;
+			row ["type"] = GetType ();
+			row ["enabled"] = IsEnabled;
 		}
 
 		//

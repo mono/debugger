@@ -51,6 +51,7 @@ LIBRARY_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
+	-r:System.Data					\
 	-r:$(srcdir)/Mono.Debugger.Cecil.dll
 
 MDB_DEPS = \
@@ -65,7 +66,7 @@ TEST_DEPS = \
 	-r:nunit.framework
 
 Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
-	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerSession.xsd,DebuggerSession $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
 
 Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)

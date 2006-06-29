@@ -26,7 +26,6 @@ namespace Mono.Debugger.Backends
 		protected ThreadServant main_thread;
 		ArrayList languages;
 		Hashtable thread_hash;
-		Hashtable events;
 
 		bool is_attached;
 		bool is_forked;
@@ -35,32 +34,25 @@ namespace Mono.Debugger.Backends
 		DebuggerMutex thread_lock_mutex;
 		bool has_thread_lock;
 
-		Hashtable thread_groups;
-		ThreadGroup main_thread_group;
-
 		int id = ++next_id;
 		static int next_id = 0;
 
-		private ProcessServant (ThreadManager manager)
+		private ProcessServant (ThreadManager manager, DebuggerSession session)
 		{
 			this.manager = manager;
-			this.client = manager.Debugger.Client.CreateProcess (this);
+			this.session = session;
+			this.client = manager.Debugger.Client.CreateProcess (this, session);
 
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
-			thread_groups = Hashtable.Synchronized (new Hashtable ());
-			main_thread_group = CreateThreadGroup ("main");
-
-			events = Hashtable.Synchronized (new Hashtable ());
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
 		}
 
 		internal ProcessServant (ThreadManager manager, ProcessStart start)
-			: this (manager)
+			: this (manager, start.Session)
 		{
 			this.start = start;
-			this.session = start.Session;
 
 			is_attached = start.PID != 0;
 
@@ -74,10 +66,9 @@ namespace Mono.Debugger.Backends
 		}
 
 		private ProcessServant (ProcessServant parent, int pid)
-			: this (parent.manager)
+			: this (parent.manager, parent.session)
 		{
 			this.start = new ProcessStart (parent.ProcessStart, pid);
-			this.session = parent.session;
 
 			this.is_forked = true;
 			this.initialized = true;
@@ -318,7 +309,7 @@ namespace Mono.Debugger.Backends
 				thread_hash [engine.PID] = engine;
 			else
 				thread_hash.Add (engine.PID, engine);
-			main_thread_group.AddThread (engine.Thread.ID);
+			session.MainThreadGroup.AddThread (engine.Thread.ID);
 
 			if ((start.PID != 0) && !is_exec) {
 				int[] threads = inferior.GetThreads ();
@@ -480,182 +471,6 @@ namespace Mono.Debugger.Backends
 			thread_lock_mutex.Unlock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock: {0}", caller);
-		}
-
-		//
-		// Session management.
-		//
-
-		public void SaveSession (Stream stream, StreamingContextStates states )
-		{
-			StreamingContext context = new StreamingContext (
-				states, this);
-
-			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
-			BinaryFormatter formatter = new BinaryFormatter (ss, context);
-
-			SessionInfo info = new SessionInfo (this);
-			formatter.Serialize (stream, info);
-		}
-
-		public void LoadSession (Stream stream, StreamingContextStates states)
-		{
-			StreamingContext context = new StreamingContext (
-				StreamingContextStates.Persistence, this);
-
-			ISurrogateSelector ss = DebuggerSession.CreateSurrogateSelector (context);
-			BinaryFormatter formatter = new BinaryFormatter (ss, context);
-
-			SessionInfo info = (SessionInfo) formatter.Deserialize (stream);
-
-			foreach (Event handle in info.Events) {
-				AddEvent (handle);
-				handle.Enable (MainThread.Client);
-			}
-		}
-
-		[Serializable]
-		private class SessionInfo : ISerializable, IDeserializationCallback
-		{
-			public readonly Module[] Modules;
-			public readonly Event[] Events;
-
-			public SessionInfo (ProcessServant process)
-			{
-				this.Modules = process.Modules;
-				this.Events = process.Events;
-			}
-
-			public void GetObjectData (SerializationInfo info, StreamingContext context)
-			{
-				info.AddValue ("modules", Modules);
-				info.AddValue ("events", Events);
-			}
-
-			void IDeserializationCallback.OnDeserialization (object obj)
-			{ }
-
-			private SessionInfo (SerializationInfo info, StreamingContext context)
-			{
-				Modules = (Module []) info.GetValue (
-					"modules", typeof (Module []));
-				Events = (Event []) info.GetValue (
-					"events", typeof (Event []));
-			}
-		}
-
-		//
-		// Thread Groups
-		//
-
-		public ThreadGroup CreateThreadGroup (string name)
-		{
-			lock (thread_groups) {
-				ThreadGroup group = (ThreadGroup) thread_groups [name];
-				if (group != null)
-					return group;
-
-				group = ThreadGroup.CreateThreadGroup (name);
-				thread_groups.Add (name, group);
-				return group;
-			}
-		}
-
-		public void DeleteThreadGroup (string name)
-		{
-			thread_groups.Remove (name);
-		}
-
-		public bool ThreadGroupExists (string name)
-		{
-			return thread_groups.Contains (name);
-		}
-
-		public ThreadGroup[] ThreadGroups {
-			get {
-				lock (thread_groups) {
-					ThreadGroup[] retval = new ThreadGroup [thread_groups.Values.Count];
-					thread_groups.Values.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-		}
-
-		public ThreadGroup ThreadGroupByName (string name)
-		{
-			return (ThreadGroup) thread_groups [name];
-		}
-
-		public ThreadGroup MainThreadGroup {
-			get { return main_thread_group; }
-		}
-
-		//
-		// Events
-		//
-
-		public Event[] Events {
-			get {
-				Event[] handles = new Event [events.Count];
-				events.Values.CopyTo (handles, 0);
-				return handles;
-			}
-		}
-
-		public Event GetEvent (int index)
-		{
-			return (Event) events [index];
-		}
-
-		internal void AddEvent (Event handle)
-		{
-			events.Add (handle.Index, handle);
-		}
-
-		public void DeleteEvent (Thread thread, Event handle)
-		{
-			handle.Remove (thread);
-			events.Remove (handle.Index);
-		}
-
-		public Event InsertBreakpoint (Thread target, ThreadGroup group, int domain,
-					       SourceLocation location)
-		{
-			Event handle = new Breakpoint (group, location);
-			events.Add (handle.Index, handle);
-			return handle;
-		}
-
-		public Event InsertBreakpoint (Thread target, ThreadGroup group,
-					       TargetFunctionType func)
-		{
-			Event handle = new Breakpoint (group, new SourceLocation (func));
-			events.Add (handle.Index, handle);
-			return handle;
-		}
-
-		public Event InsertBreakpoint (Thread target, ThreadGroup group,
-					       TargetAddress address)
-		{
-			Event handle = new Breakpoint (address.ToString (), group, address);
-			events.Add (handle.Index, handle);
-			return handle;
-		}
-
-		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							TargetType exception)
-		{
-			Event handle = new ExceptionCatchPoint (group, exception);
-			events.Add (handle.Index, handle);
-			return handle;
-		}
-
-		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
-						       BreakpointType type)
-		{
-			Event handle = new Breakpoint (address, type);
-			events.Add (handle.Index, handle);
-			return handle;
 		}
 
 		//

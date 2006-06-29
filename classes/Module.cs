@@ -4,6 +4,8 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Data;
+using System.Xml;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
@@ -61,6 +63,8 @@ namespace Mono.Debugger
 		public abstract SourceMethod[] GetMethods (SourceFile file);
 
 		public abstract Method GetMethod (int domain, long handle);
+
+		public abstract TargetFunctionType LookupMethod (string class_name, string name);
 
 		public abstract SourceMethod FindMethod (string name);
 
@@ -192,6 +196,21 @@ namespace Mono.Debugger
 			set { step_into = value; }
 		}
 
+		internal void GetSessionData (DataRow row)
+		{
+			row ["name"] = Name;
+			row ["hide-from-user"] = hide_from_user;
+			row ["load-symbols"] = load_symbols;
+			row ["step-into"] = step_into;
+		}
+
+		internal void SetSessionData (DataRow row)
+		{
+			hide_from_user = (bool) row ["hide-from-user"];
+			load_symbols = (bool) row ["load-symbols"];
+			step_into = (bool) row ["step-into"];
+		}
+
 		internal ModuleGroup (string name)
 			: this (name, false, false, false)
 		{
@@ -234,12 +253,19 @@ namespace Mono.Debugger
 		{
 			this.symfile = symfile;
 			OnModuleChanged ();
+			if (ModuleLoadedEvent != null)
+				ModuleLoadedEvent (this);
 		}
 
 		internal void UnLoadModule ()
 		{
+			if (ModuleUnloadedEvent != null)
+				ModuleUnloadedEvent (this);
 			this.symfile = null;
 		}
+
+		public event ModuleEventHandler ModuleLoadedEvent;
+		public event ModuleEventHandler ModuleUnloadedEvent;
 
 		public Language Language {
 			get { return SymbolFile.Language; }
@@ -385,6 +411,11 @@ namespace Mono.Debugger
 			return SymbolFile.GetMethod (domain, handle);
 		}
 
+		public TargetFunctionType LookupMethod (string class_name, string name)
+		{
+			return SymbolFile.LookupMethod (class_name, name);
+		}
+
 		// <summary>
 		//   Find method @name, which must be a full method name including the
 		//   signature (System.DateTime.GetUtcOffset(System.DateTime)).
@@ -440,45 +471,32 @@ namespace Mono.Debugger
 			return String.Format (":{0}:{1}", IsLoaded, SymbolsLoaded);
 		}
 
-		internal sealed class SessionSurrogate : ISerializationSurrogate
+		internal void GetSessionData (DataRow row)
 		{
-			public void GetObjectData (object obj, SerializationInfo info,
-						   StreamingContext context)
-			{
-				Module module = (Module) obj;
+			row ["name"] = Name;
+			row ["group"] = ModuleGroup.Name;
 
-				info.AddValue ("name", module.Name);
-				info.AddValue ("group", module.ModuleGroup.Name);
+			if (has_hide_from_user)
+				row ["hide-from-user"] = hide_from_user;
+			if (has_load_symbols)
+				row ["load-symbols"] = load_symbols;
+			if (has_step_into)
+				row ["step-into"] = step_into;
+		}
 
-				info.AddValue ("has-load-symbols", module.has_load_symbols);
-				info.AddValue ("load-symbols", module.load_symbols);
-				info.AddValue ("has-step-into", module.has_step_into);
-				info.AddValue ("step-into", module.step_into);
-				info.AddValue ("has-hide-from-user", module.has_hide_from_user);
-				info.AddValue ("hide-from-user", module.hide_from_user);
+		internal void SetSessionData (DataRow row)
+		{
+			if (!row.IsNull ("hide-from-user")) {
+				hide_from_user = (bool) row ["hide-from-user"];
+				has_hide_from_user = true;
 			}
-
-			public object SetObjectData (object obj, SerializationInfo info,
-						     StreamingContext context,
-						     ISurrogateSelector selector)
-			{
-				ProcessServant process = (ProcessServant) context.Context;
-
-				string gname = info.GetString ("group");
-				ModuleGroup group = process.Debugger.Configuration.GetModuleGroup (gname);
-
-				string name = info.GetString ("name");
-				Module module = process.Session.CreateModule (name, group);
-
-				module.name = info.GetString ("name");
-				module.has_load_symbols = info.GetBoolean ("has-load-symbols");
-				module.load_symbols = info.GetBoolean ("load-symbols");
-				module.has_step_into = info.GetBoolean ("has-step-into");
-				module.step_into = info.GetBoolean ("step-into");
-				module.has_hide_from_user = info.GetBoolean ("has-hide-from-user");
-				module.hide_from_user = info.GetBoolean ("hide-from-user");
-
-				return module;
+			if (!row.IsNull ("load-symbols")) {
+				load_symbols = (bool) row ["load-symbols"];
+				has_load_symbols = true;
+			}
+			if (!row.IsNull ("step-into")) {
+				step_into = (bool) row ["step-into"];
+				has_step_into = true;
 			}
 		}
 	}

@@ -84,30 +84,5 @@ namespace Mono.Debugger
 		{
 			return String.Format ("{0} ({1})", GetType (), name);
 		}
-
-		internal sealed class SessionSurrogate : ISerializationSurrogate
-		{
-			public void GetObjectData (object obj, SerializationInfo info,
-						   StreamingContext context)
-			{
-				ThreadGroup group = (ThreadGroup) obj;
-				info.AddValue ("name", group.Name);
-			}
-
-			public object SetObjectData (object obj, SerializationInfo info,
-						     StreamingContext context,
-						     ISurrogateSelector selector)
-			{
-				ProcessServant process = (ProcessServant) context.Context;
-
-				string name = info.GetString ("name");
-				if (name == "system")
-					return ThreadGroup.System;
-				else if (name == "global")
-					return ThreadGroup.Global;
-				else
-					return process.ThreadGroupByName (name);
-			}
-		}
 	}
 }

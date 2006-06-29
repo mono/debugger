@@ -554,6 +554,37 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
+		public override TargetFunctionType LookupMethod (string class_name, string name)
+		{
+			MonoClassType klass = null;
+
+			Cecil.ITypeDefinitionCollection types = Assembly.MainModule.Types;
+			// FIXME: Work around an API problem in Cecil.
+			foreach (Cecil.ITypeDefinition type in types) {
+				if (type.FullName != class_name)
+					continue;
+
+				klass = LookupMonoType (type) as MonoClassType;
+				break;
+			}
+
+			if (klass == null)
+				return null;
+
+			string full_name = class_name + '.' + name;
+			foreach (TargetMethodInfo method in klass.StaticMethods) {
+				if (method.FullName == full_name)
+					return method.Type;
+			}
+
+			foreach (TargetMethodInfo method in klass.Methods) {
+				if (method.FullName == full_name)
+					return method.Type;
+			}
+
+			return null;
+		}
+
 		protected MonoMethod GetMonoMethod (MethodHashEntry index)
 		{
 			ensure_sources ();

@@ -13,17 +13,17 @@ namespace Mono.Debugger.Languages.Mono
 		TargetType return_type;
 		TargetType[] parameter_types;
 		bool has_return_type;
-		string full_name;
+		string name;
 		int token;
 
 		public MonoFunctionType (MonoClassType klass, Cecil.IMethodDefinition mdef,
-					 string full_name)
+					 string name)
 			: base (klass.File.MonoLanguage)
 		{
 			this.klass = klass;
 			this.method_info = mdef;
 			this.token = MonoDebuggerSupport.GetMethodToken (mdef);
-			this.full_name = full_name;
+			this.name = name;
 
 			Cecil.ITypeReference rtype;
 			if (mdef.IsConstructor) {
@@ -42,7 +42,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override string Name {
-			get { return full_name; }
+			get { return name; }
+		}
+
+		public override string FullName {
+			get { return klass.Name + '.' + name; }
 		}
 
 		public override bool IsByRef {
@@ -116,26 +120,6 @@ namespace Mono.Debugger.Languages.Mono
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
-		}
-
-		//
-		// Session handling.
-		//
-
-		protected override void GetSessionData (SerializationInfo info)
-		{
-			info.AddValue ("module", Module);
-			info.AddValue ("klass", klass.Name);
-			info.AddValue ("token", token);
-		}
-
-		protected override object SetSessionData (SerializationInfo info)
-		{
-			Module module = (Module) info.GetValue ("module", typeof (Module));
-			string klass = info.GetString ("klass");
-			int token = info.GetInt32 ("token");
-
-			return ((MonoSymbolFile) module.SymbolFile).GetFunctionType (klass, token);
 		}
 	}
 }

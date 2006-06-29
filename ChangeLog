@@ -1,3 +1,65 @@
+2006-06-29  Martin Baulig  <martin@ximian.com>
+
+	The big session-handling cleanup - we now load/save the session to
+	XML using a DataSet.
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.ModuleGroups): New internal property.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Moved thread groups and events here; load and
+	save the session from XML using a DataSet.
+	(DebuggerSession.CreateThreadGroup): Moved here.
+	(DebuggerSession.DeleteThreadGroup): Moved here.
+	(DebuggerSession.ThreadGroupExists): Moved here.
+	(DebuggerSession.ThreadGroups): Moved here.
+	(DebuggerSession.ThreadGroupByName): Moved here.
+	(DebuggerSession.MainThreadGroup): Moved here.
+	(DebuggerSession.Events): Moved here.
+	(DebuggerSession.GetEvent): Moved here.
+	(DebuggerSession.AddEvent): Moved here.
+	(DebuggerSession.DeleteEvent): Moved here.
+	(DebuggerSession.InsertBreakpoint): Moved here.
+	(DebuggerSession.SaveSession): New public method to save the
+	session as XML into a Stream.
+	(DebuggerSession.ctor): Added a ctor taking a `Stream' to load the
+	session from XML.
+	(DebuggerSession.SurrogateSelector): Removed.
+
+	* classes/DebuggerSession.xsd: New file.
+
+	* classes/Process.cs (Process.Session): New public property.
+
+	* classes/Event.cs
+	(Event.GetSessionData): New internal virtual method taking a
+	`DataRow' argument.
+	(Event.GetSessionData, SetSessionData): Removed the old
+	serialization-based implementation.
+	(Event.SessionSurrogate): Removed.
+
+	* classes/ThreadGroup.cs
+	(ThreadGroup.SessionSurrogate): Removed.
+
+	* classes/Module.cs
+	(SymbolFile.LookupMethod): New public abstract method.
+	(ModuleGroup.GetSessionData, SetSessionData): New internal
+	methods; operate on a `DataRow'.
+	(Module.LookupMethod): New public abstract method.
+	(Module.GetSessionData, SetSessionData): New internal methods;
+	operate on a `DataRow'.
+	(Module.SessionSurrogate): Removed.
+
+	* classes/SourceLocation.cs
+	(SourceLocation): Don't implement IDeserializationCallback.
+	(SourceLocation.method): New private field; when loading the
+	location from XML, we just have a method name and need to do a
+	method lookup.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.Name): Don't include the class name here.
+	(TargetFunctionType.FullName): New public abstract property; this
+	is class name plus method name.
+
 2006-06-26  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs

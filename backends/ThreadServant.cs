@@ -24,7 +24,7 @@ namespace Mono.Debugger.Backends
 
 			this.id = manager.NextThreadID;
 
-			tgroup = process.CreateThreadGroup ("@" + ID);
+			tgroup = process.Session.CreateThreadGroup ("@" + ID);
 			tgroup.AddThread (ID);
 
 			thread = process.Debugger.Client.CreateThread (this, ID);

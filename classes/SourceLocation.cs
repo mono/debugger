@@ -1,4 +1,6 @@
 using System;
+using System.Xml;
+using System.Data;
 using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
@@ -12,12 +14,13 @@ namespace Mono.Debugger
 	//   such as a method lookup.
 	// </summary>
 	[Serializable]
-	public class SourceLocation : IDeserializationCallback
+	public class SourceLocation
 	{
 		Module module;
 		SourceFile file;
 		SourceMethod source;
 		TargetFunctionType function;
+		string method;
 		int line;
 
 		public Module Module {
@@ -82,8 +85,10 @@ namespace Mono.Debugger
 					return function.Name;
 				else if (line == -1)
 					return source.Name;
-				else
+				else if (file != null)
 					return String.Format ("{0}:{1}", SourceFile.FileName, line);
+				else
+					return method;
 			}
 		}
 
@@ -118,9 +123,35 @@ namespace Mono.Debugger
 			this.line = -1;
 		}
 
+		internal SourceLocation (DebuggerSession session, DataRow row)
+		{
+			module = session.GetModule ((string) row ["module"]);
+
+			if (!row.IsNull ("method"))
+				method = (string) row ["method"];
+		}
+
 		internal BreakpointHandle InsertBreakpoint (Thread target, Breakpoint breakpoint,
 							    int domain)
 		{
+			if (!module.IsLoaded)
+				return new ModuleBreakpointHandle (breakpoint, this);
+
+			if ((function == null) && (source == null)) {
+				if (method == null)
+					throw new TargetException (TargetError.LocationInvalid);
+
+				int pos = method.IndexOf (':');
+				if (pos > 0) {
+					string class_name = method.Substring (0, pos);
+					string method_name = method.Substring (pos + 1);
+
+					function = module.LookupMethod (class_name, method_name);
+				} else {
+					source = module.FindMethod (method);
+				}
+			}
+
 			if (function != null) {
 				if (function.IsLoaded) {
 					int index = target.InsertBreakpoint (breakpoint, function);
@@ -134,6 +165,7 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.LocationInvalid);
 
 			TargetAddress address = GetAddress (domain);
+			Console.WriteLine ("INSERT BPT #2: {0}", address);
 			if (!address.IsNull) {
 				int index = target.InsertBreakpoint (breakpoint, address);
 				return new SimpleBreakpointHandle (breakpoint, index);
@@ -173,71 +205,42 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		void IDeserializationCallback.OnDeserialization (object sender)
+		internal void GetSessionData (DataRow row)
 		{
 			if (function != null) {
-				this.module = function.Module;
-				this.source = function.Source;
+				row ["module"] = function.Module.Name;
+				row ["method"] = function.DeclaringType.Name + ':' + function.Name;
 			} else if (source != null) {
-				this.module = source.SourceFile.Module;
-				this.file = source.SourceFile;
+				row ["module"] = source.SourceFile.Module.Name;
+				row ["method"] = source.Name;
 			} else if (file != null) {
-				this.module = file.Module;
+				row ["module"] = file.Module.Name;
+				row ["file"] = file.Name + ":" + line;
+			} else {
+				throw new InternalError ();
 			}
 		}
 
-		protected virtual void GetSessionData (SerializationInfo info)
+		private class ModuleBreakpointHandle : BreakpointHandle
 		{
-			if (function != null) {
-				info.AddValue ("type", "function");
-				info.AddValue ("function", function);
-			} else if (source != null) {
-				info.AddValue ("type", "source");
-				info.AddValue ("source", source);
-				info.AddValue ("line", line);
-			} else if (file != null) {
-				info.AddValue ("type", "file");
-				info.AddValue ("file", file);
-				info.AddValue ("line", line);
-			} else
-				info.AddValue ("type", "unknown");
-		}
+			SourceLocation location;
 
-		protected virtual void SetSessionData (SerializationInfo info)
-		{
-			string type = info.GetString ("type");
-			if (type == "source") {
-				source = (SourceMethod) info.GetValue (
-					"source", typeof (SourceMethod));
-				line = info.GetInt32 ("line");
-			} else if (type == "file") {
-				file = (SourceFile) info.GetValue (
-					"file", typeof (SourceFile));
-				line = info.GetInt32 ("line");
-			} else if (type == "function") {
-				function = (TargetFunctionType) info.GetValue (
-					"function", typeof (TargetFunctionType));
-				line = -1;
-			} else
-				throw new InvalidOperationException ();
-		}
-
-		protected internal class SessionSurrogate : ISerializationSurrogate
-		{
-			public virtual void GetObjectData (object obj, SerializationInfo info,
-							   StreamingContext context)
+			public ModuleBreakpointHandle (Breakpoint bpt, SourceLocation location)
+				: base (bpt)
 			{
-				SourceLocation location = (SourceLocation) obj;
-				location.GetSessionData (info);
+				this.location = location;
+
+				location.Module.ModuleLoadedEvent += module_loaded;
 			}
 
-			public object SetObjectData (object obj, SerializationInfo info,
-						     StreamingContext context,
-						     ISurrogateSelector selector)
+			void module_loaded (Module module)
 			{
-				SourceLocation location = (SourceLocation) obj;
-				location.SetSessionData (info);
-				return location;
+				Console.WriteLine ("MODULE LOADED: {0} {1}", module, location);
+			}
+
+			public override void Remove (Thread target)
+			{
+				location.Module.ModuleLoadedEvent -= module_loaded;
 			}
 		}
 
@@ -249,6 +252,7 @@ namespace Mono.Debugger
 
 			public FunctionBreakpointHandle (Thread target, Breakpoint bpt, int domain,
 							 SourceLocation location)
+
 				: base (bpt)
 			{
 				this.domain = domain;

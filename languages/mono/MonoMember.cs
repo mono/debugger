@@ -54,11 +54,10 @@ namespace Mono.Debugger.Languages.Mono
 				sb.Append (pinfo.ParameterType);
 			}
 
-			string fname = String.Format (
-				"{0}.{1}({2})", klass.Name, minfo.Name, sb.ToString ());
+			string name = String.Format ("{0}({1})", minfo.Name, sb.ToString ());
 
-			MonoFunctionType type = new MonoFunctionType (klass, minfo, fname);
-			return new MonoMethodInfo (klass, index, minfo, fname, type);
+			MonoFunctionType type = new MonoFunctionType (klass, minfo, name);
+			return new MonoMethodInfo (klass, index, minfo, klass.Name + '.' + name, type);
 		}
 	}
 

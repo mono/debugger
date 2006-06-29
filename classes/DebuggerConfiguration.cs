@@ -312,6 +312,16 @@ namespace Mono.Debugger
 			return (ModuleGroup) module_groups [name];
 		}
 
+		internal ModuleGroup[] ModuleGroups {
+			get {
+				lock (module_groups.SyncRoot) {
+					ModuleGroup[] groups = new ModuleGroup [module_groups.Count];
+					module_groups.Values.CopyTo (groups, 0);
+					return groups;
+				}
+			}
+		}
+
 		internal ModuleGroup GetModuleGroup (SymbolFile symfile)
 		{
 			foreach (ModuleGroup group in module_groups.Values) {

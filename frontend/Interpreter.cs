@@ -383,10 +383,7 @@ namespace Mono.Debugger.Frontend
 
 		public void SaveSession (Stream stream)
 		{
-			BinaryFormatter formatter = new BinaryFormatter ();
-			formatter.Serialize (stream, session);
-			CurrentProcess.SaveSession (stream, StreamingContextStates.Persistence |
-						    StreamingContextStates.File);
+			session.SaveSession (stream);
 		}
 
 		public Process LoadSession (Stream stream)
@@ -395,9 +392,8 @@ namespace Mono.Debugger.Frontend
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			try {
-				BinaryFormatter formatter = new BinaryFormatter ();
-				session = (DebuggerSession) formatter.Deserialize (stream);
 				debugger = new Debugger (config);
+				session = new DebuggerSession (config, Options, stream);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
@@ -406,12 +402,16 @@ namespace Mono.Debugger.Frontend
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
-				current_process.LoadSession (
-					stream, StreamingContextStates.Persistence |
-					StreamingContextStates.File);
+				session.MainProcessReachedMain (current_process);
 
 				return current_process;
-			} catch (TargetException) {
+			} catch (TargetException ex) {
+				Console.WriteLine ("FUCK: {0}", ex);
+				debugger.Dispose ();
+				debugger = null;
+				throw;
+			} catch (Exception ex) {
+				Console.WriteLine ("FUCK: {0}", ex);
 				debugger.Dispose ();
 				debugger = null;
 				throw;
@@ -457,7 +457,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowBreakpoints ()
 		{
-			Event[] events = CurrentProcess.Events;
+			Event[] events = CurrentProcess.Session.Events;
 			if (events.Length == 0) {
 				Print ("No breakpoints or catchpoints.");
 				return;
@@ -483,7 +483,7 @@ namespace Mono.Debugger.Frontend
 
 		public Event GetEvent (int index)
 		{
-			Event handle = CurrentProcess.GetEvent (index);
+			Event handle = CurrentProcess.Session.GetEvent (index);
 			if (handle == null)
 				throw new ScriptingException ("No such breakpoint/catchpoint.");
 
@@ -517,7 +517,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Print ("Process #{0} exited.", process.ID);
 			if (process == main_process) {
-				session.MainProcessExited (process);
 				current_process = main_process = null;
 				current_thread = null;
 			} else if (process == current_process) {
@@ -613,7 +612,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowThreadGroups ()
 		{
-			foreach (ThreadGroup group in CurrentProcess.ThreadGroups) {
+			foreach (ThreadGroup group in CurrentProcess.Session.ThreadGroups) {
 				if (group.Name.StartsWith ("@"))
 					continue;
 				StringBuilder ids = new StringBuilder ();
@@ -627,18 +626,18 @@ namespace Mono.Debugger.Frontend
 
 		public void CreateThreadGroup (string name)
 		{
-			if (CurrentProcess.ThreadGroupExists (name))
+			if (CurrentProcess.Session.ThreadGroupExists (name))
 				throw new ScriptingException ("A thread group with that name already exists.");
 
-			CurrentProcess.CreateThreadGroup (name);
+			CurrentProcess.Session.CreateThreadGroup (name);
 		}
 
 		public void DeleteThreadGroup (string name)
 		{
-			if (!CurrentProcess.ThreadGroupExists (name))
+			if (!CurrentProcess.Session.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			CurrentProcess.DeleteThreadGroup (name);
+			CurrentProcess.Session.DeleteThreadGroup (name);
 		}
 
 		public ThreadGroup GetThreadGroup (string name, bool writable)
@@ -649,10 +648,10 @@ namespace Mono.Debugger.Frontend
 				return ThreadGroup.Global;
 			if (name.StartsWith ("@"))
 				throw new ScriptingException ("No such thread group.");
-			if (!CurrentProcess.ThreadGroupExists (name))
+			if (!CurrentProcess.Session.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			ThreadGroup group = CurrentProcess.CreateThreadGroup (name);
+			ThreadGroup group = CurrentProcess.Session.CreateThreadGroup (name);
 
 			if (writable && group.IsSystem)
 				throw new ScriptingException ("Cannot modify system-created thread group.");
@@ -679,7 +678,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertBreakpoint (Thread target, ThreadGroup group, int domain,
 					     SourceLocation location)
 		{
-			Event handle = target.Process.InsertBreakpoint (
+			Event handle = target.Process.Session.InsertBreakpoint (
 				target, group, domain, location);
 			handle.Enable (target);
 			return handle.Index;
@@ -688,7 +687,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     TargetAddress address)
 		{
-			Event handle = target.Process.InsertBreakpoint (
+			Event handle = target.Process.Session.InsertBreakpoint (
 				target, group, address);
 			handle.Enable (target);
 			return handle.Index;
@@ -697,7 +696,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     TargetFunctionType func)
 		{
-			Event handle = target.Process.InsertBreakpoint (target, group, func);
+			Event handle = target.Process.Session.InsertBreakpoint (target, group, func);
 			handle.Enable (target);
 			return handle.Index;
 		}
@@ -705,7 +704,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 						      TargetType exception)
 		{
-			Event handle = target.Process.InsertExceptionCatchPoint (
+			Event handle = target.Process.Session.InsertExceptionCatchPoint (
 				target, group, exception);
 			handle.Enable (target);
 			return handle.Index;
@@ -713,7 +712,7 @@ namespace Mono.Debugger.Frontend
 
 		public int InsertHardwareWatchPoint (Thread target, TargetAddress address)
 		{
-			Event handle = target.Process.InsertHardwareWatchPoint (
+			Event handle = target.Process.Session.InsertHardwareWatchPoint (
 				target, address, BreakpointType.WatchWrite);
 			handle.Enable (target);
 			return handle.Index;

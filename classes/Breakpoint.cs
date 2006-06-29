@@ -1,6 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
+using System.Data;
 
 namespace Mono.Debugger
 {
@@ -117,6 +118,19 @@ namespace Mono.Debugger
 			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
 		}
 
+		internal override void GetSessionData (DataRow row)
+		{
+			DataTable location_table = row.Table.DataSet.Tables ["Location"];
+			DataRow location_row = location_table.NewRow ();
+			int location_index = location_table.Rows.Count + 1;
+			location_row ["id"] = location_index;
+			location.GetSessionData (location_row);
+			location_table.Rows.Add (location_row);
+
+			row ["location"] = location_index;
+			base.GetSessionData (row);
+		}
+
 		internal Breakpoint (ThreadGroup group, SourceLocation location)
 			: base (location.Name, group)
 		{
@@ -136,20 +150,6 @@ namespace Mono.Debugger
 		{
 			this.address = address;
 			this.type = type;
-		}
-
-		internal override void GetSessionData (SerializationInfo info)
-		{
-			base.GetSessionData (info);
-			info.AddValue ("type", type);
-			info.AddValue ("location", location);
-		}
-
-		internal override void SetSessionData (SerializationInfo info, ProcessServant process)
-		{
-			base.SetSessionData (info, process);
-			type = (BreakpointType) info.GetValue ("type", typeof (BreakpointType));
-			location = (SourceLocation) info.GetValue ("location", typeof (SourceLocation));
 		}
 	}
 }

@@ -1,0 +1,78 @@
+<?xml version="1.0" standalone="yes"?>
+<xs:schema id="DebuggerSession" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xs:complexType name="ModuleGroup">
+    <xs:sequence>
+      <xs:element name="hide-from-user" type="xs:boolean" minOccurs="0" />
+      <xs:element name="step-into" type="xs:boolean" minOccurs="0" />
+      <xs:element name="load-symbols" type="xs:boolean" minOccurs="0" />
+    </xs:sequence>
+    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="Module">
+    <xs:sequence>
+      <xs:element name="hide-from-user" type="xs:boolean" minOccurs="0" />
+      <xs:element name="step-into" type="xs:boolean" minOccurs="0" />
+      <xs:element name="load-symbols" type="xs:boolean" minOccurs="0" />
+    </xs:sequence>
+    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
+    <xs:attribute name="group" msdata:ReadOnly="true" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="ThreadGroup">
+    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="Location">
+    <xs:choice>
+      <xs:element name="method" type="xs:string" minOccurs="0" />
+      <xs:element name="file" type="xs:string" minOccurs="0" />
+    </xs:choice>
+    <xs:attribute name="id" msdata:ReadOnly="true" type="xs:integer" use="required" />
+    <xs:attribute name="module" msdata:ReadOnly="true" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="Event">
+    <xs:attribute name="index" msdata:ReadOnly="true" type="xs:integer" use="required" />
+    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
+    <xs:attribute name="group" msdata:ReadOnly="true" type="xs:string" use="required" />
+    <xs:attribute name="type" msdata:ReadOnly="true" type="xs:string" use="required" />
+    <xs:attribute name="enabled" msdata:ReadOnly="true" type="xs:boolean" use="required" />
+    <xs:attribute name="location" msdata:ReadOnly="true" type="xs:integer" use="required" />
+  </xs:complexType>
+  <xs:element name="DebuggerSession" msdata:IsDataSet="true" msdata:Locale="en-US">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="ModuleGroup" type="ModuleGroup" />
+        <xs:element name="Module" type="Module" />
+        <xs:element name="ThreadGroup" type="ThreadGroup" />
+        <xs:element name="Location" type="Location" />
+        <xs:element name="Event" type="Event" />
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="ModuleGroup_Constraint">
+      <xs:selector xpath=".//ModuleGroup" />
+      <xs:field xpath="@name" />
+    </xs:unique>
+    <xs:unique name="Module_Constraint">
+      <xs:selector xpath=".//Module" />
+      <xs:field xpath="@name" />
+    </xs:unique>
+    <xs:keyref name="ModuleGroup_Key" refer="ModuleGroup_Constraint">
+      <xs:selector xpath=".//Module" />
+      <xs:field xpath="@group" />
+    </xs:keyref>
+    <xs:unique name="Location_Constraint">
+      <xs:selector xpath=".//Location" />
+      <xs:field xpath="@id" />
+    </xs:unique>
+    <xs:unique name="Event_Constraint">
+      <xs:selector xpath=".//Event" />
+      <xs:field xpath="@index" />
+    </xs:unique>
+    <xs:keyref name="Event_Location" refer="Location_Constraint">
+      <xs:selector xpath=".//Event" />
+      <xs:field xpath="@location" />
+    </xs:keyref>
+    <xs:keyref name="Location_Module" refer="Module_Constraint">
+      <xs:selector xpath=".//Location" />
+      <xs:field xpath="@module" />
+    </xs:keyref>
+  </xs:element>
+</xs:schema>
