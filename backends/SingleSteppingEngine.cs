@@ -382,9 +382,9 @@ namespace Mono.Debugger.Backends
 						main_method_retaddr = ret_frame.TargetAddress;
 					}
 
-					if (!process.IsManaged) {
+					process.ReachedMain ();
+					if (!process.IsManaged)
 						inferior.InitializeModules ();
-					}
 				}
 				// Ok, inform the user that we stopped.
 				OperationCompleted (result);
@@ -2082,6 +2082,7 @@ namespace Mono.Debugger.Backends
 				      sse, data1, data2, Result);
 
 			RestoreStack (sse);
+			sse.process.ReachedMain ();
 			inferior.InitializeModules ();
 			return true;
 		}

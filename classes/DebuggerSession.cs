@@ -383,10 +383,17 @@ namespace Mono.Debugger
 		// Session management.
 		//
 
-		public void MainProcessReachedMain (Process process)
+		internal void OnProcessReachedMain (Process process)
 		{
 			foreach (Event e in events.Values) {
 				e.Enable (process.MainThread);
+			}
+		}
+
+		internal void OnProcessExited (Process process)
+		{
+			foreach (Event e in events.Values) {
+				e.OnTargetExited ();
 			}
 		}
 	}

@@ -59,6 +59,8 @@ namespace Mono.Debugger
 
 		public abstract void Remove (Thread target);
 
+		internal abstract void OnTargetExited ();
+
 		//
 		// Session handling.
 		//

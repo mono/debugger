@@ -165,7 +165,6 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.LocationInvalid);
 
 			TargetAddress address = GetAddress (domain);
-			Console.WriteLine ("INSERT BPT #2: {0}", address);
 			if (!address.IsNull) {
 				int index = target.InsertBreakpoint (breakpoint, address);
 				return new SimpleBreakpointHandle (breakpoint, index);

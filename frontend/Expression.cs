@@ -2767,7 +2767,7 @@ namespace Mono.Debugger.Frontend
 			if (!method.IsStatic && !method.IsConstructor && (instance == null))
 				throw new ScriptingException (
 					"Cannot invoke instance method `{0}' with a type reference.",
-					method.Name);
+					method.FullName);
 
 			try {
 				if (debug) {

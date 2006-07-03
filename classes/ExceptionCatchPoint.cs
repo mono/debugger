@@ -35,6 +35,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal override void OnTargetExited ()
+		{
+			handle = -1;
+		}
+
 		public override void Remove (Thread target)
 		{
 			Disable (target);

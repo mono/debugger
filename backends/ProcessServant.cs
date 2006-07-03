@@ -268,6 +268,17 @@ namespace Mono.Debugger.Backends
 			new_inferior.Continue ();
 		}
 
+		internal void ReachedMain ()
+		{
+			session.OnProcessReachedMain (client);
+		}
+
+		internal void OnProcessExitedEvent ()
+		{
+			session.OnProcessExited (client);
+			manager.Debugger.OnProcessExitedEvent (this);
+		}
+
 		protected void OnThreadCreatedEvent (ThreadServant thread)
 		{
 			thread_hash.Add (thread.PID, thread);
@@ -280,7 +291,7 @@ namespace Mono.Debugger.Backends
 			manager.Debugger.OnThreadExitedEvent (thread.Client);
 
 			if (thread_hash.Count == 0)
-				manager.Debugger.OnProcessExitedEvent (this);
+				OnProcessExitedEvent ();
 		}
 
 		internal void WaitForApplication ()
@@ -338,7 +349,7 @@ namespace Mono.Debugger.Backends
 
 		internal void OnTargetDetached ()
 		{
-			manager.Debugger.OnProcessExitedEvent (this);
+			OnProcessExitedEvent ();
 			Dispose ();
 		}
 

@@ -1,3 +1,19 @@
+2006-07-03  Martin Baulig  <martin@ximian.com>
+
+	* classes/Event.cs
+	(Event.OnTargetExited): New abstract internal method; an `Event'
+	may persist across multiple invocations of the target, so we use
+	this to disable the event when we exit.
+
+	* backends/ProcessHandle.cs
+	(ProcessHandle.ReachedMain, OnProcessExitedEvent): New internal
+	methods; save/restore the session.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.OnProcessReachedMain): We're now internal and
+	called from the `ProcessServant'.
+	(DebuggerSession.OnProcessExited): Disable all events here.
+
 2006-06-29  Martin Baulig  <martin@ximian.com>
 
 	The big session-handling cleanup - we now load/save the session to

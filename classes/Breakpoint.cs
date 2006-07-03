@@ -74,6 +74,11 @@ namespace Mono.Debugger
 			Disable (target);
 		}
 
+		internal override void OnTargetExited ()
+		{
+			handle = null;
+		}
+
 		internal Breakpoint Clone (int breakpoint_id)
 		{
 			Breakpoint new_bpt = Clone ();
