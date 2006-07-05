@@ -83,10 +83,13 @@ namespace Mono.Debugger
 			get {
 				if (function != null)
 					return function.FullName;
-				else if (line == -1)
-					return source.Name;
-				else if (file != null)
-					return String.Format ("{0}:{1}", SourceFile.FileName, line);
+				else if (source != null) {
+					if (line != -1)
+						return source.Name + ':' + line;
+					else
+						return source.Name;
+				} else if (file != null)
+					return SourceFile.FileName + ':' + line;
 				else
 					return method;
 			}
@@ -129,6 +132,10 @@ namespace Mono.Debugger
 
 			if (!row.IsNull ("method"))
 				method = (string) row ["method"];
+			if (!row.IsNull ("line"))
+				line = (int) (long) row ["line"];
+			else
+				line = -1;
 		}
 
 		internal BreakpointHandle InsertBreakpoint (Thread target, Breakpoint breakpoint,
@@ -153,12 +160,16 @@ namespace Mono.Debugger
 			}
 
 			if (function != null) {
-				if (function.IsLoaded) {
+				if (line > 0)
+					source = function.Source;
+				else if (function.IsLoaded) {
 					int index = target.InsertBreakpoint (breakpoint, function);
 					return new SimpleBreakpointHandle (breakpoint, index);
-				} else
+				} else {
+					source = function.Source;
 					return new FunctionBreakpointHandle (
 						target, breakpoint, domain, this);
+				}
 			}
 
 			if (source == null)
@@ -211,12 +222,24 @@ namespace Mono.Debugger
 				row ["method"] = function.DeclaringType.Name + ':' + function.Name;
 			} else if (source != null) {
 				row ["module"] = source.SourceFile.Module.Name;
-				row ["method"] = source.Name;
+				if (source.ClassName != null) {
+					string klass = source.ClassName;
+					string name = source.Name.Substring (klass.Length + 1);
+					row ["method"] = klass + ':' + name;
+				} else
+					row ["method"] = source.Name;
 			} else if (file != null) {
 				row ["module"] = file.Module.Name;
 				row ["file"] = file.Name + ":" + line;
+			} else if (method != null) {
+				row ["module"] = module.Name;
+				row ["method"] = method;
 			} else {
 				throw new InternalError ();
+			}
+
+			if (line > 0) {
+				row ["line"] = line;
 			}
 		}
 

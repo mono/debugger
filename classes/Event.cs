@@ -89,8 +89,12 @@ namespace Mono.Debugger
 		}
 
 		protected Event (string name, ThreadGroup group)
+			: this (GetNextEventIndex (), name, group)
+		{ }
+
+		protected Event (int index, string name, ThreadGroup group)
 		{
-			this.index = GetNextEventIndex ();
+			this.index = index;
 			this.name = name;
 			this.group = group;
 

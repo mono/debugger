@@ -278,7 +278,7 @@ namespace Mono.Debugger.Backends
 				return source;
 
 			source = new SourceMethod (
-				module, subprog.SourceFile, subprog.Offset, subprog.Name,
+				module, subprog.SourceFile, subprog.Offset, null, subprog.Name,
 				start_row, end_row, true);
 			method_source_hash.Add (subprog.Offset, source);
 			return source;

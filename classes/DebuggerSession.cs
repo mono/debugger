@@ -121,6 +121,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal DebuggerSession Clone ()
+		{
+			return new DebuggerSession (Config, Options);
+		}
+
 		//
 		// Modules.
 		//
@@ -259,7 +264,7 @@ namespace Mono.Debugger
 				return;
 
 			using (MemoryStream ms = new MemoryStream (saved_session)) {
-				data.LoadSession (ms);
+				data.LoadSession (process, ms);
 			}
 		}
 
@@ -270,11 +275,14 @@ namespace Mono.Debugger
 
 		internal void OnProcessExited (Process process)
 		{
-			using (MemoryStream ms = new MemoryStream ()) {
-				Data.SaveSession (ms);
-				saved_session = ms.GetBuffer ();
+			try {
+				using (MemoryStream ms = new MemoryStream ()) {
+					Data.SaveSession (ms);
+					saved_session = ms.GetBuffer ();
+				}
+			} finally {
+				data = null;
 			}
-			data = null;
 		}
 
 		public void SaveSession (Stream stream)
@@ -301,7 +309,7 @@ namespace Mono.Debugger
 				main_thread_group = CreateThreadGroup ("main");
 			}
 
-			public void LoadSession (Stream stream)
+			public void LoadSession (Process process, Stream stream)
 			{
 				DataSet ds = new DataSet ("DebuggerSession");
 
@@ -350,8 +358,10 @@ namespace Mono.Debugger
 
 					long loc_index = (long) row ["location"];
 					SourceLocation location = (SourceLocation) locations [loc_index];
-					Breakpoint bpt = new Breakpoint (group, location);
+					int index = (int) (long) row ["index"];
+					Breakpoint bpt = new Breakpoint (index, group, location);
 					AddEvent (bpt);
+					bpt.Enable (process.MainThread);
 				}
 			}
 
@@ -386,6 +396,8 @@ namespace Mono.Debugger
 
 				DataTable event_table = ds.Tables ["Event"];
 				foreach (Event e in Events) {
+					if (!(e is Breakpoint))
+					    continue;
 					DataRow row = event_table.NewRow ();
 					e.GetSessionData (row);
 					event_table.Rows.Add (row);

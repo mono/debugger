@@ -1,3 +1,17 @@
+2006-07-06  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceInfo.cs
+	(SourceMethod.ClassName): New public property.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.Clone): New internal method.
+
+	* backends/ProcessServant.cs
+	(ProcessServant.ChildExecd): Clone the session.
+
+	* classes/SourceLocation.cs
+	(SourceLocation): Make this actually work again.
+
 2006-07-05  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs

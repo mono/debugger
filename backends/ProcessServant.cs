@@ -47,8 +47,6 @@ namespace Mono.Debugger.Backends
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
-
-			session.OnProcessCreated (client);
 		}
 
 		internal ProcessServant (ThreadManager manager, ProcessStart start)
@@ -65,6 +63,8 @@ namespace Mono.Debugger.Backends
 
 			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
+
+			session.OnProcessCreated (client);
 		}
 
 		private ProcessServant (ProcessServant parent, int pid)
@@ -231,6 +231,9 @@ namespace Mono.Debugger.Backends
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
 
+			session = session.Clone ();
+			session.OnProcessCreated (client);
+
 			breakpoint_manager = new BreakpointManager ();
 			source_factory = new SourceFileFactory ();
 
@@ -272,7 +275,8 @@ namespace Mono.Debugger.Backends
 
 		internal void OnProcessExitedEvent ()
 		{
-			session.OnProcessExited (client);
+			if (!is_forked)
+				session.OnProcessExited (client);
 			manager.Debugger.OnProcessExitedEvent (this);
 		}
 

@@ -88,7 +88,7 @@ namespace Mono.Debugger
 
 		protected virtual Breakpoint Clone ()
 		{
-			return new Breakpoint (ThreadGroup, location);
+			return new Breakpoint (GetNextEventIndex (), ThreadGroup, location);
 		}
 
 		// <summary>
@@ -134,6 +134,13 @@ namespace Mono.Debugger
 
 			row ["location"] = location_index;
 			base.GetSessionData (row);
+		}
+
+		internal Breakpoint (int index, ThreadGroup group, SourceLocation location)
+			: base (index, location.Name, group)
+		{
+			this.location = location;
+			this.type = BreakpointType.Breakpoint;
 		}
 
 		internal Breakpoint (ThreadGroup group, SourceLocation location)

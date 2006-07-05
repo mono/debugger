@@ -499,8 +499,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			string name = sb.ToString ();
 			SourceMethod method = new SourceMethod (
-				Module, file, source.Index, name, source.StartRow,
-				source.EndRow, true);
+				Module, file, source.Index, mdef.DeclaringType.FullName,
+				name, source.StartRow, source.EndRow, true);
 
 			method_index_hash.Add (index, method);
 			return method;

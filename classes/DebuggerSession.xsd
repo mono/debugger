@@ -24,6 +24,7 @@
     <xs:choice>
       <xs:element name="method" type="xs:string" minOccurs="0" />
       <xs:element name="file" type="xs:string" minOccurs="0" />
+      <xs:element name="line" type="xs:integer" minOccurs="0" />
     </xs:choice>
     <xs:attribute name="id" msdata:ReadOnly="true" type="xs:integer" use="required" />
     <xs:attribute name="module" msdata:ReadOnly="true" type="xs:string" use="required" />

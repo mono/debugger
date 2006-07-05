@@ -115,6 +115,12 @@ namespace Mono.Debugger
 			}
 		}
 
+		public string ClassName {
+			get {
+				return class_name;
+			}
+		}
+
 		public string Name {
 			get {
 				return name;
@@ -161,17 +167,19 @@ namespace Mono.Debugger
 		Module module;
 		SourceFile source;
 		string name;
+		string class_name;
 		int  start_row, end_row;
 		bool is_dynamic;
 		long handle;
 
 		public SourceMethod (Module module, SourceFile source,
-				     long handle, string name, int start, int end,
-				     bool is_dynamic)
+				     long handle, string class_name, string name,
+				     int start, int end, bool is_dynamic)
 		{
 			this.module = module;
 			this.source = source;
 			this.handle = handle;
+			this.class_name = class_name;
 			this.name = name;
 			this.start_row = start;
 			this.end_row = end;
