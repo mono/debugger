@@ -82,7 +82,7 @@ namespace Mono.Debugger
 		public string Name {
 			get {
 				if (function != null)
-					return function.Name;
+					return function.FullName;
 				else if (line == -1)
 					return source.Name;
 				else if (file != null)

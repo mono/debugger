@@ -1,3 +1,14 @@
+2006-07-05  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.MainProcessReachedMain): Make this public again
+	and call it from the `Interpreter'; read the FIXME in the source
+	code.
+
+	* frontend/Interpreter.cs
+	(Interpreter.Start): Call `session.MainProcessReachedMain ()'.
+	(Interpreter.LoadSession): Likewise.
+
 2006-07-03  Martin Baulig  <martin@ximian.com>
 
 	* classes/Event.cs
@@ -5,13 +16,11 @@
 	may persist across multiple invocations of the target, so we use
 	this to disable the event when we exit.
 
-	* backends/ProcessHandle.cs
-	(ProcessHandle.ReachedMain, OnProcessExitedEvent): New internal
-	methods; save/restore the session.
+	* backends/ProcessServant.cs
+	(ProcessServant.OnProcessExitedEvent): New internal method; save
+	the session here.
 
 	* classes/DebuggerSession.cs
-	(DebuggerSession.OnProcessReachedMain): We're now internal and
-	called from the `ProcessServant'.
 	(DebuggerSession.OnProcessExited): Disable all events here.
 
 2006-06-29  Martin Baulig  <martin@ximian.com>

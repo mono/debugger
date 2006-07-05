@@ -268,11 +268,6 @@ namespace Mono.Debugger.Backends
 			new_inferior.Continue ();
 		}
 
-		internal void ReachedMain ()
-		{
-			session.OnProcessReachedMain (client);
-		}
-
 		internal void OnProcessExitedEvent ()
 		{
 			session.OnProcessExited (client);

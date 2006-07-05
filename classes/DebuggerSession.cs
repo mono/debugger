@@ -383,7 +383,14 @@ namespace Mono.Debugger
 		// Session management.
 		//
 
-		internal void OnProcessReachedMain (Process process)
+		//
+		// FIXME: Ideally, this would be called automatically from the
+		//        SingleSteppingEngine.  The problem is that `Event.Enable()' may
+		//        need to run stepping operations, so doing this correctly would
+		//        require some more work.  Keeping this as a quick fix for the
+		//        moment.
+		//
+		public void MainProcessReachedMain (Process process)
 		{
 			foreach (Event e in events.Values) {
 				e.Enable (process.MainThread);
