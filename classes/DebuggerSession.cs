@@ -91,19 +91,12 @@ namespace Mono.Debugger
 		public readonly DebuggerConfiguration Config;
 		public readonly DebuggerOptions Options;
 
-		private readonly Hashtable modules;
-		private readonly Hashtable events;
-		private readonly Hashtable thread_groups;
-		private readonly ThreadGroup main_thread_group;
+		byte[] saved_session;
+		SessionData data;
 
 		private DebuggerSession (DebuggerConfiguration config)
 		{
 			this.Config = config;
-
-			modules = Hashtable.Synchronized (new Hashtable ());
-			events = Hashtable.Synchronized (new Hashtable ());
-			thread_groups = Hashtable.Synchronized (new Hashtable ());
-			main_thread_group = CreateThreadGroup ("main");
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options)
@@ -112,50 +105,43 @@ namespace Mono.Debugger
 			this.Options = options;
 		}
 
+		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
+					Stream stream)
+			: this (config)
+		{
+			this.Options = options;
+		}
+
+		protected SessionData Data {
+			get {
+				if (data == null)
+					throw new TargetException (TargetError.NoTarget);
+
+				return data;
+			}
+		}
+
 		//
 		// Modules.
 		//
 
 		public Module GetModule (string name)
 		{
-			return (Module) modules [name];
+			return Data.GetModule (name);
 		}
 
 		internal Module CreateModule (string name, ModuleGroup group)
 		{
-			Module module = (Module) modules [name];
-			if (module != null)
-				return module;
-
-			module = new Module (group, name, null);
-			modules.Add (name, module);
-
-			return module;
+			return Data.CreateModule (name, group);
 		}
 
 		internal Module CreateModule (string name, SymbolFile symfile)
 		{
-			if (symfile == null)
-				throw new NullReferenceException ();
-
-			Module module = (Module) modules [name];
-			if (module != null)
-				return module;
-
-			ModuleGroup group = Config.GetModuleGroup (symfile);
-
-			module = new Module (group, name, symfile);
-			modules.Add (name, module);
-
-			return module;
+			return Data.CreateModule (name, symfile);
 		}
 
 		public Module[] Modules {
-			get {
-				Module[] retval = new Module [modules.Values.Count];
-				modules.Values.CopyTo (retval, 0);
-				return retval;
-			}
+			get { return Data.Modules; }
 		}
 
 		//
@@ -164,44 +150,30 @@ namespace Mono.Debugger
 
 		public ThreadGroup CreateThreadGroup (string name)
 		{
-			lock (thread_groups) {
-				ThreadGroup group = (ThreadGroup) thread_groups [name];
-				if (group != null)
-					return group;
-
-				group = ThreadGroup.CreateThreadGroup (name);
-				thread_groups.Add (name, group);
-				return group;
-			}
+			return Data.CreateThreadGroup (name);
 		}
 
 		public void DeleteThreadGroup (string name)
 		{
-			thread_groups.Remove (name);
+			Data.DeleteThreadGroup (name);
 		}
 
 		public bool ThreadGroupExists (string name)
 		{
-			return thread_groups.Contains (name);
+			return Data.ThreadGroupExists (name);
 		}
 
 		public ThreadGroup[] ThreadGroups {
-			get {
-				lock (thread_groups) {
-					ThreadGroup[] retval = new ThreadGroup [thread_groups.Values.Count];
-					thread_groups.Values.CopyTo (retval, 0);
-					return retval;
-				}
-			}
+			get { return Data.ThreadGroups; }
 		}
 
 		public ThreadGroup ThreadGroupByName (string name)
 		{
-			return (ThreadGroup) thread_groups [name];
+			return Data.ThreadGroupByName (name);
 		}
 
 		public ThreadGroup MainThreadGroup {
-			get { return main_thread_group; }
+			get { return Data.MainThreadGroup; }
 		}
 
 		//
@@ -209,32 +181,23 @@ namespace Mono.Debugger
 		//
 
 		public Event[] Events {
-			get {
-				Event[] handles = new Event [events.Count];
-				events.Values.CopyTo (handles, 0);
-				return handles;
-			}
+			get { return Data.Events; }
 		}
 
 		public Event GetEvent (int index)
 		{
-			return (Event) events [index];
+			return Data.GetEvent (index);
 		}
 
 		internal void AddEvent (Event handle)
 		{
-			events.Add (handle.Index, handle);
+			Data.AddEvent (handle);
 		}
 
 		public void DeleteEvent (Thread thread, Event handle)
 		{
-			handle.Remove (thread);
-			events.Remove (handle.Index);
+			Data.DeleteEvent (thread, handle);
 		}
-
-		//
-		// Events
-		//
 
 		public Event InsertBreakpoint (Thread target, ThreadGroup group, int domain,
 					       SourceLocation location)
@@ -283,106 +246,6 @@ namespace Mono.Debugger
 		// Session management.
 		//
 
-		public void SaveSession (Stream stream)
-		{
-			DataSet ds = new DataSet ("DebuggerSession");
-
-			Assembly ass = Assembly.GetExecutingAssembly ();
-			using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
-				ds.ReadXmlSchema (schema);
-
-			DataTable group_table = ds.Tables ["ModuleGroup"];
-			foreach (ModuleGroup group in Config.ModuleGroups) {
-				DataRow row = group_table.NewRow ();
-				group.GetSessionData (row);
-				group_table.Rows.Add (row);
-			}
-
-			DataTable module_table = ds.Tables ["Module"];
-			foreach (Module module in Modules) {
-				DataRow row = module_table.NewRow ();
-				module.GetSessionData (row);
-				module_table.Rows.Add (row);
-			}
-
-			DataTable thread_group_table = ds.Tables ["ThreadGroup"];
-			foreach (ThreadGroup group in ThreadGroups) {
-				DataRow row = thread_group_table.NewRow ();
-				row ["name"] = group.Name;
-				thread_group_table.Rows.Add (row);
-			}
-
-			DataTable event_table = ds.Tables ["Event"];
-			foreach (Event e in Events) {
-				DataRow row = event_table.NewRow ();
-				e.GetSessionData (row);
-				event_table.Rows.Add (row);
-			}
-
-			ds.WriteXml (stream);
-		}
-
-		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
-					Stream stream)
-			: this (config)
-		{
-			this.Options = options;
-
-			DataSet ds = new DataSet ("DebuggerSession");
-
-			Assembly ass = Assembly.GetExecutingAssembly ();
-			using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
-				ds.ReadXmlSchema (schema);
-
-			XmlDataDocument doc = new XmlDataDocument (ds);
-
-			ds.ReadXml (stream, XmlReadMode.IgnoreSchema);
-
-			DataTable module_table = ds.Tables ["Module"];
-			foreach (DataRow row in module_table.Rows) {
-				string name = (string) row ["name"];
-				Module module = (Module) modules [name];
-				if (module == null) {
-					string gname = (string) row ["group"];
-					ModuleGroup group = Config.GetModuleGroup (gname);
-					module = new Module (group, name, null);
-					modules.Add (name, module);
-				}
-
-				module.SetSessionData (row);
-			}
-
-			Hashtable locations = new Hashtable ();
-			DataTable location_table = ds.Tables ["Location"];
-			foreach (DataRow row in location_table.Rows) {
-				long index = (long) row ["id"];
-				locations.Add (index, new SourceLocation (this, row));
-			}
-
-			DataTable event_table = ds.Tables ["Event"];
-			foreach (DataRow row in event_table.Rows) {
-				if ((string) row ["type"] != "Mono.Debugger.Breakpoint")
-					continue;
-
-				string gname = (string) row ["group"];
-				ThreadGroup group;
-				if (gname == "system")
-					group = ThreadGroup.System;
-				else if (gname == "global")
-					group = ThreadGroup.Global;
-				else
-					group = CreateThreadGroup (gname);
-
-				SourceLocation location = (SourceLocation) locations [(long) row ["location"]];
-				Breakpoint bpt = new Breakpoint (group, location);
-				AddEvent (bpt);
-			}
-		}
-
-		//
-		// Session management.
-		//
-
 		//
 		// FIXME: Ideally, this would be called automatically from the
 		//        SingleSteppingEngine.  The problem is that `Event.Enable()' may
@@ -392,15 +255,263 @@ namespace Mono.Debugger
 		//
 		public void MainProcessReachedMain (Process process)
 		{
-			foreach (Event e in events.Values) {
-				e.Enable (process.MainThread);
+			if (saved_session == null)
+				return;
+
+			using (MemoryStream ms = new MemoryStream (saved_session)) {
+				data.LoadSession (ms);
 			}
+		}
+
+		internal void OnProcessCreated (Process process)
+		{
+			data = new SessionData (this);
 		}
 
 		internal void OnProcessExited (Process process)
 		{
-			foreach (Event e in events.Values) {
-				e.OnTargetExited ();
+			using (MemoryStream ms = new MemoryStream ()) {
+				Data.SaveSession (ms);
+				saved_session = ms.GetBuffer ();
+			}
+			data = null;
+		}
+
+		public void SaveSession (Stream stream)
+		{
+			Data.SaveSession (stream);
+		}
+
+		protected class SessionData
+		{
+			public readonly DebuggerSession Session;
+
+			private readonly Hashtable modules;
+			private readonly Hashtable events;
+			private readonly Hashtable thread_groups;
+			private readonly ThreadGroup main_thread_group;
+
+			public SessionData (DebuggerSession session)
+			{
+				this.Session = session;
+
+				modules = Hashtable.Synchronized (new Hashtable ());
+				events = Hashtable.Synchronized (new Hashtable ());
+				thread_groups = Hashtable.Synchronized (new Hashtable ());
+				main_thread_group = CreateThreadGroup ("main");
+			}
+
+			public void LoadSession (Stream stream)
+			{
+				DataSet ds = new DataSet ("DebuggerSession");
+
+				Assembly ass = Assembly.GetExecutingAssembly ();
+				using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+					ds.ReadXmlSchema (schema);
+
+				XmlDataDocument doc = new XmlDataDocument (ds);
+
+				ds.ReadXml (stream, XmlReadMode.IgnoreSchema);
+
+				DataTable module_table = ds.Tables ["Module"];
+				foreach (DataRow row in module_table.Rows) {
+					string name = (string) row ["name"];
+					Module module = (Module) modules [name];
+					if (module == null) {
+						string gname = (string) row ["group"];
+						ModuleGroup group = Session.Config.GetModuleGroup (gname);
+						module = new Module (group, name, null);
+						modules.Add (name, module);
+					}
+
+					module.SetSessionData (row);
+				}
+
+				Hashtable locations = new Hashtable ();
+				DataTable location_table = ds.Tables ["Location"];
+				foreach (DataRow row in location_table.Rows) {
+					long index = (long) row ["id"];
+					locations.Add (index, new SourceLocation (Session, row));
+				}
+
+				DataTable event_table = ds.Tables ["Event"];
+				foreach (DataRow row in event_table.Rows) {
+					if ((string) row ["type"] != "Mono.Debugger.Breakpoint")
+						continue;
+
+					string gname = (string) row ["group"];
+					ThreadGroup group;
+					if (gname == "system")
+						group = ThreadGroup.System;
+					else if (gname == "global")
+						group = ThreadGroup.Global;
+					else
+						group = CreateThreadGroup (gname);
+
+					long loc_index = (long) row ["location"];
+					SourceLocation location = (SourceLocation) locations [loc_index];
+					Breakpoint bpt = new Breakpoint (group, location);
+					AddEvent (bpt);
+				}
+			}
+
+			public void SaveSession (Stream stream)
+			{
+				DataSet ds = new DataSet ("DebuggerSession");
+
+				Assembly ass = Assembly.GetExecutingAssembly ();
+				using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+					ds.ReadXmlSchema (schema);
+
+				DataTable group_table = ds.Tables ["ModuleGroup"];
+				foreach (ModuleGroup group in Session.Config.ModuleGroups) {
+					DataRow row = group_table.NewRow ();
+					group.GetSessionData (row);
+					group_table.Rows.Add (row);
+				}
+
+				DataTable module_table = ds.Tables ["Module"];
+				foreach (Module module in Modules) {
+					DataRow row = module_table.NewRow ();
+					module.GetSessionData (row);
+					module_table.Rows.Add (row);
+				}
+
+				DataTable thread_group_table = ds.Tables ["ThreadGroup"];
+				foreach (ThreadGroup group in ThreadGroups) {
+					DataRow row = thread_group_table.NewRow ();
+					row ["name"] = group.Name;
+					thread_group_table.Rows.Add (row);
+				}
+
+				DataTable event_table = ds.Tables ["Event"];
+				foreach (Event e in Events) {
+					DataRow row = event_table.NewRow ();
+					e.GetSessionData (row);
+					event_table.Rows.Add (row);
+				}
+
+				ds.WriteXml (stream);
+			}
+
+			//
+			// Modules.
+			//
+
+			public Module GetModule (string name)
+			{
+				return (Module) modules [name];
+			}
+
+			internal Module CreateModule (string name, ModuleGroup group)
+			{
+				Module module = (Module) modules [name];
+				if (module != null)
+					return module;
+
+				module = new Module (group, name, null);
+				modules.Add (name, module);
+
+				return module;
+			}
+
+			internal Module CreateModule (string name, SymbolFile symfile)
+			{
+				if (symfile == null)
+					throw new NullReferenceException ();
+
+				Module module = (Module) modules [name];
+				if (module != null)
+					return module;
+
+				ModuleGroup group = Session.Config.GetModuleGroup (symfile);
+
+				module = new Module (group, name, symfile);
+				modules.Add (name, module);
+
+				return module;
+			}
+
+			public Module[] Modules {
+				get {
+					Module[] retval = new Module [modules.Values.Count];
+					modules.Values.CopyTo (retval, 0);
+					return retval;
+				}
+			}
+
+			//
+			// Thread Groups
+			//
+
+			public ThreadGroup CreateThreadGroup (string name)
+			{
+				lock (thread_groups) {
+					ThreadGroup group = (ThreadGroup) thread_groups [name];
+					if (group != null)
+						return group;
+
+					group = ThreadGroup.CreateThreadGroup (name);
+					thread_groups.Add (name, group);
+					return group;
+				}
+			}
+
+			public void DeleteThreadGroup (string name)
+			{
+				thread_groups.Remove (name);
+			}
+
+			public bool ThreadGroupExists (string name)
+			{
+				return thread_groups.Contains (name);
+			}
+
+			public ThreadGroup[] ThreadGroups {
+				get {
+					lock (thread_groups) {
+						ThreadGroup[] retval = new ThreadGroup [thread_groups.Values.Count];
+						thread_groups.Values.CopyTo (retval, 0);
+						return retval;
+					}
+				}
+			}
+
+			public ThreadGroup ThreadGroupByName (string name)
+			{
+				return (ThreadGroup) thread_groups [name];
+			}
+
+			public ThreadGroup MainThreadGroup {
+				get { return main_thread_group; }
+			}
+
+			//
+			// Events
+			//
+
+			public Event[] Events {
+				get {
+					Event[] handles = new Event [events.Count];
+					events.Values.CopyTo (handles, 0);
+					return handles;
+				}
+			}
+
+			public Event GetEvent (int index)
+			{
+				return (Event) events [index];
+			}
+
+			internal void AddEvent (Event handle)
+			{
+				events.Add (handle.Index, handle);
+			}
+
+			public void DeleteEvent (Thread thread, Event handle)
+			{
+				handle.Remove (thread);
+				events.Remove (handle.Index);
 			}
 		}
 	}

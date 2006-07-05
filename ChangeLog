@@ -1,6 +1,13 @@
 2006-07-05  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs
+	(DebuggerSession.SessionData): New protected class; moved all the
+	session data here, we save this to XML when the target exists
+	while the `DebuggerSession' persists across multiple invocations.
+
+2006-07-05  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
 	(DebuggerSession.MainProcessReachedMain): Make this public again
 	and call it from the `Interpreter'; read the FIXME in the source
 	code.

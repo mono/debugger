@@ -47,6 +47,8 @@ namespace Mono.Debugger.Backends
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
+
+			session.OnProcessCreated (client);
 		}
 
 		internal ProcessServant (ThreadManager manager, ProcessStart start)
