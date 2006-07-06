@@ -2599,7 +2599,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override bool IsSourceOperation {
-			get { return false; }
+			get { return !Native; }
 		}
 
 		StepFrame step_frame;

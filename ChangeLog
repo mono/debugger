@@ -1,5 +1,10 @@
 2006-07-06  Martin Baulig  <martin@ximian.com>
 
+	* backends/SingleSteppingEngine.cs
+	(OperationFinish.IsSourceOperation): Set to `!Native'.
+
+2006-07-06  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/i386-arch.c (ArchInfo): Use `guint64' for
 	`dr_control' and `dr_status' since _server_ptrace_get_dr()
 	operates on guint64.
