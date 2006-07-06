@@ -44,8 +44,16 @@ namespace Mono.Debugger.Backends
 		internal override bool IsSyscallInstruction (TargetMemoryAccess memory,
 							     TargetAddress address)
 		{
-			return (memory.ReadByte (address - 2) == 0x0f) &&
-				(memory.ReadByte (address - 1) == 0x05);
+			try {
+				return ((memory.ReadByte (address - 2) == 0x0f) &&
+					(memory.ReadByte (address - 1) == 0x05)) ||
+					((memory.ReadByte (address - 2) == 0xeb) &&
+					 (memory.ReadByte (address - 1) == 0xf3) &&
+					 (memory.ReadByte (address - 11) == 0x0f) &&
+					 (memory.ReadByte (address - 10) == 0x34));
+			} catch {
+				return false;
+			}
 		}
 
 		internal override TargetAddress GetCallTarget (TargetMemoryAccess target,

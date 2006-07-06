@@ -1,5 +1,14 @@
 2006-07-06  Martin Baulig  <martin@ximian.com>
 
+	* arch/Architecture_I386.cs
+	(Architecture_I386.IsSyscallInstruction): Correctly implement
+	this; also protect with try/catch.
+
+	* arch/Architecture_X86_64.cs
+	(Architecture_X86_64.IsSyscallInstruction): Protect with try/catch.
+
+2006-07-06  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(OperationFinish.IsSourceOperation): Set to `!Native'.
 
