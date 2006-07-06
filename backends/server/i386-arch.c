@@ -23,7 +23,7 @@ struct ArchInfo
 	INFERIOR_FPREGS_TYPE *saved_fpregs;
 	int saved_signal;
 	GPtrArray *rti_stack;
-	unsigned dr_control, dr_status;
+	guint64 dr_control, dr_status;
 	int dr_regs [DR_NADDR];
 };
 

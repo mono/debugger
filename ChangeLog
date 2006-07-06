@@ -1,5 +1,11 @@
 2006-07-06  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/i386-arch.c (ArchInfo): Use `guint64' for
+	`dr_control' and `dr_status' since _server_ptrace_get_dr()
+	operates on guint64.
+
+2006-07-06  Martin Baulig  <martin@ximian.com>
+
 	* backends/server/x86_64-arch.c
 	(server_ptrace_insert_hw_breakpoint): Don't deadlock here.
 
