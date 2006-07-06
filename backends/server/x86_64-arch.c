@@ -615,8 +615,10 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 type, guint32 
 	}
 
 	result = find_free_hw_register (handle, idx);
-	if (result != COMMAND_ERROR_NONE)
+	if (result != COMMAND_ERROR_NONE) {
+		mono_debugger_breakpoint_manager_unlock ();
 		return result;
+	}
 
 	breakpoint = g_new0 (BreakpointInfo, 1);
 	breakpoint->type = (HardwareBreakpointType) type;

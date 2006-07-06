@@ -1,5 +1,13 @@
 2006-07-06  Martin Baulig  <martin@ximian.com>
 
+	* backends/server/x86_64-arch.c
+	(server_ptrace_insert_hw_breakpoint): Don't deadlock here.
+
+	* backends/server/i386-arch.c
+	(server_ptrace_insert_hw_breakpoint): Don't deadlock here.
+
+2006-07-06  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceInfo.cs
 	(SourceMethod.ClassName): New public property.
 
