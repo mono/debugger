@@ -2166,6 +2166,7 @@ namespace Mono.Debugger.Backends
 			LineNumberEngine engine;
 			ArrayList param_dies, local_dies;
 			TargetVariable[] parameters, locals;
+			DwarfLocation frame_base;
 
 			protected override void ProcessAttribute (Attribute attribute)
 			{
@@ -2180,6 +2181,10 @@ namespace Mono.Debugger.Backends
 
 				case DwarfAttribute.name:
 					name = (string) attribute.Data;
+					break;
+
+				case DwarfAttribute.frame_base:
+					frame_base = new DwarfLocation (this, attribute, false);
 					break;
 
 				case DwarfAttribute.decl_file:
@@ -2232,6 +2237,12 @@ namespace Mono.Debugger.Backends
 						return null;
 
 					return method.SourceMethod;
+				}
+			}
+
+			public DwarfLocation FrameBase {
+				get {
+					return frame_base;
 				}
 			}
 
@@ -2630,59 +2641,37 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected class DwarfTargetVariable : TargetVariable
+		protected class DwarfLocation
 		{
-			readonly DieSubprogram subprog;
-			readonly string name;
-			readonly TargetType type;
-			readonly byte[] location_block;
-			readonly long location_offset;
-			int offset;
+			DieSubprogram subprog;
+			byte[] location_block;
+			long loclist_offset;
+			bool has_loclist;
+			bool is_byref;
 
-			protected DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type)
+			public DwarfLocation (DieSubprogram subprog, Attribute attribute, bool is_byref)
 			{
 				this.subprog = subprog;
-				this.name = name;
-				this.type = type;
-			}
+				this.is_byref = is_byref;
 
-			public DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type,
-						    byte[] location_block)
-				: this (subprog, name, type)
-			{
-				this.location_block = location_block;
-				this.location_offset = -1;
-			}
+				if (subprog == null)
+					throw new InternalError ();
 
-			public DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type,
-						    long location_offset)
-				: this (subprog, name, type)
-			{
-				this.location_block = null;
-				this.location_offset = location_offset;
-			}
-
-			public override string Name {
-				get { return name; }
-			}
-
-			public override TargetType Type {
-				get { return type; }
-			}
-
-			public override bool IsInScope (TargetAddress address)
-			{
-				return true;
-			}
-
-			public override bool IsAlive (TargetAddress address)
-			{
-				return true;
-			}
-
-			public bool CheckValid (StackFrame frame)
-			{
-				return true;
+				switch (attribute.DwarfForm) {
+				case DwarfForm.block1:
+					location_block = (byte []) attribute.Data;
+					break;
+				case DwarfForm.data1:
+				case DwarfForm.data2:
+				case DwarfForm.data4:
+				case DwarfForm.data8:
+					loclist_offset = (long) attribute.Data;
+					has_loclist = true;
+					break;
+				default:
+					throw new InternalError  ();
+					break;
+				}
 			}
 
 			TargetLocation GetLocation (StackFrame frame, byte[] data)
@@ -2707,9 +2696,14 @@ namespace Mono.Debugger.Backends
 					off = 0;
 					is_regoffset = false;
 				} else if (opcode == 0x91) { // DW_OP_fbreg
-					reg = 3;
 					off = locreader.ReadSLeb128 ();
-					is_regoffset = true;
+					if (subprog.FrameBase != null) {
+						return new RelativeTargetLocation (
+							subprog.FrameBase.GetLocation (frame), off);
+					} else {
+						is_regoffset = true;
+						reg = 2;
+					}
 				} else if (opcode == 0x92) { // DW_OP_bregx
 					reg = locreader.ReadLeb128 () + 3;
 					off = locreader.ReadSLeb128 ();
@@ -2723,7 +2717,7 @@ namespace Mono.Debugger.Backends
 
 				MonoVariableLocation loc = new MonoVariableLocation (
 					frame.Thread, is_regoffset, frame.Registers [reg],
-					off + offset, type.IsByRef);
+					off, is_byref);
 
 				if (!locreader.IsEof)
 					return null;
@@ -2737,7 +2731,7 @@ namespace Mono.Debugger.Backends
 					return GetLocation (frame, location_block);
 
 				DwarfBinaryReader reader = subprog.dwarf.DebugLocationReader;
-				reader.Position = location_offset;
+				reader.Position = loclist_offset;
 
 				long address = frame.TargetAddress.Address;
 				long base_address = subprog.DieCompileUnit.StartAddress;
@@ -2767,22 +2761,70 @@ namespace Mono.Debugger.Backends
 				return null;
 			}
 
+
+		}
+
+		protected class DwarfTargetVariable : TargetVariable
+		{
+			readonly DieSubprogram subprog;
+			readonly string name;
+			readonly TargetType type;
+			readonly DwarfLocation location;
+			// int offset;
+
+			protected DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type)
+			{
+				this.subprog = subprog;
+				this.name = name;
+				this.type = type;
+			}
+
+			public DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type,
+						    DwarfLocation location)
+				: this (subprog, name, type)
+			{
+				this.location = location;
+			}
+
+			public override string Name {
+				get { return name; }
+			}
+
+			public override TargetType Type {
+				get { return type; }
+			}
+
+			public override bool IsInScope (TargetAddress address)
+			{
+				return true;
+			}
+
+			public override bool IsAlive (TargetAddress address)
+			{
+				return true;
+			}
+
+			public bool CheckValid (StackFrame frame)
+			{
+				return true;
+			}
+
 			public override TargetObject GetObject (StackFrame frame)
 			{
-				TargetLocation location = GetLocation (frame);
-				if (location == null)
+				TargetLocation loc = location.GetLocation (frame);
+				if (loc == null)
 					return null;
 
-				return type.GetObject (location);
+				return type.GetObject (loc);
 			}
 
 			public override string PrintLocation (StackFrame frame)
 			{
-				TargetLocation location = GetLocation (frame);
-				if (location == null)
+				TargetLocation loc = location.GetLocation (frame);
+				if (loc == null)
 					return null;
 
-				return location.Print ();
+				return loc.Print ();
 			}
 
 			public override bool CanWrite {
@@ -3667,18 +3709,7 @@ namespace Mono.Debugger.Backends
 			{
 				switch (attribute.DwarfAttribute) {
 				case DwarfAttribute.location:
-					switch (attribute.DwarfForm) {
-					case DwarfForm.block1:
-						location_block = (byte []) attribute.Data;
-						break;
-					case DwarfForm.data1:
-					case DwarfForm.data2:
-					case DwarfForm.data4:
-					case DwarfForm.data8:
-						loclist_offset = (long) attribute.Data;
-						has_loclist = true;
-						break;
-					}
+					location_attr = attribute;
 					break;
 
 				default:
@@ -3687,10 +3718,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-
-			byte[] location_block;
-			long loclist_offset;
-			bool has_loclist;
+			Attribute location_attr;
 			TargetVariable variable;
 			TargetInfo target_info;
 			DieSubprogram subprog;
@@ -3699,7 +3727,7 @@ namespace Mono.Debugger.Backends
 			protected bool DoResolve ()
 			{
 				if ((TypeOffset == 0) || (Name == null) || (subprog == null) ||
-				    (!has_loclist && (location_block == null)))
+				    (location_attr == null))
 					return false;
 
 				DieType reference = comp_unit.GetType (TypeOffset);
@@ -3710,12 +3738,8 @@ namespace Mono.Debugger.Backends
 				if (type == null)
 					return false;
 
-				if (has_loclist)
-					variable = new DwarfTargetVariable (
-						subprog, Name, type, loclist_offset);
-				else
-					variable = new DwarfTargetVariable (
-						subprog, Name, type, location_block);
+				DwarfLocation location = new DwarfLocation (subprog, location_attr, type.IsByRef);
+				variable = new DwarfTargetVariable (subprog, Name, type, location);
 				return true;
 			}
 
