@@ -86,7 +86,6 @@ namespace Mono.Debugger
 			if (!LoadModuleGroupsFromXml (doc))
 				return false;
 
-			Console.WriteLine ("CONFIG OK");
 			return true;
 		}
 

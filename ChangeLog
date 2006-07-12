@@ -1,6 +1,11 @@
 2006-07-12  Martin Baulig  <martin@ximian.com>
 
-	* classes/DebuggerOptions.cs
+	* classes/DebuggerOptions.cs: New file; split out
+	`DebuggerOptions' from DebuggerSession.cs.
+
+2006-07-12  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
 	(DebuggerOptions.ParseCommandLine): New public static method;
 	moved here from frontend/Main.cs.
 
