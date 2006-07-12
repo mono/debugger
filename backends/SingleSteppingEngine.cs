@@ -1181,11 +1181,16 @@ namespace Mono.Debugger.Backends
 
 		protected bool MethodHasSource (Method method)
 		{
-			if (method == null)
+			if ((method == null) || !method.HasSource)
 				return false;
 
-			if (!method.HasSource || !method.Module.StepInto)
-				return false;
+			if (current_method != null) {
+				if ((method.Module != current_method.Module) && !method.Module.StepInto)
+					return false;
+			} else {
+				if (!method.Module.StepInto)
+					return false;
+			}
 
 			MethodSource source = method.Source;
 			if ((source == null) || source.IsDynamic)
