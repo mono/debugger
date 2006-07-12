@@ -228,7 +228,7 @@ namespace Mono.Debugger.Tests
 
 		private static DebuggerOptions CreateOptions (string application, string[] args)
 		{
-			DebuggerOptions options = new DebuggerOptions ();
+			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
 
 			options.IsScript = true;
 			options.File = application;

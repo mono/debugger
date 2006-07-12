@@ -1,5 +1,11 @@
 2006-07-12  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.ParseCommandLine): New public static method;
+	moved here from frontend/Main.cs.
+
+2006-07-12  Martin Baulig  <martin@ximian.com>
+
 	* backends/SingleSteppingEngine.cs
 	(SingleSteppingEngine.MethodHasSource): Don't check
 	`Module.StepInto' if the method we're stepping into is in the same
