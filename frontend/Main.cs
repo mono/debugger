@@ -13,7 +13,7 @@ namespace Mono.Debugger.Frontend
 		Interpreter interpreter;
 		DebuggerEngine engine;
 		LineParser parser;
-		string prompt;
+		const string prompt = "(mdb) ";
 		int line = 0;
 
 		ST.Thread command_thread;
@@ -41,9 +41,6 @@ namespace Mono.Debugger.Frontend
 			interpreter = new Interpreter (true, is_interactive, config, options);
 			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
-
-			if (is_interactive)
-				prompt = options.Prompt;
 
 			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
@@ -281,15 +278,6 @@ namespace Mono.Debugger.Frontend
 				debug_options.MonoPath = value;
 				return true;
 
-			case "-prompt":
-				value = GetValue (ref args, ref i, ms_value);
-				if (value == null) {
-					Usage ();
-					Environment.Exit (1);
-				}
-				debug_options.Prompt = value;
-				return true;
-
 			case "-script":
 				if (ms_value != null) {
 					Usage ();
@@ -386,7 +374,6 @@ namespace Mono.Debugger.Frontend
 				"   -mono:PATH                Override the inferior mono\n" +
 				"   -mono-prefix:PATH         Override the mono prefix\n" +
 				"   -native-symtabs           Load native symtabs\n" +
-				"   -prompt:PROMPT            Override the default command-line prompt (short -p)\n" +
 				"   -script                  \n" +
 				"   -usage                   \n" +
 				"   -version                  Display version and licensing information (short -V)\n" +

@@ -25,21 +25,13 @@ namespace Mono.Debugger
 		/* argv[1...n] for the inferior process */
 		public string[] InferiorArgs = null;
 
-		/* The command line prompt.  should we really even
-		 * bother letting the user set this?  why? */
-		public string Prompt = "(mdb) ";
-
 		/* JIT optimization flags affecting the inferior
 		 * process */
-		public string JitOptimizations = "";
-
+		public string JitOptimizations = null;
 		public string[] JitArguments = null;
 
 		/* The inferior process's working directory */
-		public string WorkingDirectory = Environment.CurrentDirectory;
-
-		/* Whether or not we load native symbol tables */
-		public bool LoadNativeSymbolTable = true;
+		public string WorkingDirectory = null;
 
 		/* true if we're running in a script */
 		public bool IsScript = false;
@@ -81,6 +73,85 @@ namespace Mono.Debugger
 			} else if (value != null)
 				user_environment.Add (name, value);
 		}
+
+		internal void GetSessionData (DataSet ds)
+		{
+			DataTable options_table = ds.Tables ["Options"];
+			DataTable list_table = ds.Tables ["StringList"];
+
+			int stringlist_idx = 0;
+
+			DataRow options_row = options_table.NewRow ();
+			options_row ["file"] = File;
+			if ((InferiorArgs != null) && (InferiorArgs.Length > 0))
+				options_row ["inferior-args"] = ++stringlist_idx;
+			if ((JitArguments != null) && (JitArguments.Length > 0))
+				options_row ["jit-arguments"] = ++stringlist_idx;
+			if (JitOptimizations != null)
+				options_row ["jit-optimizations"] = JitOptimizations;
+			if (WorkingDirectory != null)
+				options_row ["working-directory"] = WorkingDirectory;
+			if (MonoPrefix != null)
+				options_row ["mono-prefix"] = MonoPrefix;
+			if (MonoPath != null)
+				options_row ["mono-path"] = MonoPath;
+			options_table.Rows.Add (options_row);
+
+			if ((InferiorArgs != null) && (InferiorArgs.Length > 0)) {
+				foreach (string arg in InferiorArgs) {
+					DataRow row = list_table.NewRow ();
+					row ["id"] = (long) options_row ["inferior-args"];
+					row ["text"] = arg;
+					list_table.Rows.Add (row);
+				}
+			}
+
+			if ((JitArguments != null) && (JitArguments.Length > 0)) {
+				foreach (string arg in JitArguments) {
+					DataRow row = list_table.NewRow ();
+					row ["id"] = (long) options_row ["jit-arguments"];
+					row ["text"] = arg;
+					list_table.Rows.Add (row);
+				}
+			}
+		}
+
+		public DebuggerOptions ()
+		{ }
+
+		internal DebuggerOptions (DataSet ds)
+		{
+			DataTable options_table = ds.Tables ["Options"];
+			DataTable list_table = ds.Tables ["StringList"];
+
+			DataRow options_row = options_table.Rows [0];
+
+			File = (string) options_row ["file"];
+			if (!options_row.IsNull ("inferior-args")) {
+				long index = (long) options_row ["inferior-args"];
+				DataRow[] rows = list_table.Select ("id=" + index);
+				InferiorArgs = new string [rows.Length];
+				for (int i = 0; i < rows.Length; i++)
+					InferiorArgs [i] = (string) rows [i] ["text"];
+			} else {
+				InferiorArgs = new string [0];
+			}
+			if (!options_row.IsNull ("jit-arguments")) {
+				long index = (long) options_row ["jit-arguments"];
+				DataRow[] rows = list_table.Select ("id=" + index);
+				JitArguments = new string [rows.Length];
+				for (int i = 0; i < rows.Length; i++)
+					JitArguments [i] = (string) rows [i] ["text"];
+			}
+			if (!options_row.IsNull ("jit-optimizations"))
+				JitOptimizations = (string) options_row ["jit-optimizations"];
+			if (!options_row.IsNull ("working-directory"))
+				WorkingDirectory = (string) options_row ["working-directory"];
+			if (!options_row.IsNull ("mono-prefix"))
+				MonoPrefix = (string) options_row ["mono-prefix"];
+			if (!options_row.IsNull ("mono-path"))
+				MonoPath = (string) options_row ["mono-path"];
+		}
 	}
 
 	public delegate void ModulesChangedHandler (DebuggerSession session);
@@ -91,7 +162,7 @@ namespace Mono.Debugger
 		public readonly DebuggerConfiguration Config;
 		public readonly DebuggerOptions Options;
 
-		byte[] saved_session;
+		DataSet saved_session;
 		SessionData data;
 
 		private DebuggerSession (DebuggerConfiguration config)
@@ -105,11 +176,18 @@ namespace Mono.Debugger
 			this.Options = options;
 		}
 
-		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
-					Stream stream)
+		public DebuggerSession (DebuggerConfiguration config, Stream stream)
 			: this (config)
 		{
-			this.Options = options;
+			saved_session = new DataSet ("DebuggerSession");
+
+			Assembly ass = Assembly.GetExecutingAssembly ();
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+				saved_session.ReadXmlSchema (schema);
+
+			saved_session.ReadXml (stream, XmlReadMode.IgnoreSchema);
+
+			Options = new DebuggerOptions (saved_session);
 		}
 
 		protected SessionData Data {
@@ -263,9 +341,7 @@ namespace Mono.Debugger
 			if (saved_session == null)
 				return;
 
-			using (MemoryStream ms = new MemoryStream (saved_session)) {
-				data.LoadSession (process, ms);
-			}
+			data.LoadSession (process, saved_session);
 		}
 
 		internal void OnProcessCreated (Process process)
@@ -276,10 +352,7 @@ namespace Mono.Debugger
 		internal void OnProcessExited (Process process)
 		{
 			try {
-				using (MemoryStream ms = new MemoryStream ()) {
-					Data.SaveSession (ms);
-					saved_session = ms.GetBuffer ();
-				}
+				saved_session = Data.SaveSession ();
 			} finally {
 				data = null;
 			}
@@ -287,7 +360,8 @@ namespace Mono.Debugger
 
 		public void SaveSession (Stream stream)
 		{
-			Data.SaveSession (stream);
+			saved_session = Data.SaveSession ();
+			saved_session.WriteXml (stream);
 		}
 
 		protected class SessionData
@@ -309,18 +383,8 @@ namespace Mono.Debugger
 				main_thread_group = CreateThreadGroup ("main");
 			}
 
-			public void LoadSession (Process process, Stream stream)
+			public void LoadSession (Process process, DataSet ds)
 			{
-				DataSet ds = new DataSet ("DebuggerSession");
-
-				Assembly ass = Assembly.GetExecutingAssembly ();
-				using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
-					ds.ReadXmlSchema (schema);
-
-				XmlDataDocument doc = new XmlDataDocument (ds);
-
-				ds.ReadXml (stream, XmlReadMode.IgnoreSchema);
-
 				DataTable module_table = ds.Tables ["Module"];
 				foreach (DataRow row in module_table.Rows) {
 					string name = (string) row ["name"];
@@ -365,13 +429,15 @@ namespace Mono.Debugger
 				}
 			}
 
-			public void SaveSession (Stream stream)
+			public DataSet SaveSession ()
 			{
 				DataSet ds = new DataSet ("DebuggerSession");
 
 				Assembly ass = Assembly.GetExecutingAssembly ();
 				using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
 					ds.ReadXmlSchema (schema);
+
+				Session.Options.GetSessionData (ds);
 
 				DataTable group_table = ds.Tables ["ModuleGroup"];
 				foreach (ModuleGroup group in Session.Config.ModuleGroups) {
@@ -403,7 +469,7 @@ namespace Mono.Debugger
 					event_table.Rows.Add (row);
 				}
 
-				ds.WriteXml (stream);
+				return ds;
 			}
 
 			//

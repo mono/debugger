@@ -67,24 +67,25 @@ namespace Mono.Debugger.Backends
 
 			this.session = session;
 			this.options = session.Options;
-			
+
 			if ((options.File == null) || (options.File == ""))
 				throw new ArgumentException ();
 			if (options.InferiorArgs == null)
 				throw new ArgumentException ();
 
 			cwd = options.WorkingDirectory;
+			if (cwd == null)
+				cwd = System.Environment.CurrentDirectory;
 			string mono_path = options.MonoPath != null ?
 				options.MonoPath : MonoPath;
 
 			if (IsMonoAssembly (options.File)) {
-				LoadNativeSymbolTable = Options.LoadNativeSymbolTable;
 				IsNative = false;
 
 				ArrayList start_argv = new ArrayList ();
 				start_argv.Add (mono_path);
 				start_argv.Add ("--inside-mdb");
-				if (options.JitOptimizations != "")
+				if (options.JitOptimizations != null)
 					start_argv.Add ("--optimize=" + options.JitOptimizations);
 				if (options.JitArguments != null)
 					start_argv.AddRange (options.JitArguments);
@@ -94,7 +95,6 @@ namespace Mono.Debugger.Backends
 				argv [start_argv.Count] = options.File;
 				options.InferiorArgs.CopyTo (this.argv, start_argv.Count + 1);
 			} else {
-				LoadNativeSymbolTable = true;
 				IsNative = true;
 
 				this.argv = new string [options.InferiorArgs.Length + 1];
@@ -123,7 +123,6 @@ namespace Mono.Debugger.Backends
 			this.options = session.Options;
 			this.PID = pid;
 
-			LoadNativeSymbolTable = true;
 			IsNative = true;
 		}
 
@@ -268,10 +267,9 @@ namespace Mono.Debugger.Backends
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1},{2},{3},{4})",
+			return String.Format ("{0} ({1}:{2}:{3})",
 					      GetType (), WorkingDirectory,
-					      print_argv (argv), IsNative,
-					      LoadNativeSymbolTable);
+					      print_argv (argv), IsNative);
 		}
 	}
 }

@@ -1,5 +1,23 @@
 <?xml version="1.0" standalone="yes"?>
 <xs:schema id="DebuggerSession" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xs:complexType name="Options">
+    <xs:sequence>
+      <xs:element name="file" type="xs:string" minOccurs="1" />
+      <xs:element name="inferior-args" type="xs:integer" minOccurs="0" />
+      <xs:element name="jit-optimizations" type="xs:string" minOccurs="0" />
+      <xs:element name="jit-arguments" type="xs:integer" minOccurs="0" />
+      <xs:element name="working-directory" type="xs:string" minOccurs="0" />
+      <xs:element name="mono-prefix" type="xs:string" minOccurs="0" />
+      <xs:element name="mono-path" type="xs:string" minOccurs="0" />
+      <xs:element name="StringList" type="StringList" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="StringList">
+    <xs:sequence>
+      <xs:element name="id" type="xs:integer" minOccurs="1" />
+      <xs:element name="text" type="xs:string" minOccurs="1" />
+    </xs:sequence>
+  </xs:complexType>
   <xs:complexType name="ModuleGroup">
     <xs:sequence>
       <xs:element name="hide-from-user" type="xs:boolean" minOccurs="0" />
@@ -40,6 +58,7 @@
   <xs:element name="DebuggerSession" msdata:IsDataSet="true" msdata:Locale="en-US">
     <xs:complexType>
       <xs:choice maxOccurs="unbounded">
+        <xs:element name="Options" type="Options" />
         <xs:element name="ModuleGroup" type="ModuleGroup" />
         <xs:element name="Module" type="Module" />
         <xs:element name="ThreadGroup" type="ThreadGroup" />
@@ -74,6 +93,14 @@
     <xs:keyref name="Location_Module" refer="Module_Constraint">
       <xs:selector xpath=".//Location" />
       <xs:field xpath="@module" />
+    </xs:keyref>
+    <xs:unique name="InferiorArgs_Constraint">
+      <xs:selector xpath=".//Options" />
+      <xs:field xpath="inferior-args" />
+    </xs:unique>
+    <xs:keyref name="Options_InferiorArgs" refer="InferiorArgs_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//StringList" />
+      <xs:field xpath="id" />
     </xs:keyref>
   </xs:element>
 </xs:schema>

@@ -395,7 +395,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				debugger = new Debugger (config);
-				session = new DebuggerSession (config, Options, stream);
+				session = new DebuggerSession (config, stream);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);

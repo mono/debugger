@@ -1,3 +1,12 @@
+2006-07-12  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.Prompt): Removed.
+	(DebuggerOptions.LoadNativeSymbolTable): Removed.
+	(DebuggerOptions.JitOptimizations): Default to null.
+	(DebuggerOptions.WorkingDirectory): Default to null.
+	(DebuggerSession): Also save/load the `DebuggerOptions'.
+
 2006-07-08  Martin Baulig  <martin@ximian.com>
 
 	* arch/DwarfReader.cs
