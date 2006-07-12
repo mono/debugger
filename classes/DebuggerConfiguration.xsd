@@ -1,5 +1,5 @@
 <?xml version="1.0" standalone="yes"?>
-<xs:schema id="DebuggerSession" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+<xs:schema id="DebuggerConfiguration" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
   <xs:complexType name="Options">
     <xs:sequence>
       <xs:element name="file" type="xs:string" minOccurs="1" />
@@ -102,5 +102,13 @@
       <xs:selector xpath=".//StringList" />
       <xs:field xpath="id" />
     </xs:keyref>
+  </xs:element>
+  <xs:element name="DebuggerConfiguration" msdata:IsDataSet="true" msdata:Locale="en-US">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="ModuleGroup" type="ModuleGroup" />
+        <xs:element name="ThreadGroup" type="ThreadGroup" />
+      </xs:choice>
+    </xs:complexType>
   </xs:element>
 </xs:schema>

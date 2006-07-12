@@ -44,7 +44,7 @@ namespace Mono.Debugger
 			saved_session = new DataSet ("DebuggerSession");
 
 			Assembly ass = Assembly.GetExecutingAssembly ();
-			using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
 				saved_session.ReadXmlSchema (schema);
 
 			saved_session.ReadXml (stream, XmlReadMode.IgnoreSchema);
@@ -296,7 +296,7 @@ namespace Mono.Debugger
 				DataSet ds = new DataSet ("DebuggerSession");
 
 				Assembly ass = Assembly.GetExecutingAssembly ();
-				using (Stream schema = ass.GetManifestResourceStream ("DebuggerSession"))
+				using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
 					ds.ReadXmlSchema (schema);
 
 				Session.Options.GetSessionData (ds);

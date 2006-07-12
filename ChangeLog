@@ -1,5 +1,10 @@
 2006-07-12  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.xsd: Renamed into
+	DebuggerConfiguration.xsd.	
+
+2006-07-12  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs: New file; split out
 	`DebuggerOptions' from DebuggerSession.cs.
 
