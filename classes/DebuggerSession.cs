@@ -43,7 +43,7 @@ namespace Mono.Debugger
 		public DebuggerSession (DebuggerConfiguration config, Stream stream)
 			: this (config, "main")
 		{
-			saved_session = DebuggerConfiguration.CreateConfiguration ();
+			saved_session = DebuggerConfiguration.CreateDataSet ();
 			saved_session.ReadXml (stream, XmlReadMode.IgnoreSchema);
 
 			Options = new DebuggerOptions (saved_session);
@@ -247,6 +247,13 @@ namespace Mono.Debugger
 				string query = String.Format ("name='{0}'", Session.Name);
 				DataRow session_row = ds.Tables ["DebuggerSession"].Select (query) [0];
 
+				DataRow[] group_rows = session_row.GetChildRows ("Session_ModuleGroup");
+				foreach (DataRow row in group_rows) {
+					string name = (string) row ["name"];
+					ModuleGroup group = Session.Config.CreateModuleGroup (name);
+					group.SetSessionData (row);
+				}
+
 				DataRow[] module_rows = session_row.GetChildRows ("Session_Module");
 				foreach (DataRow row in module_rows) {
 					string name = (string) row ["name"];
@@ -287,7 +294,7 @@ namespace Mono.Debugger
 
 			public DataSet SaveSession ()
 			{
-				DataSet ds = DebuggerConfiguration.CreateConfiguration ();
+				DataSet ds = DebuggerConfiguration.CreateDataSet ();
 
 				{
 					DataTable session_table = ds.Tables ["DebuggerSession"];

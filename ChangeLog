@@ -1,3 +1,9 @@
+2006-07-13  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration): Rewrite to use System.Data with the
+	DebuggerConfiguration.xsd schema.
+
 2006-07-12  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.xsd: Renamed into

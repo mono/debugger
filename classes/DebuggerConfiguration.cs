@@ -10,31 +10,11 @@ using System.Xml;
 
 namespace Mono.Debugger
 {
-	public enum ConfigurationSection
-	{
-		General
-	}
-
-	public class ConfigurationItem : Attribute
-	{
-		public readonly ConfigurationSection Section;
-		public readonly string Description;
-
-		public ConfigurationItem (ConfigurationSection section, string description)
-		{
-			this.Section = section;
-			this.Description = description;
-		}
-	}
-
 	public class DebuggerConfiguration : DebuggerMarshalByRefObject
 	{
 		internal readonly string ConfigDirectory;
 
 		const string ConfigFileName = "MonoDebugger.xml";
-		const string ConfigFileVersion = "1.0";
-
-		const string ConfigXmlRootNodeName = "MonoDebuggerConfiguration";
 		
 		public DebuggerConfiguration ()
 		{
@@ -50,7 +30,7 @@ namespace Mono.Debugger
 			CreateDefaultModuleGroups ();
 		}
 
-		internal static DataSet CreateConfiguration ()
+		internal static DataSet CreateDataSet ()
 		{
 			DataSet ds = new DataSet ("DebuggerSession");
 
@@ -67,7 +47,8 @@ namespace Mono.Debugger
 				if (!Directory.Exists (ConfigDirectory))
 					Directory.CreateDirectory (ConfigDirectory);
 
-				return LoadConfigurationFromStream (ConfigDirectory + ConfigFileName);
+				LoadConfigurationFromStream (ConfigDirectory + ConfigFileName);
+				return true;
 			} catch {
 				return false;
 			}
@@ -79,227 +60,46 @@ namespace Mono.Debugger
 				if (!Directory.Exists (ConfigDirectory))
 					Directory.CreateDirectory (ConfigDirectory);
 
-				return SaveConfigurationToStream (ConfigDirectory + ConfigFileName);
+				SaveConfigurationToStream (ConfigDirectory + ConfigFileName);
+				return true;
 			} catch {
 				return false;
 			}
 		}
 
-		bool LoadConfigurationFromStream (string filename)
+		void LoadConfigurationFromStream (string filename)
 		{
-			XmlDocument doc = new XmlDocument ();
-			doc.Load (filename);
+			DataSet ds = CreateDataSet ();
+			ds.ReadXml (filename, XmlReadMode.IgnoreSchema);
 
-			if (doc.DocumentElement.Attributes ["fileversion"].InnerText != ConfigFileVersion)
-				return false;
+			DataRow config_row = ds.Tables ["Configuration"].Rows [0];
+			if (!config_row.IsNull ("load-native-symtabs"))
+				load_native_symtabs = (bool) config_row ["load-native-symtabs"];
 
-			if (!LoadConfigurationFromXml (doc))
-				return false;
-			if (!LoadModuleGroupsFromXml (doc))
-				return false;
-
-			return true;
+			DataTable group_table = ds.Tables ["ModuleGroup"];
+			foreach (DataRow row in group_table.Rows) {
+				ModuleGroup group = CreateModuleGroup ((string) row ["name"]);
+				group.SetSessionData (row);
+			}
 		}
 
-		bool SaveConfigurationToStream (string filename)
+		void SaveConfigurationToStream (string filename)
 		{
-			XmlDocument doc = new XmlDocument ();
-			doc.LoadXml ("<?xml version=\"1.0\"?>\n<" + ConfigXmlRootNodeName +
-				     " fileversion = \"" + ConfigFileVersion + "\" />");
-			
-			doc.DocumentElement.AppendChild (SaveConfigurationToXml (doc));
-			doc.DocumentElement.AppendChild (SaveModuleGroupsToXml (doc));
-			doc.Save (filename);
-			return true;
-		}
+			DataSet ds = CreateDataSet ();
 
-		XmlElement SaveConfigurationToXml (XmlDocument doc)
-		{
-			XmlElement root = doc.CreateElement ("Configuration");
+			DataTable config_table = ds.Tables ["Configuration"];
+			DataRow config_row = config_table.NewRow ();
+			config_row ["load-native-symtabs"] = true;
+			config_table.Rows.Add (config_row);
 
-			Hashtable sections = new Hashtable ();
-			foreach (string section in Enum.GetNames (typeof (ConfigurationSection))) {
-				XmlElement element = doc.CreateElement ("Section");
-				root.AppendChild (element);
-				sections.Add (section, element);
-
-				XmlAttribute name = doc.CreateAttribute ("name");
-				name.InnerText = section;
-				element.Attributes.Append (name);
+			DataTable group_table = ds.Tables ["ModuleGroup"];
+			foreach (ModuleGroup group in ModuleGroups) {
+				DataRow row = group_table.NewRow ();
+				group.GetSessionData (row);
+				group_table.Rows.Add (row);
 			}
 
-			PropertyInfo[] props = typeof (DebuggerConfiguration).GetProperties (
-				BindingFlags.Public | BindingFlags.Instance);
-
-			foreach (PropertyInfo prop in props) {
-				object[] attrs = prop.GetCustomAttributes (typeof (ConfigurationItem), true);
-				if (attrs.Length != 1)
-					continue;
-
-				ConfigurationItem item = (ConfigurationItem) attrs [0];
-				XmlElement section = (XmlElement) sections [item.Section.ToString ()];
-
-				string value = prop.GetValue (this, null).ToString ();
-				XmlElement element = AddProperty (doc, prop.Name, item.Description, value);
-				section.AppendChild (element);
-			}
-
-			return root;
-		}
-
-		XmlElement AddProperty (XmlDocument doc, string name, string description, string value)
-		{
-			XmlElement element = doc.CreateElement ("Property");
-
-			XmlAttribute key = doc.CreateAttribute ("key");
-			key.InnerText = name;
-			element.Attributes.Append (key);
-
-			XmlAttribute value_attr = doc.CreateAttribute ("value");
-			value_attr.InnerText = value;
-			element.Attributes.Append (value_attr);
-
-			if (description != null) {
-				XmlAttribute desc = doc.CreateAttribute ("description");
-				desc.InnerText = description;
-				element.Attributes.Append (desc);
-			}
-
-			return element;
-		}
-
-		XmlElement AddProperty (XmlDocument doc, string name, object value)
-		{
-			return AddProperty (doc, name, null, value.ToString ());
-		}
-
-		XmlElement SaveModuleGroupsToXml (XmlDocument doc)
-		{
-			XmlElement root = doc.CreateElement ("ModuleGroups");
-
-			foreach (ModuleGroup group in module_groups.Values) {
-				XmlElement element = doc.CreateElement ("ModuleGroup");
-				root.AppendChild (element);
-
-				XmlAttribute name = doc.CreateAttribute ("name");
-				name.InnerText = group.Name;
-				element.Attributes.Append (name);
-
-				element.AppendChild (AddProperty (doc, "HideFromUser", group.HideFromUser));
-				element.AppendChild (AddProperty (doc, "LoadSymbols", group.LoadSymbols));
-				element.AppendChild (AddProperty (doc, "StepInto", group.StepInto));
-				if (group.Regexp != null)
-					element.AppendChild (AddProperty (doc, "Regexp", group.Regexp));
-			}
-
-			return root;
-		}
-
-		bool LoadConfigurationFromXml (XmlDocument doc)
-		{
-			XmlNodeList list = doc.GetElementsByTagName ("Configuration");
-			if (list.Count != 1)
-				return false;
-
-			XmlNode root = list [0];
-
-			foreach (XmlElement section in root.ChildNodes) {
-				if (section.Name != "Section")
-					continue;
-
-				XmlNodeList nodes = section.ChildNodes;
-				foreach (XmlElement element in nodes) {
-					if (element.Name != "Property")
-						continue;
-
-					XmlAttribute name = element.Attributes ["key"];
-					if (name == null)
-						return false;
-
-					PropertyInfo prop = typeof (DebuggerConfiguration).GetProperty (
-						name.InnerText, BindingFlags.Public | BindingFlags.Instance);
-					if (prop == null)
-						return false;
-
-					Type item_type = typeof (ConfigurationItem);
-					if (prop.GetCustomAttributes (item_type, true).Length != 1)
-						return false;
-
-					XmlAttribute value_attr = element.Attributes ["value"];
-					if (value_attr == null)
-						return false;
-
-					object value;
-					string text = value_attr.InnerText;
-					if (prop.PropertyType == typeof (bool)) {
-						value = Boolean.Parse (text);
-					} else {
-						return false;
-					}
-
-					prop.SetValue (this, value, null);
-				}
-			}
-
-			return true;
-		}
-
-		bool LoadModuleGroupsFromXml (XmlDocument doc)
-		{
-			XmlNodeList list = doc.GetElementsByTagName ("ModuleGroups");
-			if (list.Count != 1)
-				return false;
-
-			XmlNode root = list [0];
-
-			foreach (XmlElement xml_group in root.ChildNodes) {
-				if (xml_group.Name != "ModuleGroup")
-					continue;
-
-				XmlAttribute name_attr = xml_group.Attributes ["name"];
-				if (name_attr == null)
-					return false;
-
-				ModuleGroup group = GetModuleGroup (name_attr.InnerText);
-				if (group == null) {
-					group = new ModuleGroup (name_attr.InnerText);
-					module_groups.Add (name_attr.InnerText, group);
-				}
-
-				XmlNodeList nodes = xml_group.ChildNodes;
-				foreach (XmlElement element in nodes) {
-					if (element.Name != "Property")
-						continue;
-
-					XmlAttribute name = element.Attributes ["key"];
-					XmlAttribute value = element.Attributes ["value"];
-					if ((name == null) || (value == null))
-						return false;
-
-					switch (name.InnerText) {
-					case "HideFromUser":
-						group.HideFromUser = Boolean.Parse (value.InnerText);
-						break;
-
-					case "LoadSymbols":
-						group.LoadSymbols = Boolean.Parse (value.InnerText);
-						break;
-
-					case "StepInto":
-						group.StepInto = Boolean.Parse (value.InnerText);
-						break;
-
-					case "Regexp":
-						group.Regexp = value.InnerText;
-						break;
-
-					default:
-						return false;
-					}
-				}
-			}
-
-			return true;
+			ds.WriteXml (filename);
 		}
 
 		bool load_native_symtabs;
@@ -321,6 +121,18 @@ namespace Mono.Debugger
 		public ModuleGroup GetModuleGroup (string name)
 		{
 			return (ModuleGroup) module_groups [name];
+		}
+
+		internal ModuleGroup CreateModuleGroup (string name)
+		{
+			lock (module_groups.SyncRoot) {
+				ModuleGroup group = (ModuleGroup) module_groups [name];
+				if (group == null) {
+					group = new ModuleGroup (name);
+					module_groups.Add (name, group);
+				}
+				return group;
+			}
 		}
 
 		internal ModuleGroup[] ModuleGroups {
@@ -374,8 +186,6 @@ namespace Mono.Debugger
 		// Debugger Configuration
 		//
 
-		[ConfigurationItem (ConfigurationSection.General,
-				    "Load native symbol tables when debugging managed code.")]
 		public bool LoadNativeSymtabs {
 			get { return load_native_symtabs; }
 			set { load_native_symtabs = true; }
