@@ -81,6 +81,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("return", typeof (ReturnCommand));
 			RegisterCommand ("save", typeof (SaveCommand));
 			RegisterCommand ("load", typeof (LoadCommand));
+			RegisterCommand ("module", typeof (ModuleCommand));
 		}
 	}
 
@@ -1579,8 +1580,8 @@ namespace Mono.Debugger.Frontend
 			{
 				Module[] modules = CurrentProcess.Modules;
 
-				context.Print ("{0,4}  {4,-8} {1,5} {2,5} {3}",
-					       "Id", "step?", "sym?", "Name", "Group");
+				context.Print ("{0,4}  {1,-8} {2,5} {3,5} {4,5} {5}",
+					       "Id", "Group", "load?", "step?", "sym?", "Name");
 
 				for (int i = 0; i < modules.Length; i++) {
 					Module module = modules [i];
@@ -1588,11 +1589,12 @@ namespace Mono.Debugger.Frontend
 					if (!all && module.HideFromUser)
 						continue;
 
-					context.Print ("{0,4}  {4,-8} {1,5} {2,5} {3}",
-					       i,
-					       module.StepInto ? "y " : "n ",
-					       module.SymbolsLoaded ? "y " : "n ",
-					       module.Name, module.ModuleGroup.Name);
+					context.Print ("{0,4}  {1,-8} {2,5} {3,5} {4,5} {5}",
+						       module.ID, module.ModuleGroup.Name,
+						       module.LoadSymbols ? "y " : "n ",
+						       module.StepInto ? "y " : "n ",
+						       module.SymbolsLoaded ? "y " : "n ",
+						       module.Name);
 				}
 
 				return null;
@@ -1896,6 +1898,91 @@ namespace Mono.Debugger.Frontend
 		public CommandFamily Family { get { return CommandFamily.Threads; } }
 		public string Description { get { return "Manage thread groups."; } }
 		public string Documentation { get { return String.Format ("valid args are:{0}", GetCommandList()); } }
+	}
+
+	public class ModuleCommand : ProcessCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args == null) || (Args.Count < 1)) {
+				context.Print ("Argument expected.");
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			string name = (string) Args [0];
+
+			ModuleBase module = null;
+			if (name.StartsWith ("@")) {
+				name = name.Substring (1);
+				module = CurrentProcess.Session.Config.GetModuleGroup (name);
+				if (module == null)
+					throw new ScriptingException ("No such module group `{0}'", name);
+			} else {
+				int index;
+				try {
+					index = (int) UInt32.Parse (name);
+				} catch {
+					context.Print ("Module number expected.");
+					return false;
+				}
+
+				foreach (Module mod in CurrentProcess.Modules) {
+					if (mod.ID == index) {
+						module = mod;
+						break;
+					}
+				}
+			}
+
+			if (module == null)
+				throw new ScriptingException ("No such module `{0}'", name);
+
+			for (int i = 1; i < Args.Count; i++) {
+				string command = (string) Args [i];
+
+				switch (command) {
+				case "step":
+					module.StepInto = true;
+					break;
+				case "nostep":
+					module.StepInto = false;
+					break;
+				case "hide":
+					module.HideFromUser = true;
+					break;
+				case "nohide":
+					module.HideFromUser = false;
+					break;
+				case "load":
+					module.LoadSymbols = true;
+					break;
+				case "noload":
+					module.LoadSymbols = false;
+					break;
+				default:
+					throw new ScriptingException ("Invalid module command `{0}'", command);
+				}
+			}
+
+			context.Print ("{0}: {1} {2} {3}",
+				       module.Name,
+				       module.HideFromUser ? "hide" : "nohide",
+				       module.StepInto ? "step" : "nostep",
+				       module.LoadSymbols ? "load " : "noload");
+
+
+			return null;
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Files; } }
+		public string Description { get { return "Manage modules."; } }
+		public string Documentation { get { return ""; } }
 	}
 
 	public abstract class EventHandleCommand : ThreadCommand 

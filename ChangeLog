@@ -1,5 +1,10 @@
 2006-07-13  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(ModuleCommand): New command.
+
+2006-07-13  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs
 	(DebuggerOptions): Make this a DebuggerMarshalByRefObject.
 	(DebuggerOptions.Clone): New internal method.
