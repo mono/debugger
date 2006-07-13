@@ -41,7 +41,7 @@ namespace Mono.Debugger.Backends
 		{
 			this.manager = manager;
 			this.session = session;
-			this.client = manager.Debugger.Client.CreateProcess (this, session);
+			this.client = manager.Debugger.Client.CreateProcess (this);
 
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
@@ -231,7 +231,7 @@ namespace Mono.Debugger.Backends
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
 
-			session = session.Clone ();
+			session = session.Clone (start.Options, "@" + id);
 			session.OnProcessCreated (client);
 
 			breakpoint_manager = new BreakpointManager ();

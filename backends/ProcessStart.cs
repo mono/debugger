@@ -154,6 +154,11 @@ namespace Mono.Debugger.Backends
 
 			base_dir = GetFullPath (Path.GetDirectoryName (argv [0]));
 
+			options = options.Clone ();
+			options.File = exe_file;
+			options.InferiorArgs = cmdline_args;
+			options.WorkingDirectory = cwd;
+
 			SetupEnvironment ();
 		}
 

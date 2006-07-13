@@ -630,7 +630,7 @@ namespace Mono.Debugger.Frontend
 							   "No such file or directory: `{0}'", file);
 
 			context.Interpreter.Options.File = file;
-			Console.WriteLine ("Executable file: {0}.", file);
+			context.Print ("Executable file: {0}.", file);
 			return file;
 		}
 
@@ -1451,6 +1451,28 @@ namespace Mono.Debugger.Frontend
 	public class ShowCommand : NestedCommand, IDocumentableCommand
 	{
 #region show subcommands
+		private class ShowArgumentsCommand : DebuggerCommand
+		{
+			protected override object DoExecute (ScriptingContext context)
+			{
+				DebuggerOptions options;
+				if (context.Interpreter.HasCurrentProcess)
+					options = context.Interpreter.CurrentProcess.Session.Options;
+				else
+					options = context.Interpreter.Options;
+
+				string[] args = options.InferiorArgs;
+				if (args == null)
+					args = new string [0];
+				context.Print ("Target application:      {0}\n" +
+					       "Command line arguments:  {1}\n" +
+					       "Working directory:       {2}\n",
+					       options.File, String.Join (" ", args),
+					       options.WorkingDirectory);
+				return args;
+			}
+		}
+
 		private class ShowProcessesCommand : DebuggerCommand
 		{
 			protected override object DoExecute (ScriptingContext context)
@@ -1746,6 +1768,7 @@ namespace Mono.Debugger.Frontend
 
 		public ShowCommand ()
 		{
+			RegisterSubcommand ("args", typeof (ShowArgumentsCommand));
 			RegisterSubcommand ("procs", typeof (ShowProcessesCommand));
 			RegisterSubcommand ("processes", typeof (ShowProcessesCommand));
 			RegisterSubcommand ("threads", typeof (ShowThreadsCommand));

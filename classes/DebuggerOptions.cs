@@ -16,9 +16,11 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	[Serializable]
-	public class DebuggerOptions
+	public class DebuggerOptions : DebuggerMarshalByRefObject
 	{
+		static int next_id = 0;
+		public readonly int ID = ++next_id;
+
 		/* The executable file we're debugging */
 		public string File = null;
 
@@ -55,6 +57,45 @@ namespace Mono.Debugger
 		public string MonoPath = null;
 
 		Hashtable user_environment;
+
+		string[] clone (string[] array)
+		{
+			if (array == null)
+				return null;
+			string[] new_array = new string [array.Length];
+			array.CopyTo (new_array, 0);
+			return new_array;
+		}
+
+		Hashtable clone (Hashtable hash)
+		{
+			if (hash == null)
+				return null;
+			Hashtable new_hash = new Hashtable ();
+			foreach (string key in hash.Keys)
+				new_hash.Add (key, hash [key]);
+			return new_hash;
+		}
+
+		public DebuggerOptions Clone ()
+		{
+			DebuggerOptions options = new DebuggerOptions ();
+			options.File = File;
+			options.InferiorArgs = clone (InferiorArgs);
+			options.JitOptimizations = JitOptimizations;
+			options.JitArguments = clone (JitArguments);
+			options.WorkingDirectory = WorkingDirectory;
+			options.IsScript = IsScript;
+			options.StartTarget = StartTarget;
+			options.HasDebugFlags = HasDebugFlags;
+			options.DebugFlags = DebugFlags;
+			options.DebugOutput = DebugOutput;
+			options.InEmacs = InEmacs;
+			options.MonoPrefix = MonoPrefix;
+			options.MonoPath = MonoPath;
+			options.user_environment = clone (user_environment);
+			return options;
+		}
 
 		public Hashtable UserEnvironment {
 			get { return user_environment; }

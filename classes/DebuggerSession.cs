@@ -58,9 +58,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal DebuggerSession Clone ()
+		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)
 		{
-			return new DebuggerSession (Config, Options, Name);
+			return new DebuggerSession (Config, new_options, new_name);
 		}
 
 		//

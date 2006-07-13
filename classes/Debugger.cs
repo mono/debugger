@@ -52,9 +52,9 @@ namespace Mono.Debugger
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
-		internal Process CreateProcess (ProcessServant servant, DebuggerSession session)
+		internal Process CreateProcess (ProcessServant servant)
 		{
-			return new Process (this, servant, session);
+			return new Process (this, servant);
 		}
 
 		internal Thread CreateThread (ThreadServant servant, int id)

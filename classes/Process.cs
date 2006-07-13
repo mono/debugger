@@ -14,18 +14,15 @@ namespace Mono.Debugger
 	public class Process : DebuggerMarshalByRefObject
 	{
 		Debugger debugger;
-		DebuggerSession session;
 		ProcessServant servant;
 
 		int id = ++next_id;
 		static int next_id = 0;
 
-		internal Process (Debugger debugger, ProcessServant servant,
-				  DebuggerSession session)
+		internal Process (Debugger debugger, ProcessServant servant)
 		{
 			this.debugger = debugger;
 			this.servant = servant;
-			this.session = session;
 		}
 
 		public int ID {
@@ -37,7 +34,7 @@ namespace Mono.Debugger
 		}
 
 		public DebuggerSession Session {
-			get { return session; }
+			get { return servant.Session; }
 		}
 
 		internal ProcessServant Servant {
