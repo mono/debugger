@@ -11,6 +11,7 @@
       <xs:element name="mono-path" type="xs:string" minOccurs="0" />
       <xs:element name="StringList" type="StringList" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
+    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="StringList">
     <xs:sequence>
@@ -24,6 +25,7 @@
       <xs:element name="step-into" type="xs:boolean" minOccurs="0" />
       <xs:element name="load-symbols" type="xs:boolean" minOccurs="0" />
     </xs:sequence>
+    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" />
     <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="Module">
@@ -32,22 +34,26 @@
       <xs:element name="step-into" type="xs:boolean" minOccurs="0" />
       <xs:element name="load-symbols" type="xs:boolean" minOccurs="0" />
     </xs:sequence>
+    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
     <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
     <xs:attribute name="group" msdata:ReadOnly="true" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="ThreadGroup">
+    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
     <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="Location">
     <xs:choice>
+      <xs:element name="module" msdata:ReadOnly="true" type="xs:string" minOccurs="1" />
       <xs:element name="method" type="xs:string" minOccurs="0" />
       <xs:element name="file" type="xs:string" minOccurs="0" />
       <xs:element name="line" type="xs:integer" minOccurs="0" />
     </xs:choice>
+    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
     <xs:attribute name="id" msdata:ReadOnly="true" type="xs:integer" use="required" />
-    <xs:attribute name="module" msdata:ReadOnly="true" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="Event">
+    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
     <xs:attribute name="index" msdata:ReadOnly="true" type="xs:integer" use="required" />
     <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
     <xs:attribute name="group" msdata:ReadOnly="true" type="xs:string" use="required" />
@@ -55,15 +61,22 @@
     <xs:attribute name="enabled" msdata:ReadOnly="true" type="xs:boolean" use="required" />
     <xs:attribute name="location" msdata:ReadOnly="true" type="xs:integer" use="required" />
   </xs:complexType>
-  <xs:element name="DebuggerSession" msdata:IsDataSet="true" msdata:Locale="en-US">
+  <xs:complexType name="DebuggerSession">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="Options" type="Options" />
+      <xs:element name="ModuleGroup" type="ModuleGroup" />
+      <xs:element name="Module" type="Module" />
+      <xs:element name="ThreadGroup" type="ThreadGroup" />
+      <xs:element name="Location" type="Location" />
+      <xs:element name="Event" type="Event" />
+    </xs:choice>
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:element name="DebuggerConfiguration" msdata:IsDataSet="true" msdata:Locale="en-US">
     <xs:complexType>
       <xs:choice maxOccurs="unbounded">
-        <xs:element name="Options" type="Options" />
         <xs:element name="ModuleGroup" type="ModuleGroup" />
-        <xs:element name="Module" type="Module" />
-        <xs:element name="ThreadGroup" type="ThreadGroup" />
-        <xs:element name="Location" type="Location" />
-        <xs:element name="Event" type="Event" />
+        <xs:element name="DebuggerSession" type="DebuggerSession" />
       </xs:choice>
     </xs:complexType>
     <xs:unique name="ModuleGroup_Constraint">
@@ -86,13 +99,17 @@
       <xs:selector xpath=".//Event" />
       <xs:field xpath="@index" />
     </xs:unique>
-    <xs:keyref name="Event_Location" refer="Location_Constraint">
+    <xs:unique name="Event_Location_Constraint">
       <xs:selector xpath=".//Event" />
       <xs:field xpath="@location" />
+    </xs:unique>
+    <xs:keyref name="Location_Event" refer="Event_Location_Constraint">
+      <xs:selector xpath=".//Location" />
+      <xs:field xpath="@id" />
     </xs:keyref>
     <xs:keyref name="Location_Module" refer="Module_Constraint">
       <xs:selector xpath=".//Location" />
-      <xs:field xpath="@module" />
+      <xs:field xpath="module" />
     </xs:keyref>
     <xs:unique name="InferiorArgs_Constraint">
       <xs:selector xpath=".//Options" />
@@ -102,13 +119,33 @@
       <xs:selector xpath=".//StringList" />
       <xs:field xpath="id" />
     </xs:keyref>
-  </xs:element>
-  <xs:element name="DebuggerConfiguration" msdata:IsDataSet="true" msdata:Locale="en-US">
-    <xs:complexType>
-      <xs:choice maxOccurs="unbounded">
-        <xs:element name="ModuleGroup" type="ModuleGroup" />
-        <xs:element name="ThreadGroup" type="ThreadGroup" />
-      </xs:choice>
-    </xs:complexType>
+    <xs:unique name="Session_Constraint">
+      <xs:selector xpath=".//DebuggerSession" />
+      <xs:field xpath="@name" />
+    </xs:unique>
+    <xs:keyref name="Session_ThreadGroup" refer="Session_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//ThreadGroup" />
+      <xs:field xpath="@session" />
+    </xs:keyref>
+    <xs:keyref name="Session_Options" refer="Session_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//Options" />
+      <xs:field xpath="@session" />
+    </xs:keyref>
+    <xs:keyref name="Session_ModuleGroup" refer="Session_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//ModuleGroup" />
+      <xs:field xpath="@session" />
+    </xs:keyref>
+    <xs:keyref name="Session_Module" refer="Session_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//Module" />
+      <xs:field xpath="@session" />
+    </xs:keyref>
+    <xs:keyref name="Session_Event" refer="Session_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//Event" />
+      <xs:field xpath="@session" />
+    </xs:keyref>
+    <xs:keyref name="Session_Location" refer="Session_Constraint" msdata:IsNested="true">
+      <xs:selector xpath=".//Location" />
+      <xs:field xpath="@session" />
+    </xs:keyref>
   </xs:element>
 </xs:schema>

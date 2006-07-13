@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Data;
 using System.Reflection;
 using System.Collections;
 using System.Configuration;
@@ -47,6 +48,17 @@ namespace Mono.Debugger
 
 			module_groups = Hashtable.Synchronized (new Hashtable ());
 			CreateDefaultModuleGroups ();
+		}
+
+		internal static DataSet CreateConfiguration ()
+		{
+			DataSet ds = new DataSet ("DebuggerSession");
+
+			Assembly ass = Assembly.GetExecutingAssembly ();
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
+				ds.ReadXmlSchema (schema);
+
+			return ds;
 		}
 
 		public bool LoadConfiguration()

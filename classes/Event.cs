@@ -65,7 +65,7 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		internal virtual void GetSessionData (DataRow row)
+		protected virtual void GetSessionData (DataRow row)
 		{
 			row ["index"] = index;
 			row ["name"] = name;
@@ -73,6 +73,8 @@ namespace Mono.Debugger
 			row ["type"] = GetType ();
 			row ["enabled"] = IsEnabled;
 		}
+
+		internal abstract void GetSessionData (DataSet ds, DebuggerSession session);
 
 		//
 		// Everything below is private.

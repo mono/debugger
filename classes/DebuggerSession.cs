@@ -21,32 +21,29 @@ namespace Mono.Debugger
 	[Serializable]
 	public class DebuggerSession : DebuggerMarshalByRefObject
 	{
+		public readonly string Name;
 		public readonly DebuggerConfiguration Config;
 		public readonly DebuggerOptions Options;
 
 		DataSet saved_session;
 		SessionData data;
 
-		private DebuggerSession (DebuggerConfiguration config)
+		private DebuggerSession (DebuggerConfiguration config, string name)
 		{
 			this.Config = config;
+			this.Name = name;
 		}
 
-		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options)
-			: this (config)
+		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options, string name)
+			: this (config, name)
 		{
 			this.Options = options;
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, Stream stream)
-			: this (config)
+			: this (config, "main")
 		{
-			saved_session = new DataSet ("DebuggerSession");
-
-			Assembly ass = Assembly.GetExecutingAssembly ();
-			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
-				saved_session.ReadXmlSchema (schema);
-
+			saved_session = DebuggerConfiguration.CreateConfiguration ();
 			saved_session.ReadXml (stream, XmlReadMode.IgnoreSchema);
 
 			Options = new DebuggerOptions (saved_session);
@@ -63,7 +60,7 @@ namespace Mono.Debugger
 
 		internal DebuggerSession Clone ()
 		{
-			return new DebuggerSession (Config, Options);
+			return new DebuggerSession (Config, Options, Name);
 		}
 
 		//
@@ -247,8 +244,11 @@ namespace Mono.Debugger
 
 			public void LoadSession (Process process, DataSet ds)
 			{
-				DataTable module_table = ds.Tables ["Module"];
-				foreach (DataRow row in module_table.Rows) {
+				string query = String.Format ("name='{0}'", Session.Name);
+				DataRow session_row = ds.Tables ["DebuggerSession"].Select (query) [0];
+
+				DataRow[] module_rows = session_row.GetChildRows ("Session_Module");
+				foreach (DataRow row in module_rows) {
 					string name = (string) row ["name"];
 					Module module = (Module) modules [name];
 					if (module == null) {
@@ -261,15 +261,8 @@ namespace Mono.Debugger
 					module.SetSessionData (row);
 				}
 
-				Hashtable locations = new Hashtable ();
-				DataTable location_table = ds.Tables ["Location"];
-				foreach (DataRow row in location_table.Rows) {
-					long index = (long) row ["id"];
-					locations.Add (index, new SourceLocation (Session, row));
-				}
-
-				DataTable event_table = ds.Tables ["Event"];
-				foreach (DataRow row in event_table.Rows) {
+				DataRow[] event_rows = session_row.GetChildRows ("Session_Event");
+				foreach (DataRow row in event_rows) {
 					if ((string) row ["type"] != "Mono.Debugger.Breakpoint")
 						continue;
 
@@ -282,9 +275,10 @@ namespace Mono.Debugger
 					else
 						group = CreateThreadGroup (gname);
 
-					long loc_index = (long) row ["location"];
-					SourceLocation location = (SourceLocation) locations [loc_index];
 					int index = (int) (long) row ["index"];
+					DataRow[] location_rows = row.GetChildRows ("Location_Event");
+					SourceLocation location = new SourceLocation (Session, location_rows [0]);
+
 					Breakpoint bpt = new Breakpoint (index, group, location);
 					AddEvent (bpt);
 					bpt.Enable (process.MainThread);
@@ -293,17 +287,21 @@ namespace Mono.Debugger
 
 			public DataSet SaveSession ()
 			{
-				DataSet ds = new DataSet ("DebuggerSession");
+				DataSet ds = DebuggerConfiguration.CreateConfiguration ();
 
-				Assembly ass = Assembly.GetExecutingAssembly ();
-				using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
-					ds.ReadXmlSchema (schema);
+				{
+					DataTable session_table = ds.Tables ["DebuggerSession"];
+					DataRow row = session_table.NewRow ();
+					row ["name"] = Session.Name;
+					session_table.Rows.Add (row);
+				}
 
-				Session.Options.GetSessionData (ds);
+				Session.Options.GetSessionData (ds, Session);
 
 				DataTable group_table = ds.Tables ["ModuleGroup"];
 				foreach (ModuleGroup group in Session.Config.ModuleGroups) {
 					DataRow row = group_table.NewRow ();
+					row ["session"] = Session.Name;
 					group.GetSessionData (row);
 					group_table.Rows.Add (row);
 				}
@@ -311,6 +309,7 @@ namespace Mono.Debugger
 				DataTable module_table = ds.Tables ["Module"];
 				foreach (Module module in Modules) {
 					DataRow row = module_table.NewRow ();
+					row ["session"] = Session.Name;
 					module.GetSessionData (row);
 					module_table.Rows.Add (row);
 				}
@@ -318,18 +317,13 @@ namespace Mono.Debugger
 				DataTable thread_group_table = ds.Tables ["ThreadGroup"];
 				foreach (ThreadGroup group in ThreadGroups) {
 					DataRow row = thread_group_table.NewRow ();
+					row ["session"] = Session.Name;
 					row ["name"] = group.Name;
 					thread_group_table.Rows.Add (row);
 				}
 
-				DataTable event_table = ds.Tables ["Event"];
-				foreach (Event e in Events) {
-					if (!(e is Breakpoint))
-					    continue;
-					DataRow row = event_table.NewRow ();
-					e.GetSessionData (row);
-					event_table.Rows.Add (row);
-				}
+				foreach (Event e in Events)
+					e.GetSessionData (ds, Session);
 
 				return ds;
 			}

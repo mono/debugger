@@ -1,4 +1,5 @@
 using System;
+using System.Data;
 using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
 
@@ -89,6 +90,9 @@ namespace Mono.Debugger
 
 			return IsSubclassOf (exc.Type, exception);
 		}
+
+		internal override void GetSessionData (DataSet ds, DebuggerSession session)
+		{ }
 
 		TargetType exception;
 	}

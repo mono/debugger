@@ -123,17 +123,24 @@ namespace Mono.Debugger
 			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
 		}
 
-		internal override void GetSessionData (DataRow row)
+		internal override void GetSessionData (DataSet ds, DebuggerSession session)
 		{
-			DataTable location_table = row.Table.DataSet.Tables ["Location"];
-			DataRow location_row = location_table.NewRow ();
+			DataTable location_table = ds.Tables ["Location"];
+			DataTable event_table = ds.Tables ["Event"];
+
 			int location_index = location_table.Rows.Count + 1;
+
+			DataRow event_row = event_table.NewRow ();
+			event_row ["session"] = session.Name;
+			event_row ["location"] = location_index;
+			GetSessionData (event_row);
+			event_table.Rows.Add (event_row);
+
+			DataRow location_row = location_table.NewRow ();
+			location_row ["session"] = session.Name;
 			location_row ["id"] = location_index;
 			location.GetSessionData (location_row);
 			location_table.Rows.Add (location_row);
-
-			row ["location"] = location_index;
-			base.GetSessionData (row);
 		}
 
 		internal Breakpoint (int index, ThreadGroup group, SourceLocation location)

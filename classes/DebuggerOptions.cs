@@ -74,7 +74,7 @@ namespace Mono.Debugger
 				user_environment.Add (name, value);
 		}
 
-		internal void GetSessionData (DataSet ds)
+		internal void GetSessionData (DataSet ds, DebuggerSession session)
 		{
 			DataTable options_table = ds.Tables ["Options"];
 			DataTable list_table = ds.Tables ["StringList"];
@@ -82,6 +82,7 @@ namespace Mono.Debugger
 			int stringlist_idx = 0;
 
 			DataRow options_row = options_table.NewRow ();
+			options_row ["session"] = session.Name;
 			options_row ["file"] = File;
 			if ((InferiorArgs != null) && (InferiorArgs.Length > 0))
 				options_row ["inferior-args"] = ++stringlist_idx;
