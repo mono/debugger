@@ -165,7 +165,6 @@ namespace Mono.Debugger.Frontend
 
 			DebuggerConfiguration config = new DebuggerConfiguration ();
 			config.LoadConfiguration ();
-			config.SaveConfiguration ();
 
 			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
 
