@@ -1,6 +1,6 @@
 using System;
 using System.Xml;
-using System.Data;
+using System.Xml.XPath;
 using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
@@ -126,16 +126,21 @@ namespace Mono.Debugger
 			this.line = -1;
 		}
 
-		internal SourceLocation (DebuggerSession session, DataRow row)
+		internal SourceLocation (DebuggerSession session, XPathNavigator navigator)
 		{
-			module = session.GetModule ((string) row ["module"]);
+			this.line = -1;
 
-			if (!row.IsNull ("method"))
-				method = (string) row ["method"];
-			if (!row.IsNull ("line"))
-				line = (int) (long) row ["line"];
-			else
-				line = -1;
+			XPathNodeIterator children = navigator.SelectChildren (XPathNodeType.Element);
+			while (children.MoveNext ()) {
+				if (children.Current.Name == "Module")
+					module = session.GetModule (children.Current.Value);
+				else if (children.Current.Name == "Method")
+					method = children.Current.Value;
+				else if (children.Current.Name == "Line")
+					line = Int32.Parse (children.Current.Value);
+				else
+					throw new InvalidOperationException ();
+			}
 		}
 
 		internal BreakpointHandle InsertBreakpoint (Thread target, Breakpoint breakpoint,
@@ -215,31 +220,54 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		internal void GetSessionData (DataRow row)
+		internal void GetSessionData (XmlElement root)
 		{
 			if (function != null) {
-				row ["module"] = function.Module.Name;
-				row ["method"] = function.DeclaringType.Name + ':' + function.Name;
+				XmlElement module = root.OwnerDocument.CreateElement ("Module");
+				module.InnerText = function.Module.Name;
+				root.AppendChild (module);
+
+				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
+				method_e.InnerText = function.DeclaringType.Name + ':' + function.Name;
+				root.AppendChild (method_e);
 			} else if (source != null) {
-				row ["module"] = source.SourceFile.Module.Name;
+				XmlElement module = root.OwnerDocument.CreateElement ("Module");
+				module.InnerText = source.SourceFile.Module.Name;
+				root.AppendChild (module);
+
+				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
+				root.AppendChild (method_e);
+
 				if (source.ClassName != null) {
 					string klass = source.ClassName;
 					string name = source.Name.Substring (klass.Length + 1);
-					row ["method"] = klass + ':' + name;
+					method_e.InnerText = klass + ':' + name;
 				} else
-					row ["method"] = source.Name;
+					method_e.InnerText = source.Name;
 			} else if (file != null) {
-				row ["module"] = file.Module.Name;
-				row ["file"] = file.Name + ":" + line;
+				XmlElement module = root.OwnerDocument.CreateElement ("Module");
+				module.InnerText = file.Module.Name;
+				root.AppendChild (module);
+
+				XmlElement file_e = root.OwnerDocument.CreateElement ("File");
+				file_e.InnerText = file.Name + ":" + line;
+				root.AppendChild (file_e);
 			} else if (method != null) {
-				row ["module"] = module.Name;
-				row ["method"] = method;
+				XmlElement module = root.OwnerDocument.CreateElement ("Module");
+				module.InnerText = module.Name;
+				root.AppendChild (module);
+
+				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
+				method_e.InnerText = method;
+				root.AppendChild (method_e);
 			} else {
 				throw new InternalError ();
 			}
 
 			if (line > 0) {
-				row ["line"] = line;
+				XmlElement line_e = root.OwnerDocument.CreateElement ("Line");
+				line_e.InnerText = line.ToString ();
+				root.AppendChild (line_e);
 			}
 		}
 

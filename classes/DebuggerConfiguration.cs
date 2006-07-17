@@ -1,12 +1,13 @@
 using System;
 using System.IO;
-using System.Data;
 using System.Reflection;
 using System.Collections;
 using System.Configuration;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Schema;
+using System.Xml.XPath;
 
 namespace Mono.Debugger
 {
@@ -15,7 +16,7 @@ namespace Mono.Debugger
 		internal readonly string ConfigDirectory;
 
 		const string ConfigFileName = "MonoDebugger.xml";
-		
+
 		public DebuggerConfiguration ()
 		{
 			ConfigDirectory = Environment.GetEnvironmentVariable ("XDG_CONFIG_HOME");
@@ -30,15 +31,12 @@ namespace Mono.Debugger
 			CreateDefaultModuleGroups ();
 		}
 
-		internal static DataSet CreateDataSet ()
+		internal static XmlDocument CreateXmlDocument ()
 		{
-			DataSet ds = new DataSet ("DebuggerSession");
-
-			Assembly ass = Assembly.GetExecutingAssembly ();
-			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
-				ds.ReadXmlSchema (schema);
-
-			return ds;
+			XmlDocument doc = new XmlDocument ();
+			doc.LoadXml ("<?xml version=\"1.0\"?>\n" +
+				     "<DebuggerConfiguration fileversion = \"1.0\" />");
+			return doc;
 		}
 
 		public bool LoadConfiguration()
@@ -49,7 +47,8 @@ namespace Mono.Debugger
 
 				LoadConfigurationFromStream (ConfigDirectory + ConfigFileName);
 				return true;
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("LOAD CONFIG EX: {0}", ex);
 				return false;
 			}
 		}
@@ -62,44 +61,65 @@ namespace Mono.Debugger
 
 				SaveConfigurationToStream (ConfigDirectory + ConfigFileName);
 				return true;
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("SAVE CONFIG EX: {0}", ex);
 				return false;
 			}
 		}
 
 		void LoadConfigurationFromStream (string filename)
 		{
-			DataSet ds = CreateDataSet ();
-			ds.ReadXml (filename, XmlReadMode.IgnoreSchema);
+			using (FileStream stream = new FileStream (filename, FileMode.Open))
+				LoadConfigurationFromStream (stream);
+		}
 
-			DataRow config_row = ds.Tables ["Configuration"].Rows [0];
-			if (!config_row.IsNull ("load-native-symtabs"))
-				load_native_symtabs = (bool) config_row ["load-native-symtabs"];
+		void LoadConfigurationFromStream (Stream stream)
+		{
+			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));
+			Assembly ass = Assembly.GetExecutingAssembly ();
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
+				reader.Schemas.Add ("", new XmlTextReader (schema));
 
-			DataTable group_table = ds.Tables ["ModuleGroup"];
-			foreach (DataRow row in group_table.Rows) {
-				ModuleGroup group = CreateModuleGroup ((string) row ["name"]);
-				group.SetSessionData (row);
+			XPathDocument doc = new XPathDocument (reader);
+			XPathNavigator nav = doc.CreateNavigator ();
+
+			XPathNodeIterator iter = nav.Select ("/DebuggerConfiguration/Configuration/*");
+			while (iter.MoveNext ()) {
+				if (iter.Current.Name == "LoadNativeSymtabs")
+					LoadNativeSymtabs = Boolean.Parse (iter.Current.Value);
+				else
+					throw new InvalidOperationException ();
+			}
+
+			iter = nav.Select ("/DebuggerConfiguration/ModuleGroups/ModuleGroup");
+			while (iter.MoveNext ()) {
+				string name = iter.Current.GetAttribute ("name", "");
+				ModuleGroup group = CreateModuleGroup (name);
+
+				group.SetSessionData (iter);
 			}
 		}
 
 		void SaveConfigurationToStream (string filename)
 		{
-			DataSet ds = CreateDataSet ();
+			using (FileStream stream = new FileStream (filename, FileMode.Create)) {
+				XmlDocument doc = CreateXmlDocument ();
 
-			DataTable config_table = ds.Tables ["Configuration"];
-			DataRow config_row = config_table.NewRow ();
-			config_row ["load-native-symtabs"] = true;
-			config_table.Rows.Add (config_row);
+				XmlElement element = doc.CreateElement ("Configuration");
+				doc.DocumentElement.AppendChild (element);
 
-			DataTable group_table = ds.Tables ["ModuleGroup"];
-			foreach (ModuleGroup group in ModuleGroups) {
-				DataRow row = group_table.NewRow ();
-				group.GetSessionData (row);
-				group_table.Rows.Add (row);
+				XmlElement load_native_symtabs_e = doc.CreateElement ("LoadNativeSymtabs");
+				load_native_symtabs_e.InnerText = LoadNativeSymtabs ? "true" : "false";
+				element.AppendChild (load_native_symtabs_e);
+
+				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
+				doc.DocumentElement.AppendChild (module_groups);
+
+				foreach (ModuleGroup group in ModuleGroups)
+					group.GetSessionData (module_groups);
+
+				doc.Save (stream);
 			}
-
-			ds.WriteXml (filename);
 		}
 
 		bool load_native_symtabs;
@@ -185,14 +205,9 @@ namespace Mono.Debugger
 		//
 		// Debugger Configuration
 		//
-
 		public bool LoadNativeSymtabs {
 			get { return load_native_symtabs; }
 			set { load_native_symtabs = true; }
-		}
-
-		public bool Test {
-			get { return false; }
 		}
 	}
 }

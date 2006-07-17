@@ -1,5 +1,5 @@
 using System;
-using System.Data;
+using System.Xml;
 using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
 
@@ -91,7 +91,7 @@ namespace Mono.Debugger
 			return IsSubclassOf (exc.Type, exception);
 		}
 
-		internal override void GetSessionData (DataSet ds, DebuggerSession session)
+		protected override void GetSessionData (XmlElement element, XmlElement root)
 		{ }
 
 		TargetType exception;

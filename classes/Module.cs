@@ -4,8 +4,8 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Data;
 using System.Xml;
+using System.Xml.XPath;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
@@ -155,6 +155,43 @@ namespace Mono.Debugger
 			get; set;
 		}
 
+		internal void GetSessionData (XmlElement root)
+		{
+			XmlElement element = root.OwnerDocument.CreateElement (GetType ().Name);
+			root.AppendChild (element);
+
+			if (this is Module)
+				element.SetAttribute ("group", ((Module) this).ModuleGroup.Name);
+			element.SetAttribute ("name", Name);
+
+			XmlElement hide = root.OwnerDocument.CreateElement ("HideFromUser");
+			hide.InnerText = HideFromUser ? "true" : "false";
+			element.AppendChild (hide);
+
+			XmlElement step = root.OwnerDocument.CreateElement ("StepInto");
+			step.InnerText = StepInto ? "true" : "false";
+			element.AppendChild (step);
+
+			XmlElement load = root.OwnerDocument.CreateElement ("LoadSymbols");
+			load.InnerText = LoadSymbols ? "true" : "false";
+			element.AppendChild (load);
+		}
+
+		internal void SetSessionData (XPathNodeIterator iter)
+		{
+			XPathNodeIterator children = iter.Current.SelectChildren (XPathNodeType.Element);
+			while (children.MoveNext ()) {
+				if (children.Current.Name == "HideFromUser")
+					HideFromUser = Boolean.Parse (children.Current.Value);
+				else if (children.Current.Name == "LoadSymbols")
+					LoadSymbols = Boolean.Parse (children.Current.Value);
+				else if (children.Current.Name == "StepInto")
+					StepInto = Boolean.Parse (children.Current.Value);
+				else
+					throw new InternalError ();
+			}
+		}
+
 		protected virtual string MyToString ()
 		{
 			return "";
@@ -194,21 +231,6 @@ namespace Mono.Debugger
 		public override bool StepInto {
 			get { return step_into; }
 			set { step_into = value; }
-		}
-
-		internal void GetSessionData (DataRow row)
-		{
-			row ["name"] = Name;
-			row ["hide-from-user"] = hide_from_user;
-			row ["load-symbols"] = load_symbols;
-			row ["step-into"] = step_into;
-		}
-
-		internal void SetSessionData (DataRow row)
-		{
-			hide_from_user = (bool) row ["hide-from-user"];
-			load_symbols = (bool) row ["load-symbols"];
-			step_into = (bool) row ["step-into"];
 		}
 
 		internal ModuleGroup (string name)
@@ -469,35 +491,6 @@ namespace Mono.Debugger
 		protected override string MyToString ()
 		{
 			return String.Format (":{0}:{1}", IsLoaded, SymbolsLoaded);
-		}
-
-		internal void GetSessionData (DataRow row)
-		{
-			row ["name"] = Name;
-			row ["group"] = ModuleGroup.Name;
-
-			if (has_hide_from_user)
-				row ["hide-from-user"] = hide_from_user;
-			if (has_load_symbols)
-				row ["load-symbols"] = load_symbols;
-			if (has_step_into)
-				row ["step-into"] = step_into;
-		}
-
-		internal void SetSessionData (DataRow row)
-		{
-			if (!row.IsNull ("hide-from-user")) {
-				hide_from_user = (bool) row ["hide-from-user"];
-				has_hide_from_user = true;
-			}
-			if (!row.IsNull ("load-symbols")) {
-				load_symbols = (bool) row ["load-symbols"];
-				has_load_symbols = true;
-			}
-			if (!row.IsNull ("step-into")) {
-				step_into = (bool) row ["step-into"];
-				has_step_into = true;
-			}
 		}
 	}
 }

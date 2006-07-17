@@ -1,89 +1,99 @@
 <?xml version="1.0" standalone="yes"?>
-<xs:schema id="DebuggerConfiguration" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+<xs:schema id="DebuggerConfiguration" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:complexType name="Configuration">
     <xs:sequence>
-      <xs:element name="load-native-symtabs" type="xs:boolean" minOccurs="0" />
+      <xs:element name="LoadNativeSymtabs" type="xs:boolean" minOccurs="0" />
     </xs:sequence>
   </xs:complexType>
   <xs:complexType name="Options">
-    <xs:sequence>
-      <xs:element name="file" type="xs:string" minOccurs="1" />
-      <xs:element name="inferior-args" type="xs:integer" minOccurs="0" />
-      <xs:element name="jit-optimizations" type="xs:string" minOccurs="0" />
-      <xs:element name="jit-arguments" type="xs:integer" minOccurs="0" />
-      <xs:element name="working-directory" type="xs:string" minOccurs="0" />
-      <xs:element name="mono-prefix" type="xs:string" minOccurs="0" />
-      <xs:element name="mono-path" type="xs:string" minOccurs="0" />
-      <xs:element name="StringList" type="StringList" minOccurs="0" maxOccurs="unbounded" />
-    </xs:sequence>
-    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
-  </xs:complexType>
-  <xs:complexType name="StringList">
-    <xs:sequence>
-      <xs:element name="id" type="xs:integer" minOccurs="1" />
-      <xs:element name="text" type="xs:string" minOccurs="1" />
-    </xs:sequence>
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="File" type="xs:string" minOccurs="1" />
+      <xs:element name="InferiorArgs" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="JitOptimizations" type="xs:string" minOccurs="0" maxOccurs="1" />
+      <xs:element name="JitArguments" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="WorkingDirectory" type="xs:string" minOccurs="0" maxOccurs="1" />
+      <xs:element name="MonoPrefix" type="xs:string" minOccurs="0" maxOccurs="1" />
+      <xs:element name="MonoPath" type="xs:string" minOccurs="0" maxOccurs="1" />
+      <xs:element name="StartTarget" type="xs:bool" minOccurs="0" maxOccurs="1" />
+      <xs:element name="IsScript" type="xs:bool" minOccurs="0" maxOccurs="1" />
+      <xs:element name="InEmacs" type="xs:bool" minOccurs="0" maxOccurs="1" />
+    </xs:choice>
   </xs:complexType>
   <xs:complexType name="ModuleGroup">
-    <xs:sequence>
-      <xs:element name="hide-from-user" type="xs:boolean" minOccurs="0" />
-      <xs:element name="step-into" type="xs:boolean" minOccurs="0" />
-      <xs:element name="load-symbols" type="xs:boolean" minOccurs="0" />
-    </xs:sequence>
-    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" />
-    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
-  </xs:complexType>
-  <xs:complexType name="Module">
-    <xs:sequence>
-      <xs:element name="hide-from-user" type="xs:boolean" minOccurs="0" />
-      <xs:element name="step-into" type="xs:boolean" minOccurs="0" />
-      <xs:element name="load-symbols" type="xs:boolean" minOccurs="0" />
-    </xs:sequence>
-    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="group" msdata:ReadOnly="true" type="xs:string" use="required" />
-  </xs:complexType>
-  <xs:complexType name="ThreadGroup">
-    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
-  </xs:complexType>
-  <xs:complexType name="Location">
-    <xs:choice>
-      <xs:element name="module" msdata:ReadOnly="true" type="xs:string" minOccurs="1" />
-      <xs:element name="method" type="xs:string" minOccurs="0" />
-      <xs:element name="file" type="xs:string" minOccurs="0" />
-      <xs:element name="line" type="xs:integer" minOccurs="0" />
-    </xs:choice>
-    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="id" msdata:ReadOnly="true" type="xs:integer" use="required" />
-  </xs:complexType>
-  <xs:complexType name="Event">
-    <xs:attribute name="session" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="index" msdata:ReadOnly="true" type="xs:integer" use="required" />
-    <xs:attribute name="name" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="group" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="type" msdata:ReadOnly="true" type="xs:string" use="required" />
-    <xs:attribute name="enabled" msdata:ReadOnly="true" type="xs:boolean" use="required" />
-    <xs:attribute name="location" msdata:ReadOnly="true" type="xs:integer" use="required" />
-  </xs:complexType>
-  <xs:complexType name="DebuggerSession">
     <xs:choice maxOccurs="unbounded">
-      <xs:element name="Options" type="Options" />
-      <xs:element name="ModuleGroup" type="ModuleGroup" />
-      <xs:element name="Module" type="Module" />
-      <xs:element name="ThreadGroup" type="ThreadGroup" />
-      <xs:element name="Location" type="Location" />
-      <xs:element name="Event" type="Event" />
+      <xs:element name="HideFromUser" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="LoadSymbols" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="StepInto" type="xs:boolean" minOccurs="0" maxOccurs="1" />
     </xs:choice>
     <xs:attribute name="name" type="xs:string" use="required" />
   </xs:complexType>
-  <xs:element name="DebuggerConfiguration" msdata:IsDataSet="true" msdata:Locale="en-US">
+  <xs:complexType name="ModuleGroups">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="ModuleGroup" type="ModuleGroup" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Module">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="HideFromUser" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="StepInto" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="LoadSymbols" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+    </xs:choice>
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="group" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="Modules">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="Module" type="Module" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ThreadGroup">
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="ThreadGroups">
+    <xs:sequence maxOccurs="unbounded">
+      <xs:element name="ThreadGroup" type="ThreadGroup" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="Events">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="Breakpoint" type="Breakpoint" />
+    </xs:choice>
+  </xs:complexType>
+  <xs:complexType name="Location">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="Module" type="xs:string" minOccurs="1" />
+      <xs:element name="Method" type="xs:string" minOccurs="0" />
+      <xs:element name="File" type="xs:string" minOccurs="0" />
+      <xs:element name="Line" type="xs:integer" minOccurs="0" />
+    </xs:choice>
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="Breakpoint">
+    <xs:choice>
+      <xs:element name="Location" type="Location" />
+    </xs:choice>
+    <xs:attribute name="index" type="xs:integer" use="required" />
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="threadgroup" type="xs:string" use="required" />
+    <xs:attribute name="enabled" type="xs:boolean" use="required" />
+  </xs:complexType>
+  <xs:complexType name="DebuggerSession">
+    <xs:sequence>
+      <xs:element name="Options" type="Options" />
+      <xs:element name="Modules" type="Modules" />
+      <xs:element name="ThreadGroups" type="ThreadGroups" />
+      <xs:element name="Events" type="Events" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:element name="DebuggerConfiguration">
     <xs:complexType>
-      <xs:choice maxOccurs="unbounded">
-        <xs:element name="Configuration" type="Configuration" />
-        <xs:element name="ModuleGroup" type="ModuleGroup" />
-        <xs:element name="DebuggerSession" type="DebuggerSession" />
-      </xs:choice>
+      <xs:sequence>
+        <xs:element name="Configuration" type="Configuration" minOccurs="0" maxOccurs="1" />
+        <xs:element name="ModuleGroups" type="ModuleGroups" minOccurs="0" maxOccurs="1" />
+        <xs:element name="DebuggerSession" type="DebuggerSession" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute name="fileversion" type="xs:string" fixed="1.0" />
     </xs:complexType>
     <xs:unique name="ModuleGroup_Constraint">
       <xs:selector xpath=".//ModuleGroup" />
@@ -93,65 +103,17 @@
       <xs:selector xpath=".//Module" />
       <xs:field xpath="@name" />
     </xs:unique>
-    <xs:keyref name="ModuleGroup_Key" refer="ModuleGroup_Constraint">
+    <xs:keyref name="Module_ModuleGroup" refer="ModuleGroup_Constraint">
       <xs:selector xpath=".//Module" />
       <xs:field xpath="@group" />
     </xs:keyref>
     <xs:unique name="Location_Constraint">
       <xs:selector xpath=".//Location" />
-      <xs:field xpath="@id" />
-    </xs:unique>
-    <xs:unique name="Event_Constraint">
-      <xs:selector xpath=".//Event" />
       <xs:field xpath="@index" />
     </xs:unique>
-    <xs:unique name="Event_Location_Constraint">
-      <xs:selector xpath=".//Event" />
-      <xs:field xpath="@location" />
-    </xs:unique>
-    <xs:keyref name="Location_Event" refer="Event_Location_Constraint">
-      <xs:selector xpath=".//Location" />
-      <xs:field xpath="@id" />
-    </xs:keyref>
     <xs:keyref name="Location_Module" refer="Module_Constraint">
       <xs:selector xpath=".//Location" />
-      <xs:field xpath="module" />
-    </xs:keyref>
-    <xs:unique name="InferiorArgs_Constraint">
-      <xs:selector xpath=".//Options" />
-      <xs:field xpath="inferior-args" />
-    </xs:unique>
-    <xs:keyref name="Options_InferiorArgs" refer="InferiorArgs_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//StringList" />
-      <xs:field xpath="id" />
-    </xs:keyref>
-    <xs:unique name="Session_Constraint">
-      <xs:selector xpath=".//DebuggerSession" />
-      <xs:field xpath="@name" />
-    </xs:unique>
-    <xs:keyref name="Session_ThreadGroup" refer="Session_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//ThreadGroup" />
-      <xs:field xpath="@session" />
-    </xs:keyref>
-    <xs:keyref name="Session_Options" refer="Session_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//Options" />
-      <xs:field xpath="@session" />
-    </xs:keyref>
-    <xs:keyref name="Session_ModuleGroup" refer="Session_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//ModuleGroup" />
-      <xs:field xpath="@session" />
-    </xs:keyref>
-    <xs:keyref name="Session_Module" refer="Session_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//Module" />
-      <xs:field xpath="@session" />
-    </xs:keyref>
-    <xs:keyref name="Session_Event" refer="Session_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//Event" />
-      <xs:field xpath="@session" />
-    </xs:keyref>
-    <xs:keyref name="Session_Location" refer="Session_Constraint" msdata:IsNested="true">
-      <xs:selector xpath=".//Location" />
-      <xs:field xpath="@session" />
+      <xs:field xpath="Module" />
     </xs:keyref>
   </xs:element>
 </xs:schema>

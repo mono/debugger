@@ -8,8 +8,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Xml;
 using System.Xml.XPath;
-using System.Data;
-using System.Data.Common;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
@@ -21,40 +19,96 @@ namespace Mono.Debugger
 		static int next_id = 0;
 		public readonly int ID = ++next_id;
 
+		string file;
+		string[] inferior_args;
+		string jit_optimizations;
+		string[] jit_arguments;
+		string working_directory;
+		bool is_script, start_target;
+		bool has_debug_flags;
+		DebugFlags debug_flags = DebugFlags.None;
+		string debug_output;
+		bool in_emacs;
+		string mono_prefix, mono_path;
+
 		/* The executable file we're debugging */
-		public string File = null;
+		public string File {
+			get { return file; }
+			set { file = value; }
+		}
 
 		/* argv[1...n] for the inferior process */
-		public string[] InferiorArgs = null;
+		public string[] InferiorArgs {
+			get { return inferior_args; }
+			set { inferior_args = value; }
+		}
 
 		/* JIT optimization flags affecting the inferior
 		 * process */
-		public string JitOptimizations = null;
-		public string[] JitArguments = null;
+		public string JitOptimizations {
+			get { return jit_optimizations; }
+			set { jit_optimizations = value; }
+		}
+
+		public string[] JitArguments {
+			get { return jit_arguments; }
+			set { jit_arguments = value; }
+		}
 
 		/* The inferior process's working directory */
-		public string WorkingDirectory = null;
+		public string WorkingDirectory {
+			get { return working_directory; }
+			set { working_directory = value; }
+		}
 
 		/* true if we're running in a script */
-		public bool IsScript = false;
+		public bool IsScript {
+			get { return is_script; }
+			set { is_script = value; }
+		}
 
 		/* true if we want to start the application immediately */
-		public bool StartTarget = false;
+		public bool StartTarget {
+			get { return start_target; }
+			set { start_target = value; }
+		}
 	  
 		/* the value of the -debug-flags: command line argument */
-		public bool HasDebugFlags = false;
-		public DebugFlags DebugFlags = DebugFlags.None;
-		public string DebugOutput = null;
+		public DebugFlags DebugFlags {
+			get { return debug_flags; }
+			set {
+				debug_flags = value;
+				has_debug_flags = true;
+			}
+		}
+
+		public bool HasDebugFlags {
+			get { return has_debug_flags; }
+		}
+
+		public string DebugOutput {
+			get { return debug_output; }
+			set { debug_output = value; }
+		}
 
 		/* true if -f/-fullname is specified on the command line */
-		public bool InEmacs = false;
+		public bool InEmacs {
+			get { return in_emacs; }
+			set { in_emacs = value; }
+		}
 
 		/* non-null if the user specified the -mono-prefix
 		 * command line argument */
-		public string MonoPrefix = null;
+		public string MonoPrefix {
+			get { return mono_prefix; }
+			set { mono_prefix = value; }
+		}
 
 		/* non-null if the user specified the -mono command line argument */
-		public string MonoPath = null;
+		public string MonoPath {
+			get { return mono_path; }
+			set { mono_path = value; }
+		}
 
 		Hashtable user_environment;
 
@@ -80,19 +134,19 @@ namespace Mono.Debugger
 		public DebuggerOptions Clone ()
 		{
 			DebuggerOptions options = new DebuggerOptions ();
-			options.File = File;
-			options.InferiorArgs = clone (InferiorArgs);
-			options.JitOptimizations = JitOptimizations;
-			options.JitArguments = clone (JitArguments);
-			options.WorkingDirectory = WorkingDirectory;
-			options.IsScript = IsScript;
-			options.StartTarget = StartTarget;
-			options.HasDebugFlags = HasDebugFlags;
-			options.DebugFlags = DebugFlags;
-			options.DebugOutput = DebugOutput;
-			options.InEmacs = InEmacs;
-			options.MonoPrefix = MonoPrefix;
-			options.MonoPath = MonoPath;
+			options.file = file;
+			options.inferior_args = clone (inferior_args);
+			options.jit_optimizations = jit_optimizations;
+			options.jit_arguments = clone (jit_arguments);
+			options.working_directory = working_directory;
+			options.is_script = is_script;
+			options.start_target = start_target;
+			options.debug_flags = debug_flags;
+			options.has_debug_flags = has_debug_flags;
+			options.debug_output = debug_output;
+			options.in_emacs = in_emacs;
+			options.mono_prefix = mono_prefix;
+			options.mono_path = mono_path;
 			options.user_environment = clone (user_environment);
 			return options;
 		}
@@ -115,84 +169,92 @@ namespace Mono.Debugger
 				user_environment.Add (name, value);
 		}
 
-		internal void GetSessionData (DataSet ds, DebuggerSession session)
+		internal void GetSessionData (XmlElement root)
 		{
-			DataTable options_table = ds.Tables ["Options"];
-			DataTable list_table = ds.Tables ["StringList"];
+			XmlElement file_e = root.OwnerDocument.CreateElement ("File");
+			file_e.InnerText = file;
+			root.AppendChild (file_e);
 
-			int stringlist_idx = 0;
-
-			DataRow options_row = options_table.NewRow ();
-			options_row ["session"] = session.Name;
-			options_row ["file"] = File;
-			if ((InferiorArgs != null) && (InferiorArgs.Length > 0))
-				options_row ["inferior-args"] = ++stringlist_idx;
-			if ((JitArguments != null) && (JitArguments.Length > 0))
-				options_row ["jit-arguments"] = ++stringlist_idx;
-			if (JitOptimizations != null)
-				options_row ["jit-optimizations"] = JitOptimizations;
-			if (WorkingDirectory != null)
-				options_row ["working-directory"] = WorkingDirectory;
-			if (MonoPrefix != null)
-				options_row ["mono-prefix"] = MonoPrefix;
-			if (MonoPath != null)
-				options_row ["mono-path"] = MonoPath;
-			options_table.Rows.Add (options_row);
-
-			if ((InferiorArgs != null) && (InferiorArgs.Length > 0)) {
+			if (InferiorArgs != null) {
 				foreach (string arg in InferiorArgs) {
-					DataRow row = list_table.NewRow ();
-					row ["id"] = (long) options_row ["inferior-args"];
-					row ["text"] = arg;
-					list_table.Rows.Add (row);
+					XmlElement arg_e = root.OwnerDocument.CreateElement ("InferiorArgs");
+					arg_e.InnerText = arg;
+					root.AppendChild (arg_e);
 				}
 			}
 
-			if ((JitArguments != null) && (JitArguments.Length > 0)) {
+			if (JitArguments != null) {
 				foreach (string arg in JitArguments) {
-					DataRow row = list_table.NewRow ();
-					row ["id"] = (long) options_row ["jit-arguments"];
-					row ["text"] = arg;
-					list_table.Rows.Add (row);
+					XmlElement arg_e = root.OwnerDocument.CreateElement ("JitArguments");
+					arg_e.InnerText = arg;
+					root.AppendChild (arg_e);
 				}
+			}
+
+			if (JitOptimizations != null) {
+				XmlElement opt_e = root.OwnerDocument.CreateElement ("JitOptimizations");
+				opt_e.InnerText = JitOptimizations;
+				root.AppendChild (opt_e);
+			}
+			if (WorkingDirectory != null) {
+				XmlElement cwd_e = root.OwnerDocument.CreateElement ("WorkingDirectory");
+				cwd_e.InnerText = WorkingDirectory;
+				root.AppendChild (cwd_e);
+			}
+			if (MonoPrefix != null) {
+				XmlElement prefix_e = root.OwnerDocument.CreateElement ("MonoPrefix");
+				prefix_e.InnerText = MonoPrefix;
+				root.AppendChild (prefix_e);
+			}
+			if (MonoPath != null) {
+				XmlElement path_e = root.OwnerDocument.CreateElement ("MonoPath");
+				path_e.InnerText = MonoPath;
+				root.AppendChild (path_e);
 			}
 		}
 
 		private DebuggerOptions ()
 		{ }
 
-		internal DebuggerOptions (DataSet ds)
+		void append_array (ref string[] array, string value)
 		{
-			DataTable options_table = ds.Tables ["Options"];
-			DataTable list_table = ds.Tables ["StringList"];
-
-			DataRow options_row = options_table.Rows [0];
-
-			File = (string) options_row ["file"];
-			if (!options_row.IsNull ("inferior-args")) {
-				long index = (long) options_row ["inferior-args"];
-				DataRow[] rows = list_table.Select ("id=" + index);
-				InferiorArgs = new string [rows.Length];
-				for (int i = 0; i < rows.Length; i++)
-					InferiorArgs [i] = (string) rows [i] ["text"];
+			if (array == null) {
+				array = new string [1];
+				array [0] = value;
 			} else {
-				InferiorArgs = new string [0];
+				string[] new_array = new string [array.Length + 1];
+				array.CopyTo (new_array, 0);
+				new_array [array.Length] = value;
+				array = new_array;
 			}
-			if (!options_row.IsNull ("jit-arguments")) {
-				long index = (long) options_row ["jit-arguments"];
-				DataRow[] rows = list_table.Select ("id=" + index);
-				JitArguments = new string [rows.Length];
-				for (int i = 0; i < rows.Length; i++)
-					JitArguments [i] = (string) rows [i] ["text"];
+		}
+
+		internal DebuggerOptions (XPathNodeIterator iter)
+		{
+			while (iter.MoveNext ()) {
+				switch (iter.Current.Name) {
+				case "File":
+					file = iter.Current.Value;
+					break;
+				case "InferiorArgs":
+					append_array (ref inferior_args, iter.Current.Value);
+					break;
+				case "JitArguments":
+					append_array (ref jit_arguments, iter.Current.Value);
+					break;
+				case "WorkingDirectory":
+					working_directory = iter.Current.Value;
+					break;
+				case "MonoPrefix":
+					mono_prefix = iter.Current.Value;
+					break;
+				case "MonoPath":
+					mono_path = iter.Current.Value;
+					break;
+				default:
+					throw new InternalError ();
+				}
 			}
-			if (!options_row.IsNull ("jit-optimizations"))
-				JitOptimizations = (string) options_row ["jit-optimizations"];
-			if (!options_row.IsNull ("working-directory"))
-				WorkingDirectory = (string) options_row ["working-directory"];
-			if (!options_row.IsNull ("mono-prefix"))
-				MonoPrefix = (string) options_row ["mono-prefix"];
-			if (!options_row.IsNull ("mono-path"))
-				MonoPath = (string) options_row ["mono-path"];
 		}
 
 		static void About ()
@@ -301,7 +363,6 @@ namespace Mono.Debugger
 			} catch {
 				return false;
 			}
-			options.HasDebugFlags = true;
 			return true;
 		}
 

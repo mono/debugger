@@ -1,3 +1,18 @@
+2006-07-17  Martin Baulig  <martin@ximian.com>
+
+	Kill the System.Data dependency.
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration): Rewrite using System.Xml.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Rewrite using System.Xml; use an `XmlDocument'
+	instead of a `DataSet'.
+
+	* classes/DebuggerConfiguration.xsd: Update the schema to reflect
+	the new XML file format (we're still using the schema with an
+	`XmlValidatingReader').	
+
 2006-07-13  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs

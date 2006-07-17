@@ -51,7 +51,6 @@ LIBRARY_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:System.Data					\
 	-r:$(srcdir)/Mono.Debugger.Cecil.dll
 
 MDB_DEPS = \

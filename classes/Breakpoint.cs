@@ -1,7 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
-using System.Data;
+using System.Xml;
 
 namespace Mono.Debugger
 {
@@ -123,25 +123,14 @@ namespace Mono.Debugger
 			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
 		}
 
-		internal override void GetSessionData (DataSet ds, DebuggerSession session)
+		protected override void GetSessionData (XmlElement root, XmlElement element)
 		{
-			DataTable location_table = ds.Tables ["Location"];
-			DataTable event_table = ds.Tables ["Event"];
+			XmlElement location_e = root.OwnerDocument.CreateElement ("Location");
+			location_e.SetAttribute ("name", location.Name);
+			element.AppendChild (location_e);
 
-			int location_index = location_table.Rows.Count + 1;
-
-			DataRow event_row = event_table.NewRow ();
-			event_row ["session"] = session.Name;
-			event_row ["location"] = location_index;
-			GetSessionData (event_row);
-			event_table.Rows.Add (event_row);
-
-			DataRow location_row = location_table.NewRow ();
-			location_row ["session"] = session.Name;
-			location_row ["id"] = location_index;
-			location.GetSessionData (location_row);
-			location_table.Rows.Add (location_row);
-		}
+			location.GetSessionData (location_e);
+		}		
 
 		internal Breakpoint (int index, ThreadGroup group, SourceLocation location)
 			: base (index, location.Name, group)

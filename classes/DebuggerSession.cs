@@ -8,8 +8,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Xml;
 using System.Xml.XPath;
-using System.Data;
-using System.Data.Common;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
@@ -25,7 +23,7 @@ namespace Mono.Debugger
 		public readonly DebuggerConfiguration Config;
 		public readonly DebuggerOptions Options;
 
-		DataSet saved_session;
+		XmlDocument saved_session;
 		SessionData data;
 
 		private DebuggerSession (DebuggerConfiguration config, string name)
@@ -40,15 +38,6 @@ namespace Mono.Debugger
 			this.Options = options;
 		}
 
-		public DebuggerSession (DebuggerConfiguration config, Stream stream)
-			: this (config, "main")
-		{
-			saved_session = DebuggerConfiguration.CreateDataSet ();
-			saved_session.ReadXml (stream, XmlReadMode.IgnoreSchema);
-
-			Options = new DebuggerOptions (saved_session);
-		}
-
 		protected SessionData Data {
 			get {
 				if (data == null)
@@ -61,6 +50,82 @@ namespace Mono.Debugger
 		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)
 		{
 			return new DebuggerSession (Config, new_options, new_name);
+		}
+
+		public void SaveSession (Stream stream)
+		{
+			saved_session = SaveSession ();
+			saved_session.Save (stream);
+		}
+
+		protected XmlDocument SaveSession ()
+		{
+			XmlDocument doc = DebuggerConfiguration.CreateXmlDocument ();
+
+			XmlElement module_groups = doc.CreateElement ("ModuleGroups");
+			doc.DocumentElement.AppendChild (module_groups);
+
+			foreach (ModuleGroup group in Config.ModuleGroups)
+				group.GetSessionData (module_groups);
+
+			XmlElement root = doc.CreateElement ("DebuggerSession");
+			root.SetAttribute ("name", Name);
+			doc.DocumentElement.AppendChild (root);
+
+			XmlElement options = doc.CreateElement ("Options");
+			Options.GetSessionData (options);
+			root.AppendChild (options);
+
+			XmlElement modules = root.OwnerDocument.CreateElement ("Modules");
+			root.AppendChild (modules);
+
+			foreach (Module module in Modules)
+				module.GetSessionData (modules);
+
+			XmlElement thread_groups = root.OwnerDocument.CreateElement ("ThreadGroups");
+			root.AppendChild (thread_groups);
+
+			foreach (ThreadGroup group in ThreadGroups)
+				AddThreadGroup (thread_groups, group);
+
+			XmlElement event_list = root.OwnerDocument.CreateElement ("Events");
+			root.AppendChild (event_list);
+
+			foreach (Event e in Events)
+				e.GetSessionData (event_list);
+
+			return doc;
+		}
+
+		public DebuggerSession (DebuggerConfiguration config, Stream stream)
+			: this (config, "main")
+		{
+			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));
+			Assembly ass = Assembly.GetExecutingAssembly ();
+			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
+				reader.Schemas.Add ("", new XmlTextReader (schema));
+
+			saved_session = new XmlDocument ();
+			saved_session.Load (reader);
+			reader.Close ();
+
+			XPathNavigator nav = saved_session.CreateNavigator ();
+
+			XPathNodeIterator session_iter = nav.Select (
+				"/DebuggerConfiguration/DebuggerSession[@name='" + Name + "']");
+			if (!session_iter.MoveNext ())
+				throw new InternalError ();
+
+			XPathNodeIterator options_iter = session_iter.Current.Select ("Options/*");
+			Options = new DebuggerOptions (options_iter);
+		}
+
+		void AddThreadGroup (XmlElement root, ThreadGroup group)
+		{
+			XmlElement element = root.OwnerDocument.CreateElement ("ThreadGroup");
+			element.SetAttribute ("name", group.Name);
+
+			root.AppendChild (element);
 		}
 
 		//
@@ -211,16 +276,10 @@ namespace Mono.Debugger
 		internal void OnProcessExited (Process process)
 		{
 			try {
-				saved_session = Data.SaveSession ();
+				saved_session = SaveSession ();
 			} finally {
 				data = null;
 			}
-		}
-
-		public void SaveSession (Stream stream)
-		{
-			saved_session = Data.SaveSession ();
-			saved_session.WriteXml (stream);
 		}
 
 		protected class SessionData
@@ -242,38 +301,49 @@ namespace Mono.Debugger
 				main_thread_group = CreateThreadGroup ("main");
 			}
 
-			public void LoadSession (Process process, DataSet ds)
+			public void LoadSession (Process process, XmlDocument doc)
 			{
-				string query = String.Format ("name='{0}'", Session.Name);
-				DataRow session_row = ds.Tables ["DebuggerSession"].Select (query) [0];
+				XPathNavigator nav = doc.CreateNavigator ();
 
-				DataRow[] group_rows = session_row.GetChildRows ("Session_ModuleGroup");
-				foreach (DataRow row in group_rows) {
-					string name = (string) row ["name"];
+				XPathNodeIterator session_iter = nav.Select (
+					"/DebuggerConfiguration/DebuggerSession[@name='" + Session.Name + "']");
+				if (!session_iter.MoveNext ())
+					throw new InternalError ();
+
+				XPathNodeIterator group_iter = nav.Select (
+					"/DebuggerConfiguration/ModuleGroups/ModuleGroup");
+				while (group_iter.MoveNext ()) {
+					string name = group_iter.Current.GetAttribute ("name", "");
 					ModuleGroup group = Session.Config.CreateModuleGroup (name);
-					group.SetSessionData (row);
+
+					group.SetSessionData (group_iter);
 				}
 
-				DataRow[] module_rows = session_row.GetChildRows ("Session_Module");
-				foreach (DataRow row in module_rows) {
-					string name = (string) row ["name"];
+				XPathNodeIterator modules_iter = session_iter.Current.Select ("Modules/*");
+				while (modules_iter.MoveNext ()) {
+					string name = modules_iter.Current.GetAttribute ("name", "");
+					string group = modules_iter.Current.GetAttribute ("group", "");
+
 					Module module = (Module) modules [name];
 					if (module == null) {
-						string gname = (string) row ["group"];
-						ModuleGroup group = Session.Config.GetModuleGroup (gname);
-						module = new Module (group, name, null);
+						ModuleGroup mgroup = Session.Config.GetModuleGroup (group);
+						module = new Module (mgroup, name, null);
 						modules.Add (name, module);
 					}
 
-					module.SetSessionData (row);
+					module.SetSessionData (modules_iter);
 				}
 
-				DataRow[] event_rows = session_row.GetChildRows ("Session_Event");
-				foreach (DataRow row in event_rows) {
-					if ((string) row ["type"] != "Mono.Debugger.Breakpoint")
-						continue;
+				XPathNodeIterator event_iter = session_iter.Current.Select ("Events/*");
+				while (event_iter.MoveNext ()) {
+					if (event_iter.Current.Name != "Breakpoint")
+						throw new InternalError ();
 
-					string gname = (string) row ["group"];
+					string name = event_iter.Current.GetAttribute ("name", "");
+					int index = Int32.Parse (event_iter.Current.GetAttribute ("index", ""));
+					bool enabled = Boolean.Parse (event_iter.Current.GetAttribute ("enabled", ""));
+
+					string gname = event_iter.Current.GetAttribute ("threadgroup", "");
 					ThreadGroup group;
 					if (gname == "system")
 						group = ThreadGroup.System;
@@ -282,58 +352,24 @@ namespace Mono.Debugger
 					else
 						group = CreateThreadGroup (gname);
 
-					int index = (int) (long) row ["index"];
-					DataRow[] location_rows = row.GetChildRows ("Location_Event");
-					SourceLocation location = new SourceLocation (Session, location_rows [0]);
+					SourceLocation location = null;
+
+					XPathNodeIterator children = event_iter.Current.SelectChildren (
+						XPathNodeType.Element);
+					while (children.MoveNext ()) {
+						if (children.Current.Name == "Location")
+							location = new SourceLocation (Session, children.Current);
+						else
+							throw new InternalError ();
+					}
 
 					Breakpoint bpt = new Breakpoint (index, group, location);
 					AddEvent (bpt);
-					bpt.Enable (process.MainThread);
+					if (enabled)
+						bpt.Enable (process.MainThread);
 				}
 			}
 
-			public DataSet SaveSession ()
-			{
-				DataSet ds = DebuggerConfiguration.CreateDataSet ();
-
-				{
-					DataTable session_table = ds.Tables ["DebuggerSession"];
-					DataRow row = session_table.NewRow ();
-					row ["name"] = Session.Name;
-					session_table.Rows.Add (row);
-				}
-
-				Session.Options.GetSessionData (ds, Session);
-
-				DataTable group_table = ds.Tables ["ModuleGroup"];
-				foreach (ModuleGroup group in Session.Config.ModuleGroups) {
-					DataRow row = group_table.NewRow ();
-					row ["session"] = Session.Name;
-					group.GetSessionData (row);
-					group_table.Rows.Add (row);
-				}
-
-				DataTable module_table = ds.Tables ["Module"];
-				foreach (Module module in Modules) {
-					DataRow row = module_table.NewRow ();
-					row ["session"] = Session.Name;
-					module.GetSessionData (row);
-					module_table.Rows.Add (row);
-				}
-
-				DataTable thread_group_table = ds.Tables ["ThreadGroup"];
-				foreach (ThreadGroup group in ThreadGroups) {
-					DataRow row = thread_group_table.NewRow ();
-					row ["session"] = Session.Name;
-					row ["name"] = group.Name;
-					thread_group_table.Rows.Add (row);
-				}
-
-				foreach (Event e in Events)
-					e.GetSessionData (ds, Session);
-
-				return ds;
-			}
 
 			//
 			// Modules.

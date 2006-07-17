@@ -1,7 +1,7 @@
 using System;
 using Mono.Debugger.Backends;
 using System.Runtime.Serialization;
-using System.Data;
+using System.Xml;
 
 namespace Mono.Debugger
 {
@@ -65,16 +65,20 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		protected virtual void GetSessionData (DataRow row)
+		internal virtual void GetSessionData (XmlElement root)
 		{
-			row ["index"] = index;
-			row ["name"] = name;
-			row ["group"] = group.Name;
-			row ["type"] = GetType ();
-			row ["enabled"] = IsEnabled;
+			XmlElement element = root.OwnerDocument.CreateElement (GetType ().Name);
+			root.AppendChild (element);
+
+			element.SetAttribute ("index", Index.ToString ());
+			element.SetAttribute ("name", Name);
+			element.SetAttribute ("threadgroup", ThreadGroup.Name);
+			element.SetAttribute ("enabled", IsEnabled ? "true" : "false");
+
+			GetSessionData (root, element);
 		}
 
-		internal abstract void GetSessionData (DataSet ds, DebuggerSession session);
+		protected abstract void GetSessionData (XmlElement root, XmlElement element);
 
 		//
 		// Everything below is private.
