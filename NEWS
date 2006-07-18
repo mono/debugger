@@ -1,3 +1,18 @@
+July 18th, 2006 - Martin Baulig
+-------------------------------
+
+Released version 0.30 "Koblenz" of the Mono Debugger :-)
+
+- This version of the debugger requires Mono 1.1.16.
+
+- Redesigned and improved the session code.
+
+- Stability improvements and bug fixes.
+
+- Fixed i386 support.
+
+- The next releases will be "Dublin", "Sidney" and "Cologne".
+
 May 24th, 2006 - Martin Baulig
 ------------------------------
 

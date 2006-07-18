@@ -1,5 +1,9 @@
 2006-07-18  Martin Baulig  <martin@ximian.com>
 
+	Released version 0.30 "Koblenz" of the Mono Debugger :-)
+
+2006-07-18  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Require Mono >= 1.1.16.
 
 2006-07-17  Martin Baulig  <martin@ximian.com>
