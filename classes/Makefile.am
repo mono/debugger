@@ -7,4 +7,5 @@ EXTRA_DIST = \
 	SymbolTable.cs SymbolTableException.cs TargetAddress.cs TargetBinaryAccess.cs \
 	TargetBinaryReader.cs TargetBinaryWriter.cs TargetEvent.cs TargetException.cs \
 	TargetInvocationException.cs TargetMemoryArea.cs TargetMemoryException.cs \
-	Thread.cs ThreadGroup.cs DebuggerMarshalByRefObject.cs
+	Thread.cs ThreadGroup.cs DebuggerMarshalByRefObject.cs DebuggerOptions.cs \
+	DebuggerConfiguration.cs DebuggerConfiguration.xsd
