@@ -47,8 +47,7 @@ namespace Mono.Debugger
 
 				LoadConfigurationFromStream (ConfigDirectory + ConfigFileName);
 				return true;
-			} catch (Exception ex) {
-				Console.WriteLine ("LOAD CONFIG EX: {0}", ex);
+			} catch {
 				return false;
 			}
 		}
@@ -61,8 +60,7 @@ namespace Mono.Debugger
 
 				SaveConfigurationToStream (ConfigDirectory + ConfigFileName);
 				return true;
-			} catch (Exception ex) {
-				Console.WriteLine ("SAVE CONFIG EX: {0}", ex);
+			} catch {
 				return false;
 			}
 		}
