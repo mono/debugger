@@ -1,3 +1,7 @@
+2006-07-18  Wade Berrier <wberrier@novell.com>
+
+	* backends/Makefile.am: Remove ModuleManager.cs from EXTRA_DIST
+
 2006-07-18  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.30 "Koblenz" of the Mono Debugger :-)
