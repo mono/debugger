@@ -201,8 +201,8 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoSymbolFile : SymbolFile
 	{
 		internal readonly int Index;
-		internal readonly Cecil.IAssemblyDefinition Assembly;
-		internal readonly Cecil.IModuleDefinition ModuleDefinition;
+		internal readonly Cecil.AssemblyDefinition Assembly;
+		internal readonly Cecil.ModuleDefinition ModuleDefinition;
 		internal readonly TargetAddress MonoImage;
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
@@ -354,18 +354,18 @@ namespace Mono.Debugger.Languages.Mono
 			class_entry_hash.Add (new TypeHashEntry (entry), entry);
 		}
 
-		public TargetType LookupMonoType (Cecil.ITypeReference type)
+		public TargetType LookupMonoType (Cecil.TypeReference type)
 		{
 			TargetType result = (TargetType) type_hash [type];
 			if (result != null)
 				return result;
 
-			if (type is Cecil.IArrayType) {
-				Cecil.IArrayType atype = (Cecil.IArrayType) type;
+			if (type is Cecil.ArrayType) {
+				Cecil.ArrayType atype = (Cecil.ArrayType) type;
 				TargetType element_type = LookupMonoType (atype.ElementType);
 				result = new MonoArrayType (element_type, atype.Rank);
-			} else if (type is Cecil.ITypeDefinition) {
-				Cecil.ITypeDefinition tdef = (Cecil.ITypeDefinition) type;
+			} else if (type is Cecil.TypeDefinition) {
+				Cecil.TypeDefinition tdef = (Cecil.TypeDefinition) type;
 				if (tdef.IsEnum)
 					result = new MonoEnumType (this, tdef);
 				else
@@ -379,12 +379,12 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public void AddType (TargetType type, Cecil.ITypeDefinition typedef)
+		public void AddType (TargetType type, Cecil.TypeDefinition typedef)
 		{
 			type_hash.Add (typedef, type);
 		}
 
-		public TargetBinaryReader GetTypeInfo (Cecil.ITypeDefinition type)
+		public TargetBinaryReader GetTypeInfo (Cecil.TypeDefinition type)
 		{
 			ClassEntry entry = (ClassEntry) class_entry_hash [new TypeHashEntry (type)];
 			if (entry == null)
@@ -480,7 +480,7 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry entry = File.GetMethod (index);
 			C.MethodSourceEntry source = File.GetMethodSource (index);
 
-			Cecil.IMethodDefinition mdef = MonoDebuggerSupport.GetMethod (
+			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
 
 			StringBuilder sb = new StringBuilder (mdef.DeclaringType.FullName);
@@ -488,7 +488,7 @@ namespace Mono.Debugger.Languages.Mono
 			sb.Append (mdef.Name);
 			sb.Append ("(");
 			bool first = true;
-			foreach (Cecil.IParameterReference param in mdef.Parameters) {
+			foreach (Cecil.ParameterDefinition param in mdef.Parameters) {
 				if (first)
 					first = false;
 				else
@@ -558,9 +558,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			MonoClassType klass = null;
 
-			Cecil.ITypeDefinitionCollection types = Assembly.MainModule.Types;
+			Cecil.TypeDefinitionCollection types = Assembly.MainModule.Types;
 			// FIXME: Work around an API problem in Cecil.
-			foreach (Cecil.ITypeDefinition type in types) {
+			foreach (Cecil.TypeDefinition type in types) {
 				if (type.FullName != class_name)
 					continue;
 
@@ -595,7 +595,7 @@ namespace Mono.Debugger.Languages.Mono
 			SourceMethod method = GetSourceMethod (index.Index);
 			C.MethodEntry entry = File.GetMethod (index.Index);
 
-			Cecil.IMethodDefinition mdef = MonoDebuggerSupport.GetMethod (
+			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
 
 			mono_method = new MonoMethod (this, method, entry, mdef);
@@ -619,9 +619,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			MonoClassType klass = null;
 
-			Cecil.ITypeDefinitionCollection types = Assembly.MainModule.Types;
+			Cecil.TypeDefinitionCollection types = Assembly.MainModule.Types;
 			// FIXME: Work around an API problem in Cecil.
-			foreach (Cecil.ITypeDefinition type in types) {
+			foreach (Cecil.TypeDefinition type in types) {
 				if (type.FullName != class_name)
 					continue;
 
@@ -632,12 +632,12 @@ namespace Mono.Debugger.Languages.Mono
 			if (klass == null)
 				return null;
 
-			Cecil.IMethodDefinition minfo = MonoDebuggerSupport.GetMethod (
+			Cecil.MethodDefinition minfo = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, token);
 
 			StringBuilder sb = new StringBuilder ();
 			bool first = true;
-			foreach (Cecil.IParameterReference pinfo in minfo.Parameters) {
+			foreach (Cecil.ParameterDefinition pinfo in minfo.Parameters) {
 				if (first)
 					first = false;
 				else
@@ -682,7 +682,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoSymbolFile file;
 			SourceMethod info;
 			C.MethodEntry method;
-			Cecil.IMethodDefinition mdef;
+			Cecil.MethodDefinition mdef;
 			MonoClassType decl_type;
 			TargetType[] param_types;
 			TargetType[] local_types;
@@ -695,7 +695,7 @@ namespace Mono.Debugger.Languages.Mono
 			Hashtable load_handlers;
 
 			public MonoMethod (MonoSymbolFile file, SourceMethod info,
-					   C.MethodEntry method, Cecil.IMethodDefinition mdef)
+					   C.MethodEntry method, Cecil.MethodDefinition mdef)
 				: base (info.Name, file.ImageFile, file.Module)
 			{
 				this.file = file;
@@ -729,11 +729,11 @@ namespace Mono.Debugger.Languages.Mono
 				if (has_variables || !is_loaded)
 					return;
 
-				Cecil.IParameterDefinitionCollection param_info = mdef.Parameters;
+				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				param_types = new TargetType [param_info.Count];
 				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
-					Cecil.ITypeReference type = param_info [i].ParameterType;
+					Cecil.TypeReference type = param_info [i].ParameterType;
 
 					param_types [i] = file.MonoLanguage.LookupMonoType (type);
 					if (param_types [i] == null)
@@ -849,7 +849,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
-			string GetTypeSignature (Cecil.ITypeReference t)
+			string GetTypeSignature (Cecil.TypeReference t)
 			{
 				switch (t.FullName) {
 				case "System.Char":	return "char";
@@ -1332,7 +1332,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			public readonly int Token;
 
-			public TypeHashEntry (Cecil.ITypeDefinition type)
+			public TypeHashEntry (Cecil.TypeDefinition type)
 			{
 				Token = (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
 			}

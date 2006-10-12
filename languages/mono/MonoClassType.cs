@@ -25,12 +25,12 @@ namespace Mono.Debugger.Languages.Mono
 		int first_method = 0, first_smethod = 0;
 		int num_fields = 0, num_sfields = 0, first_field = 0;
 
-		Cecil.ITypeDefinition type;
+		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
 		MonoClassType parent_type;
 		MonoClassInfo type_info;
 
-		public MonoClassType (MonoSymbolFile file, Cecil.ITypeDefinition type)
+		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage, TargetObjectKind.Class)
 		{
 			this.type = type;
@@ -40,7 +40,7 @@ namespace Mono.Debugger.Languages.Mono
 				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
 		}
 
-		public Cecil.ITypeDefinition Type {
+		public Cecil.TypeDefinition Type {
 			get { return type; }
 		}
 
@@ -95,7 +95,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (fields != null)
 				return;
 
-			foreach (Cecil.IFieldDefinition field in type.Fields) {
+			foreach (Cecil.FieldDefinition field in type.Fields) {
 				if (field.IsStatic)
 					num_sfields++;
 				else
@@ -112,7 +112,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			int pos = 0, spos = 0, i = first_field;
-			foreach (Cecil.IFieldDefinition field in type.Fields) {
+			foreach (Cecil.FieldDefinition field in type.Fields) {
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
 					static_fields [spos] = new MonoFieldInfo (ftype, spos, i, field);
@@ -176,7 +176,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (methods != null)
 				return;
 
-			foreach (Cecil.IMethodDefinition method in type.Methods) {
+			foreach (Cecil.MethodDefinition method in type.Methods) {
 				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
 				if (method.IsStatic)
@@ -195,7 +195,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			int pos = 0, spos = 0;
-			foreach (Cecil.IMethodDefinition method in type.Methods) {
+			foreach (Cecil.MethodDefinition method in type.Methods) {
 				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
 				if (method.IsStatic) {
@@ -215,8 +215,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_sproperties = 0, num_properties = 0;
 
-			foreach (Cecil.IPropertyDefinition prop in type.Properties) {
-				Cecil.IMethodDefinition m = prop.GetMethod;
+			foreach (Cecil.PropertyDefinition prop in type.Properties) {
+				Cecil.MethodDefinition m = prop.GetMethod;
 				if (m == null) m = prop.SetMethod;
 
 				if (m.IsStatic)
@@ -229,8 +229,8 @@ namespace Mono.Debugger.Languages.Mono
 			static_properties = new MonoPropertyInfo [num_sproperties];
 
 			int pos = 0, spos = 0;
-			foreach (Cecil.IPropertyDefinition prop in type.Properties) {
-				Cecil.IMethodDefinition m = prop.GetMethod;
+			foreach (Cecil.PropertyDefinition prop in type.Properties) {
+				Cecil.MethodDefinition m = prop.GetMethod;
 				if (m == null) m = prop.SetMethod;
 
 				if (m.IsStatic) {
@@ -280,8 +280,8 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			int num_sevents = 0, num_events = 0;
-			foreach (Cecil.IEventDefinition ev in type.Events) {
-				Cecil.IMethodDefinition m = ev.AddMethod;
+			foreach (Cecil.EventDefinition ev in type.Events) {
+				Cecil.MethodDefinition m = ev.AddMethod;
 
 				if (m.IsStatic)
 					num_sevents++;
@@ -293,8 +293,8 @@ namespace Mono.Debugger.Languages.Mono
 			static_events = new MonoEventInfo [num_sevents];
 
 			int pos = 0, spos = 0;
-			foreach (Cecil.IEventDefinition ev in type.Events) {
-				Cecil.IMethodDefinition m = ev.AddMethod;
+			foreach (Cecil.EventDefinition ev in type.Events) {
+				Cecil.MethodDefinition m = ev.AddMethod;
 
 				if (m.IsStatic) {
 					static_events [spos] = MonoEventInfo.Create (this, spos, ev, true);
@@ -334,7 +334,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_ctors = 0, num_sctors = 0;
 
-			foreach (Cecil.IMethodDefinition method in type.Constructors) {
+			foreach (Cecil.MethodDefinition method in type.Constructors) {
 				if (method.IsStatic)
 					num_sctors++;
 				else
@@ -345,7 +345,7 @@ namespace Mono.Debugger.Languages.Mono
 			static_constructors = new MonoMethodInfo [num_sctors];
 
 			int pos = 0, spos = 0;
-			foreach (Cecil.IMethodDefinition method in type.Constructors) {
+			foreach (Cecil.MethodDefinition method in type.Constructors) {
 				if (method.IsStatic) {
 					static_constructors [spos] = MonoMethodInfo.Create (
 						this, spos, method);
@@ -490,13 +490,13 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			if ((type == 0x11) || (type == 0x12)) { // MONO_TYPE_(VALUETYPE|CLASS)
-				Cecil.ITypeDefinition tdef;
+				Cecil.TypeDefinition tdef;
 
 				if ((token & 0xff000000) != 0x02000000)
 					return null;
 
 				token &= 0x00ffffff;
-				tdef = (Cecil.ITypeDefinition) file.ModuleDefinition.LookupByToken (
+				tdef = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
 					Cecil.Metadata.TokenType.TypeDef, (int) token);
 
 				if (tdef != null)

@@ -11,10 +11,10 @@ namespace Mono.Debugger.Languages.Mono
 		MonoFieldInfo[] static_fields;
 
 		MonoSymbolFile file;
-		Cecil.ITypeDefinition type;
+		Cecil.TypeDefinition type;
 		bool is_flags;
 
-		public MonoEnumType (MonoSymbolFile file, Cecil.ITypeDefinition type)
+		public MonoEnumType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage)
 		{
 			this.type = type;
@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return file; }
 		}
 
-		public Cecil.ITypeDefinition Type {
+		public Cecil.TypeDefinition Type {
 			get { return type; }
 		}
 
@@ -59,7 +59,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int num_fields = 0, num_sfields = 0;
 
-			foreach (Cecil.IFieldDefinition field in type.Fields) {
+			foreach (Cecil.FieldDefinition field in type.Fields) {
 				if (field.IsStatic)
 					num_sfields++;
 				else
@@ -70,7 +70,7 @@ namespace Mono.Debugger.Languages.Mono
 			static_fields = new MonoFieldInfo [num_sfields];
 
 			int pos = 0, spos = 0, i = 0;
-			foreach (Cecil.IFieldDefinition field in type.Fields) {
+			foreach (Cecil.FieldDefinition field in type.Fields) {
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
 					static_fields [spos] = new MonoFieldInfo (ftype, spos, i, field);

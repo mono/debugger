@@ -9,14 +9,14 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal static class MonoDebuggerSupport
 	{
-		public static int GetMethodToken (Cecil.IMethodDefinition method)
+		public static int GetMethodToken (Cecil.MethodDefinition method)
 		{
 			return (int) (method.MetadataToken.TokenType + method.MetadataToken.RID);
 		}
 
-		public static Cecil.IMethodDefinition GetMethod (Cecil.IModuleDefinition module, int token)
+		public static Cecil.MethodDefinition GetMethod (Cecil.ModuleDefinition module, int token)
 		{
-			return (Cecil.IMethodDefinition) module.LookupByToken (
+			return (Cecil.MethodDefinition) module.LookupByToken (
 				Cecil.Metadata.TokenType.Method, token & 0xffffff);
 		}
 
@@ -186,8 +186,8 @@ namespace Mono.Debugger.Languages.Mono
 				throw new ArgumentException ();
 			}
 
-			Cecil.ITypeReference type =
-				(Cecil.ITypeReference) file.ModuleDefinition.LookupByToken (token);
+			Cecil.TypeReference type =
+				(Cecil.TypeReference) file.ModuleDefinition.LookupByToken (token);
 			if (type == null)
 				return null;
 

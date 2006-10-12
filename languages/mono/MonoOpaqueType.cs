@@ -5,15 +5,15 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoOpaqueType : TargetType
 	{
-		Cecil.ITypeReference typeref;
+		Cecil.TypeReference typeref;
 
-		public MonoOpaqueType (MonoSymbolFile file, Cecil.ITypeReference typeref)
+		public MonoOpaqueType (MonoSymbolFile file, Cecil.TypeReference typeref)
 			: base (file.MonoLanguage, TargetObjectKind.Unknown)
 		{
 			this.typeref = typeref;
 		}
 
-		public Cecil.ITypeReference Type {
+		public Cecil.TypeReference Type {
 			get { return typeref; }
 		}
 

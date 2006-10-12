@@ -9,14 +9,14 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoFunctionType : TargetFunctionType
 	{
 		MonoClassType klass;
-		Cecil.IMethodDefinition method_info;
+		Cecil.MethodDefinition method_info;
 		TargetType return_type;
 		TargetType[] parameter_types;
 		bool has_return_type;
 		string name;
 		int token;
 
-		public MonoFunctionType (MonoClassType klass, Cecil.IMethodDefinition mdef,
+		public MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef,
 					 string name)
 			: base (klass.File.MonoLanguage)
 		{
@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.token = MonoDebuggerSupport.GetMethodToken (mdef);
 			this.name = name;
 
-			Cecil.ITypeReference rtype;
+			Cecil.TypeReference rtype;
 			if (mdef.IsConstructor) {
 				rtype = mdef.DeclaringType;
 				has_return_type = true;

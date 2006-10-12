@@ -8,10 +8,10 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoFieldInfo : TargetFieldInfo
 	{
 		[NonSerialized]
-		public readonly Cecil.IFieldDefinition FieldInfo;
+		public readonly Cecil.FieldDefinition FieldInfo;
 
 		public MonoFieldInfo (TargetType type, int index, int pos,
-				      Cecil.IFieldDefinition finfo)
+				      Cecil.FieldDefinition finfo)
 			: base (type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFunctionType FunctionType;
 		public readonly MonoClassType Klass;
 
-		private MonoMethodInfo (MonoClassType klass, int index, Cecil.IMethodDefinition minfo,
+		private MonoMethodInfo (MonoClassType klass, int index, Cecil.MethodDefinition minfo,
 					string full_name, MonoFunctionType type)
 			: base (type, minfo.Name, index, minfo.IsStatic, full_name)
 		{
@@ -42,11 +42,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal static MonoMethodInfo Create (MonoClassType klass, int index,
-						       Cecil.IMethodDefinition minfo)
+						       Cecil.MethodDefinition minfo)
 		{
 			StringBuilder sb = new StringBuilder ();
 			bool first = true;
-			foreach (Cecil.IParameterReference pinfo in minfo.Parameters) {
+			foreach (Cecil.ParameterDefinition pinfo in minfo.Parameters) {
 				if (first)
 					first = false;
 				else
@@ -67,7 +67,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType Klass;
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
-		private MonoEventInfo (MonoClassType klass, int index, Cecil.IEventDefinition einfo,
+		private MonoEventInfo (MonoClassType klass, int index, Cecil.EventDefinition einfo,
 				       bool is_static, TargetType type, MonoFunctionType add,
 				       MonoFunctionType remove, MonoFunctionType raise)
 			: base (type, einfo.Name, index, is_static, add, remove, raise)
@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal static MonoEventInfo Create (MonoClassType klass, int index,
-						      Cecil.IEventDefinition einfo, bool is_static)
+						      Cecil.EventDefinition einfo, bool is_static)
 		{
 			TargetType type = klass.File.MonoLanguage.LookupMonoType (einfo.EventType);
 
@@ -111,7 +111,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFunctionType GetterType, SetterType;
 
 		private MonoPropertyInfo (TargetType type, MonoClassType klass, int index,
-					  Cecil.IPropertyDefinition pinfo, bool is_static,
+					  Cecil.PropertyDefinition pinfo, bool is_static,
 					  MonoFunctionType getter, MonoFunctionType setter)
 			: base (type, pinfo.Name, index, is_static, getter, setter)
 		{
@@ -121,7 +121,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal static MonoPropertyInfo Create (MonoClassType klass, int index,
-							 Cecil.IPropertyDefinition pinfo,
+							 Cecil.PropertyDefinition pinfo,
 							 bool is_static)
 		{
 			TargetType type = klass.File.MonoLanguage.LookupMonoType (pinfo.PropertyType);

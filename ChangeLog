@@ -1,3 +1,17 @@
+2006-10-09  Jb Evain  <jbevain@gmail.com>
+
+	* languages/mono/MonoFunctionType.cs
+	languages/mono/MonoLanguageBackend.cs
+	languages/mono/MonoOpaqueType.cs
+	languages/mono/MonoSymbolFile.cs
+	languages/mono/MonoEnumType.cs
+	languages/mono/MonoMember.cs
+	languages/mono/MonoClassType.cs
+	languages/mono/MonoObjectType.cs
+	languages/mono/MonoDebuggerSupport.cs:
+		Don't use Cecil's interfaces which are deprecated
+		in the next version.
+
 2006-07-18  Wade Berrier <wberrier@novell.com>
 
 	* backends/Makefile.am: Remove ModuleManager.cs from EXTRA_DIST
