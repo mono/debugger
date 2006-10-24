@@ -1,4 +1,4 @@
-EXTRA_DIST = FAQ.txt breakpoints.txt debugger-status.txt \
+EXTRA_DIST = FAQ.txt breakpoints.txt \
 	     symbol-lookups.txt debugger.source
 
 sourcesdir = @mono_prefix@/lib/monodoc/sources

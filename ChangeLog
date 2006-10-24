@@ -1,3 +1,7 @@
+2006-10-24  Wade Berrier  <wberrier@novell.com>
+
+	* doc/Makefile.am: Update filelist for removed files to fix make dist
+
 2006-10-09  Jb Evain  <jbevain@gmail.com>
 
 	* languages/mono/MonoFunctionType.cs
