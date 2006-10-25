@@ -1,5 +1,9 @@
 2006-10-25  Martin Baulig  <martin@ximian.com>
 
+	* arch/: Moved to backend/arch.
+
+2006-10-25  Martin Baulig  <martin@ximian.com>
+
 	* backends/: Rename to backend.
 
 2006-10-24  Wade Berrier  <wberrier@novell.com>

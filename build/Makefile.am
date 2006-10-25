@@ -31,7 +31,7 @@ MDB_SRCLIST = \
 	AssemblyInfo.cs
 
 LIBRARY_SRCLIST = \
-	$(top_srcdir)/arch/*.cs				\
+	$(top_srcdir)/backend/arch/*.cs			\
 	$(top_srcdir)/backend/*.cs			\
 	$(top_srcdir)/languages/*.cs			\
 	$(top_srcdir)/languages/mono/*.cs		\
