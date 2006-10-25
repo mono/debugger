@@ -1,5 +1,16 @@
 2006-10-25  Martin Baulig  <martin@ximian.com>
 
+	* build/: Rename the current `Mono.Debugger.dll' into
+	`Mono.Debugger.Backend.dll' and create a new `Mono.Debugger.dll'.
+
+	* classes/TargetAddress.cs: Moved to ../interface.
+
+	* classes/AddressDomain.cs: Moved to ../interface.
+
+	* classes/Report.cs: Moved to ../interface.
+
+2006-10-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/AddressDomain.cs
 	(AddressDomain): Don't make this byref; add [Serializable]
 	attribute and make the .ctor take the id as argument.

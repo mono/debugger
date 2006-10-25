@@ -6,7 +6,11 @@ one_SCRIPTS = mdb.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
-noinst_SCRIPTS = Mono.Debugger.dll Mono.Debugger.Frontend.dll Mono.Debugger.Test.dll
+noinst_SCRIPTS = \
+	Mono.Debugger.dll				\
+	Mono.Debugger.Backend.dll			\
+	Mono.Debugger.Frontend.dll			\
+	Mono.Debugger.Test.dll
 
 EXTRA_DATA = Mono.Debugger.Cecil.dll
 
@@ -30,7 +34,11 @@ MDB_SRCLIST = \
 	$(LANGUAGE_SPECIFIC_FILES)			\
 	AssemblyInfo.cs
 
-LIBRARY_SRCLIST = \
+INTERFACE_SRCLIST = \
+	$(top_srcdir)/interface/*.cs			\
+	AssemblyInfo.cs
+
+BACKEND_SRCLIST = \
 	$(top_srcdir)/backend/arch/*.cs			\
 	$(top_srcdir)/backend/*.cs			\
 	$(top_srcdir)/languages/*.cs			\
@@ -46,27 +54,36 @@ TEST_SRCLIST = \
 TEST_CASE_SRCLIST = \
 	$(top_srcdir)/test/src/*.cs
 
-LIBRARY_DEPS = \
+INTERFACE_DEPS = \
+	-r:Mono.GetOptions
+
+BACKEND_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:$(srcdir)/Mono.Debugger.Cecil.dll
+	-r:$(srcdir)/Mono.Debugger.Cecil.dll		\
+	-r:./Mono.Debugger.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
+	-r:./Mono.Debugger.Backend.dll			\
 	-r:./Mono.Debugger.dll
 
 TEST_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll				\
+	-r:./Mono.Debugger.Backend.dll			\
 	-r:./Mono.Debugger.Frontend.dll			\
 	-r:nunit.framework
 
-Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(LIBRARY_SRCLIST)
-	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(LIBRARY_DEPS) $(LIBRARY_SRCLIST)
+Mono.Debugger.Backend.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(BACKEND_SRCLIST) Mono.Debugger.dll
+	$(MCS) -target:library -out:Mono.Debugger.Backend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(BACKEND_DEPS) $(BACKEND_SRCLIST)
 
-Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
+Mono.Debugger.dll: Makefile $(INTERFACE_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(INTERFACE_DEPS) $(INTERFACE_SRCLIST)
+
+Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.Backend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
@@ -75,7 +92,7 @@ Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
 #	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/build/mono.snk)
 
-mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
+mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.Backend.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile

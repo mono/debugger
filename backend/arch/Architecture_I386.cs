@@ -142,7 +142,7 @@ namespace Mono.Debugger.Backends
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
-			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr);
+			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr.Value);
 			vtable_addr += disp;
 
 			if (dereference_addr)
@@ -385,7 +385,7 @@ namespace Mono.Debugger.Backends
 			Registers regs = new Registers (old_regs);
 
 			TargetAddress ebp = new TargetAddress (
-				AddressDomain, old_regs [(int) I386Register.EBP]);
+				AddressDomain, old_regs [(int) I386Register.EBP].Value);
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
@@ -706,11 +706,11 @@ namespace Mono.Debugger.Backends
 		internal override StackFrame CreateFrame (Thread thread, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.EIP]);
+				AddressDomain, regs [(int) I386Register.EIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.ESP]);
+				AddressDomain, regs [(int) I386Register.ESP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.EBP]);
+				AddressDomain, regs [(int) I386Register.EBP].GetValue ());
 
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
 		}

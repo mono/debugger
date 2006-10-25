@@ -40,7 +40,7 @@ namespace Mono.Debugger
 		// <summary>
 		//   `name' is just used in the error messages.
 		// </summary>
-		internal AddressDomain (string name, int id)
+		public AddressDomain (string name, int id)
 		{
 			this.id = id;
 			this.name = name;

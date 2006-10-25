@@ -180,7 +180,7 @@ namespace Mono.Debugger.Backends
 			Registers regs = target.GetRegisters ();
 			Register addr = regs [(int) reg];
 
-			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr);
+			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr.Value);
 			vtable_addr += disp;
 
 			if (dereference_addr)
@@ -484,7 +484,7 @@ namespace Mono.Debugger.Backends
 				return null;
 
 			TargetAddress rbp = new TargetAddress (
-				AddressDomain, old_regs [(int) X86_64_Register.RBP]);
+				AddressDomain, old_regs [(int) X86_64_Register.RBP].Value);
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
