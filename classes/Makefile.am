@@ -8,4 +8,5 @@ EXTRA_DIST = \
 	TargetBinaryReader.cs TargetBinaryWriter.cs TargetEvent.cs TargetException.cs \
 	TargetInvocationException.cs TargetMemoryArea.cs TargetMemoryException.cs \
 	Thread.cs ThreadGroup.cs DebuggerMarshalByRefObject.cs DebuggerOptions.cs \
-	DebuggerConfiguration.cs DebuggerConfiguration.xsd
+	DebuggerConfiguration.cs DebuggerConfiguration.xsd \
+	ISymbolTable.cs ITargetNotification.cs

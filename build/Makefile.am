@@ -37,7 +37,6 @@ LIBRARY_SRCLIST = \
 	$(top_srcdir)/languages/mono/*.cs		\
 	$(top_srcdir)/languages/native/*.cs		\
 	$(top_srcdir)/classes/*.cs			\
-	$(top_srcdir)/interfaces/*.cs			\
 	AssemblyInfo.cs
 
 TEST_SRCLIST = \

@@ -1,5 +1,11 @@
 2006-10-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces/ISymbolTable.cs: Moved to ../classes/.
+
+	* interfaces/ITargetNotification.cs: Moved to ../classes/.
+
+2006-10-25  Martin Baulig  <martin@ximian.com>
+
 	* jay/: Moved to frontend/jay/.
 
 2006-10-25  Martin Baulig  <martin@ximian.com>

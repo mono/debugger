@@ -1,1 +1,1 @@
-EXTRA_DIST = ISymbolTable.cs ITargetNotification.cs
+EXTRA_DIST = 
