@@ -236,7 +236,6 @@ AM_CONDITIONAL(DISABLED, false)
 AC_OUTPUT([
 Makefile
 mono-debugger.pc
-jay/Makefile
 interfaces/Makefile
 classes/Makefile
 build/Makefile
@@ -257,6 +256,7 @@ languages/Makefile
 languages/mono/Makefile
 languages/native/Makefile
 frontend/Makefile
+frontend/jay/Makefile
 frontend/libedit/Makefile
 test/Makefile
 test/src/Makefile
