@@ -34,23 +34,20 @@ namespace Mono.Debugger
 	//   This is intentionally a class and not a struct - we must always pass this by
 	//   reference and not by value.
 	// </remarks>
-	public sealed class AddressDomain : DebuggerMarshalByRefObject, IDisposable
+	[Serializable]
+	public sealed class AddressDomain
 	{
 		// <summary>
 		//   `name' is just used in the error messages.
 		// </summary>
-		internal AddressDomain (string name)
+		internal AddressDomain (string name, int id)
 		{
-			this.id = ++next_id;
-			this.is_valid = true;
+			this.id = id;
 			this.name = name;
 		}
 
 		int id;
-		bool is_valid;
 		string name;
-
-		static int next_id = 0;
 
 		public int ID {
 			get { return id; }
@@ -60,45 +57,9 @@ namespace Mono.Debugger
 			get { return name; }
 		}
 
-		public bool IsValid {
-			get { return is_valid; }
-		}
-
 		public override string ToString ()
 		{
 			return String.Format ("AddressDomain ({0}:{1})", ID, Name);
-		}
-
-		//
-		// IDisposable
-		//
-
-		private bool disposed = false;
-
-		private void check_disposed ()
-		{
-			if (disposed)
-				throw new ObjectDisposedException ("AddressDomain");
-		}
-
-		private void Dispose (bool disposing)
-		{
-			if (!this.disposed) {
-				this.is_valid = false;
-				this.disposed = true;
-			}
-		}
-
-		public void Dispose ()
-		{
-			Dispose (true);
-			// Take yourself off the Finalization queue
-			GC.SuppressFinalize (this);
-		}
-
-		~AddressDomain ()
-		{
-			Dispose (false);
 		}
 	}
 }
