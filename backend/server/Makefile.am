@@ -32,7 +32,7 @@ libmonodebuggerserver_la_SOURCES = \
 
 libmonodebuggerserver_la_LIBADD = \
 	@SERVER_DEPENDENCIES_LIBS@ \
-	../../arch/libmonodebuggerbfdglue.la
+	../arch/libmonodebuggerbfdglue.la
 libmonodebuggerserver_la_LDFLAGS = \
 	 -no-undefined -export-dynamic -shared
 

@@ -1,4 +1,4 @@
-SUBDIRS = server
+SUBDIRS = arch server
 
 EXTRA_DIST = \
 	BreakpointHandle.cs BreakpointManager.cs EventQueue.cs ILanguageBackend.cs \

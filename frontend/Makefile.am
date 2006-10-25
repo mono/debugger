@@ -1,8 +1,8 @@
-SUBDIRS = libedit
+SUBDIRS = jay libedit
 
 noinst_DATA = $(top_builddir)/frontend/CSharpExpressionParser.cs
 
-JAY = $(top_builddir)/jay/jay
+JAY = jay/jay
 CSLEX = $(top_builddir)/cslex/cslex.exe
 
 $(top_builddir)/frontend/CSharpExpressionParser.cs: CSharpExpressionParser.jay $(srcdir)/skeleton
