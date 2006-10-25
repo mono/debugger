@@ -236,7 +236,7 @@ AM_CONDITIONAL(DISABLED, false)
 AC_OUTPUT([
 Makefile
 mono-debugger.pc
-interfaces/Makefile
+interface/Makefile
 classes/Makefile
 build/Makefile
 build/Mono.Debugger.dll.config

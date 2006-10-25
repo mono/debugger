@@ -1,5 +1,9 @@
 2006-10-25  Martin Baulig  <martin@ximian.com>
 
+	* interfaces: Renamed to interface.
+
+2006-10-25  Martin Baulig  <martin@ximian.com>
+
 	* interfaces/ISymbolTable.cs: Moved to ../classes/.
 
 	* interfaces/ITargetNotification.cs: Moved to ../classes/.
