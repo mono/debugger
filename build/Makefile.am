@@ -32,7 +32,7 @@ MDB_SRCLIST = \
 
 LIBRARY_SRCLIST = \
 	$(top_srcdir)/arch/*.cs				\
-	$(top_srcdir)/backends/*.cs			\
+	$(top_srcdir)/backend/*.cs			\
 	$(top_srcdir)/languages/*.cs			\
 	$(top_srcdir)/languages/mono/*.cs		\
 	$(top_srcdir)/languages/native/*.cs		\
