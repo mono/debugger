@@ -1,4 +1,4 @@
-/*	$NetBSD: readline.h,v 1.11 2004/01/17 17:57:40 christos Exp $	*/
+/*	$NetBSD: readline.h,v 1.18 2006/08/21 12:45:30 christos Exp $	*/
 
 /*-
  * Copyright (c) 1997 The NetBSD Foundation, Inc.
@@ -15,11 +15,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the NetBSD
- *	Foundation, Inc. and its contributors.
- * 4. Neither the name of The NetBSD Foundation nor the names of its
+ * 3. Neither the name of The NetBSD Foundation nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
  *
@@ -45,12 +41,15 @@
 /* typedefs */
 typedef int	  Function(const char *, int);
 typedef void	  VFunction(void);
+typedef void	  VCPFunction(char *);
 typedef char	 *CPFunction(const char *, int);
 typedef char	**CPPFunction(const char *, int, int);
 
+typedef void *histdata_t;
+
 typedef struct _hist_entry {
 	const char	*line;
-	const char	*data;
+	histdata_t	*data;
 } HIST_ENTRY;
 
 typedef struct _keymap_entry {
@@ -71,7 +70,7 @@ typedef KEYMAP_ENTRY *Keymap;
 
 #ifndef CTRL
 #include <sys/ioctl.h>
-#if !defined(__sun__) && !defined(__hpux__)
+#ifdef __GLIBC__
 #include <sys/ttydefaults.h>
 #endif
 #ifndef CTRL
@@ -102,10 +101,12 @@ extern char		*rl_completer_word_break_characters;
 extern char		*rl_completer_quote_characters;
 extern Function		*rl_completion_entry_function;
 extern CPPFunction	*rl_attempted_completion_function;
+extern int		 rl_attempted_completion_over;
 extern int		rl_completion_type;
 extern int		rl_completion_query_items;
 extern char		*rl_special_prefixes;
 extern int		rl_completion_append_character;
+extern int		rl_inhibit_completion;
 extern Function		*rl_pre_input_hook;
 extern Function		*rl_startup_hook;
 extern char		*rl_terminal_name;
@@ -138,6 +139,7 @@ int		 history_is_stifled(void);
 int		 where_history(void);
 HIST_ENTRY	*current_history(void);
 HIST_ENTRY	*history_get(int);
+HIST_ENTRY	*remove_history(int);
 int		 history_total_bytes(void);
 int		 history_set_pos(int);
 HIST_ENTRY	*previous_history(void);
@@ -165,7 +167,7 @@ void		 rl_reset_terminal(const char *);
 int		 rl_bind_key(int, int (*)(int, int));
 int		 rl_newline(int, int);
 void		 rl_callback_read_char(void);
-void		 rl_callback_handler_install(const char *, VFunction *);
+void		 rl_callback_handler_install(const char *, VCPFunction *);
 void		 rl_callback_handler_remove(void);
 void		 rl_redisplay(void);
 int		 rl_get_previous_history(int, int);
@@ -173,6 +175,7 @@ void		 rl_prep_terminal(int);
 void		 rl_deprep_terminal(void);
 int		 rl_read_init_file(const char *);
 int		 rl_parse_and_bind(const char *);
+int		 rl_variable_bind(const char *, const char *);
 void		 rl_stuff_char(int);
 int		 rl_add_defun(const char *, Function *, int);
 

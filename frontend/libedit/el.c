@@ -1,4 +1,4 @@
-/*	$NetBSD: el.c,v 1.38.2.1 2004/07/10 09:28:27 tron Exp $	*/
+/*	$NetBSD: el.c,v 1.41 2005/08/19 04:21:47 christos Exp $	*/
 
 /*-
  * Copyright (c) 1992, 1993
@@ -33,7 +33,13 @@
  */
 
 #include "config.h"
-#include "sys.h"
+#if !defined(lint) && !defined(SCCSID)
+#if 0
+static char sccsid[] = "@(#)el.c	8.2 (Berkeley) 1/3/94";
+#else
+__RCSID("$NetBSD: el.c,v 1.41 2005/08/19 04:21:47 christos Exp $");
+#endif
+#endif /* not lint && not SCCSID */
 
 /*
  * el.c: EditLine interface functions
@@ -127,7 +133,7 @@ el_reset(EditLine *el)
 {
 
 	tty_cookedmode(el);
-	ch_reset(el);		/* XXX: Do we want that? */
+	ch_reset(el, 0);		/* XXX: Do we want that? */
 }
 
 
@@ -294,11 +300,11 @@ el_get(EditLine *el, int op, void *ret)
 	switch (op) {
 	case EL_PROMPT:
 	case EL_RPROMPT:
-		rv = prompt_get(el, (void *) &ret, op);
+		rv = prompt_get(el, (el_pfunc_t *) ret, op);
 		break;
 
 	case EL_EDITOR:
-		rv = map_get_editor(el, (void *) &ret);
+		rv = map_get_editor(el, (const char **)ret);
 		break;
 
 	case EL_SIGNAL:
@@ -424,16 +430,22 @@ public int
 el_source(EditLine *el, const char *fname)
 {
 	FILE *fp;
-	char ptr [BUFSIZ];
+	size_t len;
+	char *ptr;
 
 	fp = NULL;
 	if (fname == NULL) {
-#ifdef HAVE_ISSETUGID
 		static const char elpath[] = "/.editrc";
+#ifdef MAXPATHLEN
 		char path[MAXPATHLEN];
+#else
+		char path[4096];
+#endif
 
+#ifdef HAVE_ISSETUGID
 		if (issetugid())
 			return (-1);
+#endif
 		if ((ptr = getenv("HOME")) == NULL)
 			return (-1);
 		if (strlcpy(path, ptr, sizeof(path)) >= sizeof(path))
@@ -441,22 +453,13 @@ el_source(EditLine *el, const char *fname)
 		if (strlcat(path, elpath, sizeof(path)) >= sizeof(path))
 			return (-1);
 		fname = path;
-#else
-		/*
-		 * If issetugid() is missing, always return an error, in order
-		 * to keep from inadvertently opening up the user to a security
-		 * hole.
-		 */
-		return (-1);
-#endif
 	}
 	if (fp == NULL)
 		fp = fopen(fname, "r");
 	if (fp == NULL)
 		return (-1);
 
-	while (fgets (ptr, BUFSIZ, fp)) {
-		size_t len = strlen (ptr);
+	while ((ptr = fgetln(fp, &len)) != NULL) {
 		if (len > 0 && ptr[len - 1] == '\n')
 			--len;
 		ptr[len] = '\0';

@@ -1,4 +1,4 @@
-/*	$NetBSD: strlcat.c,v 1.16 2003/10/27 00:12:42 lukem Exp $	*/
+/*	$NetBSD: strlcat.c,v 1.2 2006/03/30 20:37:51 christos Exp $	*/
 /*	$OpenBSD: strlcat.c,v 1.10 2003/04/12 21:56:39 millert Exp $	*/
 
 /*
@@ -17,12 +17,21 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "config.h"
-#include "sys.h"
+#include <config.h>
+
+#if defined(LIBC_SCCS) && !defined(lint)
+__RCSID("$NetBSD: strlcat.c,v 1.2 2006/03/30 20:37:51 christos Exp $");
+#endif /* LIBC_SCCS and not lint */
 
 #include <sys/types.h>
 #include <assert.h>
 #include <string.h>
+
+#ifdef _LIBC
+# ifdef __weak_alias
+__weak_alias(strlcat, _strlcat)
+# endif
+#endif
 
 #if !HAVE_STRLCAT
 /*

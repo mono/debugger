@@ -1,4 +1,4 @@
-/*	$NetBSD: histedit.h,v 1.25 2003/12/05 13:37:48 lukem Exp $	*/
+/*	$NetBSD: histedit.h,v 1.28 2005/07/14 15:00:58 christos Exp $	*/
 
 /*-
  * Copyright (c) 1992, 1993
@@ -45,6 +45,10 @@
 
 #include <sys/types.h>
 #include <stdio.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * ==== Editing ====
@@ -106,6 +110,7 @@ int		 el_parse(EditLine *, int, const char **);
  */
 int		 el_set(EditLine *, int, ...);
 int		 el_get(EditLine *, int, void *);
+unsigned char	_el_fn_complete(EditLine *, int);
 
 /*
  * el_set/el_get parameters
@@ -192,6 +197,7 @@ int		history(History *, HistEvent *, int, ...);
 #define	H_CLEAR		19	/* , void);		*/
 #define	H_SETUNIQUE	20	/* , int);		*/
 #define	H_GETUNIQUE	21	/* , void);		*/
+#define	H_DEL		22	/* , int);		*/
 
 
 /*
@@ -210,5 +216,9 @@ int		 tok_line(Tokenizer *, const LineInfo *,
 		    int *, const char ***, int *, int *);
 int		 tok_str(Tokenizer *, const char *,
 		    int *, const char ***);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _HISTEDIT_H_ */

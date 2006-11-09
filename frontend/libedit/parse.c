@@ -1,4 +1,4 @@
-/*	$NetBSD: parse.c,v 1.20 2003/12/05 13:37:48 lukem Exp $	*/
+/*	$NetBSD: parse.c,v 1.22 2005/05/29 04:58:15 lukem Exp $	*/
 
 /*-
  * Copyright (c) 1992, 1993
@@ -33,7 +33,13 @@
  */
 
 #include "config.h"
-#include "sys.h"
+#if !defined(lint) && !defined(SCCSID)
+#if 0
+static char sccsid[] = "@(#)parse.c	8.1 (Berkeley) 6/4/93";
+#else
+__RCSID("$NetBSD: parse.c,v 1.22 2005/05/29 04:58:15 lukem Exp $");
+#endif
+#endif /* not lint && not SCCSID */
 
 /*
  * parse.c: parse an editline extended command
@@ -130,7 +136,7 @@ el_parse(EditLine *el, int argc, const char *argv[])
  *	the appropriate character or -1 if the escape is not valid
  */
 protected int
-parse__escape(const char **const ptr)
+parse__escape(const char **ptr)
 {
 	const char *p;
 	int c;

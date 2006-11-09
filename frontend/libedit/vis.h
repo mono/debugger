@@ -1,4 +1,4 @@
-/*	$NetBSD: vis.h,v 1.14 2003/08/07 09:44:12 agc Exp $	*/
+/*	$NetBSD: vis.h,v 1.16 2005/09/13 01:44:32 christos Exp $	*/
 
 /*-
  * Copyright (c) 1990, 1993
@@ -34,7 +34,7 @@
 #ifndef _VIS_H_
 #define	_VIS_H_
 
-#include <sys/types.h>
+#include <config.h>
 
 /*
  * to select alternate encoding format
@@ -72,19 +72,18 @@
  */
 #define	UNVIS_END	1	/* no more characters */
 
-#include <sys/cdefs.h>
-
 __BEGIN_DECLS
-char	*vis __P((char *, int, int, int));
-char	*svis __P((char *, int, int, int, const char *));
-int	strvis __P((char *, const char *, int));
-int	strsvis __P((char *, const char *, int, const char *));
-int	strvisx __P((char *, const char *, size_t, int));
-int	strsvisx __P((char *, const char *, size_t, int, const char *));
-int	strunvis __P((char *, const char *));
-int	strunvisx __P((char *, const char *, int));
-int	unvis __P((char *, int, int *, int));
-int	__unvis13 __P((char *, int, int *, int));
+char	*vis(char *, int, int, int);
+char	*svis(char *, int, int, int, const char *);
+int	strvis(char *, const char *, int);
+int	strsvis(char *, const char *, int, const char *);
+int	strvisx(char *, const char *, size_t, int);
+int	strsvisx(char *, const char *, size_t, int, const char *);
+int	strunvis(char *, const char *);
+int	strunvisx(char *, const char *, int);
+#ifndef __LIBC12_SOURCE__
+int	unvis(char *, int, int *, int);
+#endif
 __END_DECLS
 
 #endif /* !_VIS_H_ */

@@ -40,12 +40,22 @@
 #ifndef _h_sys
 #define	_h_sys
 
+#include <config.h>
+
 #ifdef HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
 #endif
 
 #if !defined(__attribute__) && (defined(__cplusplus) || !defined(__GNUC__)  || __GNUC__ == 2 && __GNUC_MINOR__ < 8)
 # define __attribute__(A)
+#endif
+
+#ifndef __P
+# define __P(x) x
+#endif
+
+#ifndef _DIAGASSERT
+# define _DIAGASSERT(x)
 #endif
 
 #ifndef __BEGIN_DECLS
@@ -69,6 +79,10 @@
 #ifndef protected
 # define protected	/* Redefined from elsewhere to "static" */
 			/* When we want to hide everything	*/
+#endif
+
+#ifndef HAVE_U_INT32_T
+typedef unsigned int  u_int32_t;
 #endif
 
 #ifndef _PTR_T
@@ -96,10 +110,6 @@ size_t	strlcpy(char *dst, const char *src, size_t size);
 #ifndef HAVE_FGETLN
 #define	fgetln libedit_fgetln
 char	*fgetln(FILE *fp, size_t *len);
-#endif
-
-#ifndef _DIAGASSERT
-#define _DIAGASSERT assert
 #endif
 
 #define	REGEX		/* Use POSIX.2 regular expression functions */

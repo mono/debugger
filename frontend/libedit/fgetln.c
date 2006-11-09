@@ -1,11 +1,11 @@
-/*	$NetBSD: read.h,v 1.5 2006/08/21 12:45:30 christos Exp $	*/
+/*	$NetBSD: fgetln.c,v 1.8 2006/10/18 15:17:38 christos Exp $	*/
 
 /*-
- * Copyright (c) 2001 The NetBSD Foundation, Inc.
+ * Copyright (c) 1998 The NetBSD Foundation, Inc.
  * All rights reserved.
  *
  * This code is derived from software contributed to The NetBSD Foundation
- * by Anthony Mallet.
+ * by Christos Zoulas.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,22 +32,79 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * el.read.h: Character reading functions
- */
-#ifndef	_h_el_read
-#define	_h_el_read
+#ifdef HAVE_NBTOOL_CONFIG_H
+#include "nbtool_config.h"
+#endif
 
-typedef int (*el_rfunc_t)(EditLine *, char *);
+#if !HAVE_FGETLN
+#include <config.h>
+#include <stdlib.h>
+#ifndef HAVE_NBTOOL_CONFIG_H
+/* These headers are required, but included from nbtool_config.h */
+#include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#endif
 
-typedef struct el_read_t {
-	el_rfunc_t	read_char;	/* Function to read a character */
-} el_read_t;
- 
-protected int		read_init(EditLine *);
-protected void		read_prepare(EditLine *);
-protected void		read_finish(EditLine *);
-protected int		el_read_setfn(EditLine *, el_rfunc_t);
-protected el_rfunc_t	el_read_getfn(EditLine *);
+char *
+fgetln(FILE *fp, size_t *len)
+{
+	static char *buf = NULL;
+	static size_t bufsiz = 0;
+	char *ptr;
 
-#endif /* _h_el_read */
+
+	if (buf == NULL) {
+		bufsiz = BUFSIZ;
+		if ((buf = malloc(bufsiz)) == NULL)
+			return NULL;
+	}
+
+	if (fgets(buf, bufsiz, fp) == NULL)
+		return NULL;
+
+	*len = 0;
+	while ((ptr = strchr(&buf[*len], '\n')) == NULL) {
+		size_t nbufsiz = bufsiz + BUFSIZ;
+		char *nbuf = realloc(buf, nbufsiz);
+
+		if (nbuf == NULL) {
+			int oerrno = errno;
+			free(buf);
+			errno = oerrno;
+			buf = NULL;
+			return NULL;
+		} else
+			buf = nbuf;
+
+		if (fgets(&buf[bufsiz], BUFSIZ, fp) == NULL) {
+			buf[bufsiz] = '\0';
+			*len = strlen(buf);
+			return buf;
+		}
+
+		*len = bufsiz;
+		bufsiz = nbufsiz;
+	}
+
+	*len = (ptr - buf) + 1;
+	return buf;
+}
+
+#endif
+
+#ifdef TEST
+int
+main(int argc, char *argv[])
+{
+	char *p;
+	size_t len;
+
+	while ((p = fgetln(stdin, &len)) != NULL) {
+		(void)printf("%zu %s", len, p);
+		free(p);
+	}
+	return 0;
+}
+#endif

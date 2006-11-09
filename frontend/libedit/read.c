@@ -1,4 +1,4 @@
-/*	$NetBSD: read.c,v 1.33.2.1 2004/07/10 09:28:04 tron Exp $	*/
+/*	$NetBSD: read.c,v 1.39 2005/08/02 12:11:14 christos Exp $	*/
 
 /*-
  * Copyright (c) 1992, 1993
@@ -33,7 +33,13 @@
  */
 
 #include "config.h"
-#include "sys.h"
+#if !defined(lint) && !defined(SCCSID)
+#if 0
+static char sccsid[] = "@(#)read.c	8.1 (Berkeley) 6/4/93";
+#else
+__RCSID("$NetBSD: read.c,v 1.39 2005/08/02 12:11:14 christos Exp $");
+#endif
+#endif /* not lint && not SCCSID */
 
 /*
  * read.c: Clean this junk up! This is horrible code.
@@ -358,8 +364,11 @@ read_prepare(EditLine *el)
 	   we have the wrong size. */
 	el_resize(el);
 	re_clear_display(el);	/* reset the display stuff */
-	ch_reset(el);
+	ch_reset(el, 0);
 	re_refresh(el);		/* print the prompt */
+
+	if (el->el_flags & UNBUFFERED)
+		term__flush();
 }
 
 protected void
@@ -476,7 +485,7 @@ el_gets(EditLine *el, int *nread)
 #endif /* DEBUG_READ */
 			break;
 		}
-		if ((uint)cmdnum >= el->el_map.nfunc) {	/* BUG CHECK command */
+		if ((unsigned int)cmdnum >= el->el_map.nfunc) {	/* BUG CHECK command */
 #ifdef DEBUG_EDIT
 			(void) fprintf(el->el_errfile,
 			    "ERROR: illegal command from key 0%o\r\n", ch);
@@ -568,7 +577,7 @@ el_gets(EditLine *el, int *nread)
 #endif /* DEBUG_READ */
 			/* put (real) cursor in a known place */
 			re_clear_display(el);	/* reset the display stuff */
-			ch_reset(el);	/* reset the input pointers */
+			ch_reset(el, 1);	/* reset the input pointers */
 			re_refresh(el);	/* print the prompt again */
 			break;
 
