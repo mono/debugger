@@ -33,13 +33,6 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)sig.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: sig.c,v 1.11 2003/08/07 16:44:33 agc Exp $");
-#endif
-#endif /* not lint && not SCCSID */
 
 /*
  * sig.c: Signal handling stuff.

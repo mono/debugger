@@ -19,10 +19,6 @@
 
 #include <config.h>
 
-#if defined(LIBC_SCCS) && !defined(lint)
-__RCSID("$NetBSD: strlcat.c,v 1.2 2006/03/30 20:37:51 christos Exp $");
-#endif /* LIBC_SCCS and not lint */
-
 #include <sys/types.h>
 #include <assert.h>
 #include <string.h>

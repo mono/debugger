@@ -52,10 +52,6 @@ extern char *alloca ();
 # endif
 #endif
 
-#if !defined(lint) && !defined(SCCSID)
-__RCSID("$NetBSD: filecomplete.c,v 1.9 2006/08/21 12:45:30 christos Exp $");
-#endif /* not lint && not SCCSID */
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>

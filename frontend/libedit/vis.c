@@ -78,10 +78,6 @@ extern char *alloca ();
 # endif
 #endif
 
-#if defined(LIBC_SCCS) && !defined(lint)
-__RCSID("$NetBSD: vis.c,v 1.35 2006/08/28 20:42:12 christos Exp $");
-#endif /* LIBC_SCCS and not lint */
-
 #include <sys/types.h>
 
 #include <assert.h>

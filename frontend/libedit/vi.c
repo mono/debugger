@@ -37,14 +37,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)vi.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: vi.c,v 1.27 2006/10/22 07:48:13 mrg Exp $");
-#endif
-#endif /* not lint && not SCCSID */
-
 /*
  * vi.c: Vi mode commands.
  */

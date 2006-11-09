@@ -33,13 +33,6 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)key.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: key.c,v 1.19 2006/03/23 20:22:51 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
 
 /*
  * key.c: This module contains the procedures for maintaining

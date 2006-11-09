@@ -30,13 +30,6 @@
  */
 
 #include <config.h>
-#if defined(LIBC_SCCS) && !defined(lint)
-#if 0
-static char sccsid[] = "@(#)unvis.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: unvis.c,v 1.28 2005/09/13 01:44:09 christos Exp $");
-#endif
-#endif /* LIBC_SCCS and not lint */
 
 #include <sys/types.h>
 

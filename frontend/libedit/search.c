@@ -33,13 +33,6 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)search.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: search.c,v 1.20 2004/11/04 01:16:03 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
 
 /*
  * search.c: History and character search functions

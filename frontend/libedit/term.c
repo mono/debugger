@@ -33,13 +33,6 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)term.c	8.2 (Berkeley) 4/30/95";
-#else
-__RCSID("$NetBSD: term.c,v 1.45 2006/03/18 19:23:14 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
 
 /*
  * term.c: Editor/termcap-curses interface

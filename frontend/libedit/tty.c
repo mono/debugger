@@ -33,13 +33,6 @@
  */
 
 #include "config.h"
-#if !defined(lint) && !defined(SCCSID)
-#if 0
-static char sccsid[] = "@(#)tty.c	8.1 (Berkeley) 6/4/93";
-#else
-__RCSID("$NetBSD: tty.c,v 1.25 2006/03/18 09:09:41 christos Exp $");
-#endif
-#endif /* not lint && not SCCSID */
 
 /*
  * tty.c: tty interface stuff
