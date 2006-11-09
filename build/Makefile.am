@@ -104,13 +104,14 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 
-noinst_DATA = Mono.Debugger.dll.config
+noinst_DATA = Mono.Debugger.dll.config Mono.Debugger.Backend.dll.config
 
-CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config TestResult.*
+CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
+	Mono.Debugger.Backend.dll.config TestResult.*
 
 EXTRA_DIST = \
 	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
-	Mono.Debugger.Cecil.dll
+	Mono.Debugger.Backend.config.in Mono.Debugger.Cecil.dll
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
