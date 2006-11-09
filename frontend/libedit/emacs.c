@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * emacs.c: Emacs functions

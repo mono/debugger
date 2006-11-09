@@ -38,6 +38,7 @@
  * chared.c: Character editor utilities
  */
 #include <stdlib.h>
+#include "sys.h"
 #include "el.h"
 
 private void ch__clearmacro __P((EditLine *));

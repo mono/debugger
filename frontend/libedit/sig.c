@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * sig.c: Signal handling stuff.

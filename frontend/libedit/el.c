@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * el.c: EditLine interface functions

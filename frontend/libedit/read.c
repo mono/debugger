@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * read.c: Clean this junk up! This is horrible code.

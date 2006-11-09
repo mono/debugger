@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * common.c: Common Editor functions

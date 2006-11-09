@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * map.c: Editor function definitions
@@ -60,7 +61,7 @@ private const el_action_t  el_map_emacs[] = {
 	/*   5 */	ED_MOVE_TO_END,		/* ^E */
 	/*   6 */	ED_NEXT_CHAR,		/* ^F */
 	/*   7 */	ED_UNASSIGNED,		/* ^G */
-	/*   8 */	EM_DELETE_PREV_CHAR,	/* ^H */
+	/*   8 */	ED_DELETE_PREV_CHAR,	/* ^H */
 	/*   9 */	ED_UNASSIGNED,		/* ^I */
 	/*  10 */	ED_NEWLINE,		/* ^J */
 	/*  11 */	ED_KILL_LINE,		/* ^K */
@@ -179,7 +180,7 @@ private const el_action_t  el_map_emacs[] = {
 	/* 124 */	ED_INSERT,		/* | */
 	/* 125 */	ED_INSERT,		/* } */
 	/* 126 */	ED_INSERT,		/* ~ */
-	/* 127 */	EM_DELETE_PREV_CHAR,	/* ^? */
+	/* 127 */	ED_DELETE_PREV_CHAR,	/* ^? */
 	/* 128 */	ED_UNASSIGNED,		/* M-^@ */
 	/* 129 */	ED_UNASSIGNED,		/* M-^A */
 	/* 130 */	ED_UNASSIGNED,		/* M-^B */

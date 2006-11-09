@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * tty.c: tty interface stuff
@@ -114,11 +115,11 @@ private const ttychar_t ttychar = {
 private const ttymap_t tty_map[] = {
 #ifdef VERASE
 	{C_ERASE, VERASE,
-	{EM_DELETE_PREV_CHAR, VI_DELETE_PREV_CHAR, ED_PREV_CHAR}},
+	{ED_DELETE_PREV_CHAR, VI_DELETE_PREV_CHAR, ED_PREV_CHAR}},
 #endif /* VERASE */
 #ifdef VERASE2
 	{C_ERASE2, VERASE2,
-	{EM_DELETE_PREV_CHAR, VI_DELETE_PREV_CHAR, ED_PREV_CHAR}},
+	{ED_DELETE_PREV_CHAR, VI_DELETE_PREV_CHAR, ED_PREV_CHAR}},
 #endif /* VERASE2 */
 #ifdef VKILL
 	{C_KILL, VKILL,

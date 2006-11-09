@@ -66,10 +66,11 @@ extern char *alloca ();
 #include <fcntl.h>
 #include <vis.h>
 
+#include "sys.h"
 #include "el.h"
 #include "fcns.h"		/* for EL_NUM_FCNS */
 #include "histedit.h"
-#include "editline/readline.h"
+#include "readline.h"
 #include "filecomplete.h"
 
 void rl_prep_terminal(int);

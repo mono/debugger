@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 
 /*
  * search.c: History and character search functions
@@ -263,7 +264,6 @@ ce_inc_search(EditLine *el, int dir)
 			redo++;
 			break;
 
-		case EM_DELETE_PREV_CHAR:
 		case ED_DELETE_PREV_CHAR:
 			if (el->el_search.patlen > LEN)
 				done++;

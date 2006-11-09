@@ -33,6 +33,7 @@
  */
 
 #include "config.h"
+#include "sys.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/wait.h>

@@ -66,6 +66,7 @@ extern char *alloca ();
 #include <fcntl.h>
 #include <vis.h>
 
+#include "sys.h"
 #include "el.h"
 #include "fcns.h"		/* for EL_NUM_FCNS */
 #include "histedit.h"
