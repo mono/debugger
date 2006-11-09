@@ -111,7 +111,7 @@ CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
 
 EXTRA_DIST = \
 	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
-	Mono.Debugger.Backend.config.in Mono.Debugger.Cecil.dll
+	Mono.Debugger.Cecil.dll
 
 mdb: mdb.in Makefile
 	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
