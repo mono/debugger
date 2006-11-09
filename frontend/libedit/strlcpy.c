@@ -18,6 +18,7 @@
  */
 
 #include <config.h>
+#include "sys.h"
 
 #include <sys/types.h>
 #include <assert.h>
