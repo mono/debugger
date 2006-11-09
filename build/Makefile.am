@@ -119,10 +119,12 @@ mdb: mdb.in Makefile
 
 install-data-local:
 	$(GACUTIL) /i $(srcdir)/Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i Mono.Debugger.Backend.dll /f $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /u Mono.Debugger.Backend $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /u Mono.Debugger.Cecil $(GACUTIL_FLAGS) || exit 1;
 
 NUNIT_CONSOLE_FLAGS =
