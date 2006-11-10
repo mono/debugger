@@ -148,7 +148,7 @@ namespace Mono.Debugger.Tests
 		}
 	}
 
-	public abstract class TestSuite
+	public abstract class TestSuite : MarshalByRefObject
 	{
 		DebuggerConfiguration config;
 		DebuggerOptions options;
@@ -172,16 +172,13 @@ namespace Mono.Debugger.Tests
 			ExeFileName = Path.GetFullPath (builddir + exe_file);
 			FileName = Path.GetFullPath (srcdir + src_file);
 
+			Report.Initialize ();
+
 			config = new DebuggerConfiguration ();
 			options = CreateOptions (ExeFileName, args);
 
 			inferior_stdout = new LineReader ();
 			inferior_stderr = new LineReader ();
-		}
-
-		static TestSuite ()
-		{
-			Report.Initialize ();
 		}
 
 		public NUnitInterpreter Interpreter {

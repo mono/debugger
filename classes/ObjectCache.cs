@@ -35,7 +35,7 @@ namespace Mono.Debugger
 			mutex.Unlock ();
 		}
 
-		static ObjectCache ()
+		public static void Initialize ()
 		{
 			mutex = new DebuggerMutex ("object_cache");
 			objects = new ArrayList ();
