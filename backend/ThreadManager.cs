@@ -19,8 +19,6 @@ namespace Mono.Debugger.Backends
 	{
 		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (5000);
 
-		static int next_addressdomain_id;
-
 		internal ThreadManager (DebuggerServant backend)
 		{
 			this.backend = backend;
@@ -29,7 +27,7 @@ namespace Mono.Debugger.Backends
 			engine_hash = Hashtable.Synchronized (new Hashtable ());
 			processes = ArrayList.Synchronized (new ArrayList ());
 			
-			address_domain = new AddressDomain ("global", ++next_addressdomain_id);
+			address_domain = AddressDomain.Global;
 
 			command_mutex = new DebuggerMutex ("command_mutex");
 			command_mutex.DebugFlags = DebugFlags.Wait;

@@ -28,7 +28,7 @@ namespace Mono.Debugger
 		//   (TargetAddress.Null is in the null domain and comparision between
 		//    different domains is not allowed).
 		// </remarks>
-		public static TargetAddress Null = new TargetAddress (null, 0);
+		public static TargetAddress Null = new TargetAddress (AddressDomain.Global, 0);
 
 		// <summary>
 		//   This is not what it looks like.
@@ -69,7 +69,7 @@ namespace Mono.Debugger
 		// </summary>
 		public bool IsNull {
 			get {
-				return (address == 0) && (domain == null);
+				return (address == 0) && (domain.IsGlobal);
 			}
 		}
 
@@ -89,7 +89,7 @@ namespace Mono.Debugger
 
 		static void check_domains (TargetAddress a, TargetAddress b)
 		{
-			if (a.domain == b.domain)
+			if (a.domain.Equals (b.domain))
 				return;
 
 			throw new ArgumentException (String.Format (

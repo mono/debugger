@@ -30,12 +30,8 @@ namespace Mono.Debugger
 	//     stack frame, the address will also become invalid.
 	//
 	// </summary>
-	// <remarks>
-	//   This is intentionally a class and not a struct - we must always pass this by
-	//   reference and not by value.
-	// </remarks>
 	[Serializable]
-	public sealed class AddressDomain
+	public struct AddressDomain : IComparable
 	{
 		// <summary>
 		//   `name' is just used in the error messages.
@@ -46,6 +42,8 @@ namespace Mono.Debugger
 			this.name = name;
 		}
 
+		public static readonly AddressDomain Global = new AddressDomain ("global", 0);
+
 		int id;
 		string name;
 
@@ -55,6 +53,36 @@ namespace Mono.Debugger
 
 		public string Name {
 			get { return name; }
+		}
+
+		public bool IsGlobal {
+			get { return (id == 0) && (name == "global"); }
+		}
+
+		public int CompareTo (object obj)
+		{
+			AddressDomain domain = (AddressDomain) obj;
+
+			if (id < domain.id)
+				return -1;
+			else if (id > domain.id)
+				return 1;
+			else
+				return 0;
+		}
+
+		public override bool Equals (object o)
+		{
+			if (o == null || !(o is AddressDomain))
+				return false;
+
+			AddressDomain b = (AddressDomain) o;
+			return (id == b.id) && (name == b.name);
+		}
+
+		public override int GetHashCode ()
+		{
+			return id;
 		}
 
 		public override string ToString ()
