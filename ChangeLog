@@ -1,5 +1,11 @@
 2006-11-10  Martin Baulig  <martin@ximian.com>
 
+	* build/Makefile.am: Don't remove Mono.Debugger.Cecil.dll.
+
+	* build/Mono.Debugger.Cecil.dll: Upgrade to Cecil 0.4.3.
+
+2006-11-10  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoLanguageBackend.cs: Don't crash if a symbol
 	file occurs twice in the list.
 

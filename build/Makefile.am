@@ -106,8 +106,10 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 
 noinst_DATA = Mono.Debugger.dll.config Mono.Debugger.Backend.dll.config
 
-CLEANFILES = *.exe *.dll *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
-	Mono.Debugger.Backend.dll.config TestResult.*
+CLEANFILES = *.exe *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
+	Mono.Debugger.Backend.dll.config TestResult.* \
+	Mono.Debugger.Backend.dll Mono.Debugger.dll Mono.Debugger.Frontend.dll \
+	Mono.Debugger.Test.dll
 
 EXTRA_DIST = \
 	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
