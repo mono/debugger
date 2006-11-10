@@ -1,5 +1,10 @@
 2006-11-10  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs: Don't crash if a symbol
+	file occurs twice in the list.
+
+2006-11-10  Martin Baulig  <martin@ximian.com>
+
 	* classes/Debugger.cs: Don't use another appdomain for the server.
 
 2006-11-09  Wade Berrier  <wberrier@novell.com>

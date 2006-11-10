@@ -419,11 +419,12 @@ namespace Mono.Debugger.Languages.Mono
 					MonoSymbolFile symfile = new MonoSymbolFile (
 						this, process, memory, address);
 
+					symbol_files.Add (symfile);
+
 					if (assembly_by_name.Contains (symfile.Assembly.Name.FullName))
 						continue;
 
 					image_hash.Add (symfile.MonoImage, symfile);
-					symbol_files.Add (symfile);
 					assembly_hash.Add (symfile.Assembly, symfile);
 					assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
 
@@ -538,7 +539,10 @@ namespace Mono.Debugger.Languages.Mono
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
-			MonoSymbolFile file = (MonoSymbolFile) symbol_files [reader.BinaryReader.ReadInt32 ()];
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+			Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1} {2}",
+				      size, file_idx, symbol_files.Count);
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 			file.AddRangeEntry (reader, contents);
 		}
 
