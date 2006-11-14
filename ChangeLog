@@ -1,3 +1,7 @@
+2006-11-14  Wade Berrier  <wberrier@novell.com>
+
+	* ChangeLog: bump version for 0.31 tag
+
 2006-11-10  Martin Baulig  <martin@ximian.com>
 
 	* build/Makefile.am: Don't remove Mono.Debugger.Cecil.dll.
