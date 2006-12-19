@@ -406,7 +406,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	x86_arch_get_registers (handle);
 
-	if (INFERIOR_REG_EIP (arch->current_regs) - 1 == inferior->notification_address) {
+	if ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == inferior->notification_address) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
 		guint64 data [3];
 
