@@ -192,10 +192,11 @@ namespace Mono.Debugger.Backends
 
 		public abstract string PrintType (Style style, TargetType type);
 
-		public abstract CommandResult RuntimeInvoke (TargetFunctionType function,
-							     TargetClassObject object_argument,
-							     TargetObject[] param_objects,
-							     bool is_virtual, bool debug);
+		public abstract void RuntimeInvoke (TargetFunctionType function,
+						    TargetClassObject object_argument,
+						    TargetObject[] param_objects,
+						    bool is_virtual, bool debug,
+						    RuntimeInvokeResult result);
 
 		public abstract CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
 							  TargetAddress arg2);

@@ -1550,19 +1550,19 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected TargetObject GetProperty (ScriptingContext context,
-						     TargetPropertyInfo prop)
+						    TargetPropertyInfo prop)
 		{
-			string exc_message;
-			TargetObject res = context.CurrentThread.RuntimeInvoke (
-				prop.Getter, InstanceObject, new TargetObject [0], true,
-				out exc_message);
+			RuntimeInvokeResult result = context.CurrentThread.RuntimeInvoke (
+				prop.Getter, InstanceObject, new TargetObject [0], true, false);
 
-			if (exc_message != null)
+			context.Interpreter.Wait (context.CurrentThread, result);
+
+			if (result.ExceptionMessage != null)
 				throw new ScriptingException (
 					"Invocation of `{0}' raised an exception: {1}",
-					Name, exc_message);
+					Name, result.ExceptionMessage);
 
-			return res;
+			return result.ReturnObject;
 		}
 
 		protected TargetObject GetMember (ScriptingContext context, Thread target,
@@ -2770,27 +2770,22 @@ namespace Mono.Debugger.Frontend
 					method.FullName);
 
 			try {
-				if (debug) {
-					Thread thread = context.CurrentThread;
-					thread.RuntimeInvoke (method, instance, objs, true);
+				Thread thread = context.CurrentThread;
+				RuntimeInvokeResult result;
 
-					if (context.Interpreter.IsSynchronous)
-						context.Interpreter.Wait (thread);
+				result = thread.RuntimeInvoke (method, instance, objs, true, debug);
 
+				if (debug && !context.Interpreter.IsSynchronous)
 					return null;
-				}
 
-				string exc_message;
-				TargetObject retval = context.CurrentThread.RuntimeInvoke (
-					method, method_expr.InstanceObject, objs, true,
-					out exc_message);
+				context.Interpreter.Wait (thread, result);
 
-				if (exc_message != null)
+				if (result.ExceptionMessage != null)
 					throw new ScriptingException (
 						"Invocation of `{0}' raised an exception: {1}",
-						Name, exc_message);
+						Name, result.ExceptionMessage);
 
-				return retval;
+				return result.ReturnObject;
 			} catch (TargetException ex) {
 				throw new ScriptingException (
 					"Invocation of `{0}' raised an exception: {1}", Name, ex.Message);

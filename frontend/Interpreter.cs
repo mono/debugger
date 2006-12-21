@@ -37,6 +37,7 @@ namespace Mono.Debugger.Frontend
 		bool is_synchronous;
 		bool is_interactive;
 		int exit_code = 0;
+		int interrupt_level;
 
 		ManualResetEvent interrupt_event;
 		Thread current_thread;
@@ -420,16 +421,22 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void Wait (CommandResult result)
+		public void Wait (Thread thread, CommandResult result)
 		{
 			if (result == null)
 				return;
 
+			ClearInterrupt ();
 			WaitHandle[] handles = new WaitHandle [2];
 			handles [0] = interrupt_event;
 			handles [1] = result.CompletedEvent;
 
-			WaitHandle.WaitAny (handles);
+			int ret = WaitHandle.WaitAny (handles);
+
+			if (ret == 0) {
+				thread.Stop ();
+				result.CompletedEvent.WaitOne ();
+			}
 
 			if (result.Result is Exception)
 				throw (Exception) result.Result;
@@ -444,16 +451,18 @@ namespace Mono.Debugger.Frontend
 			handles [0] = interrupt_event;
 			handles [1] = thread.WaitHandle;
 
-			WaitHandle.WaitAny (handles);
+			int ret = WaitHandle.WaitAny (handles);
 		}
 
-		public void Interrupt ()
+		public int Interrupt ()
 		{
 			interrupt_event.Set ();
+			return ++interrupt_level;
 		}
 
 		public void ClearInterrupt ()
 		{
+			interrupt_level = 0;
 			interrupt_event.Reset ();
 		}
 

@@ -474,10 +474,11 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			public override CommandResult RuntimeInvoke (TargetFunctionType function,
-								     TargetClassObject object_argument,
-								     TargetObject[] param_objects,
-								     bool is_virtual, bool debug)
+			public override void RuntimeInvoke (TargetFunctionType function,
+							    TargetClassObject object_argument,
+							    TargetObject[] param_objects,
+							    bool is_virtual, bool debug,
+							    RuntimeInvokeResult result)
 			{
 				throw new InvalidOperationException ();
 			}

@@ -799,21 +799,21 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override object DoExecute (ScriptingContext context)
 		{
-			CommandResult result = DoStep (context);
+			Thread thread = CurrentThread;
+			CommandResult result = DoStep (thread, context);
 			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.Wait (result);
-			return null;
-
+				context.Interpreter.Wait (thread, result);
+			return result;
 		}
 
-		protected abstract CommandResult DoStep (ScriptingContext context);
+		protected abstract CommandResult DoStep (Thread thread, ScriptingContext context);
 	}
 
 	public class ContinueCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
 		{
-			return CurrentThread.Continue ();
+			return thread.Continue ();
 		}
 
 		// IDocumentableCommand
@@ -824,10 +824,10 @@ namespace Mono.Debugger.Frontend
 
 	public class StepCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = false;
-			return CurrentThread.StepLine ();
+			return thread.StepLine ();
 		}
 
 		// IDocumentableCommand
@@ -838,10 +838,10 @@ namespace Mono.Debugger.Frontend
 
 	public class NextCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = false;
-			return CurrentThread.NextLine ();
+			return thread.NextLine ();
 		}
 
 		// IDocumentableCommand
@@ -859,13 +859,13 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override CommandResult DoStep (ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = true;
 			if (Native)
-				return CurrentThread.StepNativeInstruction ();
+				return thread.StepNativeInstruction ();
 			else
-				return CurrentThread.StepInstruction ();
+				return thread.StepInstruction ();
 		}
 
 		// IDocumentableCommand
@@ -876,10 +876,10 @@ namespace Mono.Debugger.Frontend
 
 	public class NextInstructionCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = true;
-			return CurrentThread.NextInstruction ();
+			return thread.NextInstruction ();
 		}
 
 		// IDocumentableCommand
@@ -897,9 +897,9 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override CommandResult DoStep (ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
 		{
-			return CurrentThread.Finish (Native);
+			return thread.Finish (Native);
 		}
 
 		// IDocumentableCommand

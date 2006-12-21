@@ -241,6 +241,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal void SetCompleted ()
+		{
+			operation_completed_event.Set ();
+		}
+
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
@@ -249,7 +254,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
+				CommandResult result = new ThreadCommandResult (this);
 				servant.StepInstruction (result);
 				return result;
 			}
@@ -263,7 +268,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
+				CommandResult result = new ThreadCommandResult (this);
 				servant.StepNativeInstruction (result);
 				return result;
 			}
@@ -277,7 +282,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
+				CommandResult result = new ThreadCommandResult (this);
 				servant.NextInstruction (result);
 				return result;
 			}
@@ -291,7 +296,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
+				CommandResult result = new ThreadCommandResult (this);
 				servant.StepLine (result);
 				return result;
 			}
@@ -305,7 +310,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
+				CommandResult result = new ThreadCommandResult (this);
 				servant.NextLine (result);
 				return result;
 			}
@@ -319,7 +324,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
+				CommandResult result = new ThreadCommandResult (this);
 				servant.Finish (native, result);
 				return result;
 			}
@@ -345,8 +350,8 @@ namespace Mono.Debugger
 			lock (this) {
 				check_servant ();
 				operation_completed_event.Reset ();
-				CommandResult result = new StepCommandResult (this);
-				servant.Continue (until, in_background, new StepCommandResult (this));
+				CommandResult result = new ThreadCommandResult (this);
+				servant.Continue (until, in_background, new ThreadCommandResult (this));
 				return result;
 			}
 		}
@@ -480,44 +485,19 @@ namespace Mono.Debugger
 			return servant.DisassembleMethod (method);
 		}
 
-		public void RuntimeInvoke (TargetFunctionType function,
-					   TargetClassObject object_argument,
-					   TargetObject[] param_objects,
-					   bool is_virtual)
+		public RuntimeInvokeResult RuntimeInvoke (TargetFunctionType function,
+							  TargetClassObject object_argument,
+							  TargetObject[] param_objects,
+							  bool is_virtual, bool debug)
 		{
-			CommandResult result;
-
 			lock (this) {
 				check_servant ();
-				result = servant.RuntimeInvoke (
-					function, object_argument, param_objects, is_virtual, true);
+				RuntimeInvokeResult result = new RuntimeInvokeResult (this);
+				servant.RuntimeInvoke (
+					function, object_argument, param_objects, is_virtual,
+					debug, result);
+				return result;
 			}
-
-			result.Wait ();
-		}
-
-		public TargetObject RuntimeInvoke (TargetFunctionType function,
-						   TargetClassObject object_argument,
-						   TargetObject[] param_objects,
-						   bool is_virtual, out string exc_message)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_servant ();
-				result = servant.RuntimeInvoke (
-					function, object_argument, param_objects, is_virtual, false);
-			}
-
-			result.Wait ();
-
-			RuntimeInvokeResult res = (RuntimeInvokeResult) result.Result;
-			if (res == null) {
-				exc_message = null;
-				return null;
-			}
-			exc_message = res.ExceptionMessage;
-			return res.ReturnObject;
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
@@ -721,25 +701,6 @@ namespace Mono.Debugger
 		}
 #endregion
 
-		internal class StepCommandResult : CommandResult
-		{
-			Thread thread;
-
-			public StepCommandResult (Thread thread)
-			{
-				this.thread = thread;
-			}
-
-			public override ST.WaitHandle CompletedEvent {
-				get { return thread.WaitHandle; }
-			}
-
-			public override void Completed ()
-			{
-				thread.operation_completed_event.Set ();
-			}
-		}
-
 #region IDisposable implementation
 		private bool disposed = false;
 
@@ -803,5 +764,45 @@ namespace Mono.Debugger
 			if (Result is Exception)
 				throw (Exception) Result;
 		}
+	}
+
+	public class ThreadCommandResult : CommandResult
+	{
+		Thread thread;
+
+		public ThreadCommandResult (Thread thread)
+		{
+			this.thread = thread;
+		}
+
+		public override ST.WaitHandle CompletedEvent {
+			get { return thread.WaitHandle; }
+		}
+
+		public override void Completed ()
+		{
+			thread.SetCompleted ();
+		}
+	}
+
+	public class RuntimeInvokeResult : CommandResult
+	{
+		ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
+
+		public override ST.WaitHandle CompletedEvent {
+			get { return completed_event; }
+		}
+
+		public override void Completed ()
+		{
+			completed_event.Set ();
+		}
+
+		public RuntimeInvokeResult (Thread thread)
+		{ }
+
+		public bool InvocationCompleted;
+		public TargetObject ReturnObject;
+		public string ExceptionMessage;
 	}
 }

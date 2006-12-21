@@ -191,12 +191,14 @@ namespace Mono.Debugger.Frontend
 				if (ftype.ReturnType != ftype.Language.StringType)
 					continue;
 
-				string exc_message;
-				TargetObject retval = CurrentThread.RuntimeInvoke (
-					ftype, obj, new TargetObject [0], true, out exc_message);
-				if ((exc_message != null) || (retval == null))
+				RuntimeInvokeResult result = CurrentThread.RuntimeInvoke (
+					ftype, obj, new TargetObject [0], true, false);
+
+				Interpreter.Wait (CurrentThread, result);
+				if ((result.ExceptionMessage != null) || (result.ReturnObject == null))
 					return null;
 
+				TargetObject retval = (TargetObject) result.ReturnObject;
 				object value = ((TargetFundamentalObject) retval).GetObject (CurrentThread);
 				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
 			}

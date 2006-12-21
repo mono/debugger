@@ -105,7 +105,7 @@ namespace Mono.Debugger.Backends
 				pid = inferior.Run (true);
 			}
 
-			result = new Thread.StepCommandResult (thread);
+			result = new ThreadCommandResult (thread);
 			current_operation = new OperationStart (result);
 		}
 
@@ -124,7 +124,7 @@ namespace Mono.Debugger.Backends
 			else
 				inferior.InitializeThread (pid);
 
-			CommandResult result = new Thread.StepCommandResult (thread);
+			CommandResult result = new ThreadCommandResult (thread);
 			if (do_attach)
 				current_operation = new OperationInitialize (result);
 			else
@@ -1415,13 +1415,14 @@ namespace Mono.Debugger.Backends
 			StartOperation (new OperationRun (until, in_background, result));
 		}
 
-		public override CommandResult RuntimeInvoke (TargetFunctionType function,
-							     TargetClassObject object_argument,
-							     TargetObject[] param_objects,
-							     bool is_virtual, bool debug)
+		public override void RuntimeInvoke (TargetFunctionType function,
+						    TargetClassObject object_argument,
+						    TargetObject[] param_objects,
+						    bool is_virtual, bool debug,
+						    RuntimeInvokeResult result)
 		{
-			return StartOperation (new OperationRuntimeInvoke (
-				function, object_argument, param_objects, is_virtual, debug));
+			StartOperation (new OperationRuntimeInvoke (
+				function, object_argument, param_objects, is_virtual, debug, result));
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, long method_argument,
@@ -2809,6 +2810,7 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationRuntimeInvoke : OperationCallback
 	{
+		new public readonly RuntimeInvokeResult Result;
 		public readonly MonoFunctionType Function;
 		public readonly TargetObject[] ParamObjects;
 		public readonly bool IsVirtual;
@@ -2838,9 +2840,13 @@ namespace Mono.Debugger.Backends
 		}
 
 		public OperationRuntimeInvoke (TargetFunctionType function,
-					       TargetClassObject instance, TargetObject[] param_objects,
-					       bool is_virtual, bool debug)
+					       TargetClassObject instance,
+					       TargetObject[] param_objects,
+					       bool is_virtual, bool debug,
+					       RuntimeInvokeResult result)
+			: base (result)
 		{
+			this.Result = result;
 			this.Function = (MonoFunctionType) function;
 			this.instance = instance;
 			this.ParamObjects = param_objects;
@@ -3016,14 +3022,13 @@ namespace Mono.Debugger.Backends
 					pushed_rti_frame = false;
 				}
 
-				RuntimeInvokeResult result = new RuntimeInvokeResult ();
 				if (data2 != 0) {
 					TargetAddress exc_address = new TargetAddress (
 						inferior.AddressDomain, data2);
 					TargetFundamentalObject exc_obj = (TargetFundamentalObject)
 						language.CreateObject (sse.Thread, exc_address);
 
-					result.ExceptionMessage = (string) exc_obj.GetObject (
+					Result.ExceptionMessage = (string) exc_obj.GetObject (
 						sse.Thread);
 				}
 
@@ -3031,11 +3036,11 @@ namespace Mono.Debugger.Backends
 					TargetAddress retval_address = new TargetAddress (
 						inferior.AddressDomain, data1);
 
-					result.ReturnObject = language.CreateObject (
+					Result.ReturnObject = language.CreateObject (
 						sse.Thread, retval_address);
 				}
 
-				Result.Result = result;
+				Result.InvocationCompleted = true;
 				return true;
 			}
 
@@ -3476,13 +3481,6 @@ namespace Mono.Debugger.Backends
 		Long,
 		LongLong,
 		LongString
-	}
-
-	[Serializable]
-	internal class RuntimeInvokeResult
-	{
-		public TargetObject ReturnObject;
-		public string ExceptionMessage;
 	}
 
 	internal class SimpleCommandResult : CommandResult

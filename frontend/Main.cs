@@ -58,6 +58,7 @@ namespace Mono.Debugger.Frontend
 			while ((s = ReadInput (is_complete)) != null) {
 				parser.Append (s);
 				if (parser.IsComplete ()){
+					interpreter.ClearInterrupt ();
 					parser.Execute ();
 					parser.Reset ();
 					is_complete = true;
@@ -154,8 +155,8 @@ namespace Mono.Debugger.Frontend
 				if (mono_debugger_server_get_pending_sigint () == 0)
 					continue;
 
-				interpreter.Interrupt ();
-				main_thread.Abort ();
+				if (interpreter.Interrupt () > 2)
+					main_thread.Abort ();
 			} while (true);
 		}
 
