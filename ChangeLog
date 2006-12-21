@@ -1,5 +1,20 @@
 2006-12-21  Martin Baulig  <martin@ximian.com>
 
+	Change Ctrl-C semantics: abort the current operation on Ctrl-C.
+
+	* frontend/Main.cs
+	(CommandLineInterpreter.command_thread_main): Don't abort the main
+	thread on Ctrl-C; we still do it the second time the user hits
+	Ctrl-C as a fallback.
+
+	* frontend/Interpreter.cs
+	(Interpreter.Wait): Check whether the operation was interrupted by
+	Ctrl-C and stop the thread if neccessary.
+
+	* frontend/Command.cs: Use the new RuntimeInvoke API.
+
+2006-12-21  Martin Baulig  <martin@ximian.com>
+
 	* classes/Thread.cs
 	(Thread.StepCommandResult): Renamed to `ThreadCommandResult' and
 	made public.
