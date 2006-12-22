@@ -777,6 +777,18 @@ namespace Mono.Debugger.Backends
 			return section.GetReader (address);
 		}
 
+		public TargetAddress GetSectionAddress (string name)
+		{
+			IntPtr section;
+
+			section = bfd_get_section_by_name (bfd, name);
+			if (section == IntPtr.Zero)
+				return TargetAddress.Null;
+
+			long vma = bfd_glue_get_section_vma (section);
+			return GetAddress (vma);
+		}
+
 		public byte[] GetSectionContents (string name, bool raw_section)
 		{
 			IntPtr section;

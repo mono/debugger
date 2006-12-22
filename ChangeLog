@@ -1,3 +1,10 @@
+2006-12-22  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs: The `mono' binary now contains a
+	pointer to the `MONO_DEBUGGER__debugger_info' in a special
+	`.mdb_debug_info' section - this also works when the binary is
+	stripped.	
+
 2006-12-21  Martin Baulig  <martin@ximian.com>
 
 	Change Ctrl-C semantics: abort the current operation on Ctrl-C.

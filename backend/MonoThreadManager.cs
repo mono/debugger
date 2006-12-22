@@ -30,7 +30,11 @@ namespace Mono.Debugger.Backends
 							    Inferior inferior, bool attach,
 							    bool stop_in_main)
 		{
-			TargetAddress info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
+			TargetAddress info = inferior.GetSectionAddress (".mdb_debug_info");
+			if (!info.IsNull)
+				info = inferior.ReadAddress (info);
+			else
+				info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
 			if (info.IsNull)
 				return null;
 

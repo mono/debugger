@@ -693,6 +693,11 @@ namespace Mono.Debugger.Backends
 			return bfd [name];
 		}
 
+		public TargetAddress GetSectionAddress (string name)
+		{
+			return bfd.GetSectionAddress (name);
+		}
+
 		public TargetAddress MainMethodAddress {
 			get {
 				return bfd.EntryPoint;
