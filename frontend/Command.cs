@@ -1067,6 +1067,9 @@ namespace Mono.Debugger.Frontend
 			if (!context.HasBackend)
 				return true;
 
+			if (Args.Count != 0)
+				throw new ScriptingException ("Argument expected.");
+
 			if (context.Interpreter.IsInteractive && context.Interpreter.Query (
 				    "The program being debugged has been started already.\n" +
 				    "Start it from the beginning?")) {
