@@ -257,8 +257,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 57;
-		public const int  MaxDynamicVersion = 57;
+		public const int  MinDynamicVersion = 58;
+		public const int  MaxDynamicVersion = 58;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
@@ -281,6 +281,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Attach;
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
+		public readonly TargetAddress GetLMFAddress;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -312,6 +313,7 @@ namespace Mono.Debugger.Backends
 			Attach                  = reader.ReadAddress ();
 			Detach                  = reader.ReadAddress ();
 			Initialize              = reader.ReadAddress ();
+			GetLMFAddress           = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 

@@ -1,5 +1,10 @@
 2006-12-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo): Added `GetLMFAddress'.
+
+2006-12-28  Martin Baulig  <martin@ximian.com>
+
 	* classes/Process.cs
 	(Process): Replaced the `Threads' property with a GetThreads()
 	method.
