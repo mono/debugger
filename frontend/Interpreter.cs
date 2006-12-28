@@ -434,15 +434,21 @@ namespace Mono.Debugger.Frontend
 			int ret = WaitHandle.WaitAny (handles);
 
 			if (ret == 0) {
-				thread.Stop ();
+				result.Abort ();
 				result.CompletedEvent.WaitOne ();
 			}
+
+#if FIXME
+			TargetEventArgs args = thread.LastTargetEvent;
+			if (args != null)
+				Style.TargetEvent (thread, args);
+#endif
 
 			if (result.Result is Exception)
 				throw (Exception) result.Result;
 		}
 
-		public void Wait (Thread thread)
+		protected void Wait (Thread thread)
 		{
 			if (thread == null)
 				return;
@@ -603,7 +609,7 @@ namespace Mono.Debugger.Frontend
 				return CurrentThread;
 
 			foreach (Process process in Processes) {
-				foreach (Thread thread in process.Threads)
+				foreach (Thread thread in process.GetThreads ())
 					if (thread.ID == number)
 						return thread;
 			}

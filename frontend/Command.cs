@@ -244,7 +244,7 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public abstract class ThreadCommand : DebuggerCommand
+	public abstract class ThreadCommand : ProcessCommand
 	{
 		int index = -1;
 		Thread thread;
@@ -781,11 +781,38 @@ namespace Mono.Debugger.Frontend
 
 	public class StopThreadCommand : ThreadCommand, IDocumentableCommand
 	{
+		bool all;
+
+		public bool All {
+			get { return all; }
+			set { all = value; }
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
-			CurrentThread.Stop ();
-			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.Wait (CurrentThread);
+			Thread[] threads;
+			if (all) {
+				threads = CurrentProcess.GetThreads ();
+			} else {
+				threads = new Thread [1];
+				threads [0] = CurrentThread;
+			}
+
+			foreach (Thread thread in threads)
+				thread.Stop ();
+
+			if (!context.Interpreter.IsSynchronous)
+				return null;
+
+			WaitHandle[] handles = new WaitHandle [threads.Length];
+			for (int i = 0; i < threads.Length; i++)
+				handles [i] = threads [i].WaitHandle;
+
+			WaitHandle.WaitAll (handles);
+
+			TargetEventArgs args = CurrentThread.LastTargetEvent;
+			if (args != null)
+				context.Interpreter.Style.TargetEvent (CurrentThread, args);
 			return null;
 		}
 
@@ -1507,7 +1534,7 @@ namespace Mono.Debugger.Frontend
 				foreach (Process process in context.Interpreter.Processes) {
 					context.Print ("Process {0}:",
 						       context.Interpreter.PrintProcess (process));
-					foreach (Thread proc in process.Threads) {
+					foreach (Thread proc in process.GetThreads ()) {
 						string prefix = proc.ID == current_id ? "(*)" : "   ";
 						context.Print ("{0} {1} ({2}:{3:x}) {4}", prefix, proc,
 							       proc.PID, proc.TID, proc.State);
