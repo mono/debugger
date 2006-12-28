@@ -60,6 +60,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		public TargetEventArgs LastTargetEvent {
+			get {
+				check_servant ();
+				return servant.LastTargetEvent;
+			}
+		}
+
 		public int ID {
 			get { return id; }
 		}
@@ -758,6 +765,8 @@ namespace Mono.Debugger
 
 		public abstract void Completed ();
 
+		public abstract void Abort ();
+
 		public void Wait ()
 		{
 			CompletedEvent.WaitOne ();
@@ -770,13 +779,18 @@ namespace Mono.Debugger
 	{
 		Thread thread;
 
-		public ThreadCommandResult (Thread thread)
+		internal ThreadCommandResult (Thread thread)
 		{
 			this.thread = thread;
 		}
 
 		public override ST.WaitHandle CompletedEvent {
 			get { return thread.WaitHandle; }
+		}
+
+		public override void Abort ()
+		{
+			thread.Stop ();
 		}
 
 		public override void Completed ()
@@ -787,7 +801,13 @@ namespace Mono.Debugger
 
 	public class RuntimeInvokeResult : CommandResult
 	{
+		Thread thread;
 		ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
+
+		internal RuntimeInvokeResult (Thread thread)
+		{
+			this.thread = thread;
+		}
 
 		public override ST.WaitHandle CompletedEvent {
 			get { return completed_event; }
@@ -798,8 +818,10 @@ namespace Mono.Debugger
 			completed_event.Set ();
 		}
 
-		public RuntimeInvokeResult (Thread thread)
-		{ }
+		public override void Abort ()
+		{
+			thread.Stop ();
+		}
 
 		public bool InvocationCompleted;
 		public TargetObject ReturnObject;

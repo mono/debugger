@@ -184,6 +184,10 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile; }
 			}
 
+			public override TargetEventArgs LastTargetEvent {
+				get { throw new InvalidOperationException (); }
+			}
+
 			public override TargetInfo TargetInfo {
 				get { return CoreFile.TargetInfo; }
 			}

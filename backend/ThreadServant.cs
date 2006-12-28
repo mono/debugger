@@ -85,6 +85,10 @@ namespace Mono.Debugger.Backends
 			is_daemon = true;
 		}
 
+		public abstract TargetEventArgs LastTargetEvent {
+			get;
+		}
+
 		public abstract TargetMemoryArea[] GetMemoryMaps ();
 
 		public abstract Method Lookup (TargetAddress address);

@@ -1,5 +1,14 @@
 2006-12-28  Martin Baulig  <martin@ximian.com>
 
+	* classes/Thread.cs
+	(Thread.LastTargetEvent): New public property.
+	(CommandResult.Abort): New public method.
+
+	* backend/ThreadServant.cs
+	(ThreadServant.LastTargetEvent): New public property.
+
+2006-12-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(Operation): Store the `SingleSteppingEngine' inside the
 	`Operation', so we don't need to pass it around as a parameter.

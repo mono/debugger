@@ -111,7 +111,7 @@ namespace Mono.Debugger.Backends
 			this.start = start;
 
 			CoreFile core = CoreFile.OpenCoreFile (this, start);
-			threads = core.Threads;
+			threads = core.GetThreads ();
 			return core;
 		}
 
