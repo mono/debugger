@@ -108,8 +108,9 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public Thread[] Threads {
-			get { return servant.Threads; }
+		public Thread[] GetThreads ()
+		{
+			return servant.GetThreads ();
 		}
 
 		public override string ToString ()

@@ -440,17 +440,16 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Thread[] Threads {
-			get {
-				lock (thread_hash.SyncRoot) {
-					int count = thread_hash.Count;
-					Thread[] threads = new Thread [count];
-					ThreadServant[] servants = new ThreadServant [count];
-					thread_hash.Values.CopyTo (servants, 0);
-					for (int i = 0; i < count; i++)
-						threads [i] = servants [i].Client;
-					return threads;
-				}
+		public Thread[] GetThreads ()
+		{
+			lock (thread_hash.SyncRoot) {
+				int count = thread_hash.Count;
+				Thread[] threads = new Thread [count];
+				ThreadServant[] servants = new ThreadServant [count];
+				thread_hash.Values.CopyTo (servants, 0);
+				for (int i = 0; i < count; i++)
+					threads [i] = servants [i].Client;
+				return threads;
 			}
 		}
 
