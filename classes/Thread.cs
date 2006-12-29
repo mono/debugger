@@ -28,6 +28,7 @@ namespace Mono.Debugger
 		}
 
 		int id;
+		bool is_running;
 		ST.ManualResetEvent operation_completed_event;
 		ThreadServant servant;
 
@@ -60,11 +61,21 @@ namespace Mono.Debugger
 			}
 		}
 
-		public TargetEventArgs LastTargetEvent {
-			get {
-				check_servant ();
-				return servant.LastTargetEvent;
+		public TargetEventArgs GetLastTargetEvent ()
+		{
+			check_servant ();
+			lock (this) {
+				TargetEventArgs args = servant.LastTargetEvent;
+				if (args != null) {
+					is_running = false;
+					return args;
+				}
 			}
+			return null;
+		}
+
+		public bool IsRunning {
+			get { return is_running; }
 		}
 
 		public int ID {
@@ -256,12 +267,13 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
-		public CommandResult StepInstruction ()
+		public ThreadCommandResult StepInstruction ()
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.StepInstruction (result);
 				return result;
 			}
@@ -270,12 +282,13 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
-		public CommandResult StepNativeInstruction ()
+		public ThreadCommandResult StepNativeInstruction ()
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.StepNativeInstruction (result);
 				return result;
 			}
@@ -284,12 +297,13 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
-		public CommandResult NextInstruction ()
+		public ThreadCommandResult NextInstruction ()
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.NextInstruction (result);
 				return result;
 			}
@@ -298,12 +312,13 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one source line.
 		// </summary>
-		public CommandResult StepLine ()
+		public ThreadCommandResult StepLine ()
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.StepLine (result);
 				return result;
 			}
@@ -312,12 +327,13 @@ namespace Mono.Debugger
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
-		public CommandResult NextLine ()
+		public ThreadCommandResult NextLine ()
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.NextLine (result);
 				return result;
 			}
@@ -326,38 +342,40 @@ namespace Mono.Debugger
 		// <summary>
 		//   Continue until leaving the current method.
 		// </summary>
-		public CommandResult Finish (bool native)
+		public ThreadCommandResult Finish (bool native)
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.Finish (native, result);
 				return result;
 			}
 		}
 
-		public CommandResult Continue ()
+		public ThreadCommandResult Continue ()
 		{
 			return Continue (TargetAddress.Null, false);
 		}
 
-		public CommandResult Continue (TargetAddress until)
+		public ThreadCommandResult Continue (TargetAddress until)
 		{
 			return Continue (until, false);
 		}
 
-		public CommandResult Continue (bool in_background)
+		public ThreadCommandResult Continue (bool in_background)
 		{
 			return Continue (TargetAddress.Null, in_background);
 		}
 
-		public CommandResult Continue (TargetAddress until, bool in_background)
+		public ThreadCommandResult Continue (TargetAddress until, bool in_background)
 		{
 			lock (this) {
 				check_servant ();
+				is_running = true;
 				operation_completed_event.Reset ();
-				CommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.Continue (until, in_background, new ThreadCommandResult (this));
 				return result;
 			}
@@ -782,6 +800,10 @@ namespace Mono.Debugger
 		internal ThreadCommandResult (Thread thread)
 		{
 			this.thread = thread;
+		}
+
+		public Thread Thread {
+			get { return thread; }
 		}
 
 		public override ST.WaitHandle CompletedEvent {

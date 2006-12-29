@@ -1,3 +1,12 @@
+2006-12-29  Martin Baulig  <martin@ximian.com>
+
+	* classes/Thread.cs
+	(Thread): Make all the stepping operations return a
+	`ThreadCommandResult' instead of a `CommandResult'.
+	(Thread.GetLastTargetEvent): Renamed from `LastTargetEvent' and
+	made it a function.
+	(Thread.IsRunning): New public property.
+
 2006-12-28  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadManager.cs
