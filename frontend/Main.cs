@@ -38,7 +38,7 @@ namespace Mono.Debugger.Frontend
 			else
 				Report.Initialize ();
 
-			interpreter = new Interpreter (true, is_interactive, config, options);
+			interpreter = new Interpreter (is_interactive, config, options);
 			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
 
@@ -53,6 +53,16 @@ namespace Mono.Debugger.Frontend
 		{
 			string s;
 			bool is_complete = true;
+
+			foreach (Process process in interpreter.Processes) {
+				foreach (Thread thread in process.GetThreads ()) {
+					if (!thread.WaitHandle.WaitOne (0, false))
+						continue;
+					TargetEventArgs args = thread.GetLastTargetEvent ();
+					if (args != null)
+						interpreter.Style.TargetEvent (thread, args);
+				}
+			}
 
 			parser.Reset ();
 			while ((s = ReadInput (is_complete)) != null) {

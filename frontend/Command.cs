@@ -801,16 +801,13 @@ namespace Mono.Debugger.Frontend
 			foreach (Thread thread in threads)
 				thread.Stop ();
 
-			if (!context.Interpreter.IsSynchronous)
-				return null;
-
 			WaitHandle[] handles = new WaitHandle [threads.Length];
 			for (int i = 0; i < threads.Length; i++)
 				handles [i] = threads [i].WaitHandle;
 
 			WaitHandle.WaitAll (handles);
 
-			TargetEventArgs args = CurrentThread.LastTargetEvent;
+			TargetEventArgs args = CurrentThread.GetLastTargetEvent ();
 			if (args != null)
 				context.Interpreter.Style.TargetEvent (CurrentThread, args);
 			return null;
@@ -824,21 +821,55 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class SteppingCommand : ThreadCommand
 	{
+		bool in_background;
+		bool wait;
+
+		[Property ("in-background", "bg")]
+		public bool InBackground {
+			get { return in_background; }
+			set { in_background = value; }
+		}
+
+		public bool Wait {
+			get { return wait; }
+			set { wait = value; }
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
 			Thread thread = CurrentThread;
-			CommandResult result = DoStep (thread, context);
-			if (context.Interpreter.IsSynchronous)
-				context.Interpreter.Wait (thread, result);
-			return result;
+			ThreadCommandResult result = DoStep (thread, context);
+			if (in_background)
+				return result;
+
+			Console.WriteLine ("STEPPING COMMAND: {0} {1} {2}",
+					   this, thread, thread.IsRunning);
+
+			Thread ret;
+			do {
+				ret = context.Interpreter.WaitAll (result);
+				Console.WriteLine ("STEPPING COMMAND #1: {0} {1} {2}", this, thread, ret);
+				if (ret == null)
+					return null;
+
+				TargetEventArgs args = ret.GetLastTargetEvent ();
+				if (args != null)
+					context.Interpreter.Style.TargetEvent (ret, args);
+
+				if (ret == thread)
+					return thread;
+			} while (wait && (ret != thread));
+
+			context.Interpreter.CurrentThread = ret;
+			return ret;
 		}
 
-		protected abstract CommandResult DoStep (Thread thread, ScriptingContext context);
+		protected abstract ThreadCommandResult DoStep (Thread thread, ScriptingContext context);
 	}
 
 	public class ContinueCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			return thread.Continue ();
 		}
@@ -851,7 +882,7 @@ namespace Mono.Debugger.Frontend
 
 	public class StepCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = false;
 			return thread.StepLine ();
@@ -865,7 +896,7 @@ namespace Mono.Debugger.Frontend
 
 	public class NextCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = false;
 			return thread.NextLine ();
@@ -886,7 +917,7 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = true;
 			if (Native)
@@ -903,7 +934,7 @@ namespace Mono.Debugger.Frontend
 
 	public class NextInstructionCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = true;
 			return thread.NextInstruction ();
@@ -924,7 +955,7 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override CommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
 		{
 			return thread.Finish (Native);
 		}

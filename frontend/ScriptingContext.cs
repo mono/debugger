@@ -194,7 +194,7 @@ namespace Mono.Debugger.Frontend
 				RuntimeInvokeResult result = CurrentThread.RuntimeInvoke (
 					ftype, obj, new TargetObject [0], true, false);
 
-				Interpreter.Wait (CurrentThread, result);
+				Interpreter.Wait (result);
 				if ((result.ExceptionMessage != null) || (result.ReturnObject == null))
 					return null;
 

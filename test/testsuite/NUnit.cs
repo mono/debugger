@@ -51,7 +51,7 @@ namespace Mono.Debugger.Tests
 	{
 		internal NUnitInterpreter (DebuggerConfiguration config, DebuggerOptions options,
 					   LineReader inferior_stdout, LineReader inferior_stderr)
-			: base (true, true, config, options)
+			: base (true, config, options)
 		{
 			this.inferior_stdout = inferior_stdout;
 			this.inferior_stderr = inferior_stderr;

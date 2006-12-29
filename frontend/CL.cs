@@ -11,6 +11,22 @@ using System.Reflection;
 
 namespace Mono.Debugger.Frontend
 {
+	public class PropertyAttribute : Attribute
+	{
+		public readonly string Name;
+		public readonly string ShortName;
+
+		public PropertyAttribute (string name)
+			: this (name, null)
+		{ }
+
+		public PropertyAttribute (string name, string short_name)
+		{
+			this.Name = name;
+			this.ShortName = short_name;
+		}
+	}
+
 	public class Engine {
 		public readonly Interpreter Interpreter;
 		public readonly string[] CommandFamilyBlurbs;
@@ -107,9 +123,20 @@ namespace Mono.Debugger.Frontend
 
 				arg = arg.Substring (1);
 				for (int j = 0; j < pi.Length; j++){
-					if (!pi [j].CanWrite ||
-					    (pi [j].Name.ToLower () != arg))
+					if (!pi [j].CanWrite)
 						continue;
+
+					object[] attrs = pi [j].GetCustomAttributes (
+						typeof (PropertyAttribute), false);
+
+					if ((attrs != null) && (attrs.Length > 0)) {
+						PropertyAttribute attr = (PropertyAttribute) attrs [0];
+						if ((pi [j].Name != attr.Name) &&
+						    (pi [j].Name != attr.ShortName))
+							continue;
+					} else if (pi [j].Name.ToLower () != arg)
+						continue;
+
 					if (pi [j].PropertyType == typeof (bool)){
 						pi [j].SetValue (c, true, null);
 						goto next;

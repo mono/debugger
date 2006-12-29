@@ -34,7 +34,6 @@ namespace Mono.Debugger.Frontend
 		Hashtable parser_names_by_language;
 		string current_parser_name;
 
-		bool is_synchronous;
 		bool is_interactive;
 		int exit_code = 0;
 		int interrupt_level;
@@ -50,11 +49,10 @@ namespace Mono.Debugger.Frontend
 			DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
 		}
 
-		public Interpreter (bool is_synchronous, bool is_interactive,
-				    DebuggerConfiguration config, DebuggerOptions options)
+		public Interpreter (bool is_interactive, DebuggerConfiguration config,
+				    DebuggerOptions options)
 		{
 			this.config = config;
-			this.is_synchronous = is_synchronous;
 			this.is_interactive = is_interactive;
 			this.session = new DebuggerSession (config, options, "main");
 			this.engine = new DebuggerEngine (this);
@@ -175,10 +173,6 @@ namespace Mono.Debugger.Frontend
 			else {
 				return new CSharp.ExpressionParser (context, name);
 			}
-		}
-
-		public bool IsSynchronous {
-			get { return is_synchronous; }
 		}
 
 		public bool IsInteractive {
@@ -421,10 +415,10 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void Wait (Thread thread, CommandResult result)
+		public bool Wait (CommandResult result)
 		{
 			if (result == null)
-				return;
+				return true;
 
 			ClearInterrupt ();
 			WaitHandle[] handles = new WaitHandle [2];
@@ -436,16 +430,45 @@ namespace Mono.Debugger.Frontend
 			if (ret == 0) {
 				result.Abort ();
 				result.CompletedEvent.WaitOne ();
+				return false;
 			}
-
-#if FIXME
-			TargetEventArgs args = thread.LastTargetEvent;
-			if (args != null)
-				Style.TargetEvent (thread, args);
-#endif
 
 			if (result.Result is Exception)
 				throw (Exception) result.Result;
+
+			return true;
+		}
+
+		public Thread WaitAll (ThreadCommandResult result)
+		{
+			if (result == null)
+				return null;
+
+			ClearInterrupt ();
+			ArrayList list = new ArrayList ();
+			foreach (Process process in Processes) {
+				foreach (Thread thread in process.GetThreads ()) {
+					if (thread.IsRunning)
+						list.Add (thread);
+				}
+			}
+			WaitHandle[] handles = new WaitHandle [list.Count + 1];
+			handles [0] = interrupt_event;
+			for (int i = 0; i < list.Count; i++)
+				handles [i + 1] = ((Thread) list [i]).WaitHandle;
+
+			int ret = WaitHandle.WaitAny (handles);
+
+			if (ret == 0) {
+				result.Abort ();
+				result.CompletedEvent.WaitOne ();
+				return null;
+			}
+
+			if (result.Result is Exception)
+				throw (Exception) result.Result;
+
+			return (Thread) list [ret - 1];
 		}
 
 		protected void Wait (Thread thread)
@@ -457,7 +480,7 @@ namespace Mono.Debugger.Frontend
 			handles [0] = interrupt_event;
 			handles [1] = thread.WaitHandle;
 
-			int ret = WaitHandle.WaitAny (handles);
+			WaitHandle.WaitAny (handles);
 		}
 
 		public int Interrupt ()
@@ -550,7 +573,6 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
-			Style.TargetEvent (thread, args);
 		}
 
 		protected virtual void OnTargetOutput (bool is_stderr, string line)

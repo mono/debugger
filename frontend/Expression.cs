@@ -1555,7 +1555,7 @@ namespace Mono.Debugger.Frontend
 			RuntimeInvokeResult result = context.CurrentThread.RuntimeInvoke (
 				prop.Getter, InstanceObject, new TargetObject [0], true, false);
 
-			context.Interpreter.Wait (context.CurrentThread, result);
+			context.Interpreter.Wait (result);
 
 			if (result.ExceptionMessage != null)
 				throw new ScriptingException (
@@ -2775,10 +2775,7 @@ namespace Mono.Debugger.Frontend
 
 				result = thread.RuntimeInvoke (method, instance, objs, true, debug);
 
-				if (debug && !context.Interpreter.IsSynchronous)
-					return null;
-
-				context.Interpreter.Wait (thread, result);
+				context.Interpreter.Wait (result);
 
 				if (result.ExceptionMessage != null)
 					throw new ScriptingException (
