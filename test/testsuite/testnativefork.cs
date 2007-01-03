@@ -230,7 +230,7 @@ namespace Mono.Debugger.Tests
 
 			AssertFrame (thread, "main", LineWaitpid + 1);
 
-			AssertExecute ("continue");
+			AssertExecute ("continue -thread " + thread.ID);
 			AssertTargetExited (thread.Process);
 		}
 	}
