@@ -20,6 +20,14 @@ namespace Mono.Debugger
 
 	public class Thread : TargetAccess
 	{
+		[Flags]
+		public enum Flags {
+			None		= 0x0000,
+			Daemon		= 0x0001,
+			Immutable	= 0x0002,
+			Background	= 0x0004
+		}
+
 		internal Thread (ThreadServant servant, int id)
 		{
 			this.id = id;
@@ -28,6 +36,7 @@ namespace Mono.Debugger
 		}
 
 		int id;
+		Flags flags;
 		bool is_running;
 		ST.ManualResetEvent operation_completed_event;
 		ThreadServant servant;
@@ -68,6 +77,7 @@ namespace Mono.Debugger
 				TargetEventArgs args = servant.LastTargetEvent;
 				if (args != null) {
 					is_running = false;
+					flags &= ~Flags.Background;
 					return args;
 				}
 			}
@@ -78,13 +88,21 @@ namespace Mono.Debugger
 			get { return is_running; }
 		}
 
+		public bool IsAlive {
+			get { return (servant != null) && servant.IsAlive; }
+		}
+
 		public int ID {
 			get { return id; }
 		}
 
+		public Flags ThreadFlags {
+			get { return flags; }
+		}
+
 		public string Name {
 			get {
-				if (IsDaemon)
+				if ((flags & Flags.Daemon) != 0)
 					return String.Format ("Daemon thread @{0}", id);
 				else
 					return String.Format ("Thread @{0}", id);
@@ -140,11 +158,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool IsDaemon {
-			get {
-				check_servant ();
-				return servant.IsDaemon;
-			}
+		internal void SetThreadFlags (Flags flags)
+		{
+			this.flags = flags;
 		}
 
 		public ThreadGroup ThreadGroup {
@@ -157,6 +173,12 @@ namespace Mono.Debugger
 		void check_servant ()
 		{
 			if (servant == null)
+				throw new TargetException (TargetError.NoTarget);
+		}
+
+		void check_alive ()
+		{
+			if ((servant == null) || !servant.IsAlive)
 				throw new TargetException (TargetError.NoTarget);
 		}
 
@@ -222,7 +244,7 @@ namespace Mono.Debugger
 
 		public override void SetRegisters (Registers registers)
 		{
-			check_servant ();
+			check_alive ();
 			servant.SetRegisters (registers);
 		}
 
@@ -270,7 +292,7 @@ namespace Mono.Debugger
 		public ThreadCommandResult StepInstruction ()
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
@@ -285,7 +307,7 @@ namespace Mono.Debugger
 		public ThreadCommandResult StepNativeInstruction ()
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
@@ -300,7 +322,7 @@ namespace Mono.Debugger
 		public ThreadCommandResult NextInstruction ()
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
@@ -315,7 +337,7 @@ namespace Mono.Debugger
 		public ThreadCommandResult StepLine ()
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
@@ -330,7 +352,7 @@ namespace Mono.Debugger
 		public ThreadCommandResult NextLine ()
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
@@ -345,7 +367,7 @@ namespace Mono.Debugger
 		public ThreadCommandResult Finish (bool native)
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
@@ -356,27 +378,35 @@ namespace Mono.Debugger
 
 		public ThreadCommandResult Continue ()
 		{
-			return Continue (TargetAddress.Null, false);
+			return Continue (TargetAddress.Null);
 		}
 
 		public ThreadCommandResult Continue (TargetAddress until)
 		{
-			return Continue (until, false);
+			lock (this) {
+				check_alive ();
+				is_running = true;
+				flags |= Flags.Background;
+				operation_completed_event.Reset ();
+				ThreadCommandResult result = new ThreadCommandResult (this);
+				servant.Continue (until, new ThreadCommandResult (this));
+				return result;
+			}
 		}
 
-		public ThreadCommandResult Continue (bool in_background)
+		public ThreadCommandResult Background ()
 		{
-			return Continue (TargetAddress.Null, in_background);
+			return Background (TargetAddress.Null);
 		}
 
-		public ThreadCommandResult Continue (TargetAddress until, bool in_background)
+		public ThreadCommandResult Background (TargetAddress until)
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				is_running = true;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
-				servant.Continue (until, in_background, new ThreadCommandResult (this));
+				servant.Background (until, new ThreadCommandResult (this));
 				return result;
 			}
 		}
@@ -399,7 +429,7 @@ namespace Mono.Debugger
 
 		public void Stop ()
 		{
-			check_servant ();
+			check_alive ();
 			servant.Stop ();
 		}
 
@@ -418,7 +448,7 @@ namespace Mono.Debugger
 		// </summary>
 		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.InsertBreakpoint (breakpoint, address);
 		}
 
@@ -444,7 +474,7 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				result = servant.InsertBreakpoint (breakpoint, func);
 			}
 
@@ -461,7 +491,7 @@ namespace Mono.Debugger
 		// </summary>
 		public int AddEventHandler (EventType type, Event handle)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.AddEventHandler (type, handle);
 		}
 
@@ -478,13 +508,13 @@ namespace Mono.Debugger
 
 		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.PrintObject (style, obj, format);
 		}
 
 		public string PrintType (Style style, TargetType type)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.PrintType (style, type);
 		}
 
@@ -494,19 +524,19 @@ namespace Mono.Debugger
 
 		public override int GetInstructionSize (TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.GetInstructionSize (address);
 		}
 
 		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.DisassembleInstruction (method, address);
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.DisassembleMethod (method);
 		}
 
@@ -516,7 +546,7 @@ namespace Mono.Debugger
 							  bool is_virtual, bool debug)
 		{
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				RuntimeInvokeResult result = new RuntimeInvokeResult (this);
 				servant.RuntimeInvoke (
 					function, object_argument, param_objects, is_virtual,
@@ -531,7 +561,7 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				result = servant.CallMethod (method, arg1, arg2);
 			}
 
@@ -549,7 +579,7 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				result = servant.CallMethod (method, method_arg, string_arg);
 			}
 
@@ -566,7 +596,7 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				result = servant.Return (run_finally);
 				if (result == null)
 					return;
@@ -580,7 +610,7 @@ namespace Mono.Debugger
 			CommandResult result;
 
 			lock (this) {
-				check_servant ();
+				check_alive ();
 				result = servant.AbortInvocation ();
 			}
 
@@ -636,7 +666,7 @@ namespace Mono.Debugger
 #region TargetMemoryAccess implementation
 		void write_memory (TargetAddress address, byte[] buffer)
 		{
-			check_servant ();
+			check_alive ();
 			servant.WriteBuffer (address, buffer);
 		}
 
@@ -648,44 +678,44 @@ namespace Mono.Debugger
 
 		public override byte ReadByte (TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.ReadByte (address);
 		}
 
 		public override int ReadInteger (TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.ReadInteger (address);
 		}
 
 		public override long ReadLongInteger (TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.ReadLongInteger (address);
 		}
 
 		public override TargetAddress ReadAddress (TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.ReadAddress (address);
 		}
 
 		public override string ReadString (TargetAddress address)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.ReadString (address);
 		}
 
 		public override TargetBlob ReadMemory (TargetAddress address, int size)
 		{
-			check_servant ();
+			check_alive ();
 			byte[] buffer = servant.ReadBuffer (address, size);
 			return new TargetBlob (buffer, TargetInfo);
 		}
 
 		public override byte[] ReadBuffer (TargetAddress address, int size)
 		{
-			check_servant ();
+			check_alive ();
 			return servant.ReadBuffer (address, size);
 		}
 
@@ -718,7 +748,7 @@ namespace Mono.Debugger
 
 		public override void WriteAddress (TargetAddress address, TargetAddress value)
 		{
-			check_servant ();
+			check_alive ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (
 				TargetInfo.TargetAddressSize, TargetInfo);
 			writer.WriteAddress (value);

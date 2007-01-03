@@ -764,7 +764,7 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override object DoExecute (ScriptingContext context)
 		{
-			CurrentThread.Continue (true);
+			CurrentThread.Background ();
 			return null;
 		}
 
@@ -842,13 +842,9 @@ namespace Mono.Debugger.Frontend
 			if (in_background)
 				return result;
 
-			Console.WriteLine ("STEPPING COMMAND: {0} {1} {2}",
-					   this, thread, thread.IsRunning);
-
 			Thread ret;
 			do {
 				ret = context.Interpreter.WaitAll (result);
-				Console.WriteLine ("STEPPING COMMAND #1: {0} {1} {2}", this, thread, ret);
 				if (ret == null)
 					return null;
 

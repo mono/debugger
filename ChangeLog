@@ -1,3 +1,12 @@
+2007-01-03  Martin Baulig  <martin@ximian.com>
+
+	* classes/Thread.cs (Thread.Flags): New public enum.
+	(Thread.ThreadFlags): New public property.
+	(Thread.IsAlive): New public property.
+	(Thread.IsDaemon): Removed.
+	(Thread.Continue): Removed the `is_background' argument.
+	(Thread.Background): New public method.
+
 2006-12-29  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Interpreter.cs

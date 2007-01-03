@@ -980,12 +980,14 @@ namespace Mono.Debugger.Frontend
 
 			public void thread_created (Debugger debugger, Thread thread)
 			{
-				interpreter.OnThreadCreated (thread);
+				if ((thread.ThreadFlags & Thread.Flags.Daemon) == 0)
+					interpreter.OnThreadCreated (thread);
 			}
 
 			public void thread_exited (Debugger debugger, Thread thread)
 			{
-				interpreter.OnThreadExited (thread);
+				if ((thread.ThreadFlags & Thread.Flags.Daemon) == 0)
+					interpreter.OnThreadExited (thread);
 			}
 
 			public void process_created (Debugger debugger, Process process)
@@ -1028,6 +1030,10 @@ namespace Mono.Debugger.Frontend
 
 			public void target_event (Thread thread, TargetEventArgs args)
 			{
+				if (((thread.ThreadFlags & Thread.Flags.Daemon) != 0) &&
+				    ((args.Type == TargetEventType.TargetExited) ||
+				     (args.Type == TargetEventType.TargetSignaled)))
+					return;
 				interpreter.OnTargetEvent (thread, args);
 			}
 		}

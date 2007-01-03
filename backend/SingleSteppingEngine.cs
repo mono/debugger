@@ -614,6 +614,7 @@ namespace Mono.Debugger.Backends
 		void ExecuteOperation (Operation operation)
 		{
 			try {
+				check_inferior ();
 				operation.Execute ();
 			} catch (Exception ex) {
 				Report.Debug (DebugFlags.SSE, "{0} caught exception while " +
@@ -657,6 +658,10 @@ namespace Mono.Debugger.Backends
 
 		public override long TID {
 			get { return tid; }
+		}
+
+		public override bool IsAlive {
+			get { return inferior != null; }
 		}
 
 		public override bool CanRun {
@@ -1414,10 +1419,14 @@ namespace Mono.Debugger.Backends
 			StartOperation (new OperationFinish (this, native, result));
 		}
 
-		public override void Continue (TargetAddress until, bool in_background,
-					       CommandResult result)
+		public override void Continue (TargetAddress until, CommandResult result)
 		{
-			StartOperation (new OperationRun (this, until, in_background, result));
+			StartOperation (new OperationRun (this, until, false, result));
+		}
+
+		public override void Background (TargetAddress until, CommandResult result)
+		{
+			StartOperation (new OperationRun (this, until, true, result));
 		}
 
 		public override void RuntimeInvoke (TargetFunctionType function,

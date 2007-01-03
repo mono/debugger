@@ -83,6 +83,7 @@ namespace Mono.Debugger.Backends
 		internal void SetDaemon ()
 		{
 			is_daemon = true;
+			thread.SetThreadFlags (thread.ThreadFlags | Thread.Flags.Daemon | Thread.Flags.Immutable);
 		}
 
 		public abstract TargetEventArgs LastTargetEvent {
@@ -137,8 +138,9 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		public abstract void Finish (bool native, CommandResult result);
 
-		public abstract void Continue (TargetAddress until, bool in_background,
-					       CommandResult result);
+		public abstract void Continue (TargetAddress until, CommandResult result);
+
+		public abstract void Background (TargetAddress until, CommandResult result);
 
 		public abstract void Kill ();
 
@@ -217,6 +219,10 @@ namespace Mono.Debugger.Backends
 		public string PrintRegisters (StackFrame frame)
 		{
 			return Architecture.PrintRegisters (frame);
+		}
+
+		public abstract bool IsAlive {
+			get;
 		}
 
 		public abstract bool CanRun {

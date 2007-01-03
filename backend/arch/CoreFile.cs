@@ -200,6 +200,10 @@ namespace Mono.Debugger.Backends
 				get { return -1; }
 			}
 
+			public override bool IsAlive {
+				get { return false; }
+			}
+
 			public override bool CanRun {
 				get { return false; }
 			}
@@ -420,8 +424,12 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			public override void Continue (TargetAddress until, bool in_background,
-						       CommandResult result)
+			public override void Continue (TargetAddress until, CommandResult result)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			public override void Background (TargetAddress until, CommandResult result)
 			{
 				throw new InvalidOperationException ();
 			}
