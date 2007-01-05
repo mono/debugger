@@ -54,13 +54,15 @@ namespace Mono.Debugger.Frontend
 			string s;
 			bool is_complete = true;
 
-			foreach (Process process in interpreter.Processes) {
-				foreach (Thread thread in process.GetThreads ()) {
-					if (!thread.WaitHandle.WaitOne (0, false))
-						continue;
-					TargetEventArgs args = thread.GetLastTargetEvent ();
-					if (args != null)
-						interpreter.Style.TargetEvent (thread, args);
+			if (interpreter.HasTarget) {
+				foreach (Process process in interpreter.Processes) {
+					foreach (Thread thread in process.GetThreads ()) {
+						if (!thread.WaitHandle.WaitOne (0, false))
+							continue;
+						TargetEventArgs args = thread.GetLastTargetEvent ();
+						if (args != null)
+							interpreter.Style.TargetEvent (thread, args);
+					}
 				}
 			}
 
