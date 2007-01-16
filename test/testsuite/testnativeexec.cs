@@ -18,6 +18,8 @@ namespace Mono.Debugger.Tests
 		const int LineWaitpid = 24;
 		const int LineChild = 19;
 
+		int bpt_waitpid;
+
 		[Test]
 		[Category("Fork")]
 		public void Main ()
@@ -28,7 +30,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-			AssertExecute ("next");
+			bpt_waitpid = AssertBreakpoint ("-local " + (LineWaitpid+1));
+			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
 
@@ -69,7 +72,8 @@ namespace Mono.Debugger.Tests
 					TargetEventArgs args = (TargetEventArgs) e.Data2;
 
 					if ((e_thread == thread) &&
-					    (args.Type == TargetEventType.TargetStopped)) {
+					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
+					    ((int) args.Data == bpt_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == execd_child) &&
@@ -82,17 +86,11 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "main", LineMain + 1);
-
+			AssertFrame (thread, "main", LineWaitpid + 1);
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
-			AssertExecute ("next");
-			AssertStopped (thread, "main", LineWaitpid);
-
-			AssertExecute ("next");
-			AssertTargetOutput ("Hello World!");
-			AssertStopped (thread, "main", LineWaitpid + 1);
 
 			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World!");
 			AssertTargetExited (thread.Process);
 		}
 
@@ -107,7 +105,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-			AssertExecute ("next");
+			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
 
@@ -148,7 +146,8 @@ namespace Mono.Debugger.Tests
 					TargetEventArgs args = (TargetEventArgs) e.Data2;
 
 					if ((e_thread == thread) &&
-					    (args.Type == TargetEventType.TargetStopped)) {
+					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
+					    ((int) args.Data == bpt_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == execd_child) &&
@@ -161,8 +160,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "main", LineMain + 1);
-
+			AssertFrame (thread, "main", LineWaitpid + 1);
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 			AssertExecute ("continue");
 
@@ -181,14 +179,15 @@ namespace Mono.Debugger.Tests
 
 			AssertStopped (thread, "main", LineMain);
 		        int child_bpt = AssertBreakpoint ("-global " + LineChild);
-			AssertExecute ("next");
+			int waitpit_bpt = AssertBreakpoint ("-local " + LineWaitpid);
+			AssertExecute ("continue -bg");
 
 			Thread child = AssertProcessCreated ();
 
 			bool child_stopped = false;
-			bool stopped = false;
+			bool reached_waitpid = false;
 
-			while (!child_stopped || !stopped) {
+			while (!child_stopped || !reached_waitpid) {
 				DebuggerEvent e = AssertEvent ();
 
 				if (e.Type != DebuggerEventType.TargetEvent)
@@ -198,8 +197,9 @@ namespace Mono.Debugger.Tests
 				TargetEventArgs args = (TargetEventArgs) e.Data2;
 
 				if ((e_thread == thread) &&
-				    (args.Type == TargetEventType.TargetStopped)) {
-					stopped = true;
+				    (args.Type == TargetEventType.TargetHitBreakpoint) &&
+				    ((int) args.Data == waitpit_bpt)) {
+					reached_waitpid = true;
 					continue;
 				} else if ((e_thread == child) &&
 					   (args.Type == TargetEventType.TargetHitBreakpoint) &&
@@ -211,14 +211,14 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "main", LineMain + 1);
+			AssertFrame (thread, "main", LineWaitpid);
 			AssertFrame (child, "main", LineChild);
 
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 			AssertPrint (child, "pid", "(pid_t) 0");
 
 			AssertExecute ("background -thread " + child.ID);
-			AssertExecute ("next");
+			AssertExecute ("continue -wait");
 
 			Thread execd_child = null;
 			bool exited = false;
@@ -226,7 +226,7 @@ namespace Mono.Debugger.Tests
 			bool child_exited = false;
 			bool thread_created = false;
 			bool thread_exited = false;
-			stopped = false;
+			bool stopped = false;
 
 			while (!exited || !stopped || !child_execd || !thread_created ||
 			       !child_exited || !thread_exited) {
@@ -256,7 +256,8 @@ namespace Mono.Debugger.Tests
 					TargetEventArgs args = (TargetEventArgs) e.Data2;
 
 					if ((e_thread == thread) &&
-					    (args.Type == TargetEventType.TargetStopped)) {
+					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
+					    ((int) args.Data == bpt_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == execd_child) &&
@@ -269,12 +270,8 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "main", LineWaitpid);
-
-			AssertExecute ("next");
+			AssertFrame (thread, "main", LineWaitpid + 1);
 			AssertTargetOutput ("Hello World!");
-			AssertStopped (thread, "main", LineWaitpid + 1);
-
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);
 		}

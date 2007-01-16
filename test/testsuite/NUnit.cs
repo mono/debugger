@@ -47,6 +47,27 @@ namespace Mono.Debugger.Tests
 		}
 	}
 
+	public class StyleNUnit : StyleCLI
+	{
+		public readonly NUnitInterpreter NUnit;
+
+		public StyleNUnit (NUnitInterpreter nunit)
+			: base (nunit)
+		{
+			this.NUnit = nunit;
+		}
+
+		public event TargetEventHandler TargetEventEvent;
+
+		public override void TargetEvent (Thread thread, TargetEventArgs args)
+		{
+			if (TargetEventEvent != null)
+				TargetEventEvent (thread, args);
+
+			base.TargetEvent (thread, args);
+		}
+	}
+
 	public class NUnitInterpreter : Interpreter
 	{
 		internal NUnitInterpreter (DebuggerConfiguration config, DebuggerOptions options,
@@ -58,9 +79,15 @@ namespace Mono.Debugger.Tests
 
 			queue = Queue.Synchronized (new Queue ());
 			wait_event = new ST.ManualResetEvent (false);
+
+			Style = style_nunit = new StyleNUnit (this);
+			style_nunit.TargetEventEvent += delegate (Thread thread, TargetEventArgs args) {
+				AddEvent (new DebuggerEvent (DebuggerEventType.TargetEvent, thread, args));
+			};
 		}
 
 		Queue queue;
+		StyleNUnit style_nunit;
 		ST.ManualResetEvent wait_event;
 		LineReader inferior_stdout, inferior_stderr;
 
@@ -90,12 +117,6 @@ namespace Mono.Debugger.Tests
 				queue.Enqueue (e);
 				wait_event.Set ();
 			}
-		}
-
-		protected override void OnTargetEvent (Thread thread, TargetEventArgs args)
-		{
-			base.OnTargetEvent (thread, args);
-			AddEvent (new DebuggerEvent (DebuggerEventType.TargetEvent, thread, args));
 		}
 
 		protected override void OnThreadCreated (Thread thread)

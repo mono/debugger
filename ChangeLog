@@ -1,5 +1,10 @@
 2007-01-16  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/: Updated the testsuite to reflect the latest
+	threading changes.	
+
+2007-01-16  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.CheckLastEvent): New method.
 	(Interpreter.WaitAll): Correctly implement this.

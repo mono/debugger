@@ -28,7 +28,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-			AssertExecute ("next");
+			AssertExecute ("next -wait");
 
 			Thread child = AssertProcessCreated ();
 
@@ -72,13 +72,13 @@ namespace Mono.Debugger.Tests
 
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 
-			AssertExecute ("next");
+			AssertExecute ("next -wait");
 			AssertStopped (thread, "main", LineWaitpid);
 
-			AssertExecute ("next");
+			AssertExecute ("next -wait");
 			AssertStopped (thread, "main", LineWaitpid + 1);
 
-			AssertExecute ("continue");
+			AssertExecute ("continue -wait");
 			AssertTargetExited (thread.Process);
 		}
 
@@ -93,7 +93,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-			AssertExecute ("next");
+			AssertExecute ("next -wait");
 
 			Thread child = AssertProcessCreated ();
 
@@ -136,7 +136,7 @@ namespace Mono.Debugger.Tests
 			AssertFrame (thread, "main", LineMain + 1);
 			AssertPrint (thread, "pid", String.Format ("(pid_t) {0}", child.PID));
 
-			AssertExecute ("continue");
+			AssertExecute ("continue -wait");
 			AssertTargetExited (thread.Process);
 		}
 
@@ -152,7 +152,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "main", LineMain);
 		        int child_bpt = AssertBreakpoint ("-global " + LineChild);
 			int waitpid_bpt = AssertBreakpoint ("-local " + (LineWaitpid + 1));
-			AssertExecute ("next");
+			AssertExecute ("next -wait");
 
 			Thread child = AssertProcessCreated ();
 
@@ -189,7 +189,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (child, "pid", "(pid_t) 0");
 
 			AssertExecute ("background -thread " + child.ID);
-			AssertExecute ("continue");
+			AssertExecute ("continue -wait");
 
 			bool exited = false;
 			bool child_exited = false;
@@ -230,7 +230,7 @@ namespace Mono.Debugger.Tests
 
 			AssertFrame (thread, "main", LineWaitpid + 1);
 
-			AssertExecute ("continue -thread " + thread.ID);
+			AssertExecute ("continue -wait -thread " + thread.ID);
 			AssertTargetExited (thread.Process);
 		}
 	}

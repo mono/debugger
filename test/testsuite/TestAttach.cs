@@ -53,8 +53,6 @@ namespace Mono.Debugger.Tests
 			AssertThreadCreated ();
 
 			AssertStopped (null, null, -1);
-			AssertStopped (null, null, -1);
-			AssertStopped (null, null, -1);
 
 			StackFrame frame = process.MainThread.CurrentFrame;
 			Assert.IsNotNull (frame);
@@ -78,8 +76,6 @@ namespace Mono.Debugger.Tests
 			AssertThreadCreated ();
 
 			AssertStopped (null, null, -1);
-			AssertStopped (null, null, -1);
-			AssertStopped (null, null, -1);
 
 			StackFrame frame = process.MainThread.CurrentFrame;
 			Assert.IsNotNull (frame);
@@ -102,8 +98,6 @@ namespace Mono.Debugger.Tests
 			AssertThreadCreated ();
 			AssertThreadCreated ();
 
-			AssertStopped (null, null, -1);
-			AssertStopped (null, null, -1);
 			AssertStopped (null, null, -1);
 
 			StackFrame frame = process.MainThread.CurrentFrame;
