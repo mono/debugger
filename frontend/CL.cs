@@ -110,7 +110,7 @@ namespace Mono.Debugger.Frontend
 			int num_args = args != null ? args.Count : 0;
 			for (int i = 0; i < num_args; i++){
 				string arg = (string) args [i];
-				
+
 				if (!arg.StartsWith ("-")){
 					if (c.Args == null)
 						c.Args = new ArrayList ();
@@ -131,8 +131,7 @@ namespace Mono.Debugger.Frontend
 
 					if ((attrs != null) && (attrs.Length > 0)) {
 						PropertyAttribute attr = (PropertyAttribute) attrs [0];
-						if ((pi [j].Name != attr.Name) &&
-						    (pi [j].Name != attr.ShortName))
+						if ((arg != attr.Name) && (arg != attr.ShortName))
 							continue;
 					} else if (pi [j].Name.ToLower () != arg)
 						continue;

@@ -2777,6 +2777,9 @@ namespace Mono.Debugger.Frontend
 
 				context.Interpreter.Wait (result);
 
+				if (debug)
+					context.Interpreter.CheckLastEvent (thread);
+
 				if (result.ExceptionMessage != null)
 					throw new ScriptingException (
 						"Invocation of `{0}' raised an exception: {1}",

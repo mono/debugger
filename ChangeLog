@@ -1,5 +1,11 @@
 2007-01-16  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.CheckLastEvent): New method.
+	(Interpreter.WaitAll): Correctly implement this.
+
+2007-01-16  Martin Baulig  <martin@ximian.com>
+
 	* classes/Thread.cs (Thread.Flags): Added `AutoRun'.
 	(Thread.AutoStop): New public method.
 

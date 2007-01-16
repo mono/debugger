@@ -807,9 +807,7 @@ namespace Mono.Debugger.Frontend
 
 			WaitHandle.WaitAll (handles);
 
-			TargetEventArgs args = CurrentThread.GetLastTargetEvent ();
-			if (args != null)
-				context.Interpreter.Style.TargetEvent (CurrentThread, args);
+			context.Interpreter.CheckLastEvent (CurrentThread);
 			return null;
 		}
 
@@ -822,7 +820,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class SteppingCommand : ThreadCommand
 	{
 		bool in_background;
-		bool wait;
+		bool wait, has_wait;
 
 		[Property ("in-background", "bg")]
 		public bool InBackground {
@@ -832,7 +830,19 @@ namespace Mono.Debugger.Frontend
 
 		public bool Wait {
 			get { return wait; }
-			set { wait = value; }
+			set {
+				has_wait = true;
+				wait = value;
+			}
+		}
+
+		protected override bool DoResolveBase (ScriptingContext context)
+		{
+			if (!has_wait) {
+				wait = context.Interpreter.DebuggerConfiguration.StayInThread;
+				has_wait = true;
+			}
+			return base.DoResolveBase (context);
 		}
 
 		protected override object DoExecute (ScriptingContext context)
@@ -842,19 +852,9 @@ namespace Mono.Debugger.Frontend
 			if (in_background)
 				return result;
 
-			Thread ret;
-			do {
-				ret = context.Interpreter.WaitAll (result);
-				if (ret == null)
-					return null;
-
-				TargetEventArgs args = ret.GetLastTargetEvent ();
-				if (args != null)
-					context.Interpreter.Style.TargetEvent (ret, args);
-
-				if (ret == thread)
-					return thread;
-			} while (wait && (ret != thread));
+			Thread ret = context.Interpreter.WaitAll (result, wait);
+			if (ret == null)
+				return null;
 
 			context.Interpreter.CurrentThread = ret;
 			return ret;
@@ -2834,10 +2834,16 @@ namespace Mono.Debugger.Frontend
 
 		protected override object DoExecute (ScriptingContext context)
 		{
+			Thread thread = CurrentThread;
 			if (Invocation)
-				CurrentThread.AbortInvocation ();
+				thread.AbortInvocation ();
 			else
-				CurrentThread.Return (true);
+				thread.Return (true);
+
+			TargetEventArgs args = thread.GetLastTargetEvent ();
+			if (args != null)
+				context.Interpreter.Style.TargetEvent (thread, args);
+
 			return null;
 		}
 

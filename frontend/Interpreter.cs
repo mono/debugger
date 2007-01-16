@@ -99,6 +99,10 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public DebuggerConfiguration DebuggerConfiguration {
+			get { return config; }
+		}
+
 		public DebuggerEngine DebuggerEngine {
 			get { return engine; }
 		}
@@ -294,7 +298,17 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public Process Start ()
+		public void CheckLastEvent (Thread thread)
+		{
+			TargetEventArgs args = thread.GetLastTargetEvent ();
+			if (args == null)
+				return;
+
+			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data == 0))
+				Style.TargetEvent (current_thread, args);
+		}
+
+		public virtual Process Start ()
 		{
 			if ((debugger != null) || (main_process != null))
 				throw new TargetException (TargetError.AlreadyHaveTarget);
@@ -313,6 +327,8 @@ namespace Mono.Debugger.Frontend
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
+				CheckLastEvent (current_thread);
+
 				// FIXME: Read the FIXME in DebuggerSession.cs !
 				session.MainProcessReachedMain (current_process);
 
@@ -341,6 +357,8 @@ namespace Mono.Debugger.Frontend
 				current_process = main_process = debugger.Attach (session, pid);
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
+				CheckLastEvent (current_thread);
+
 				session.MainProcessReachedMain (current_process);
 
 				return current_process;
@@ -369,6 +387,8 @@ namespace Mono.Debugger.Frontend
 					session, core_file, out threads);
 
 				current_thread = current_process.MainThread;
+
+				CheckLastEvent (current_thread);
 
 				return current_process;
 			} catch (TargetException) {
@@ -400,6 +420,8 @@ namespace Mono.Debugger.Frontend
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
 				session.MainProcessReachedMain (current_process);
+
+				CheckLastEvent (current_thread);
 
 				return current_process;
 			} catch (TargetException ex) {
@@ -439,36 +461,66 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public Thread WaitAll (ThreadCommandResult result)
+		public Thread WaitAll (ThreadCommandResult result, bool wait)
 		{
 			if (result == null)
 				return null;
 
 			ClearInterrupt ();
-			ArrayList list = new ArrayList ();
+
+			Thread stopped;
+			do {
+				ArrayList list = new ArrayList ();
+				foreach (Process process in Processes) {
+					foreach (Thread thread in process.GetThreads ()) {
+						if (thread.IsRunning)
+							list.Add (thread);
+						else if ((thread.ThreadFlags & Thread.Flags.AutoRun) != 0) {
+							thread.Continue ();
+							list.Add (thread);
+						}
+					}
+				}
+
+				WaitHandle[] handles = new WaitHandle [list.Count + 1];
+				handles [0] = interrupt_event;
+				for (int i = 0; i < list.Count; i++)
+					handles [i + 1] = ((Thread) list [i]).WaitHandle;
+
+				int ret = WaitHandle.WaitAny (handles);
+
+				if (ret == 0) {
+					stopped = null;
+					result.Abort ();
+					result.CompletedEvent.WaitOne ();
+					break;
+				}
+
+				if (result.Result is Exception)
+					throw (Exception) result.Result;
+
+				stopped = (Thread) list [ret - 1];
+
+				CheckLastEvent (stopped);
+			} while (wait && (stopped != null) && (stopped != result.Thread));
+
 			foreach (Process process in Processes) {
 				foreach (Thread thread in process.GetThreads ()) {
-					if (thread.IsRunning)
-						list.Add (thread);
+					if (thread == stopped)
+						continue;
+					// Never touch immutable threads.
+					if ((thread.ThreadFlags & Thread.Flags.Immutable) != 0)
+						continue;
+					// Background thread -> keep running.
+					if ((thread.ThreadFlags & Thread.Flags.Background) != 0)
+						continue;
+
+					// Stop and set AutoRun.
+					thread.AutoStop ();
 				}
 			}
-			WaitHandle[] handles = new WaitHandle [list.Count + 1];
-			handles [0] = interrupt_event;
-			for (int i = 0; i < list.Count; i++)
-				handles [i + 1] = ((Thread) list [i]).WaitHandle;
 
-			int ret = WaitHandle.WaitAny (handles);
-
-			if (ret == 0) {
-				result.Abort ();
-				result.CompletedEvent.WaitOne ();
-				return null;
-			}
-
-			if (result.Result is Exception)
-				throw (Exception) result.Result;
-
-			return (Thread) list [ret - 1];
+			return stopped;
 		}
 
 		protected void Wait (Thread thread)
@@ -573,6 +625,10 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
+			if ((args.Type != TargetEventType.TargetStopped) || ((int) args.Data != 0))
+				Style.TargetEvent (thread, args);
+			else if ((thread.ThreadFlags & Thread.Flags.Background) != 0)
+				Style.TargetEvent (thread, args);
 		}
 
 		protected virtual void OnTargetOutput (bool is_stderr, string line)
