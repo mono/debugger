@@ -152,10 +152,10 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
-						ref Inferior.ChildEvent cevent)
+						ref Inferior.ChildEvent cevent, out bool resume_target)
 		{
 			if (cevent.Type == Inferior.ChildEventType.NONE) {
-				inferior.Continue ();
+				resume_target = true;
 				return true;
 			}
 
@@ -163,18 +163,19 @@ namespace Mono.Debugger.Backends
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
 				inferior.Process.ThreadCreated (inferior, (int) cevent.Argument, false);
-				inferior.Continue ();
+				resume_target = true;
 				return true;
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_FORKED) {
 				inferior.Process.ChildForked (inferior, (int) cevent.Argument);
-				inferior.Continue ();
+				resume_target = true;
 				return true;
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_EXECD) {
 				inferior.Process.ChildExecd (inferior);
+				resume_target = false;
 				return true;
 			}
 
@@ -182,19 +183,22 @@ namespace Mono.Debugger.Backends
 			    (cevent.Argument == inferior.SIGCHLD)) {
 				cevent = new Inferior.ChildEvent (
 					Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
+				resume_target = false;
 				return false;
 			}
 
 			bool retval = false;
+			resume_target = false;
 			if (inferior.Process.MonoManager != null)
 				retval = inferior.Process.MonoManager.HandleChildEvent (
-					engine, inferior, ref cevent);
+					engine, inferior, ref cevent, out resume_target);
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
 				engine.OnThreadExited (cevent);
+				resume_target = false;
 				return true;
 			}
 

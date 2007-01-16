@@ -151,8 +151,8 @@ namespace Mono.Debugger.Backends
 				return;
 
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
-			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} ({2:x})",
-				      this, cevent, status);
+			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} ({2:x}){3}",
+				      this, cevent, status, stop_requested ? " - stop requested" : "");
 			if (has_thread_lock) {
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} while being thread-locked ({2})",
@@ -179,8 +179,21 @@ namespace Mono.Debugger.Backends
 					      "{0} received event {1} ({2:x}) while running {3}",
 					      this, cevent, status, current_operation);
 
-			if (manager.HandleChildEvent (this, inferior, ref cevent))
+			bool resume_target;
+			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} done handling event: {1} {2} {3}", this, cevent, resume_target,
+					      stop_requested);
+				if (!resume_target)
+					return;
+				if (stop_requested) {
+					stop_requested = false;
+					frame_changed (inferior.CurrentFrame, null);
+					OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
+				}
+				inferior.Continue ();
 				return;
+			}
 			ProcessChildEvent (cevent);
 		}
 
@@ -778,8 +791,8 @@ namespace Mono.Debugger.Backends
 		public override void Stop ()
 		{
 			lock (this) {
-				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1}",
-					      this, engine_stopped);
+				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1} {2}",
+					      this, engine_stopped, current_operation);
 
 				if (engine_stopped)
 					return;
@@ -1371,8 +1384,12 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 
-				if (manager.HandleChildEvent (this, inferior, ref cevent))
+				bool resume_target;
+				if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
+					if (resume_target)
+						inferior.Continue ();
 					return;
+				}
 				ProcessChildEvent (cevent);
 			}
 		}
@@ -2019,6 +2036,9 @@ namespace Mono.Debugger.Backends
 			if (sse.ProcessServant.IsAttached)
 				return EventResult.Completed;
 
+			Report.Debug (DebugFlags.SSE,
+				      "{0} start #1: {1} {2} {3}", sse, cevent,
+				      sse.ProcessServant.IsAttached, inferior.MainMethodAddress);
 			sse.PushOperation (new OperationRun (
 				sse, inferior.MainMethodAddress, true, Result));
 			return EventResult.Running;

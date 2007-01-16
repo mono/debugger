@@ -25,13 +25,15 @@ namespace Mono.Debugger
 			None		= 0x0000,
 			Daemon		= 0x0001,
 			Immutable	= 0x0002,
-			Background	= 0x0004
+			Background	= 0x0004,
+			AutoRun		= 0x0008
 		}
 
 		internal Thread (ThreadServant servant, int id)
 		{
 			this.id = id;
 			this.servant = servant;
+			this.is_running = true;
 			this.operation_completed_event = new ST.ManualResetEvent (false);
 		}
 
@@ -386,7 +388,6 @@ namespace Mono.Debugger
 			lock (this) {
 				check_alive ();
 				is_running = true;
-				flags |= Flags.Background;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.Continue (until, new ThreadCommandResult (this));
@@ -404,6 +405,7 @@ namespace Mono.Debugger
 			lock (this) {
 				check_alive ();
 				is_running = true;
+				flags |= Flags.Background;
 				operation_completed_event.Reset ();
 				ThreadCommandResult result = new ThreadCommandResult (this);
 				servant.Background (until, new ThreadCommandResult (this));
@@ -431,6 +433,15 @@ namespace Mono.Debugger
 		{
 			check_alive ();
 			servant.Stop ();
+		}
+
+		public void AutoStop ()
+		{
+			check_alive ();
+			servant.Stop ();
+			Wait ();
+			is_running = false;
+			flags |= Flags.AutoRun;
 		}
 
 		public void Wait ()

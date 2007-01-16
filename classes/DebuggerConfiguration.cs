@@ -120,6 +120,7 @@ namespace Mono.Debugger
 			}
 		}
 
+		bool stay_in_thread;
 		bool load_native_symtabs;
 		Hashtable module_groups;
 
@@ -206,6 +207,11 @@ namespace Mono.Debugger
 		public bool LoadNativeSymtabs {
 			get { return load_native_symtabs; }
 			set { load_native_symtabs = true; }
+		}
+
+		public bool StayInThread {
+			get { return stay_in_thread; }
+			set { stay_in_thread = false; }
 		}
 	}
 }

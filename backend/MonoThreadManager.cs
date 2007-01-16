@@ -141,7 +141,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
-						ref Inferior.ChildEvent cevent)
+						ref Inferior.ChildEvent cevent, out bool resume_target)
 		{
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) {
 				NotificationType type = (NotificationType) cevent.Argument;
@@ -197,6 +197,7 @@ namespace Mono.Debugger.Backends
 						engine.ReachedManagedMain (data);
 					else
 						engine.ReachedManagedMain (TargetAddress.Null);
+					resume_target = false;
 					return true;
 				}
 
@@ -208,18 +209,21 @@ namespace Mono.Debugger.Backends
 					cevent = new Inferior.ChildEvent (
 						Inferior.ChildEventType.UNHANDLED_EXCEPTION,
 						0, cevent.Data1, cevent.Data2);
+					resume_target = false;
 					return false;
 
 				case NotificationType.HandleException:
 					cevent = new Inferior.ChildEvent (
 						Inferior.ChildEventType.HANDLE_EXCEPTION,
 						0, cevent.Data1, cevent.Data2);
+					resume_target = false;
 					return false;
 
 				case NotificationType.ThrowException:
 					cevent = new Inferior.ChildEvent (
 						Inferior.ChildEventType.THROW_EXCEPTION,
 						0, cevent.Data1, cevent.Data2);
+					resume_target = false;
 					return false;
 
 				case NotificationType.FinalizeManagedCode:
@@ -236,16 +240,17 @@ namespace Mono.Debugger.Backends
 				}
 				}
 
-				inferior.Continue ();
+				resume_target = true;
 				return true;
 			}
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 			    (cevent.Argument == inferior.MonoThreadAbortSignal)) {
-				inferior.Continue ();
+				resume_target = true;
 				return true;
 			}
 
+			resume_target = false;
 			return false;
 		}
 	}
