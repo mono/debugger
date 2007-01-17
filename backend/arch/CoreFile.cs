@@ -200,6 +200,10 @@ namespace Mono.Debugger.Backends
 				get { return -1; }
 			}
 
+			public override TargetAddress LMFAddress {
+				get { return TargetAddress.Null; }
+			}
+
 			public override bool IsAlive {
 				get { return false; }
 			}

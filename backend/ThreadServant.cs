@@ -72,6 +72,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		public abstract TargetAddress LMFAddress {
+			get;
+		}
+
 		public bool IsDaemon {
 			get { return is_daemon; }
 		}

@@ -677,6 +677,10 @@ namespace Mono.Debugger.Backends
 			get { return inferior != null; }
 		}
 
+		public override TargetAddress LMFAddress {
+			get { return lmf_address; }
+		}
+
 		public override bool CanRun {
 			get { return true; }
 		}
@@ -1802,6 +1806,8 @@ namespace Mono.Debugger.Backends
 
 		TargetEventArgs last_target_event;
 
+		TargetAddress lmf_address = TargetAddress.Null;
+
 		TargetAddress end_stack_address = TargetAddress.Null;
 
 		TargetAddress main_method_stackptr = TargetAddress.Null;
@@ -2002,13 +2008,15 @@ namespace Mono.Debugger.Backends
 		{ }
 
 		bool initialized;
+		bool has_lmf;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} start: {1} {2}", sse, cevent,
-				      sse.ProcessServant.IsAttached);
+				      "{0} start: {1} {2} {3} {4}", sse, initialized,
+				      cevent, sse.ProcessServant.IsAttached,
+				      inferior.CurrentFrame);
 
 			args = null;
 			if (cevent.Type != Inferior.ChildEventType.CHILD_STOPPED)
@@ -2029,8 +2037,15 @@ namespace Mono.Debugger.Backends
 					initialized = true;
 					inferior.Continue ();
 					return EventResult.Running;
-				} else
-					return EventResult.Completed;
+				}
+
+				if (!has_lmf) {
+					has_lmf = true;
+					sse.PushOperation (new OperationGetLMFAddr (sse, null));
+					return EventResult.Running;
+				}
+
+				return EventResult.Completed;
 			}
 
 			if (sse.ProcessServant.IsAttached)
@@ -2118,7 +2133,9 @@ namespace Mono.Debugger.Backends
 			long tid = reader.BinaryReader.ReadInt64 ();
 
 			sse.OnManagedThreadCreated (tid, thread + info.ThreadEndStackOffset);
-			return true;
+
+			sse.PushOperation (new OperationGetLMFAddr (sse, null));
+			return false;
 		}
 	}
 
@@ -2146,6 +2163,52 @@ namespace Mono.Debugger.Backends
 
 			RestoreStack ();
 			inferior.InitializeModules ();
+			return true;
+		}
+	}
+
+	protected class OperationGetLMFAddr : OperationCallback
+	{
+		public OperationGetLMFAddr (SingleSteppingEngine sse, CommandResult result)
+			: base (sse, result)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			inferior.CallMethod (info.GetLMFAddress, 0, 0, ID);
+		}
+
+		protected override bool CallbackCompleted (Inferior.ChildEvent cevent,
+							   out TargetEventArgs args,
+							   out EventResult result)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} get lmf done: {1} {2}",
+				      sse, cevent, Result);
+
+			args = null;
+
+			if (!CallbackCompleted (cevent.Data1, cevent.Data2)) {
+				result = EventResult.Running;
+				return true;
+			}
+
+			result = EventResult.Completed;
+			return true;
+		}
+
+		protected override bool CallbackCompleted (long data1, long data2)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} get lmf: {1:x} {2:x} {3}",
+				      sse, data1, data2, Result);
+
+			RestoreStack ();
+			sse.lmf_address = new TargetAddress (inferior.AddressDomain, data1);
 			return true;
 		}
 	}

@@ -1,3 +1,14 @@
+2007-01-17  Martin Baulig  <martin@ximian.com>
+
+	* backends/ThreadServant.cs
+	(ThreadServant.LMFAddress): New public property.
+
+	* backends/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OperationGetLMFAddress): New operation.
+	(SingleSteppingEngine.OperationStart): Push
+	OperationGetLMFAddress() to get the LMF on startup.
+	(SingleSteppingEngine.OperationInitialize): Likewise.
+
 2007-01-16  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/: Updated the testsuite to reflect the latest
