@@ -32,6 +32,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return "native"; }
 		}
 
+		public override bool IsManaged {
+			get { return false; }
+		}
+
 		internal override ProcessServant Process {
 			get { return bfd_container.Process; }
 		}

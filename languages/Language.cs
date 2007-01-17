@@ -9,6 +9,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract bool IsManaged {
+			get;
+		}
+
 		internal abstract ProcessServant Process {
 			get;
 		}

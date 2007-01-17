@@ -1,5 +1,10 @@
 2007-01-17  Martin Baulig  <martin@ximian.com>
 
+	* languages/Language.cs
+	(Language.IsManaged): New public property.
+
+2007-01-17  Martin Baulig  <martin@ximian.com>
+
 	* backends/ThreadServant.cs
 	(ThreadServant.LMFAddress): New public property.
 

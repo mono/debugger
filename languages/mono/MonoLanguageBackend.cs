@@ -201,6 +201,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return "Mono"; }
 		}
 
+		public override bool IsManaged {
+			get { return true; }
+		}
+
 		internal MonoDebuggerInfo MonoDebuggerInfo {
 			get { return info; }
 		}
