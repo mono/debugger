@@ -385,7 +385,7 @@ namespace Mono.Debugger.Backends
 			Registers regs = new Registers (old_regs);
 
 			TargetAddress ebp = new TargetAddress (
-				AddressDomain, old_regs [(int) I386Register.EBP].Value);
+				AddressDomain, old_regs [(int) I386Register.EBP].GetValue ());
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
@@ -713,6 +713,38 @@ namespace Mono.Debugger.Backends
 				AddressDomain, regs [(int) I386Register.EBP].GetValue ());
 
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
+		}
+
+		internal override StackFrame GetLMF (Thread thread)
+		{
+			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
+
+			TargetBinaryReader reader = thread.ReadMemory (lmf, 32).GetReader ();
+			Console.WriteLine ("GET LMF: {0} {1} {2} {3}", thread, thread.LMFAddress,
+					   lmf, reader.HexDump ());
+
+			reader.Position = 12;
+
+			TargetAddress ebx = reader.ReadTargetAddress ();
+			TargetAddress edi = reader.ReadTargetAddress ();
+			TargetAddress esi = reader.ReadTargetAddress ();
+			TargetAddress ebp = reader.ReadTargetAddress ();
+
+			Registers regs = new Registers (this);
+			regs [(int) I386Register.EBX].SetValue (lmf + 12, ebx);
+			regs [(int) I386Register.EDI].SetValue (lmf + 16, edi);
+			regs [(int) I386Register.ESI].SetValue (lmf + 20, esi);
+			regs [(int) I386Register.EBP].SetValue (lmf + 24, ebp);
+
+			TargetAddress new_eip = thread.ReadAddress (ebp + 4);
+			regs [(int) I386Register.EIP].SetValue (ebp + 4, new_eip);
+
+			TargetAddress new_esp = ebp + 8;
+			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
+
+			ebp -= 4;
+
+			return CreateFrame (thread, new_eip, new_esp, ebp, regs);
 		}
 	}
 }
