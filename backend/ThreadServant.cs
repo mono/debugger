@@ -76,6 +76,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		internal ProcessServant Process {
+			get { return process; }
+		}
+
 		public bool IsDaemon {
 			get { return is_daemon; }
 		}

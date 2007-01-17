@@ -164,6 +164,11 @@ namespace Mono.Debugger
 				return ReadUInt32 ();
 		}
 
+		public TargetAddress ReadTargetAddress ()
+		{
+			return new TargetAddress (TargetInfo.AddressDomain, ReadAddress ());
+		}
+
 		public string PeekString (long pos)
 		{
 			int length = 0;
