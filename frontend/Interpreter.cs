@@ -305,7 +305,7 @@ namespace Mono.Debugger.Frontend
 				return;
 
 			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data == 0))
-				Style.TargetEvent (current_thread, args);
+				Style.TargetEvent (thread, args);
 		}
 
 		public virtual Process Start ()
