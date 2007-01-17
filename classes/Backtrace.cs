@@ -56,9 +56,6 @@ namespace Mono.Debugger
 		internal void GetBacktrace (ThreadServant target, TargetAddress until,
 					    int max_frames)
 		{
-			if (target.Process.IsManaged && target.LMFAddress.IsNull)
-				throw new Exception ("FUCK");
-
 			while (TryUnwind (target, until)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
@@ -73,6 +70,7 @@ namespace Mono.Debugger
 			} catch (TargetException) {
 			}
 
+#if TEST_ME
 			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
 				try {
 					if (!last_frame.Language.IsManaged && !target.LMFAddress.IsNull)
@@ -87,6 +85,10 @@ namespace Mono.Debugger
 				if (new_frame.StackPointer < last_frame.StackPointer)
 					return false;
 			}
+#else
+			if (new_frame == null)
+				return false;
+#endif
 
 			if (!until.IsNull && (new_frame.StackPointer >= until))
 				return false;

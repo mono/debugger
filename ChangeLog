@@ -1,6 +1,12 @@
 2007-01-17  Martin Baulig  <martin@ximian.com>
 
 	* classes/Backtrace.cs
+	(Backtrace.TryUnwind): Temporarily disable the LMF code until I
+	tested in on x86_64 tomorrow.
+
+2007-01-17  Martin Baulig  <martin@ximian.com>
+
+	* classes/Backtrace.cs
 	(Backtrace.GetBacktrace): Make this internal and take a
 	`ThreadServant'.
 	(Backtrace.TryUnwind): Likewise.
