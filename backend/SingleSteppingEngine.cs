@@ -2163,7 +2163,9 @@ namespace Mono.Debugger.Backends
 
 			RestoreStack ();
 			inferior.InitializeModules ();
-			return true;
+
+			sse.PushOperation (new OperationGetLMFAddr (sse, null));
+			return false;
 		}
 	}
 
