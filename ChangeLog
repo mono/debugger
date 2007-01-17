@@ -3,7 +3,7 @@
 	* classes/Thread.cs
 	(Thread.LMFAddress): New internal property.
 
-	* backends/ThreadServant.cs
+	* backend/ThreadServant.cs
 	(ThreadServant.Process): New internal property.
 
 	* classes/TargetBinaryReader.cs
@@ -16,10 +16,10 @@
 
 2007-01-17  Martin Baulig  <martin@ximian.com>
 
-	* backends/ThreadServant.cs
+	* backend/ThreadServant.cs
 	(ThreadServant.LMFAddress): New public property.
 
-	* backends/SingleSteppingEngine.cs
+	* backend/SingleSteppingEngine.cs
 	(SingleSteppingEngine.OperationGetLMFAddress): New operation.
 	(SingleSteppingEngine.OperationStart): Push
 	OperationGetLMFAddress() to get the LMF on startup.
@@ -44,7 +44,7 @@
 	* classes/DebuggerConfiguration.cs
 	(DebuggerConfiguration.StayInThread): New public property.
 
-	* backends/SingleSteppingEngine.cs: Correctly handle stop requests.
+	* backend/SingleSteppingEngine.cs: Correctly handle stop requests.
 
 2007-01-03  Martin Baulig  <martin@ximian.com>
 
