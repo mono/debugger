@@ -54,6 +54,13 @@ namespace Mono.Debugger
 			}
 		}
 
+		internal TargetAddress LMFAddress {
+			get {
+				check_servant ();
+				return servant.LMFAddress;
+			}
+		}
+
 		public override string ToString ()
 		{
 			return Name;
