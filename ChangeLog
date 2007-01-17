@@ -1,5 +1,14 @@
 2007-01-17  Martin Baulig  <martin@ximian.com>
 
+	* classes/Backtrace.cs
+	(Backtrace.GetBacktrace): Make this internal and take a
+	`ThreadServant'.
+	(Backtrace.TryUnwind): Likewise.
+	(Backtrace.TryUnwind): If we're in unmanaged code and don't have
+	any source info, use the LMF to get back to managed land.
+
+2007-01-17  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Architecture.cs
 	(Architecture.GetLMF): New internal method.
 

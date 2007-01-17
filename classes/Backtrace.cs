@@ -4,6 +4,8 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	public class Backtrace : DebuggerMarshalByRefObject
@@ -51,16 +53,19 @@ namespace Mono.Debugger
 			}
 		}
 
-		public void GetBacktrace (TargetMemoryAccess target, TargetAddress until,
-					  int max_frames)
+		internal void GetBacktrace (ThreadServant target, TargetAddress until,
+					    int max_frames)
 		{
+			if (target.Process.IsManaged && target.LMFAddress.IsNull)
+				throw new Exception ("FUCK");
+
 			while (TryUnwind (target, until)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
 		}
 
-		public bool TryUnwind (TargetMemoryAccess target, TargetAddress until)
+		internal bool TryUnwind (ThreadServant target, TargetAddress until)
 		{
 			StackFrame new_frame = null;
 			try {
@@ -68,8 +73,20 @@ namespace Mono.Debugger
 			} catch (TargetException) {
 			}
 
-			if (new_frame == null)
-				return false;
+			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
+				try {
+					if (!last_frame.Language.IsManaged && !target.LMFAddress.IsNull)
+						new_frame = target.Architecture.GetLMF (target.Client);
+				} catch (TargetException) {
+				}
+
+				if (new_frame == null)
+					return false;
+
+				// Sanity check; don't loop.
+				if (new_frame.StackPointer < last_frame.StackPointer)
+					return false;
+			}
 
 			if (!until.IsNull && (new_frame.StackPointer >= until))
 				return false;
