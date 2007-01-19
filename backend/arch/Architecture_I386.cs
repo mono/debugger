@@ -720,8 +720,6 @@ namespace Mono.Debugger.Backends
 			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
 
 			TargetBinaryReader reader = thread.ReadMemory (lmf, 32).GetReader ();
-			Console.WriteLine ("GET LMF: {0} {1} {2} {3}", thread, thread.LMFAddress,
-					   lmf, reader.HexDump ());
 
 			reader.Position = 12;
 
