@@ -70,7 +70,6 @@ namespace Mono.Debugger
 			} catch (TargetException) {
 			}
 
-#if TEST_ME
 			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
 				try {
 					if (!last_frame.Language.IsManaged && !target.LMFAddress.IsNull)
@@ -82,13 +81,9 @@ namespace Mono.Debugger
 					return false;
 
 				// Sanity check; don't loop.
-				if (new_frame.StackPointer < last_frame.StackPointer)
+				if (new_frame.StackPointer <= last_frame.StackPointer)
 					return false;
 			}
-#else
-			if (new_frame == null)
-				return false;
-#endif
 
 			if (!until.IsNull && (new_frame.StackPointer >= until))
 				return false;
