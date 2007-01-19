@@ -1,5 +1,15 @@
 2007-01-19  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.IsStopped): Check whether the engine is
+	stopped rather than using the Inferior's TargetState.
+
+	* classes/Thread.cs
+	(Thread.IsStopped): Use `servant.IsStopped' rather than relying on
+	the `TargetState'.
+
+2007-01-19  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerConfiguration.cs
 	(DebuggerConfiguration.BrokenThreading): New public property;
 	enabled by default.

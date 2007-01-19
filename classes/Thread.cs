@@ -658,7 +658,7 @@ namespace Mono.Debugger
 		}
 
 		public bool IsStopped {
-			get { return State == TargetState.Stopped; }
+			get { return (servant != null) && servant.IsStopped; }
 		}
 
 		public override TargetInfo TargetInfo {

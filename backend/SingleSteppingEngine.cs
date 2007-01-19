@@ -691,7 +691,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override bool IsStopped {
-			get { return State == TargetState.Stopped; }
+			get { return engine_stopped; }
 		}
 
 		internal override ProcessServant ProcessServant {
