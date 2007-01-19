@@ -806,8 +806,6 @@ namespace Mono.Debugger.Frontend
 				handles [i] = threads [i].WaitHandle;
 
 			WaitHandle.WaitAll (handles);
-
-			context.Interpreter.CheckLastEvent (CurrentThread);
 			return null;
 		}
 
@@ -852,7 +850,7 @@ namespace Mono.Debugger.Frontend
 			if (in_background)
 				return result;
 
-			Thread ret = context.Interpreter.WaitAll (result, wait);
+			Thread ret = context.Interpreter.WaitAll (result.Thread, result, wait);
 			if (ret == null)
 				return null;
 

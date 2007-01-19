@@ -1552,10 +1552,9 @@ namespace Mono.Debugger.Frontend
 		protected TargetObject GetProperty (ScriptingContext context,
 						    TargetPropertyInfo prop)
 		{
-			RuntimeInvokeResult result = context.CurrentThread.RuntimeInvoke (
-				prop.Getter, InstanceObject, new TargetObject [0], true, false);
-
-			context.Interpreter.Wait (result);
+			RuntimeInvokeResult result = context.Interpreter.RuntimeInvoke (
+				context.CurrentThread, prop.Getter, InstanceObject,
+				new TargetObject [0], true, false);
 
 			if (result.ExceptionMessage != null)
 				throw new ScriptingException (
@@ -2773,12 +2772,8 @@ namespace Mono.Debugger.Frontend
 				Thread thread = context.CurrentThread;
 				RuntimeInvokeResult result;
 
-				result = thread.RuntimeInvoke (method, instance, objs, true, debug);
-
-				context.Interpreter.Wait (result);
-
-				if (debug)
-					context.Interpreter.CheckLastEvent (thread);
+				result = context.Interpreter.RuntimeInvoke (
+					thread, method, instance, objs, true, debug);
 
 				if (result.ExceptionMessage != null)
 					throw new ScriptingException (

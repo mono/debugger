@@ -298,7 +298,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void CheckLastEvent (Thread thread)
+		protected void CheckLastEvent (Thread thread)
 		{
 			TargetEventArgs args = thread.GetLastTargetEvent ();
 			if (args == null)
@@ -461,7 +461,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		public Thread WaitAll (ThreadCommandResult result, bool wait)
+		public Thread WaitAll (Thread thread, CommandResult result, bool wait)
 		{
 			if (result == null)
 				return null;
@@ -472,20 +472,23 @@ namespace Mono.Debugger.Frontend
 			do {
 				ArrayList list = new ArrayList ();
 				foreach (Process process in Processes) {
-					foreach (Thread thread in process.GetThreads ()) {
-						if (thread.IsRunning)
-							list.Add (thread);
-						else if ((thread.ThreadFlags & Thread.Flags.AutoRun) != 0) {
-							thread.Continue ();
-							list.Add (thread);
+					foreach (Thread t in process.GetThreads ()) {
+						if (t == thread)
+							continue;
+						else if (t.IsRunning)
+							list.Add (t);
+						else if ((t.ThreadFlags & Thread.Flags.AutoRun) != 0) {
+							t.Continue ();
+							list.Add (t);
 						}
 					}
 				}
 
-				WaitHandle[] handles = new WaitHandle [list.Count + 1];
+				WaitHandle[] handles = new WaitHandle [list.Count + 2];
 				handles [0] = interrupt_event;
+				handles [1] = result.CompletedEvent;
 				for (int i = 0; i < list.Count; i++)
-					handles [i + 1] = ((Thread) list [i]).WaitHandle;
+					handles [i + 2] = ((Thread) list [i]).WaitHandle;
 
 				int ret = WaitHandle.WaitAny (handles);
 
@@ -499,24 +502,27 @@ namespace Mono.Debugger.Frontend
 				if (result.Result is Exception)
 					throw (Exception) result.Result;
 
-				stopped = (Thread) list [ret - 1];
+				if (ret == 1)
+					stopped = thread;
+				else
+					stopped = (Thread) list [ret - 2];
 
 				CheckLastEvent (stopped);
-			} while (wait && (stopped != null) && (stopped != result.Thread));
+			} while (wait && (stopped != null) && (stopped != thread));
 
 			foreach (Process process in Processes) {
-				foreach (Thread thread in process.GetThreads ()) {
-					if (thread == stopped)
+				foreach (Thread t in process.GetThreads ()) {
+					if (t == stopped)
 						continue;
 					// Never touch immutable threads.
-					if ((thread.ThreadFlags & Thread.Flags.Immutable) != 0)
+					if ((t.ThreadFlags & Thread.Flags.Immutable) != 0)
 						continue;
 					// Background thread -> keep running.
-					if ((thread.ThreadFlags & Thread.Flags.Background) != 0)
+					if ((t.ThreadFlags & Thread.Flags.Background) != 0)
 						continue;
 
 					// Stop and set AutoRun.
-					thread.AutoStop ();
+					t.AutoStop ();
 				}
 			}
 
@@ -533,6 +539,31 @@ namespace Mono.Debugger.Frontend
 			handles [1] = thread.WaitHandle;
 
 			WaitHandle.WaitAny (handles);
+		}
+
+		public RuntimeInvokeResult RuntimeInvoke (Thread thread,
+							  TargetFunctionType function,
+							  TargetClassObject object_argument,
+							  TargetObject[] param_objects,
+							  bool is_virtual, bool debug)
+		{
+			RuntimeInvokeResult result = thread.RuntimeInvoke (
+				function, object_argument, param_objects, is_virtual, debug);
+
+			if (DebuggerConfiguration.BrokenThreading) {
+				Thread ret = WaitAll (thread, result, false);
+				if (ret != thread) {
+					result.Abort ();
+					return null;
+				}
+			} else {
+				Wait (thread);
+
+				if (debug)
+					CheckLastEvent (thread);
+			}
+
+			return result;
 		}
 
 		public int Interrupt ()

@@ -1,5 +1,15 @@
 2007-01-19  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.BrokenThreading): New public property;
+	enabled by default.
+
+	* frontend/Interpreter.cs
+	(Interpreter.RuntimeInvoke): New public method; use WaitAll() is
+	`DebuggerConfiguration.BrokenThreading' is set.
+
+2007-01-19  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoLanguageBackend.cs: Don't crash if we don't
 	have a symbol table.  This might happen if we for instance attach
 	to a mono process which is running without --debug.

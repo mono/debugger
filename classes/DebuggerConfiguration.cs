@@ -121,6 +121,7 @@ namespace Mono.Debugger
 		}
 
 		bool stay_in_thread;
+		bool broken_threading = true;
 		bool load_native_symtabs;
 		Hashtable module_groups;
 
@@ -212,6 +213,11 @@ namespace Mono.Debugger
 		public bool StayInThread {
 			get { return stay_in_thread; }
 			set { stay_in_thread = false; }
+		}
+
+		public bool BrokenThreading {
+			get { return broken_threading; }
+			set { broken_threading = value; }
 		}
 	}
 }
