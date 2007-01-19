@@ -965,15 +965,26 @@ namespace Mono.Debugger.Frontend
 	public class BacktraceCommand : ThreadCommand, IDocumentableCommand
 	{
 		int max_frames = -1;
+		Backtrace.Mode mode = Backtrace.Mode.Default;
 
 		public int Max {
 			get { return max_frames; }
 			set { max_frames = value; }
 		}
 
+		public bool Native {
+			get { return mode == Backtrace.Mode.Native; }
+			set { mode = Backtrace.Mode.Native; }
+		}
+
+		public bool Managed {
+			get { return mode == Backtrace.Mode.Managed; }
+			set { mode = Backtrace.Mode.Managed; }
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
-			Backtrace backtrace = CurrentThread.GetBacktrace (max_frames);
+			Backtrace backtrace = CurrentThread.GetBacktrace (mode, max_frames);
 
 			for (int i = 0; i < backtrace.Count; i++) {
 				string prefix = i == backtrace.CurrentFrameIndex ? "(*)" : "   ";

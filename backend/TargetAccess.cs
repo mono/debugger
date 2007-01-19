@@ -28,7 +28,7 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		public abstract Backtrace GetBacktrace (int max_frames);
+		public abstract Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames);
 
 		public abstract int GetInstructionSize (TargetAddress address);
 

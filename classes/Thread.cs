@@ -222,10 +222,15 @@ namespace Mono.Debugger
 		//   without doing any stepping operations in the meantime, you'll always
 		//   get the same backtrace.
 		// </summary>
-		public override Backtrace GetBacktrace (int max_frames)
+		public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
 		{
 			check_servant ();
-			return servant.GetBacktrace (max_frames);
+			return servant.GetBacktrace (mode, max_frames);
+		}
+
+		public Backtrace GetBacktrace (int max_frames)
+		{
+			return GetBacktrace (Backtrace.Mode.Default, max_frames);
 		}
 
 		public Backtrace GetBacktrace ()
@@ -235,7 +240,7 @@ namespace Mono.Debugger
 			if (bt != null)
 				return bt;
 
-			return GetBacktrace (-1);
+			return GetBacktrace (Backtrace.Mode.Default, -1);
 		}
 
 		public override Backtrace CurrentBacktrace {

@@ -220,12 +220,12 @@ namespace Mono.Debugger.Backends
 				get { return true; }
 			}
 
-			public override Backtrace GetBacktrace (int max_frames)
+			public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
 			{
 				current_backtrace = new Backtrace (CurrentFrame);
 
 				current_backtrace.GetBacktrace (
-					this, TargetAddress.Null, max_frames);
+					this, mode, TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			}

@@ -1504,7 +1504,7 @@ namespace Mono.Debugger.Backends
 		public override CommandResult Return (bool run_finally)
 		{
 			return (CommandResult) SendCommand (delegate {
-				GetBacktrace (-1);
+				GetBacktrace (Backtrace.Mode.Native, -1);
 				if (current_backtrace == null)
 					throw new TargetException (TargetError.NoStack);
 
@@ -1529,7 +1529,7 @@ namespace Mono.Debugger.Backends
 		public override CommandResult AbortInvocation ()
 		{
 			return (CommandResult) SendCommand (delegate {
-				GetBacktrace (-1);
+				GetBacktrace (Backtrace.Mode.Native, -1);
 				if (current_backtrace == null)
 					throw new TargetException (TargetError.NoStack);
 
@@ -1544,7 +1544,7 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public override Backtrace GetBacktrace (int max_frames)
+		public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
 		{
 			return (Backtrace) SendCommand (delegate {
 				if (!engine_stopped) {
@@ -1564,12 +1564,12 @@ namespace Mono.Debugger.Backends
 
 				foreach (StackFrame rti_frame in callback_stack) {
 					current_backtrace.GetBacktrace (
-						this, rti_frame.StackPointer, max_frames);
+						this, mode, rti_frame.StackPointer, max_frames);
 
 					current_backtrace.AddFrame (rti_frame);
 				}
 
-				current_backtrace.GetBacktrace (this, until, max_frames);
+				current_backtrace.GetBacktrace (this, mode, until, max_frames);
 
 				return current_backtrace;
 			});

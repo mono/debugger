@@ -10,6 +10,12 @@ namespace Mono.Debugger
 {
 	public class Backtrace : DebuggerMarshalByRefObject
 	{
+		public enum Mode {
+			Default,
+			Native,
+			Managed
+		}
+
 		StackFrame last_frame;
 		ArrayList frames;
 		int current_frame_idx;
@@ -53,37 +59,54 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal void GetBacktrace (ThreadServant target, TargetAddress until,
+		internal void GetBacktrace (ThreadServant target, Mode mode, TargetAddress until,
 					    int max_frames)
 		{
-			while (TryUnwind (target, until)) {
+			while (TryUnwind (target, mode, until)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
 		}
 
-		internal bool TryUnwind (ThreadServant target, TargetAddress until)
+		private StackFrame TryLMF (ThreadServant target)
 		{
-			StackFrame new_frame = null;
 			try {
-				new_frame = last_frame.UnwindStack (target);
-			} catch (TargetException) {
-			}
+				if (target.LMFAddress.IsNull)
+					return null;
 
-			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
-				try {
-					if (!last_frame.Language.IsManaged && !target.LMFAddress.IsNull)
-						new_frame = target.Architecture.GetLMF (target.Client);
-				} catch (TargetException) {
-				}
-
+				StackFrame new_frame = target.Architecture.GetLMF (target.Client);
 				if (new_frame == null)
-					return false;
+					return null;
 
 				// Sanity check; don't loop.
 				if (new_frame.StackPointer <= last_frame.StackPointer)
-					return false;
+					return null;
+
+				return new_frame;
+			} catch (TargetException) {
+				return null;
 			}
+		}
+
+		internal bool TryUnwind (ThreadServant target, Mode mode, TargetAddress until)
+		{
+			StackFrame new_frame = null;
+			if ((mode == Mode.Managed) && !last_frame.Language.IsManaged) {
+				new_frame = TryLMF (target);
+			} else {
+				try {
+					new_frame = last_frame.UnwindStack (target);
+				} catch (TargetException) {
+				}
+			}
+
+			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
+				if (!last_frame.Language.IsManaged && (mode != Mode.Native))
+					new_frame = TryLMF (target);
+			}
+
+			if (new_frame == null)
+				return false;
 
 			if (!until.IsNull && (new_frame.StackPointer >= until))
 				return false;
