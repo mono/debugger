@@ -383,6 +383,9 @@ namespace Mono.Debugger.Languages.Mono
 		void do_update (TargetMemoryAccess memory)
 		{
 			TargetAddress symtab_address = memory.ReadAddress (info.SymbolTable);
+			if (symtab_address.IsNull)
+				return;
+
 			TargetReader header = new TargetReader (
 				memory.ReadMemory (symtab_address, info.SymbolTableSize));
 

@@ -1,5 +1,11 @@
 2007-01-19  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs: Don't crash if we don't
+	have a symbol table.  This might happen if we for instance attach
+	to a mono process which is running without --debug.
+
+2007-01-19  Martin Baulig  <martin@ximian.com>
+
 	* classes/Backtrace.cs
 	(Backtrace.Mode): New public enum.
 	(Backtrace.GetBacktrace): Added `Mode mode' argument.
