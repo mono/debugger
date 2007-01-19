@@ -182,14 +182,15 @@ namespace Mono.Debugger.Backends
 			bool resume_target;
 			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} done handling event: {1} {2} {3}", this, cevent, resume_target,
-					      stop_requested);
+					      "{0} done handling event: {1} {2} {3}",
+					      this, cevent, resume_target, stop_requested);
 				if (!resume_target)
 					return;
 				if (stop_requested) {
 					stop_requested = false;
 					frame_changed (inferior.CurrentFrame, null);
 					OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
+					return;
 				}
 				inferior.Continue ();
 				return;
