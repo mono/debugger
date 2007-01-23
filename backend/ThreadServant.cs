@@ -202,6 +202,8 @@ namespace Mono.Debugger.Backends
 
 		internal abstract void ReleaseThreadLock ();
 
+		internal abstract void ReleaseThreadLockDone ();
+
 		public abstract string PrintObject (Style style, TargetObject obj, DisplayFormat format);
 
 		public abstract string PrintType (Style style, TargetType type);

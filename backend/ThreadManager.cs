@@ -314,6 +314,8 @@ namespace Mono.Debugger.Backends
 				} catch (ST.ThreadAbortException) {
 					;
 				} catch (Exception e) {
+					Report.Debug (DebugFlags.Wait,
+						      "ThreadManager caught exception: {0}", e);
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
 

@@ -579,7 +579,7 @@ namespace Mono.Debugger.Backends
 		void StartOperation ()
 		{
 			lock (this) {
-				if (!engine_stopped) {
+				if (!engine_stopped || (has_thread_lock && (pending_operation != null))) {
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
 					throw new TargetException (TargetError.NotStopped);
@@ -611,8 +611,15 @@ namespace Mono.Debugger.Backends
 		{
 			stop_requested = false;
 
-			Report.Debug (DebugFlags.SSE,
-				      "{0} starting {1}", this, operation);
+			if (has_thread_lock) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} starting {1} while being thread-locked",
+					      this, operation);
+				pending_operation = operation;
+				return operation.Result;
+			} else
+				Report.Debug (DebugFlags.SSE,
+					      "{0} starting {1}", this, operation);
 
 			current_operation = operation;
 			ExecuteOperation (operation);
@@ -1338,7 +1345,8 @@ namespace Mono.Debugger.Backends
 		internal override void AcquireThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
-				      "{0} acquiring thread lock", this);
+				      "{0} acquiring thread lock: {1} {2}", this, engine_stopped,
+				      current_operation);
 
 			has_thread_lock = true;
 			stopped = inferior.Stop (out stop_event);
@@ -1367,8 +1375,8 @@ namespace Mono.Debugger.Backends
 		internal override void ReleaseThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
-				      "{0} releasing thread lock: {1} {2}",
-				      this, stopped, stop_event);
+				      "{0} releasing thread lock: {1} {2} {3}",
+				      this, stopped, stop_event, current_operation);
 
 			has_thread_lock = false;
 
@@ -1397,6 +1405,19 @@ namespace Mono.Debugger.Backends
 				}
 				ProcessChildEvent (cevent);
 			}
+		}
+
+		internal override void ReleaseThreadLockDone ()
+		{
+			if (pending_operation == null)
+				return;
+
+			Report.Debug (DebugFlags.Threads, "{0} starting pending operation {1}", this,
+				      pending_operation);
+
+			current_operation = pending_operation;
+			pending_operation = null;
+			ExecuteOperation (current_operation);
 		}
 
 		void inferior_output_handler (bool is_stderr, string line)
@@ -1789,6 +1810,7 @@ namespace Mono.Debugger.Backends
 		bool stopped;
 		Inferior.ChildEvent stop_event;
 		Operation current_operation;
+		Operation pending_operation;
 
 		Inferior inferior;
 		Disassembler disassembler;

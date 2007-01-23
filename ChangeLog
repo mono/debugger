@@ -1,3 +1,15 @@
+2007-01-23  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ProcessOperation): Queue the operation and
+	start it later if we're currently thread-locked.
+	(SingleSteppingEngine.ReleaseThreadLockDone): New internal method.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ReleaseGlobalThreadLock): Call
+	ReleaseThreadLockDone() on each SSE after releasing the mutex to
+	start queued operations.
+
 2007-01-19  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs
