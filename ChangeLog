@@ -1,5 +1,11 @@
 2007-01-23  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.WaitAll): Store the threads in a Hashtable instead of
+	an ArrayList and only start each thread once.
+
+2007-01-23  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(SingleSteppingEngine.ProcessOperation): Queue the operation and
 	start it later if we're currently thread-locked.

@@ -469,17 +469,18 @@ namespace Mono.Debugger.Frontend
 			ClearInterrupt ();
 
 			Thread stopped;
+			Hashtable list = new Hashtable ();
+
 			do {
-				ArrayList list = new ArrayList ();
 				foreach (Process process in Processes) {
 					foreach (Thread t in process.GetThreads ()) {
-						if (t == thread)
+						if ((t == thread) || list.Contains (t))
 							continue;
 						else if (t.IsRunning)
-							list.Add (t);
+							list.Add (t, false);
 						else if ((t.ThreadFlags & Thread.Flags.AutoRun) != 0) {
 							t.Continue ();
-							list.Add (t);
+							list.Add (t, true);
 						}
 					}
 				}
@@ -487,8 +488,12 @@ namespace Mono.Debugger.Frontend
 				WaitHandle[] handles = new WaitHandle [list.Count + 2];
 				handles [0] = interrupt_event;
 				handles [1] = result.CompletedEvent;
+
+				Thread[] threads = new Thread [list.Count];
+				list.Keys.CopyTo (threads, 0);
+
 				for (int i = 0; i < list.Count; i++)
-					handles [i + 2] = ((Thread) list [i]).WaitHandle;
+					handles [i + 2] = threads [i].WaitHandle;
 
 				int ret = WaitHandle.WaitAny (handles);
 
@@ -505,7 +510,7 @@ namespace Mono.Debugger.Frontend
 				if (ret == 1)
 					stopped = thread;
 				else
-					stopped = (Thread) list [ret - 2];
+					stopped = threads [ret - 2];
 
 				CheckLastEvent (stopped);
 			} while (wait && (stopped != null) && (stopped != thread));
