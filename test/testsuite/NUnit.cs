@@ -181,6 +181,11 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
+		static TestSuite ()
+		{
+			Report.Initialize ();
+		}
+
 		protected TestSuite (string application)
 			: this (application + ".exe", application + ".cs")
 		{ }
@@ -192,8 +197,6 @@ namespace Mono.Debugger.Tests
 
 			ExeFileName = Path.GetFullPath (builddir + exe_file);
 			FileName = Path.GetFullPath (srcdir + src_file);
-
-			Report.Initialize ();
 
 			config = new DebuggerConfiguration ();
 			options = CreateOptions (ExeFileName, args);
