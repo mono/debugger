@@ -5,8 +5,6 @@ lib_LTLIBRARIES = libmonodebuggerserver.la
 EXTRA_libmonodebuggerserver_la_SOURCES = \
 	i386-arch.c			\
 	i386-arch.h			\
-	i386-win32.c			\
-	i386-win32.h			\
 	x86-arch.h			\
 	x86_64-arch.h			\
 	x86_64-arch.c			\
@@ -16,7 +14,7 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 	x86-ptrace.h
 
 if PLATFORM_POWERPC
-platform_sources = powerpc-darwin.c
+platform_sources =
 else
 platform_sources = x86-ptrace.c
 endif

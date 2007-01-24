@@ -1,3 +1,7 @@
+2007-01-24  Wade Berrier  <wberrier@novell.com>
+
+	* backend/server/Makefile.am: remove deleted files to fix make dist
+
 2007-01-24  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/TestMultiThread.cs: Improved the test.
