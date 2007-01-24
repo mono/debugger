@@ -1,5 +1,9 @@
 2007-01-24  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/TestMultiThread.cs: Improved the test.
+
+2007-01-24  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/i386-win32.[ch]: Removed old code.
 	* backend/server/powerpc-arch.[ch]: Likewise.
 	* backend/server/powerpc-darwin.[ch]: Likewise.

@@ -1,48 +1,56 @@
 using System;
 using System.Threading;
 
-class X
+public class X
 {
-	public static bool Silent = false;
-
-	public X (string name)
+	public X (string name, int seconds)
 	{
 		this.Name = name;
+		this.Seconds = seconds;
 	}
 
 	public readonly string Name;
+	public readonly int Seconds;
+	public static X Parent;
+	public static X Child;
 	public int Counter;
 
-	static void Loop (int seconds)
+	void Loop ()
 	{
-		Thread.Sleep (seconds * 50);
+		Thread.Sleep (Seconds * 40);
+	}
+
+	public int Test ()
+	{
+		Loop ();
+		return Counter;
 	}
 
 	void LoopDone ()
 	{
-		if (!Silent)
-			Console.WriteLine ("Loop: {0} {1}", Name, ++Counter);
+		Console.WriteLine ("Loop: {0} {1}", Name, Counter);
+		Counter++;
 	}
 
-	void CommonFunction (int seconds)
+	void CommonFunction ()
 	{
 		for (;;) {
-			Loop (seconds);
+			Loop ();
 			LoopDone ();
 		}
 	}
 
 	static void ThreadMain ()
 	{
-		X x = new X ("child");
-		x.CommonFunction (7);
+		X x = Child = new X ("child", 7);
+		x.CommonFunction ();
 	}
 
 	static void Main ()
 	{
 		Thread thread = new Thread (new ThreadStart (ThreadMain));
 		thread.Start ();
-		X x = new X ("main");
-		x.CommonFunction (11);
+		X x = Parent = new X ("main", 17);
+		x.CommonFunction ();
 	}
 }

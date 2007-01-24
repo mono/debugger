@@ -2775,6 +2775,10 @@ namespace Mono.Debugger.Frontend
 				result = context.Interpreter.RuntimeInvoke (
 					thread, method, instance, objs, true, debug);
 
+				if (result == null)
+					throw new ScriptingException (
+						"Invocation of `{0}' aborted abnormally.", Name);
+
 				if (result.ExceptionMessage != null)
 					throw new ScriptingException (
 						"Invocation of `{0}' raised an exception: {1}",

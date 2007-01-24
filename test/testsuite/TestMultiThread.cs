@@ -14,8 +14,9 @@ namespace Mono.Debugger.Tests
 			: base ("TestMultiThread")
 		{ }
 
-		const int LineMain = 43;
-		const int LineLoop = 25;
+		const int LineMain = 51;
+		const int LineLoop = 32;
+		const int LineSleep = 20;
 
 		int bpt_loop;
 
@@ -44,6 +45,18 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
 			AssertExecute ("continue");
+			AssertTargetOutput ("Loop: child 0");
+			AssertHitBreakpoint (child, bpt_loop, "X.LoopDone()", LineLoop);
+
+			Assert.IsTrue (thread.IsStopped);
+			Assert.IsTrue (child.IsStopped);
+			Assert.IsTrue (Interpreter.CurrentThread == child);
+
+			AssertPrint (child, "Child.Counter", "(System.Int32) 0");
+			AssertPrint (child, "Counter", "(System.Int32) 0");
+			AssertPrint (child, "Parent.Counter", "(System.Int32) 0");
+
+			AssertExecute ("continue");
 			AssertTargetOutput ("Loop: child 1");
 			AssertHitBreakpoint (child, bpt_loop, "X.LoopDone()", LineLoop);
 
@@ -51,19 +64,65 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
+			AssertPrint (child, "Child.Counter", "(System.Int32) 1");
+			AssertPrint (child, "Counter", "(System.Int32) 1");
+			AssertPrint (child, "Parent.Counter", "(System.Int32) 0");
+
 			AssertExecute ("continue");
-			AssertTargetOutput ("Loop: main 1");
+			AssertTargetOutput ("Loop: main 0");
 			AssertHitBreakpoint (thread, bpt_loop, "X.LoopDone()", LineLoop);
 
 			Assert.IsTrue (thread.IsStopped);
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
+			AssertPrint (thread, "Child.Counter", "(System.Int32) 2");
+			AssertPrint (thread, "Counter", "(System.Int32) 0");
+			AssertPrint (thread, "Parent.Counter", "(System.Int32) 0");
+
 			AssertExecute ("continue -wait -thread " + thread.ID);
 			AssertTargetOutput ("Loop: child 2");
 
 			bool child_event = false, thread_event = false;
+			while (!child_event || !thread_event) {
+				DebuggerEvent e = AssertEvent ();
 
+				if (e.Type == DebuggerEventType.TargetEvent) {
+					Thread e_thread = (Thread) e.Data;
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+
+					if ((args.Type == TargetEventType.TargetHitBreakpoint) &&
+					    ((int) args.Data == bpt_loop)) {
+						if ((e_thread == thread) && !thread_event) {
+							thread_event = true;
+							continue;
+						} else if ((e_thread == child) && !child_event) {
+							child_event = true;
+							continue;
+						}
+					}
+				}
+
+				Assert.Fail ("Received unexpected event {0}", e);
+			}
+
+			AssertTargetOutput ("Loop: main 1");
+			AssertNoTargetOutput ();
+
+			Assert.IsTrue (thread.IsStopped);
+			Assert.IsTrue (child.IsStopped);
+			Assert.IsTrue (Interpreter.CurrentThread == thread);
+
+			AssertPrint (thread, "Child.Counter", "(System.Int32) 2");
+			AssertPrint (thread, "Parent.Counter", "(System.Int32) 1");
+
+			AssertFrame (thread, "X.LoopDone()", LineLoop);
+			AssertFrame (child, "X.LoopDone()", LineLoop);
+
+			AssertExecute ("continue -wait -thread " + thread.ID);
+			AssertTargetOutput ("Loop: child 3");
+
+			child_event = false; thread_event = false;
 			while (!child_event || !thread_event) {
 				DebuggerEvent e = AssertEvent ();
 
@@ -93,8 +152,103 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
+			AssertPrint (thread, "Child.Counter", "(System.Int32) 3");
+			AssertPrint (thread, "Parent.Counter", "(System.Int32) 2");
+
 			AssertFrame (thread, "X.LoopDone()", LineLoop);
 			AssertFrame (child, "X.LoopDone()", LineLoop);
+
+			AssertExecute ("continue -wait -thread " + child.ID);
+			AssertTargetOutput ("Loop: child 4");
+
+			AssertHitBreakpoint (child, bpt_loop, "X.LoopDone()", LineLoop);
+			Assert.IsTrue (thread.IsStopped);
+			Assert.IsTrue (child.IsStopped);
+			Assert.IsTrue (Interpreter.CurrentThread == child);
+
+			AssertPrint (child, "Child.Counter", "(System.Int32) 4");
+			AssertPrint (child, "Parent.Counter", "(System.Int32) 3");
+
+			AssertFrame (child, "X.LoopDone()", LineLoop);
+
+			Backtrace bt = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
+			Assert.IsTrue (bt.Count == 6);
+			AssertFrame (bt [3], 3, "X.Loop()", LineSleep);
+
+			AssertExecute ("continue -thread " + thread.ID);
+			AssertTargetOutput ("Loop: child 5");
+
+			AssertHitBreakpoint (child, bpt_loop, "X.LoopDone()", LineLoop);
+			Assert.IsTrue (thread.IsStopped);
+			Assert.IsTrue (child.IsStopped);
+			Assert.IsTrue (Interpreter.CurrentThread == child);
+
+			AssertPrint (child, "Child.Counter", "(System.Int32) 5");
+			AssertPrint (child, "Parent.Counter", "(System.Int32) 3");
+
+			AssertFrame (child, "X.LoopDone()", LineLoop);
+
+			AssertExecute ("continue -wait -thread " + thread.ID);
+			AssertTargetOutput ("Loop: main 3");
+
+			AssertHitBreakpoint (thread, bpt_loop, "X.LoopDone()", LineLoop);
+			Assert.IsTrue (thread.IsStopped);
+			Assert.IsTrue (child.IsStopped);
+			Assert.IsTrue (Interpreter.CurrentThread == thread);
+
+			AssertPrint (thread, "Child.Counter", "(System.Int32) 6");
+			AssertPrint (thread, "Parent.Counter", "(System.Int32) 3");
+
+			Assert.IsTrue (thread.IsStopped);
+			Assert.IsTrue (child.IsStopped);
+			Assert.IsTrue (Interpreter.CurrentThread == thread);
+
+			AssertExecute ("continue -wait -thread " + thread.ID);
+			AssertTargetOutput ("Loop: child 6");
+
+			child_event = false; thread_event = false;
+			while (!child_event || !thread_event) {
+				DebuggerEvent e = AssertEvent ();
+
+				if (e.Type == DebuggerEventType.TargetEvent) {
+					Thread e_thread = (Thread) e.Data;
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+
+					if ((args.Type == TargetEventType.TargetHitBreakpoint) &&
+					    ((int) args.Data == bpt_loop)) {
+						if ((e_thread == thread) && !thread_event) {
+							thread_event = true;
+							continue;
+						} else if ((e_thread == child) && !child_event) {
+							child_event = true;
+							continue;
+						}
+					}
+				}
+
+				Assert.Fail ("Received unexpected event {0}", e);
+			}
+
+			AssertTargetOutput ("Loop: main 4");
+			AssertNoTargetOutput ();
+
+			AssertPrint (thread, "Child.Counter", "(System.Int32) 6");
+			AssertPrint (thread, "Parent.Counter", "(System.Int32) 4");
+
+			AssertFrame (thread, "X.LoopDone()", LineLoop);
+			AssertFrame (child, "X.LoopDone()", LineLoop);
+
+			/*
+			 * This doesn't work when broken threading is enabled:
+			 *
+			 *    AssertPrint (thread, "Parent.Test ()", "(System.Int32) 7");
+			 *
+			 * Note that the exception handling is also broken:
+			 *
+			 *    AssertPrintException (thread, "Parent.Test ()",
+			 *                          "Invocation of `Parent.Test ()' aborted abnormally.");
+			 *
+			 */
 
 			AssertExecute ("kill");
 
