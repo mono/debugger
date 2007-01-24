@@ -1,5 +1,12 @@
 2007-01-24  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/i386-win32.[ch]: Removed old code.
+	* backend/server/powerpc-arch.[ch]: Likewise.
+	* backend/server/powerpc-darwin.[ch]: Likewise.
+	* backend/server/x86-freebsd-ptrace.[ch]: Likewise.
+
+2007-01-24  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/NUnit.cs (TestSuite..cctor): Call
 	Report.Initialize() in the .cctor rather than in the .ctor to
 	avoid a sharing violation on the logfile.
