@@ -1,3 +1,8 @@
+2007-01-25  Martin Baulig  <martin@ximian.com>
+
+	* build/Makefile.am
+	(check-local): Set LD_LIBRARY_PATH to build/server/.libs.
+
 2007-01-24  Wade Berrier  <wberrier@novell.com>
 
 	* backend/server/Makefile.am: remove deleted files to fix make dist
