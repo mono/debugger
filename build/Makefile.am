@@ -132,6 +132,6 @@ uninstall-local:
 NUNIT_CONSOLE_FLAGS =
 
 check-local: Mono.Debugger.Test.dll $(TEST_CASE_SRCLIST)
-	LD_LIBRARY_PATH="$(top_builddir)/backend/server/:$$LD_LIBRARY_PATH" $(NUNIT_CONSOLE) $(NUNIT_CONSOLE_FLAGS) /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml Mono.Debugger.Test.dll || ok=false; \
+	LD_LIBRARY_PATH="$(top_builddir)/backend/server/.libs:$$LD_LIBRARY_PATH" $(NUNIT_CONSOLE) $(NUNIT_CONSOLE_FLAGS) /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml Mono.Debugger.Test.dll || ok=false; \
 	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 	$$ok
