@@ -243,12 +243,10 @@ namespace Mono.Debugger.Tests
 			 *
 			 *    AssertPrint (thread, "Parent.Test ()", "(System.Int32) 7");
 			 *
-			 * Note that the exception handling is also broken:
-			 *
-			 *    AssertPrintException (thread, "Parent.Test ()",
-			 *                          "Invocation of `Parent.Test ()' aborted abnormally.");
-			 *
 			 */
+
+			AssertPrintException (thread, "Parent.Test ()",
+					      "Invocation of `Parent.Test ()' aborted abnormally.");
 
 			AssertExecute ("kill");
 

@@ -1,5 +1,11 @@
 2007-01-25  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Stop): Check whether a stop has already been
+	requested.	
+
+2007-01-25  Martin Baulig  <martin@ximian.com>
+
 	* build/Makefile.am
 	(check-local): Set LD_LIBRARY_PATH to build/server/.libs.
 

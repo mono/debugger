@@ -806,7 +806,7 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1} {2}",
 					      this, engine_stopped, current_operation);
 
-				if (engine_stopped)
+				if (engine_stopped || stop_requested)
 					return;
 
 				stop_requested = true;
