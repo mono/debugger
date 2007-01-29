@@ -101,6 +101,7 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		-e 's^\@srcdir\@^$(srcdir)^g' \
 		-e 's^\@builddir\@^$(builddir)^g' \
 		-e 's^\@mono\@^$(MONO)^g' \
+		-e 's^\@mcs\@^$(MCS)^g' \
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 

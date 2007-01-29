@@ -1,5 +1,9 @@
 2007-01-29  Martin Baulig  <martin@ximian.com>
 
+	* build/AssemblyInfo.cs.in (BuildInfo.mcs): New public property.
+
+2007-01-29  Martin Baulig  <martin@ximian.com>
+
 	* interface/Report.cs (Report.Print): Only print to the `writer'.
 	(Report.Errort): Likewise.
 
