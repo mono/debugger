@@ -1,5 +1,10 @@
 2007-01-29  Martin Baulig  <martin@ximian.com>
 
+	* interface/Report.cs (Report.Print): Only print to the `writer'.
+	(Report.Errort): Likewise.
+
+2007-01-29  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.c
 	(server_ptrace_spawn): Use mono_domain_get() instead of
 	mono_get_root_domain() to execute the callback in the correct domain.

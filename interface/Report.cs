@@ -128,18 +128,12 @@ namespace Mono.Debugger
 
 		public void Print (string message)
 		{
-			// Console.WriteLine ("PRINT: {0} |{1}|", file, message);
-			Console.Write (message);
-			if (file != null)
-				writer.Write (message);
+			writer.Write (message);
 		}
 
 		public void Error (string message)
 		{
-			// Console.WriteLine ("ERROR: {0} |{1}|", file, message);
-			Console.Write (message);
-			if (file != null)
-				writer.Write (message);
+			writer.Write (message);
 		}
 
 		public string ReadLine ()
