@@ -20,7 +20,7 @@ EXTRA_DIST = \
 	TestToString.cs TestObject.cs TestProperty.cs TestAbort.cs \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
 	TestRestart.cs TestExec.cs TestChild.cs TestAttach.cs \
-	TestMethodLookup.cs TestMultiThread.exe
+	TestMethodLookup.cs TestMultiThread.cs TestSession.cs
 
 noinst_PROGRAMS = \
 	testnativefork testnativeexec testnativechild testnativeattach

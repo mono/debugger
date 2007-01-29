@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using SD = System.Diagnostics;
 using ST = System.Threading;
 using System.Text;
 using NUnit.Framework;
@@ -157,7 +158,6 @@ namespace Mono.Debugger.Tests
 
 		protected override void OnTargetOutput (bool is_stderr, string line)
 		{
-			base.OnTargetOutput (is_stderr, line);
 			if (is_stderr)
 				inferior_stderr.Add (line);
 			else
@@ -227,6 +227,22 @@ namespace Mono.Debugger.Tests
 			get {
 				return BuildInfo.mono;
 			}
+		}
+
+		public void Compile (string filename)
+		{
+			SD.ProcessStartInfo start = new SD.ProcessStartInfo (
+				BuildInfo.mcs, "-debug " + filename);
+			start.UseShellExecute = false;
+			start.RedirectStandardOutput = true;
+			start.RedirectStandardError = true;
+
+			SD.Process child = SD.Process.Start (start);
+			child.WaitForExit ();
+
+			if (child.ExitCode != 0)
+				Assert.Fail ("Compilation of {0} exited with error: {1}\n{2}",
+					     filename, child.ExitCode, child.StandardError.ReadToEnd ());
 		}
 
 		[TestFixtureSetUp]

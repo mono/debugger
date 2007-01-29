@@ -1,5 +1,15 @@
 2007-01-29  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/NUnit.cs
+	(TestSuite.Compile): New public method to trigger a mcs compilation.
+	(TestSuite.OnTargetOutput): Don't call our base method; ie. we
+	don't want to print the text to the console.
+
+	* test/testsuite/TestSession.cs: New test.
+	* test/src/TestSession.cs: Source file for it.
+
+2007-01-29  Martin Baulig  <martin@ximian.com>
+
 	* build/AssemblyInfo.cs.in (BuildInfo.mcs): New public property.
 
 2007-01-29  Martin Baulig  <martin@ximian.com>
