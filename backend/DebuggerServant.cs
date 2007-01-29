@@ -29,7 +29,7 @@ namespace Mono.Debugger.Backends
 		{
 			this.client = client;
 			this.config = config;
-			Report.ReportWriter = writer;
+			Report.Initialize (writer);
 			ObjectCache.Initialize ();
 			thread_manager = new ThreadManager (this);
 			process_hash = Hashtable.Synchronized (new Hashtable ());
