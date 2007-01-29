@@ -255,6 +255,9 @@ namespace Mono.Debugger
 					throw new InternalError ();
 				}
 			}
+
+			if (inferior_args == null)
+				inferior_args = new string [0];
 		}
 
 		static void About ()

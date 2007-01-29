@@ -14,9 +14,9 @@
       <xs:element name="WorkingDirectory" type="xs:string" minOccurs="0" maxOccurs="1" />
       <xs:element name="MonoPrefix" type="xs:string" minOccurs="0" maxOccurs="1" />
       <xs:element name="MonoPath" type="xs:string" minOccurs="0" maxOccurs="1" />
-      <xs:element name="StartTarget" type="xs:bool" minOccurs="0" maxOccurs="1" />
-      <xs:element name="IsScript" type="xs:bool" minOccurs="0" maxOccurs="1" />
-      <xs:element name="InEmacs" type="xs:bool" minOccurs="0" maxOccurs="1" />
+      <xs:element name="StartTarget" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="IsScript" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="InEmacs" type="xs:boolean" minOccurs="0" maxOccurs="1" />
     </xs:choice>
   </xs:complexType>
   <xs:complexType name="ModuleGroup">

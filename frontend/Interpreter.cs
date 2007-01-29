@@ -419,9 +419,9 @@ namespace Mono.Debugger.Frontend
 
 				current_thread = current_process.MainThread;
 				Wait (current_thread);
-				session.MainProcessReachedMain (current_process);
-
 				CheckLastEvent (current_thread);
+
+				session.MainProcessReachedMain (current_process);
 
 				return current_process;
 			} catch (TargetException ex) {
