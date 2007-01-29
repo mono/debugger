@@ -1,5 +1,11 @@
 2007-01-29  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-ptrace.c
+	(server_ptrace_spawn): Use mono_domain_get() instead of
+	mono_get_root_domain() to execute the callback in the correct domain.
+
+2007-01-29  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoSymbolFile.cs
 	(MonoSymbolFile.ctor): Do the GUID check here rather than passing
 	an assembly to C.MonoSymbolFile's .ctor.

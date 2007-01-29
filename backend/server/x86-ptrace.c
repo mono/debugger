@@ -390,7 +390,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	mono_thread_create (mono_get_root_domain (), io_thread, io_data);
+	mono_thread_create (mono_domain_get (), io_thread, io_data);
 
 	return COMMAND_ERROR_NONE;
 }
