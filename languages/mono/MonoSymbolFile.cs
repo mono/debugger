@@ -257,12 +257,21 @@ namespace Mono.Debugger.Languages.Mono
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
 
+			string mdb_file = ImageFile + ".mdb";
+
 			try {
-				System.Reflection.Assembly ass = System.Reflection.Assembly.LoadFrom (ImageFile);
-				File = C.MonoSymbolFile.ReadSymbolFile (ass);
+				File = C.MonoSymbolFile.ReadSymbolFile (mdb_file);
 			} catch (Exception ex) {
-				Console.WriteLine (ex.Message);
+				throw new SymbolTableException (
+					"Cannot load symbol file `{0}': {1}", mdb_file, ex.Message);
 			}
+			if (File == null)
+				throw new SymbolTableException (
+					"Cannot load symbol file `{0}'", mdb_file);
+
+			if (ModuleDefinition.Mvid != File.Guid)
+				throw new SymbolTableException (
+					"Symbol file `{0}' does not match assembly `{1}'", mdb_file, ImageFile);
 
 			symtab = new MonoSymbolTable (this);
 

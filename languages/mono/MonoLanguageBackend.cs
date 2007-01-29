@@ -443,6 +443,8 @@ namespace Mono.Debugger.Languages.Mono
 						corlib, memory, info.MonoMetadataInfo);
 				} catch (C.MonoSymbolFileException ex) {
 					Console.WriteLine (ex.Message);
+				} catch (SymbolTableException ex) {
+					Console.WriteLine (ex.Message);
 				} catch (Exception ex) {
 					Console.WriteLine (ex);
 				}
