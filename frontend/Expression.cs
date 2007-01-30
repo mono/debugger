@@ -2519,6 +2519,12 @@ namespace Mono.Debugger.Frontend
 					return ctype;
 			}
 
+			TargetArrayType atype = type as TargetArrayType;
+			if (atype != null) {
+				if (atype.Language.ArrayType != null)
+					return atype.Language.ArrayType;
+			}
+
 			throw new ScriptingException (
 				"Type `{0}' is not a struct or class.", type.Name);
 		}
@@ -2532,6 +2538,10 @@ namespace Mono.Debugger.Frontend
 			TargetObjectObject oobj = obj as TargetObjectObject;
 			if (oobj != null)
 				return oobj.GetClassObject (target);
+
+			TargetArrayObject aobj = obj as TargetArrayObject;
+			if ((aobj != null) && aobj.HasClassObject)
+				return aobj.GetClassObject (target);
 
 			return null;
 		}

@@ -50,5 +50,14 @@ namespace Mono.Debugger.Languages.Native
 			else
 				return String.Format ("{0}", Location);
 		}
+
+		public override bool HasClassObject {
+			get { return false; }
+		}
+
+		public override TargetClassObject GetClassObject (Thread target)
+		{
+			throw new InvalidOperationException ();
+		}
 	}
 }

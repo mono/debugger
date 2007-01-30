@@ -41,6 +41,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoStringType StringType;
 		public readonly MonoClassType ExceptionType;
 		public readonly MonoClassType DelegateType;
+		public readonly MonoClassType ArrayType;
 
 		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, TargetMemoryAccess memory,
 					    MonoMetadataInfo info)
@@ -155,6 +156,12 @@ namespace Mono.Debugger.Languages.Mono
 			StringType = new MonoStringType (
 				corlib, string_type.FullName, object_size, object_size + 4);
 			language.AddCoreType (StringType, string_type, klass);
+
+			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
+			klass = mono_defaults.ReadAddress ();
+			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
+			ArrayType = new MonoClassType (corlib, array_type);
+			language.AddCoreType (ArrayType, array_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsDelegateOffset;
 			klass = mono_defaults.ReadAddress ();
@@ -778,6 +785,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetClassType ObjectType {
 			get { return builtin_types.ObjectClass; }
+		}
+
+		public override TargetClassType ArrayType {
+			get { return builtin_types.ArrayType; }
 		}
 #endregion
 

@@ -105,5 +105,14 @@ namespace Mono.Debugger.Languages.Mono
 			else
 				return String.Format ("{0}", Location);
 		}
+
+		public override bool HasClassObject {
+			get { return true; }
+		}
+
+		public override TargetClassObject GetClassObject (Thread target)
+		{
+			return (TargetClassObject) Type.Language.ArrayType.GetObject (Location);
+		}
 	}
 }

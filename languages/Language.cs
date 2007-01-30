@@ -53,6 +53,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract TargetClassType ArrayType {
+			get;
+		}
+
 		public abstract string SourceLanguage (StackFrame frame);
 
 		public abstract TargetType LookupType (string name);

@@ -103,6 +103,12 @@ namespace Mono.Debugger.Languages
 		public abstract void SetElement (Thread target, int[] indices,
 						 TargetObject obj);
 
+		public abstract bool HasClassObject {
+			get;
+		}
+
+		public abstract TargetClassObject GetClassObject (Thread target);
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}:{2}:{3}]", GetType (), Type,

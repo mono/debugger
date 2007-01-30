@@ -1,5 +1,18 @@
 2007-01-30  Martin Baulig  <martin@ximian.com>
 
+	* languages/Language.cs
+	(Language.ArrayType): New public property.
+
+	* languages/TargetArrayObject.cs
+	(TargetArrayObject.HasClassObject): New public abstract property.
+	(TargetArrayObject.GetClassObject): New public abstract method.
+
+	* frontend/Expression.cs
+	(Convert.ToClassObject): Handle `TargetArrayObject' -> `TargetClassObject'.
+	(Convert.ToClassType): Handle `TargetArrayType' -> `TargetClassType'.
+
+2007-01-30  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs
 	(StructAccessExpression.GetField): Add support for consts.
 
