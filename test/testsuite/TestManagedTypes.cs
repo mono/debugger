@@ -108,6 +108,8 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "a[1]", "(System.Int32) 4");
 			AssertExecute ("set a[2] = 9");
 			AssertPrint (thread, "a[2]", "(System.Int32) 9");
+			AssertPrint (thread, "a.Length", "(System.Int32) 3");
+			AssertPrint (thread, "a.GetRank ()", "(System.Int32) 1");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
@@ -123,6 +125,8 @@ namespace Mono.Debugger.Tests
 			AssertPrintException (thread, "a[2]",
 					      "Index of array expression `a' out of bounds.");
 			AssertExecute ("set a[1,2] = 50");
+			AssertPrint (thread, "a.Length", "(System.Int32) 6");
+			AssertPrint (thread, "a.GetRank ()", "(System.Int32) 2");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("50");

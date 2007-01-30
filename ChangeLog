@@ -11,6 +11,8 @@
 	(Convert.ToClassObject): Handle `TargetArrayObject' -> `TargetClassObject'.
 	(Convert.ToClassType): Handle `TargetArrayType' -> `TargetClassType'.
 
+	* test/testsuite/TestManagedTypes.cs: Add tests for that.
+
 2007-01-30  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs
