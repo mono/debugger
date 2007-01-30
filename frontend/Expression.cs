@@ -1543,7 +1543,9 @@ namespace Mono.Debugger.Frontend
 
 		protected TargetObject GetField (Thread target, TargetFieldInfo field)
 		{
-			if (field.IsStatic)
+			if (field.HasConstValue)
+				return field.Type.Language.CreateInstance (target, field.ConstValue);
+			else if (field.IsStatic)
 				return Type.GetStaticField (target, field);
 			else
 				return InstanceObject.GetField (target, field);

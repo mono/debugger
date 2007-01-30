@@ -258,7 +258,11 @@ namespace Mono.Debugger.Frontend
 					       bool is_static, Hashtable hash)
 		{
 			string tname = member.Type.Name;
-			if (is_static)
+			TargetFieldInfo fi = member as TargetFieldInfo;
+			if ((fi != null) && fi.HasConstValue)
+				return String.Format (
+					"{0}   const {1} {2} = {3}", prefix, tname, member.Name, fi.ConstValue);
+			else if (is_static)
 				return String.Format (
 					"{0}   static {1} {2}", prefix, tname, member.Name);
 			else
