@@ -919,7 +919,13 @@ namespace Mono.Debugger.Frontend
 				if ((index < 0) || (index > modules.Length))
 					throw new ScriptingException ("No such module {0}.", index);
 
-				retval [pos++] = modules [index];
+				for (int i = 0; i < modules.Length; i++) {
+					if (modules [i].ID != index)
+						continue;
+					retval [pos] = modules [i];
+				}
+
+				pos ++;
 			}
 
 			return retval;
