@@ -2186,6 +2186,10 @@ namespace Mono.Debugger.Frontend
 
 				return location;
 			}
+
+			set {
+				location = value;
+			}
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -2248,6 +2252,7 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Argument == "-"){
+				Location = context.CurrentLocation;
 				reverse = true;
 				return true;
 			}
