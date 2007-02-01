@@ -182,8 +182,9 @@ namespace Mono.Debugger.Backends
 			bool resume_target;
 			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} done handling event: {1} {2} {3}",
-					      this, cevent, resume_target, stop_requested);
+					      "{0} done handling event: {1} {2} {3} {4}",
+					      this, cevent, resume_target, stop_requested,
+					      has_thread_lock);
 				if (!resume_target)
 					return;
 				if (stop_requested) {
@@ -304,19 +305,16 @@ namespace Mono.Debugger.Backends
 				// breakpoint or whether it belongs to another thread.  In this case,
 				// `step_over_breakpoint' does everything for us and we can just continue
 				// execution.
+				bool remain_stopped = child_breakpoint (cevent, arg);
 				if (stop_requested) {
 					stop_requested = false;
 					frame_changed (inferior.CurrentFrame, null);
-					result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
-				} else if (arg == 0) {
-					// Unknown breakpoint, always stop.
-				} else if (step_over_breakpoint (TargetAddress.Null, false, false)) {
-					Report.Debug (DebugFlags.SSE,
-						      "{0} now stepping over breakpoint", this);
-					return;
-				} else if (!child_breakpoint (cevent, arg)) {
-					// we hit any breakpoint, but its handler told us
-					// to resume the target and continue.
+					if (remain_stopped)
+						result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
+					else
+						result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
+				} else if (!remain_stopped) {
+					do_continue ();
 					return;
 				}
 			}
@@ -509,13 +507,8 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedManagedMain (TargetAddress method)
 		{
-			if (!method.IsNull) {
-				TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
-				PushOperation (new OperationCompileMethod (this, compile, method, null));
-			} else {
-				current_operation = new OperationRun (this, TargetAddress.Null, true, null);
-				current_operation.Execute ();
-			}
+			TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
+			PushOperation (new OperationCompileMethod (this, compile, method, null));
 		}
 
 		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
@@ -871,44 +864,33 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (index);
-			if (bpt == null) {
-				do_continue ();
+			if ((bpt == null) || !bpt.Breaks (thread.ID))
 				return false;
-			}
+
+			if (!process.BreakpointManager.IsBreakpointEnabled (index))
+				return false;
 
 			bool remain_stopped;
-			if (bpt.BreakpointHandler (inferior, out remain_stopped)) {
-				if (!remain_stopped) {
-					do_continue ();
-					return false;
-				} else
-					return true;
-			}
+			if (bpt.BreakpointHandler (inferior, out remain_stopped))
+				return remain_stopped;
 
 			TargetAddress address = inferior.CurrentFrame;
-			if (!bpt.CheckBreakpointHit (thread, address)) {
-				do_continue ();
-				return false;
-			}
-
-			return true;
+			return bpt.CheckBreakpointHit (thread, address);
 		}
 
-		bool step_over_breakpoint (TargetAddress until, bool trampoline, bool current)
+		bool step_over_breakpoint (TargetAddress until, bool trampoline)
 		{
 			int index;
 			bool is_enabled;
 			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index, out is_enabled);
 
-			if ((index == 0) || !is_enabled ||
-			    (!current && (bpt != null) && bpt.Breaks (thread.ID)))
+			if ((index == 0) || !is_enabled)
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over {3}breakpoint {1} at {2} until {4}/{5}",
-				      this, index, inferior.CurrentFrame,
-				      current ? "current " : "", until, trampoline);
+				      "{0} stepping over breakpoint {1} at {2} until {3}/{4}",
+				      this, index, inferior.CurrentFrame, until, trampoline);
 
 			PushOperation (new OperationStepOverBreakpoint (this, index, trampoline, until));
 			return true;
@@ -1158,7 +1140,7 @@ namespace Mono.Debugger.Backends
 			check_inferior ();
 			frames_invalid ();
 
-			if (step_over_breakpoint (until, trampoline, true))
+			if (step_over_breakpoint (until, trampoline))
 				return;
 
 			if (!until.IsNull)
@@ -1176,7 +1158,7 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			if (step_over_breakpoint (TargetAddress.Null, false, true))
+			if (step_over_breakpoint (TargetAddress.Null, false))
 				return;
 
 			inferior.Step ();

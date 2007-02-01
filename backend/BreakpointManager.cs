@@ -23,6 +23,9 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_breakpoint_manager_lookup (IntPtr manager, long address);
 
 		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_breakpoint_manager_lookup_by_id (IntPtr manager, int id);
+
+		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_breakpoint_manager_lock ();
 
 		[DllImport("monodebuggerserver")]
@@ -95,6 +98,21 @@ namespace Mono.Debugger.Backends
 			Lock ();
 			try {
 				return (Breakpoint) breakpoints [breakpoint];
+			} finally {
+				Unlock ();
+			}
+		}
+
+		public bool IsBreakpointEnabled (int breakpoint)
+		{
+			Lock ();
+			try {
+				IntPtr info = mono_debugger_breakpoint_manager_lookup_by_id (
+					_manager, breakpoint);
+				if (info == IntPtr.Zero)
+					return false;
+
+				return mono_debugger_breakpoint_info_get_is_enabled (info);
 			} finally {
 				Unlock ();
 			}

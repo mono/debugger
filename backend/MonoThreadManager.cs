@@ -195,9 +195,7 @@ namespace Mono.Debugger.Backends
 
 					if (stop_in_main)
 						engine.ReachedManagedMain (data);
-					else
-						engine.ReachedManagedMain (TargetAddress.Null);
-					resume_target = false;
+					resume_target = !stop_in_main;
 					return true;
 				}
 

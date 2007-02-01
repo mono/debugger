@@ -1,5 +1,12 @@
 2007-02-01  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs: Fix a race condition: if we hit
+	a breakpoint and a stop has been requested at the same time, check
+	the breakpoint handler first and report `TargetStopped' instead of
+	`TargetHitBreakpoint' if the handler told us to resume.
+
+2007-02-01  Martin Baulig  <martin@ximian.com>
+
 	* interface/Report.cs
 	(ReportWriter.PrintToConsole): New public property.
 	(ReportWriter.Print): Also print to the console if we have a
