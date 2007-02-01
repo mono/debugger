@@ -142,6 +142,8 @@ namespace Mono.Debugger
 		public void Error (string message)
 		{
 			writer.Write (message);
+			if (print_to_console && (file != null))
+				Console.Write (message);
 		}
 
 		public string ReadLine ()
