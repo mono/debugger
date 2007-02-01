@@ -184,6 +184,7 @@ namespace Mono.Debugger.Tests
 		static TestSuite ()
 		{
 			Report.Initialize ();
+			Report.ReportWriter.PrintToConsole = false;
 		}
 
 		protected TestSuite (string application)

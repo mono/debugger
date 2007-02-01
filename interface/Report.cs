@@ -83,6 +83,7 @@ namespace Mono.Debugger
 	{
 		int flags;
 		string file;
+		bool print_to_console = true;
 		StreamWriter writer;
 
 		public ReportWriter ()
@@ -118,6 +119,11 @@ namespace Mono.Debugger
 			writer.AutoFlush = true;
 		}
 
+		public bool PrintToConsole {
+			get { return print_to_console; }
+			set { print_to_console = value; }
+		}
+
 		public void Debug (DebugFlags category, string message)
 		{
 			if (((int) category & (int) flags) == 0)
@@ -129,6 +135,8 @@ namespace Mono.Debugger
 		public void Print (string message)
 		{
 			writer.Write (message);
+			if (print_to_console && (file != null))
+				Console.Write (message);
 		}
 
 		public void Error (string message)
