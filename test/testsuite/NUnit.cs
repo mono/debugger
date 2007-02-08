@@ -468,6 +468,14 @@ namespace Mono.Debugger.Tests
 					     process.ID, exp_process.ID);
 		}
 
+		public void AssertNoEvent ()
+		{
+			if (Interpreter.HasEvent) {
+				DebuggerEvent e = Interpreter.Wait ();
+				Assert.Fail ("Received unexpected event {0}.", e);
+			}
+		}
+
 		public void AssertTargetExited ()
 		{
 			while (true) {

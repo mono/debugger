@@ -172,6 +172,9 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	x86_arch_get_registers (handle);
 
+	if (stopsig == SIGSTOP)
+		return STOP_ACTION_INTERRUPTED;
+
 	if (INFERIOR_REG_RIP (arch->current_regs) - 1 == inferior->notification_address) {
 		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
 		*retval = INFERIOR_REG_RSI (arch->current_regs);
@@ -232,18 +235,18 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 #if defined(__linux__) || defined(__FreeBSD__)
 		if (stopsig != SIGTRAP)
-			return STOP_ACTION_SEND_STOPPED;
+			return STOP_ACTION_STOPPED;
 #endif
 
 		if (server_ptrace_peek_word (handle, GPOINTER_TO_SIZE(INFERIOR_REG_RIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
-			return STOP_ACTION_SEND_STOPPED;
+			return STOP_ACTION_STOPPED;
 
 		if ((code & 0xff) == 0xcc) {
 			*retval = 0;
 			return STOP_ACTION_BREAKPOINT_HIT;
 		}
 
-		return STOP_ACTION_SEND_STOPPED;
+		return STOP_ACTION_STOPPED;
 	}
 
 	if (_server_ptrace_set_registers (inferior, arch->saved_regs) != COMMAND_ERROR_NONE)

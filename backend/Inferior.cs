@@ -189,7 +189,9 @@ namespace Mono.Debugger.Backends
 			CHILD_EXECD,
 			CHILD_CALLED_EXIT,
 			CHILD_NOTIFICATION,
-			UNHANDLED_EXCEPTION,
+			CHILD_INTERRUPTED,
+
+			UNHANDLED_EXCEPTION	= 4001,
 			THROW_EXCEPTION,
 			HANDLE_EXCEPTION
 		}
@@ -600,6 +602,7 @@ namespace Mono.Debugger.Backends
 			case ChildEventType.CHILD_CALLBACK:
 			case ChildEventType.CHILD_CALLBACK_COMPLETED:
 			case ChildEventType.CHILD_STOPPED:
+			case ChildEventType.CHILD_INTERRUPTED:
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
 				change_target_state (TargetState.Stopped);
 				break;

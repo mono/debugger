@@ -80,6 +80,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "Counter", "(System.Int32) 0");
 			AssertPrint (thread, "Parent.Counter", "(System.Int32) 0");
 
+			AssertNoEvent ();
 			AssertExecute ("continue -wait -thread " + thread.ID);
 			AssertTargetOutput ("Loop: child 2");
 

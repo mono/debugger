@@ -226,34 +226,37 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 	if (WIFSTOPPED (status)) {
 		guint64 callback_arg, retval, retval2;
 		ChildStoppedAction action;
+		int stopsig;
+
+		stopsig = WSTOPSIG (status);
 
 		if (!handle->inferior->is_initialized) {
 			x86_arch_remove_hardware_breakpoints (handle);
 			handle->inferior->is_initialized = TRUE;
+			if (stopsig == SIGSTOP)
+				stopsig = 0;
 		}
 
-		action = x86_arch_child_stopped (handle, WSTOPSIG (status),
-						 &callback_arg, &retval, &retval2);
+		action = x86_arch_child_stopped (
+			handle, stopsig, &callback_arg, &retval, &retval2);
 
-		if (action != STOP_ACTION_SEND_STOPPED)
+		if (action != STOP_ACTION_STOPPED)
 			handle->inferior->last_signal = 0;
 
 		switch (action) {
-		case STOP_ACTION_SEND_STOPPED:
-			if (WSTOPSIG (status) == SIGTRAP) {
+		case STOP_ACTION_STOPPED:
+			if (stopsig == SIGTRAP) {
 				handle->inferior->last_signal = 0;
 				*arg = 0;
-			} else if (WSTOPSIG (status) == 32) {
-				handle->inferior->last_signal = WSTOPSIG (status);
-				return MESSAGE_NONE;
 			} else {
-				if (WSTOPSIG (status) == SIGSTOP)
-					handle->inferior->last_signal = 0;
-				else
-					handle->inferior->last_signal = WSTOPSIG (status);
-				*arg = handle->inferior->last_signal;
+				handle->inferior->last_signal = stopsig;
+				*arg = stopsig;
 			}
 			return MESSAGE_CHILD_STOPPED;
+
+		case STOP_ACTION_INTERRUPTED:
+			*arg = 0;
+			return MESSAGE_CHILD_INTERRUPTED;
 
 		case STOP_ACTION_BREAKPOINT_HIT:
 			*arg = (int) retval;
@@ -283,7 +286,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		*arg = WEXITSTATUS (status);
 		return MESSAGE_CHILD_EXITED;
 	} else if (WIFSIGNALED (status)) {
-		if (WTERMSIG (status) == SIGTRAP) {
+		if ((WTERMSIG (status) == SIGTRAP) || (WTERMSIG (status) == SIGKILL)) {
 			*arg = 0;
 			return MESSAGE_CHILD_EXITED;
 		} else {

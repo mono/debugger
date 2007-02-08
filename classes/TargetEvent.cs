@@ -10,6 +10,7 @@ namespace Mono.Debugger
 	{
 		TargetRunning,
 		TargetStopped,
+		TargetInterrupted,
 		TargetHitBreakpoint,
 		TargetSignaled,
 		TargetExited,

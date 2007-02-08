@@ -153,6 +153,14 @@ namespace Mono.Debugger.Backends
 			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
 			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} ({2:x}){3}",
 				      this, cevent, status, stop_requested ? " - stop requested" : "");
+
+			if (killed && (cevent.Type != Inferior.ChildEventType.CHILD_EXITED)) {
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} when already killed",
+					      this, cevent);
+				return;
+			}
+
 			if (has_thread_lock) {
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} while being thread-locked ({2})",
@@ -178,6 +186,13 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} ({2:x}) while running {3}",
 					      this, cevent, status, current_operation);
+
+			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
+				stop_requested = false;
+				frame_changed (inferior.CurrentFrame, null);
+				OperationCompleted (new TargetEventArgs (TargetEventType.TargetInterrupted, 0, current_frame));
+				return;
+			}
 
 			bool resume_target;
 			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
@@ -1379,6 +1394,11 @@ namespace Mono.Debugger.Backends
 					return;
 				}
 
+				if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
+					do_continue ();
+					return;
+				}
+
 				bool resume_target;
 				if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
 					if (resume_target)
@@ -2322,25 +2342,43 @@ namespace Mono.Debugger.Backends
 				inferior.Step ();
 		}
 
-		void ReleaseThreadLock ()
+		bool ReleaseThreadLock (Inferior.ChildEvent cevent)
 		{
-			if (has_thread_lock) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} releasing thread lock at {1}",
-					      sse, inferior.CurrentFrame);
+			if (!has_thread_lock)
+				return true;
 
-				inferior.EnableBreakpoint (Index);
-				sse.process.ReleaseGlobalThreadLock (sse);
+			Report.Debug (DebugFlags.SSE,
+				      "{0} releasing thread lock at {1}",
+				      sse, inferior.CurrentFrame);
 
-				has_thread_lock = false;
-			}
+			inferior.EnableBreakpoint (Index);
+			sse.process.ReleaseGlobalThreadLock (sse);
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} done releasing thread lock at {1} - {2}",
+				      sse, inferior.CurrentFrame, sse.has_thread_lock);
+
+			has_thread_lock = false;
+
+			if (!sse.has_thread_lock)
+				return true;
+
+			sse.stopped = true;
+			sse.stop_event = cevent;
+			return false;
 		}
 
 		protected override EventResult ProcessEvent (Inferior.ChildEvent cevent,
 							     out TargetEventArgs args)
 		{
-			if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK)
-				ReleaseThreadLock ();
+			if (((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			     (cevent.Argument == 0)) ||
+			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK)) {
+				if (!ReleaseThreadLock (cevent)) {
+					args = null;
+					return EventResult.Running;
+				}
+			}
 			return base.ProcessEvent (cevent, out args);
 		}
 
