@@ -469,30 +469,33 @@ namespace Mono.Debugger.Frontend
 			ClearInterrupt ();
 
 			Thread stopped;
-			Hashtable list = new Hashtable ();
+			Hashtable seen_threads = new Hashtable ();
+			Hashtable wait_list = new Hashtable ();
 
 			do {
 				foreach (Process process in Processes) {
 					foreach (Thread t in process.GetThreads ()) {
-						if ((t == thread) || list.Contains (t))
+						if ((t == thread) || seen_threads.Contains (t))
 							continue;
-						else if (t.IsRunning)
-							list.Add (t, false);
+
+						seen_threads.Add (t, null);
+						if (t.IsRunning)
+							wait_list.Add (t, false);
 						else if ((t.ThreadFlags & Thread.Flags.AutoRun) != 0) {
 							t.Continue ();
-							list.Add (t, true);
+							wait_list.Add (t, true);
 						}
 					}
 				}
 
-				WaitHandle[] handles = new WaitHandle [list.Count + 2];
+				WaitHandle[] handles = new WaitHandle [wait_list.Count + 2];
 				handles [0] = interrupt_event;
 				handles [1] = result.CompletedEvent;
 
-				Thread[] threads = new Thread [list.Count];
-				list.Keys.CopyTo (threads, 0);
+				Thread[] threads = new Thread [wait_list.Count];
+				wait_list.Keys.CopyTo (threads, 0);
 
-				for (int i = 0; i < list.Count; i++)
+				for (int i = 0; i < wait_list.Count; i++)
 					handles [i + 2] = threads [i].WaitHandle;
 
 				int ret = WaitHandle.WaitAny (handles);
@@ -513,6 +516,7 @@ namespace Mono.Debugger.Frontend
 					stopped = threads [ret - 2];
 
 				CheckLastEvent (stopped);
+				wait_list.Remove (stopped);
 			} while (wait && (stopped != null) && (stopped != thread));
 
 			foreach (Process process in Processes) {
@@ -520,6 +524,8 @@ namespace Mono.Debugger.Frontend
 					if (t == stopped)
 						continue;
 					// Never touch immutable threads.
+					if (!t.IsRunning)
+						continue;
 					if ((t.ThreadFlags & Thread.Flags.Immutable) != 0)
 						continue;
 					// Background thread -> keep running.
@@ -661,7 +667,9 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
-			if ((args.Type != TargetEventType.TargetStopped) || ((int) args.Data != 0))
+			if (args.Type == TargetEventType.TargetInterrupted)
+				;
+			else if ((args.Type != TargetEventType.TargetStopped) || ((int) args.Data != 0))
 				Style.TargetEvent (thread, args);
 			else if ((thread.ThreadFlags & Thread.Flags.Background) != 0)
 				Style.TargetEvent (thread, args);

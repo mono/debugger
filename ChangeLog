@@ -1,5 +1,9 @@
 2007-02-08  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs (Interpreter.WaitAll): Fix another bug.
+
+2007-02-08  Martin Baulig  <martin@ximian.com>
+
 	Distinguish between normal stopping and receiving a SIGSTOP in the
 	backend.
 
