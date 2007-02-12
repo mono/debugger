@@ -897,7 +897,7 @@ namespace Mono.Debugger.Backends
 		{
 			int index;
 			bool is_enabled;
-			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (
+			process.BreakpointManager.LookupBreakpoint (
 				inferior.CurrentFrame, out index, out is_enabled);
 
 			if ((index == 0) || !is_enabled)
@@ -1357,8 +1357,6 @@ namespace Mono.Debugger.Backends
 				return;
 
 			TargetAddress new_rsp = inferior.PushRegisters ();
-
-			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
 
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquired thread lock: {1} {2} {3} {4}",
