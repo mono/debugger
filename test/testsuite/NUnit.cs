@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Globalization;
 using SD = System.Diagnostics;
 using ST = System.Threading;
 using System.Text;
@@ -85,6 +86,8 @@ namespace Mono.Debugger.Tests
 			style_nunit.TargetEventEvent += delegate (Thread thread, TargetEventArgs args) {
 				AddEvent (new DebuggerEvent (DebuggerEventType.TargetEvent, thread, args));
 			};
+
+			ST.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 		}
 
 		Queue queue;
