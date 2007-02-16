@@ -8,90 +8,33 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	// <summary>
-	//   Represents a location in the source code on which we can insert a breakpoint.
-	//   Instances of this class are normally created as the result of a user action
-	//   such as a method lookup.
-	// </summary>
-	[Serializable]
 	public class SourceLocation
 	{
-		Module module;
-		SourceFile file;
-		SourceMethod source;
-		TargetFunctionType function;
-		string method;
-		int line;
+		public readonly string Name;
 
-		public Module Module {
-			get { return module; }
+		protected readonly string Module;
+		protected readonly string Method;
+
+		public readonly string FileName;
+		public readonly int Line = -1;
+
+		DynamicSourceLocation dynamic;
+
+		private SourceLocation (DynamicSourceLocation dynamic)
+		{
+			this.dynamic = dynamic;
 		}
 
-		public bool HasSourceFile {
-			get { return file != null; }
-		}
+		public SourceLocation (TargetFunctionType function)
+			: this (new DynamicSourceLocation (function, -1))
+		{
+			Module = function.Module.Name;
+			Method = function.DeclaringType.Name + ':' + function.Name;
+			Name = function.FullName;
 
-		public bool HasMethod {
-			get { return source != null; }
-		}
-
-		public bool HasLine {
-			get { return line != -1; }
-		}
-
-		public bool HasFunction {
-			get { return function != null; }
-		}
-
-		public SourceFile SourceFile {
-			get {
-				if (!HasSourceFile)
-					throw new InvalidOperationException ();
-
-				return file;
-			}
-		}
-
-		public SourceMethod Method {
-			get {
-				if (!HasMethod)
-					throw new InvalidOperationException ();
-
-				return source;
-			}
-		}
-
-		public TargetFunctionType Function {
-			get {
-				if (!HasFunction)
-					throw new InvalidOperationException ();
-
-				return function;
-			}
-		}
-
-		public int Line {
-			get {
-				if (line == -1)
-					return source.StartRow;
-				else
-					return line;
-			}
-		}
-
-		public string Name {
-			get {
-				if (function != null)
-					return function.FullName;
-				else if (source != null) {
-					if (line != -1)
-						return source.Name + ':' + line;
-					else
-						return source.Name;
-				} else if (file != null)
-					return SourceFile.FileName + ':' + line;
-				else
-					return method;
+			if (function.Source != null) {
+				FileName = function.Source.SourceFile.FileName;
+				Line = function.Source.StartRow;
 			}
 		}
 
@@ -100,6 +43,145 @@ namespace Mono.Debugger
 		{ }
 
 		public SourceLocation (SourceMethod source, int line)
+			: this (new DynamicSourceLocation (source, line))
+		{
+			Module = source.SourceFile.Module.Name;
+			FileName = source.SourceFile.FileName;
+
+			if (source.ClassName != null) {
+				string klass = source.ClassName;
+				string name = source.Name.Substring (klass.Length + 1);
+				Method = klass + ':' + name;
+			} else
+				Method = source.Name;
+
+			if (line != -1)
+				Name = source.Name + ':' + line;
+			else
+				Name = source.Name;
+
+			Line = line;
+		}
+
+		public SourceLocation (SourceFile file, int line)
+			: this (new DynamicSourceLocation (file, line))
+		{
+			Module = file.Module.Name;
+			FileName = Name = file.Name + ":" + line;
+			Line = line;
+		}
+
+		public void DumpLineNumbers ()
+		{
+			if (dynamic == null)
+				throw new TargetException (TargetError.LocationInvalid);
+
+			dynamic.DumpLineNumbers ();
+		}
+
+		internal BreakpointHandle InsertBreakpoint (DebuggerSession session,
+							    Thread target, Breakpoint breakpoint,
+							    int domain)
+		{
+			if (dynamic == null) {
+				if (Method == null)
+					throw new TargetException (TargetError.LocationInvalid);
+
+				Module module = session.GetModule (Module);
+
+				int pos = Method.IndexOf (':');
+				if (pos > 0) {
+					string class_name = Method.Substring (0, pos);
+					string method_name = Method.Substring (pos + 1);
+
+					dynamic = new DynamicSourceLocation (
+						module.LookupMethod (class_name, method_name), Line);
+				} else {
+					dynamic = new DynamicSourceLocation (
+						module.FindMethod (Method), Line);
+				}
+			}
+
+			return dynamic.InsertBreakpoint (target, breakpoint, domain);
+		}
+
+		internal void OnTargetExited ()
+		{
+			dynamic = null;
+		}
+
+		internal void GetSessionData (XmlElement root)
+		{
+			XmlElement name_e = root.OwnerDocument.CreateElement ("Name");
+			name_e.InnerText = Name;
+			root.AppendChild (name_e);
+
+			if (Module != null) {
+				XmlElement module_e = root.OwnerDocument.CreateElement ("Module");
+				module_e.InnerText = Module;
+				root.AppendChild (module_e);
+			}
+
+			if (Method != null) {
+				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
+				method_e.InnerText = Method;
+				root.AppendChild (method_e);
+			}
+
+			if (FileName != null) {
+				XmlElement file_e = root.OwnerDocument.CreateElement ("File");
+				file_e.InnerText = FileName;
+				root.AppendChild (file_e);
+			}
+
+			if (Line > 0) {
+				XmlElement line_e = root.OwnerDocument.CreateElement ("Line");
+				line_e.InnerText = Line.ToString ();
+				root.AppendChild (line_e);
+			}
+		}
+
+		internal SourceLocation (DebuggerSession session, XPathNavigator navigator)
+		{
+			this.Line = -1;
+
+			XPathNodeIterator children = navigator.SelectChildren (XPathNodeType.Element);
+			while (children.MoveNext ()) {
+				if (children.Current.Name == "Module")
+					Module = children.Current.Value;
+				else if (children.Current.Name == "Method")
+					Method = children.Current.Value;
+				else if (children.Current.Name == "File")
+					FileName = children.Current.Value;
+				else if (children.Current.Name == "Name")
+					Name = children.Current.Value;
+				else if (children.Current.Name == "Line")
+					Line = Int32.Parse (children.Current.Value);
+				else
+					throw new InvalidOperationException ();
+			}
+		}
+	}
+
+	// <summary>
+	//   Represents a location in the source code on which we can insert a breakpoint.
+	//   Instances of this class are normally created as the result of a user action
+	//   such as a method lookup.
+	// </summary>
+	internal class DynamicSourceLocation
+	{
+		Module module;
+		SourceFile file;
+		SourceMethod source;
+		TargetFunctionType function;
+		string method;
+		int line;
+
+		public DynamicSourceLocation (SourceMethod source)
+			: this (source, -1)
+		{ }
+
+		public DynamicSourceLocation (SourceMethod source, int line)
 		{
 			this.module = source.SourceFile.Module;
 			this.file = source.SourceFile;
@@ -107,14 +189,14 @@ namespace Mono.Debugger
 			this.line = line;
 		}
 
-		public SourceLocation (SourceFile file, int line)
+		public DynamicSourceLocation (SourceFile file, int line)
 		{
 			this.module = file.Module;
 			this.file = file;
 			this.line = line;
 		}
 
-		public SourceLocation (TargetFunctionType function)
+		public DynamicSourceLocation (TargetFunctionType function, int line)
 		{
 			this.function = function;
 			this.module = function.Module;
@@ -123,24 +205,19 @@ namespace Mono.Debugger
 			if (source != null)
 				file = source.SourceFile;
 
-			this.line = -1;
+			this.line = line;
 		}
 
-		internal SourceLocation (DebuggerSession session, XPathNavigator navigator)
+		internal void DumpLineNumbers ()
 		{
-			this.line = -1;
+			if (source == null)
+				throw new TargetException (TargetError.LocationInvalid);
 
-			XPathNodeIterator children = navigator.SelectChildren (XPathNodeType.Element);
-			while (children.MoveNext ()) {
-				if (children.Current.Name == "Module")
-					module = session.GetModule (children.Current.Value);
-				else if (children.Current.Name == "Method")
-					method = children.Current.Value;
-				else if (children.Current.Name == "Line")
-					line = Int32.Parse (children.Current.Value);
-				else
-					throw new InvalidOperationException ();
-			}
+			Method method = source.GetMethod (0);
+			if ((method == null) || !method.HasSource)
+				throw new TargetException (TargetError.LocationInvalid);
+
+			method.Source.DumpLineNumbers ();
 		}
 
 		internal BreakpointHandle InsertBreakpoint (Thread target, Breakpoint breakpoint,
@@ -216,71 +293,16 @@ namespace Mono.Debugger
 				return method.StartAddress;
 		}
 
-		//
-		// Session handling.
-		//
-
-		internal void GetSessionData (XmlElement root)
-		{
-			if (function != null) {
-				XmlElement module = root.OwnerDocument.CreateElement ("Module");
-				module.InnerText = function.Module.Name;
-				root.AppendChild (module);
-
-				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
-				method_e.InnerText = function.DeclaringType.Name + ':' + function.Name;
-				root.AppendChild (method_e);
-			} else if (source != null) {
-				XmlElement module = root.OwnerDocument.CreateElement ("Module");
-				module.InnerText = source.SourceFile.Module.Name;
-				root.AppendChild (module);
-
-				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
-				root.AppendChild (method_e);
-
-				if (source.ClassName != null) {
-					string klass = source.ClassName;
-					string name = source.Name.Substring (klass.Length + 1);
-					method_e.InnerText = klass + ':' + name;
-				} else
-					method_e.InnerText = source.Name;
-			} else if (file != null) {
-				XmlElement module = root.OwnerDocument.CreateElement ("Module");
-				module.InnerText = file.Module.Name;
-				root.AppendChild (module);
-
-				XmlElement file_e = root.OwnerDocument.CreateElement ("File");
-				file_e.InnerText = file.Name + ":" + line;
-				root.AppendChild (file_e);
-			} else if (method != null) {
-				XmlElement module = root.OwnerDocument.CreateElement ("Module");
-				module.InnerText = module.Name;
-				root.AppendChild (module);
-
-				XmlElement method_e = root.OwnerDocument.CreateElement ("Method");
-				method_e.InnerText = method;
-				root.AppendChild (method_e);
-			} else {
-				throw new InternalError ();
-			}
-
-			if (line > 0) {
-				XmlElement line_e = root.OwnerDocument.CreateElement ("Line");
-				line_e.InnerText = line.ToString ();
-				root.AppendChild (line_e);
-			}
-		}
-
 		private class ModuleBreakpointHandle : BreakpointHandle
 		{
-			SourceLocation location;
+			DynamicSourceLocation location;
 
-			public ModuleBreakpointHandle (Breakpoint bpt, SourceLocation location)
+			public ModuleBreakpointHandle (Breakpoint bpt, DynamicSourceLocation location)
 				: base (bpt)
 			{
 				this.location = location;
 
-				location.Module.ModuleLoadedEvent += module_loaded;
+				location.module.ModuleLoadedEvent += module_loaded;
 			}
 
 			void module_loaded (Module module)
@@ -290,7 +312,7 @@ namespace Mono.Debugger
 
 			public override void Remove (Thread target)
 			{
-				location.Module.ModuleLoadedEvent -= module_loaded;
+				location.module.ModuleLoadedEvent -= module_loaded;
 			}
 		}
 
@@ -301,14 +323,14 @@ namespace Mono.Debugger
 			int domain;
 
 			public FunctionBreakpointHandle (Thread target, Breakpoint bpt, int domain,
-							 SourceLocation location)
+							 DynamicSourceLocation location)
 
 				: base (bpt)
 			{
 				this.domain = domain;
 
-				load_handler = location.Module.SymbolFile.RegisterLoadHandler (
-					target, location.Method, method_loaded, location);
+				load_handler = location.module.SymbolFile.RegisterLoadHandler (
+					target, location.source, method_loaded, location);
 			}
 
 			public override void Remove (Thread target)
@@ -332,18 +354,13 @@ namespace Mono.Debugger
 			{
 				load_handler = null;
 
-				SourceLocation location = (SourceLocation) data;
+				DynamicSourceLocation location = (DynamicSourceLocation) data;
 				TargetAddress address = location.GetAddress (domain);
 				if (address.IsNull)
 					return;
 
 				index = target.InsertBreakpoint (Breakpoint, address);
 			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("SourceLocation ({0})", Name);
 		}
 	}
 }

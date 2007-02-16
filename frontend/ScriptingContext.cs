@@ -342,10 +342,10 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation FindLocation (SourceLocation location, int line)
 		{
-			if (!location.HasSourceFile)
+			if (location.FileName == null)
 				throw new ScriptingException ("Location doesn't have any source code.");
 
-			return FindLocation (location.SourceFile.FileName, line);
+			return FindLocation (location.FileName, line);
 		}
 
 		public SourceLocation FindMethod (string name)

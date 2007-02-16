@@ -123,6 +123,8 @@ namespace Mono.Debugger.Tests
 			       !child_exited || !thread_exited) {
 				DebuggerEvent e = AssertEvent ();
 
+				Report.Debug (DebugFlags.Threads, "EXEC EVENT: {0}", e);
+
 				if (e.Type == DebuggerEventType.ProcessExited) {
 					if ((Process) e.Data == child.Process) {
 						child_exited = true;

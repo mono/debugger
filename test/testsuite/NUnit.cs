@@ -347,13 +347,20 @@ namespace Mono.Debugger.Tests
 						 frame.Level, level);
 				if (frame.SourceAddress == null)
 					Assert.Fail ("Current frame `{0}' has no source code.", frame);
+
 				SourceLocation location = frame.SourceAddress.Location;
-				Assert.AreEqual (function, location.Method.Name,
+
+				string name = location.Name;
+				int pos = name.IndexOf (':');
+				if (pos > 0)
+					name = name.Substring (0, pos);
+
+				Assert.AreEqual (function, name,
 						 "Target stopped in method `{0}', but expected `{1}'.",
-						 function, location.Method.Name);
+						 function, name);
 				Assert.AreEqual (line, location.Line,
 						 "Target stopped at line {0}, but expected {1}.",
-						 location.Name, line);
+						 location.Line, line);
 			} catch (TargetException ex) {
 				Assert.Fail ("Cannot get current frame: {0}.", ex.Message);
 			}

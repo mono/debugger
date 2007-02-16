@@ -18,10 +18,6 @@ namespace Mono.Debugger
 			this.exception = exception;
 		}
 
-		public override bool IsEnabled {
-			get { return handle > 0; }
-		}
-
 		public override void Enable (Thread target)
 		{
 			lock (this) {

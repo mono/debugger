@@ -1,3 +1,20 @@
+2007-02-16  Martin Baulig  <martin@ximian.com>
+
+	Session changes: keep the `DebuggerSession' in memory between
+	different invocations of the same target; this allows us to modify
+	breakpoints before starting the target.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.SessionData): Removed the nested class.
+
+	* classes/Event.cs
+	(Event.IsEnabled): Added a setter for this property.
+
+	* classes/SourceLocation.cs
+	(SourceLocation): Splitted into `SourceLocation' and
+	`DynamicSourceLocation'; the `SourceLocation' can now persist
+	across different invocations of the same target.
+
 2007-02-13  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/NUnit.cs: Run the tests in the invariant culture;

@@ -19,6 +19,7 @@ namespace Mono.Debugger
 	public class Breakpoint : Event
 	{
 		BreakpointHandle handle;
+		DebuggerSession session;
 		SourceLocation location;
 		BreakpointType type;
 		TargetAddress address = TargetAddress.Null;
@@ -32,10 +33,6 @@ namespace Mono.Debugger
 			get { return location; }
 		}
 
-		public override bool IsEnabled {
-			get { return handle != null; }
-		}
-
 		public override void Enable (Thread target)
 		{
 			if (handle != null)
@@ -47,7 +44,9 @@ namespace Mono.Debugger
 					int breakpoint_id = target.InsertBreakpoint (this, address);
 					handle = new SimpleBreakpointHandle (this, breakpoint_id);
 				} else if (location != null)
-					handle = location.InsertBreakpoint (target, this, domain);
+					handle = location.InsertBreakpoint (session, target, this, domain);
+				else
+					throw new TargetException (TargetError.LocationInvalid);
 				break;
 
 			case BreakpointType.WatchRead:
@@ -76,6 +75,8 @@ namespace Mono.Debugger
 
 		internal override void OnTargetExited ()
 		{
+			if (location != null)
+				location.OnTargetExited ();
 			handle = null;
 		}
 
@@ -88,7 +89,7 @@ namespace Mono.Debugger
 
 		protected virtual Breakpoint Clone ()
 		{
-			return new Breakpoint (GetNextEventIndex (), ThreadGroup, location);
+			return new Breakpoint (session, GetNextEventIndex (), ThreadGroup, location);
 		}
 
 		// <summary>
@@ -132,16 +133,20 @@ namespace Mono.Debugger
 			location.GetSessionData (location_e);
 		}		
 
-		internal Breakpoint (int index, ThreadGroup group, SourceLocation location)
+		internal Breakpoint (DebuggerSession session, int index, ThreadGroup group,
+				     SourceLocation location)
 			: base (index, location.Name, group)
 		{
+			this.session = session;
 			this.location = location;
 			this.type = BreakpointType.Breakpoint;
 		}
 
-		internal Breakpoint (ThreadGroup group, SourceLocation location)
+		internal Breakpoint (DebuggerSession session, ThreadGroup group,
+				     SourceLocation location)
 			: base (location.Name, group)
 		{
+			this.session = session;
 			this.location = location;
 			this.type = BreakpointType.Breakpoint;
 		}

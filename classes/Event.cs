@@ -49,8 +49,9 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		public abstract bool IsEnabled {
-			get;
+		public bool IsEnabled {
+			get { return enabled; }
+			set { enabled = value; }
 		}
 
 		public abstract void Enable (Thread target);
@@ -86,6 +87,7 @@ namespace Mono.Debugger
 
 		int index;
 		string name;
+		bool enabled;
 		ThreadGroup group;
 		static int next_event_index = 0;
 

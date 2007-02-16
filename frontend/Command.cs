@@ -2266,20 +2266,17 @@ namespace Mono.Debugger.Frontend
 			if (!Repeating) {
 				SourceBuffer buffer;
 
-				if (Location.HasSourceFile) {
-					string filename = Location.SourceFile.FileName;
-					buffer = context.FindFile (filename);
+				if (Location.FileName != null) {
+					buffer = context.FindFile (Location.FileName);
 					if (buffer == null)
 						throw new ScriptingException (
-							"Cannot find source file `{0}'", filename);
+							"Cannot find source file `{0}'",
+							Location.FileName);
 				} else
 					throw new ScriptingException (
 						"Current location doesn't have any source code.");
 
 				source_code = buffer.Contents;
-
-				if (Location.HasMethod && !Location.HasLine)
-					count = Location.Method.EndRow - Location.Method.StartRow + 4;
 
 				if (count < 0)
 					last_line = System.Math.Max (Location.Line + 2, 0);
@@ -2411,19 +2408,14 @@ namespace Mono.Debugger.Frontend
 					context.CurrentThread, tgroup, address);
 				context.Print ("Breakpoint {0} at {1}", index, address);
 				return index;
-			} else if (Location.HasFunction) {
+			} else {
 				if (domain != 0)
 					throw new ScriptingException (
-						"Can't insert function breakpoints in " +
+						"Can't insert breakpoints in " +
 						"other application domains.");
 
 				int index = context.Interpreter.InsertBreakpoint (
-					context.CurrentThread, tgroup, Location.Function);
-				context.Print ("Breakpoint {0} at {1}", index, Location.Name);
-				return index;
-			} else {
-				int index = context.Interpreter.InsertBreakpoint (
-					context.CurrentThread, tgroup, domain, Location);
+					context.CurrentThread, tgroup, Location);
 				context.Print ("Breakpoint {0} at {1}", index, Location.Name);
 				return index;
 			}
@@ -2602,19 +2594,12 @@ namespace Mono.Debugger.Frontend
 				if (!resolved)
 					throw new ScriptingException ("No such method: `{0}'", Argument);
 
-				if (!Location.HasSourceFile)
-					throw new ScriptingException ("Location invalid.");
-
 				return true;
 			}
 
 			protected override object DoExecute (ScriptingContext context)
 			{
-				Method method = Location.Method.GetMethod (0);
-				if ((method == null) || !method.HasSource)
-					throw new ScriptingException ("Location invalid.");
-
-				method.Source.DumpLineNumbers ();
+				Location.DumpLineNumbers ();
 				return null;
 			}
 

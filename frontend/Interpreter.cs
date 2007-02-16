@@ -814,11 +814,10 @@ namespace Mono.Debugger.Frontend
 				group.RemoveThread (thread.ID);
 		}
 
-		public int InsertBreakpoint (Thread target, ThreadGroup group, int domain,
+		public int InsertBreakpoint (Thread target, ThreadGroup group,
 					     SourceLocation location)
 		{
-			Event handle = target.Process.Session.InsertBreakpoint (
-				target, group, domain, location);
+			Event handle = target.Process.Session.InsertBreakpoint (target, group, location);
 			handle.Enable (target);
 			return handle.Index;
 		}
@@ -828,14 +827,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Event handle = target.Process.Session.InsertBreakpoint (
 				target, group, address);
-			handle.Enable (target);
-			return handle.Index;
-		}
-
-		public int InsertBreakpoint (Thread target, ThreadGroup group,
-					     TargetFunctionType func)
-		{
-			Event handle = target.Process.Session.InsertBreakpoint (target, group, func);
 			handle.Enable (target);
 			return handle.Index;
 		}
