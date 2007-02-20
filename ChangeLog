@@ -1,3 +1,19 @@
+2007-02-20  Martin Baulig  <martin@ximian.com>
+
+	* classes/Event.cs
+	(Event.Breaks): Check `IsEnabled' as well.
+	(Event.Enable, Event.Disable): Make these methods internal; modify
+	the `IsEnabled' property instead.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertBreakpoint): Also enable the breakpoint by
+	calling the now internal `Event.Enable ()'.
+	(DebuggerSession.InsertHardwareWatchPoint): Likewise.
+	(DebuggerSession.InsertExceptionCatchPoint): Likewise.
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine): Check whether a breakpoint is actually enabled.
+
 2007-02-16  Martin Baulig  <martin@ximian.com>
 
 	Session changes: keep the `DebuggerSession' in memory between

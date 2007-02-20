@@ -303,7 +303,7 @@ namespace Mono.Debugger.Backends
 					Report.Debug (DebugFlags.SSE,
 						      "{0} hit temporary breakpoint {1} at {2} {3}",
 						      this, arg, inferior.CurrentFrame, bpt);
-					if (bpt == null) {
+					if ((bpt == null) || !bpt.Breaks (thread.ID)) {
 						message = Inferior.ChildEventType.CHILD_STOPPED;
 						arg = 0;
 						cevent = new Inferior.ChildEvent (
@@ -488,7 +488,7 @@ namespace Mono.Debugger.Backends
 				pending_bpt = current_operation.PendingBreakpoint;
 			if (pending_bpt >= 0) {
 				Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (pending_bpt);
-				if (bpt != null) {
+				if ((bpt != null) && bpt.Breaks (thread.ID)) {
 					result = new TargetEventArgs (
 						TargetEventType.TargetHitBreakpoint, bpt.Index,
 						current_frame);

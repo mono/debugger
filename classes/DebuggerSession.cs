@@ -134,6 +134,7 @@ namespace Mono.Debugger
 					       SourceLocation location)
 		{
 			Event handle = new Breakpoint (this, group, location);
+			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -142,6 +143,7 @@ namespace Mono.Debugger
 					       TargetAddress address)
 		{
 			Event handle = new Breakpoint (address.ToString (), group, address);
+			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -150,6 +152,7 @@ namespace Mono.Debugger
 							TargetType exception)
 		{
 			Event handle = new ExceptionCatchPoint (group, exception);
+			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -158,6 +161,7 @@ namespace Mono.Debugger
 						       BreakpointType type)
 		{
 			Event handle = new Breakpoint (address, type);
+			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
 		}

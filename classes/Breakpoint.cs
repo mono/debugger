@@ -33,7 +33,7 @@ namespace Mono.Debugger
 			get { return location; }
 		}
 
-		public override void Enable (Thread target)
+		internal override void Enable (Thread target)
 		{
 			if (handle != null)
 				return;
@@ -60,7 +60,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public override void Disable (Thread target)
+		internal override void Disable (Thread target)
 		{
 			if (handle != null) {
 				handle.Remove (target);

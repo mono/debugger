@@ -18,14 +18,14 @@ namespace Mono.Debugger
 			this.exception = exception;
 		}
 
-		public override void Enable (Thread target)
+		internal override void Enable (Thread target)
 		{
 			lock (this) {
 				EnableCatchpoint (target);
 			}
 		}
 
-		public override void Disable (Thread target)
+		internal override void Disable (Thread target)
 		{
 			lock (this) {
 				DisableCatchpoint (target);

@@ -38,6 +38,9 @@ namespace Mono.Debugger
 
 		public bool Breaks (int id)
 		{
+			if (!IsEnabled)
+				return false;
+
 			if (group.IsSystem)
 				return true;
 
@@ -54,9 +57,9 @@ namespace Mono.Debugger
 			set { enabled = value; }
 		}
 
-		public abstract void Enable (Thread target);
+		internal abstract void Enable (Thread target);
 
-		public abstract void Disable (Thread target);
+		internal abstract void Disable (Thread target);
 
 		public abstract void Remove (Thread target);
 
@@ -87,7 +90,7 @@ namespace Mono.Debugger
 
 		int index;
 		string name;
-		bool enabled;
+		bool enabled = true;
 		ThreadGroup group;
 		static int next_event_index = 0;
 
