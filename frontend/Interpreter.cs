@@ -122,6 +122,15 @@ namespace Mono.Debugger.Frontend
 			get { return current_process != null; }
 		}
 
+		public DebuggerSession Session {
+			get {
+				if (session == null)
+					throw new TargetException (TargetError.NoTarget);
+
+				return session;
+			}
+		}
+
 		public StyleBase GetStyle (string name)
 		{
 			StyleBase style = (StyleBase) styles [name];
@@ -591,7 +600,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowBreakpoints ()
 		{
-			Event[] events = CurrentProcess.Session.Events;
+			Event[] events = Session.Events;
 			if (events.Length == 0) {
 				Print ("No breakpoints or catchpoints.");
 				return;
@@ -617,7 +626,7 @@ namespace Mono.Debugger.Frontend
 
 		public Event GetEvent (int index)
 		{
-			Event handle = CurrentProcess.Session.GetEvent (index);
+			Event handle = Session.GetEvent (index);
 			if (handle == null)
 				throw new ScriptingException ("No such breakpoint/catchpoint.");
 
@@ -751,7 +760,7 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowThreadGroups ()
 		{
-			foreach (ThreadGroup group in CurrentProcess.Session.ThreadGroups) {
+			foreach (ThreadGroup group in Session.ThreadGroups) {
 				if (group.Name.StartsWith ("@"))
 					continue;
 				StringBuilder ids = new StringBuilder ();
@@ -765,18 +774,18 @@ namespace Mono.Debugger.Frontend
 
 		public void CreateThreadGroup (string name)
 		{
-			if (CurrentProcess.Session.ThreadGroupExists (name))
+			if (Session.ThreadGroupExists (name))
 				throw new ScriptingException ("A thread group with that name already exists.");
 
-			CurrentProcess.Session.CreateThreadGroup (name);
+			Session.CreateThreadGroup (name);
 		}
 
 		public void DeleteThreadGroup (string name)
 		{
-			if (!CurrentProcess.Session.ThreadGroupExists (name))
+			if (!Session.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			CurrentProcess.Session.DeleteThreadGroup (name);
+			Session.DeleteThreadGroup (name);
 		}
 
 		public ThreadGroup GetThreadGroup (string name, bool writable)
@@ -787,10 +796,10 @@ namespace Mono.Debugger.Frontend
 				return ThreadGroup.Global;
 			if (name.StartsWith ("@"))
 				throw new ScriptingException ("No such thread group.");
-			if (!CurrentProcess.Session.ThreadGroupExists (name))
+			if (!Session.ThreadGroupExists (name))
 				throw new ScriptingException ("No such thread group.");
 
-			ThreadGroup group = CurrentProcess.Session.CreateThreadGroup (name);
+			ThreadGroup group = Session.CreateThreadGroup (name);
 
 			if (writable && group.IsSystem)
 				throw new ScriptingException ("Cannot modify system-created thread group.");
@@ -818,7 +827,6 @@ namespace Mono.Debugger.Frontend
 					     SourceLocation location)
 		{
 			Event handle = target.Process.Session.InsertBreakpoint (target, group, location);
-			handle.Enable (target);
 			return handle.Index;
 		}
 
@@ -827,7 +835,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Event handle = target.Process.Session.InsertBreakpoint (
 				target, group, address);
-			handle.Enable (target);
 			return handle.Index;
 		}
 
@@ -836,7 +843,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Event handle = target.Process.Session.InsertExceptionCatchPoint (
 				target, group, exception);
-			handle.Enable (target);
 			return handle.Index;
 		}
 
@@ -844,7 +850,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Event handle = target.Process.Session.InsertHardwareWatchPoint (
 				target, address, BreakpointType.WatchWrite);
-			handle.Enable (target);
 			return handle.Index;
 		}
 

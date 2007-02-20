@@ -1522,11 +1522,7 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override object DoExecute (ScriptingContext context)
 			{
-				DebuggerOptions options;
-				if (context.Interpreter.HasCurrentProcess)
-					options = context.Interpreter.CurrentProcess.Session.Options;
-				else
-					options = context.Interpreter.Options;
+				DebuggerOptions options = context.Interpreter.Session.Options;
 
 				string[] args = options.InferiorArgs;
 				if (args == null)
@@ -1985,7 +1981,7 @@ namespace Mono.Debugger.Frontend
 			ModuleBase module = null;
 			if (name.StartsWith ("@")) {
 				name = name.Substring (1);
-				module = CurrentProcess.Session.Config.GetModuleGroup (name);
+				module = context.Interpreter.Session.Config.GetModuleGroup (name);
 				if (module == null)
 					throw new ScriptingException ("No such module group `{0}'", name);
 			} else {
@@ -2078,11 +2074,14 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Enable (CurrentThread);
+				handle.IsEnabled = true;
 			} else {
+				if (!context.Interpreter.Query ("Enable all breakpoints?"))
+					return null;
+
 				// enable all breakpoints
-				foreach (Event h in CurrentThread.Process.Session.Events)
-					h.Enable (CurrentThread);
+				foreach (Event h in context.Interpreter.Session.Events)
+					h.IsEnabled = true;
 			}
 
 			return null;
@@ -2099,11 +2098,14 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.Disable (CurrentThread);
+				handle.IsEnabled = false;
 			} else {
+				if (!context.Interpreter.Query ("Disable all breakpoints?"))
+					return null;
+
 				// enable all breakpoints
-				foreach (Event h in CurrentThread.Process.Session.Events)
-					h.Disable (CurrentThread);
+				foreach (Event h in context.Interpreter.Session.Events)
+					h.IsEnabled = false;
 			}
 
 			return null;
@@ -2120,9 +2122,9 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				CurrentThread.Process.Session.DeleteEvent (CurrentThread, handle);
+				context.Interpreter.Session.DeleteEvent (CurrentThread, handle);
 			} else {
-				Event[] hs = CurrentThread.Process.Session.Events;
+				Event[] hs = context.Interpreter.Session.Events;
 
 				if (hs.Length == 0)
 					return null;
@@ -2131,8 +2133,8 @@ namespace Mono.Debugger.Frontend
 					return null;
 
 				// delete all breakpoints
-				foreach (Event h in CurrentThread.Process.Session.Events)
-					CurrentThread.Process.Session.DeleteEvent (CurrentThread, h);
+				foreach (Event h in context.Interpreter.Session.Events)
+					context.Interpreter.Session.DeleteEvent (CurrentThread, h);
 			}
 
 			return null;
