@@ -28,6 +28,7 @@ namespace Mono.Debugger
 		protected readonly Hashtable thread_groups;
 		protected readonly ThreadGroup main_thread_group;
 
+		Process main_process;
 		XmlDocument saved_session;
 
 		private DebuggerSession (DebuggerConfiguration config, string name)
@@ -179,17 +180,22 @@ namespace Mono.Debugger
 		//
 		public void MainProcessReachedMain (Process process)
 		{
+			main_process = process;
+
 			foreach (Event e in events.Values) {
 				e.Enable (process.MainThread);
 			}
 		}
 
 		internal void OnProcessCreated (Process process)
-		{
-		}
+		{ }
 
 		internal void OnProcessExited (Process process)
 		{
+			if (process != main_process)
+				return;
+
+			main_process = null;
 			foreach (Event e in events.Values) {
 				e.OnTargetExited ();
 			}
@@ -374,9 +380,10 @@ namespace Mono.Debugger
 			events.Add (handle.Index, handle);
 		}
 
-		public void DeleteEvent (Thread thread, Event handle)
+		public void DeleteEvent (Event handle)
 		{
-			handle.Remove (thread);
+			if (main_process != null)
+				handle.Remove (main_process.MainThread);
 			events.Remove (handle.Index);
 		}
 	}

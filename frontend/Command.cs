@@ -2047,7 +2047,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public abstract class EventHandleCommand : ThreadCommand 
+	public abstract class EventHandleCommand : DebuggerCommand 
 	{
 		protected Event handle;
 
@@ -2122,7 +2122,7 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				context.Interpreter.Session.DeleteEvent (CurrentThread, handle);
+				context.Interpreter.Session.DeleteEvent (handle);
 			} else {
 				Event[] hs = context.Interpreter.Session.Events;
 
@@ -2134,7 +2134,7 @@ namespace Mono.Debugger.Frontend
 
 				// delete all breakpoints
 				foreach (Event h in context.Interpreter.Session.Events)
-					context.Interpreter.Session.DeleteEvent (CurrentThread, h);
+					context.Interpreter.Session.DeleteEvent (h);
 			}
 
 			return null;

@@ -1,5 +1,18 @@
 2007-02-20  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Store the main process internally and use it's
+	main thread when removing events.
+	(DebuggerSession.DeleteEvent): Removed the `Thread' argument.
+
+	* frontend/Command.cs
+	(EventHandleCommand): Derive from `DebuggerCommand', not
+	`ThreadCommand'; the "enable", "disable" and "delete" commands now
+	longer require a thread to operate on - it's now also possible to
+	enable/disable or delete events after the target exited.
+
+2007-02-20  Martin Baulig  <martin@ximian.com>
+
 	* classes/Event.cs
 	(Event.Breaks): Check `IsEnabled' as well.
 	(Event.Enable, Event.Disable): Make these methods internal; modify
