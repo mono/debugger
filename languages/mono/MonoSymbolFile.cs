@@ -252,7 +252,13 @@ namespace Mono.Debugger.Languages.Mono
 			MonoImage = memory.ReadAddress (address);
 			address += address_size;
 
-			Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
+			try {
+				Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
+			} catch (Exception ex) {
+				throw new SymbolTableException (
+					"Cannot load symbol file `{0}': {1}", ImageFile, ex.Message);
+			}
+
 			ModuleDefinition = Assembly.MainModule;
 
 			Report.Debug (DebugFlags.JitSymtab, "SYMBOL TABLE READER: {0}", ImageFile);
