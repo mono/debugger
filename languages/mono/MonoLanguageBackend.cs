@@ -429,25 +429,10 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress address = memory.ReadAddress (symfiles_address);
 				symfiles_address += memory.TargetInfo.TargetAddressSize;
 
+				MonoSymbolFile symfile = null;
+
 				try {
-					MonoSymbolFile symfile = new MonoSymbolFile (
-						this, process, memory, address);
-
-					symbol_files.Add (symfile);
-
-					if (assembly_by_name.Contains (symfile.Assembly.Name.FullName))
-						continue;
-
-					image_hash.Add (symfile.MonoImage, symfile);
-					assembly_hash.Add (symfile.Assembly, symfile);
-					assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
-
-					if (address != corlib_address)
-						continue;
-
-					corlib = symfile;
-					builtin_types = new MonoBuiltinTypeInfo (
-						corlib, memory, info.MonoMetadataInfo);
+					symfile = new MonoSymbolFile (this, process, memory, address);
 				} catch (C.MonoSymbolFileException ex) {
 					Console.WriteLine (ex.Message);
 				} catch (SymbolTableException ex) {
@@ -455,6 +440,25 @@ namespace Mono.Debugger.Languages.Mono
 				} catch (Exception ex) {
 					Console.WriteLine (ex);
 				}
+
+				symbol_files.Add (symfile);
+
+				if (symfile == null)
+					continue;
+
+				if (assembly_by_name.Contains (symfile.Assembly.Name.FullName))
+					continue;
+
+				image_hash.Add (symfile.MonoImage, symfile);
+				assembly_hash.Add (symfile.Assembly, symfile);
+				assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
+
+				if (address != corlib_address)
+					continue;
+
+				corlib = symfile;
+				builtin_types = new MonoBuiltinTypeInfo (
+					corlib, memory, info.MonoMetadataInfo);
 			}
 
 			last_num_symbol_files = num_symbol_files;
@@ -559,7 +563,8 @@ namespace Mono.Debugger.Languages.Mono
 			Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1} {2}",
 				      size, file_idx, symbol_files.Count);
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
-			file.AddRangeEntry (reader, contents);
+			if (file != null)
+				file.AddRangeEntry (reader, contents);
 		}
 
 		void read_class_entry (TargetReader reader)
