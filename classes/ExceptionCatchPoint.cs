@@ -12,6 +12,10 @@ namespace Mono.Debugger
 	{
 		int handle = -1;
 
+		public override bool IsPersistent {
+			get { return false; }
+		}
+
 		internal ExceptionCatchPoint (ThreadGroup group, TargetType exception)
 			: base (EventType.CatchException, exception.Name, group)
 		{

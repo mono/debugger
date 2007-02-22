@@ -17,6 +17,14 @@ namespace Mono.Debugger
 	public abstract class Event : DebuggerMarshalByRefObject
 	{
 		// <summary>
+		//   Whether this breakpoint can persist across multiple
+		//   invocations of the target.
+		// </summary>
+		public abstract bool IsPersistent {
+			get;
+		}
+
+		// <summary>
 		//   The type of this event.
 		// </summary>
 		public EventType Type {
@@ -80,9 +88,12 @@ namespace Mono.Debugger
 		// Session handling.
 		//
 
-		internal virtual void GetSessionData (XmlElement root)
+		internal void GetSessionData (XmlElement root)
 		{
-			XmlElement element = root.OwnerDocument.CreateElement (GetType ().Name);
+			if (!IsPersistent)
+				return;
+
+			XmlElement element = root.OwnerDocument.CreateElement ("Breakpoint");
 			root.AppendChild (element);
 
 			element.SetAttribute ("index", Index.ToString ());

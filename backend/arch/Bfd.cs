@@ -1168,8 +1168,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		[Serializable]
-		protected class SetXidBreakpoint : Breakpoint
+		protected class SetXidBreakpoint : AddressBreakpoint
 		{
 			protected readonly Bfd bfd;
 
@@ -1191,15 +1190,9 @@ namespace Mono.Debugger.Backends
 				remain_stopped = false;
 				return true;
 			}
-
-			protected override Breakpoint Clone ()
-			{
-				throw new InvalidOperationException ();
-			}
 		}
 
-		[Serializable]
-		protected class DynlinkBreakpoint : Breakpoint
+		protected class DynlinkBreakpoint : AddressBreakpoint
 		{
 			protected readonly Bfd bfd;
 
@@ -1220,11 +1213,6 @@ namespace Mono.Debugger.Backends
 				bfd.dynlink_handler (inferior);
 				remain_stopped = false;
 				return true;
-			}
-
-			protected override Breakpoint Clone ()
-			{
-				throw new InvalidOperationException ();
 			}
 		}
 

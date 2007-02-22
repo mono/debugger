@@ -181,9 +181,11 @@ namespace Mono.Debugger.Backends
 
 				for (int i = 0; i < indices.Length; i++) {
 					int idx = indices [i];
-					Breakpoint bpt = (Breakpoint) breakpoints [idx];
+					SourceBreakpoint bpt = breakpoints [idx] as SourceBreakpoint;
 
-					if (bpt.ThreadGroup.IsGlobal) {
+					if (bpt == null) {
+						RemoveBreakpoint (inferior, idx);
+					} else if (bpt.ThreadGroup.IsGlobal) {
 						Breakpoint new_bpt = bpt.Clone (idx);
 						inferior.Process.Session.AddEvent (new_bpt);
 					} else if (!bpt.ThreadGroup.IsSystem) {

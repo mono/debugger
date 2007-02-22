@@ -134,7 +134,7 @@ namespace Mono.Debugger
 		public Event InsertBreakpoint (Thread target, ThreadGroup group,
 					       SourceLocation location)
 		{
-			Event handle = new Breakpoint (this, group, location);
+			Event handle = new SourceBreakpoint (this, group, location);
 			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
@@ -143,7 +143,7 @@ namespace Mono.Debugger
 		public Event InsertBreakpoint (Thread target, ThreadGroup group,
 					       TargetAddress address)
 		{
-			Event handle = new Breakpoint (address.ToString (), group, address);
+			Event handle = new AddressBreakpoint (address.ToString (), group, address);
 			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
@@ -161,7 +161,7 @@ namespace Mono.Debugger
 		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
 						       HardwareWatchType type)
 		{
-			Event handle = new Breakpoint (type, address);
+			Event handle = new AddressBreakpoint (type, address);
 			handle.Enable (target);
 			AddEvent (handle);
 			return handle;
@@ -196,8 +196,13 @@ namespace Mono.Debugger
 				return;
 
 			main_process = null;
-			foreach (Event e in events.Values) {
+			Event[] list = new Event [events.Count];
+			events.Values.CopyTo (list, 0);
+
+			foreach (Event e in list) {
 				e.OnTargetExited ();
+				if (!e.IsPersistent)
+					events.Remove (e.Index);
 			}
 		}
 
@@ -260,7 +265,7 @@ namespace Mono.Debugger
 						throw new InternalError ();
 				}
 
-				Breakpoint bpt = new Breakpoint (this, index, group, location);
+				Breakpoint bpt = new SourceBreakpoint (this, index, group, location);
 				bpt.IsEnabled = enabled;
 				AddEvent (bpt);
 			}

@@ -90,8 +90,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		[Serializable]
-		protected class InitializeBreakpoint : Breakpoint
+		protected class InitializeBreakpoint : AddressBreakpoint
 		{
 			protected readonly MonoThreadManager manager;
 
@@ -112,11 +111,6 @@ namespace Mono.Debugger.Backends
 				manager.initialize_notifications (inferior);
 				remain_stopped = false;
 				return true;
-			}
-
-			protected override Breakpoint Clone ()
-			{
-				throw new InvalidOperationException ();
 			}
 		}
 
