@@ -190,7 +190,7 @@ namespace Mono.Debugger.Backends
 		//   Returns a number which may be passed to RemoveEventHandler() to remove
 		//   the event handler.
 		// </summary>
-		public abstract int AddEventHandler (EventType type, Event handle);
+		public abstract int AddEventHandler (Event handle);
 
 		// <summary>
 		//   Remove event handler @index.  @index is the event handler number which has

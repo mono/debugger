@@ -1640,9 +1640,9 @@ namespace Mono.Debugger.Backends
 		}
 
 		static int next_event_index = 0;
-		public override int AddEventHandler (EventType type, Event handle)
+		public override int AddEventHandler (Event handle)
 		{
-			if (type != EventType.CatchException)
+			if (handle.Type != EventType.CatchException)
 				throw new InternalError ();
 
 			int index = ++next_event_index;

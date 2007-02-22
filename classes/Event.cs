@@ -5,13 +5,24 @@ using System.Xml;
 
 namespace Mono.Debugger
 {
+	[Serializable]
 	public enum EventType
 	{
-		CatchException
+		Breakpoint,
+		CatchException,
+		WatchRead,
+		WatchWrite
 	}
 
 	public abstract class Event : DebuggerMarshalByRefObject
 	{
+		// <summary>
+		//   The type of this event.
+		// </summary>
+		public EventType Type {
+			get { return type; }
+		}
+
 		// <summary>
 		//   An automatically generated unique index for this event.
 		// </summary>
@@ -75,6 +86,7 @@ namespace Mono.Debugger
 			root.AppendChild (element);
 
 			element.SetAttribute ("index", Index.ToString ());
+			element.SetAttribute ("type", Type.ToString ());
 			element.SetAttribute ("name", Name);
 			element.SetAttribute ("threadgroup", ThreadGroup.Name);
 			element.SetAttribute ("enabled", IsEnabled ? "true" : "false");
@@ -88,8 +100,9 @@ namespace Mono.Debugger
 		// Everything below is private.
 		//
 
-		int index;
-		string name;
+		private readonly int index;
+		private readonly string name;
+		private readonly EventType type;
 		bool enabled = true;
 		ThreadGroup group;
 		static int next_event_index = 0;
@@ -99,12 +112,13 @@ namespace Mono.Debugger
 			return ++next_event_index;
 		}
 
-		protected Event (string name, ThreadGroup group)
-			: this (GetNextEventIndex (), name, group)
+		protected Event (EventType type, string name, ThreadGroup group)
+			: this (type, GetNextEventIndex (), name, group)
 		{ }
 
-		protected Event (int index, string name, ThreadGroup group)
+		protected Event (EventType type, int index, string name, ThreadGroup group)
 		{
+			this.type = type;
 			this.index = index;
 			this.name = name;
 			this.group = group;

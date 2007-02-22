@@ -134,17 +134,17 @@ namespace Mono.Debugger.Backends
 
 				int dr_index = -1;
 				switch (breakpoint.Type) {
-				case BreakpointType.Breakpoint:
+				case EventType.Breakpoint:
 					index = inferior.InsertBreakpoint (address);
 					break;
 
-				case BreakpointType.WatchRead:
+				case EventType.WatchRead:
 					index = inferior.InsertHardwareWatchPoint (
 						address, Inferior.HardwareBreakpointType.READ,
 						out dr_index);
 					break;
 
-				case BreakpointType.WatchWrite:
+				case EventType.WatchWrite:
 					index = inferior.InsertHardwareWatchPoint (
 						address, Inferior.HardwareBreakpointType.WRITE,
 						out dr_index);

@@ -1,5 +1,21 @@
 2007-02-22  Martin Baulig  <martin@ximian.com>
 
+	* classes/Event.cs
+	(EventType): Added `Breakpoint', `WatchRead' and `WatchWrite'.
+	(Event.Type): New public property.
+
+	* classes/Breakpoint.cs
+	(HardwareWatchType): New public enum.
+	(BreakpointType): Removed; use `EventType' instead.
+
+	* classes/Thread.cs
+	(Thread.AddEventHandler): Removed the `EventType' argument.
+
+	* backends/ThreadServer.cs
+	(ThreadServant.AddEventHandler): Likewise.
+
+2007-02-22  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoLanguageBackend.cs: Don't crash if we can't
 	find a symbol file.
 

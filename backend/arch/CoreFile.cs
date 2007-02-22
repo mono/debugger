@@ -474,7 +474,7 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			public override int AddEventHandler (EventType type, Event handle)
+			public override int AddEventHandler (Event handle)
 			{
 				throw new InvalidOperationException ();
 			}

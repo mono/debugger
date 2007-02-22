@@ -13,7 +13,7 @@ namespace Mono.Debugger
 		int handle = -1;
 
 		internal ExceptionCatchPoint (ThreadGroup group, TargetType exception)
-			: base (exception.Name, group)
+			: base (EventType.CatchException, exception.Name, group)
 		{
 			this.exception = exception;
 		}
@@ -48,7 +48,7 @@ namespace Mono.Debugger
 				if (handle > 0)
 					return;
 
-				handle = target.AddEventHandler (EventType.CatchException, this);
+				handle = target.AddEventHandler (this);
 			}
 		}
 

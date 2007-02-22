@@ -159,9 +159,9 @@ namespace Mono.Debugger
 		}
 
 		public Event InsertHardwareWatchPoint (Thread target, TargetAddress address,
-						       BreakpointType type)
+						       HardwareWatchType type)
 		{
-			Event handle = new Breakpoint (address, type);
+			Event handle = new Breakpoint (type, address);
 			handle.Enable (target);
 			AddEvent (handle);
 			return handle;

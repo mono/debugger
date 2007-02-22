@@ -6,8 +6,7 @@ using System.Xml;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public enum BreakpointType {
-		Breakpoint,
+	public enum HardwareWatchType {
 		WatchRead,
 		WatchWrite
 	}
@@ -21,13 +20,8 @@ namespace Mono.Debugger
 		BreakpointHandle handle;
 		DebuggerSession session;
 		SourceLocation location;
-		BreakpointType type;
 		TargetAddress address = TargetAddress.Null;
 		int domain;
-
-		public BreakpointType Type {
-			get { return type; }
-		}
 
 		public SourceLocation Location {
 			get { return location; }
@@ -38,8 +32,8 @@ namespace Mono.Debugger
 			if (handle != null)
 				return;
 
-			switch (type) {
-			case BreakpointType.Breakpoint:
+			switch (Type) {
+			case EventType.Breakpoint:
 				if (!address.IsNull) {
 					int breakpoint_id = target.InsertBreakpoint (this, address);
 					handle = new SimpleBreakpointHandle (this, breakpoint_id);
@@ -49,8 +43,8 @@ namespace Mono.Debugger
 					throw new TargetException (TargetError.LocationInvalid);
 				break;
 
-			case BreakpointType.WatchRead:
-			case BreakpointType.WatchWrite:
+			case EventType.WatchRead:
+			case EventType.WatchWrite:
 				int breakpoint_id = target.InsertBreakpoint (this, address);
 				handle = new SimpleBreakpointHandle (this, breakpoint_id);
 				break;
@@ -135,34 +129,42 @@ namespace Mono.Debugger
 
 		internal Breakpoint (DebuggerSession session, int index, ThreadGroup group,
 				     SourceLocation location)
-			: base (index, location.Name, group)
+			: base (EventType.Breakpoint, index, location.Name, group)
 		{
 			this.session = session;
 			this.location = location;
-			this.type = BreakpointType.Breakpoint;
 		}
 
 		internal Breakpoint (DebuggerSession session, ThreadGroup group,
 				     SourceLocation location)
-			: base (location.Name, group)
+			: base (EventType.Breakpoint, location.Name, group)
 		{
 			this.session = session;
 			this.location = location;
-			this.type = BreakpointType.Breakpoint;
 		}
 
 		internal Breakpoint (string name, ThreadGroup group, TargetAddress address)
-			: base (name, group)
+			: base (EventType.Breakpoint, name, group)
 		{
 			this.address = address;
-			this.type = BreakpointType.Breakpoint;
 		}
 
-		internal Breakpoint (TargetAddress address, BreakpointType type)
-			: base (address.ToString (), ThreadGroup.Global)
+		internal Breakpoint (HardwareWatchType type, TargetAddress address)
+			: base (GetEventType (type), address.ToString (), ThreadGroup.Global)
 		{
 			this.address = address;
-			this.type = type;
+		}
+
+		protected static EventType GetEventType (HardwareWatchType type)
+		{
+			switch (type) {
+			case HardwareWatchType.WatchRead:
+				return EventType.WatchRead;
+			case HardwareWatchType.WatchWrite:
+				return EventType.WatchWrite;
+			default:
+				throw new InternalError ();
+			}
 		}
 	}
 }

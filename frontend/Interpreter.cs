@@ -849,7 +849,7 @@ namespace Mono.Debugger.Frontend
 		public int InsertHardwareWatchPoint (Thread target, TargetAddress address)
 		{
 			Event handle = target.Process.Session.InsertHardwareWatchPoint (
-				target, address, BreakpointType.WatchWrite);
+				target, address, HardwareWatchType.WatchWrite);
 			return handle.Index;
 		}
 
