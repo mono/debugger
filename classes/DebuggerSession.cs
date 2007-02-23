@@ -254,21 +254,32 @@ namespace Mono.Debugger
 				else
 					group = CreateThreadGroup (gname);
 
-				SourceLocation location = null;
+				Event e = null;
 
 				XPathNodeIterator children = event_iter.Current.SelectChildren (
 					XPathNodeType.Element);
-				while (children.MoveNext ()) {
-					if (children.Current.Name == "Location")
-						location = new SourceLocation (this, children.Current);
-					else
-						throw new InternalError ();
-				}
 
-				Breakpoint bpt = new SourceBreakpoint (this, index, group, location);
-				bpt.IsEnabled = enabled;
-				AddEvent (bpt);
+				if (!children.MoveNext ())
+					throw new InternalError ();
+				e = ParseEvent (children.Current, index, group);
+				if (children.MoveNext ())
+					throw new InternalError ();
+
+				e.IsEnabled = enabled;
+				AddEvent (e);
 			}
+		}
+
+		protected Event ParseEvent (XPathNavigator navigator, int index, ThreadGroup group)
+		{
+			if (navigator.Name == "Location") {
+				SourceLocation location = new SourceLocation (this, navigator);
+				return new SourceBreakpoint (this, index, group, location);
+			} else if (navigator.Name == "Exception") {
+				string exc = navigator.GetAttribute ("type", "");
+				return new ExceptionCatchPoint (index, group, exc);
+			} else
+				throw new InternalError ();
 		}
 
 		//

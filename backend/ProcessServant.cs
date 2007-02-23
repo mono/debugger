@@ -291,6 +291,7 @@ namespace Mono.Debugger.Backends
 		{
 			thread_hash.Remove (thread.PID);
 			thread.ThreadGroup.RemoveThread (thread.ID);
+			session.DeleteThreadGroup (thread.ThreadGroup.Name);
 			manager.Debugger.OnThreadExitedEvent (thread.Client);
 
 			if (thread_hash.Count == 0)

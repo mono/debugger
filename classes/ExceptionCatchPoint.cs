@@ -13,7 +13,7 @@ namespace Mono.Debugger
 		int handle = -1;
 
 		public override bool IsPersistent {
-			get { return false; }
+			get { return true; }
 		}
 
 		internal ExceptionCatchPoint (ThreadGroup group, TargetType exception)
@@ -21,6 +21,10 @@ namespace Mono.Debugger
 		{
 			this.exception = exception;
 		}
+
+		internal ExceptionCatchPoint (int index, ThreadGroup group, string name)
+			: base (EventType.CatchException, index, name, group)
+		{ }
 
 		internal override void Enable (Thread target)
 		{
@@ -38,6 +42,7 @@ namespace Mono.Debugger
 
 		internal override void OnTargetExited ()
 		{
+			exception = null;
 			handle = -1;
 		}
 
@@ -83,16 +88,25 @@ namespace Mono.Debugger
 
 		internal bool CheckException (Thread target, TargetAddress address)
 		{
-			TargetClassObject exc = exception.Language.CreateObject (target, address)
-				as TargetClassObject;
+			Language mono = target.Process.Servant.MonoLanguage;
+			TargetClassObject exc = mono.CreateObject (target, address) as TargetClassObject;
 			if (exc == null)
 				return false; // OOOPS
+
+			if (exception == null)
+				exception = mono.LookupType (Name);
+			if (exception == null)
+				return false;
 
 			return IsSubclassOf (exc.Type, exception);
 		}
 
-		protected override void GetSessionData (XmlElement element, XmlElement root)
-		{ }
+		protected override void GetSessionData (XmlElement root, XmlElement element)
+		{
+			XmlElement exception_e = root.OwnerDocument.CreateElement ("Exception");
+			exception_e.SetAttribute ("type", Name);
+			element.AppendChild (exception_e);
+		}
 
 		TargetType exception;
 	}

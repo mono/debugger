@@ -1,3 +1,8 @@
+2007-02-23  Martin Baulig  <martin@ximian.com>
+
+	* classes/ExceptionCatchPoint.cs
+	(ExceptionCatchPoint): Make this persistent.
+
 2007-02-22  Martin Baulig  <martin@ximian.com>
 
 	* classes/Event.cs
