@@ -2072,17 +2072,25 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointEnableCommand : EventHandleCommand, IDocumentableCommand
 	{
+		protected void Activate (ScriptingContext context, Event handle)
+		{
+			handle.IsEnabled = true;
+
+			if (context.Interpreter.HasTarget && !handle.IsActivated)
+				handle.Activate (context.Interpreter.CurrentThread);
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.IsEnabled = true;
+				Activate (context, handle);
 			} else {
 				if (!context.Interpreter.Query ("Enable all breakpoints?"))
 					return null;
 
 				// enable all breakpoints
 				foreach (Event h in context.Interpreter.Session.Events)
-					h.IsEnabled = true;
+					Activate (context, h);
 			}
 
 			return null;
@@ -2096,17 +2104,25 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointDisableCommand : EventHandleCommand, IDocumentableCommand
 	{
+		protected void Deactivate (ScriptingContext context, Event handle)
+		{
+			handle.IsEnabled = false;
+
+			if (context.Interpreter.HasTarget && handle.IsActivated)
+				handle.Deactivate (context.Interpreter.CurrentThread);
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				handle.IsEnabled = false;
+				Deactivate (context, handle);
 			} else {
 				if (!context.Interpreter.Query ("Disable all breakpoints?"))
 					return null;
 
 				// enable all breakpoints
 				foreach (Event h in context.Interpreter.Session.Events)
-					h.IsEnabled = false;
+					Deactivate (context, h);
 			}
 
 			return null;

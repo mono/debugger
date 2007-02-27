@@ -607,7 +607,7 @@ namespace Mono.Debugger.Frontend
 			}
 				       
 			Print ("Breakpoints:");
-			Print ("{0,3} {1,6} {2,3} {3,12}  {4}", "Id", "Type", "En", "ThreadGroup", "What");
+			Print ("{0,3} {1,6} {2,3} {3,4} {4,12}  {5}", "Id", "Type", "En", "Act", "ThreadGroup", "What");
 			foreach (Event handle in events) {
 				string type;
 
@@ -616,9 +616,10 @@ namespace Mono.Debugger.Frontend
 				else
 					type = "break";
 
-				Print ("{0,3} {1,6} {2,3} {3,12}  {4}",
+				Print ("{0,3} {1,6} {2,3} {3,4} {4,12}  {5}",
 				       handle.Index, type,
 				       handle.IsEnabled ? "y" : "n",
+				       handle.IsActivated ? "y" : "n",
 				       handle.ThreadGroup != null ? handle.ThreadGroup.Name : "global",
 				       handle.Name);
 			}
