@@ -329,25 +329,6 @@ namespace Mono.Debugger.Frontend
 			return sb.ToString ();
 		}
 
-		public SourceLocation FindLocation (string file, int line)
-		{
-			string path = interpreter.GetFullPath (file);
-			SourceLocation location = CurrentProcess.FindLocation (path, line);
-
-			if (location != null)
-				return location;
-			else
-				throw new ScriptingException ("No method contains the specified file/line.");
-		}
-
-		public SourceLocation FindLocation (SourceLocation location, int line)
-		{
-			if (location.FileName == null)
-				throw new ScriptingException ("Location doesn't have any source code.");
-
-			return FindLocation (location.FileName, line);
-		}
-
 		public SourceLocation FindMethod (string name)
 		{
 			return CurrentProcess.FindMethod (name);

@@ -19,6 +19,8 @@ namespace Mono.Debugger
 		int id = ++next_id;
 		static int next_id = 0;
 
+		static readonly string DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
+
 		internal Process (Debugger debugger, ProcessServant servant)
 		{
 			this.debugger = debugger;
@@ -82,6 +84,37 @@ namespace Mono.Debugger
 
 		public Module[] Modules {
 			get { return servant.Modules; }
+		}
+
+		protected string GetFullPathByFilename (string filename)
+		{
+			Module[] modules = servant.Modules;
+
+			foreach (Module module in modules) {
+				if (!module.SymbolsLoaded)
+					continue;
+
+				foreach (SourceFile source in module.Sources) {
+					if (filename.Equals (source.Name))
+						return source.FileName;
+				}
+			}
+
+			return null;
+		}
+
+		public string GetFullPath (string filename)
+		{
+			if (Path.IsPathRooted (filename))
+				return filename;
+
+			string path = GetFullPathByFilename (filename);
+			if (path == null)
+				path = String.Concat (
+					servant.ProcessStart.Options.WorkingDirectory, DirectorySeparatorStr,
+					filename);
+
+			return path;
 		}
 
 		public SourceLocation FindLocation (string file, int line)

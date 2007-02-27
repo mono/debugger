@@ -1,5 +1,15 @@
 2007-02-27  Martin Baulig  <martin@ximian.com>
 
+	* classes/Process.cs
+	(Process.GetFullPath): New public method; moved here from the
+	`ScriptingContext'.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.GetFullPath): Moved into `Process'.
+	(ScriptingContext.GetFullPathByFilename): Removed.
+
+2007-02-27  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(ShowCommand): Make `show events' and alias for `show breakpoints'.
 

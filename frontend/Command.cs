@@ -2207,7 +2207,7 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException ("Expected filename:line");
 				}
 
-				location = context.FindLocation (filename, line);
+				location = CurrentProcess.FindLocation (filename, line);
 				return true;
 			}
 
@@ -2218,7 +2218,11 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				line = (int) UInt32.Parse (Argument);
-				location = context.FindLocation (context.CurrentLocation, line);
+				location = context.CurrentLocation;
+				if (location.FileName == null)
+					throw new ScriptingException ("Location doesn't have any source code.");
+
+				location = CurrentProcess.FindLocation (location.FileName, line);
 				return location != null;
 			} catch {
 			}

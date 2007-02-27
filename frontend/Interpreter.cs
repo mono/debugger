@@ -882,37 +882,6 @@ namespace Mono.Debugger.Frontend
 				process.Detach ();
 		}
 
-		public string GetFullPathByFilename (string filename)
-		{
-			Module[] modules = CurrentProcess.Modules;
-
-			foreach (Module module in modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				foreach (SourceFile source in module.Sources) {
-					if (filename.Equals (source.Name))
-						return source.FileName;
-				}
-			}
-
-			return null;
-		}
-
-		public string GetFullPath (string filename)
-		{
-			if (Path.IsPathRooted (filename))
-				return filename;
-
-			string path = GetFullPathByFilename (filename);
-			if (path == null)
-				path = String.Concat (
-					Options.WorkingDirectory, DirectorySeparatorStr,
-					filename);
-
-			return path;
-		}
-
 		public Module[] GetModules (int[] indices)
 		{
 			int pos = 0;
