@@ -1841,6 +1841,7 @@ namespace Mono.Debugger.Frontend
 			RegisterSubcommand ("locals", typeof (ShowLocalsCommand));
 			RegisterSubcommand ("parameters", typeof (ShowParametersCommand));
 			RegisterSubcommand ("params", typeof (ShowParametersCommand));
+			RegisterSubcommand ("events", typeof (ShowBreakpointsCommand));
 			RegisterSubcommand ("breakpoints", typeof (ShowBreakpointsCommand));
 			RegisterSubcommand ("modules", typeof (ShowModulesCommand));
 			RegisterSubcommand ("threadgroups", typeof (ShowThreadGroupsCommand));
