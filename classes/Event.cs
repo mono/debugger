@@ -76,9 +76,13 @@ namespace Mono.Debugger
 			set { enabled = value; }
 		}
 
-		internal abstract void Enable (Thread target);
+		public abstract bool IsActivated {
+			get;
+		}
 
-		internal abstract void Disable (Thread target);
+		public abstract void Activate (Thread target);
+
+		public abstract void Deactivate (Thread target);
 
 		public abstract void Remove (Thread target);
 

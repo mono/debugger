@@ -30,7 +30,11 @@ namespace Mono.Debugger
 			this.address = address;
 		}
 
-		internal override void Enable (Thread target)
+		public override bool IsActivated {
+			get { return handle != null; }
+		}
+
+		public override void Activate (Thread target)
 		{
 			if (handle != null)
 				return;
@@ -53,7 +57,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal override void Disable (Thread target)
+		public override void Deactivate (Thread target)
 		{
 			if (handle != null) {
 				handle.Remove (target);

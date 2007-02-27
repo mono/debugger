@@ -135,7 +135,7 @@ namespace Mono.Debugger
 					       SourceLocation location)
 		{
 			Event handle = new SourceBreakpoint (this, group, location);
-			handle.Enable (target);
+			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -144,7 +144,7 @@ namespace Mono.Debugger
 					       TargetAddress address)
 		{
 			Event handle = new AddressBreakpoint (address.ToString (), group, address);
-			handle.Enable (target);
+			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -153,7 +153,7 @@ namespace Mono.Debugger
 							TargetType exception)
 		{
 			Event handle = new ExceptionCatchPoint (group, exception);
-			handle.Enable (target);
+			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -162,7 +162,7 @@ namespace Mono.Debugger
 						       HardwareWatchType type)
 		{
 			Event handle = new AddressBreakpoint (type, address);
-			handle.Enable (target);
+			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
 		}
@@ -173,7 +173,7 @@ namespace Mono.Debugger
 
 		//
 		// FIXME: Ideally, this would be called automatically from the
-		//        SingleSteppingEngine.  The problem is that `Event.Enable()' may
+		//        SingleSteppingEngine.  The problem is that `Event.Activate()' may
 		//        need to run stepping operations, so doing this correctly would
 		//        require some more work.  Keeping this as a quick fix for the
 		//        moment.
@@ -183,7 +183,8 @@ namespace Mono.Debugger
 			main_process = process;
 
 			foreach (Event e in events.Values) {
-				e.Enable (process.MainThread);
+				if (e.IsEnabled)
+					e.Activate (process.MainThread);
 			}
 		}
 

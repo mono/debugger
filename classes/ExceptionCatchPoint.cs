@@ -26,14 +26,18 @@ namespace Mono.Debugger
 			: base (EventType.CatchException, index, name, group)
 		{ }
 
-		internal override void Enable (Thread target)
+		public override bool IsActivated {
+			get { return handle > 0; }
+		}
+
+		public override void Activate (Thread target)
 		{
 			lock (this) {
 				EnableCatchpoint (target);
 			}
 		}
 
-		internal override void Disable (Thread target)
+		public override void Deactivate (Thread target)
 		{
 			lock (this) {
 				DisableCatchpoint (target);
@@ -48,7 +52,9 @@ namespace Mono.Debugger
 
 		public override void Remove (Thread target)
 		{
-			Disable (target);
+			lock (this) {
+				DisableCatchpoint (target);
+			}
 		}
 
 		void EnableCatchpoint (Thread target)

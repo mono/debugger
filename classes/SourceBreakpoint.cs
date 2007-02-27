@@ -50,9 +50,13 @@ namespace Mono.Debugger
 			element.AppendChild (location_e);
 
 			location.GetSessionData (location_e);
-		}		
+		}
 
-		internal override void Enable (Thread target)
+		public override bool IsActivated {
+			get { return handle != null; }
+		}
+
+		public override void Activate (Thread target)
 		{
 			if (handle != null)
 				return;
@@ -60,7 +64,7 @@ namespace Mono.Debugger
 			handle = location.InsertBreakpoint (session, target, this, domain);
 		}
 
-		internal override void Disable (Thread target)
+		public override void Deactivate (Thread target)
 		{
 			if (handle != null) {
 				handle.Remove (target);

@@ -19,7 +19,7 @@ namespace Mono.Debugger
 	{
 		public override void Remove (Thread target)
 		{
-			Disable (target);
+			Deactivate (target);
 		}
 
 		// <summary>
