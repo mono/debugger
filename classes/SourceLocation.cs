@@ -71,6 +71,12 @@ namespace Mono.Debugger
 			Line = line;
 		}
 
+		public SourceLocation (string file, int line)
+		{
+			this.Line = line;
+			this.FileName = Name = file + ":" + line;
+		}
+
 		public void DumpLineNumbers ()
 		{
 			if (dynamic == null)
@@ -79,14 +85,12 @@ namespace Mono.Debugger
 			dynamic.DumpLineNumbers ();
 		}
 
-		internal BreakpointHandle InsertBreakpoint (DebuggerSession session,
-							    Thread target, Breakpoint breakpoint,
-							    int domain)
+		protected bool Resolve (DebuggerSession session, Thread target)
 		{
-			if (dynamic == null) {
-				if (Method == null)
-					throw new TargetException (TargetError.LocationInvalid);
+			if (dynamic != null)
+				return true;
 
+			if (Method != null) {
 				Module module = session.GetModule (Module);
 
 				int pos = Method.IndexOf (':');
@@ -100,7 +104,34 @@ namespace Mono.Debugger
 					dynamic = new DynamicSourceLocation (
 						module.FindMethod (Method), Line);
 				}
+
+				return true;
 			}
+
+			if (FileName != null) {
+				int pos = FileName.IndexOf (':');
+				if (pos < 0)
+					return false;
+
+				string filename = FileName.Substring (0, pos);
+
+				SourceFile file = target.Process.FindFile (filename);
+				if (file == null)
+					return false;
+
+				dynamic = new DynamicSourceLocation (file, Line);
+				return true;
+			}
+
+			return false;
+		}
+
+		internal BreakpointHandle InsertBreakpoint (DebuggerSession session,
+							    Thread target, Breakpoint breakpoint,
+							    int domain)
+		{
+			if (!Resolve (session, target))
+					throw new TargetException (TargetError.LocationInvalid);
 
 			return dynamic.InsertBreakpoint (target, breakpoint, domain);
 		}
@@ -227,17 +258,20 @@ namespace Mono.Debugger
 				return new ModuleBreakpointHandle (breakpoint, this);
 
 			if ((function == null) && (source == null)) {
-				if (method == null)
-					throw new TargetException (TargetError.LocationInvalid);
+				if (method != null) {
+					int pos = method.IndexOf (':');
+					if (pos > 0) {
+						string class_name = method.Substring (0, pos);
+						string method_name = method.Substring (pos + 1);
 
-				int pos = method.IndexOf (':');
-				if (pos > 0) {
-					string class_name = method.Substring (0, pos);
-					string method_name = method.Substring (pos + 1);
-
-					function = module.LookupMethod (class_name, method_name);
+						function = module.LookupMethod (class_name, method_name);
+					} else {
+						source = module.FindMethod (method);
+					}
+				} else if (file != null) {
+					source = file.FindMethod (line);
 				} else {
-					source = module.FindMethod (method);
+					throw new TargetException (TargetError.LocationInvalid);
 				}
 			}
 
@@ -359,7 +393,13 @@ namespace Mono.Debugger
 				if (address.IsNull)
 					return;
 
-				index = target.InsertBreakpoint (Breakpoint, address);
+				try {
+					index = target.InsertBreakpoint (Breakpoint, address);
+				} catch (TargetException ex) {
+					Report.Error ("Can't insert breakpoint {0} at {1}: {2}",
+						      Breakpoint.Index, address, ex.Message);
+					index = -1;
+				}
 			}
 		}
 	}

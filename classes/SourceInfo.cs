@@ -53,6 +53,17 @@ namespace Mono.Debugger
 			}
 		}
 
+		public SourceMethod FindMethod (int line)
+		{
+			SourceMethod[] methods = module.GetMethods (this);
+			foreach (SourceMethod method in methods) {
+				if ((method.StartRow <= line) && (method.EndRow >= line))
+					return method;
+			}
+
+			return null;
+		}
+
 		public SourceLocation FindLine (int line)
 		{
 			SourceMethod[] methods = module.GetMethods (this);

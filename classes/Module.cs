@@ -448,22 +448,40 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
+		//   Find source file @filename.  If @filename is a full pathname, an exact
+		//   match is required.  Otherwise, a match from any directory is ok.
+		// </summary>
+		public SourceFile FindFile (string filename)
+		{
+			if (!SymbolsLoaded)
+				return null;
+
+			if (filename.IndexOf ('/') >= 0) {
+				foreach (SourceFile source in Sources) {
+					if (source.FileName == filename)
+						return source;
+				}
+			} else {
+				foreach (SourceFile source in Sources) {
+					if (source.FileName.EndsWith (filename))
+						return source;
+				}
+			}
+
+			return null;
+		}
+
+		// <summary>
 		//   Find the method containing line @line in @source_file, which must be
 		//   the file's full pathname.
 		// </summary>
 		public SourceLocation FindLocation (string source_file, int line)
 		{
-			if (!SymbolsLoaded)
+			SourceFile file = FindFile (source_file);
+			if (file == null)
 				return null;
 
-			foreach (SourceFile source in Sources) {
-				if (source.FileName != source_file)
-					continue;
-
-				return source.FindLine (line);
-			}
-
-			return null;
+			return file.FindLine (line);
 		}
 
 		public Symbol SimpleLookup (TargetAddress address, bool exact_match)

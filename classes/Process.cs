@@ -129,6 +129,19 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public SourceFile FindFile (string file_name)
+		{
+			foreach (Module module in Modules) {
+				SourceFile file = module.FindFile (file_name);
+
+				if (file != null)
+					return file;
+			}
+
+			return null;
+		}
+
+
 		public SourceLocation FindMethod (string name)
 		{
 			foreach (Module module in Modules) {
