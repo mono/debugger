@@ -2211,9 +2211,25 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		protected bool FindFile (string filename, int line)
+		{
+			SourceFile file = CurrentProcess.FindFile (filename);
+			if (file == null)
+				throw new ScriptingException ("Cannot find source file `{0}'.",
+							      filename);
+
+			SourceMethod source = file.FindMethod (line);
+			if (source == null)
+				throw new ScriptingException (
+					"Cannot find method in line {0} in `{1}'.", line, file.Name);
+
+			location = new SourceLocation (source, line);
+			return true;
+		}
+
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			int line;
+			int line = -1;
 			int pos = Argument.IndexOf (':');
 			if (pos >= 0) {
 				string filename = Argument.Substring (0, pos);
@@ -2223,8 +2239,7 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException ("Expected filename:line");
 				}
 
-				location = CurrentProcess.FindLocation (filename, line);
-				return true;
+				return FindFile (filename, line);
 			}
 
 			if (Argument == "") {
@@ -2234,13 +2249,15 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				line = (int) UInt32.Parse (Argument);
+			} catch {
+			}
+
+			if (line != -1) {
 				location = context.CurrentLocation;
 				if (location.FileName == null)
 					throw new ScriptingException ("Location doesn't have any source code.");
 
-				location = CurrentProcess.FindLocation (location.FileName, line);
-				return location != null;
-			} catch {
+				return FindFile (location.FileName, line);
 			}
 
 			MethodExpression mexpr;

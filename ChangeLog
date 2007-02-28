@@ -1,5 +1,14 @@
 2007-02-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/ProcessStart.cs
+	(ProcessStart..ctor): Set `options.WorkingDirectory' if null.
+
+	* classes/Process.cs
+	(Process.FindFile): Correctly implement this.
+	(Process.FindLocation): Removed; use FileFile() instead.
+
+2007-02-28  Martin Baulig  <martin@ximian.com>
+
 	* classes/Process.cs
 	(Process.GetFullPath): Removed; use FindFile() instead.
 

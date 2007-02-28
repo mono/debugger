@@ -75,7 +75,7 @@ namespace Mono.Debugger.Backends
 
 			cwd = options.WorkingDirectory;
 			if (cwd == null)
-				cwd = System.Environment.CurrentDirectory;
+				cwd = options.WorkingDirectory = System.Environment.CurrentDirectory;
 			string mono_path = options.MonoPath != null ?
 				options.MonoPath : MonoPath;
 
