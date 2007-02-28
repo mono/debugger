@@ -1,5 +1,10 @@
 2007-02-28  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/TestBreakpoint.cs: Add a test for inserting
+	breakpoints by filename.
+
+2007-02-28  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerSession.cs
 	(DebuggerSession.InsertBreakpoint): Don't take a `Thread' argument
 	when inserting a breakpoint on a `SourceLocation' and don't

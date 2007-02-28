@@ -41,7 +41,7 @@ namespace Mono.Debugger.Tests
 
 			int bpt_1 = AssertBreakpoint ("Martin.Baulig.Hello.Test");
 			int bpt_2 = AssertBreakpoint (line_test_2);
-			int bpt_3 = AssertBreakpoint (line_test_3);
+			int bpt_3 = AssertBreakpoint ("TestBreakpoint.cs:" + line_test_3);
 			int bpt_world = AssertBreakpoint ("Martin.Baulig.Hello.World");
 			int bpt_main_2 = AssertBreakpoint (line_main_2);
 
