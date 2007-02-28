@@ -462,8 +462,9 @@ namespace Mono.Debugger
 						return source;
 				}
 			} else {
+				filename = Path.GetFileName (filename);
 				foreach (SourceFile source in Sources) {
-					if (source.FileName.EndsWith (filename))
+					if (Path.GetFileName (source.FileName).Equals (filename))
 						return source;
 				}
 			}
