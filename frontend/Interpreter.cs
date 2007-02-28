@@ -213,10 +213,7 @@ namespace Mono.Debugger.Frontend
 
 		public void Error (string message)
 		{
-			if (IsScript)
-				Report.Error ("ERROR: {0}\n", message);
-			else
-				Report.Error ("ERROR: {0}\n", message);
+			Report.Error ("ERROR: {0}", message);
 		}
 
 		public void Error (string format, params object[] args)
@@ -689,7 +686,7 @@ namespace Mono.Debugger.Frontend
 		{
 			if (!IsScript) {
 				if (is_stderr)
-					Report.Error ("{0}", line);
+					Report.Print ("{0}", line);
 				else
 					Report.Print ("{0}", line);
 			}
