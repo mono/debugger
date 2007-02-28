@@ -181,8 +181,15 @@ namespace Mono.Debugger
 			main_process = process;
 
 			foreach (Event e in events.Values) {
-				if (e.IsEnabled)
+				if (!e.IsEnabled)
+					continue;
+
+				try {
 					e.Activate (process.MainThread);
+				} catch (TargetException ex) {
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
+				}
 			}
 		}
 
