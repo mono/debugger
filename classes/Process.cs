@@ -86,37 +86,6 @@ namespace Mono.Debugger
 			get { return servant.Modules; }
 		}
 
-		protected string GetFullPathByFilename (string filename)
-		{
-			Module[] modules = servant.Modules;
-
-			foreach (Module module in modules) {
-				if (!module.SymbolsLoaded)
-					continue;
-
-				foreach (SourceFile source in module.Sources) {
-					if (filename.Equals (source.Name))
-						return source.FileName;
-				}
-			}
-
-			return null;
-		}
-
-		public string GetFullPath (string filename)
-		{
-			if (Path.IsPathRooted (filename))
-				return filename;
-
-			string path = GetFullPathByFilename (filename);
-			if (path == null)
-				path = String.Concat (
-					servant.ProcessStart.Options.WorkingDirectory, DirectorySeparatorStr,
-					filename);
-
-			return path;
-		}
-
 		public SourceLocation FindLocation (string file, int line)
 		{
 			foreach (Module module in Modules) {
@@ -129,18 +98,24 @@ namespace Mono.Debugger
 			return null;
 		}
 
-		public SourceFile FindFile (string file_name)
+		public SourceFile FindFile (string filename)
 		{
-			foreach (Module module in Modules) {
-				SourceFile file = module.FindFile (file_name);
+			if (!Path.IsPathRooted (filename))
+				filename = String.Concat (
+					servant.ProcessStart.Options.WorkingDirectory,
+					DirectorySeparatorStr,
+					filename);
 
+			Module[] modules = servant.Modules;
+
+			foreach (Module module in modules) {
+				SourceFile file = module.FindFile (filename);
 				if (file != null)
 					return file;
 			}
 
 			return null;
 		}
-
 
 		public SourceLocation FindMethod (string name)
 		{
