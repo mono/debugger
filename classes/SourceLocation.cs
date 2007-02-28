@@ -131,7 +131,7 @@ namespace Mono.Debugger
 							    int domain)
 		{
 			if (!Resolve (session, target))
-					throw new TargetException (TargetError.LocationInvalid);
+				throw new TargetException (TargetError.LocationInvalid);
 
 			return dynamic.InsertBreakpoint (target, breakpoint, domain);
 		}

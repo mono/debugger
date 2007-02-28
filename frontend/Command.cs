@@ -82,6 +82,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("save", typeof (SaveCommand));
 			RegisterCommand ("load", typeof (LoadCommand));
 			RegisterCommand ("module", typeof (ModuleCommand));
+			RegisterCommand ("test", typeof (TestCommand));
 		}
 	}
 
@@ -2368,6 +2369,43 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
+	public class TestCommand : DebuggerCommand
+	{
+		SourceLocation location;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			int line;
+			int pos = Argument.IndexOf (':');
+			if (pos >= 0) {
+				string filename = Argument.Substring (0, pos);
+				try {
+					line = (int) UInt32.Parse (Argument.Substring (pos+1));
+				} catch {
+					throw new ScriptingException ("Expected filename:line");
+				}
+
+				location = new SourceLocation (filename, line);
+				return true;
+			}
+
+			return false;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			if (location == null)
+				throw new TargetException (TargetError.LocationInvalid);
+
+			Event handle = context.Interpreter.Session.InsertBreakpoint (
+				ThreadGroup.Global, location);
+			if (context.Interpreter.HasTarget)
+				handle.Activate (context.Interpreter.CurrentThread);
+
+			return handle.Index;
+		}
+	}
+
 	public class BreakCommand : SourceCommand, IDocumentableCommand
 	{
 		string group;
@@ -2444,20 +2482,21 @@ namespace Mono.Debugger.Frontend
 						"Can't specifcy an appdomain when inserting a " +
 						"breakpoint on an address");
 
-				int index = context.Interpreter.InsertBreakpoint (
+				Event handle = context.Interpreter.Session.InsertBreakpoint (
 					context.CurrentThread, tgroup, address);
-				context.Print ("Breakpoint {0} at {1}", index, address);
-				return index;
+				context.Print ("Breakpoint {0} at {1}", handle.Index, address);
+				return handle.Index;
 			} else {
 				if (domain != 0)
 					throw new ScriptingException (
 						"Can't insert breakpoints in " +
 						"other application domains.");
 
-				int index = context.Interpreter.InsertBreakpoint (
-					context.CurrentThread, tgroup, Location);
-				context.Print ("Breakpoint {0} at {1}", index, Location.Name);
-				return index;
+				Event handle = context.Interpreter.Session.InsertBreakpoint (
+					tgroup, Location);
+				handle.Activate (context.CurrentThread);
+				context.Print ("Breakpoint {0} at {1}", handle.Index, Location.Name);
+				return handle.Index;
 			}
 		}
 

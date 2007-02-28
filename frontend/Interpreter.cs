@@ -821,21 +821,6 @@ namespace Mono.Debugger.Frontend
 				group.RemoveThread (thread.ID);
 		}
 
-		public int InsertBreakpoint (Thread target, ThreadGroup group,
-					     SourceLocation location)
-		{
-			Event handle = target.Process.Session.InsertBreakpoint (target, group, location);
-			return handle.Index;
-		}
-
-		public int InsertBreakpoint (Thread target, ThreadGroup group,
-					     TargetAddress address)
-		{
-			Event handle = target.Process.Session.InsertBreakpoint (
-				target, group, address);
-			return handle.Index;
-		}
-
 		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 						      TargetType exception)
 		{

@@ -1,5 +1,20 @@
 2007-02-28  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertBreakpoint): Don't take a `Thread' argument
+	when inserting a breakpoint on a `SourceLocation' and don't
+	activate it.  This allows us to insert such breakpoints before the
+	target is started.
+
+	* frontend/Interpreter.cs
+	(Interpreter.InsertBreakpoint): Removed; call
+	DebuggerSession.InsertBreakpoint() directly.
+
+	* frontend/Command.cs
+	(TestCommand): Temporary hack.
+
+2007-02-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/ProcessStart.cs
 	(ProcessStart..ctor): Set `options.WorkingDirectory' if null.
 

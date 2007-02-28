@@ -131,11 +131,9 @@ namespace Mono.Debugger
 			root.AppendChild (element);
 		}
 
-		public Event InsertBreakpoint (Thread target, ThreadGroup group,
-					       SourceLocation location)
+		public Event InsertBreakpoint (ThreadGroup group, SourceLocation location)
 		{
 			Event handle = new SourceBreakpoint (this, group, location);
-			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
 		}
