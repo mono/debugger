@@ -9,15 +9,113 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontend
 {
-	public enum LocationType
+	public class LocationParser : ILocationParser
 	{
-		Method,
-		Constructor,
-		DelegateInvoke,
-		PropertyGetter,
-		PropertySetter,
-		EventAdd,
-		EventRemove
+		public readonly Interpreter Interpreter;
+
+		internal LocationParser (Interpreter interpreter)
+		{
+			this.Interpreter = interpreter;
+		}
+
+		protected static SourceLocation FindFile (Thread target, string filename, int line)
+		{
+			SourceFile file = target.Process.FindFile (filename);
+			if (file == null)
+				throw new ScriptingException ("Cannot find source file `{0}'.",
+							      filename);
+
+			SourceMethod source = file.FindMethod (line);
+			if (source == null)
+				throw new ScriptingException (
+					"Cannot find method corresponding to line {0} in `{1}'.",
+					line, file.Name);
+
+			return new SourceLocation (source, line);
+		}
+
+		protected SourceLocation DoParseExpression (Thread target, LocationType type, string arg)
+		{
+			ScriptingContext context = new ScriptingContext (Interpreter);
+			IExpressionParser parser = new CSharp.ExpressionParser (context, arg);
+			context.CurrentFrame = target.CurrentFrame;
+
+			Expression expr = parser.Parse (arg);
+			if (expr == null)
+				throw new ScriptingException ("Cannot resolve expression `{0}'.", arg);
+
+			MethodExpression mexpr;
+			try {
+				mexpr = expr.ResolveMethod (context, type);
+			} catch {
+				return null;
+			}
+
+			if (mexpr != null)
+				return mexpr.EvaluateSource (context);
+			else
+				return context.FindMethod (arg);
+		}
+
+		public static bool ParseLocation (Thread target, string arg, out SourceLocation location)
+		{
+			int line;
+			int pos = arg.IndexOf (':');
+			if (pos >= 0) {
+				string filename = arg.Substring (0, pos);
+				try {
+					line = (int) UInt32.Parse (arg.Substring (pos+1));
+				} catch {
+					throw new ScriptingException ("Expected filename:line");
+				}
+
+				location = FindFile (target, filename, line);
+				return true;
+			}
+
+			try {
+				line = (int) UInt32.Parse (arg);
+			} catch {
+				location = null;
+				return false;
+			}
+
+			StackFrame frame = target.CurrentFrame;
+			if ((frame.SourceAddress == null) || (frame.SourceAddress.Location == null))
+				throw new ScriptingException (
+					"Current stack frame doesn't have source code");
+
+			location = frame.SourceAddress.Location;
+			if (location.FileName == null)
+				throw new ScriptingException (
+					"Current stack frame doesn't have source code");
+
+			location = FindFile (target, location.FileName, line);
+			return true;
+		}
+
+		protected SourceLocation DoParse (Thread target, LocationType type, string arg)
+		{
+			if (type != LocationType.Default)
+				return DoParseExpression (target, type, arg);
+
+			SourceLocation location;
+			if (ParseLocation (target, arg, out location))
+				return location;
+
+			return DoParseExpression (target, type, arg);
+		}
+
+		public SourceLocation Parse (Thread target, LocationType type, string arg)
+		{
+			try {
+				return DoParse (target, type, arg);
+			} catch (ScriptingException ex) {
+				throw new TargetException (TargetError.LocationInvalid, ex.Message);
+			}
+
+			return null;
+		}
 	}
 
 	public abstract class Expression

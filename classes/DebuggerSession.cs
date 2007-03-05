@@ -29,12 +29,15 @@ namespace Mono.Debugger
 		protected readonly ThreadGroup main_thread_group;
 
 		Process main_process;
+		ILocationParser parser;
 		XmlDocument saved_session;
 
-		private DebuggerSession (DebuggerConfiguration config, string name)
+		private DebuggerSession (DebuggerConfiguration config, string name,
+					 ILocationParser parser)
 		{
 			this.Config = config;
 			this.Name = name;
+			this.parser = parser;
 
 			modules = Hashtable.Synchronized (new Hashtable ());
 			events = Hashtable.Synchronized (new Hashtable ());
@@ -42,15 +45,16 @@ namespace Mono.Debugger
 			main_thread_group = CreateThreadGroup ("main");
 		}
 
-		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options, string name)
-			: this (config, name)
+		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
+					string name, ILocationParser parser)
+			: this (config, name, parser)
 		{
 			this.Options = options;
 		}
 
 		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)
 		{
-			return new DebuggerSession (Config, new_options, new_name);
+			return new DebuggerSession (Config, new_options, new_name, parser);
 		}
 
 		public void SaveSession (Stream stream)
@@ -98,8 +102,9 @@ namespace Mono.Debugger
 			return doc;
 		}
 
-		public DebuggerSession (DebuggerConfiguration config, Stream stream)
-			: this (config, "main")
+		public DebuggerSession (DebuggerConfiguration config, Stream stream,
+					ILocationParser parser)
+			: this (config, "main", parser)
 		{
 			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));
 			Assembly ass = Assembly.GetExecutingAssembly ();
@@ -138,6 +143,13 @@ namespace Mono.Debugger
 			return handle;
 		}
 
+		public Event InsertBreakpoint (ThreadGroup group, LocationType type, string name)
+		{
+			Event handle = new ExpressionBreakpoint (this, group, type, name);
+			AddEvent (handle);
+			return handle;
+		}
+
 		public Event InsertBreakpoint (Thread target, ThreadGroup group,
 					       TargetAddress address)
 		{
@@ -163,6 +175,11 @@ namespace Mono.Debugger
 			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
+		}
+
+		internal SourceLocation ParseLocation (Thread target, LocationType type, string name)
+		{
+			return parser.Parse (target, type, name);
 		}
 
 		//
@@ -281,6 +298,11 @@ namespace Mono.Debugger
 			if (navigator.Name == "Location") {
 				SourceLocation location = new SourceLocation (this, navigator);
 				return new SourceBreakpoint (this, index, group, location);
+			} else if (navigator.Name == "Expression") {
+				string expression = navigator.GetAttribute ("expression", "");
+				LocationType type = (LocationType) Enum.Parse (
+					typeof (LocationType), navigator.GetAttribute ("type", ""));
+				return new ExpressionBreakpoint (this, index, group, type, expression);
 			} else if (navigator.Name == "Exception") {
 				string exc = navigator.GetAttribute ("type", "");
 				return new ExceptionCatchPoint (index, group, exc);

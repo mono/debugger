@@ -1,3 +1,22 @@
+2007-03-05  Martin Baulig  <martin@ximian.com>
+
+	* classes/ExpressionBreakpoint.cs: New file.
+	(ExpressionBreakpoint.LocationType): Moved here from
+	frontend/Expression.cs.	
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ctor): Added `ILocationParser parser' argument.
+	(DebuggerSession.ParseLocation): New internal method.
+	(DebuggerSession.InsertBreakpoint): Added overloaded version
+	taking a `LocationType' and a `string'.
+
+	* frontend/Expression.cs
+	(LocationParser): New public class.
+
+	* frontend/Command.cs
+	(BreakCommand): Completely rewrote this; we can now insert
+	breakpoints before the target is started.
+
 2007-02-28  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/TestBreakpoint.cs: Add a test for inserting

@@ -444,6 +444,9 @@ namespace Mono.Debugger
 		// </summary>
 		public SourceMethod FindMethod (string name)
 		{
+			if (!SymbolsLoaded)
+				return null;
+
 			return SymbolFile.FindMethod (name);
 		}
 

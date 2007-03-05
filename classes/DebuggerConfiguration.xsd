@@ -69,6 +69,10 @@
     </xs:choice>
     <xs:attribute name="name" type="xs:string" use="required" />
   </xs:complexType>
+  <xs:complexType name="Expression">
+    <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="expression" type="xs:string" use="required" />
+  </xs:complexType>
   <xs:complexType name="Exception">
     <xs:attribute name="type" type="xs:string" use="required" />
   </xs:complexType>
@@ -76,6 +80,7 @@
     <xs:choice>
       <xs:element name="Location" type="Location" />
       <xs:element name="Exception" type="Exception" />
+      <xs:element name="Expression" type="Expression" />
     </xs:choice>
     <xs:attribute name="index" type="xs:integer" use="required" />
     <xs:attribute name="type" type="xs:string" use="required" />

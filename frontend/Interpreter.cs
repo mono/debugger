@@ -38,6 +38,7 @@ namespace Mono.Debugger.Frontend
 		int exit_code = 0;
 		int interrupt_level;
 
+		LocationParser parser;
 		ManualResetEvent interrupt_event;
 		Thread current_thread;
 
@@ -54,7 +55,8 @@ namespace Mono.Debugger.Frontend
 		{
 			this.config = config;
 			this.is_interactive = is_interactive;
-			this.session = new DebuggerSession (config, options, "main");
+			this.parser = new LocationParser (this);
+			this.session = new DebuggerSession (config, options, "main", parser);
 			this.engine = new DebuggerEngine (this);
 
 			interrupt_event = new ManualResetEvent (false);
@@ -168,8 +170,7 @@ namespace Mono.Debugger.Frontend
 			if (current_parser_name == "auto") {
 				/* determine the language parser by the current stack frame */
 				parser_type = (Type)parsers_by_name [parser_names_by_language [context.CurrentLanguage.Name]];
-			}
-			else {
+			} else {
 				/* use the user specified language */
 				parser_type = (Type)parsers_by_name [current_parser_name];
 			}
@@ -182,8 +183,7 @@ namespace Mono.Debugger.Frontend
 				parser = (IExpressionParser)Activator.CreateInstance (parser_type, args);
 
 				return parser;
-			}
-			else {
+			} else {
 				return new CSharp.ExpressionParser (context, name);
 			}
 		}
@@ -416,7 +416,7 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				debugger = new Debugger (config);
-				session = new DebuggerSession (config, stream);
+				session = new DebuggerSession (config, stream, parser);
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);

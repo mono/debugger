@@ -1,5 +1,5 @@
-
 using System;
+using System.Xml;
 using System.Text;
 using System.IO;
 using System.Threading;
@@ -82,7 +82,6 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("save", typeof (SaveCommand));
 			RegisterCommand ("load", typeof (LoadCommand));
 			RegisterCommand ("module", typeof (ModuleCommand));
-			RegisterCommand ("test", typeof (TestCommand));
 		}
 	}
 
@@ -2369,50 +2368,16 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 
-	public class TestCommand : DebuggerCommand
+	public class BreakCommand : DebuggerCommand, IDocumentableCommand
 	{
 		SourceLocation location;
-
-		protected override bool DoResolve (ScriptingContext context)
-		{
-			int line;
-			int pos = Argument.IndexOf (':');
-			if (pos >= 0) {
-				string filename = Argument.Substring (0, pos);
-				try {
-					line = (int) UInt32.Parse (Argument.Substring (pos+1));
-				} catch {
-					throw new ScriptingException ("Expected filename:line");
-				}
-
-				location = new SourceLocation (filename, line);
-				return true;
-			}
-
-			return false;
-		}
-
-		protected override object DoExecute (ScriptingContext context)
-		{
-			if (location == null)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			Event handle = context.Interpreter.Session.InsertBreakpoint (
-				ThreadGroup.Global, location);
-			if (context.Interpreter.HasTarget)
-				handle.Activate (context.Interpreter.CurrentThread);
-
-			return handle.Index;
-		}
-	}
-
-	public class BreakCommand : SourceCommand, IDocumentableCommand
-	{
+		LocationType type = LocationType.Default;
+		TargetAddress address = TargetAddress.Null;
+		int p_index = -1, t_index = -1, f_index = -1;
 		string group;
 		bool global, local;
 		int domain = 0;
 		ThreadGroup tgroup;
-		TargetAddress address = TargetAddress.Null;
 
 		public string Group {
 			get { return group; }
@@ -2432,6 +2397,51 @@ namespace Mono.Debugger.Frontend
 		public int Domain {
 			get { return domain; }
 			set { domain = value; }
+		}
+
+		public bool Ctor {
+			get { return type == LocationType.Constructor; }
+			set { type = LocationType.Constructor; }
+		}
+
+		public bool Get {
+			get { return type == LocationType.PropertyGetter; }
+			set { type = LocationType.PropertyGetter; }
+		}
+
+		public bool Set {
+			get { return type == LocationType.PropertySetter; }
+			set { type = LocationType.PropertySetter; }
+		}
+
+		public bool Add {
+			get { return type == LocationType.EventAdd; }
+			set { type = LocationType.EventAdd; }
+		}
+
+		public bool Remove {
+			get { return type == LocationType.EventRemove; }
+			set { type = LocationType.EventRemove; }
+		}
+
+		public bool Invoke {
+			get { return type == LocationType.DelegateInvoke; }
+			set { type = LocationType.DelegateInvoke; }
+		}
+
+		public int Process {
+			get { return p_index; }
+			set { p_index = value; }
+		}
+
+		public int Thread {
+			get { return t_index; }
+			set { t_index = value; }
+		}
+
+		public int Frame {
+			get { return f_index; }
+			set { f_index = value; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -2458,62 +2468,96 @@ namespace Mono.Debugger.Frontend
 				tgroup = ThreadGroup.Global;
 			}
 
-			bool resolved = base.DoResolve (context);
-			if (resolved)
+			if (context.Interpreter.HasTarget) {
+				context.CurrentProcess = context.Interpreter.GetProcess (p_index);
+				context.CurrentThread = context.Interpreter.GetThread (t_index);
+
+				Thread thread = context.CurrentThread;
+				if (!thread.IsStopped)
+					throw new TargetException (TargetError.NotStopped);
+
+				Backtrace backtrace = thread.GetBacktrace ();
+
+				StackFrame frame;
+				if (f_index == -1)
+					frame = backtrace.CurrentFrame;
+				else {
+					if (f_index >= backtrace.Count)
+						throw new ScriptingException (
+							"No such frame: {0}", f_index);
+
+					frame = backtrace [f_index];
+				}
+
+				context.CurrentFrame = frame;
+
+				if (LocationParser.ParseLocation (thread, Argument, out location))
+					return true;
+			}
+
+			if (Argument.IndexOf (':') > 0)
 				return true;
 
 			try {
-				PointerExpression pexpr = ParseExpression (context) as PointerExpression;
-				if (pexpr != null) {
-					address = pexpr.EvaluateAddress (context);
-					return true;
-				}
+				UInt32.Parse (Argument);
+				return true;
 			} catch {
 			}
 
-			throw new ScriptingException ("No such method: `{0}'", Argument);
+			IExpressionParser parser = new CSharp.ExpressionParser (context, Argument);
+			Expression expr = parser.Parse (Argument);
+			if (expr == null)
+				throw new ScriptingException ("Cannot resolve expression `{0}'.", Argument);
+
+			if (expr is PointerExpression) {
+				address = ((PointerExpression) expr).EvaluateAddress (context);
+				return true;
+			}
+
+			if (!context.Interpreter.HasTarget)
+				return true;
+
+			MethodExpression mexpr;
+			try {
+				mexpr = expr.ResolveMethod (context, type);
+			} catch {
+				throw new ScriptingException ("No such method: `{0}'.", Argument);
+			}
+
+			if (mexpr != null)
+				location = mexpr.EvaluateSource (context);
+			else
+				location = context.FindMethod (Argument);
+
+			if (location == null)
+				throw new ScriptingException ("No such method: `{0}'.", Argument);
+
+			return true;
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			if (!address.IsNull) {
-				if (domain != 0)
-					throw new ScriptingException (
-						"Can't specifcy an appdomain when inserting a " +
-						"breakpoint on an address");
+			Event handle;
 
-				Event handle = context.Interpreter.Session.InsertBreakpoint (
+			if (!address.IsNull) {
+				handle = context.Interpreter.Session.InsertBreakpoint (
 					context.CurrentThread, tgroup, address);
 				context.Print ("Breakpoint {0} at {1}", handle.Index, address);
-				return handle.Index;
+			} else if (location != null) {
+				handle = context.Interpreter.Session.InsertBreakpoint (
+					tgroup, location);
+				context.Print ("Breakpoint {0} at {1}", handle.Index, location.Name);
 			} else {
-				if (domain != 0)
-					throw new ScriptingException (
-						"Can't insert breakpoints in " +
-						"other application domains.");
-
-				Event handle = context.Interpreter.Session.InsertBreakpoint (
-					tgroup, Location);
-				handle.Activate (context.CurrentThread);
-				context.Print ("Breakpoint {0} at {1}", handle.Index, Location.Name);
-				return handle.Index;
+				handle = context.Interpreter.Session.InsertBreakpoint (
+					tgroup, type, Argument);
+				context.Print ("Breakpoint {0} at {1}", handle.Index, Argument);
 			}
+
+			if (context.Interpreter.HasTarget)
+				handle.Activate (context.Interpreter.CurrentThread);
+
+			return handle.Index;
 		}
-
-                public override void Complete (Engine e, string text, int start, int end)
-		{
-			if (text.StartsWith ("-")) {
-				e.Completer.ArgumentCompleter (GetType(), text, start, end);
-			}
-			else if (text.IndexOf (Path.DirectorySeparatorChar) != -1) {
-				/* attempt filename completion */
-				e.Completer.FilenameCompleter (text, start, end);
-			}
-			else {
-				/* attempt symbol name completion */
-				// e.Completer.SymbolCompleter (context, text, start, end);
-			}
-                }
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
