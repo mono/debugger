@@ -1,5 +1,9 @@
 2007-03-06  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/TestSession.cs: Add a new testcase.
+
+2007-03-06  Martin Baulig  <martin@ximian.com>
+
 	* classes/Debugger.cs
 	(Debugger.MainProcessCreatedEvent): New public event.
 

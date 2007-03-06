@@ -19,10 +19,12 @@ namespace Mono.Debugger.Tests
 		const int line_test = 15;
 		const int line_bar = 23;
 		const int line_world = 33;
+		const int line_pub = 38;
 
 		int bpt_test;
 		int bpt_bar;
 		int bpt_world;
+		int bpt_pub;
 
 		byte[] session;
 
@@ -110,9 +112,8 @@ namespace Mono.Debugger.Tests
 		{
 			Compile (FileName);
 
-			Process process;
-			using (MemoryStream ms = new MemoryStream (session))
-				process = LoadSession (ms);
+			AssertExecute ("run");
+			Process process = AssertMainProcessCreated ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -151,6 +152,34 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_test, "X.Test()", line_test);
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_bar, "Foo.Bar()", line_bar);
+			AssertExecute ("continue");
+			AssertTargetOutput ("Irish Pub");
+			AssertHitBreakpoint (thread, bpt_world, "Hello.World()", line_world);
+			AssertExecute ("continue");
+
+			AssertTargetOutput ("WORLD!");
+			AssertTargetExited (thread.Process);
+		}
+
+		[Test]
+		[Category("Session")]
+		public void TestBreakpoint2 ()
+		{
+			bpt_pub = AssertBreakpoint ("Hello.IrishPub");
+			AssertExecute ("disable " + bpt_test);
+			AssertExecute ("disable " + bpt_bar);
+
+			AssertExecute ("run");
+			Process process = AssertMainProcessCreated ();
+			Assert.IsTrue (process.IsManaged);
+			Assert.IsTrue (process.MainThread.IsStopped);
+			Thread thread = process.MainThread;
+
+			AssertStopped (thread, "X.Main()", line_main);
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World");
+			AssertHitBreakpoint (thread, bpt_pub, "Hello.IrishPub()", line_pub);
 			AssertExecute ("continue");
 			AssertTargetOutput ("Irish Pub");
 			AssertHitBreakpoint (thread, bpt_world, "Hello.World()", line_world);

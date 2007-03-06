@@ -21,7 +21,7 @@ public static class Foo
 	public static void Bar ()
 	{
 		Hello hello = new Hello ();
-		Console.WriteLine ("Irish Pub");
+		hello.IrishPub ();
 		hello.World ();
 	}
 }
@@ -31,5 +31,10 @@ public class Hello
 	public void World ()
 	{
 		Console.WriteLine ("WORLD!");
+	}
+
+	public void IrishPub ()
+	{
+		Console.WriteLine ("Irish Pub");
 	}
 }
