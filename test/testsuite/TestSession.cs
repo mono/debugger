@@ -18,9 +18,11 @@ namespace Mono.Debugger.Tests
 		const int line_main = 7;
 		const int line_test = 15;
 		const int line_bar = 23;
+		const int line_world = 33;
 
 		int bpt_test;
 		int bpt_bar;
+		int bpt_world;
 
 		byte[] session;
 
@@ -30,7 +32,7 @@ namespace Mono.Debugger.Tests
 		{
 			Compile (FileName);
 
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -56,7 +58,7 @@ namespace Mono.Debugger.Tests
 
 			Process process;
 			using (MemoryStream ms = new MemoryStream (session))
-				process = Interpreter.LoadSession (ms);
+				process = LoadSession (ms);
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -71,6 +73,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Irish Pub");
+			AssertTargetOutput ("WORLD!");
 			AssertTargetExited (thread.Process);
 		}
 
@@ -82,7 +85,7 @@ namespace Mono.Debugger.Tests
 
 			Process process;
 			using (MemoryStream ms = new MemoryStream (session))
-				process = Interpreter.LoadSession (ms);
+				process = LoadSession (ms);
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -97,6 +100,63 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Irish Pub");
+			AssertTargetOutput ("WORLD!");
+			AssertTargetExited (thread.Process);
+		}
+
+		[Test]
+		[Category("Session")]
+		public void TestBreakpoint ()
+		{
+			Compile (FileName);
+
+			Process process;
+			using (MemoryStream ms = new MemoryStream (session))
+				process = LoadSession (ms);
+			Assert.IsTrue (process.IsManaged);
+			Assert.IsTrue (process.MainThread.IsStopped);
+			Thread thread = process.MainThread;
+
+			AssertStopped (thread, "X.Main()", line_main);
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World");
+			AssertHitBreakpoint (thread, bpt_test, "X.Test()", line_test);
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, bpt_bar, "Foo.Bar()", line_bar);
+
+			AssertExecute ("next");
+			AssertStopped (thread, "Foo.Bar()", line_bar+1);
+
+			//
+			// This breakpoint is contect-sensitive; ie. we can't use the
+			// expression "hello.World ()" to insert it when we're at the
+			// beginning of Main().
+			//
+			// We test here whether the session code correctly handles
+			// this situation.
+			//
+			bpt_world = AssertBreakpoint ("hello.World ()");
+
+			AssertExecute ("run -yes");
+			AssertTargetExited (thread.Process);
+
+			process = AssertMainProcessCreated ();
+			thread = process.MainThread;
+
+			AssertStopped (thread, "X.Main()", line_main);
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World");
+			AssertHitBreakpoint (thread, bpt_test, "X.Test()", line_test);
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, bpt_bar, "Foo.Bar()", line_bar);
+			AssertExecute ("continue");
+			AssertTargetOutput ("Irish Pub");
+			AssertHitBreakpoint (thread, bpt_world, "Hello.World()", line_world);
+			AssertExecute ("continue");
+
+			AssertTargetOutput ("WORLD!");
 			AssertTargetExited (thread.Process);
 		}
 	}

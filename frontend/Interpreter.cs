@@ -314,7 +314,7 @@ namespace Mono.Debugger.Frontend
 				Style.TargetEvent (thread, args);
 		}
 
-		public virtual Process Start ()
+		public Process Start ()
 		{
 			if ((debugger != null) || (main_process != null))
 				throw new TargetException (TargetError.AlreadyHaveTarget);
@@ -644,6 +644,9 @@ namespace Mono.Debugger.Frontend
 			if (thread == current_thread)
 				current_thread = null;
 		}
+
+		protected virtual void OnMainProcessCreated (Process process)
+		{ }
 
 		protected virtual void OnProcessCreated (Process process)
 		{
@@ -1026,6 +1029,7 @@ namespace Mono.Debugger.Frontend
 				debugger.TargetExitedEvent += target_exited;
 				debugger.ThreadCreatedEvent += thread_created;
 				debugger.ThreadExitedEvent += thread_exited;
+				debugger.MainProcessCreatedEvent += main_process_created;
 				debugger.ProcessCreatedEvent += process_created;
 				debugger.ProcessExitedEvent += process_exited;
 				debugger.ProcessExecdEvent += process_execd;
@@ -1042,6 +1046,11 @@ namespace Mono.Debugger.Frontend
 			{
 				if ((thread.ThreadFlags & Thread.Flags.Daemon) == 0)
 					interpreter.OnThreadExited (thread);
+			}
+
+			public void main_process_created (Debugger debugger, Process process)
+			{
+				interpreter.OnMainProcessCreated (process);
 			}
 
 			public void process_created (Debugger debugger, Process process)

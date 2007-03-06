@@ -51,6 +51,7 @@ namespace Mono.Debugger
 		public event TargetOutputHandler TargetOutputEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
+		public event ProcessEventHandler MainProcessCreatedEvent;
 		public event ProcessEventHandler ProcessCreatedEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
 		public event ProcessEventHandler ProcessExecdEvent;
@@ -66,6 +67,12 @@ namespace Mono.Debugger
 		internal Thread CreateThread (ThreadServant servant, int id)
 		{
 			return new Thread (servant, id);
+		}
+
+		internal void OnMainProcessCreatedEvent (Process process)
+		{
+			if (MainProcessCreatedEvent != null)
+				MainProcessCreatedEvent (this, process);
 		}
 
 		internal void OnProcessCreatedEvent (Process process)

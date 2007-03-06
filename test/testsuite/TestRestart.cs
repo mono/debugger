@@ -25,7 +25,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void Main ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -50,7 +50,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void Restarted ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -72,7 +72,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void SecondRestart ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;

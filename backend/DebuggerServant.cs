@@ -47,6 +47,11 @@ namespace Mono.Debugger.Backends
 			get { return thread_manager; }
 		}
 
+		internal void OnMainProcessCreatedEvent (ProcessServant process)
+		{
+			client.OnMainProcessCreatedEvent (process.Client);
+		}
+
 		internal void OnProcessCreatedEvent (ProcessServant process)
 		{
 			process_hash.Add (process, process);

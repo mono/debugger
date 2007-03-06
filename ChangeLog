@@ -1,3 +1,24 @@
+2007-03-06  Martin Baulig  <martin@ximian.com>
+
+	* classes/Debugger.cs
+	(Debugger.MainProcessCreatedEvent): New public event.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.Initialize): Fire a `MainProcessCreatedEvent' when
+	creating the main process.
+
+	* test/testsuite/NUnit.cs
+	(TestSuite.Start): New public method; use this instead of
+	`Interpreter.Start()'.
+	(TestSuite.LoadSession): Likewise.
+	(TestSuite.Attach): Likewise.
+
+	* test/testsuite/*.cs: Use our parent class'es Start(),
+	LoadSession() and Attach() methods instead directly calling them
+	on the `Interpreter'.
+
+	* test/testsuite/TestSession.cs: Add a new testcase.
+
 2007-03-05  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionBreakpoint.cs: New file.

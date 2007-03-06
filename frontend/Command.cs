@@ -1080,6 +1080,13 @@ namespace Mono.Debugger.Frontend
 
 	public class RunCommand : DebuggerCommand, IDocumentableCommand
 	{
+		bool yes;
+
+		public bool Yes {
+			get { return yes; }
+			set { yes = true; }
+		}
+
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if ((context.Interpreter.Options.File == null) ||
@@ -1088,18 +1095,22 @@ namespace Mono.Debugger.Frontend
 					"No executable file specified.\nUse the `file' command.");
 			}
 
-			if (context.HasBackend && context.Interpreter.IsInteractive) {
-				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
-							       "Start it from the beginning?")) {
-					context.Interpreter.Kill ();
-					return true;
-				}
-				else {
-					return false;
-				}
+			if (!context.HasBackend)
+				return true;
+
+			if (!context.Interpreter.IsInteractive || yes) {
+				context.Interpreter.Kill ();
+				return true;
 			}
 
-			return true;
+			if (context.Interpreter.Query (
+				    "The program being debugged has been started already.\n" +
+				    "Start it from the beginning?")) {
+				context.Interpreter.Kill ();
+				return true;
+			} else {
+				return false;
+			}
 		}
 
 		protected override object DoExecute (ScriptingContext context)

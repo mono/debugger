@@ -24,7 +24,7 @@ namespace Mono.Debugger.Tests
 		[Category("Threads")]
 		public void Main ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 

@@ -45,7 +45,7 @@ namespace Mono.Debugger.Tests
 		[Category("Attach")]
 		public void Main ()
 		{
-			Process process = Interpreter.Attach (child.Id);
+			Process process = Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
 
 			AssertThreadCreated ();
@@ -68,7 +68,7 @@ namespace Mono.Debugger.Tests
 		[Category("Attach")]
 		public void AttachAgain ()
 		{
-			Process process = Interpreter.Attach (child.Id);
+			Process process = Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
 
 			AssertThreadCreated ();
@@ -91,7 +91,7 @@ namespace Mono.Debugger.Tests
 		[Category("Attach")]
 		public void Kill ()
 		{
-			Process process = Interpreter.Attach (child.Id);
+			Process process = Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
 
 			AssertThreadCreated ();

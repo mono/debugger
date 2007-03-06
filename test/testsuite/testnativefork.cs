@@ -22,7 +22,7 @@ namespace Mono.Debugger.Tests
 		[Category("Fork")]
 		public void Main ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsFalse (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -87,7 +87,7 @@ namespace Mono.Debugger.Tests
 		[Category("Fork")]
 		public void Continue ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsFalse (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -144,7 +144,7 @@ namespace Mono.Debugger.Tests
 		[Category("Fork")]
 		public void Breakpoint ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsFalse (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;

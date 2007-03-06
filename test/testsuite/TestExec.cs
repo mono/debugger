@@ -24,7 +24,7 @@ namespace Mono.Debugger.Tests
 		[Category("Fork")]
 		public void NativeChild ()
 		{
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Tests
 				MonoExecutable, BuildDirectory + "/TestChild.exe"
 			};
 
-			Process process = Interpreter.Start ();
+			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;

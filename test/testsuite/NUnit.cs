@@ -17,6 +17,7 @@ namespace Mono.Debugger.Tests
 		TargetEvent,
 		ThreadCreated,
 		ThreadExited,
+		MainProcessCreated,
 		ProcessCreated,
 		ProcessExecd,
 		ProcessExited,
@@ -74,7 +75,7 @@ namespace Mono.Debugger.Tests
 	{
 		internal NUnitInterpreter (DebuggerConfiguration config, DebuggerOptions options,
 					   LineReader inferior_stdout, LineReader inferior_stderr)
-			: base (true, config, options)
+			: base (false, config, options)
 		{
 			this.inferior_stdout = inferior_stdout;
 			this.inferior_stderr = inferior_stderr;
@@ -133,6 +134,12 @@ namespace Mono.Debugger.Tests
 		{
 			base.OnThreadExited (thread);
 			AddEvent (new DebuggerEvent (DebuggerEventType.ThreadExited, thread));
+		}
+
+		protected override void OnMainProcessCreated (Process process)
+		{
+			base.OnMainProcessCreated (process);
+			AddEvent (new DebuggerEvent (DebuggerEventType.MainProcessCreated, process));
 		}
 
 		protected override void OnProcessCreated (Process process)
@@ -357,7 +364,7 @@ namespace Mono.Debugger.Tests
 
 				Assert.AreEqual (function, name,
 						 "Target stopped in method `{0}', but expected `{1}'.",
-						 function, name);
+						 name, function);
 				Assert.AreEqual (line, location.Line,
 						 "Target stopped at line {0}, but expected {1}.",
 						 location.Line, line);
@@ -453,6 +460,12 @@ namespace Mono.Debugger.Tests
 			}
 
 			return (int) result;
+		}
+
+		public Process AssertMainProcessCreated ()
+		{
+			DebuggerEvent e = AssertEvent (DebuggerEventType.MainProcessCreated);
+			return (Process) e.Data;
 		}
 
 		public Thread AssertProcessCreated ()
@@ -663,6 +676,36 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received event {0}, but expected {1}.", e, type);
 
 			return e;
+		}
+
+		private void AssertMainProcessCreated (Process process)
+		{
+			DebuggerEvent e = AssertEvent (DebuggerEventType.MainProcessCreated);
+			Process main = (Process) e.Data;
+			Assert.AreEqual (process, main,
+					 "Created main process `{0}', but expected `{1}'.",
+					 main, process);
+		}
+
+		public Process Start ()
+		{
+			Process process = Interpreter.Start ();
+			AssertMainProcessCreated (process);
+			return process;
+		}
+
+		public Process LoadSession (Stream stream)
+		{
+			Process process = Interpreter.LoadSession (stream);
+			AssertMainProcessCreated (process);
+			return process;
+		}
+
+		public Process Attach (int pid)
+		{
+			Process process = Interpreter.Attach (pid);
+			AssertMainProcessCreated (process);
+			return process;
 		}
 
 		public TargetEventArgs AssertTargetEvent (Thread thread, TargetEventType type)
