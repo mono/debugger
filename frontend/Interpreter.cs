@@ -43,6 +43,13 @@ namespace Mono.Debugger.Frontend
 		Thread current_thread;
 
 		internal static readonly string DirectorySeparatorStr;
+		
+		DisplayCollection displays = new DisplayCollection ();
+		public DisplayCollection Displays {
+			get {
+				return displays;
+			}
+		}
 
 		static Interpreter ()
 		{

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
@@ -65,6 +66,9 @@ namespace Mono.Debugger.Frontend
 			RegisterAlias   ("l", typeof (ListCommand));
 			RegisterCommand ("break", typeof (BreakCommand));
 			RegisterAlias   ("b", typeof (BreakCommand));
+			RegisterCommand ("display", typeof (DisplayCommand));
+			RegisterAlias   ("d", typeof (DisplayCommand));
+			RegisterCommand ("undisplay", typeof (UndisplayCommand));
 			RegisterCommand ("catch", typeof (CatchCommand));
 			RegisterCommand ("watch", typeof (WatchCommand));
 			RegisterCommand ("quit", typeof (QuitCommand));
@@ -144,7 +148,47 @@ namespace Mono.Debugger.Frontend
 			}
                 }
 	}
+	
+	public class DisplayCommand : Command {
+		public override object Execute (Engine e) {
+			Display result = e.Interpreter.Displays.CreateDisplay (e.Interpreter, Argument);
+			result.Execute (Display.ContextFromInterpreter (e.Interpreter));
+			return result;
+		}
+		
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Data; } }
+		public string Description { get { return "Display the result of an expression"; } }
+		public string Documentation { get { return ""; } }
+	}
+	public class UndisplayCommand : Command {
+		public override object Execute (Engine e) {
+			string argument = Argument;
+			
+			if (argument == null || argument == "") {
+				Display.ContextFromInterpreter (e.Interpreter).Print ("Display number expected");
+				return null;
+			}
+			int index;
+			try {
+				index = (int) UInt32.Parse (argument);
+			} catch {
+				Display.ContextFromInterpreter (e.Interpreter).Print ("Cannot parse display number {0}", argument);
+				return null;
+			}
 
+			if (! e.Interpreter.Displays.RemoveDisplay (index)) {
+				Display.ContextFromInterpreter (e.Interpreter).Print ("Display {0} not found", argument);
+			}
+			return null;
+		}
+		
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Data; } }
+		public string Description { get { return "Delete a display"; } }
+		public string Documentation { get { return ""; } }
+	}
+	
 	public abstract class DebuggerCommand : Command
 	{
 		protected bool Repeating;
@@ -448,7 +492,262 @@ namespace Mono.Debugger.Frontend
 	{
 		TargetAddress start;
 		Expression expression;
-		int count = 16;
+
+		char format = '_';
+		char size = '_';
+		int count = 1;
+		
+		static Regex formatRegex = new Regex ("^/([0-9]*)([oxdutfc]?)([bhwga]?)$");
+
+		int BaseRepresentation () {
+			switch (format) {
+				case 'o':
+					return 8;
+				case 'x':
+					return 16;
+				case 'd':
+				case 'u':
+					return 10;
+				case 't':
+					return 2;
+				case 'f':
+				case 'c':
+					return -1;
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		char DefaultSize () {
+			switch (format) {
+				case 'o':
+				case 'x':
+				case 't':
+				case 'c':
+					return 'b';
+				case 'd':
+				case 'u':
+					return 'w';
+				case 'f':
+					return 'g';
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		char LeftPadding () {
+			switch (format) {
+				case 'o':
+				case 'x':
+				case 't':
+					return '0';
+				case 'c':
+				case 'd':
+				case 'u':
+				case 'f':
+					return ' ';
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		int SizeOfItem () {
+			switch (size) {
+				case 'b':
+					return 1;
+				case 'h':
+					return 2;
+				case 'w':
+					return 4;
+				case 'g':
+					return 8;
+				case 'a':
+					return IntPtr.Size;
+				default:
+					throw new ScriptingException ("Unknown size " + size);
+			}
+		}
+		int LengthOfByteItem () {
+			switch (format) {
+				case 'o':
+					return 3;
+				case 'x':
+					return 2;
+				case 'd':
+					return 4;
+				case 'u':
+					return 3;
+				case 't':
+					return 8;
+				case 'f':
+					return -1;
+				case 'c':
+					return 1;
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		int LengthOfHalfItem () {
+			switch (format) {
+				case 'o':
+					return 6;
+				case 'x':
+					return 4;
+				case 'd':
+					return 6;
+				case 'u':
+					return 5;
+				case 't':
+					return 16;
+				case 'f':
+					return -1;
+				case 'c':
+					return -1;
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		int LengthOfWordItem () {
+			switch (format) {
+				case 'o':
+					return 12;
+				case 'x':
+					return 8;
+				case 'd':
+					return 11;
+				case 'u':
+					return 10;
+				case 't':
+					return 32;
+				case 'f':
+					return 15;
+				case 'c':
+					return -1;
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		int LengthOfGiantItem () {
+			switch (format) {
+				case 'o':
+					return 24;
+				case 'x':
+					return 16;
+				case 'd':
+					return 21;
+				case 'u':
+					return 20;
+				case 't':
+					return 64;
+				case 'f':
+					return 15;
+				case 'c':
+					return -1;
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
+		int LengthOfAddressItem () {
+			if (IntPtr.Size == 4) {
+				return LengthOfWordItem ();
+			} else if (IntPtr.Size == 8) {
+				return LengthOfGiantItem ();
+			} else {
+				throw new ScriptingException ("Unsupported IntPtr.Size: " + IntPtr.Size);
+			}
+		}
+		int LengthOfItem () {
+			switch (size) {
+				case 'b':
+					return LengthOfByteItem ();
+				case 'h':
+					return LengthOfHalfItem ();
+				case 'w':
+					return LengthOfWordItem ();
+				case 'g':
+					return LengthOfGiantItem ();
+				case 'a':
+					return LengthOfAddressItem ();
+				default:
+					throw new ScriptingException ("Unknown size " + size);
+			}
+		}
+		int ItemsPerLine () {
+			int item_length = LengthOfItem ();
+			if (item_length > 0) {
+				int result = 60 / (item_length + 1);
+				for (int i = 16; i > 0; i >>= 1) {
+					if (result >= i) {
+						return i;
+					}
+				}
+				return 1;
+			} else {
+				throw new ScriptingException ("Unsupported format and size combination");
+			}
+		}
+		
+		void PrintPaddedValue (StringBuilder output, int paddedLength, char padding, string valueString) {
+			if (paddedLength - valueString.Length > 0) {
+				output.Append (padding, paddedLength - valueString.Length);
+			}
+			output.Append (valueString);
+		}
+		long ReadIntegerValue (byte[] data, int startIndex) {
+			switch (size) {
+				case 'b':
+					return data [startIndex];
+				case 'h':
+					return new BinaryReader(new MemoryStream (data, startIndex, 2, false, false)).ReadInt16 ();
+				case 'w':
+					return new BinaryReader(new MemoryStream (data, startIndex, 4, false, false)).ReadInt32 ();
+				case 'g':
+					return new BinaryReader(new MemoryStream (data, startIndex, 8, false, false)).ReadInt64 ();
+				case 'a':
+					if (IntPtr.Size == 4) {
+						return new BinaryReader(new MemoryStream (data, startIndex, 4, false, false)).ReadInt32 ();
+					} else if (IntPtr.Size == 8) {
+						return new BinaryReader(new MemoryStream (data, startIndex, 8, false, false)).ReadInt64 ();
+					} else {
+						throw new ScriptingException ("Unsupported IntPtr.Size " + IntPtr.Size);
+					}
+				default:
+					throw new ScriptingException ("Unknown size " + size);
+			}
+		}
+		double ReadDoubleValue (byte[] data, int startIndex) {
+			switch (size) {
+				case 'w':
+					return new BinaryReader(new MemoryStream (data, startIndex, 4, false, false)).ReadSingle ();
+				case 'g':
+					return new BinaryReader(new MemoryStream (data, startIndex, 8, false, false)).ReadDouble ();
+				default:
+					throw new ScriptingException ("Unknown size " + size);
+			}
+		}
+		string ConvertIntegerValue (long value) {
+			if (format == 'd') {
+				return System.Convert.ToString (value);
+			} else {
+				return System.Convert.ToString (value, BaseRepresentation ());
+			}
+		}
+		void PrintItem (StringBuilder output, byte[] data, int startIndex) {
+			switch (format) {
+				case 'o':
+				case 'x':
+				case 'd':
+				case 'u':
+				case 't':
+					PrintPaddedValue (output, LengthOfItem (), LeftPadding (), ConvertIntegerValue (ReadIntegerValue (data, startIndex)));
+					return;
+				case 'f':
+					output.AppendFormat ("{0}", ReadDoubleValue (data, startIndex));
+					return;
+				case 'c':
+					output.AppendFormat ("{0}", (char) data [startIndex]);
+					return;
+				default:
+					throw new ScriptingException ("Unknown format " + format);
+			}
+		}
 
 		public int Count {
 			get { return count; }
@@ -460,6 +759,47 @@ namespace Mono.Debugger.Frontend
 			if (Repeating)
 				return true;
 
+			if (Args.Count > 1) {
+				string formatArgument = (string) Args [0];
+				Match match = formatRegex.Match (formatArgument);
+				
+				if (match.Success) {
+					string countString = match.Groups [1].Value;
+					string formatString = match.Groups [2].Value;
+					string sizeString = match.Groups [3].Value;
+					
+					if (countString != null && countString != "") {
+						count = Int32.Parse (countString);
+					}
+					if (formatString != null && formatString != "") {
+						format = formatString [0];
+					}
+					if (sizeString != null && sizeString != "") {
+						size = sizeString [0];
+					}
+					
+					//context.Print ("EXAMINE: count {0}, format{1}, size {2}", count, format, size);
+					
+					Args.RemoveAt (0);
+					//context.Print ("EXAMINE: Argument now is '" + Argument + "'");
+				} else {
+					//context.Print ("EXAMINE: " + formatArgument + " did not match");
+					if (formatArgument.Length > 0 && formatArgument [0] == '/') {
+						throw new ScriptingException ("Invalid format " + formatArgument);
+					}
+				}
+			} else {
+				//context.Print ("EXAMINE: by default: count {0}, format{1}, size {2}", count, format, size);
+			}
+			
+			if (format == '_') {
+				format = 'x';
+			}
+			if (size == '_') {
+				size = DefaultSize ();
+			}
+			//context.Print ("EXAMINE: finally: count {0}, format{1}, size {2}", count, format, size);
+			
 			expression = ParseExpression (context);
 			if (expression == null)
 				return false;
@@ -480,16 +820,55 @@ namespace Mono.Debugger.Frontend
 				start = pexp.EvaluateAddress (context);
 			}
 
-			byte[] data = CurrentThread.ReadBuffer (start, count);
-			context.Print (TargetBinaryReader.HexDump (start, data));
-			start += count;
+			int itemSize = SizeOfItem ();
+			int itemsPerLine = ItemsPerLine ();
+			int itemsInCurrentLine = 0;
+			byte[] data = CurrentThread.ReadBuffer (start, count * itemSize);
+			StringBuilder output = new StringBuilder (120);
+			
+			//context.Print ("EXAMINE: executing itemSize {0}, itemsPerLine {1}, data.Length {2}, count {3}", 
+			//		itemSize, itemsPerLine, data.Length, count);
+			for (int i = 0; i < count; i++) {
+				if (itemsInCurrentLine == 0) {
+					if (IntPtr.Size == 4) {
+						PrintPaddedValue (output, 8, '0', System.Convert.ToString (start.Address + (i * itemSize), 16));
+					} else if (IntPtr.Size == 8) {
+						PrintPaddedValue (output, 16, '0', System.Convert.ToString (start.Address + (i * itemSize), 16));
+					} else {
+						throw new ScriptingException ("Unsupported IntPtr.Size " + IntPtr.Size);
+					}
+					output.Append (": ");
+				}
+				
+				PrintItem (output, data, i * itemSize);
+				itemsInCurrentLine ++;
+				
+				if (itemsInCurrentLine < itemsPerLine) {
+					output.Append (' ');
+				} else {
+					context.Print (output);
+					output.Remove (0, output.Length);
+					itemsInCurrentLine = 0;
+				}
+			}
+			if (output.Length > 0) {
+				context.Print (output);
+			}
+			//context.Print (TargetBinaryReader.HexDump (start, data));
+			start += data.Length;
 			return data;
 		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Examine memory."; } }
-		public string Documentation { get { return ""; } } 
+		public string Documentation { get { return
+				"Option format: /[Items][Format][Size]\n" +
+				"Items is the number of items to print.\n" +
+				"Format specifiers are (similar to gdb): o(octal), x(hex), d(decimal),\n" +
+				"u(unsigned decimal), t(binary), f(float), c(ASCII char).\n" +
+				"Size specifiers are (again, similar to gdb): b(byte), h(halfword),\n" +
+				"w(word), g(giant, 8 bytes), a(address, 4 or 8 bytes).\n" ; } } 
 	}
 
 	public class PrintFrameCommand : FrameCommand, IDocumentableCommand
@@ -1839,6 +2218,20 @@ namespace Mono.Debugger.Frontend
 				return null;
 			}
 		}
+
+		private class ShowDisplaysCommand : DebuggerCommand
+		{
+			protected override bool DoResolve (ScriptingContext context)
+			{
+				return true;
+			}
+
+			protected override object DoExecute (ScriptingContext context)
+			{
+				context.Interpreter.Displays.Show (context.Interpreter);
+				return null;
+			}
+		}
 #endregion
 
 		public ShowCommand ()
@@ -1862,6 +2255,7 @@ namespace Mono.Debugger.Frontend
 			RegisterSubcommand ("lang", typeof (ShowLangCommand));
 			RegisterSubcommand ("style", typeof (ShowStyleCommand));
 			RegisterSubcommand ("location", typeof (ShowLocationCommand));
+			RegisterSubcommand ("displays", typeof (ShowDisplaysCommand));
 		}
 
 		// IDocumentableCommand

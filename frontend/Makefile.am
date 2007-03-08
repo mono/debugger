@@ -21,6 +21,7 @@ EXTRA_DIST = \
 	GnuReadLine.cs			\
 	IExpressionParser.cs		\
 	Interpreter.cs			\
+	Displays.cs			\
 	Main.cs				\
 	MyTextReader.cs			\
 	ScriptingContext.cs		\

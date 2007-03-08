@@ -86,6 +86,12 @@ namespace Mono.Debugger.Frontend
 			}
 			if (native && (current_insn != null))
 				interpreter.PrintInstruction (current_insn);
+			
+			if (interpreter != null) {
+				interpreter.Displays.Execute (interpreter);
+			} else {
+				System.Console.WriteLine ("TargetStopped with interpreter null");
+			}
 		}
 
 		public override void UnhandledException (Interpreter interpreter, StackFrame frame,
