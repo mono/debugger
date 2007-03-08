@@ -1,3 +1,8 @@
+2007-03-08  Wade Berrier  <wberrier@novell.com>
+
+	* classes/Makefile.am: added new files to fix make dist, 
+	beautified listing
+
 2007-03-08  Martin Baulig  <martin@ximian.com>
 
 	* api/: Removed unused directory.
