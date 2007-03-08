@@ -1,3 +1,7 @@
+2007-03-08  Martin Baulig  <martin@ximian.com>
+
+	* api/: Removed unused directory.
+
 2007-03-08  Massimiliano Mantione  <massi@ximian.com>
 
 	* frontend/Command.cs: Added "[un]display" and enhanced "examine".
@@ -7,7 +11,6 @@
 	* frontend/Interpreter.cs: Added the collection of displays to
 	the interpreter instance.
 	* build/Makefile.am, frontend/Makefile.am: added Displays.cs
-	* api/IStackFrame.cs: Added import to make build in Monodevelop happy.
 
 2007-03-06  Martin Baulig  <martin@ximian.com>
 
