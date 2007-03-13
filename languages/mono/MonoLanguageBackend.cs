@@ -656,13 +656,16 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			foreach (MonoSymbolFile symfile in symbol_files) {
-				Cecil.TypeDefinitionCollection types = symfile.Assembly.MainModule.Types;
-				// FIXME: Work around an API problem in Cecil.
-				foreach (Cecil.TypeDefinition type in types) {
-					if (type.FullName != name)
-						continue;
+				try {
+					Cecil.TypeDefinitionCollection types = symfile.Assembly.MainModule.Types;
+					// FIXME: Work around an API problem in Cecil.
+					foreach (Cecil.TypeDefinition type in types) {
+						if (type.FullName != name)
+							continue;
 
-					return symfile.LookupMonoType (type);
+						return symfile.LookupMonoType (type);
+					}
+				} catch {
 				}
 			}
 
