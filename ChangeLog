@@ -1,3 +1,8 @@
+2007-03-13  Miguel de Icaza  <miguel@novell.com>
+
+	* languages/mono/MonoLanguageBackend.cs: The main assembly might
+	not have symbols, we should not crash in that case. 
+
 2007-03-08  Wade Berrier  <wberrier@novell.com>
 
 	* classes/Makefile.am: added new files to fix make dist, 
