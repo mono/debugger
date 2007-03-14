@@ -866,6 +866,10 @@ namespace Mono.Debugger.Languages.Mono
 			// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
 			string GetTypeSignature (Cecil.TypeReference t)
 			{
+				Cecil.ReferenceType rtype = t as Cecil.ReferenceType;
+				if (rtype != null)
+					return GetTypeSignature (rtype.ElementType) + "&";
+
 				switch (t.FullName) {
 				case "System.Char":	return "char";
 				case "System.Boolean":	return "bool";
