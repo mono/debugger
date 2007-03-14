@@ -870,6 +870,15 @@ namespace Mono.Debugger.Languages.Mono
 				if (rtype != null)
 					return GetTypeSignature (rtype.ElementType) + "&";
 
+				Cecil.ArrayType atype = t as Cecil.ArrayType;
+				if (atype != null) {
+					string etype = GetTypeSignature (atype.ElementType);
+					if (atype.Rank > 1)
+						return String.Format ("{0}[{1}]", etype, atype.Rank);
+					else
+						return etype + "[]";
+				}
+
 				switch (t.FullName) {
 				case "System.Char":	return "char";
 				case "System.Boolean":	return "bool";

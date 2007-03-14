@@ -1,3 +1,9 @@
+2007-03-14  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.MonoMethod.GetTypeSignature): Add support for
+	byref types and arrays.
+
 2007-03-13  Miguel de Icaza  <miguel@novell.com>
 
 	* languages/mono/MonoLanguageBackend.cs: The main assembly might
