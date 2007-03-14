@@ -425,6 +425,9 @@ namespace Mono.Debugger.Frontend
 		protected override string Execute (ScriptingContext context,
 						   Expression expression, DisplayFormat format)
 		{
+			if (expression is TypeExpression)
+				throw new ScriptingException (
+					"`{0}' is a type, not a variable.", expression.Name);
 			object retval = expression.Evaluate (context);
 			string text = context.FormatObject (retval, format);
 			context.Print (text);
