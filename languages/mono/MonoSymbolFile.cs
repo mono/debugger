@@ -880,7 +880,7 @@ namespace Mono.Debugger.Languages.Mono
 				case "System.Single":	return "single";
 				case "System.Double":	return "double";
 				case "System.String":	return "string";
-				case "System.Object":
+				case "System.Object":	return "object";
 				default:		return t.FullName;
 				}
 			}
