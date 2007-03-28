@@ -26,8 +26,8 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("examine", typeof (ExamineCommand));
 			RegisterAlias   ("x", typeof (ExamineCommand));
 			RegisterCommand ("file", typeof (FileCommand));
-			RegisterCommand ("frame", typeof (PrintFrameCommand));
-			RegisterAlias   ("f", typeof (PrintFrameCommand));
+			RegisterCommand ("frame", typeof (SelectFrameCommand));
+			RegisterAlias   ("f", typeof (SelectFrameCommand));
 			RegisterCommand ("disassemble", typeof (DisassembleCommand));
 			RegisterAlias   ("dis", typeof (DisassembleCommand));
 			RegisterCommand ("thread", typeof (SelectThreadCommand));
@@ -134,7 +134,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		/* override this to provide command specific completion */
-                public virtual void Complete (Engine e, string text, int start, int end)
+		public virtual void Complete (Engine e, string text, int start, int end)
 		{
 			if (text.StartsWith ("-")) {
 				/* do our super cool argument completion on the command's
@@ -146,7 +146,7 @@ namespace Mono.Debugger.Frontend
 				/* otherwise punt */
 				e.Completer.NoopCompleter (text, start, end);
 			}
-                }
+		}
 	}
 	
 	public class DisplayCommand : Command {
@@ -874,15 +874,45 @@ namespace Mono.Debugger.Frontend
 				"w(word), g(giant, 8 bytes), a(address, 4 or 8 bytes).\n" ; } } 
 	}
 
-	public class PrintFrameCommand : FrameCommand, IDocumentableCommand
+	public class SelectFrameCommand : FrameCommand, IDocumentableCommand
 	{
+		int frameIndex = -1;
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Args == null || Args.Count != 1)
+				return true;
+
+			try {
+				frameIndex = (int) UInt32.Parse ((string) Args [0]);
+			} catch {
+				throw new ScriptingException (
+					"Argument must be a positive integer");
+			}
+
+			return true;
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
+			StackFrame frame;
+			if (frameIndex != -1) {
+				Backtrace backtrace = CurrentThread.GetBacktrace ();
+				try {
+					backtrace.CurrentFrameIndex = frameIndex;
+				} catch {
+					throw new ScriptingException ("Invalid frame.");
+				}
+				frame = backtrace.CurrentFrame;
+			} else
+				frame = CurrentFrame;
+			
 			if (context.Interpreter.IsScript)
-				context.Print (CurrentFrame);
+				context.Print (frame);
 			else
-				context.Interpreter.Style.PrintFrame (context, CurrentFrame);
-			return CurrentFrame;
+				context.Interpreter.Style.PrintFrame (context, frame);
+
+			return frame;
 		}
 
 		// IDocumentableCommand
