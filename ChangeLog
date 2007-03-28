@@ -1,4 +1,4 @@
-2007-03-14  Jb Evain  <jb@nurv.fr>
+2007-03-28  Jb Evain  <jb@nurv.fr>
 
 	* frontend/Command.cs: Rename PrintFrameCommand to SelectFrameCommand.
 	and make it able to select the current frame.
