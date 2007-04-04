@@ -1,3 +1,9 @@
+2007-04-04  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(BacktraceCommand.DoExecute): If we already have a backtrace and
+	no arguments were given, reuse it.
+
 2007-03-28  Jb Evain  <jb@nurv.fr>
 
 	* frontend/Command.cs: Rename PrintFrameCommand to SelectFrameCommand.

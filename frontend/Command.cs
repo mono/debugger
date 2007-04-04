@@ -1394,7 +1394,13 @@ namespace Mono.Debugger.Frontend
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			Backtrace backtrace = CurrentThread.GetBacktrace (mode, max_frames);
+			Backtrace backtrace = null;
+
+			if ((mode == Backtrace.Mode.Default) && (max_frames == -1))
+				backtrace = CurrentThread.CurrentBacktrace;
+
+			if (backtrace == null)
+				backtrace = CurrentThread.GetBacktrace (mode, max_frames);
 
 			for (int i = 0; i < backtrace.Count; i++) {
 				string prefix = i == backtrace.CurrentFrameIndex ? "(*)" : "   ";
