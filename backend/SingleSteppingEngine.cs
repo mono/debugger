@@ -2877,9 +2877,14 @@ namespace Mono.Debugger.Backends
 				goto out_frame_changed;
 			}
 
-			EventResult result;
-			if (CallbackCompleted (cevent, out args, out result))
-				return result;
+			try {
+				EventResult result;
+				if (CallbackCompleted (cevent, out args, out result))
+					return result;
+			} catch (Exception ex) {
+				RestoreStack ();
+				return EventResult.CompletedCallback;
+			}
 
 			if (stack_data != null) {
 				sse.restore_stack (stack_data);
@@ -3131,6 +3136,13 @@ namespace Mono.Debugger.Backends
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
 				TargetType class_type = language.GetClass (sse.Thread, klass);
+
+				if (class_type == null) {
+					Result.ExceptionMessage = String.Format (
+						"Unable to get virtual method `{0}'.", Function.FullName);
+					Result.InvocationCompleted = true;
+					return true;
+				}
 
 				if (!class_type.IsByRef) {
 					TargetLocation new_loc = instance.Location.GetLocationAtOffset (

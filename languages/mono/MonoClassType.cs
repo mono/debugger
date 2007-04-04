@@ -457,8 +457,8 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		public static TargetType ReadMonoClass (MonoLanguageBackend language,
-							Thread target, TargetAddress address)
+		internal static TargetType ReadMonoClass (MonoLanguageBackend language,
+							  Thread target, TargetAddress address)
 		{
 			TargetReader reader = new TargetReader (
 				target.ReadMemory (address, language.MonoMetadataInfo.KlassSize));

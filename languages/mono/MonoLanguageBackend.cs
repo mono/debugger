@@ -333,7 +333,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (type != null)
 				return type;
 
-			return MonoClassType.ReadMonoClass (this, target, klass_address);
+			try {
+				return MonoClassType.ReadMonoClass (this, target, klass_address);
+			} catch {
+				return null;
+			}
 		}
 
 		public MonoSymbolFile GetImage (TargetAddress address)
