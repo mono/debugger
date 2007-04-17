@@ -19,7 +19,6 @@ EXTRA_DIST = \
 	CSharpExpressionParser.jay	\
 	CSharpTokenizer.cs		\
 	GnuReadLine.cs			\
-	IExpressionParser.cs		\
 	Interpreter.cs			\
 	Displays.cs			\
 	Main.cs				\
