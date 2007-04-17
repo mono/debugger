@@ -30,10 +30,6 @@ namespace Mono.Debugger.Frontend
 		Hashtable styles;
 		StyleBase current_style;
 
-		Hashtable parsers_by_name;
-		Hashtable parser_names_by_language;
-		string current_parser_name;
-
 		bool is_interactive;
 		int exit_code = 0;
 		int interrupt_level;
@@ -72,18 +68,6 @@ namespace Mono.Debugger.Frontend
 			styles.Add ("cli", new StyleCLI (this));
 			styles.Add ("emacs", new StyleEmacs (this));
 			current_style = (StyleBase) styles ["cli"];
-
-			parsers_by_name = new Hashtable ();
-			parsers_by_name.Add ("c#", typeof (CSharp.ExpressionParser));
-
-			// XXX we should really get these from the
-			// actual Name property of a language
-			// instance..
-			parser_names_by_language = new Hashtable ();
-			parser_names_by_language.Add ("Mono", "c#");
-			parser_names_by_language.Add ("native", "c#");
-
-			current_parser_name = "auto";
 		}
 
 		AppDomain debugger_domain;
@@ -158,41 +142,9 @@ namespace Mono.Debugger.Frontend
 			return names;
 		}
 
-		public string CurrentLang {
-			get { return current_parser_name; }
-			set {
-				if (value == "auto" || parsers_by_name [value] != null) {
-					current_parser_name = value;
-				}
-				else {
-					throw new ScriptingException ("No such language: `{0}'", value);
-				}
-			}
-		}
-
 		public IExpressionParser GetExpressionParser (ScriptingContext context, string name)
 		{
-			Type parser_type;
-
-			if (current_parser_name == "auto") {
-				/* determine the language parser by the current stack frame */
-				parser_type = (Type)parsers_by_name [parser_names_by_language [context.CurrentLanguage.Name]];
-			} else {
-				/* use the user specified language */
-				parser_type = (Type)parsers_by_name [current_parser_name];
-			}
-
-			if (parser_type != null) {
-				IExpressionParser parser;
-				object[] args = new object[2];
-				args[0] = context;
-				args[1] = name;
-				parser = (IExpressionParser)Activator.CreateInstance (parser_type, args);
-
-				return parser;
-			} else {
-				return new CSharp.ExpressionParser (context, name);
-			}
+			return new CSharp.ExpressionParser (context, name);
 		}
 
 		public bool IsInteractive {

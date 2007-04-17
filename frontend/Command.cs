@@ -1784,29 +1784,6 @@ namespace Mono.Debugger.Frontend
 		AssignmentCommand assign;
 
 #region set subcommands
-		private class SetLangCommand : DebuggerCommand
-		{
-			protected string lang;
-
-			protected override bool DoResolve (ScriptingContext context)
-			{
-				if ((Args == null) || (Args.Count != 1)) {
-					context.Print ("Invalid argument: Need the name of the language");
-					return false;
-				}
-
-				lang = (string) Args [0];
-				return true;
-			}
-
-			protected override object DoExecute (ScriptingContext context)
-			{
-				if (lang != null)
-					context.Interpreter.CurrentLang = lang;
-				return null;
-			}
-		}
-
 		private class SetArgsCommand : DebuggerCommand
 		{
 			protected override bool DoResolve (ScriptingContext context)
@@ -1916,7 +1893,6 @@ namespace Mono.Debugger.Frontend
 		{
 			RegisterSubcommand ("env", typeof (SetEnvironmentCommand));
 			RegisterSubcommand ("args", typeof (SetArgsCommand));
-			RegisterSubcommand ("lang", typeof (SetLangCommand));
 			RegisterSubcommand ("style", typeof (SetStyleCommand));
 		}
 

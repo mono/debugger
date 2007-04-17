@@ -1,3 +1,9 @@
+2007-04-17  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Interpreter.cs
+	(Interpreter): Remove support for multiple parser languages; this
+	was never used and we only supported "c#" anyways.
+
 2007-04-04  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs
