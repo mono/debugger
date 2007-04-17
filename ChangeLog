@@ -1,5 +1,18 @@
 2007-04-17  Martin Baulig  <martin@ximian.com>
 
+	* classes/ExpressionBreakpoint.cs
+	(ILocationParser): Moved to DebuggerSession.cs and renamed into
+	`IExpressionParser'.	
+
+	* classes/DebuggerSession.cs
+	(LocationType): Moved here from ExpressionBreakpoint.cs.
+	(IExpressionParser): Formerly known as `ILocationParser'.
+
+	* frontend/Expression.cs: Merge `ExpressionParser' and
+	`LocationParser'.	
+
+2007-04-17  Martin Baulig  <martin@ximian.com>
+
 	* frontend/IExpressionParser.cs: Removed.
 
 	* frontend/CSharpExpressionParser.jay: We don't need a

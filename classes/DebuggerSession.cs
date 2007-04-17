@@ -16,6 +16,23 @@ namespace Mono.Debugger
 {
 	public delegate void ModulesChangedHandler (DebuggerSession session);
 
+	public enum LocationType
+	{
+		Default,
+		Method,
+		Constructor,
+		DelegateInvoke,
+		PropertyGetter,
+		PropertySetter,
+		EventAdd,
+		EventRemove
+	}
+
+	public interface IExpressionParser
+	{
+		SourceLocation Parse (Thread target, LocationType type, string name);
+	}
+
 	[Serializable]
 	public class DebuggerSession : DebuggerMarshalByRefObject
 	{
@@ -29,11 +46,11 @@ namespace Mono.Debugger
 		protected readonly ThreadGroup main_thread_group;
 
 		Process main_process;
-		ILocationParser parser;
+		IExpressionParser parser;
 		XmlDocument saved_session;
 
 		private DebuggerSession (DebuggerConfiguration config, string name,
-					 ILocationParser parser)
+					 IExpressionParser parser)
 		{
 			this.Config = config;
 			this.Name = name;
@@ -46,7 +63,7 @@ namespace Mono.Debugger
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
-					string name, ILocationParser parser)
+					string name, IExpressionParser parser)
 			: this (config, name, parser)
 		{
 			this.Options = options;
@@ -103,7 +120,7 @@ namespace Mono.Debugger
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, Stream stream,
-					ILocationParser parser)
+					IExpressionParser parser)
 			: this (config, "main", parser)
 		{
 			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));

@@ -4,23 +4,6 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	public enum LocationType
-	{
-		Default,
-		Method,
-		Constructor,
-		DelegateInvoke,
-		PropertyGetter,
-		PropertySetter,
-		EventAdd,
-		EventRemove
-	}
-
-	public interface ILocationParser
-	{
-		SourceLocation Parse (Thread target, LocationType type, string name);
-	}
-
 	public class ExpressionBreakpoint : Breakpoint
 	{
 		public readonly DebuggerSession Session;

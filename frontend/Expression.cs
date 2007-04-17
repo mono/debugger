@@ -9,7 +9,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontend
 {
-	public class ExpressionParser
+	public class ExpressionParser : IExpressionParser
 	{
 		public readonly Interpreter Interpreter;
 
@@ -25,16 +25,6 @@ namespace Mono.Debugger.Frontend
 		public Expression Parse (string expression)
 		{
 			return parser.Parse (expression);
-		}
-	}
-
-	public class LocationParser : ILocationParser
-	{
-		public readonly Interpreter Interpreter;
-
-		internal LocationParser (Interpreter interpreter)
-		{
-			this.Interpreter = interpreter;
 		}
 
 		protected static SourceLocation FindFile (Thread target, string filename, int line)

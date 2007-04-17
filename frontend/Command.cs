@@ -2908,7 +2908,7 @@ namespace Mono.Debugger.Frontend
 
 				context.CurrentFrame = frame;
 
-				if (LocationParser.ParseLocation (thread, Argument, out location))
+				if (ExpressionParser.ParseLocation (thread, Argument, out location))
 					return true;
 			}
 
