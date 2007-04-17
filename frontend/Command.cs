@@ -225,10 +225,7 @@ namespace Mono.Debugger.Frontend
 
 		protected Expression DoParseExpression (ScriptingContext context, string arg)
 		{
-			IExpressionParser parser = context.Interpreter.GetExpressionParser (
-				context, ToString());
-
-			Expression expr = parser.Parse (arg);
+			Expression expr = context.Interpreter.ExpressionParser.Parse (arg);
 			if (expr == null)
 				throw new ScriptingException ("Cannot parse arguments");
 
@@ -2924,8 +2921,7 @@ namespace Mono.Debugger.Frontend
 			} catch {
 			}
 
-			IExpressionParser parser = new CSharp.ExpressionParser (context, Argument);
-			Expression expr = parser.Parse (Argument);
+			Expression expr = context.Interpreter.ExpressionParser.Parse (Argument);
 			if (expr == null)
 				throw new ScriptingException ("Cannot resolve expression `{0}'.", Argument);
 

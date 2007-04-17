@@ -59,9 +59,9 @@ namespace Mono.Debugger.Frontend
 		void Execute (ScriptingContext context, bool showAll) {
 			Expression expression = null;
 			try {
-				IExpressionParser parser = context.Interpreter.GetExpressionParser (context, "display");
-				parser.Verbose = false;
-				expression = (Expression) parser.Parse (argument);
+				// IExpressionParser parser = context.Interpreter.GetExpressionParser (context, "display");
+				// parser.Verbose = false;
+				// expression = (Expression) parser.Parse (argument);
 			} catch (Exception) {
 				expression = null;
 			}

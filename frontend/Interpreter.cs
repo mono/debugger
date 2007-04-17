@@ -35,6 +35,7 @@ namespace Mono.Debugger.Frontend
 		int interrupt_level;
 
 		LocationParser parser;
+		ExpressionParser expr_parser;
 		ManualResetEvent interrupt_event;
 		Thread current_thread;
 
@@ -59,6 +60,7 @@ namespace Mono.Debugger.Frontend
 			this.config = config;
 			this.is_interactive = is_interactive;
 			this.parser = new LocationParser (this);
+			this.expr_parser = new ExpressionParser (this);
 			this.session = new DebuggerSession (config, options, "main", parser);
 			this.engine = new DebuggerEngine (this);
 
@@ -142,9 +144,8 @@ namespace Mono.Debugger.Frontend
 			return names;
 		}
 
-		public IExpressionParser GetExpressionParser (ScriptingContext context, string name)
-		{
-			return new CSharp.ExpressionParser (context, name);
+		public ExpressionParser ExpressionParser {
+			get { return expr_parser; }
 		}
 
 		public bool IsInteractive {

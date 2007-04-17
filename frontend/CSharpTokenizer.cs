@@ -31,7 +31,6 @@ namespace Mono.Debugger.Frontend.CSharp
 		int putback_char;
 		Object val;
 
-		ScriptingContext context;
 		TextReader reader;
 		string ref_name;
 		int current_token;
@@ -80,9 +79,8 @@ namespace Mono.Debugger.Frontend.CSharp
 			}
 		}
 
-		public Tokenizer (ScriptingContext context, TextReader reader, string name)
+		public Tokenizer (TextReader reader, string name)
 		{
-			this.context = context;
 			this.reader = reader;
 			this.ref_name = name;
 		}

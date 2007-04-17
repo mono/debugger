@@ -1,5 +1,19 @@
 2007-04-17  Martin Baulig  <martin@ximian.com>
 
+	* frontend/IExpressionParser.cs: Removed.
+
+	* frontend/CSharpExpressionParser.jay: We don't need a
+	`ScriptingContext' here; allow reusing the parser to parse
+	multiple expressions.
+
+	* frontend/Expression.cs
+	(ExpressionParser): New public class.
+
+	* frontend/Interpreter.cs
+	(Interpreter.ExpressionParser): New public property.
+
+2007-04-17  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter): Remove support for multiple parser languages; this
 	was never used and we only supported "c#" anyways.

@@ -9,6 +9,25 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Frontend
 {
+	public class ExpressionParser
+	{
+		public readonly Interpreter Interpreter;
+
+		private readonly CSharp.ExpressionParser parser;
+
+		internal ExpressionParser (Interpreter interpreter)
+		{
+			this.Interpreter = interpreter;
+
+			parser = new CSharp.ExpressionParser ("C#");
+		}
+
+		public Expression Parse (string expression)
+		{
+			return parser.Parse (expression);
+		}
+	}
+
 	public class LocationParser : ILocationParser
 	{
 		public readonly Interpreter Interpreter;
@@ -37,10 +56,9 @@ namespace Mono.Debugger.Frontend
 		protected SourceLocation DoParseExpression (Thread target, LocationType type, string arg)
 		{
 			ScriptingContext context = new ScriptingContext (Interpreter);
-			IExpressionParser parser = new CSharp.ExpressionParser (context, arg);
 			context.CurrentFrame = target.CurrentFrame;
 
-			Expression expr = parser.Parse (arg);
+			Expression expr = Interpreter.ExpressionParser.Parse (arg);
 			if (expr == null)
 				throw new ScriptingException ("Cannot resolve expression `{0}'.", arg);
 

@@ -6,9 +6,8 @@ using System;
 
 namespace Mono.Debugger.Frontend.CSharp
 {
-	internal class ExpressionParser : IExpressionParser
+	internal class ExpressionParser
 	{
-		ScriptingContext current_context;
 		MyTextReader reader;
 		Tokenizer lexer;
 
@@ -297,12 +296,11 @@ variable_or_type_name_0
 
 %%
 
-public ExpressionParser (ScriptingContext context, string name)
+public ExpressionParser (string name)
 {
 	this.reader = new MyTextReader ();
-	this.current_context = context;
 
-	lexer = new Tokenizer (context, reader, name);
+	lexer = new Tokenizer (reader, name);
 }
 
 public Expression Parse (string text)
