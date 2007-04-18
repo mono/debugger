@@ -59,6 +59,11 @@
       <xs:element name="Breakpoint" type="Breakpoint" />
     </xs:choice>
   </xs:complexType>
+  <xs:complexType name="Displays">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="Display" type="Display" />
+    </xs:choice>
+  </xs:complexType>
   <xs:complexType name="Location">
     <xs:choice maxOccurs="unbounded">
       <xs:element name="Name" type="xs:string" minOccurs="1" />
@@ -68,6 +73,11 @@
       <xs:element name="Line" type="xs:integer" minOccurs="0" />
     </xs:choice>
     <xs:attribute name="name" type="xs:string" use="required" />
+  </xs:complexType>
+  <xs:complexType name="Display">
+    <xs:attribute name="index" type="xs:integer" use="required" />
+    <xs:attribute name="enabled" type="xs:boolean" use="required" />
+    <xs:attribute name="text" type="xs:string" use="required" />
   </xs:complexType>
   <xs:complexType name="Expression">
     <xs:attribute name="type" type="xs:string" use="required" />
@@ -94,6 +104,7 @@
       <xs:element name="Modules" type="Modules" />
       <xs:element name="ThreadGroups" type="ThreadGroups" />
       <xs:element name="Events" type="Events" />
+      <xs:element name="Displays" type="Displays" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required" />
   </xs:complexType>

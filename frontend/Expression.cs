@@ -124,6 +124,40 @@ namespace Mono.Debugger.Frontend
 
 			return null;
 		}
+
+		public string EvaluateExpression (ScriptingContext context, string text,
+						  DisplayFormat format)
+		{
+			Expression expression;
+
+			try {
+				expression = Interpreter.ExpressionParser.Parse (text);
+			} catch (ScriptingException ex) {
+				throw new ScriptingException ("Cannot parse expression `{0}': {1}.",
+							      text, ex.Message);
+			} catch {
+				throw new ScriptingException ("Cannot parse expression `{0}'.", text);
+			}
+
+			try {
+				expression = expression.Resolve (context);
+			} catch (ScriptingException ex) {
+				throw new ScriptingException ("Cannot resolve expression `{0}': {1}",
+							      text, ex.Message);
+			} catch {
+				throw new ScriptingException ("Cannot resolve expression `{0}'.", text);
+			}
+
+			try {
+				object retval = expression.Evaluate (context);
+				return context.FormatObject (retval, format);
+			} catch (ScriptingException ex) {
+				throw new ScriptingException ("Cannot evaluate expression `{0}': {1}",
+							      text, ex.Message);
+			} catch {
+				throw new ScriptingException ("Cannot evaluate expression `{0}'.", text);
+			}
+		}
 	}
 
 	public abstract class Expression

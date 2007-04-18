@@ -26,7 +26,6 @@ MDB_SRCLIST = \
 	$(top_srcdir)/frontend/Expression.cs		\
 	$(top_srcdir)/frontend/GnuReadLine.cs		\
 	$(top_srcdir)/frontend/Interpreter.cs		\
-	$(top_srcdir)/frontend/Displays.cs		\
 	$(top_srcdir)/frontend/Main.cs			\
 	$(top_srcdir)/frontend/MyTextReader.cs		\
 	$(top_srcdir)/frontend/ScriptingContext.cs	\

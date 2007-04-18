@@ -83,15 +83,11 @@ namespace Mono.Debugger.Frontend
 			if (frame != null) {
 				if (!PrintSource (interpreter, frame))
 					native = true;
+
+				interpreter.ShowDisplays (frame);
 			}
 			if (native && (current_insn != null))
 				interpreter.PrintInstruction (current_insn);
-			
-			if (interpreter != null) {
-				interpreter.Displays.Execute (interpreter);
-			} else {
-				System.Console.WriteLine ("TargetStopped with interpreter null");
-			}
 		}
 
 		public override void UnhandledException (Interpreter interpreter, StackFrame frame,

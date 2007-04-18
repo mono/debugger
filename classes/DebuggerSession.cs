@@ -42,6 +42,7 @@ namespace Mono.Debugger
 
 		protected readonly Hashtable modules;
 		protected readonly Hashtable events;
+		protected readonly Hashtable displays;
 		protected readonly Hashtable thread_groups;
 		protected readonly ThreadGroup main_thread_group;
 
@@ -58,6 +59,7 @@ namespace Mono.Debugger
 
 			modules = Hashtable.Synchronized (new Hashtable ());
 			events = Hashtable.Synchronized (new Hashtable ());
+			displays = Hashtable.Synchronized (new Hashtable ());
 			thread_groups = Hashtable.Synchronized (new Hashtable ());
 			main_thread_group = CreateThreadGroup ("main");
 		}
@@ -115,6 +117,12 @@ namespace Mono.Debugger
 
 			foreach (Event e in Events)
 				e.GetSessionData (event_list);
+
+			XmlElement display_list = root.OwnerDocument.CreateElement ("Displays");
+			root.AppendChild (display_list);
+
+			foreach (Display d in Displays)
+				d.GetSessionData (display_list);
 
 			return doc;
 		}
@@ -308,6 +316,19 @@ namespace Mono.Debugger
 				e.IsEnabled = enabled;
 				AddEvent (e);
 			}
+
+			XPathNodeIterator display_iter = session_iter.Current.Select ("Displays/*");
+			while (display_iter.MoveNext ()) {
+				if (display_iter.Current.Name != "Display")
+					throw new InternalError ();
+
+				int index = Int32.Parse (display_iter.Current.GetAttribute ("index", ""));
+				string text = display_iter.Current.GetAttribute ("text", "");
+				bool enabled = Boolean.Parse (display_iter.Current.GetAttribute ("enabled", ""));
+
+				Display d = new Display (this, index, enabled, text);
+				displays.Add (d.Index, d);
+			}
 		}
 
 		protected Event ParseEvent (XPathNavigator navigator, int index, ThreadGroup group)
@@ -446,6 +467,35 @@ namespace Mono.Debugger
 			if (main_process != null)
 				handle.Remove (main_process.MainThread);
 			events.Remove (handle.Index);
+		}
+
+		//
+		// Displays
+		//
+
+		public Display[] Displays {
+			get {
+				Display[] handles = new Display [displays.Count];
+				displays.Values.CopyTo (handles, 0);
+				return handles;
+			}
+		}
+
+		public Display GetDisplay (int index)
+		{
+			return (Display) displays [index];
+		}
+
+		public Display CreateDisplay (string text)
+		{
+			Display d = new Display (this, text);
+			displays.Add (d.Index, d);
+			return d;
+		}
+
+		public void DeleteDisplay (Display d)
+		{
+			displays.Remove (d.Index);
 		}
 	}
 }

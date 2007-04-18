@@ -40,13 +40,6 @@ namespace Mono.Debugger.Frontend
 
 		internal static readonly string DirectorySeparatorStr;
 		
-		DisplayCollection displays = new DisplayCollection ();
-		public DisplayCollection Displays {
-			get {
-				return displays;
-			}
-		}
-
 		static Interpreter ()
 		{
 			// FIXME: Why isn't this public in System.IO.Path ?
@@ -937,6 +930,15 @@ namespace Mono.Debugger.Frontend
 			}
 			return String.Format ("#{0} ({1}:{2})", process.ID,
 					      process.MainThread.PID, command_line);
+		}
+
+		public void ShowDisplays (StackFrame frame)
+		{
+			ScriptingContext context = new ScriptingContext (this);
+			context.CurrentFrame = frame;
+
+			foreach (Display d in Session.Displays)
+				context.ShowDisplay (d);
 		}
 
 		//

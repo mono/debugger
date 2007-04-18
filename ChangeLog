@@ -1,3 +1,26 @@
+2007-04-18  Martin Baulig  <martin@ximian.com>
+
+	Reimplement displays; integrate them with the session code and use
+	the new expression parser.
+
+	* classes/Display.cs: New file.
+	(Display): New public class.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession): Add displays to the session.
+
+	* frontend/Displays.cs: Removed.
+
+	* frontend/Command.cs
+	(DisplayCommand): Derive from `DebuggerCommand'.
+	(UndisplayCommand): Likewise.
+
+	* frontend/Expression.cs
+	(ExpressionParser.EvaluateExpression): New public method.
+
+	* frontend/Interpreter.cs
+	(Interpreter): Displays are now in the `DebuggerSession'.
+
 2007-04-17  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionBreakpoint.cs

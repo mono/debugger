@@ -43,7 +43,7 @@ namespace Mono.Debugger.Frontend
 			get { return interpreter; }
 		}
 
-		public bool HasBackend {
+		public bool HasTarget {
 			get {
 				return interpreter.HasTarget;
 			}
@@ -367,6 +367,25 @@ namespace Mono.Debugger.Frontend
 
 			Print ("Loaded library {0}.", filename);
 		}
+
+		public void ShowDisplay (Display display)
+		{
+			if (!HasTarget) {
+				Print ("Display {0}: {1}", display.Index, display.Text);
+				return;
+			}
+
+			try {
+				string text = Interpreter.ExpressionParser.EvaluateExpression (
+					this, display.Text, DisplayFormat.Object);
+				Print ("Display {0} (\"{1}\"): {2}", display.Index, display.Text, text);
+			} catch (ScriptingException ex) {
+				Print ("Display {0} (\"{1}\"): {2}", display.Index, display.Text,
+				       ex.Message);
+			} catch (Exception ex) {
+				Print ("Display {0} (\"{1}\"): {2}", display.Index, display.Text,
+				       ex);
+			}
+		}
 	}
 }
-

@@ -149,11 +149,25 @@ namespace Mono.Debugger.Frontend
 		}
 	}
 	
-	public class DisplayCommand : Command {
-		public override object Execute (Engine e) {
-			Display result = e.Interpreter.Displays.CreateDisplay (e.Interpreter, Argument);
-			result.Execute (Display.ContextFromInterpreter (e.Interpreter));
-			return result;
+	public class DisplayCommand : DebuggerCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if (Argument == "")
+				throw new ScriptingException ("Argument expected");
+
+			Expression expression = context.Interpreter.ExpressionParser.Parse (Argument);
+			if (expression == null)
+				throw new ScriptingException ("Cannot parse expression `{0}'.", Argument);
+
+			return true;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			Display display = context.Interpreter.Session.CreateDisplay (Argument);
+			context.Print ("Added display {0}.", display.Index);
+			return display;
 		}
 		
 		// IDocumentableCommand
@@ -161,25 +175,33 @@ namespace Mono.Debugger.Frontend
 		public string Description { get { return "Display the result of an expression"; } }
 		public string Documentation { get { return ""; } }
 	}
-	public class UndisplayCommand : Command {
-		public override object Execute (Engine e) {
+
+	public class UndisplayCommand : DebuggerCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			return true;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
 			string argument = Argument;
 			
-			if (argument == null || argument == "") {
-				Display.ContextFromInterpreter (e.Interpreter).Print ("Display number expected");
-				return null;
-			}
+			if (argument == null || argument == "")
+				throw new ScriptingException ("Display number expected");
+
 			int index;
 			try {
 				index = (int) UInt32.Parse (argument);
 			} catch {
-				Display.ContextFromInterpreter (e.Interpreter).Print ("Cannot parse display number {0}", argument);
-				return null;
+				throw new ScriptingException ("Cannot parse display number {0}", argument);
 			}
 
-			if (! e.Interpreter.Displays.RemoveDisplay (index)) {
-				Display.ContextFromInterpreter (e.Interpreter).Print ("Display {0} not found", argument);
-			}
+			Display d = context.Interpreter.Session.GetDisplay (index);
+			if (d == null)
+				throw new ScriptingException ("Display {0} not found", argument);
+
+			context.Interpreter.Session.DeleteDisplay (d);
 			return null;
 		}
 		
@@ -187,7 +209,7 @@ namespace Mono.Debugger.Frontend
 		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Delete a display"; } }
 		public string Documentation { get { return ""; } }
-	}
+	}	
 	
 	public abstract class DebuggerCommand : Command
 	{
@@ -1510,7 +1532,7 @@ namespace Mono.Debugger.Frontend
 					"No executable file specified.\nUse the `file' command.");
 			}
 
-			if (!context.HasBackend)
+			if (!context.HasTarget)
 				return true;
 
 			if (!context.Interpreter.IsInteractive || yes) {
@@ -1553,7 +1575,7 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (!context.HasBackend)
+			if (!context.HasTarget)
 				return true;
 
 			if (Args.Count != 0)
@@ -1592,7 +1614,7 @@ namespace Mono.Debugger.Frontend
 					"No core file specified.\nUse the `file' command.");
 			}
 
-			if (context.HasBackend && context.Interpreter.IsInteractive) {
+			if (context.HasTarget && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program being debugged has been started already.\n" +
 							       "Start it from the beginning?")) {
 					context.Interpreter.Kill ();
@@ -1649,7 +1671,7 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			if (context.HasBackend && context.Interpreter.IsInteractive) {
+			if (context.HasTarget && context.Interpreter.IsInteractive) {
 				if (context.Interpreter.Query ("The program is running.  Exit anyway?")) {
 					return true;
 				}
@@ -2240,7 +2262,9 @@ namespace Mono.Debugger.Frontend
 
 			protected override object DoExecute (ScriptingContext context)
 			{
-				context.Interpreter.Displays.Show (context.Interpreter);
+				foreach (Display d in context.Interpreter.Session.Displays)
+					context.ShowDisplay (d);
+
 				return null;
 			}
 		}
@@ -3426,7 +3450,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			if (context.HasBackend)
+			if (context.HasTarget)
 				throw new ScriptingException ("Already have a target.");
 			try {
 				using (FileStream fs = new FileStream ((string) Args [0], FileMode.Open))
