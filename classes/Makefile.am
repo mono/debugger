@@ -8,6 +8,7 @@ EXTRA_DIST = \
 	DebuggerConfiguration.xsd \
 	DebuggerOptions.cs \
 	DebuggerSession.cs \
+	Display.cs \
 	Event.cs \
 	ExceptionCatchPoint.cs \
 	ExpressionBreakpoint.cs \

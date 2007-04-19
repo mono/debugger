@@ -20,7 +20,6 @@ EXTRA_DIST = \
 	CSharpTokenizer.cs		\
 	GnuReadLine.cs			\
 	Interpreter.cs			\
-	Displays.cs			\
 	Main.cs				\
 	MyTextReader.cs			\
 	ScriptingContext.cs		\
