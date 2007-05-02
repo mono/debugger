@@ -344,6 +344,7 @@ namespace Mono.Debugger.Backends
 		public readonly int KlassParentOffset;
 		public readonly int KlassTokenOffset;
 		public readonly int KlassFieldOffset;
+		public readonly int KlassFieldCountOffset;
 		public readonly int KlassMethodsOffset;
 		public readonly int KlassMethodCountOffset;
 		public readonly int KlassThisArgOffset;
@@ -405,6 +406,8 @@ namespace Mono.Debugger.Backends
 			KlassGenericClassOffset = reader.ReadInt32 ();
 			KlassGenericContainerOffset = reader.ReadInt32 ();
 			FieldInfoSize = reader.ReadInt32 ();
+
+			KlassFieldCountOffset = KlassMethodCountOffset - 8;
 
 			MonoDefaultsCorlibOffset = reader.ReadInt32 ();
 			MonoDefaultsObjectOffset = reader.ReadInt32 ();

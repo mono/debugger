@@ -57,7 +57,7 @@ namespace Mono.Debugger.Languages.Mono
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
 			Cecil.TypeDefinition object_type = corlib.ModuleDefinition.Types ["System.Object"];
 			ObjectType = new MonoObjectType (corlib, object_type, object_size);
-			ObjectClass = new MonoClassType (corlib, object_type);
+			ObjectClass = new MonoClassType (memory, corlib, object_type, klass);
 			language.AddCoreType (ObjectClass, object_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsByteOffset;
@@ -160,7 +160,7 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
-			ArrayType = new MonoClassType (corlib, array_type);
+			ArrayType = new MonoClassType (memory, corlib, array_type, klass);
 			language.AddCoreType (ArrayType, array_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsDelegateOffset;
@@ -172,7 +172,7 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.Offset = info.MonoDefaultsExceptionOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
-			ExceptionType = new MonoClassType (corlib, exception_type);
+			ExceptionType = new MonoClassType (memory, corlib, exception_type, klass);
 			language.AddCoreType (ExceptionType, exception_type, klass);
 		}
 	}
@@ -185,6 +185,8 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable assembly_hash;
 		Hashtable assembly_by_name;
 		Hashtable class_hash;
+		Hashtable class_info_by_addr;
+		Hashtable class_info_by_type;
 		MonoSymbolFile corlib;
 		MonoBuiltinTypeInfo builtin_types;
 
@@ -314,30 +316,31 @@ namespace Mono.Debugger.Languages.Mono
 				return mono_type;
 		}
 
-		public void AddClass (TargetAddress klass_address, TargetType type)
-		{
-			if (!class_hash.Contains (klass_address))
-				class_hash.Add (klass_address, type);
-		}
-
 		internal void AddCoreType (TargetType type, Cecil.TypeDefinition typedef,
 					   TargetAddress klass)
 		{
 			corlib.AddType (type, typedef);
-			AddClass (klass, type);
+			if (!class_hash.Contains (klass))
+				class_hash.Add (klass, type);
 		}
 
-		public TargetType GetClass (Thread target, TargetAddress klass_address)
+		public TargetType GetClass (TargetMemoryAccess target, TargetAddress klass_address)
 		{
 			TargetType type = (TargetType) class_hash [klass_address];
 			if (type != null)
 				return type;
 
 			try {
-				return MonoClassType.ReadMonoClass (this, target, klass_address);
+				type = MonoClassType.ReadMonoClass (this, target, klass_address);
 			} catch {
 				return null;
 			}
+
+			if (type == null)
+				return null;
+
+			class_hash.Add (klass_address, type);
+			return type;
 		}
 
 		public MonoSymbolFile GetImage (TargetAddress address)
@@ -362,6 +365,8 @@ namespace Mono.Debugger.Languages.Mono
 			assembly_hash = new Hashtable ();
 			assembly_by_name = new Hashtable ();
 			class_hash = new Hashtable ();
+			class_info_by_addr = new Hashtable ();
+			class_info_by_type = new Hashtable ();
 			initialized = true;
 		}
 
@@ -546,7 +551,7 @@ namespace Mono.Debugger.Languages.Mono
 					break;
 
 				case DataItemType.Class:
-					read_class_entry (reader);
+					read_class_entry (memory, reader);
 					break;
 
 				case DataItemType.Wrapper:
@@ -571,10 +576,8 @@ namespace Mono.Debugger.Languages.Mono
 				file.AddRangeEntry (reader, contents);
 		}
 
-		void read_class_entry (TargetReader reader)
+		void read_class_entry (TargetMemoryAccess memory, TargetReader reader)
 		{
-			int size = reader.BinaryReader.PeekInt32 ();
-			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
 			int file_idx = reader.BinaryReader.ReadInt32 ();
 
@@ -585,7 +588,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (file == null)
 				return;
 
-			file.AddClassEntry (reader, contents);
+			reader.BinaryReader.ReadLeb128 ();
+			reader.BinaryReader.ReadLeb128 ();
+			TargetAddress klass_address = reader.ReadAddress ();
+
+			GetClassInfo (memory, klass_address);
 		}
 
 		void read_wrapper_entry (TargetMemoryAccess memory, TargetReader reader)
@@ -594,6 +601,40 @@ namespace Mono.Debugger.Languages.Mono
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
 			corlib.AddWrapperEntry (memory, reader, contents);
+		}
+
+		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
+		{
+			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass_address];
+			if (info != null)
+				return info;
+
+			int token = memory.ReadInteger (
+				klass_address + MonoMetadataInfo.KlassTokenOffset);
+
+			TargetAddress image = memory.ReadAddress (klass_address);
+			MonoSymbolFile file = GetImage (image);
+			if (file == null)
+				return null;
+
+			if ((token & 0xff000000) != 0x02000000)
+				throw new InternalError ();
+			token &= 0x00ffffff;
+
+			Cecil.TypeDefinition tdef = file.ModuleDefinition.LookupByToken (
+				Cecil.Metadata.TokenType.TypeDef, (int) token) as Cecil.TypeDefinition;
+			if (tdef == null)
+				throw new InternalError ();
+
+			info = new MonoClassInfo (memory, this, token, klass_address);
+			class_info_by_addr.Add (klass_address, info);
+			class_info_by_type.Add (tdef, info);
+			return info;
+		}
+
+		internal MonoClassInfo GetClassInfo (Cecil.TypeDefinition type)
+		{
+			return (MonoClassInfo) class_info_by_type [type];
 		}
 #endregion
 

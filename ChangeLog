@@ -1,3 +1,20 @@
+2007-05-02  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo): Completely redesigned this; we now construct the
+	`MonoClassInfo' when reading the symbol tables and it replaces the
+	`ClassEntry' in the symbol table.  This means that we don't have
+	to do any target access when actually using the class.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.read_class_entry): Read all the data from the
+	target and construct the `MonoClassInfo' here, so we don't have to
+	make any target access when actually using the class.
+
+	* languages/mono/MonoClassObject.cs
+	(MonoClassObject): We now keep a reference to our `MonoClassType',
+	not our `MonoClassInfo'.
+
 2007-04-18  Martin Baulig  <martin@ximian.com>
 
 	Reimplement displays; integrate them with the session code and use

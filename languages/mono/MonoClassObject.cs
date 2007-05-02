@@ -5,17 +5,17 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoClassObject : TargetClassObject
 	{
-		new MonoClassInfo type;
+		new MonoClassType type;
 
-		public MonoClassObject (MonoClassInfo type, TargetLocation location)
-			: base (type.Type, location)
+		public MonoClassObject (MonoClassType type, TargetLocation location)
+			: base (type, location)
 		{
 			this.type = type;
 		}
 
 		public override TargetClassObject GetParentObject (Thread target)
 		{
-			if (!type.Type.HasParent)
+			if (!type.HasParent)
 				return null;
 
 			return type.GetParentObject (target, Location);
@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetClassObject GetCurrentObject (Thread target)
 		{
-			if (!type.Type.IsByRef)
+			if (!type.IsByRef)
 				return null;
 
 			return type.GetCurrentObject (target, Location);
@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal TargetAddress KlassAddress {
-			get { return type.KlassAddress; }
+			get { return type.MonoClassInfo.KlassAddress; }
 		}
 
 		internal override long GetDynamicSize (Thread target, TargetBlob blob,

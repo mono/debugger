@@ -110,11 +110,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetAddress GetMethodAddress (Thread target)
 		{
-			MonoClassInfo info = klass.GetTypeInfo ();
-			if (info == null)
-				throw new LocationInvalidException ();
-
-			return info.GetMethodAddress (target, Token);
+			return klass.MonoClassInfo.GetMethodAddress (target, Token);
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)

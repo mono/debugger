@@ -219,7 +219,6 @@ namespace Mono.Debugger.Languages.Mono
 		ArrayList ranges;
 		ArrayList wrappers;
 		Hashtable type_hash;
-		Hashtable class_entry_hash;
 		ArrayList sources;
 		Hashtable source_hash;
 		Hashtable source_file_hash;
@@ -242,7 +241,6 @@ namespace Mono.Debugger.Languages.Mono
 			wrappers = new ArrayList ();
 			range_hash = new Hashtable ();
 			type_hash = new Hashtable ();
-			class_entry_hash = new Hashtable ();
 
 			Index = memory.ReadInteger (address);
 			address += int_size;
@@ -363,12 +361,6 @@ namespace Mono.Debugger.Languages.Mono
 			wrappers.Add (wrapper);
 		}
 
-		internal void AddClassEntry (TargetReader reader, byte[] contents)
-		{
-			ClassEntry entry = new ClassEntry (this, reader, contents);
-			class_entry_hash.Add (new TypeHashEntry (entry), entry);
-		}
-
 		public TargetType LookupMonoType (Cecil.TypeReference type)
 		{
 			TargetType result = (TargetType) type_hash [type];
@@ -390,21 +382,15 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 			}
 
-			type_hash.Add (type, result);
+			if (!type_hash.Contains (type))
+				type_hash.Add (type, result);
 			return result;
 		}
 
 		public void AddType (TargetType type, Cecil.TypeDefinition typedef)
 		{
-			type_hash.Add (typedef, type);
-		}
-
-		public TargetBinaryReader GetTypeInfo (Cecil.TypeDefinition type)
-		{
-			ClassEntry entry = (ClassEntry) class_entry_hash [new TypeHashEntry (type)];
-			if (entry == null)
-				return null;
-			return entry.Contents;
+			if (!type_hash.Contains (typedef))
+				type_hash.Add (typedef, type);
 		}
 
 		void ensure_sources ()
@@ -1365,11 +1351,6 @@ namespace Mono.Debugger.Languages.Mono
 				Token = (int) (type.MetadataToken.TokenType + type.MetadataToken.RID);
 			}
 
-			public TypeHashEntry (ClassEntry entry)
-			{
-				Token = entry.Token;
-			}
-
 			public TypeHashEntry (int token)
 			{
 				Token = token;
@@ -1389,35 +1370,6 @@ namespace Mono.Debugger.Languages.Mono
 			public override string ToString ()
 			{
 				return String.Format ("TypeHashEntry ({0:x})", Token);
-			}
-		}
-
-		protected class ClassEntry
-		{
-			public readonly MonoSymbolFile File;
-			public readonly int Token;
-			public readonly int InstanceSize;
-			public readonly TargetAddress KlassAddress;
-			readonly byte[] contents;
-
-			public ClassEntry (MonoSymbolFile file, TargetReader reader, byte[] contents)
-			{
-				this.File = file;
-				this.contents = contents;
-
-				Token = reader.BinaryReader.ReadLeb128 ();
-				InstanceSize = reader.BinaryReader.ReadLeb128 ();
-				KlassAddress = reader.ReadAddress ();
-			}
-
-			public TargetBinaryReader Contents {
-				get { return new TargetBinaryReader (contents, File.TargetInfo); }
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("ClassEntry [{0}:{1:x}:{2}:{3}]",
-						      File, Token, InstanceSize, KlassAddress);
 			}
 		}
 
