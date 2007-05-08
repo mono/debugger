@@ -6,57 +6,6 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	public class StructFormatter
-	{
-		public string head;
-		public static int Columns = 75;
-
-		ArrayList items = new ArrayList ();
-
-		public StructFormatter (string header) {
-			head = header;
-		}
-
-		public void Add (string item)
-		{
-			items.Add (item);
-		}
-
-		public string Format ()
-		{
-			StringBuilder sb = new StringBuilder ();
-
-			int pos = head.Length + 1;
-			bool multi_line = false;
-			for (int i = 0; i < items.Count; i++) {
-				if (i > 0) {
-					sb.Append (", ");
-					pos += 2;
-				} else {
-					sb.Append (" ");
-					pos++;
-				}
-
-				string item = (string) items [i];
-
-				pos += item.Length;
-				if (pos > Columns) {
-					sb.Append ("\n  ");
-					multi_line = true;
-					pos = item.Length + 2;
-				}
-
-				sb.Append (item);
-			}
-
-			string text = sb.ToString ();
-			if (multi_line)
-				return head + "{\n " + text + "\n}";
-			else
-				return head + "{" + text + " }";
-		}
-	}
-
 	[Serializable]
 	public enum DisplayFormat
 	{

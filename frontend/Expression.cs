@@ -250,7 +250,23 @@ namespace Mono.Debugger.Frontend
 			if (var == null)
 				return null;
 
-			return var.GetObject (context.CurrentFrame);
+			TargetObject obj = var.GetObject (context.CurrentFrame);
+			if (obj == null)
+				return null;
+
+			TargetClassObject cobj = obj as TargetClassObject;
+			if (cobj != null) {
+				TargetObject current;
+				try {
+					current = cobj.GetCurrentObject (context.CurrentThread);
+				} catch {
+					current = null;
+				}
+				if (current != null)
+					return current;
+			}
+
+			return obj;
 		}
 
 		public TargetObject EvaluateObject (ScriptingContext context)
@@ -684,7 +700,15 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			TargetClassObject cobj = (TargetClassObject) base.DoEvaluateObject (context);
+			TargetVariable var = DoEvaluateVariable (context);
+			if (var == null)
+				return null;
+
+			TargetObject obj = var.GetObject (context.CurrentFrame);
+			if (obj == null)
+				return null;
+
+			TargetClassObject cobj = (TargetClassObject) obj;
 			return cobj.GetParentObject (context.CurrentThread);
 		}
 	}

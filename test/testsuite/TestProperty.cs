@@ -34,7 +34,7 @@ namespace Mono.Debugger.Tests
 
 			AssertPrint (thread, "test.A", "(A) { }");
 			AssertPrint (thread, "test.B", "(B[]) [ { } ]");
-			AssertPrint (thread, "test.C", "(C[,]) [  ]");
+			AssertPrint (thread, "test.C", "(C[,]) [ ]");
 			AssertPrint (thread, "test.Hello (new D ())", "(System.String) \"D\"");
 
 			AssertExecute ("continue");

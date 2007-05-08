@@ -1,5 +1,28 @@
 2007-05-08  Martin Baulig  <martin@ximian.com>
 
+	The new ObjectFormatter :-)
+
+	This has two major user-visible changes:
+	- When printing a class, we now include fields from the parent type.
+	- When printing a variable, we use the actual type of the object
+	rather than just using the variable type.
+
+	* classes/Style.cs (StructFormatter): Removed; this has been
+	replaced by the new ObjectFormatter.
+
+	* frontend/Expression.cs
+	(Expression.DoEvaluateObject): Get the "real" type of a class
+	object instead of just using the variable type.
+	(BaseExpression.DoEvaluateObject): We need to override this and
+	use the variable type.
+
+	* frontend/ObjectFormatter.cs: New file.
+	(ObjectFormatter): New public class.
+
+	* frontend/Style.cs: Use the new ObjectFormatter.
+
+2007-05-08  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassType.cs
 	(MonoClassType.GetCurrentObject): Unbox the object if necessary.
 

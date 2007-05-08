@@ -89,6 +89,7 @@ namespace Mono.Debugger.Tests
 			};
 
 			ST.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+			ObjectFormatter.WrapLines = false;
 		}
 
 		Queue queue;

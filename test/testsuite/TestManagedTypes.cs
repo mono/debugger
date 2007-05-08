@@ -203,9 +203,12 @@ namespace Mono.Debugger.Tests
 					     "X.InheritedClassType()", LineInheritedClassType);
 
 			AssertPrint (thread, "c",
-				     "(C) { a = 8, f = 3.14 }");
+				     "(C) { <B> = { a = 5, b = 256, c = \"New England Patriots\" }, " +
+				     "a = 8, f = 3.14 }");
+
 			AssertPrint (thread, "b",
-				     "(B) { a = 5, b = 256, c = \"New England Patriots\" }");
+				     "(C) { <B> = { a = 5, b = 256, c = \"New England Patriots\" }, " +
+				     "a = 8, f = 3.14 }");
 			AssertPrint (thread, "(B) c",
 				     "(B) { a = 5, b = 256, c = \"New England Patriots\" }");
 
@@ -221,7 +224,8 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "d.b",
 				     "(B) { a = 5, b = 256, c = \"New England Patriots\" }");
 			AssertPrint (thread, "d.c",
-				     "(C) { a = 8, f = 3.14 }");
+				     "(C) { <B> = { a = 5, b = 256, c = \"New England Patriots\" }, " +
+				     "a = 8, f = 3.14 }");
 			AssertPrint (thread, "d.s",
 				     "(System.String[]) [ \"Eintracht Trier\" ]");
 

@@ -32,7 +32,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
-			AssertPrint (thread, "obj", "(object) &(Bar) { Data = 81 }");
+			AssertPrint (thread, "obj", "(object) &(Bar) { <Foo> = { }, Data = 81 }");
 			AssertPrint (thread, "boxed", "(object) &(Hello) { Data = 305419896 }");
 			AssertPrint (thread, DisplayFormat.HexaDecimal, "boxed",
 				     "(object) &(Hello) { Data = 0x12345678 }");
@@ -40,7 +40,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "obj.GetType ()", "(System.MonoType) { \"Bar\" }");
 			AssertPrint (thread, "boxed.GetType()", "(System.MonoType) { \"Hello\" }");
 			AssertPrint (thread, "boxed.ToString ()", "(System.String) \"0x12345678\"");
-			AssertPrint (thread, "value", "(System.ValueType) { }");
+			AssertPrint (thread, "value", "(Hello) { \"0x12345678\" }");
 			AssertPrint (thread, "value.GetType ()", "(System.MonoType) { \"Hello\" }");
 			AssertPrint (thread, "value.ToString ()", "(System.String) \"0x12345678\"");
 

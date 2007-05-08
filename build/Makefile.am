@@ -30,6 +30,7 @@ MDB_SRCLIST = \
 	$(top_srcdir)/frontend/MyTextReader.cs		\
 	$(top_srcdir)/frontend/ScriptingContext.cs	\
 	$(top_srcdir)/frontend/Style.cs			\
+	$(top_srcdir)/frontend/ObjectFormatter.cs	\
 	$(LANGUAGE_SPECIFIC_FILES)			\
 	AssemblyInfo.cs
 

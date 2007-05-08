@@ -38,13 +38,18 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "a.ToString ()", "(System.String) \"5\"");
 			AssertPrint (thread, "(A) a", "(A) { \"5\" }");
 			AssertPrintException (thread, "(B) a", "Cannot cast from A to B.");
-			AssertPrint (thread, "d", "(D) { e = 500 }");
-			AssertPrint (thread, "(C) d", "(C) { f = 3.14 }");
+			AssertPrint (thread, "d", "(D) { <C> = { <B> = { a = 8, " +
+				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
+			AssertPrint (thread, "(C) d",
+				     "(C) { <B> = { a = 8, Hello = \"Hello World\" }, f = 3.14 }");
 			AssertPrint (thread, "(B) d", "(B) { a = 8, Hello = \"Hello World\" }");
 			AssertPrintException (thread, "(A) d", "Cannot cast from D to A.");
-			AssertPrint (thread, "(D) d", "(D) { e = 500 }");
-			AssertPrint (thread, "((D) d)", "(D) { e = 500 }");
-			AssertPrint (thread, "(((D) d))", "(D) { e = 500 }");
+			AssertPrint (thread, "(D) d", "(D) { <C> = { <B> = { a = 8, " +
+				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
+			AssertPrint (thread, "((D) d)", "(D) { <C> = { <B> = { a = 8, " +
+				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
+			AssertPrint (thread, "(((D) d))", "(D) { <C> = { <B> = { a = 8, " +
+				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
 			AssertPrint (thread, "((B) d).Test ()", "(System.String) \"Hello World\"");
 			AssertPrint (thread, "((C) d).Test ()", "(System.String) \"Hello World\"");
 			AssertPrint (thread, "(((D) d).Test ())", "(System.String) \"Hello World\"");
@@ -65,7 +70,8 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "c.Virtual ()", "(System.Int32) 2");
 			AssertPrint (thread, "hello.Test ()", "(System.String) \"Hello\"");
 			AssertPrint (thread, "world.Test ()", "(System.String) \"World\"");
-			AssertPrint (thread, "((D) c)", "(D) { e = 500 }");
+			AssertPrint (thread, "((D) c)", "(D) { <C> = { <B> = { a = 8, " +
+				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
 			AssertPrint (thread, "c.Test (c)", "(System.Int32) 64");
 
 			int bpt_hello = AssertBreakpoint (line_hello);
@@ -77,7 +83,8 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_hello, "C.Hello()", line_hello);
 
-			AssertPrint (thread, "this", "(C) { f = 3.14 }");
+			AssertPrint (thread, "this", "(D) { <C> = { <B> = { a = 8, " +
+				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
 			AssertPrint (thread, "f", "(System.Single) 3.14");
 			AssertPrint (thread, "base.a", "(System.Int32) 8");
 			AssertPrint (thread, "base.Hello", "(System.String) \"Hello World\"");
