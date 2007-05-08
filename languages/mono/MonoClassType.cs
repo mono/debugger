@@ -610,6 +610,10 @@ namespace Mono.Debugger.Languages.Mono
 			if (current == null)
 				return null;
 
+			if (IsByRef && !current.IsByRef) // Unbox
+				location = location.GetLocationAtOffset (
+					2 * target.TargetInfo.TargetAddressSize);
+
 			return (MonoClassObject) current.GetObject (location);
 		}
 	}

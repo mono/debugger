@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetClassObject GetParentObject (Thread target)
 		{
-			if (!type.HasParent)
+			if (!type.HasParent || !type.IsByRef)
 				return null;
 
 			return type.GetParentObject (target, Location);
