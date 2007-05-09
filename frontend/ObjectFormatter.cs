@@ -247,18 +247,22 @@ namespace Mono.Debugger.Frontend
 
 			object value = fobj.GetObject (target);
 
+			SortedList members = new SortedList ();
+			foreach (TargetFieldInfo field in eobj.Type.Members)
+				members.Add (field.Name, field.ConstValue);
+
 			if (!eobj.Type.IsFlagsEnum) {
-				foreach (TargetFieldInfo field in eobj.Type.Members) {
-					if (field.ConstValue.Equals (value)) {
-						Append (field.Name);
+				foreach (DictionaryEntry entry in members) {
+					if (entry.Value.Equals (value)) {
+						Append ((string) entry.Key);
 						return;
 					}
 				}
 			} else if (value is ulong) {
 				bool first = true;
 				ulong the_value = (ulong) value;
-				foreach (TargetFieldInfo field in eobj.Type.Members) {
-					ulong fvalue = System.Convert.ToUInt64 (field.ConstValue);
+				foreach (DictionaryEntry entry in members) {
+					ulong fvalue = System.Convert.ToUInt64 (entry.Value);
 					if ((the_value & fvalue) != fvalue)
 						continue;
 					if (!first) {
@@ -266,15 +270,15 @@ namespace Mono.Debugger.Frontend
 						CheckLineWrap ();
 					}
 					first = false;
-					Append (field.Name);
+					Append ((string) entry.Key);
 				}
 				if (!first)
 					return;
 			} else {
 				bool first = true;
 				long the_value = System.Convert.ToInt64 (value);
-				foreach (TargetFieldInfo field in eobj.Type.Members) {
-					long fvalue = System.Convert.ToInt64 (field.ConstValue);
+				foreach (DictionaryEntry entry in members) {
+					long fvalue = System.Convert.ToInt64 (entry.Value);
 					if ((the_value & fvalue) != fvalue)
 						continue;
 					if (!first) {
@@ -282,7 +286,7 @@ namespace Mono.Debugger.Frontend
 						CheckLineWrap ();
 					}
 					first = false;
-					Append (field.Name);
+					Append ((string) entry.Key);
 				}
 				if (!first)
 					return;

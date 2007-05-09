@@ -36,8 +36,8 @@ namespace Mono.Debugger.Tests
 				     "(Pub) { Music = 0x0, Drinks = 0x301f }");
 			AssertPrint (thread, "irish_pub_thursday.Music", "(Music) Irish");
 			AssertPrint (thread, "irish_pub_thursday.Drinks",
-				     "(Drinks) Tequila | Coffee | NonAlcoholic | Whine | " +
-				     "Water | Beer | Rum | Alcoholic | Juice | Vodka | All | Tea");
+				     "(Drinks) Alcoholic | All | Beer | Coffee | Juice | " +
+				     "NonAlcoholic | Rum | Tea | Tequila | Vodka | Water | Whine");
 			AssertPrint (thread, DisplayFormat.HexaDecimal, "lunch_break",
 				     "(Pub) { Music = 0x2, Drinks = 0x1005 }");
 			AssertPrint (thread, "lunch_break",
