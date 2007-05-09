@@ -1,5 +1,13 @@
 2007-05-09  Martin Baulig  <martin@ximian.com>
 
+	*** Preparing the release; this line will be removed when ready ***
+
+	Released version 0.50 "Dublin" of the Mono Debugger :-)
+
+	* configure.in: Require Mono >= 1.2.4.
+
+2007-05-09  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassInfo.cs
 	(MonoClassInfo.GenericClass): New public field.
 	(MonoClassInfo.GenericContainer): Likewise.

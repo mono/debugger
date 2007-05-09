@@ -2,7 +2,7 @@
 AC_INIT(README)
 AC_CANONICAL_SYSTEM
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(mono-debugger, 0.35)
+AM_INIT_AUTOMAKE(mono-debugger, 0.49)
 AM_MAINTAINER_MODE
 
 AC_CHECK_TOOL(CC, gcc, gcc)
@@ -136,7 +136,7 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 
 ## Versions of dependencies
 GLIB_REQUIRED_VERSION=2.0.0
-MONO_REQUIRED_VERSION=1.2.3
+MONO_REQUIRED_VERSION=1.2.4
 
 
 PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)

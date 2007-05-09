@@ -1,3 +1,23 @@
+May 9th, 2007 - Martin Baulig
+-----------------------------
+
+Released version 0.50 "Dublin" of the Mono Debugger :-)
+
+- Lots of bug-fixes, usability improvements and increased stability.
+
+- New object formatter:
+  When printing a class object, we now include fields from its parents.
+
+- Added support for Displays (thanks to Massimiliano Mantione).
+
+- New threading model:
+  By default, all threads are now stopped when the debugger is in
+  control.
+
+- Ctrl-C now stops all threads.
+
+- We now support stripped `mono' binaries.
+
 November 15th, 2006 - Martin Baulig
 -----------------------------------
 
