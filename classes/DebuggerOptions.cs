@@ -309,15 +309,21 @@ namespace Mono.Debugger
 					continue;
 
 				if (!parsing_options)
-					continue;
+					break;
 
 				if (arg.StartsWith ("-")) {
 					if (ParseOption (options, arg, ref args, ref i, ref args_follow))
 						continue;
+					Usage ();
+					Console.WriteLine ("Unknown argument: {0}", arg);
+					Environment.Exit (1);
 				} else if (arg.StartsWith ("/")) {
 					string unix_opt = "-" + arg.Substring (1);
 					if (ParseOption (options, unix_opt, ref args, ref i, ref args_follow))
 						continue;
+					Usage ();
+					Console.WriteLine ("Unknown argument: {0}", arg);
+					Environment.Exit (1);
 				}
 
 				options.File = arg;

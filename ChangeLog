@@ -1,3 +1,8 @@
+2007-05-09  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.ParseCommandLine): Warn about unknown arguments.
+
 2007-05-08  Martin Baulig  <martin@ximian.com>
 
 	The new ObjectFormatter :-)
