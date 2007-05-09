@@ -32,7 +32,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void Main ()
 		{
-			Compile (FileName);
+			Compile ();
 
 			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void Load ()
 		{
-			Compile (FileName);
+			Compile ();
 
 			Process process;
 			using (MemoryStream ms = new MemoryStream (session))
@@ -83,7 +83,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void LoadAgain ()
 		{
-			Compile (FileName);
+			Compile ();
 
 			Process process;
 			using (MemoryStream ms = new MemoryStream (session))
@@ -110,7 +110,7 @@ namespace Mono.Debugger.Tests
 		[Category("Session")]
 		public void TestBreakpoint ()
 		{
-			Compile (FileName);
+			Compile ();
 
 			AssertExecute ("run");
 			Process process = AssertMainProcessCreated ();

@@ -8,6 +8,13 @@
 
 2007-05-09  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/NUnit.cs (TestSuite.Compile): Don't take a
+	filename argument; use the `FileName' and `ExeFileName' and pass
+	the output filename to mcs to make things work with
+	srcdir != builddir.
+
+2007-05-09  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassInfo.cs
 	(MonoClassInfo.GenericClass): New public field.
 	(MonoClassInfo.GenericContainer): Likewise.

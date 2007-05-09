@@ -241,11 +241,12 @@ namespace Mono.Debugger.Tests
 			}
 		}
 
-		public void Compile (string filename)
+		public void Compile ()
 		{
 			SD.ProcessStartInfo start = new SD.ProcessStartInfo (
-				BuildInfo.mcs, "-debug " + filename);
+				BuildInfo.mcs, "-debug " + FileName + " -out:" + ExeFileName);
 			start.UseShellExecute = false;
+			start.WorkingDirectory = BuildDirectory;
 			start.RedirectStandardOutput = true;
 			start.RedirectStandardError = true;
 
@@ -254,7 +255,7 @@ namespace Mono.Debugger.Tests
 
 			if (child.ExitCode != 0)
 				Assert.Fail ("Compilation of {0} exited with error: {1}\n{2}",
-					     filename, child.ExitCode, child.StandardError.ReadToEnd ());
+					     FileName, child.ExitCode, child.StandardError.ReadToEnd ());
 		}
 
 		[TestFixtureSetUp]

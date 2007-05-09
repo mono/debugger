@@ -24,4 +24,5 @@ EXTRA_DIST = \
 	MyTextReader.cs			\
 	ScriptingContext.cs		\
 	Style.cs			\
+	ObjectFormatter.cs		\
 	skeleton
