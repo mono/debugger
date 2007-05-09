@@ -946,8 +946,8 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 
 			default:
-				Console.WriteLine ("Received unknown notification {0:x}",
-						   (int) type);
+				Console.WriteLine ("Received unknown notification {0:x} / {1} {2:x}",
+						   (int) type, data, arg);
 				break;
 			}
 		}
