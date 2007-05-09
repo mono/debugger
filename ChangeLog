@@ -1,5 +1,15 @@
 2007-05-09  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.GenericClass): New public field.
+	(MonoClassInfo.GenericContainer): Likewise.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.GetClassInfo): Don't add generic classes to
+	the type hash.
+
+2007-05-09  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs
 	(DebuggerOptions.ParseCommandLine): Warn about unknown arguments.
 

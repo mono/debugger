@@ -8,6 +8,8 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly int Token;
 		public readonly TargetAddress KlassAddress;
+		public readonly TargetAddress GenericContainer;
+		public readonly TargetAddress GenericClass;
 
 		protected readonly int[] field_offsets;
 		protected readonly Hashtable methods;
@@ -23,6 +25,11 @@ namespace Mono.Debugger.Languages.Mono
 				KlassAddress + mono.MonoMetadataInfo.KlassParentOffset);
 			if (!parent_klass.IsNull)
 				parent = mono.GetClassInfo (target, parent_klass);
+
+			GenericContainer = target.ReadAddress (
+				KlassAddress + mono.MonoMetadataInfo.KlassGenericContainerOffset);
+			GenericClass = target.ReadAddress (
+				KlassAddress + mono.MonoMetadataInfo.KlassGenericClassOffset);
 
 			TargetAddress field_info = target.ReadAddress (
 				KlassAddress + mono.MonoMetadataInfo.KlassFieldOffset);

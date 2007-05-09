@@ -628,7 +628,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			info = new MonoClassInfo (memory, this, token, klass_address);
 			class_info_by_addr.Add (klass_address, info);
-			class_info_by_type.Add (tdef, info);
+			if (info.GenericClass.IsNull)
+				class_info_by_type.Add (tdef, info);
 			return info;
 		}
 
