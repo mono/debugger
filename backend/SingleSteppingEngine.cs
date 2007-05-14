@@ -1877,7 +1877,7 @@ namespace Mono.Debugger.Backends
 		protected readonly Inferior inferior;
 
 		public readonly CommandResult Result;
-		public TargetAddress StartFrame;
+		public TargetAddress StartFrame = TargetAddress.Null;
 		public int PendingBreakpoint = -1;
 
 		protected Operation (SingleSteppingEngine sse, CommandResult result)
