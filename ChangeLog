@@ -1,7 +1,5 @@
 2007-05-09  Martin Baulig  <martin@ximian.com>
 
-	*** Preparing the release; this line will be removed when ready ***
-
 	Released version 0.50 "Dublin" of the Mono Debugger :-)
 
 	* configure.in: Require Mono >= 1.2.4.
