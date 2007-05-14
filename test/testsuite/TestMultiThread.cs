@@ -173,8 +173,8 @@ namespace Mono.Debugger.Tests
 			AssertFrame (child, "X.LoopDone()", LineLoop);
 
 			Backtrace bt = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
-			Assert.IsTrue (bt.Count == 6);
-			AssertFrame (bt [3], 3, "X.Loop()", LineSleep);
+			Assert.IsTrue (bt.Count == 5);
+			AssertFrame (bt [2], 2, "X.Loop()", LineSleep);
 
 			AssertExecute ("continue -thread " + thread.ID);
 			AssertTargetOutput ("Loop: child 5");
