@@ -8,6 +8,12 @@
 
 2007-05-14  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.symbol_files): Make this a Hashtable instead
+	of an ArrayList; don't store any null's in the list.
+
+2007-05-14  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Architecture_I386.cs
 	(Architecture_I386.GetLMF): Correctly set ebp.
 

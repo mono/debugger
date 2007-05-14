@@ -179,7 +179,7 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoLanguageBackend : Language, ILanguageBackend
 	{
-		ArrayList symbol_files;
+		Hashtable symbol_files;
 		int last_num_symbol_files;
 		Hashtable image_hash;
 		Hashtable assembly_hash;
@@ -360,7 +360,7 @@ namespace Mono.Debugger.Languages.Mono
 			address += 2 * memory.TargetInfo.TargetAddressSize;
 			trampolines [3] = memory.ReadAddress (address);
 
-			symbol_files = new ArrayList ();
+			symbol_files = new Hashtable ();
 			image_hash = new Hashtable ();
 			assembly_hash = new Hashtable ();
 			assembly_by_name = new Hashtable ();
@@ -450,8 +450,6 @@ namespace Mono.Debugger.Languages.Mono
 					Console.WriteLine (ex);
 				}
 
-				symbol_files.Add (symfile);
-
 				if (symfile == null)
 					continue;
 
@@ -461,6 +459,8 @@ namespace Mono.Debugger.Languages.Mono
 				image_hash.Add (symfile.MonoImage, symfile);
 				assembly_hash.Add (symfile.Assembly, symfile);
 				assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
+
+				symbol_files.Add (i, symfile);
 
 				if (address != corlib_address)
 					continue;
@@ -569,8 +569,8 @@ namespace Mono.Debugger.Languages.Mono
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
 			int file_idx = reader.BinaryReader.ReadInt32 ();
-			Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1} {2}",
-				      size, file_idx, symbol_files.Count);
+			Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1}",
+				      size, file_idx);
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 			if (file != null)
 				file.AddRangeEntry (reader, contents);
@@ -580,9 +580,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			reader.BinaryReader.ReadInt32 ();
 			int file_idx = reader.BinaryReader.ReadInt32 ();
-
-			if (file_idx >= symbol_files.Count)
-				return;
 
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 			if (file == null)
@@ -701,7 +698,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (name.IndexOf ('[') >= 0)
 				return null;
 
-			foreach (MonoSymbolFile symfile in symbol_files) {
+			foreach (MonoSymbolFile symfile in symbol_files.Values) {
 				try {
 					Cecil.TypeDefinitionCollection types = symfile.Assembly.MainModule.Types;
 					// FIXME: Work around an API problem in Cecil.
@@ -902,7 +899,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress klass = memory.ReadAddress (trampoline + 8);
 			TargetAddress image = memory.ReadAddress (klass);
 
-			foreach (MonoSymbolFile file in symbol_files) {
+			foreach (MonoSymbolFile file in symbol_files.Values) {
 				if (file.MonoImage != image)
 					continue;
 
@@ -966,7 +963,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (disposing) {
 				if (symbol_files != null) {
-					foreach (MonoSymbolFile symfile in symbol_files)
+					foreach (MonoSymbolFile symfile in symbol_files.Values)
 						symfile.Dispose();
 
 					symbol_files = null;
