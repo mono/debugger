@@ -67,6 +67,10 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		public bool IsGenericClass {
+			get { return !GenericClass.IsNull; }
+		}
+
 		public int[] FieldOffsets {
 			get { return field_offsets; }
 		}
