@@ -737,12 +737,15 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_eip = thread.ReadAddress (ebp + 4);
 			regs [(int) I386Register.EIP].SetValue (ebp + 4, new_eip);
 
+			TargetAddress new_ebp = thread.ReadAddress (ebp);
+			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
+
 			TargetAddress new_esp = ebp + 8;
 			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
 
 			ebp -= 4;
 
-			return CreateFrame (thread, new_eip, new_esp, ebp, regs);
+			return CreateFrame (thread, new_eip, new_esp, new_ebp, regs);
 		}
 	}
 }

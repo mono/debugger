@@ -826,9 +826,12 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_rip = thread.ReadAddress (rbp + 8);
 			regs [(int) X86_64_Register.RIP].SetValue (rbp + 8, new_rip);
 
+			TargetAddress new_rbp = thread.ReadAddress (rbp);
+			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
+
 			rbp -= 8;
 
-			return CreateFrame (thread, new_rip, rsp, rbp, regs);
+			return CreateFrame (thread, new_rip, rsp, new_rbp, regs);
 		}
 	}
 }

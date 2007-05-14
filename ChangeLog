@@ -6,6 +6,14 @@
 
 	* configure.in: Require Mono >= 1.2.4.
 
+2007-05-14  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_I386.cs
+	(Architecture_I386.GetLMF): Correctly set ebp.
+
+	* backend/arch/Architecture_X86_64.cs
+	(Architecture_X86_64.GetLMF): Correctly set rbp.
+
 2007-05-09  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ObjectFormatter.cs
