@@ -276,11 +276,11 @@ namespace Mono.Debugger
 			if (function != null) {
 				if (line > 0)
 					source = function.Source;
-				else if (function.IsLoaded) {
-					return new FunctionBreakpointHandle (breakpoint, domain, this);
-				} else {
+				else if (function.IsLoaded)
+					return new FunctionBreakpointHandle (breakpoint, domain, function);
+				else {
 					source = function.Source;
-					return new FunctionBreakpointHandle (breakpoint, domain, this);
+					return new FunctionBreakpointHandle (breakpoint, domain, source);
 				}
 			}
 
@@ -295,7 +295,7 @@ namespace Mono.Debugger
 				// callback when it's loaded.  We register this
 				// callback here and do the actual insertion when
 				// the method is loaded.
-				return new FunctionBreakpointHandle (breakpoint, domain, this);
+				return new FunctionBreakpointHandle (breakpoint, domain, source, line);
 			}
 
 			return null;
@@ -344,70 +344,6 @@ namespace Mono.Debugger
 			public override void Remove (Thread target)
 			{
 				module.ModuleLoadedEvent -= module_loaded;
-			}
-		}
-
-		class FunctionBreakpointHandle : BreakpointHandle
-		{
-			DynamicSourceLocation location;
-			ILoadHandler load_handler;
-			int index = -1;
-			int domain;
-
-			public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-							 DynamicSourceLocation location)
-
-				: base (bpt)
-			{
-				this.location = location;
-				this.domain = domain;
-			}
-
-			public override void Insert (Thread target)
-			{
-				if ((load_handler != null) || (index > 0))
-					return;
-
-				if ((location.function != null) && location.function.IsLoaded)
-					index = target.InsertBreakpoint (Breakpoint, location.function);
-				else
-					load_handler = location.module.SymbolFile.RegisterLoadHandler (
-						target, location.source, method_loaded, location);
-			}
-
-			public override void Remove (Thread target)
-			{
-				if (index > 0)
-					target.RemoveBreakpoint (index);
-
-				if (load_handler != null)
-					load_handler.Remove ();
-
-				load_handler = null;
-				index = -1;
-			}
-
-			// <summary>
-			//   The method has just been loaded, lookup the breakpoint
-			//   address and actually insert it.
-			// </summary>
-			public void method_loaded (TargetMemoryAccess target,
-						   SourceMethod source, object data)
-			{
-				load_handler = null;
-
-				DynamicSourceLocation location = (DynamicSourceLocation) data;
-				TargetAddress address = location.GetAddress (domain);
-				if (address.IsNull)
-					return;
-
-				try {
-					index = target.InsertBreakpoint (Breakpoint, address);
-				} catch (TargetException ex) {
-					Report.Error ("Can't insert breakpoint {0} at {1}: {2}",
-						      Breakpoint.Index, address, ex.Message);
-					index = -1;
-				}
 			}
 		}
 	}

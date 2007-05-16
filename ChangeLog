@@ -1,5 +1,14 @@
 2007-05-16  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceLocation.cs
+	(SourceLocation.FunctionBreakpointHandle): Moved into
+	BreakpointHandle.cs and made internal.
+
+	* backend/BreakpointHandle.cs
+	(FunctionBreakpointHandle): New internal class.
+
+2007-05-16  Martin Baulig  <martin@ximian.com>
+
 	* classes/Breakpoint.cs
 	(Breakpoint.Resolve): New abstract internal method.
 
