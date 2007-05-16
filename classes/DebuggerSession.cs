@@ -207,6 +207,14 @@ namespace Mono.Debugger
 			return parser.Parse (target, type, name);
 		}
 
+		public SourceFile FindFile (string name)
+		{
+			if (main_process == null)
+				return null;
+
+			return main_process.FindFile (name);
+		}
+
 		//
 		// Session management.
 		//

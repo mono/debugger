@@ -19,16 +19,25 @@ namespace Mono.Debugger
 			get { return handle != null; }
 		}
 
-		public override void Activate (Thread target)
+		internal override BreakpointHandle Resolve (Thread target)
 		{
 			if (handle != null)
-				return;
+				return handle;
 
 			SourceLocation location = Session.ParseLocation (target, LocationType, Name);
 			if (location == null)
 				throw new TargetException (TargetError.LocationInvalid);
 
-			handle = location.InsertBreakpoint (Session, target, this, domain);
+			handle = location.ResolveBreakpoint (Session, this, domain);
+			return handle;
+		}
+
+		public override void Activate (Thread target)
+		{
+			Resolve (target);
+			if (handle == null)
+				throw new TargetException (TargetError.LocationInvalid);
+			handle.Insert (target);
 		}
 
 		public override void Deactivate (Thread target)
@@ -42,14 +51,6 @@ namespace Mono.Debugger
 		internal override void OnTargetExited ()
 		{
 			handle = null;
-		}
-
-		internal Breakpoint Clone (int breakpoint_id)
-		{
-			ExpressionBreakpoint new_bpt = new ExpressionBreakpoint (
-				Session, GetNextEventIndex (), ThreadGroup, LocationType, Name);
-			new_bpt.handle = new SimpleBreakpointHandle (new_bpt, breakpoint_id);
-			return new_bpt;
 		}
 
 		protected override void GetSessionData (XmlElement root, XmlElement element)

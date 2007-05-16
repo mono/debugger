@@ -1,3 +1,19 @@
+2007-05-16  Martin Baulig  <martin@ximian.com>
+
+	* classes/Breakpoint.cs
+	(Breakpoint.Resolve): New abstract internal method.
+
+	* classes/SourceLocation.cs
+	(SourceLocation.InsertBreakpoint): Renamed into
+	ResolveBreakpoint(); don't take a `Thread' argument.  You need to
+	call Insert() on the returned `BreakpointHandle' to actually
+	insert the breakpoint.
+
+	* backend/BreakpointHandle.cs
+	(BreakpointHandle.Insert): New public abstract method; we need to
+	call this to actually insert the breakpoint.
+	(AddressBreakpointHandle): New internal class.
+
 2007-05-09  Martin Baulig  <martin@ximian.com>
 
 	Released version 0.50 "Dublin" of the Mono Debugger :-)

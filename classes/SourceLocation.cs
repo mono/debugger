@@ -85,7 +85,7 @@ namespace Mono.Debugger
 			dynamic.DumpLineNumbers ();
 		}
 
-		protected bool Resolve (DebuggerSession session, Thread target)
+		protected bool Resolve (DebuggerSession session)
 		{
 			if (dynamic != null)
 				return true;
@@ -115,7 +115,7 @@ namespace Mono.Debugger
 
 				string filename = FileName.Substring (0, pos);
 
-				SourceFile file = target.Process.FindFile (filename);
+				SourceFile file = session.FindFile (filename);
 				if (file == null)
 					return false;
 
@@ -126,14 +126,13 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		internal BreakpointHandle InsertBreakpoint (DebuggerSession session,
-							    Thread target, Breakpoint breakpoint,
-							    int domain)
+		internal BreakpointHandle ResolveBreakpoint (DebuggerSession session,
+							     Breakpoint breakpoint, int domain)
 		{
-			if (!Resolve (session, target))
+			if (!Resolve (session))
 				throw new TargetException (TargetError.LocationInvalid);
 
-			return dynamic.InsertBreakpoint (target, breakpoint, domain);
+			return dynamic.ResolveBreakpoint (breakpoint, domain);
 		}
 
 		internal void OnTargetExited ()
@@ -251,11 +250,10 @@ namespace Mono.Debugger
 			method.Source.DumpLineNumbers ();
 		}
 
-		internal BreakpointHandle InsertBreakpoint (Thread target, Breakpoint breakpoint,
-							    int domain)
+		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint, int domain)
 		{
 			if (!module.IsLoaded)
-				return new ModuleBreakpointHandle (breakpoint, this);
+				return new ModuleBreakpointHandle (breakpoint, module);
 
 			if ((function == null) && (source == null)) {
 				if (method != null) {
@@ -279,12 +277,10 @@ namespace Mono.Debugger
 				if (line > 0)
 					source = function.Source;
 				else if (function.IsLoaded) {
-					int index = target.InsertBreakpoint (breakpoint, function);
-					return new SimpleBreakpointHandle (breakpoint, index);
+					return new FunctionBreakpointHandle (breakpoint, domain, this);
 				} else {
 					source = function.Source;
-					return new FunctionBreakpointHandle (
-						target, breakpoint, domain, this);
+					return new FunctionBreakpointHandle (breakpoint, domain, this);
 				}
 			}
 
@@ -293,15 +289,13 @@ namespace Mono.Debugger
 
 			TargetAddress address = GetAddress (domain);
 			if (!address.IsNull) {
-				int index = target.InsertBreakpoint (breakpoint, address);
-				return new SimpleBreakpointHandle (breakpoint, index);
+				return new AddressBreakpointHandle (breakpoint, address);
 			} else if (source.IsDynamic) {
 				// A dynamic method is a method which may emit a
 				// callback when it's loaded.  We register this
 				// callback here and do the actual insertion when
 				// the method is loaded.
-				return new FunctionBreakpointHandle (
-					target, breakpoint, domain, this);
+				return new FunctionBreakpointHandle (breakpoint, domain, this);
 			}
 
 			return null;
@@ -327,44 +321,58 @@ namespace Mono.Debugger
 				return method.StartAddress;
 		}
 
-		private class ModuleBreakpointHandle : BreakpointHandle
+		class ModuleBreakpointHandle : BreakpointHandle
 		{
-			DynamicSourceLocation location;
+			Module module;
 
-			public ModuleBreakpointHandle (Breakpoint bpt, DynamicSourceLocation location)
+			public ModuleBreakpointHandle (Breakpoint bpt, Module module)
 				: base (bpt)
 			{
-				this.location = location;
-
-				location.module.ModuleLoadedEvent += module_loaded;
+				this.module = module;
 			}
 
 			void module_loaded (Module module)
 			{
-				Console.WriteLine ("MODULE LOADED: {0} {1}", module, location);
+				Console.WriteLine ("MODULE LOADED: {0} {1}", module);
+			}
+
+			public override void Insert (Thread target)
+			{
+				module.ModuleLoadedEvent += module_loaded;
 			}
 
 			public override void Remove (Thread target)
 			{
-				location.module.ModuleLoadedEvent -= module_loaded;
+				module.ModuleLoadedEvent -= module_loaded;
 			}
 		}
 
-		private class FunctionBreakpointHandle : BreakpointHandle
+		class FunctionBreakpointHandle : BreakpointHandle
 		{
+			DynamicSourceLocation location;
 			ILoadHandler load_handler;
 			int index = -1;
 			int domain;
 
-			public FunctionBreakpointHandle (Thread target, Breakpoint bpt, int domain,
+			public FunctionBreakpointHandle (Breakpoint bpt, int domain,
 							 DynamicSourceLocation location)
 
 				: base (bpt)
 			{
+				this.location = location;
 				this.domain = domain;
+			}
 
-				load_handler = location.module.SymbolFile.RegisterLoadHandler (
-					target, location.source, method_loaded, location);
+			public override void Insert (Thread target)
+			{
+				if ((load_handler != null) || (index > 0))
+					return;
+
+				if ((location.function != null) && location.function.IsLoaded)
+					index = target.InsertBreakpoint (Breakpoint, location.function);
+				else
+					load_handler = location.module.SymbolFile.RegisterLoadHandler (
+						target, location.source, method_loaded, location);
 			}
 
 			public override void Remove (Thread target)

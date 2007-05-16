@@ -34,6 +34,28 @@ namespace Mono.Debugger
 			get { return handle != null; }
 		}
 
+		internal override BreakpointHandle Resolve (Thread target)
+		{
+			if (handle != null)
+				return handle;
+
+			switch (Type) {
+			case EventType.Breakpoint:
+				handle = new AddressBreakpointHandle (this, address);
+				break;
+
+			case EventType.WatchRead:
+			case EventType.WatchWrite:
+				handle = new AddressBreakpointHandle (this, address);
+				break;
+
+			default:
+				throw new InternalError ();
+			}
+
+			return handle;
+		}
+
 		public override void Activate (Thread target)
 		{
 			if (handle != null)
