@@ -2965,8 +2965,8 @@ namespace Mono.Debugger.Backends
 		public readonly bool Debug;
 
 		MonoLanguageBackend language;
-		TargetAddress method;
-		TargetAddress invoke;
+		TargetAddress method = TargetAddress.Null;
+		TargetAddress invoke = TargetAddress.Null;
 		TargetClassObject instance;
 		bool pushed_rti_frame;
 		Stage stage;
