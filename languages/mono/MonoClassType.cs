@@ -376,7 +376,8 @@ namespace Mono.Debugger.Languages.Mono
 					return type_info;
 
 				throw new TargetException (
-					TargetError.LocationInvalid, "Can't find class `{0}'", Name);
+					TargetError.LocationInvalid, "Class `{0}' not initialized yet.",
+					Name);
 			}
 		}
 

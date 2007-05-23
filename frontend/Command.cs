@@ -2656,15 +2656,10 @@ namespace Mono.Debugger.Frontend
 		{
 			SourceFile file = CurrentProcess.FindFile (filename);
 			if (file == null)
-				throw new ScriptingException ("Cannot find source file `{0}'.",
-							      filename);
-
-			SourceMethod source = file.FindMethod (line);
-			if (source == null)
 				throw new ScriptingException (
-					"Cannot find method in line {0} in `{1}'.", line, file.Name);
+					"Cannot find source file `{0}'.", filename);
 
-			location = new SourceLocation (source, line);
+			location = new SourceLocation (file, line);
 			return true;
 		}
 
@@ -2696,7 +2691,8 @@ namespace Mono.Debugger.Frontend
 			if (line != -1) {
 				location = context.CurrentLocation;
 				if (location.FileName == null)
-					throw new ScriptingException ("Location doesn't have any source code.");
+					throw new ScriptingException (
+						"Location doesn't have any source code.");
 
 				return FindFile (location.FileName, line);
 			}
@@ -2747,15 +2743,14 @@ namespace Mono.Debugger.Frontend
 			if (!Repeating) {
 				SourceBuffer buffer;
 
-				if (Location.FileName != null) {
-					buffer = context.FindFile (Location.FileName);
-					if (buffer == null)
-						throw new ScriptingException (
-							"Cannot find source file `{0}'",
-							Location.FileName);
-				} else
+				if (Location.FileName == null) 
 					throw new ScriptingException (
 						"Current location doesn't have any source code.");
+
+				buffer = context.FindFile (Location.FileName);
+				if (buffer == null)
+					throw new ScriptingException (
+						"Cannot read source file `{0}'", Location.FileName);
 
 				source_code = buffer.Contents;
 

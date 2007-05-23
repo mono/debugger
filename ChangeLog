@@ -1,3 +1,10 @@
+2007-05-23  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(SourceCommand.FindFile): Don't do a method lookup here.
+	(ListCommand.DoExecute): We can now list source locations outside
+	methods.	
+
 2007-05-16  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceLocation.cs

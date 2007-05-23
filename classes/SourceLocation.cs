@@ -67,14 +67,16 @@ namespace Mono.Debugger
 			: this (new DynamicSourceLocation (file, line))
 		{
 			Module = file.Module.Name;
-			FileName = Name = file.Name + ":" + line;
+			FileName = file.FileName;
+			Name = file.FileName + ":" + line;
 			Line = line;
 		}
 
 		public SourceLocation (string file, int line)
 		{
 			this.Line = line;
-			this.FileName = Name = file + ":" + line;
+			this.FileName = file;
+			this.Name = file + ":" + line;
 		}
 
 		public void DumpLineNumbers ()
