@@ -15,6 +15,7 @@ EXTRA_DIST = \
 	ISymbolTable.cs \
 	ITargetNotification.cs \
 	InternalError.cs \
+	LineNumberTable.cs \
 	Method.cs \
 	Module.cs \
 	ObjectCache.cs \
