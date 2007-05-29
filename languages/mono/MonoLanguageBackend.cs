@@ -234,10 +234,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return process; }
 		}
 
-		public SourceFileFactory SourceFileFactory {
-			get { return process.SourceFileFactory; }
-		}
-
 		public override TargetInfo TargetInfo {
 			get { return corlib.TargetInfo; }
 		}

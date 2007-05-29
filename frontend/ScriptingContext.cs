@@ -345,11 +345,6 @@ namespace Mono.Debugger.Frontend
 				Print ("{0,4}  {1}", source.ID, source.FileName);
 		}
 
-		public SourceBuffer FindFile (string filename)
-		{
-			return CurrentProcess.SourceFileFactory.FindFile (filename);
-		}
-
 		public void LoadLibrary (Thread thread, string filename)
 		{
 			string pathname = Path.GetFullPath (filename);

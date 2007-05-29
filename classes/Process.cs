@@ -63,10 +63,6 @@ namespace Mono.Debugger
 			get { return servant.NativeLanguage; }
 		}
 
-		public SourceFileFactory SourceFileFactory {
-			get { return servant.SourceFileFactory; }
-		}
-
 		public void Kill ()
 		{
 			servant.Kill ();

@@ -2747,7 +2747,7 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException (
 						"Current location doesn't have any source code.");
 
-				buffer = context.FindFile (Location.FileName);
+				buffer = context.Interpreter.ReadFile (Location.FileName);
 				if (buffer == null)
 					throw new ScriptingException (
 						"Cannot read source file `{0}'", Location.FileName);

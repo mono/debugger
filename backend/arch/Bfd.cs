@@ -638,8 +638,7 @@ namespace Mono.Debugger.Backends
 				return;
 
 			try {
-				dwarf = new DwarfReader (
-					this, module, container.Process.SourceFileFactory);
+				dwarf = new DwarfReader (this, module);
 			} catch (Exception ex) {
 				Console.WriteLine ("Cannot read DWARF debugging info from " +
 						   "symbol file `{0}': {1}", FileName, ex);

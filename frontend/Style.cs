@@ -103,15 +103,15 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			Method method = frame.Method;
-			if ((method == null) || !method.HasLineNumbers ||
-			    (method.LineNumberTable == null))
+			if ((method == null) || !method.HasSourceFile)
 				return false;
 
-			LineNumberTable source = method.LineNumberTable;
-			if (source.SourceBuffer == null)
+			SourceFile file = method.SourceFile;
+			SourceBuffer buffer = interpreter.SourceFileFactory.FindFile (file.FileName);
+			if (buffer.Contents == null)
 				return false;
 
-			string line = source.SourceBuffer.Contents [location.Row - 1];
+			string line = buffer.Contents [location.Row - 1];
 			interpreter.Print (String.Format ("{0,4} {1}", location.Row, line));
 			return true;
 		}

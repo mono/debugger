@@ -709,6 +709,14 @@ namespace Mono.Debugger.Languages.Mono
 				get { return mdef; }
 			}
 
+			public override bool HasSourceFile {
+				get { return info.SourceFile != null; }
+			}
+
+			public override SourceFile SourceFile {
+				get { return info.SourceFile; }
+			}
+
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
 			{
 				if (is_loaded)
@@ -722,7 +730,8 @@ namespace Mono.Debugger.Languages.Mono
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
-				SetLineNumbers (new MonoLineNumberTable (file.MonoLanguage.SourceFileFactory, this, info, method, address.LineNumbers));
+				SetLineNumbers (new MonoLineNumberTable (
+					this, info, method, address.LineNumbers));
 			}
 
 			void get_variables ()
@@ -965,18 +974,15 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry method;
 			SourceMethod source_method;
 			Method imethod;
-			SourceFileFactory factory;
 			Hashtable namespaces;
 
-			public MonoLineNumberTable (SourceFileFactory factory, Method imethod,
-						 SourceMethod source_method, C.MethodEntry method,
-						 JitLineNumberEntry[] line_numbers)
-				: base (imethod, source_method.SourceFile)
+			public MonoLineNumberTable (Method imethod, SourceMethod source_method,
+						    C.MethodEntry method, JitLineNumberEntry[] jit_lnt)
+				: base (imethod, false)
 			{
-				this.factory = factory;
 				this.imethod = imethod;
 				this.method = method;
-				this.line_numbers = line_numbers;
+				this.line_numbers = jit_lnt;
 				this.source_method = source_method;
 				this.start_row = method.StartRow;
 				this.end_row = method.EndRow;
@@ -1017,9 +1023,8 @@ namespace Mono.Debugger.Languages.Mono
 				LineEntry[] addresses = new LineEntry [lines.Count];
 				lines.CopyTo (addresses, 0);
 
-				SourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
 				return new LineNumberTableData (
-					start_row, end_row, addresses, source_method, buffer,
+					start_row, end_row, addresses, source_method, null,
 					source_method.SourceFile.Module);
 			}
 
@@ -1244,6 +1249,14 @@ namespace Mono.Debugger.Languages.Mono
 				get { return Entry.WrapperMethod; }
 			}
 
+			public override bool HasSourceFile {
+				get { return false; }
+			}
+
+			public override SourceFile SourceFile {
+				get { throw new InvalidOperationException (); }
+			}
+
 			public override TargetClassType DeclaringType {
 				get { return null; }
 			}
@@ -1276,7 +1289,7 @@ namespace Mono.Debugger.Languages.Mono
 			WrapperMethod wrapper;
 
 			public WrapperLineNumberTable (WrapperMethod wrapper)
-				: base (wrapper, null)
+				: base (wrapper, false)
 			{
 				this.wrapper = wrapper;
 			}

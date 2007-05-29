@@ -23,6 +23,8 @@ namespace Mono.Debugger.Frontend
 		DebuggerSession session;
 		DebuggerEngine engine;
 
+		SourceFileFactory source_factory;
+
 		Debugger debugger;
 		Process main_process;
 		Process current_process;
@@ -54,6 +56,8 @@ namespace Mono.Debugger.Frontend
 			this.parser = new ExpressionParser (this);
 			this.session = new DebuggerSession (config, options, "main", parser);
 			this.engine = new DebuggerEngine (this);
+
+			source_factory = new SourceFileFactory ();
 
 			interrupt_event = new ManualResetEvent (false);
 
@@ -91,6 +95,10 @@ namespace Mono.Debugger.Frontend
 
 		public DebuggerEngine DebuggerEngine {
 			get { return engine; }
+		}
+
+		public SourceFileFactory SourceFileFactory {
+			get { return source_factory; }
 		}
 
 		public Process CurrentProcess {
@@ -867,6 +875,11 @@ namespace Mono.Debugger.Frontend
 			}
 
 			return retval;
+		}
+
+		public SourceBuffer ReadFile (string filename)
+		{
+			return source_factory.FindFile (filename);
 		}
 
 		public void ModuleOperations (Module[] modules, ModuleOperation[] operations)

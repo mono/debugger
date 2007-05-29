@@ -1213,7 +1213,7 @@ namespace Mono.Debugger.Backends
 
 		protected bool MethodHasSource (Method method)
 		{
-			if ((method == null) || !method.HasLineNumbers)
+			if ((method == null) || !method.HasLineNumbers || !method.HasMethodBounds)
 				return false;
 
 			if (current_method != null) {
@@ -1224,24 +1224,16 @@ namespace Mono.Debugger.Backends
 					return false;
 			}
 
-			LineNumberTable source = method.LineNumberTable;
-			if ((source == null) || source.IsDynamic)
+			LineNumberTable lnt = method.LineNumberTable;
+			if (lnt == null)
 				return false;
 
-			SourceFileFactory factory = process.SourceFileFactory;
-			if (!factory.Exists (source.SourceFile.FileName))
-				return false;
-
-			if (!method.HasMethodBounds)
-				return false;
-
-			SourceAddress addr = source.Lookup (method.MethodStartAddress);
+			SourceAddress addr = lnt.Lookup (method.MethodStartAddress);
 			if (addr == null) {
 				Console.WriteLine ("OOOOPS - No source for method: " +
-						   "{0} {1} {2} - {3} {4}",
-						   method, source, source.SourceFile.FileName,
-						   source.StartRow, source.EndRow);
-				source.DumpLineNumbers ();
+						   "{0} {1} - {2} {3}",
+						   method, lnt, lnt.StartRow, lnt.EndRow);
+				lnt.DumpLineNumbers ();
 				return false;
 			}
 

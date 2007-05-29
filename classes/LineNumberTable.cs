@@ -6,15 +6,14 @@ namespace Mono.Debugger
 {
 	public abstract class LineNumberTable : DebuggerMarshalByRefObject
 	{
-		SourceFile file;
 		string name;
+		bool is_dynamic;
 
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 
-		protected LineNumberTable (Method method, SourceFile file)
+		protected LineNumberTable (Method method, bool is_dynamic)
 		{
-			this.file = file;
 			this.start = method.StartAddress;
 			this.end = method.EndAddress;
 			this.name = method.Name;
@@ -66,22 +65,16 @@ namespace Mono.Debugger
 
 		public bool IsDynamic {
 			get {
-				return file == null;
+				return is_dynamic;
 			}
 		}
 
 		public SourceBuffer SourceBuffer {
 			get {
-				return Data.SourceBuffer;
-			}
-		}
-
-		public SourceFile SourceFile {
-			get {
-				if (IsDynamic)
+				if (!IsDynamic)
 					throw new InvalidOperationException ();
 
-				return file;
+				return Data.SourceBuffer;
 			}
 		}
 
@@ -175,8 +168,7 @@ namespace Mono.Debugger
 		public virtual void DumpLineNumbers ()
 		{
 			Console.WriteLine ("--------");
-			Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0} {1}",
-					   name, file);
+			Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0}", name);
 			Console.WriteLine ("BOUNDS: start = {0} / {1}, end = {2} / {3}", 
 					   start, method_start, end, method_end);
 			Console.WriteLine ("--------");

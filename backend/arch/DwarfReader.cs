@@ -116,14 +116,12 @@ namespace Mono.Debugger.Backends
 		Hashtable pubnames;
 		Hashtable pubtypes;
 		TargetInfo target_info;
-		SourceFileFactory factory;
 
-		public DwarfReader (Bfd bfd, Module module, SourceFileFactory factory)
+		public DwarfReader (Bfd bfd, Module module)
 		{
 			this.bfd = bfd;
 			this.module = module;
 			this.filename = bfd.FileName;
-			this.factory = factory;
 			this.target_info = bfd.TargetInfo;
 
 			debug_info_reader = create_reader (".debug_info");
@@ -2396,9 +2394,8 @@ namespace Mono.Debugger.Backends
 		{
 			DwarfTargetMethod method;
 
-			public DwarfTargetLineNumberTable (DwarfTargetMethod method,
-							   SourceFile file)
-				: base (method, file)
+			public DwarfTargetLineNumberTable (DwarfTargetMethod method)
+				: base (method, false)
 			{
 				this.method = method;
 			}
@@ -2416,8 +2413,7 @@ namespace Mono.Debugger.Backends
 
 				return new LineNumberTableData (
 					method.StartRow, method.EndRow, addresses,
-					method.SourceMethod, method.SourceBuffer,
-					method.Module);
+					method.SourceMethod, null, method.Module);
 			}
 		}
 
@@ -2429,7 +2425,6 @@ namespace Mono.Debugger.Backends
 			DwarfTargetLineNumberTable line_numbers;
 			int start_row, end_row;
 			LineNumber[] lines;
-			SourceBuffer buffer;
 
 			public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
@@ -2447,6 +2442,14 @@ namespace Mono.Debugger.Backends
 
 			public override object MethodHandle {
 				get { return this; }
+			}
+
+			public override bool HasSourceFile {
+				get { return subprog.SourceFile != null; }
+			}
+
+			public override SourceFile SourceFile {
+				get { return subprog.SourceFile; }
 			}
 
 			public override TargetClassType DeclaringType {
@@ -2487,10 +2490,6 @@ namespace Mono.Debugger.Backends
 				get { return source; }
 			}
 
-			public SourceBuffer SourceBuffer {
-				get { return buffer; }
-			}
-
 			void read_line_numbers ()
 			{
 				string file = engine.GetSource (
@@ -2500,9 +2499,6 @@ namespace Mono.Debugger.Backends
 
 				source = subprog.dwarf.GetSourceMethod (
 					subprog, StartRow, EndRow);
-
-				buffer = subprog.dwarf.factory.FindFile (
-					subprog.SourceFile.FileName);
 
 				subprog.dwarf.method_hash.Add (source.Handle, this);
 			}
@@ -2518,7 +2514,7 @@ namespace Mono.Debugger.Backends
 				if (sc.IsContinuous)
 					SetAddresses (sc.StartAddress, sc.EndAddress);
 
-				line_numbers = new DwarfTargetLineNumberTable (this, subprog.SourceFile);
+				line_numbers = new DwarfTargetLineNumberTable (this);
 				SetLineNumbers (line_numbers);
 
 				if ((lines != null) && (lines.Length > 2)) {

@@ -78,8 +78,8 @@ namespace Mono.Debugger
 		public string Name {
 			get {
 				if (!source.IsDynamic)
-					return String.Format ("{0}:{1}",
-							      source.SourceFile.FileName, Row);
+					return String.Format (
+						"{0}:{1}", source.SourceMethod.SourceFile.FileName, Row);
 				else
 					return String.Format ("{0}", Row);
 			}

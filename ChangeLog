@@ -1,5 +1,24 @@
 2007-05-29  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.SourceFileFactory): New public property; moved the
+	`SourceFileFactory' from the backend to the frontend.
+
+	* frontend/Interpreter.cs
+	(Interpreter.ReadFile): New public method.
+
+	* classes/Method.cs
+	(Method.HasSourceFile): New public property.
+	(Method.SourceFile): New public property.
+
+	* classes/Process.cs
+	(Process.SourceFileFactory): Removed.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.SourceFileFactory): Removed.
+
+2007-05-29  Martin Baulig  <martin@ximian.com>
+
 	* classes/MethodSource.cs: Renamed into LineNumberTable.cs
 	(MethodSource): Renamed into `LineNumberTable'.
 

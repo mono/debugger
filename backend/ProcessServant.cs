@@ -17,7 +17,6 @@ namespace Mono.Debugger.Backends
 		ThreadManager manager;
 		BfdContainer bfd_container;
 		SymbolTableManager symtab_manager;
-		SourceFileFactory source_factory;
 		MonoLanguageBackend mono_language;
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
@@ -57,7 +56,6 @@ namespace Mono.Debugger.Backends
 			is_attached = start.PID != 0;
 
 			breakpoint_manager = new BreakpointManager ();
-			source_factory = new SourceFileFactory ();
 
 			symtab_manager = new SymbolTableManager (session);
 
@@ -76,7 +74,6 @@ namespace Mono.Debugger.Backends
 			this.initialized = true;
 
 			breakpoint_manager = new BreakpointManager (parent.breakpoint_manager);
-			source_factory = parent.source_factory;
 
 			symtab_manager = parent.symtab_manager;
 
@@ -117,12 +114,6 @@ namespace Mono.Debugger.Backends
 		internal SymbolTableManager SymbolTableManager {
 			get {
 				return symtab_manager;
-			}
-		}
-
-		public SourceFileFactory SourceFileFactory {
-			get {
-				return source_factory;
 			}
 		}
 
@@ -235,7 +226,6 @@ namespace Mono.Debugger.Backends
 			session.OnProcessCreated (client);
 
 			breakpoint_manager = new BreakpointManager ();
-			source_factory = new SourceFileFactory ();
 
 			symtab_manager = new SymbolTableManager (session);
 

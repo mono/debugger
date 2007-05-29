@@ -166,6 +166,14 @@ namespace Mono.Debugger
 			}
 		}
 
+		public abstract bool HasSourceFile {
+			get;
+		}
+
+		public abstract SourceFile SourceFile {
+			get;
+		}
+
 		public abstract object MethodHandle {
 			get;
 		}
