@@ -127,8 +127,8 @@ namespace Mono.Debugger.Backends
 				return TargetAddress.Null;
 
 			if (line != -1) {
-				if (method.HasSource)
-					return method.Source.Lookup (line);
+				if (method.HasLineNumbers)
+					return method.LineNumberTable.Lookup (line);
 				else
 					return TargetAddress.Null;
 			} else if (method.HasMethodBounds)

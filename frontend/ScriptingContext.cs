@@ -124,10 +124,10 @@ namespace Mono.Debugger.Frontend
 		public string[] GetNamespaces (StackFrame frame)
 		{
 			Method method = frame.Method;
-			if ((method == null) || !method.HasSource)
+			if ((method == null) || !method.HasLineNumbers)
 				return null;
 
-			MethodSource msource = method.Source;
+			LineNumberTable msource = method.LineNumberTable;
 			if (msource.IsDynamic)
 				return null;
 

@@ -103,10 +103,11 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			Method method = frame.Method;
-			if ((method == null) || !method.HasSource || (method.Source == null))
+			if ((method == null) || !method.HasLineNumbers ||
+			    (method.LineNumberTable == null))
 				return false;
 
-			MethodSource source = method.Source;
+			LineNumberTable source = method.LineNumberTable;
 			if (source.SourceBuffer == null)
 				return false;
 

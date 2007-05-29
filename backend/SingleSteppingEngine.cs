@@ -996,8 +996,8 @@ namespace Mono.Debugger.Backends
 			registers = inferior.GetRegisters ();
 
 			// Compute the current stack frame.
-			if ((current_method != null) && current_method.HasSource) {
-				SourceAddress source = current_method.Source.Lookup (address);
+			if ((current_method != null) && current_method.HasLineNumbers) {
+				SourceAddress source = current_method.LineNumberTable.Lookup (address);
 
 				if (!same_method) {
 					// If check_method_operation() returns true, it already
@@ -1213,7 +1213,7 @@ namespace Mono.Debugger.Backends
 
 		protected bool MethodHasSource (Method method)
 		{
-			if ((method == null) || !method.HasSource)
+			if ((method == null) || !method.HasLineNumbers)
 				return false;
 
 			if (current_method != null) {
@@ -1224,7 +1224,7 @@ namespace Mono.Debugger.Backends
 					return false;
 			}
 
-			MethodSource source = method.Source;
+			LineNumberTable source = method.LineNumberTable;
 			if ((source == null) || source.IsDynamic)
 				return false;
 

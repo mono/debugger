@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace Mono.Debugger
 {
-	public abstract class MethodSource : DebuggerMarshalByRefObject
+	public abstract class LineNumberTable : DebuggerMarshalByRefObject
 	{
 		SourceFile file;
 		string name;
@@ -12,7 +12,7 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 
-		protected MethodSource (Method method, SourceFile file)
+		protected LineNumberTable (Method method, SourceFile file)
 		{
 			this.file = file;
 			this.start = method.StartAddress;
@@ -28,7 +28,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected MethodSource (TargetAddress start, TargetAddress end)
+		protected LineNumberTable (TargetAddress start, TargetAddress end)
 		{
 			this.start = this.method_start = start;
 			this.end = this.method_end = end;
@@ -40,23 +40,23 @@ namespace Mono.Debugger
 			this.end = this.method_end = end;
 		}
 
-		ObjectCache source_cache = null;
-		object read_source (object user_data)
+		ObjectCache cache = null;
+		object read_line_numbers (object user_data)
 		{
-			return ReadSource ();
+			return ReadLineNumbers ();
 		}
 
-		protected MethodSourceData SourceData {
+		protected LineNumberTableData Data {
 			get {
-				if (source_cache == null)
-					source_cache = new ObjectCache
-						(new ObjectCacheFunc (read_source), null, 5);
+				if (cache == null)
+					cache = new ObjectCache
+						(new ObjectCacheFunc (read_line_numbers), null, 5);
 
-				return (MethodSourceData) source_cache.Data;
+				return (LineNumberTableData) cache.Data;
 			}
 		}
 
-		protected abstract MethodSourceData ReadSource ();
+		protected abstract LineNumberTableData ReadLineNumbers ();
 
 		public virtual string Name {
 			get {
@@ -72,7 +72,7 @@ namespace Mono.Debugger
 
 		public SourceBuffer SourceBuffer {
 			get {
-				return SourceData.SourceBuffer;
+				return Data.SourceBuffer;
 			}
 		}
 
@@ -87,7 +87,7 @@ namespace Mono.Debugger
 
 		public Module Module {
 			get {
-				return SourceData.Module;
+				return Data.Module;
 			}
 		}
 
@@ -96,25 +96,25 @@ namespace Mono.Debugger
 				if (IsDynamic)
 					throw new InvalidOperationException ();
 
-				return SourceData.SourceMethod;
+				return Data.SourceMethod;
 			}
 		}
 
 		protected LineEntry[] Addresses {
 			get {
-				return SourceData.Addresses;
+				return Data.Addresses;
 			}
 		}
 
 		public virtual int StartRow {
 			get {
-				return SourceData.StartRow;
+				return Data.StartRow;
 			}
 		}
 
 		public virtual int EndRow {
 			get {
-				return SourceData.EndRow;
+				return Data.EndRow;
 			}
 		}
 
@@ -187,7 +187,7 @@ namespace Mono.Debugger
 			Console.WriteLine ("--------");
 		}
 
-		protected class MethodSourceData
+		protected class LineNumberTableData
 		{
 			public readonly int StartRow;
 			public readonly int EndRow;
@@ -196,14 +196,14 @@ namespace Mono.Debugger
 			public readonly SourceBuffer SourceBuffer;
 			public readonly Module Module;
 
-			public MethodSourceData (int start, int end, LineEntry[] addresses,
-						 SourceBuffer buffer, Module module)
+			public LineNumberTableData (int start, int end, LineEntry[] addresses,
+						    SourceBuffer buffer, Module module)
 				: this (start, end, addresses, null, buffer, module)
 			{ }
 
-			public MethodSourceData (int start, int end, LineEntry[] addresses,
-						 SourceMethod method, SourceBuffer buffer,
-						 Module module)
+			public LineNumberTableData (int start, int end, LineEntry[] addresses,
+						    SourceMethod method, SourceBuffer buffer,
+						    Module module)
 			{
 				this.StartRow = start;
 				this.EndRow = end;

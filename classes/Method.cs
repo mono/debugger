@@ -67,7 +67,7 @@ namespace Mono.Debugger
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 		WrapperType wrapper_type = WrapperType.None;
-		MethodSource source;
+		LineNumberTable line_numbers;
 		Module module;
 		bool is_loaded, has_bounds;
 		string image_file;
@@ -111,9 +111,9 @@ namespace Mono.Debugger
 			this.has_bounds = true;
 		}
 
-		protected void SetSource (MethodSource source)
+		protected void SetLineNumbers (LineNumberTable line_numbers)
 		{
-			this.source = source;
+			this.line_numbers = line_numbers;
 		}
 
 		protected void SetWrapperType (WrapperType wrapper_type)
@@ -224,18 +224,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool HasSource {
+		public bool HasLineNumbers {
 			get {
-				return source != null;
+				return line_numbers != null;
 			}
 		}
 
-		public MethodSource Source {
+		public LineNumberTable LineNumberTable {
 			get {
-				if (!HasSource)
+				if (!HasLineNumbers)
 					throw new InvalidOperationException ();
 
-				return source;
+				return line_numbers;
 			}
 		}
 

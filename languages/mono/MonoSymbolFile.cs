@@ -722,7 +722,7 @@ namespace Mono.Debugger.Languages.Mono
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
-				SetSource (new MonoMethodSource (file.MonoLanguage.SourceFileFactory, this, info, method, address.LineNumbers));
+				SetLineNumbers (new MonoLineNumberTable (file.MonoLanguage.SourceFileFactory, this, info, method, address.LineNumbers));
 			}
 
 			void get_variables ()
@@ -958,7 +958,7 @@ namespace Mono.Debugger.Languages.Mono
 #endregion
 		}
 
-		protected class MonoMethodSource : MethodSource
+		protected class MonoLineNumberTable : LineNumberTable
 		{
 			int start_row, end_row;
 			JitLineNumberEntry[] line_numbers;
@@ -968,7 +968,7 @@ namespace Mono.Debugger.Languages.Mono
 			SourceFileFactory factory;
 			Hashtable namespaces;
 
-			public MonoMethodSource (SourceFileFactory factory, Method imethod,
+			public MonoLineNumberTable (SourceFileFactory factory, Method imethod,
 						 SourceMethod source_method, C.MethodEntry method,
 						 JitLineNumberEntry[] line_numbers)
 				: base (imethod, source_method.SourceFile)
@@ -1000,7 +1000,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			protected override MethodSourceData ReadSource ()
+			protected override LineNumberTableData ReadLineNumbers ()
 			{
 				ArrayList lines = new ArrayList ();
 				int last_line = -1;
@@ -1018,7 +1018,7 @@ namespace Mono.Debugger.Languages.Mono
 				lines.CopyTo (addresses, 0);
 
 				SourceBuffer buffer = factory.FindFile (source_method.SourceFile.FileName);
-				return new MethodSourceData (
+				return new LineNumberTableData (
 					start_row, end_row, addresses, source_method, buffer,
 					source_method.SourceFile.Module);
 			}
@@ -1236,7 +1236,7 @@ namespace Mono.Debugger.Languages.Mono
 			{
 				this.Entry = entry;
 				SetMethodBounds (entry.MethodStartAddress, entry.MethodEndAddress);
-				SetSource (new WrapperMethodSource (this));
+				SetLineNumbers (new WrapperLineNumberTable (this));
 				SetWrapperType (entry.WrapperType);
 			}
 
@@ -1271,11 +1271,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected class WrapperMethodSource : MethodSource
+		protected class WrapperLineNumberTable : LineNumberTable
 		{
 			WrapperMethod wrapper;
 
-			public WrapperMethodSource (WrapperMethod wrapper)
+			public WrapperLineNumberTable (WrapperMethod wrapper)
 				: base (wrapper, null)
 			{
 				this.wrapper = wrapper;
@@ -1299,7 +1299,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			protected override MethodSourceData ReadSource ()
+			protected override LineNumberTableData ReadLineNumbers ()
 			{
 				ArrayList lines = new ArrayList ();
 				int last_line = -1;
@@ -1335,7 +1335,7 @@ namespace Mono.Debugger.Languages.Mono
 				LineEntry[] addresses = new LineEntry [lines.Count];
 				lines.CopyTo (addresses, 0);
 
-				return new MethodSourceData (
+				return new LineNumberTableData (
 					1, cil_code.Length, addresses, null, buffer,
 					wrapper.Entry.File.Module);
 			}

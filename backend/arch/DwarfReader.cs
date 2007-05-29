@@ -2392,18 +2392,18 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected class DwarfTargetMethodSource : MethodSource
+		protected class DwarfTargetLineNumberTable : LineNumberTable
 		{
 			DwarfTargetMethod method;
 
-			public DwarfTargetMethodSource (DwarfTargetMethod method,
-							SourceFile file)
+			public DwarfTargetLineNumberTable (DwarfTargetMethod method,
+							   SourceFile file)
 				: base (method, file)
 			{
 				this.method = method;
 			}
 
-			protected override MethodSourceData ReadSource ()
+			protected override LineNumberTableData ReadLineNumbers ()
 			{
 				LineNumber[] lines = method.LineNumbers;
 				LineEntry[] addresses = new LineEntry [lines.Length];
@@ -2414,7 +2414,7 @@ namespace Mono.Debugger.Backends
 						line.Line);
 				}
 
-				return new MethodSourceData (
+				return new LineNumberTableData (
 					method.StartRow, method.EndRow, addresses,
 					method.SourceMethod, method.SourceBuffer,
 					method.Module);
@@ -2426,7 +2426,7 @@ namespace Mono.Debugger.Backends
 			LineNumberEngine engine;
 			DieSubprogram subprog;
 			SourceMethod source;
-			DwarfTargetMethodSource msource;
+			DwarfTargetLineNumberTable line_numbers;
 			int start_row, end_row;
 			LineNumber[] lines;
 			SourceBuffer buffer;
@@ -2437,7 +2437,7 @@ namespace Mono.Debugger.Backends
 				this.subprog = subprog;
 				this.engine = engine;
 
-				read_source ();
+				read_line_numbers ();
 				CheckLoaded ();
 			}
 
@@ -2491,7 +2491,7 @@ namespace Mono.Debugger.Backends
 				get { return buffer; }
 			}
 
-			void read_source ()
+			void read_line_numbers ()
 			{
 				string file = engine.GetSource (
 					subprog, out start_row, out end_row, out lines);
@@ -2511,16 +2511,15 @@ namespace Mono.Debugger.Backends
 			{
 				if (!subprog.dwarf.bfd.IsLoaded)
 					return false;
-				if (msource != null)
+				if (line_numbers != null)
 					return true;
 
 				ISymbolContainer sc = (ISymbolContainer) subprog;
 				if (sc.IsContinuous)
 					SetAddresses (sc.StartAddress, sc.EndAddress);
 
-				msource = new DwarfTargetMethodSource (
-					this, subprog.SourceFile);
-				SetSource (msource);
+				line_numbers = new DwarfTargetLineNumberTable (this, subprog.SourceFile);
+				SetLineNumbers (line_numbers);
 
 				if ((lines != null) && (lines.Length > 2)) {
 					LineNumber start = lines [1];

@@ -30,7 +30,7 @@ namespace Mono.Debugger
 		}
 	}
 
-	public sealed class AssemblerMethod : MethodSource
+	public sealed class AssemblerMethod : LineNumberTable
 	{
 		SourceBuffer buffer;
 		int start_row;
@@ -132,12 +132,12 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected override MethodSourceData ReadSource ()
+		protected override LineNumberTableData ReadLineNumbers ()
 		{
 			buffer = new SourceBuffer (name, contents);
 			LineEntry[] lines = new LineEntry [addresses.Count];
 			addresses.CopyTo (lines);
-			return new MethodSourceData (start_row, end_row, lines, buffer, module);
+			return new LineNumberTableData (start_row, end_row, lines, buffer, module);
 		}
 	}
 }

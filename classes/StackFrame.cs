@@ -244,8 +244,8 @@ namespace Mono.Debugger
 			get {
 				if (has_source)
 					return source;
-				if ((method != null) && method.HasSource)
-					source = method.Source.Lookup (address);
+				if ((method != null) && method.HasLineNumbers)
+					source = method.LineNumberTable.Lookup (address);
 				has_source = true;
 				return source;
 			}

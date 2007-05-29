@@ -246,10 +246,10 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.LocationInvalid);
 
 			Method method = source.GetMethod (0);
-			if ((method == null) || !method.HasSource)
+			if ((method == null) || !method.HasLineNumbers)
 				throw new TargetException (TargetError.LocationInvalid);
 
-			method.Source.DumpLineNumbers ();
+			method.LineNumberTable.DumpLineNumbers ();
 		}
 
 		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint, int domain)
@@ -313,8 +313,8 @@ namespace Mono.Debugger
 				return TargetAddress.Null;
 
 			if (line != -1) {
-				if (method.HasSource)
-					return method.Source.Lookup (line);
+				if (method.HasLineNumbers)
+					return method.LineNumberTable.Lookup (line);
 				else
 					return TargetAddress.Null;
 			} else if (method.HasMethodBounds)
