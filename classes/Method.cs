@@ -174,6 +174,14 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract int StartRow {
+			get;
+		}
+
+		public abstract int EndRow {
+			get;
+		}
+
 		public abstract object MethodHandle {
 			get;
 		}

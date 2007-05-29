@@ -717,6 +717,14 @@ namespace Mono.Debugger.Languages.Mono
 				get { return info.SourceFile; }
 			}
 
+			public override int StartRow {
+				get { return method.StartRow; }
+			}
+
+			public override int EndRow {
+				get { return method.EndRow; }
+			}
+
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
 			{
 				if (is_loaded)
@@ -1254,6 +1262,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override SourceFile SourceFile {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override int StartRow {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override int EndRow {
 				get { throw new InvalidOperationException (); }
 			}
 

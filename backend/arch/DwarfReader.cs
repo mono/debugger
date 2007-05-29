@@ -2474,11 +2474,11 @@ namespace Mono.Debugger.Backends
 				get { return subprog.Locals; }
 			}
 
-			public int StartRow {
+			public override int StartRow {
 				get { return start_row; }
 			}
 
-			public int EndRow {
+			public override int EndRow {
 				get { return end_row; }
 			}
 

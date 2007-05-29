@@ -1,5 +1,11 @@
 2007-05-29  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(Method.StartRow, Method.EndRow): New public properties.  Only
+	valid when `HasSourceFile' is true.
+
+2007-05-29  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.SourceFileFactory): New public property; moved the
 	`SourceFileFactory' from the backend to the frontend.
