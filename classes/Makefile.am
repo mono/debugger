@@ -16,7 +16,6 @@ EXTRA_DIST = \
 	ITargetNotification.cs \
 	InternalError.cs \
 	Method.cs \
-	MethodSource.cs \
 	Module.cs \
 	ObjectCache.cs \
 	Process.cs \

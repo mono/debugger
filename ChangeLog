@@ -1,3 +1,7 @@
+2007-05-29  Wade Berrier  <wberrier@novell.com>
+
+	* classes/Makefile.am: fix make dist (remove MethodSource.cs)
+
 2007-05-29  Martin Baulig  <martin@ximian.com>
 
 	* classes/Method.cs
