@@ -652,7 +652,8 @@ namespace Mono.Debugger.Languages.Mono
 		internal int InsertBreakpoint (Thread target, string method_name,
 					       BreakpointHandler handler, object user_data)
 		{
-			TargetAddress retval = target.CallMethod (info.InsertBreakpoint, 0, method_name);
+			TargetAddress retval = target.CallMethod (
+				info.InsertBreakpoint, 0, 0, method_name);
 
 			int index = (int) retval.Address;
 

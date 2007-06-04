@@ -1,5 +1,21 @@
 2007-06-04  Martin Baulig  <martin@ximian.com>
 
+	* classes/Thread.cs
+	(Thread.CallMethod (long,string)): Added second `long' argument
+	so we can now pass a long value in addition to the string to the
+	target.
+
+	* backends/Inferior.cs
+	(Inferior.CallMethod (long,string)): Added second `long' argument
+	so we can now pass a long value in addition to the string to the
+	target.
+
+	* backends/server/server.h
+	(mono_debugger_server_call_method_1): Added `guint64 data_arg'
+	argument.
+
+2007-06-04  Martin Baulig  <martin@ximian.com>
+
 	Replace `SourceMethod' with a new abstract `MethodSource'.
 
 	* classes/MethodSource.cs: New file.

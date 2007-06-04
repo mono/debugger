@@ -1475,18 +1475,16 @@ namespace Mono.Debugger.Backends
 				is_virtual, debug, result));
 		}
 
-		public override CommandResult CallMethod (TargetAddress method, long method_argument,
+		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2,
 							  string string_argument)
 		{
 			return StartOperation (new OperationCallMethod (
-				this, method, method_argument, string_argument));
+				this, method, arg1, arg2, string_argument));
 		}
 
-		public override CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
-							  TargetAddress arg2)
+		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2)
 		{
-			return StartOperation (new OperationCallMethod (
-				this, method, arg1.Address, arg2.Address));
+			return StartOperation (new OperationCallMethod (this, method, arg1, arg2));
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, TargetAddress argument)
@@ -3247,12 +3245,14 @@ namespace Mono.Debugger.Backends
 		public readonly string StringArgument;
 
 		public OperationCallMethod (SingleSteppingEngine sse,
-					    TargetAddress method, long arg, string sarg)
+					    TargetAddress method, long arg1, long arg2,
+					    string sarg)
 			: base (sse)
 		{
 			this.Type = CallMethodType.LongString;
 			this.Method = method;
-			this.Argument1 = arg;
+			this.Argument1 = arg1;
+			this.Argument2 = arg2;
 			this.StringArgument = sarg;
 		}
 
@@ -3287,7 +3287,8 @@ namespace Mono.Debugger.Backends
 				break;
 
 			case CallMethodType.LongString:
-				inferior.CallMethod (Method, Argument1, StringArgument, ID);
+				inferior.CallMethod (Method, Argument1, Argument2,
+						     StringArgument, ID);
 				break;
 
 			default:

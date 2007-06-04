@@ -214,11 +214,11 @@ namespace Mono.Debugger.Backends
 						    bool is_virtual, bool debug,
 						    RuntimeInvokeResult result);
 
-		public abstract CommandResult CallMethod (TargetAddress method, TargetAddress arg1,
-							  TargetAddress arg2);
+		public abstract CommandResult CallMethod (TargetAddress method, long arg1,
+							  long arg2);
 
-		public abstract CommandResult CallMethod (TargetAddress method, long method_arg,
-							  string string_arg);
+		public abstract CommandResult CallMethod (TargetAddress method, long arg1,
+							  long arg2, string string_arg);
 
 		public abstract CommandResult CallMethod (TargetAddress method, TargetAddress arg);
 

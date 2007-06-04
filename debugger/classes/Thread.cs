@@ -585,7 +585,7 @@ namespace Mono.Debugger
 
 			lock (this) {
 				check_alive ();
-				result = servant.CallMethod (method, arg1, arg2);
+				result = servant.CallMethod (method, arg1.Address, arg2.Address);
 			}
 
 			result.Wait ();
@@ -596,14 +596,14 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public TargetAddress CallMethod (TargetAddress method, long method_arg,
+		public TargetAddress CallMethod (TargetAddress method, long arg1, long arg2,
 						 string string_arg)
 		{
 			CommandResult result;
 
 			lock (this) {
 				check_alive ();
-				result = servant.CallMethod (method, method_arg, string_arg);
+				result = servant.CallMethod (method, arg1, arg2, string_arg);
 			}
 
 			result.Wait ();

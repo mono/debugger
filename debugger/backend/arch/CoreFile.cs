@@ -505,14 +505,13 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override CommandResult CallMethod (TargetAddress method,
-								  TargetAddress arg1,
-								  TargetAddress arg2)
+								  long arg1, long arg2)
 			{
 				throw new InvalidOperationException ();
 			}
 
 			public override CommandResult CallMethod (TargetAddress method,
-								  long method_arg,
+								  long arg1, long arg2,
 								  string string_arg)
 			{
 				throw new InvalidOperationException ();

@@ -774,8 +774,8 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
-			     guint64 method_argument, const gchar *string_argument,
-			     guint64 callback_argument)
+			     guint64 method_argument, guint64 data_argument,
+			     const gchar *string_argument, guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
@@ -872,6 +872,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = new_rsp + 8;
+	INFERIOR_REG_RDX (arch->current_regs) = data_argument;
 	INFERIOR_REG_RSI (arch->current_regs) = method_argument;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
 
