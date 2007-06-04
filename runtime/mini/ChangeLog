@@ -1,3 +1,7 @@
+2007-06-04  Martin Baulig  <martin@ximian.com>
+
+	* debug-debugger.h (MonoDebuggerInfo): Changed signatures in the vtable:
+	`(guint64, const gchar *)' -> `(guint64, guint64, const gchar *)'.
 
 Mon Jun 4 11:29:43 CEST 2007 Paolo Molaro <lupus@ximian.com>
 

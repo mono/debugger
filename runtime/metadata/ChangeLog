@@ -1,3 +1,7 @@
+2007-06-04  Martin Baulig  <martin@ximian.com>
+
+	* mono-debug.h (MONO_DEBUGGER_VERSION): Bump to 59.
+
 2007-05-31  Zoltan Varga  <vargaz@gmail.com>
 
 	* domain-internals.h (MonoDomain): Add two new hash tables to store delegate

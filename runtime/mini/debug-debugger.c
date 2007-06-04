@@ -25,16 +25,18 @@
 #error "Some clown #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
 #endif
 
-static guint64 debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument);
+static guint64 debugger_insert_breakpoint (guint64 index, G_GNUC_UNUSED guint64 dummy_argument,
+					   const gchar *string_argument);
 static guint64 debugger_remove_breakpoint (guint64 breakpoint);
 static guint64 debugger_compile_method (guint64 method_arg);
 static guint64 debugger_get_virtual_method (guint64 class_arg, guint64 method_arg);
 static guint64 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg);
-static guint64 debugger_create_string (guint64 dummy_argument, const gchar *string_argument);
+static guint64 debugger_create_string (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
+				       const gchar *string_argument);
 static guint64 debugger_class_get_static_field_data (guint64 klass);
 static guint64 debugger_lookup_class (guint64 image_argument, guint64 token_arg);
-static guint64 debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument);
-static guint64 debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument);
+static guint64 debugger_lookup_assembly (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
+					 const gchar *string_argument);
 static guint64 debugger_run_finally (guint64 argument1, guint64 argument2);
 static guint64 debugger_get_current_thread (void);
 static void debugger_attach (void);
@@ -111,7 +113,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_create_string,
 	&debugger_class_get_static_field_data,
 	&debugger_lookup_class,
-	&debugger_lookup_type,
 	&debugger_lookup_assembly,
 	&debugger_run_finally,
 	&debugger_get_current_thread,
@@ -122,7 +123,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 };
 
 static guint64
-debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument)
+debugger_insert_breakpoint (guint64 index, G_GNUC_UNUSED guint64 dummy_argument,
+			    const gchar *string_argument)
 {
 	MonoMethodDesc *desc;
 
@@ -192,21 +194,10 @@ debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg)
 }
 
 static guint64
-debugger_create_string (guint64 dummy_argument, const gchar *string_argument)
+debugger_create_string (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
+			const gchar *string_argument)
 {
 	return (guint64) (gsize) mono_string_new_wrapper (string_argument);
-}
-
-static guint64
-debugger_lookup_type (guint64 dummy_argument, const gchar *string_argument)
-{
-	guint64 retval;
-
-	mono_debugger_lock ();
-	// retval = mono_debugger_lookup_type (string_argument);
-	retval = -1;
-	mono_debugger_unlock ();
-	return retval;
 }
 
 static guint64
@@ -224,7 +215,8 @@ debugger_lookup_class (guint64 image_argument, guint64 token_argument)
 }
 
 static guint64
-debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument)
+debugger_lookup_assembly (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
+			  const gchar *string_argument)
 {
 	gint64 retval;
 
@@ -235,7 +227,7 @@ debugger_lookup_assembly (guint64 dummy_argument, const gchar *string_argument)
 }
 
 static guint64
-debugger_run_finally (guint64 context_argument, guint64 dummy)
+debugger_run_finally (guint64 context_argument, G_GNUC_UNUSED guint64 dummy)
 {
 	mono_debugger_run_finally (GUINT_TO_POINTER ((gsize)context_argument));
 	return 0;
