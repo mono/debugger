@@ -251,7 +251,7 @@ namespace Mono.Debugger.Frontend
 			return (formatted);
 		}
 
-		public void PrintMethods (SourceMethod[] methods)
+		public void PrintMethods (MethodSource[] methods)
 		{
 			for (int i = 0; i < methods.Length; i++) {
 				interpreter.Print ("{0,4}  {1}", i+1, methods [i].Name);

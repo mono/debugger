@@ -14,9 +14,6 @@ namespace Mono.Debugger
 {
 	public delegate void ModuleEventHandler (Module module);
 
-	internal delegate void MethodLoadedHandler (TargetMemoryAccess target, SourceMethod method,
-						    object user_data);
-
 	internal interface ILoadHandler
 	{
 		object UserData {
@@ -60,24 +57,17 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract SourceMethod[] GetMethods (SourceFile file);
+		public abstract MethodSource[] GetMethods (SourceFile file);
 
 		public abstract Method GetMethod (int domain, long handle);
 
-		public abstract TargetFunctionType LookupMethod (string class_name, string name);
-
-		public abstract SourceMethod FindMethod (string name);
+		public abstract MethodSource FindMethod (string name);
 
 		public abstract Symbol SimpleLookup (TargetAddress address, bool exact_match);
 
 		public abstract ISymbolTable SymbolTable {
 			get;
 		}
-
-		internal abstract ILoadHandler RegisterLoadHandler (Thread target,
-								    SourceMethod method,
-								    MethodLoadedHandler handler,
-								    object user_data);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
 							  TargetMemoryAccess memory);
@@ -423,7 +413,7 @@ namespace Mono.Debugger
 			get { return SymbolFile.Sources; }
 		}
 
-		public SourceMethod[] GetMethods (SourceFile file)
+		public MethodSource[] GetMethods (SourceFile file)
 		{
 			return SymbolFile.GetMethods (file);
 		}
@@ -433,16 +423,11 @@ namespace Mono.Debugger
 			return SymbolFile.GetMethod (domain, handle);
 		}
 
-		public TargetFunctionType LookupMethod (string class_name, string name)
-		{
-			return SymbolFile.LookupMethod (class_name, name);
-		}
-
 		// <summary>
 		//   Find method @name, which must be a full method name including the
 		//   signature (System.DateTime.GetUtcOffset(System.DateTime)).
 		// </summary>
-		public SourceMethod FindMethod (string name)
+		public MethodSource FindMethod (string name)
 		{
 			if (!SymbolsLoaded)
 				return null;

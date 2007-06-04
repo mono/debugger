@@ -286,7 +286,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract SourceMethod GetTrampoline (TargetMemoryAccess memory,
+		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
 
 		public TargetVariable GetVariableByName (TargetAddress address, string name)

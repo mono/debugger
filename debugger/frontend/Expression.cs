@@ -34,7 +34,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Cannot find source file `{0}'.",
 							      filename);
 
-			SourceMethod source = file.FindMethod (line);
+			MethodSource source = file.FindMethod (line);
 			if (source == null)
 				throw new ScriptingException (
 					"Cannot find method corresponding to line {0} in `{1}'.",

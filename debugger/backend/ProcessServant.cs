@@ -416,7 +416,7 @@ namespace Mono.Debugger.Backends
 		public SourceLocation FindMethod (string name)
 		{
 			foreach (Module module in Modules) {
-				SourceMethod method = module.FindMethod (name);
+				MethodSource method = module.FindMethod (name);
 				
 				if (method != null)
 					return new SourceLocation (method);

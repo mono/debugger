@@ -66,7 +66,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override SourceMethod Source {
+		public override MethodSource Source {
 			get {
 				return null;
 			}

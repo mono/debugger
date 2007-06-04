@@ -53,14 +53,14 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (8)");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_2);
+			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("return -yes");
 			AssertStopped (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (9)");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_2);
+			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_3);
+			AssertStopped (thread, "X.Hello(int)", line_hello_3);
 			AssertExecute ("return -yes");
 			AssertTargetOutput ("Done: 9 18 1");
 			AssertNoTargetOutput ();
@@ -74,9 +74,9 @@ namespace Mono.Debugger.Tests
 			AssertFrame (bt [0], 0, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (7)");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_2);
+			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_3);
+			AssertStopped (thread, "X.Hello(int)", line_hello_3);
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Hello()", line_hello);
 
@@ -86,7 +86,7 @@ namespace Mono.Debugger.Tests
 					     bt.Count, 4);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
-			AssertFrame (bt [1], 1, "X.Hello(System.Int32)", line_hello_3);
+			AssertFrame (bt [1], 1, "X.Hello(int)", line_hello_3);
 			AssertInternalFrame (bt [2], 2);
 			AssertFrame (bt [3], 3, "X.Main()", line_main);
 

@@ -68,12 +68,12 @@ namespace Mono.Debugger.Backends
 	{
 		ILoadHandler load_handler;
 		TargetFunctionType function;
-		SourceMethod source;
+		MethodSource source;
 		int line = -1;
 		int index = -1;
 		int domain;
 
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain, SourceMethod source)
+		public FunctionBreakpointHandle (Breakpoint bpt, int domain, MethodSource source)
 			: base (bpt)
 		{
 			this.domain = domain;
@@ -81,7 +81,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-						 SourceMethod source, int line)
+						 MethodSource source, int line)
 			: this (bpt, domain, source)
 		{
 			this.line = line;
@@ -104,8 +104,7 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			load_handler = source.SourceFile.Module.SymbolFile.RegisterLoadHandler (
-				target, source, method_loaded, null);
+			load_handler = source.RegisterLoadHandler (target, method_loaded, null);
 		}
 
 		public override void Remove (Thread target)
@@ -142,7 +141,7 @@ namespace Mono.Debugger.Backends
 		//   address and actually insert it.
 		// </summary>
 		public void method_loaded (TargetMemoryAccess target,
-					   SourceMethod source, object data)
+					   MethodSource source, object data)
 		{
 			load_handler = null;
 

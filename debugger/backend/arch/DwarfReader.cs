@@ -230,7 +230,7 @@ namespace Mono.Debugger.Backends
 			return method;
 		}
 
-		public SourceMethod[] GetMethods (SourceFile file)
+		public MethodSource[] GetMethods (SourceFile file)
 		{
 			DieCompileUnit die = (DieCompileUnit) source_hash [file];
 
@@ -238,18 +238,18 @@ namespace Mono.Debugger.Backends
 
 			foreach (Die child in die.Subprograms) {
 				DieSubprogram subprog = child as DieSubprogram;
-				if ((subprog == null) || (subprog.SourceMethod == null))
+				if ((subprog == null) || (subprog.MethodSource == null))
 					continue;
 
-				list.Add (subprog.SourceMethod);
+				list.Add (subprog.MethodSource);
 			}
 
-			SourceMethod[] methods = new SourceMethod [list.Count];
+			MethodSource[] methods = new MethodSource [list.Count];
 			list.CopyTo (methods, 0);
 			return methods;
 		}
 
-		public SourceMethod FindMethod (string name)
+		public MethodSource FindMethod (string name)
 		{
 			if (pubnames == null)
 				return null;
@@ -258,8 +258,8 @@ namespace Mono.Debugger.Backends
 			if (entry == null)
 				return null;
 
-			SourceMethod source;
-			source = (SourceMethod) method_source_hash [entry.AbsoluteOffset];
+			MethodSource source;
+			source = (MethodSource) method_source_hash [entry.AbsoluteOffset];
 			if (source != null)
 				return source;
 
@@ -267,17 +267,15 @@ namespace Mono.Debugger.Backends
 			return block.GetMethod (entry.AbsoluteOffset);
 		}
 
-		protected SourceMethod GetSourceMethod (DieSubprogram subprog,
-							int start_row, int end_row)
+		protected DwarfMethodSource GetMethodSource (DieSubprogram subprog,
+							     int start_row, int end_row)
 		{
-			SourceMethod source;
-			source = (SourceMethod) method_source_hash [subprog.Offset];
+			DwarfMethodSource source;
+			source = (DwarfMethodSource) method_source_hash [subprog.Offset];
 			if (source != null)
 				return source;
 
-			source = new SourceMethod (
-				module, subprog.SourceFile, subprog.Offset, null, subprog.Name,
-				start_row, end_row, true);
+			source = new DwarfMethodSource (subprog, start_row, end_row);
 			method_source_hash.Add (subprog.Offset, source);
 			return source;
 		}
@@ -348,7 +346,7 @@ namespace Mono.Debugger.Backends
 				return null;
 			}
 
-			public SourceMethod GetMethod (long offset)
+			public MethodSource GetMethod (long offset)
 			{
 				build_symtabs ();
 				CompilationUnit comp_unit = get_comp_unit (offset);
@@ -360,7 +358,7 @@ namespace Mono.Debugger.Backends
 				if (subprog == null)
 					return null;
 
-				return subprog.SourceMethod;
+				return subprog.MethodSource;
 			}
 
 			void read_children ()
@@ -2229,12 +2227,12 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			public SourceMethod SourceMethod {
+			public MethodSource MethodSource {
 				get {
 					if (method == null)
 						return null;
 
-					return method.SourceMethod;
+					return method.MethodSource;
 				}
 			}
 
@@ -2413,7 +2411,65 @@ namespace Mono.Debugger.Backends
 
 				return new LineNumberTableData (
 					method.StartRow, method.EndRow, addresses,
-					method.SourceMethod, null, method.Module);
+					method.MethodSource, null, method.Module);
+			}
+		}
+
+		protected class DwarfMethodSource : MethodSource
+		{
+			DieSubprogram subprog;
+			int start_row;
+			int end_row;
+
+			public DwarfMethodSource (DieSubprogram subprog, int start_row, int end_row)
+			{
+				this.subprog = subprog;
+				this.start_row = start_row;
+				this.end_row = end_row;
+			}
+
+			internal long Handle {
+				get { return subprog.Offset; }
+			}
+
+			public override Module Module {
+				get { return subprog.dwarf.module; }
+			}
+
+			public override string Name {
+				get { return subprog.Name; }
+			}
+
+			public override bool IsManaged {
+				get { return false; }
+			}
+
+			public override bool HasSourceCode {
+				get { return subprog.SourceFile != null; }
+			}
+
+			public override SourceFile SourceFile {
+				get { return subprog.SourceFile; }
+			}
+
+			public override int StartRow {
+				get { return start_row; }
+			}
+
+			public override int EndRow {
+				get { return end_row; }
+			}
+
+			public override Method GetMethod (int domain)
+			{
+				return subprog.Method;
+			}
+
+			internal override ILoadHandler RegisterLoadHandler (Thread target,
+									    MethodLoadedHandler handler,
+									    object user_data)
+			{
+				throw new NotImplementedException ();
 			}
 		}
 
@@ -2421,7 +2477,7 @@ namespace Mono.Debugger.Backends
 		{
 			LineNumberEngine engine;
 			DieSubprogram subprog;
-			SourceMethod source;
+			DwarfMethodSource source;
 			DwarfTargetLineNumberTable line_numbers;
 			int start_row, end_row;
 			LineNumber[] lines;
@@ -2486,7 +2542,7 @@ namespace Mono.Debugger.Backends
 				get { return lines; }
 			}
 
-			public SourceMethod SourceMethod {
+			public MethodSource MethodSource {
 				get { return source; }
 			}
 
@@ -2497,8 +2553,7 @@ namespace Mono.Debugger.Backends
 				if (file == null)
 					throw new InternalError ();
 
-				source = subprog.dwarf.GetSourceMethod (
-					subprog, StartRow, EndRow);
+				source = subprog.dwarf.GetMethodSource (subprog, StartRow, EndRow);
 
 				subprog.dwarf.method_hash.Add (source.Handle, this);
 			}
@@ -2529,7 +2584,7 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			internal override SourceMethod GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
+			internal override MethodSource GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
 			{
 				return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
 			}

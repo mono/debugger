@@ -41,7 +41,7 @@ namespace Mono.Debugger
 
 		public SourceLocation Location {
 			get {
-				return new SourceLocation (source.SourceMethod, row);
+				return new SourceLocation (source.MethodSource, row);
 			}
 		}
 
@@ -79,7 +79,7 @@ namespace Mono.Debugger
 			get {
 				if (!source.IsDynamic)
 					return String.Format (
-						"{0}:{1}", source.SourceMethod.SourceFile.FileName, Row);
+						"{0}:{1}", source.MethodSource.SourceFile.FileName, Row);
 				else
 					return String.Format ("{0}", Row);
 			}

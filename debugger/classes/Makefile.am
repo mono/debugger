@@ -17,6 +17,7 @@ EXTRA_DIST = \
 	InternalError.cs \
 	LineNumberTable.cs \
 	Method.cs \
+	MethodSource.cs \
 	Module.cs \
 	ObjectCache.cs \
 	Process.cs \

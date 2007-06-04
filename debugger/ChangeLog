@@ -1,3 +1,17 @@
+2007-06-04  Martin Baulig  <martin@ximian.com>
+
+	Replace `SourceMethod' with a new abstract `MethodSource'.
+
+	* classes/MethodSource.cs: New file.
+	(MethodSource): New public abstract class.
+
+	* classes/SourceInfo.cs
+	(SourceMethod): Removed; we now use the new `MethodSource'.
+
+	* classes/Module.cs
+	(Module.LookupMethod): Removed; use FindMethod() instead.
+	(Module.RegisterLoadHandler): Removed.
+
 2007-05-29  Wade Berrier  <wberrier@novell.com>
 
 	* classes/Makefile.am: fix make dist (remove MethodSource.cs)

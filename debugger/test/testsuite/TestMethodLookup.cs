@@ -149,7 +149,7 @@ namespace Mono.Debugger.Tests
 					      "`X.Overloaded()' with a type reference.");
 			AssertPrintException (thread, "Overloaded(3)",
 					      "Cannot invoke instance method " +
-					      "`X.Overloaded(System.Int32)' with a type reference.");
+					      "`X.Overloaded(int)' with a type reference.");
 			AssertPrintException (thread, "Overloaded(root)",
 					      "Cannot invoke instance method " +
 					      "`X.Overloaded(Root)' with a type reference.");
@@ -176,7 +176,7 @@ namespace Mono.Debugger.Tests
 					      "`Root.Overloaded()' with a type reference.");
 			AssertPrintException (thread, "Root.Overloaded(3)",
 					      "Cannot invoke instance method " +
-					      "`Root.Overloaded(System.Int32)' with a type reference.");
+					      "`Root.Overloaded(int)' with a type reference.");
 			AssertPrintException (thread, "Root.Overloaded(root)",
 					      "Cannot invoke instance method " +
 					      "`Root.Overloaded(Root)' with a type reference.");

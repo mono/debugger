@@ -54,7 +54,7 @@ namespace Mono.Debugger.Backends
 						    TargetAddress address,
 						    out bool is_start);
 
-		SourceMethod GetTrampoline (TargetMemoryAccess memory,
+		MethodSource GetTrampoline (TargetMemoryAccess memory,
 					    TargetAddress address);
 
 		void Notification (Inferior inferior, NotificationType type,

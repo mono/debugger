@@ -24,7 +24,6 @@ namespace Mono.Debugger.Backends
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		TargetAddress entry_point = TargetAddress.Null;
 		bool is_loaded;
-		Hashtable load_handlers;
 		Hashtable symbols;
 		ArrayList simple_symbols;
 		BfdSymbolTable simple_symtab;
@@ -175,8 +174,6 @@ namespace Mono.Debugger.Backends
 			this.base_address = base_address;
 			this.main_bfd = main_bfd;
 			this.is_loaded = is_loaded;
-
-			load_handlers = new Hashtable ();
 
 			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
@@ -552,7 +549,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override SourceMethod[] GetMethods (SourceFile file)
+		public override MethodSource[] GetMethods (SourceFile file)
 		{
 			if (dwarf != null)
 				return dwarf.GetMethods (file);
@@ -568,12 +565,7 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetFunctionType LookupMethod (string class_name, string method_name)
-		{
-			return null;
-		}
-
-		public override SourceMethod FindMethod (string name)
+		public override MethodSource FindMethod (string name)
 		{
 			if (dwarf != null)
 				return dwarf.FindMethod (name);
@@ -955,7 +947,7 @@ namespace Mono.Debugger.Backends
 			return GetTrampoline (memory, address, out is_start);
 		}
 
-		SourceMethod ILanguageBackend.GetTrampoline (TargetMemoryAccess memory,
+		MethodSource ILanguageBackend.GetTrampoline (TargetMemoryAccess memory,
 							     TargetAddress address)
 		{
 			return null;
@@ -1029,23 +1021,6 @@ namespace Mono.Debugger.Backends
 				dwarf.ReadTypes ();
 		}
 
-		internal override ILoadHandler RegisterLoadHandler (Thread target,
-								    SourceMethod method,
-								    MethodLoadedHandler handler,
-								    object user_data)
-		{
-			LoadHandlerData data = new LoadHandlerData (
-				this, method, handler, user_data);
-
-			load_handlers.Add (data, true);
-			return data;
-		}
-
-		protected void UnRegisterLoadHandler (LoadHandlerData data)
-		{
-			load_handlers.Remove (data);
-		}
-
 		void module_loaded (Inferior inferior, TargetAddress address)
 		{
 			this.base_address = address;
@@ -1074,36 +1049,6 @@ namespace Mono.Debugger.Backends
 			if (dwarf != null) {
 				dwarf.ModuleLoaded ();
 				has_debugging_info = true;
-			}
-
-			foreach (LoadHandlerData data in load_handlers.Keys)
-				data.Handler (inferior, data.Method, data.UserData);
-		}
-
-		protected sealed class LoadHandlerData : ILoadHandler
-		{
-			public readonly Bfd Bfd;
-			public readonly SourceMethod Method;
-			public readonly MethodLoadedHandler Handler;
-			public readonly object UserData;
-
-			public LoadHandlerData (Bfd bfd, SourceMethod method,
-						MethodLoadedHandler handler,
-						object user_data)
-			{
-				this.Bfd = bfd;
-				this.Method = method;
-				this.Handler = handler;
-				this.UserData = user_data;
-			}
-
-			object ILoadHandler.UserData {
-				get { return UserData; }
-			}
-
-			public void Remove ()
-			{
-				Bfd.UnRegisterLoadHandler (this);
 			}
 		}
 

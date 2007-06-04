@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract SourceMethod Source {
+		public abstract MethodSource Source {
 			get;
 		}
 

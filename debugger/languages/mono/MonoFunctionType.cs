@@ -16,14 +16,13 @@ namespace Mono.Debugger.Languages.Mono
 		string name;
 		int token;
 
-		public MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef,
-					 string name)
+		public MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef)
 			: base (klass.File.MonoLanguage)
 		{
 			this.klass = klass;
 			this.method_info = mdef;
 			this.token = MonoDebuggerSupport.GetMethodToken (mdef);
-			this.name = name;
+			this.name = mdef.Name + MonoSymbolFile.GetMethodSignature (mdef);
 
 			Cecil.TypeReference rtype;
 			if (mdef.IsConstructor) {
@@ -85,7 +84,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass; }
 		}
 
-		public override SourceMethod Source {
+		public override MethodSource Source {
 			get {
 				int token = MonoDebuggerSupport.GetMethodToken (method_info);
 				return klass.File.GetMethodByToken (token);

@@ -453,30 +453,30 @@ namespace Mono.Debugger.Languages.Mono
 			return retval;
 		}
 
-		SourceMethod GetSourceMethod (int index)
+		MonoMethodSource GetMethodSource (int index)
 		{
 			ensure_sources ();
-			SourceMethod method = (SourceMethod) method_index_hash [index];
+			MonoMethodSource method = (MonoMethodSource) method_index_hash [index];
 			if (method != null)
 				return method;
 
 			C.MethodEntry entry = File.GetMethod (index);
 			SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
 
-			return CreateSourceMethod (file, index);
+			return CreateMethodSource (file, index);
 		}
 
-		SourceMethod GetSourceMethod (SourceFile file, int index)
+		MonoMethodSource GetMethodSource (SourceFile file, int index)
 		{
 			ensure_sources ();
-			SourceMethod method = (SourceMethod) method_index_hash [index];
+			MonoMethodSource method = (MonoMethodSource) method_index_hash [index];
 			if (method != null)
 				return method;
 
-			return CreateSourceMethod (file, index);
+			return CreateMethodSource (file, index);
 		}
 
-		SourceMethod CreateSourceMethod (SourceFile file, int index)
+		MonoMethodSource CreateMethodSource (SourceFile file, int index)
 		{
 			C.MethodEntry entry = File.GetMethod (index);
 			C.MethodSourceEntry source = File.GetMethodSource (index);
@@ -484,35 +484,13 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
 
-			StringBuilder sb = new StringBuilder (mdef.DeclaringType.FullName);
-			sb.Append (".");
-			sb.Append (mdef.Name);
-			sb.Append ("(");
-			bool first = true;
-			foreach (Cecil.ParameterDefinition param in mdef.Parameters) {
-				if (first)
-					first = false;
-				else
-					sb.Append (",");
-				sb.Append (param.ParameterType.FullName);
-			}
-			sb.Append (")");
-
-			string name = sb.ToString ();
-			SourceMethod method = new SourceMethod (
-				Module, file, source.Index, mdef.DeclaringType.FullName,
-				name, source.StartRow, source.EndRow, true);
-
+			MonoMethodSource method = new MonoMethodSource (
+				this, file, entry, source, mdef);
 			method_index_hash.Add (index, method);
 			return method;
 		}
 
-		public SourceMethod GetMethod (int index)
-		{
-			return GetSourceMethod (index);
-		}
-
-		public SourceMethod GetMethodByToken (int token)
+		public MethodSource GetMethodByToken (int token)
 		{
 			if (File == null)
 				return null;
@@ -521,7 +499,7 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry entry = File.GetMethodByToken (token);
 			if (entry == null)
 				return null;
-			return GetSourceMethod (entry.Index);
+			return GetMethodSource (entry.Index);
 		}
 
 		Hashtable method_hash = new Hashtable ();
@@ -536,77 +514,159 @@ namespace Mono.Debugger.Languages.Mono
 			return entry.GetMethod ();
 		}
 
-		public override SourceMethod[] GetMethods (SourceFile file)
+		public override MethodSource[] GetMethods (SourceFile file)
 		{
 			ensure_sources ();
 			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
 
 			C.MethodSourceEntry[] entries = source.Methods;
-			SourceMethod[] methods = new SourceMethod [entries.Length];
+			MethodSource[] methods = new MethodSource [entries.Length];
 
 			for (int i = 0; i < entries.Length; i++)
-				methods [i] = GetSourceMethod (file, entries [i].Index);
+				methods [i] = GetMethodSource (file, entries [i].Index);
 
 			return methods;
 		}
 
-		public override SourceMethod FindMethod (string name)
+		// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
+		protected static string GetTypeSignature (Cecil.TypeReference t)
 		{
-			return null;
+			Cecil.ReferenceType rtype = t as Cecil.ReferenceType;
+			if (rtype != null)
+				return GetTypeSignature (rtype.ElementType) + "&";
+
+			Cecil.ArrayType atype = t as Cecil.ArrayType;
+			if (atype != null) {
+				string etype = GetTypeSignature (atype.ElementType);
+				if (atype.Rank > 1)
+					return String.Format ("{0}[{1}]", etype, atype.Rank);
+				else
+					return etype + "[]";
+			}
+
+			switch (t.FullName) {
+			case "System.Char":	return "char";
+			case "System.Boolean":	return "bool";
+			case "System.Byte":	return "byte";
+			case "System.SByte":	return "sbyte";
+			case "System.Int16":	return "int16";
+			case "System.UInt16":	return "uint16";
+			case "System.Int32":	return "int";
+			case "System.UInt32":	return "uint";
+			case "System.Int64":	return "long";
+			case "System.UInt64":	return "ulong";
+			case "System.Single":	return "single";
+			case "System.Double":	return "double";
+			case "System.String":	return "string";
+			case "System.Object":	return "object";
+			default:		return t.FullName;
+			}
 		}
 
-		public override TargetFunctionType LookupMethod (string class_name, string name)
+		internal static string GetMethodSignature (Cecil.MethodDefinition mdef)
 		{
-			MonoClassType klass = null;
+			StringBuilder sb = new StringBuilder ("(");
+			bool first = true;
+			foreach (Cecil.ParameterDefinition p in mdef.Parameters) {
+				if (first)
+					first = false;
+				else
+					sb.Append (",");
+				sb.Append (GetTypeSignature (p.ParameterType).Replace ('+','/'));
+			}
+			sb.Append (")");
+			return sb.ToString ();
+		}
+
+		internal static string GetMethodName (Cecil.MethodDefinition mdef)
+		{
+			return mdef.DeclaringType.FullName + '.' + mdef.Name +
+				GetMethodSignature (mdef);
+		}
+
+		Cecil.MethodDefinition FindCecilMethod (string full_name)
+		{
+			string method_name, signature;
+
+			int pos = full_name.IndexOf ('(');
+			if (pos > 0) {
+				method_name = full_name.Substring (0, pos);
+				signature = full_name.Substring (pos);
+			} else {
+				method_name = full_name;
+				signature = null;
+			}
 
 			Cecil.TypeDefinitionCollection types = Assembly.MainModule.Types;
 			// FIXME: Work around an API problem in Cecil.
 			foreach (Cecil.TypeDefinition type in types) {
-				if (type.FullName != class_name)
+				if (!method_name.StartsWith (type.FullName))
 					continue;
 
-				klass = LookupMonoType (type) as MonoClassType;
-				break;
-			}
+				if (method_name.Length <= type.FullName.Length)
+					continue;
 
-			if (klass == null)
-				return null;
+				string mname = method_name.Substring (type.FullName.Length + 1);
+				foreach (Cecil.MethodDefinition method in type.Methods) {
+					if (method.Name != mname)
+						continue;
 
-			string full_name = class_name + '.' + name;
-			foreach (TargetMethodInfo method in klass.StaticMethods) {
-				if (method.FullName == full_name)
-					return method.Type;
-			}
+					if (signature == null)
+						return method;
 
-			foreach (TargetMethodInfo method in klass.Methods) {
-				if (method.FullName == full_name)
-					return method.Type;
+					string sig = GetMethodSignature (method);
+					if (sig != signature)
+						continue;
+
+					return method;
+				}
 			}
 
 			return null;
 		}
 
-		protected MonoMethod GetMonoMethod (MethodHashEntry index)
+		public override MethodSource FindMethod (string name)
+		{
+			Cecil.MethodDefinition method = FindCecilMethod (name);
+			if (method == null)
+				return null;
+
+			int token = (int) (method.MetadataToken.TokenType + method.MetadataToken.RID);
+			return GetMethodByToken (token);
+		}
+
+		protected MonoMethod GetMonoMethod (MonoMethodSource source, int domain)
 		{
 			ensure_sources ();
-			MonoMethod mono_method = (MonoMethod) method_hash [index];
-			if (mono_method != null)
-				return mono_method;
+			MethodHashEntry index = new MethodHashEntry (domain, source.Index);
 
-			SourceMethod method = GetSourceMethod (index.Index);
-			C.MethodEntry entry = File.GetMethod (index.Index);
+			MonoMethod method = (MonoMethod) method_hash [index];
+			if (method == null) {
+				method = new MonoMethod (this, source, source.Entry, source.Method);
+				method_hash.Add (index, method);
+			}
 
-			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
-				ModuleDefinition, entry.Token);
+			if (method.IsLoaded)
+				return method;
 
-			mono_method = new MonoMethod (this, method, entry, mdef);
-			method_hash.Add (index, mono_method);
-			return mono_method;
+			MethodRangeEntry entry = (MethodRangeEntry) range_hash [index];
+			if (entry == null)
+				return method;
+
+			TargetBinaryReader reader = new TargetBinaryReader (entry.Contents, TargetInfo);
+			method.Load (reader, TargetInfo.AddressDomain);
+			return method;
 		}
 
 		protected MonoMethod GetMonoMethod (MethodHashEntry index, byte[] contents)
 		{
-			MonoMethod method = GetMonoMethod (index);
+			ensure_sources ();
+			MonoMethod method = (MonoMethod) method_hash [index];
+			if (method == null) {
+				MonoMethodSource source = GetMethodSource (index.Index);
+				method = new MonoMethod (this, source, source.Entry, source.Method);
+				method_hash.Add (index, method);
+			}
 
 			if (!method.IsLoaded) {
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
@@ -636,30 +696,7 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition minfo = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, token);
 
-			StringBuilder sb = new StringBuilder ();
-			bool first = true;
-			foreach (Cecil.ParameterDefinition pinfo in minfo.Parameters) {
-				if (first)
-					first = false;
-				else
-					sb.Append (",");
-				sb.Append (pinfo.ParameterType);
-			}
-
-			string fname = String.Format (
-				"{0}.{1}({2})", klass.Name, minfo.Name, sb.ToString ());
-
-			return new MonoFunctionType (klass, minfo, fname);
-		}
-
-		internal override ILoadHandler RegisterLoadHandler (Thread target,
-								    SourceMethod source,
-								    MethodLoadedHandler handler,
-								    object user_data)
-		{
-			int index = (int) source.Handle;
-			MonoMethod method = GetMonoMethod (new MethodHashEntry (0, index));
-			return method.RegisterLoadHandler (target, handler, user_data);
+			return new MonoFunctionType (klass, minfo);
 		}
 
 		internal override StackFrame UnwindStack (StackFrame last_frame,
@@ -678,10 +715,150 @@ namespace Mono.Debugger.Languages.Mono
 			base.DoDispose ();
 		}
 
+		protected class MonoMethodSource : MethodSource
+		{
+			protected readonly MonoSymbolFile file;
+			protected readonly SourceFile source_file;
+			protected readonly C.MethodEntry method;
+			protected readonly C.MethodSourceEntry source;
+			protected readonly Cecil.MethodDefinition mdef;
+			protected readonly string full_name;
+			Hashtable load_handlers;
+
+			public MonoMethodSource (MonoSymbolFile file, SourceFile source_file,
+						 C.MethodEntry method, C.MethodSourceEntry source,
+						 Cecil.MethodDefinition mdef)
+			{
+				this.file = file;
+				this.source_file = source_file;
+				this.method = method;
+				this.source = source;
+				this.mdef = mdef;
+				this.full_name = MonoSymbolFile.GetMethodName (mdef);
+			}
+
+			public override Module Module {
+				get { return file.Module; }
+			}
+
+			public override string Name {
+				get { return full_name; }
+			}
+
+			public override bool IsManaged {
+				get { return true; }
+			}
+
+			public override bool HasSourceCode {
+				get { return true; }
+			}
+
+			public override SourceFile SourceFile {
+				get { return source_file; }
+			}
+
+			public override int StartRow {
+				get { return source.StartRow; }
+			}
+
+			public override int EndRow {
+				get { return source.EndRow; }
+			}
+
+			internal int Index {
+				get { return source.Index; }
+			}
+
+			internal C.MethodEntry Entry {
+				get { return method; }
+			}
+
+			internal Cecil.MethodDefinition Method {
+				get { return mdef; }
+			}
+
+			public override Method GetMethod (int domain)
+			{
+				return file.GetMonoMethod (this, domain);
+			}
+
+
+			internal override ILoadHandler RegisterLoadHandler (Thread target,
+									    MethodLoadedHandler handler,
+									    object user_data)
+			{
+				string full_name = mdef.DeclaringType.FullName + ':' + mdef.Name +
+					MonoSymbolFile.GetMethodSignature (mdef);
+
+				if (load_handlers == null) {
+					/* only insert the load handler breakpoint once */
+					file.MonoLanguage.InsertBreakpoint (
+						target, full_name,
+						new BreakpointHandler (breakpoint_hit),
+						null);
+
+					load_handlers = new Hashtable ();
+				}
+
+				/* but permit lots of handlers so we can insert multiple breakpoints in
+				 * an unjitted method */
+				HandlerData data = new HandlerData (this, handler, user_data);
+				load_handlers.Add (data, true);
+				return data;
+			}
+
+			protected void UnRegisterLoadHandler (HandlerData data)
+			{
+				if (load_handlers == null)
+					return;
+
+				load_handlers.Remove (data);
+				if (load_handlers.Count == 0)
+					load_handlers = null;
+			}
+
+			void breakpoint_hit (Inferior inferior, TargetAddress address,
+					     object user_data)
+			{
+				if (load_handlers == null)
+					return;
+
+				foreach (HandlerData handler in load_handlers.Keys)
+					handler.Handler (inferior, this, handler.UserData);
+
+				load_handlers = null;
+			}
+
+			protected sealed class HandlerData : DebuggerMarshalByRefObject, ILoadHandler
+			{
+				public readonly MonoMethodSource Method;
+				public readonly MethodLoadedHandler Handler;
+				public readonly object UserData;
+
+				public HandlerData (MonoMethodSource method,
+						    MethodLoadedHandler handler,
+						    object user_data)
+				{
+					this.Method = method;
+					this.Handler = handler;
+					this.UserData = user_data;
+				}
+
+				object ILoadHandler.UserData {
+					get { return UserData; }
+				}
+
+				public void Remove ()
+				{
+					Method.UnRegisterLoadHandler (this);
+				}
+			}
+		}
+
 		protected class MonoMethod : Method
 		{
 			MonoSymbolFile file;
-			SourceMethod info;
+			MethodSource source;
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
 			MonoClassType decl_type;
@@ -693,14 +870,13 @@ namespace Mono.Debugger.Languages.Mono
 			bool has_variables;
 			bool is_loaded;
 			MethodAddress address;
-			Hashtable load_handlers;
 
-			public MonoMethod (MonoSymbolFile file, SourceMethod info,
+			public MonoMethod (MonoSymbolFile file, MethodSource source,
 					   C.MethodEntry method, Cecil.MethodDefinition mdef)
-				: base (info.Name, file.ImageFile, file.Module)
+				: base (source.Name, file.ImageFile, file.Module)
 			{
 				this.file = file;
-				this.info = info;
+				this.source = source;
 				this.method = method;
 				this.mdef = mdef;
 			}
@@ -710,11 +886,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override bool HasSourceFile {
-				get { return info.SourceFile != null; }
+				get { return source.HasSourceCode; }
 			}
 
 			public override SourceFile SourceFile {
-				get { return info.SourceFile; }
+				get { return source.SourceFile; }
 			}
 
 			public override int StartRow {
@@ -739,7 +915,7 @@ namespace Mono.Debugger.Languages.Mono
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
 				SetLineNumbers (new MonoLineNumberTable (
-					this, info, method, address.LineNumbers));
+					this, source, method, address.LineNumbers));
 			}
 
 			void get_variables ()
@@ -846,152 +1022,30 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			internal override SourceMethod GetTrampoline (TargetMemoryAccess memory,
+			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
 				return file.LanguageBackend.GetTrampoline (memory, address);
 			}
-
-			void breakpoint_hit (Inferior inferior, TargetAddress address,
-					     object user_data)
-			{
-				if (load_handlers == null)
-					return;
-
-				// ensure_method ();
-
-				foreach (HandlerData handler in load_handlers.Keys)
-					handler.Handler (inferior, info, handler.UserData);
-
-				load_handlers = null;
-			}
-
-			// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
-			string GetTypeSignature (Cecil.TypeReference t)
-			{
-				Cecil.ReferenceType rtype = t as Cecil.ReferenceType;
-				if (rtype != null)
-					return GetTypeSignature (rtype.ElementType) + "&";
-
-				Cecil.ArrayType atype = t as Cecil.ArrayType;
-				if (atype != null) {
-					string etype = GetTypeSignature (atype.ElementType);
-					if (atype.Rank > 1)
-						return String.Format ("{0}[{1}]", etype, atype.Rank);
-					else
-						return etype + "[]";
-				}
-
-				switch (t.FullName) {
-				case "System.Char":	return "char";
-				case "System.Boolean":	return "bool";
-				case "System.Byte":	return "byte";
-				case "System.SByte":	return "sbyte";
-				case "System.Int16":	return "int16";
-				case "System.UInt16":	return "uint16";
-				case "System.Int32":	return "int";
-				case "System.UInt32":	return "uint";
-				case "System.Int64":	return "long";
-				case "System.UInt64":	return "ulong";
-				case "System.Single":	return "single";
-				case "System.Double":	return "double";
-				case "System.String":	return "string";
-				case "System.Object":	return "object";
-				default:		return t.FullName;
-				}
-			}
-
-#region load handlers for unjitted methods
-			public ILoadHandler RegisterLoadHandler (Thread target,
-								 MethodLoadedHandler handler,
-								 object user_data)
-			{
-				StringBuilder sb = new StringBuilder ();
-				sb.Append (mdef.DeclaringType.FullName);
-				sb.Append (":");
-				sb.Append (mdef.Name);
-				sb.Append ("(");
-				for (int i = 0; i < mdef.Parameters.Count; i++) {
-					if (i > 0)
-						sb.Append (",");
-					sb.Append (GetTypeSignature (mdef.Parameters[i].ParameterType).Replace ('+','/'));
-				}
-				sb.Append (")");
-				string full_name = sb.ToString ();
-
-				if (load_handlers == null) {
-					/* only insert the load handler breakpoint once */
-					file.MonoLanguage.InsertBreakpoint (
-						target, full_name,
-						new BreakpointHandler (breakpoint_hit),
-						null);
-				 
-					load_handlers = new Hashtable ();
-				}
-
-				/* but permit lots of handlers so we
-				 * can insert multiple breakpoints in
-				 * an unjitted method */
-				HandlerData data = new HandlerData (this, handler, user_data);
-
-				load_handlers.Add (data, true);
-				return data;
-			}
-
-			protected void UnRegisterLoadHandler (HandlerData data)
-			{
-				if (load_handlers == null)
-					return;
-
-				load_handlers.Remove (data);
-				if (load_handlers.Count == 0)
-					load_handlers = null;
-			}
-
-			protected sealed class HandlerData : DebuggerMarshalByRefObject, ILoadHandler
-			{
-				public readonly MonoMethod Method;
-				public readonly MethodLoadedHandler Handler;
-				public readonly object UserData;
-
-				public HandlerData (MonoMethod method,
-						    MethodLoadedHandler handler,
-						    object user_data)
-				{
-					this.Method = method;
-					this.Handler = handler;
-					this.UserData = user_data;
-				}
-
-				object ILoadHandler.UserData {
-					get { return UserData; }
-				}
-
-				public void Remove ()
-				{
-					Method.UnRegisterLoadHandler (this);
-				}
-			}
-#endregion
 		}
 
 		protected class MonoLineNumberTable : LineNumberTable
 		{
 			int start_row, end_row;
 			JitLineNumberEntry[] line_numbers;
-			C.MethodEntry method;
-			SourceMethod source_method;
-			Method imethod;
+			C.MethodEntry entry;
+			MethodSource source;
+			Method method;
 			Hashtable namespaces;
 
-			public MonoLineNumberTable (Method imethod, SourceMethod source_method,
-						    C.MethodEntry method, JitLineNumberEntry[] jit_lnt)
-				: base (imethod, false)
+			public MonoLineNumberTable (Method method, MethodSource source,
+						    C.MethodEntry entry, JitLineNumberEntry[] jit_lnt)
+				: base (method, false)
 			{
-				this.imethod = imethod;
 				this.method = method;
+				this.entry = entry;
 				this.line_numbers = jit_lnt;
-				this.source_method = source_method;
+				this.source = source;
 				this.start_row = method.StartRow;
 				this.end_row = method.EndRow;
 			}
@@ -999,8 +1053,8 @@ namespace Mono.Debugger.Languages.Mono
 			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
 						   ref int last_line)
 			{
-				for (int i = method.NumLineNumbers - 1; i >= 0; i--) {
-					C.LineNumberEntry lne = method.LineNumbers [i];
+				for (int i = entry.NumLineNumbers - 1; i >= 0; i--) {
+					C.LineNumberEntry lne = entry.LineNumbers [i];
 
 					if (lne.Offset > offset)
 						continue;
@@ -1022,7 +1076,7 @@ namespace Mono.Debugger.Languages.Mono
 				for (int i = 0; i < line_numbers.Length; i++) {
 					JitLineNumberEntry lne = line_numbers [i];
 
-					generate_line_number (lines, imethod.StartAddress + lne.Address,
+					generate_line_number (lines, method.StartAddress + lne.Address,
 							      lne.Offset, ref last_line);
 				}
 
@@ -1032,20 +1086,19 @@ namespace Mono.Debugger.Languages.Mono
 				lines.CopyTo (addresses, 0);
 
 				return new LineNumberTableData (
-					start_row, end_row, addresses, source_method, null,
-					source_method.SourceFile.Module);
+					start_row, end_row, addresses, source, null, method.Module);
 			}
 
 			public override string[] GetNamespaces ()
 			{
-				int index = method.NamespaceID;
+				int index = entry.NamespaceID;
 
 				if (namespaces == null) {
 					namespaces = new Hashtable ();
 
-					C.SourceFileEntry source = method.SourceFile;
-					foreach (C.NamespaceEntry entry in source.Namespaces)
-						namespaces.Add (entry.Index, entry);
+					C.SourceFileEntry source = entry.SourceFile;
+					foreach (C.NamespaceEntry nse in source.Namespaces)
+						namespaces.Add (nse.Index, nse);
 				}
 
 				ArrayList list = new ArrayList ();
@@ -1071,8 +1124,8 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("Symfile Line Numbers:");
 				Console.WriteLine ("---------------------");
 
-				for (int i = 0; i < method.NumLineNumbers; i++) {
-					C.LineNumberEntry lne = method.LineNumbers [i];
+				for (int i = 0; i < entry.NumLineNumbers; i++) {
+					C.LineNumberEntry lne = entry.LineNumbers [i];
 
 					Console.WriteLine ("{0,4} {1,4} {2,4:x}", i,
 							   lne.Row, lne.Offset);
@@ -1087,7 +1140,7 @@ namespace Mono.Debugger.Languages.Mono
 					JitLineNumberEntry lne = line_numbers [i];
 
 					Console.WriteLine ("{0,4} {1,4:x} {2,4:x} {3,4:x}", i, lne.Offset,
-							   lne.Address, imethod.StartAddress + lne.Address);
+							   lne.Address, method.StartAddress + lne.Address);
 				}
 				Console.WriteLine ("-----------------");
 			}
@@ -1115,7 +1168,7 @@ namespace Mono.Debugger.Languages.Mono
 			public readonly MonoSymbolFile File;
 			public readonly MethodHashEntry Index;
 			public readonly TargetAddress WrapperAddress;
-			readonly byte[] contents;
+			public readonly byte[] Contents;
 
 			private MethodRangeEntry (MonoSymbolFile file, int domain, int index,
 						  TargetAddress start_address, TargetAddress end_address,
@@ -1125,7 +1178,7 @@ namespace Mono.Debugger.Languages.Mono
 				this.File = file;
 				this.Index = new MethodHashEntry (domain, index);
 				this.WrapperAddress = wrapper_address;
-				this.contents = contents;
+				this.Contents = contents;
 			}
 
 			public static MethodRangeEntry Create (MonoSymbolFile file, TargetReader reader,
@@ -1145,12 +1198,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			internal Method GetMethod ()
 			{
-				return File.GetMonoMethod (Index, contents);
+				return File.GetMonoMethod (Index, Contents);
 			}
 
 			protected override ISymbolLookup GetSymbolLookup ()
 			{
-				return File.GetMonoMethod (Index, contents);
+				return File.GetMonoMethod (Index, Contents);
 			}
 
 			public override string ToString ()
@@ -1293,7 +1346,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return null; }
 			}
 
-			internal override SourceMethod GetTrampoline (TargetMemoryAccess memory,
+			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
 				return Entry.File.LanguageBackend.GetTrampoline (memory, address);

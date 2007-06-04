@@ -883,7 +883,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.RunFinally; }
 		}
 
-		public SourceMethod GetTrampoline (TargetMemoryAccess memory,
+		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
 			bool is_start;

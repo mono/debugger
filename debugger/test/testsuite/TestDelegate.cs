@@ -38,20 +38,20 @@ namespace Mono.Debugger.Tests
 			AssertNoTargetOutput ();
 
 			AssertExecute ("step");
-			AssertStopped (thread, "X.foo(System.Int32)", 17);
+			AssertStopped (thread, "X.foo(int)", 17);
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World: 4");
 			AssertNoTargetOutput ();
-			AssertStopped (thread, "X.foo(System.Int32)", 18);
+			AssertStopped (thread, "X.foo(int)", 18);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.foo(System.Int32)", 19);
+			AssertStopped (thread, "X.foo(int)", 19);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.boston(System.Int32)", 23);
+			AssertStopped (thread, "X.boston(int)", 23);
 			AssertExecute ("next");
 			AssertTargetOutput ("Boston: 4");
-			AssertStopped (thread, "X.boston(System.Int32)", 24);
+			AssertStopped (thread, "X.boston(int)", 24);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.boston(System.Int32)", 25);
+			AssertStopped (thread, "X.boston(int)", 25);
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 31);
 
@@ -69,21 +69,21 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertTargetOutput ("Back in main");
 			AssertNoTargetOutput ();
-			AssertStopped (thread, "X.foo(System.Int32)", 17);
+			AssertStopped (thread, "X.foo(int)", 17);
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World: 11");
 			AssertNoTargetOutput ();
-			AssertStopped (thread, "X.foo(System.Int32)", 18);
+			AssertStopped (thread, "X.foo(int)", 18);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.foo(System.Int32)", 19);
+			AssertStopped (thread, "X.foo(int)", 19);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.boston(System.Int32)", 23);
+			AssertStopped (thread, "X.boston(int)", 23);
 			AssertExecute ("next");
 			AssertTargetOutput ("Boston: 11");
 			AssertNoTargetOutput ();
-			AssertStopped (thread, "X.boston(System.Int32)", 24);
+			AssertStopped (thread, "X.boston(int)", 24);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.boston(System.Int32)", 25);
+			AssertStopped (thread, "X.boston(int)", 25);
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 33);
 

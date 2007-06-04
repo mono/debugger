@@ -84,12 +84,12 @@ namespace Mono.Debugger
 			}
 		}
 
-		public SourceMethod SourceMethod {
+		public MethodSource MethodSource {
 			get {
 				if (IsDynamic)
 					throw new InvalidOperationException ();
 
-				return Data.SourceMethod;
+				return Data.MethodSource;
 			}
 		}
 
@@ -184,7 +184,7 @@ namespace Mono.Debugger
 			public readonly int StartRow;
 			public readonly int EndRow;
 			public readonly LineEntry[] Addresses;
-			public readonly SourceMethod SourceMethod;
+			public readonly MethodSource MethodSource;
 			public readonly SourceBuffer SourceBuffer;
 			public readonly Module Module;
 
@@ -194,12 +194,12 @@ namespace Mono.Debugger
 			{ }
 
 			public LineNumberTableData (int start, int end, LineEntry[] addresses,
-						    SourceMethod method, SourceBuffer buffer,
+						    MethodSource source, SourceBuffer buffer,
 						    Module module)
 			{
 				this.StartRow = start;
 				this.EndRow = end;
-				this.SourceMethod = method;
+				this.MethodSource = source;
 				this.SourceBuffer = buffer;
 				this.Addresses = addresses;
 				this.Module = module;
