@@ -33,7 +33,8 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_THROW_EXCEPTION,
 	MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION,
 	MONO_DEBUGGER_EVENT_REACHED_MAIN,
-	MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE
+	MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE,
+	MONO_DEBUGGER_EVENT_CLASS_INITIALIZED
 } MonoDebuggerEvent;
 
 struct _MonoDebuggerBreakpointInfo {
@@ -43,25 +44,32 @@ struct _MonoDebuggerBreakpointInfo {
 
 extern void (*mono_debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_initialize                  (gboolean use_debugger);
-void            mono_debugger_cleanup                     (void);
+void            mono_debugger_initialize                    (gboolean use_debugger);
+void            mono_debugger_cleanup                       (void);
 
-void            mono_debugger_lock                        (void);
-void            mono_debugger_unlock                      (void);
-void            mono_debugger_event                       (MonoDebuggerEvent event, guint64 data, guint64 arg);
+void            mono_debugger_lock                          (void);
+void            mono_debugger_unlock                        (void);
+void            mono_debugger_event                         (MonoDebuggerEvent event, guint64 data, guint64 arg);
 
-void            mono_debugger_add_symbol_file             (MonoDebugHandle *handle);
-void            mono_debugger_start_add_type              (MonoDebugHandle *symfile, MonoClass *klass);
+void            mono_debugger_add_symbol_file               (MonoDebugHandle *handle);
+void            mono_debugger_add_type                      (MonoDebugHandle *symfile, MonoClass *klass);
 
-int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
-int             mono_debugger_remove_breakpoint           (int breakpoint_id);
-void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
+MonoClass      *mono_debugger_register_class_init_callback  (MonoImage *image, guint64 index,
+							     const gchar *full_name);
+void            mono_debugger_remove_class_init_callback    (int index);
 
-MonoObject     *mono_debugger_runtime_invoke              (MonoMethod *method, void *obj,
-							   void **params, MonoObject **exc);
+void            mono_debugger_register_method_load_callback (guint64 index, MonoMethod *method);
+void            mono_debugger_remove_method_load_callback   (int index);
 
-gboolean        mono_debugger_lookup_type                 (const gchar *type_name);
-gint32          mono_debugger_lookup_assembly             (const gchar *name);
+int             mono_debugger_insert_breakpoint_full        (MonoMethodDesc *desc);
+int             mono_debugger_remove_breakpoint             (int breakpoint_id);
+void            mono_debugger_breakpoint_callback           (MonoMethod *method, guint32 idx);
+
+MonoObject     *mono_debugger_runtime_invoke                (MonoMethod *method, void *obj,
+							     void **params, MonoObject **exc);
+
+gboolean        mono_debugger_lookup_type                   (const gchar *type_name);
+gint32          mono_debugger_lookup_assembly               (const gchar *name);
 
 void *
 mono_vtable_get_static_field_data (MonoVTable *vt);

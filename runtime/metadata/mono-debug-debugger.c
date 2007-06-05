@@ -93,12 +93,6 @@ mono_debugger_add_symbol_file (MonoDebugHandle *handle)
 }
 
 void
-mono_debugger_start_add_type (MonoDebugHandle *symfile, MonoClass *klass)
-{
-	must_reload_symtabs = TRUE;
-}
-
-void
 mono_debugger_event (MonoDebuggerEvent event, guint64 data, guint64 arg)
 {
 	if (mono_debugger_event_handler)
@@ -387,3 +381,145 @@ mono_debugger_lookup_assembly (const gchar *name)
 	goto again;
 }
 
+static GPtrArray *class_init_callbacks = NULL;
+static GPtrArray *method_load_callbacks = NULL;
+
+typedef struct {
+	guint64 index;
+	gchar *name_space;
+	gchar *name;
+} ClassInitCallback;
+
+MonoClass *
+mono_debugger_register_class_init_callback (MonoImage *image, guint64 index,
+					    const gchar *full_name)
+{
+	ClassInitCallback *info;
+	MonoClass *klass;
+	gchar *name_space, *name, *pos;
+
+	name = g_strdup (full_name);
+
+	pos = strrchr (name, '.');
+	if (pos) {
+		name_space = name;
+		*pos = 0;
+		name = pos + 1;
+	} else {
+		name_space = NULL;
+	}
+
+	mono_loader_lock ();
+
+	klass = mono_class_from_name (image, name_space ? name_space : "", name);
+	g_message (G_STRLOC ": %p - %s - %p", image, full_name, klass);
+	if (klass && klass->inited) {
+		mono_loader_unlock ();
+		return klass;
+	}
+
+	info = g_new0 (ClassInitCallback, 1);
+	info->index = index;
+	info->name_space = name_space;
+	info->name = name;
+
+	if (!class_init_callbacks)
+		class_init_callbacks = g_ptr_array_new ();
+
+	g_ptr_array_add (class_init_callbacks, info);
+	mono_loader_unlock ();
+	return NULL;
+}
+
+void
+mono_debugger_remove_class_init_callback (int index)
+{
+	int i;
+
+	if (!class_init_callbacks)
+		return;
+
+	for (i = 0; i < class_init_callbacks->len; i++) {
+		ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
+
+		if (info->index != index)
+			continue;
+
+		g_ptr_array_remove (class_init_callbacks, info);
+		if (info->name_space)
+			g_free (info->name_space);
+		else
+			g_free (info->name);
+		g_free (info);
+	}
+}
+
+void
+mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass)
+{
+	int i;
+
+	must_reload_symtabs = TRUE;
+
+	if (!class_init_callbacks)
+		return;
+
+	for (i = 0; i < class_init_callbacks->len; i++) {
+		ClassInitCallback *info = g_ptr_array_index (class_init_callbacks, i);
+
+		if (info->name_space && strcmp (info->name_space, klass->name_space))
+			continue;
+		if (strcmp (info->name, klass->name))
+			continue;
+
+		mono_debugger_event (MONO_DEBUGGER_EVENT_CLASS_INITIALIZED,
+				     (guint64) (gsize) klass, info->index);
+
+		g_ptr_array_remove (class_init_callbacks, info);
+		if (info->name_space)
+			g_free (info->name_space);
+		else
+			g_free (info->name);
+		g_free (info);
+		return;
+	}
+}
+
+typedef struct {
+	guint64 index;
+	MonoMethod *method;
+} MethodLoadCallback;
+
+void
+mono_debugger_register_method_load_callback (guint64 index, MonoMethod *method)
+{
+	MethodLoadCallback *info;
+
+	info = g_new0 (MethodLoadCallback, 1);
+	info->index = index;
+	info->method = method;
+
+	if (!method_load_callbacks)
+		method_load_callbacks = g_ptr_array_new ();
+
+	g_ptr_array_add (method_load_callbacks, info);
+}
+
+void
+mono_debugger_remove_method_load_callback (int index)
+{
+	int i;
+
+	if (!method_load_callbacks)
+		return;
+
+	for (i = 0; i < method_load_callbacks->len; i++) {
+		MethodLoadCallback *info = g_ptr_array_index (method_load_callbacks, i);
+
+		if (info->index != index)
+			continue;
+
+		g_ptr_array_remove (method_load_callbacks, info);
+		g_free (info);
+	}
+}

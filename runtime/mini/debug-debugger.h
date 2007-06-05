@@ -39,18 +39,24 @@ struct _MonoDebuggerInfo {
 	guint64 (*compile_method) (guint64 method_argument);
 	guint64 (*get_virtual_method) (guint64 object_argument, guint64 method_argument);
 	guint64 (*get_boxed_object_method) (guint64 klass_argument, guint64 val_argument);
-	guint64 (*insert_breakpoint) (guint64 method_argument, guint64 dummy_argument,
+	guint64 (*insert_breakpoint) (guint64 method_argument, G_GNUC_UNUSED guint64 dummy_argument,
 				      const gchar *string_argument);
 	guint64 (*remove_breakpoint) (guint64 breakpoint);
+	guint64 (*register_class_init_callback) (guint64 image_arg, guint64 index,
+						 const gchar *string_argument);
+	guint64 (*remove_class_init_callback) (guint64 index);
 	MonoInvokeFunc runtime_invoke;
-	guint64 (*create_string) (guint64 dummy_argument, guint64 dummy_argument2,
+	guint64 (*create_string) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
 				  const gchar *string_argument);
 	guint64 (*class_get_static_field_data) (guint64 klass);
-	guint64 (*lookup_class) (guint64 image_argument, guint64 token_arg);
-	guint64 (*lookup_assembly) (guint64 dummy_argument, guint64 dummy_argument2,
+	gint64 (*lookup_class) (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
+				gchar *full_name);
+	guint64 (*lookup_assembly) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
 				    const gchar *string_argument);
 	guint64 (*run_finally) (guint64 argument1, guint64 argument2);
 	guint64 (*get_current_thread) (void);
+	gint64 (*get_method_addr_or_bpt) (guint64 method_argument, guint64 index);
+	void (*remove_method_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
 	void (*attach) (void);
 	void (*detach) (void);
 	void (*initialize) (void);

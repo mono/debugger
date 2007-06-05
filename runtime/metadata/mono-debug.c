@@ -812,30 +812,25 @@ mono_debug_add_type (MonoClass *klass)
 	if (max_size > BUFSIZ)
 		g_free (oldptr);
 
-	mono_debugger_start_add_type (handle, klass);
+	mono_debugger_add_type (handle, klass);
 }
 
-static MonoDebugMethodJitInfo *
+static MonoDebugMethodAddress *
 find_method (MonoDebugMethodInfo *minfo, MonoDomain *domain)
 {
 	MethodHashEntry lookup;
-	MonoDebugMethodAddress *address;
 
 	lookup.symfile_id = minfo->handle->index;
 	lookup.domain_id = mono_domain_get_id (domain);
 	lookup.method_id = minfo->index;
 
-	address = g_hash_table_lookup (method_hash, &lookup);
-	if (!address)
-		return NULL;
-
-	return mono_debug_read_method (address);
+	return g_hash_table_lookup (method_hash, &lookup);
 }
 
-MonoDebugMethodJitInfo *
+MonoDebugMethodAddress *
 mono_debug_find_method (MonoDebugMethodInfo *minfo, MonoDomain *domain)
 {
-	MonoDebugMethodJitInfo *res;
+	MonoDebugMethodAddress *res;
 	mono_debugger_lock ();
 	res = find_method (minfo, domain);
 	mono_debugger_unlock ();
