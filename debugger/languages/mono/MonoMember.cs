@@ -44,7 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal static MonoMethodInfo Create (MonoClassType klass, int index,
 						       Cecil.MethodDefinition minfo)
 		{
-			MonoFunctionType type = new MonoFunctionType (klass, minfo);
+			MonoFunctionType type = klass.File.LookupFunction (klass, minfo);
 			return new MonoMethodInfo (klass, index, minfo, type);
 		}
 	}
@@ -73,17 +73,17 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoFunctionType add, remove, raise;
 			if (einfo.AddMethod != null)
-				add = new MonoFunctionType (klass, einfo.AddMethod);
+				add = klass.File.LookupFunction (klass, einfo.AddMethod);
 			else
 				add = null;
 
 			if (einfo.RemoveMethod != null)
-				remove = new MonoFunctionType (klass, einfo.RemoveMethod);
+				remove = klass.File.LookupFunction (klass, einfo.RemoveMethod);
 			else
 				remove = null;
 
 			if (einfo.InvokeMethod != null)
-				raise = new MonoFunctionType (klass, einfo.InvokeMethod);
+				raise = klass.File.LookupFunction (klass, einfo.InvokeMethod);
 			else
 				raise = null;
 
@@ -116,12 +116,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoFunctionType getter, setter;
 			if (pinfo.GetMethod != null)
-				getter = new MonoFunctionType (klass, pinfo.GetMethod);
+				getter = klass.File.LookupFunction (klass, pinfo.GetMethod);
 			else
 				getter = null;
 
 			if (pinfo.SetMethod != null)
-				setter = new MonoFunctionType (klass, pinfo.SetMethod);
+				setter = klass.File.LookupFunction (klass, pinfo.SetMethod);
 			else
 				setter = null;
 

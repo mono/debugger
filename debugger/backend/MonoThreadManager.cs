@@ -267,6 +267,8 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress GetBoxedObjectMethod;
 		public readonly TargetAddress InsertBreakpoint;
 		public readonly TargetAddress RemoveBreakpoint;
+		public readonly TargetAddress RegisterClassInitCallback;
+		public readonly TargetAddress RemoveClassInitCallback;
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
@@ -274,6 +276,8 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress GetCurrentThread;
+		public readonly TargetAddress GetMethodAddressOrBpt;
+		public readonly TargetAddress RemoveMethodBreakpoint;
 		public readonly TargetAddress Attach;
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
@@ -286,29 +290,33 @@ namespace Mono.Debugger.Backends
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
 
-			SymbolTableSize         = reader.ReadInteger ();
+			SymbolTableSize           = reader.ReadInteger ();
 
 			reader.Offset = 24;
-			NotificationAddress     = reader.ReadAddress ();
-			MonoTrampolineCode      = reader.ReadAddress ();
-			SymbolTable             = reader.ReadAddress ();
+			NotificationAddress       = reader.ReadAddress ();
+			MonoTrampolineCode        = reader.ReadAddress ();
+			SymbolTable               = reader.ReadAddress ();
 			TargetAddress metadata_info = reader.ReadAddress ();
-			CompileMethod           = reader.ReadAddress ();
-			GetVirtualMethod        = reader.ReadAddress ();
-			GetBoxedObjectMethod    = reader.ReadAddress ();
-			InsertBreakpoint        = reader.ReadAddress ();
-			RemoveBreakpoint        = reader.ReadAddress ();
-			RuntimeInvoke           = reader.ReadAddress ();
-			CreateString            = reader.ReadAddress ();
-			ClassGetStaticFieldData = reader.ReadAddress ();
-			LookupClass             = reader.ReadAddress ();
-			LookupAssembly          = reader.ReadAddress ();
-			RunFinally              = reader.ReadAddress ();
-			GetCurrentThread        = reader.ReadAddress ();
-			Attach                  = reader.ReadAddress ();
-			Detach                  = reader.ReadAddress ();
-			Initialize              = reader.ReadAddress ();
-			GetLMFAddress           = reader.ReadAddress ();
+			CompileMethod             = reader.ReadAddress ();
+			GetVirtualMethod          = reader.ReadAddress ();
+			GetBoxedObjectMethod      = reader.ReadAddress ();
+			InsertBreakpoint          = reader.ReadAddress ();
+			RemoveBreakpoint          = reader.ReadAddress ();
+			RegisterClassInitCallback = reader.ReadAddress ();
+			RemoveClassInitCallback   = reader.ReadAddress ();
+			RuntimeInvoke             = reader.ReadAddress ();
+			CreateString              = reader.ReadAddress ();
+			ClassGetStaticFieldData   = reader.ReadAddress ();
+			LookupClass               = reader.ReadAddress ();
+			LookupAssembly            = reader.ReadAddress ();
+			RunFinally                = reader.ReadAddress ();
+			GetCurrentThread          = reader.ReadAddress ();
+			GetMethodAddressOrBpt     = reader.ReadAddress ();
+			RemoveMethodBreakpoint    = reader.ReadAddress ();
+			Attach                    = reader.ReadAddress ();
+			Detach                    = reader.ReadAddress ();
+			Initialize                = reader.ReadAddress ();
+			GetLMFAddress             = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 

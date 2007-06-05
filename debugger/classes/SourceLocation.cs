@@ -32,9 +32,9 @@ namespace Mono.Debugger
 			Method = function.FullName;
 			Name = function.FullName;
 
-			if (function.Source != null) {
-				FileName = function.Source.SourceFile.FileName;
-				Line = function.Source.StartRow;
+			if (function.HasSourceCode) {
+				FileName = function.SourceFile.FileName;
+				Line = function.StartRow;
 			}
 		}
 
@@ -202,9 +202,17 @@ namespace Mono.Debugger
 
 		public DynamicSourceLocation (MethodSource source, int line)
 		{
-			this.module = source.Module;
+			Console.WriteLine ("DYNAMIC SOURCE: {0} {1}", source, source.Function);
+
+			if (source.IsManaged) {
+				this.function = source.Function;
+				this.module = function.Module;
+			} else {
+				this.module = source.Module;
+				this.source = source;
+			}
+
 			this.file = source.SourceFile;
-			this.source = source;
 			this.line = line;
 		}
 
@@ -218,11 +226,8 @@ namespace Mono.Debugger
 		public DynamicSourceLocation (TargetFunctionType function, int line)
 		{
 			this.function = function;
+			this.file = null;
 			this.module = function.Module;
-			this.source = function.Source;
-
-			if (source != null)
-				file = source.SourceFile;
 
 			this.line = line;
 		}
@@ -244,6 +249,9 @@ namespace Mono.Debugger
 			if (!module.IsLoaded)
 				return new ModuleBreakpointHandle (breakpoint, module);
 
+			Console.WriteLine ("RESOLVE BREAKPOINT: {0} {1} {2}", breakpoint,
+					   function, source);
+
 			if ((function == null) && (source == null)) {
 				if (method != null) {
 					source = module.FindMethod (method);
@@ -254,26 +262,15 @@ namespace Mono.Debugger
 				}
 			}
 
-			if (function != null) {
-				if (line > 0)
-					source = function.Source;
-				else if (function.IsLoaded)
-					return new FunctionBreakpointHandle (breakpoint, domain, function);
-				else {
-					source = function.Source;
-					return new FunctionBreakpointHandle (breakpoint, domain, source);
-				}
-			}
+			if (function != null)
+				return new FunctionBreakpointHandle (breakpoint, domain, function, line);
 
 			if (source == null)
 				throw new TargetException (TargetError.LocationInvalid);
 
 			TargetAddress address = GetAddress (domain);
-			if (!address.IsNull) {
+			if (!address.IsNull)
 				return new AddressBreakpointHandle (breakpoint, address);
-			} else if (source.IsManaged) {
-				return new FunctionBreakpointHandle (breakpoint, domain, source, line);
-			}
 
 			return null;
 		}

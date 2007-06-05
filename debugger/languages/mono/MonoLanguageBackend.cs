@@ -653,7 +653,7 @@ namespace Mono.Debugger.Languages.Mono
 					       BreakpointHandler handler, object user_data)
 		{
 			TargetAddress retval = target.CallMethod (
-				info.InsertBreakpoint, 0, 0, method_name);
+				info.InsertBreakpoint, TargetAddress.Null, 0, method_name);
 
 			int index = (int) retval.Address;
 
@@ -662,6 +662,99 @@ namespace Mono.Debugger.Languages.Mono
 
 			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
 			return index;
+		}
+#endregion
+
+#region Class Init Handlers
+
+		static int next_unique_id;
+
+		internal static int GetUniqueID ()
+		{
+			return ++next_unique_id;
+		}
+
+		Hashtable class_init_handlers = new Hashtable ();
+
+		internal int InsertClassInitHandler (Thread target, MonoClassType klass,
+						     ClassInitHandler handler)
+		{
+			int index = GetUniqueID ();
+
+			TargetAddress retval = target.CallMethod (
+				info.RegisterClassInitCallback,
+				klass.File.MonoImage, index, klass.Name);
+
+			Console.WriteLine ("TEST #1: {0} {1} {2}", klass, index, retval);
+
+			if (retval.IsNull) {
+				class_init_handlers.Add (index, handler);
+				return index;
+			}
+
+			handler (target, retval);
+			return -1;
+		}
+#endregion
+
+#region Method Load Handlers
+
+		Hashtable method_load_handlers = new Hashtable ();
+
+		Method method_from_jit_info (TargetMemoryAccess target, TargetAddress data)
+		{
+			Console.WriteLine ("JIT INFO: {0}", data, data);
+
+			try {
+				TargetBinaryReader reader = target.ReadMemory (data, 16).GetReader ();
+				int size = reader.ReadInt32 ();
+				int symfile_id = reader.ReadInt32 ();
+				int domain_id = reader.ReadInt32 ();
+				int method_id = reader.ReadInt32 ();
+
+				MonoSymbolFile file = (MonoSymbolFile) symbol_files [symfile_id];
+				if (file == null)
+					return null;
+
+				Console.WriteLine ("JIT INFO #1: {0} {1} {2} {3} {4}", size,
+						   symfile_id, domain_id, method_id, file);
+
+				Method method = file.GetMethod (domain_id, method_id);
+				Console.WriteLine ("JIT INFO #2: {0}", method);
+				return method;
+			} catch (TargetException) {
+				return null;
+			}
+		}
+
+		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
+							MethodLoadedHandler handler)
+		{
+			int index = GetUniqueID ();
+
+			TargetAddress retval = target.CallMethod (
+				info.GetMethodAddressOrBpt, method_address, index);
+
+			Console.WriteLine ("METHOD LOAD HANDLER: {0} {1}", method_address, retval);
+
+			if (retval.IsNull) {
+				method_load_handlers.Add (index, handler);
+				return index;
+			}
+
+			Method method = method_from_jit_info (target, retval);
+			if (method != null) {
+				handler (target, method);
+				return 0;
+			}
+
+			return -1;
+		}
+
+		internal void RemoveMethodLoadHandler (Thread target, int index)
+		{
+			target.CallMethod (info.RemoveMethodBreakpoint, TargetAddress.Null, 0);
+			method_load_handlers.Remove (index);
 		}
 #endregion
 
@@ -906,6 +999,18 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
+		void JitBreakpoint (Inferior inferior, int idx, TargetAddress data)
+		{
+			Console.WriteLine ("JIT BREAKPOINT: {0} {1}", idx, data);
+
+			Method method = method_from_jit_info (inferior, data);
+			Console.WriteLine ("JIT BREAKPOINT #1: {0} {1} {2}", idx, data, method);
+
+			MethodLoadedHandler handler = (MethodLoadedHandler) method_load_handlers [idx];
+			if (handler != null)
+				handler (inferior, method);
+		}
+
 		public void Notification (Inferior inferior, NotificationType type,
 					  TargetAddress data, long arg)
 		{
@@ -925,19 +1030,24 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 
 			case NotificationType.JitBreakpoint:
-				if (!breakpoints.Contains ((int) arg))
-					break;
-
-				do_update_symbol_table (inferior);
-
-				MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [(int) arg];
-				handle.Handler (inferior, data, handle.UserData);
-				breakpoints.Remove (arg);
+				JitBreakpoint (inferior, (int) arg, data);
 				break;
 
-			case NotificationType.MethodCompiled:
+			case NotificationType.MethodCompiled: {
+				Console.WriteLine ("METHOD COMPILED: {0} {1:x}", data, arg);
 				do_update_symbol_table (inferior);
 				break;
+			}
+
+			case NotificationType.ClassInitialized: {
+				int idx = (int) arg;
+				ClassInitHandler handler = (ClassInitHandler) class_init_handlers [idx];
+				if (handler != null) {
+					class_init_handlers.Remove (idx);
+					handler (inferior, data);
+				}
+				break;
+			}
 
 			default:
 				Console.WriteLine ("Received unknown notification {0:x} / {1} {2:x}",

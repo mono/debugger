@@ -66,86 +66,44 @@ namespace Mono.Debugger.Backends
 
 	internal class FunctionBreakpointHandle : BreakpointHandle
 	{
-		ILoadHandler load_handler;
 		TargetFunctionType function;
-		MethodSource source;
+		bool has_load_handler;
 		int line = -1;
 		int index = -1;
 		int domain;
 
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain, MethodSource source)
+		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
+						 TargetFunctionType function, int line)
 			: base (bpt)
 		{
-			this.domain = domain;
-			this.source = source;
-		}
-
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-						 MethodSource source, int line)
-			: this (bpt, domain, source)
-		{
-			this.line = line;
-		}
-
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-						 TargetFunctionType function)
-			: this (bpt, domain, function.Source, -1)
-		{
 			this.function = function;
+			this.domain = domain;
+			this.line = line;
 		}
 
 		public override void Insert (Thread target)
 		{
-			if ((load_handler != null) || (index > 0))
+			if (has_load_handler || (index > 0))
 				return;
 
-			if ((function != null) && function.IsLoaded) {
-				index = target.InsertBreakpoint (Breakpoint, function);
-				return;
-			}
-
-			load_handler = source.RegisterLoadHandler (target, method_loaded, null);
+			has_load_handler = function.InsertBreakpoint (target, method_loaded);
 		}
 
-		public override void Remove (Thread target)
+		void method_loaded (TargetMemoryAccess target, Method method)
 		{
-			if (index > 0)
-				target.RemoveBreakpoint (index);
+			Console.WriteLine ("BREAKPOINT HANDLE LOADED: {0}", method);
 
-			if (load_handler != null)
-				load_handler.Remove ();
-
-			load_handler = null;
-			index = -1;
-		}
-
-		protected TargetAddress GetAddress (int domain)
-		{
-			Method method = source.GetMethod (domain);
-			if (method == null)
-				return TargetAddress.Null;
-
+			TargetAddress address;
 			if (line != -1) {
 				if (method.HasLineNumbers)
-					return method.LineNumberTable.Lookup (line);
+					address = method.LineNumberTable.Lookup (line);
 				else
-					return TargetAddress.Null;
+					address = TargetAddress.Null;
 			} else if (method.HasMethodBounds)
-				return method.MethodStartAddress;
+				address = method.MethodStartAddress;
 			else
-				return method.StartAddress;
-		}
+				address = method.StartAddress;
 
-		// <summary>
-		//   The method has just been loaded, lookup the breakpoint
-		//   address and actually insert it.
-		// </summary>
-		public void method_loaded (TargetMemoryAccess target,
-					   MethodSource source, object data)
-		{
-			load_handler = null;
-
-			TargetAddress address = GetAddress (domain);
 			if (address.IsNull)
 				return;
 
@@ -156,6 +114,18 @@ namespace Mono.Debugger.Backends
 					      Breakpoint.Index, address, ex.Message);
 				index = -1;
 			}
+		}
+
+		public override void Remove (Thread target)
+		{
+			if (index > 0)
+				target.RemoveBreakpoint (index);
+
+			if (has_load_handler)
+				function.RemoveBreakpoint (target);
+
+			has_load_handler = false;
+			index = -1;
 		}
 	}
 }

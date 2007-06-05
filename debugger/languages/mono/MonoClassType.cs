@@ -8,6 +8,8 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
+	internal delegate void ClassInitHandler (TargetMemoryAccess target, TargetAddress klass);
+
 	internal class MonoClassType : TargetClassType
 	{
 		MonoFieldInfo[] fields;
@@ -29,6 +31,9 @@ namespace Mono.Debugger.Languages.Mono
 		MonoSymbolFile file;
 		MonoClassType parent_type;
 		MonoClassInfo type_info;
+
+		Hashtable load_handlers;
+		int load_handler_id;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage, TargetObjectKind.Class)
@@ -551,7 +556,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				MonoClassInfo.KlassAddress, TargetAddress.Null);
+				MonoClassInfo.KlassAddress, 0);
 
 			int offset = GetFieldOffset (finfo);
 
@@ -571,7 +576,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				MonoClassInfo.KlassAddress, TargetAddress.Null);
+				MonoClassInfo.KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -590,7 +595,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (!IsByRef && parent_type.IsByRef) {
 				TargetAddress boxed = target.CallMethod (
 					File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
-					MonoClassInfo.KlassAddress, location.Address);
+					MonoClassInfo.KlassAddress, location.Address.Address);
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
 				return new MonoClassObject (parent_type, new_loc);
 			}
@@ -616,6 +621,23 @@ namespace Mono.Debugger.Languages.Mono
 					2 * target.TargetInfo.TargetAddressSize);
 
 			return (MonoClassObject) current.GetObject (location);
+		}
+
+		internal bool ResolveClass (Thread target)
+		{
+			Console.WriteLine ("RESOLVE CLASS: {0}", type_info);
+
+			if (type_info != null)
+				return true;
+
+			TargetAddress klass_address = target.CallMethod (
+				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
+				file.MonoImage, 0, Name);
+
+			Console.WriteLine ("RESOLVE CLASS #1: {0}", klass_address);
+			type_info = file.MonoLanguage.GetClassInfo (target, klass_address);
+			Console.WriteLine ("RESOLVE CLASS #2: {0} {1}", klass_address, type_info);
+			return type_info != null;
 		}
 	}
 }

@@ -1,10 +1,8 @@
 using System;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
-	internal delegate void MethodLoadedHandler (TargetMemoryAccess target, MethodSource method,
-						    object user_data);
-
 	public abstract class MethodSource : DebuggerMarshalByRefObject
 	{
 		public abstract Module Module {
@@ -16,6 +14,14 @@ namespace Mono.Debugger
 		}
 
 		public abstract bool IsManaged {
+			get;
+		}
+
+		public abstract TargetClassType DeclaringType {
+			get;
+		}
+
+		public abstract TargetFunctionType Function {
 			get;
 		}
 
@@ -36,9 +42,5 @@ namespace Mono.Debugger
 		}
 
 		public abstract Method GetMethod (int domain);
-
-		internal abstract ILoadHandler RegisterLoadHandler (Thread target,
-								    MethodLoadedHandler handler,
-								    object user_data);
 	}
 }

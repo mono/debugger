@@ -75,7 +75,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return field_offsets; }
 		}
 
-		internal TargetAddress GetMethodAddress (Thread target, int token)
+		internal TargetAddress GetMethodAddress (int token)
 		{
 			if (!methods.Contains (token))
 				throw new InternalError ();

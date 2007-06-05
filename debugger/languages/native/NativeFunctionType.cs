@@ -26,6 +26,22 @@ namespace Mono.Debugger.Languages.Native
 			get { return name; }
 		}
 
+		public override bool HasSourceCode {
+			get { return false; }
+		}
+
+		public override SourceFile SourceFile {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override int StartRow {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override int EndRow {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override int Size {
 			get { return Language.TargetInfo.TargetAddressSize; }
 		}
@@ -66,12 +82,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override MethodSource Source {
-			get {
-				return null;
-			}
-		}
-
 		public override object MethodHandle {
 			get {
 				return null;
@@ -96,6 +106,20 @@ namespace Mono.Debugger.Languages.Native
 		public override TargetAddress GetMethodAddress (Thread target)
 		{
 			throw new NotSupportedException ();
+		}
+
+		public override bool IsManaged {
+			get { return false; }
+		}
+
+		internal override bool InsertBreakpoint (Thread target, MethodLoadedHandler handler)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		internal override void RemoveBreakpoint (Thread target)
+		{
+			throw new InvalidOperationException ();
 		}
 	}
 }

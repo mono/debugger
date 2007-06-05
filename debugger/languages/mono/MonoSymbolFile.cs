@@ -223,6 +223,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable source_hash;
 		Hashtable source_file_hash;
 		Hashtable method_index_hash;
+		Hashtable function_hash;
 
 		internal MonoSymbolFile (MonoLanguageBackend language, ProcessServant process,
 					 TargetMemoryAccess memory, TargetAddress address)
@@ -237,10 +238,11 @@ namespace Mono.Debugger.Languages.Mono
 			int address_size = TargetInfo.TargetAddressSize;
 			int int_size = TargetInfo.TargetIntegerSize;
 
-			ranges = new ArrayList ();
-			wrappers = new ArrayList ();
-			range_hash = new Hashtable ();
-			type_hash = new Hashtable ();
+			ranges = ArrayList.Synchronized (new ArrayList ());
+			wrappers = ArrayList.Synchronized (new ArrayList ());
+			range_hash = Hashtable.Synchronized (new Hashtable ());
+			type_hash = Hashtable.Synchronized (new Hashtable ());
+			function_hash = Hashtable.Synchronized (new Hashtable ());
 
 			Index = memory.ReadInteger (address);
 			address += int_size;
@@ -453,6 +455,28 @@ namespace Mono.Debugger.Languages.Mono
 			return retval;
 		}
 
+		public MonoFunctionType LookupFunction (MonoClassType klass, Cecil.MethodDefinition mdef)
+		{
+			ensure_sources ();
+			int token = MonoDebuggerSupport.GetMethodToken (mdef);
+			MonoFunctionType function = (MonoFunctionType) function_hash [token];
+			if (function != null)
+				return function;
+
+			C.MethodEntry entry = File.GetMethodByToken (token);
+			if (entry != null) {
+				C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
+				SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
+				function = new MonoFunctionType (
+					klass, mdef, file, source.StartRow, source.EndRow);
+			} else {
+				function = new MonoFunctionType (klass, mdef);
+			}
+
+			function_hash.Add (token, function);
+			return function;
+		}
+
 		MonoMethodSource GetMethodSource (int index)
 		{
 			ensure_sources ();
@@ -484,9 +508,16 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
 
+			MonoClassType klass = LookupMonoType (mdef.DeclaringType) as MonoClassType;
+			if (klass == null)
+				throw new InternalError ();
+
+			MonoFunctionType function = LookupFunction (klass, mdef);
+
 			MonoMethodSource method = new MonoMethodSource (
-				this, file, entry, source, mdef);
+				this, file, entry, source, mdef, klass, function);
 			method_index_hash.Add (index, method);
+
 			return method;
 		}
 
@@ -722,12 +753,14 @@ namespace Mono.Debugger.Languages.Mono
 			protected readonly C.MethodEntry method;
 			protected readonly C.MethodSourceEntry source;
 			protected readonly Cecil.MethodDefinition mdef;
+			protected readonly MonoClassType klass;
+			public readonly MonoFunctionType function;
 			protected readonly string full_name;
-			Hashtable load_handlers;
 
 			public MonoMethodSource (MonoSymbolFile file, SourceFile source_file,
 						 C.MethodEntry method, C.MethodSourceEntry source,
-						 Cecil.MethodDefinition mdef)
+						 Cecil.MethodDefinition mdef, MonoClassType klass,
+						 MonoFunctionType function)
 			{
 				this.file = file;
 				this.source_file = source_file;
@@ -735,6 +768,8 @@ namespace Mono.Debugger.Languages.Mono
 				this.source = source;
 				this.mdef = mdef;
 				this.full_name = MonoSymbolFile.GetMethodName (mdef);
+				this.function = function;
+				this.klass = klass;
 			}
 
 			public override Module Module {
@@ -747,6 +782,14 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override bool IsManaged {
 				get { return true; }
+			}
+
+			public override TargetClassType DeclaringType {
+				get { return klass; }
+			}
+
+			public override TargetFunctionType Function {
+				get { return function; }
 			}
 
 			public override bool HasSourceCode {
@@ -780,78 +823,6 @@ namespace Mono.Debugger.Languages.Mono
 			public override Method GetMethod (int domain)
 			{
 				return file.GetMonoMethod (this, domain);
-			}
-
-
-			internal override ILoadHandler RegisterLoadHandler (Thread target,
-									    MethodLoadedHandler handler,
-									    object user_data)
-			{
-				string full_name = mdef.DeclaringType.FullName + ':' + mdef.Name +
-					MonoSymbolFile.GetMethodSignature (mdef);
-
-				if (load_handlers == null) {
-					/* only insert the load handler breakpoint once */
-					file.MonoLanguage.InsertBreakpoint (
-						target, full_name,
-						new BreakpointHandler (breakpoint_hit),
-						null);
-
-					load_handlers = new Hashtable ();
-				}
-
-				/* but permit lots of handlers so we can insert multiple breakpoints in
-				 * an unjitted method */
-				HandlerData data = new HandlerData (this, handler, user_data);
-				load_handlers.Add (data, true);
-				return data;
-			}
-
-			protected void UnRegisterLoadHandler (HandlerData data)
-			{
-				if (load_handlers == null)
-					return;
-
-				load_handlers.Remove (data);
-				if (load_handlers.Count == 0)
-					load_handlers = null;
-			}
-
-			void breakpoint_hit (Inferior inferior, TargetAddress address,
-					     object user_data)
-			{
-				if (load_handlers == null)
-					return;
-
-				foreach (HandlerData handler in load_handlers.Keys)
-					handler.Handler (inferior, this, handler.UserData);
-
-				load_handlers = null;
-			}
-
-			protected sealed class HandlerData : DebuggerMarshalByRefObject, ILoadHandler
-			{
-				public readonly MonoMethodSource Method;
-				public readonly MethodLoadedHandler Handler;
-				public readonly object UserData;
-
-				public HandlerData (MonoMethodSource method,
-						    MethodLoadedHandler handler,
-						    object user_data)
-				{
-					this.Method = method;
-					this.Handler = handler;
-					this.UserData = user_data;
-				}
-
-				object ILoadHandler.UserData {
-					get { return UserData; }
-				}
-
-				public void Remove ()
-				{
-					Method.UnRegisterLoadHandler (this);
-				}
 			}
 		}
 

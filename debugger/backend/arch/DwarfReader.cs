@@ -2444,6 +2444,14 @@ namespace Mono.Debugger.Backends
 				get { return false; }
 			}
 
+			public override TargetClassType DeclaringType {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override TargetFunctionType Function {
+				get { throw new InvalidOperationException (); }
+			}
+
 			public override bool HasSourceCode {
 				get { return subprog.SourceFile != null; }
 			}
@@ -2463,13 +2471,6 @@ namespace Mono.Debugger.Backends
 			public override Method GetMethod (int domain)
 			{
 				return subprog.Method;
-			}
-
-			internal override ILoadHandler RegisterLoadHandler (Thread target,
-									    MethodLoadedHandler handler,
-									    object user_data)
-			{
-				throw new NotImplementedException ();
 			}
 		}
 
