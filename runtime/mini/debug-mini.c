@@ -36,7 +36,7 @@ typedef struct
 } MiniDebugMethodInfo;
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
+mono_debugger_check_breakpoints (MonoMethod *method, gpointer address);
 
 static inline void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
@@ -254,7 +254,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 
-	mono_debugger_check_breakpoints (method, debug_info);
+	mono_debugger_check_breakpoints (method, jit->code_start);
 
 	mono_debug_free_method_jit_info (jit);
 	g_array_free (info->line_numbers, TRUE);
@@ -604,7 +604,6 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 	MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
 	MonoDebugMethodInfo *minfo;
 	MonoDebugMethodJitInfo *jit;
-	MonoDebugMethodAddress *address;
 	int i;
 
 	if (!ji)
@@ -614,11 +613,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 	if (!minfo)
 		return;
 
-	address = mono_debug_find_method (minfo, domain);
-	if (!address)
-		return;
-
-	jit = mono_debug_read_method (address);
+	jit = mono_debug_find_method (minfo, domain);
 	if (!jit)
 		return;
 
@@ -688,7 +683,7 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 }
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
+mono_debugger_check_breakpoints (MonoMethod *method, gpointer address)
 {
 	MiniDebugBreakpointInfo *info;
 	gboolean first = TRUE;
@@ -706,11 +701,11 @@ mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *deb
 		if (first) {
 			mono_debugger_event (
 				MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) method,
-				(guint64) (gsize) debug_info);
+				(guint64) (gsize) address);
 			first = FALSE;
 		}
 
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
-				     (guint64) (gsize) debug_info, info->index);
+				     (guint64) (gsize) address, info->index);
 	}
 }

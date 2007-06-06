@@ -236,6 +236,8 @@ debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 	gchar *name_space, *name, *pos;
 	MonoClass *klass;
 
+	g_message (G_STRLOC ": %p - %p", image, full_name);
+	g_message (G_STRLOC ": %p - %s", image, full_name);
 	pos = strrchr (full_name, '.');
 	if (pos) {
 		name_space = full_name;
@@ -287,27 +289,43 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 {
 	MonoMethod *method = GUINT_TO_POINTER ((gsize) method_argument);
 	MonoDomain *domain = mono_get_root_domain ();
-	MonoDebugMethodInfo *minfo;
-	MonoDebugMethodAddress *address;
+	MonoJitInfo *info;
 
-	mono_debugger_lock ();
-	minfo = mono_debug_lookup_method (method);
-	g_message (G_STRLOC ": %p - %p", method, minfo);
-	if (!minfo) {
-		mono_debugger_unlock ();
-		return -1;
+	g_message (G_STRLOC ": %p - %p - %s.%s.%s", method, domain,
+		   method->klass->name_space, method->klass->name, method->name);
+
+	mono_domain_lock (domain);
+
+	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
+		const char *name = method->name;
+		MonoMethod *nm = NULL;
+
+		if (method->klass->parent == mono_defaults.multicastdelegate_class) {
+			if (*name == 'I' && (strcmp (name, "Invoke") == 0))
+			        nm = mono_marshal_get_delegate_invoke (method);
+			else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0))
+				nm = mono_marshal_get_delegate_begin_invoke (method);
+			else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0))
+				nm = mono_marshal_get_delegate_end_invoke (method);
+		}
+
+		if (!nm) {
+			mono_domain_unlock (domain);
+			return -1;
+		}
+
+		method = nm;
 	}
 
-	address = mono_debug_find_method (minfo, domain);
-	g_message (G_STRLOC ": %p", address);
-
-	if (address) {
-		mono_debugger_unlock ();
-		return (gint64) (gssize) address;
+	if ((info = g_hash_table_lookup (domain->jit_code_hash, method))) {
+		mono_domain_unlock (domain);
+		g_message (G_STRLOC ": %p - %p", method, info->code_start);
+		return (gint64) (gssize) info->code_start;
 	}
 
+	g_message (G_STRLOC ": %p - %Ld", method, index);
 	mono_debugger_insert_method_breakpoint (method, index);
-	mono_debugger_unlock ();
+	mono_domain_unlock (domain);
 	return 0;
 }
 
