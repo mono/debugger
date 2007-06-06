@@ -3007,7 +3007,8 @@ namespace Mono.Debugger.Backends
 					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
 
 				inferior.CallMethod (
-					language.LookupClassFunc, image.Address, token, ID);
+					language.LookupClassFunc, image.Address, 0,
+					Function.MonoClass.Name, ID);
 				return;
 			}
 

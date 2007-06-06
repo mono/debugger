@@ -202,8 +202,6 @@ namespace Mono.Debugger
 
 		public DynamicSourceLocation (MethodSource source, int line)
 		{
-			Console.WriteLine ("DYNAMIC SOURCE: {0} {1}", source, source.Function);
-
 			if (source.IsManaged) {
 				this.function = source.Function;
 				this.module = function.Module;

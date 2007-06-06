@@ -703,7 +703,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		Method method_from_jit_info (TargetMemoryAccess target, TargetAddress data)
 		{
-			Console.WriteLine ("JIT INFO: {0}", data, data);
+			Console.WriteLine ("JIT INFO: {0}", data);
+
+			Method the_method = process.SymbolTableManager.Lookup (data);
+
+			Console.WriteLine ("JIT INFO #1: {0}", data, the_method);
+
+			return the_method;
 
 			try {
 				TargetBinaryReader reader = target.ReadMemory (data, 16).GetReader ();
@@ -1005,6 +1011,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			Method method = method_from_jit_info (inferior, data);
 			Console.WriteLine ("JIT BREAKPOINT #1: {0} {1} {2}", idx, data, method);
+			if (method == null)
+				return;
 
 			MethodLoadedHandler handler = (MethodLoadedHandler) method_load_handlers [idx];
 			if (handler != null)
