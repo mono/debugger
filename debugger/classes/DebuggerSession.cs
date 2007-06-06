@@ -30,7 +30,8 @@ namespace Mono.Debugger
 
 	public interface IExpressionParser
 	{
-		SourceLocation Parse (Thread target, LocationType type, string name);
+		SourceLocation Parse (TargetMemoryAccess target, StackFrame frame,
+				      LocationType type, string name);
 	}
 
 	[Serializable]
@@ -202,9 +203,10 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		internal SourceLocation ParseLocation (Thread target, LocationType type, string name)
+		internal SourceLocation ParseLocation (TargetMemoryAccess target, StackFrame frame,
+						       LocationType type, string name)
 		{
-			return parser.Parse (target, type, name);
+			return parser.Parse (target, frame, type, name);
 		}
 
 		public SourceFile FindFile (string name)

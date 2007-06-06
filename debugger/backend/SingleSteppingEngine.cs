@@ -523,7 +523,8 @@ namespace Mono.Debugger.Backends
 		internal void ReachedManagedMain (TargetAddress method)
 		{
 			TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
-			PushOperation (new OperationCompileMethod (this, compile, method, null));
+			// PushOperation (new OperationCompileMethod (this, compile, method, null));
+			PushOperation (new OperationManagedMain (this, method));
 		}
 
 		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
@@ -1033,7 +1034,8 @@ namespace Mono.Debugger.Backends
 					}
 					update_current_frame (new StackFrame (
 						thread, iframe.Address, iframe.StackPointer,
-						iframe.FrameAddress, registers, name));
+						iframe.FrameAddress, registers, thread.NativeLanguage,
+						name));
 				}
 			}
 
@@ -1863,6 +1865,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		protected bool HasChild {
+			get { return child != null; }
+		}
+
 		protected readonly SingleSteppingEngine sse;
 		protected readonly Inferior inferior;
 
@@ -2070,6 +2076,177 @@ namespace Mono.Debugger.Backends
 			sse.PushOperation (new OperationRun (
 				sse, inferior.MainMethodAddress, true, Result));
 			return EventResult.Running;
+		}
+	}
+
+	protected class OperationMethodBreakpoint : OperationCallback
+	{
+		public readonly MonoFunctionType Function;
+		public readonly MethodLoadedHandler Handler;
+
+		MonoLanguageBackend language;
+		MonoDebuggerInfo debugger_info;
+		int index;
+
+		bool class_resolved;
+
+		public OperationMethodBreakpoint (SingleSteppingEngine sse, TargetFunctionType func,
+						  MethodLoadedHandler handler)
+			: base (sse)
+		{
+			this.Function = (MonoFunctionType) func;
+			this.Handler = handler;
+		}
+
+		protected override void DoExecute ()
+		{
+			language = sse.process.MonoLanguage;
+			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+
+			TargetAddress image = Function.MonoClass.File.MonoImage;
+
+			inferior.CallMethod (debugger_info.LookupClass, image.Address,
+					     0, Function.MonoClass.Name, ID);
+		}
+
+		protected override bool CallbackCompleted (long data1, long data2)
+		{
+			Console.WriteLine ("INSERT METHOD BREAKPOINT: {0:x} {1:x}", data1, data2);
+			if (!class_resolved) {
+				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
+				Console.WriteLine ("RESOLVE CLASS #1: {0}", klass);
+				MonoClassInfo info = Function.MonoClass.ClassResolved (sse.Client, klass);
+				Console.WriteLine ("RESOLVE CLASS #2: {0}", info);
+
+				TargetAddress method = info.GetMethodAddress (Function.Token);
+				Console.WriteLine ("GET METHOD ADDRESS OR BPT: {0}", method);
+
+				index = MonoLanguageBackend.GetUniqueID ();
+
+				inferior.CallMethod (debugger_info.GetMethodAddressOrBpt,
+						     method.Address, index, ID);
+
+				language.RegisterMethodLoadHandler (index, Handler);
+
+				class_resolved = true;
+				return false;
+			}
+
+			return true;
+		}
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			if (!class_resolved)
+				return base.DoProcessEvent (cevent, out args);
+
+
+			args = null;
+			return EventResult.AskParent;
+		}
+	}
+
+	protected class OperationManagedMain : Operation
+	{
+		public readonly TargetAddress MainMethod;
+
+		public OperationManagedMain (SingleSteppingEngine sse, TargetAddress method)
+			: base (sse, null)
+		{
+			this.MainMethod = method;
+			pending_events = new Queue (sse.ProcessServant.Session.Events);
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} managed main execute: {1} {2}", sse,
+				      inferior.CurrentFrame, pending_events.Count);
+
+			Console.WriteLine ("MANAGED MAIN: {0} {1} {2}", sse,
+					   inferior.CurrentFrame, MainMethod);
+
+			int token = inferior.ReadInteger (MainMethod + 4);
+			TargetAddress klass = inferior.ReadAddress (MainMethod + 8);
+			TargetAddress image = inferior.ReadAddress (klass);
+
+			Console.WriteLine ("MANAGED MAIN #1: {0:x} {1} {2}", token, klass, image);
+
+			MonoSymbolFile file = sse.ProcessServant.MonoLanguage.GetImage (image);
+
+			Console.WriteLine ("MANAGED MAIN #2: {0}", file);
+
+			MethodSource source = file.GetMethodByToken (token);
+			SourceLocation location = new SourceLocation (source);
+
+			Method method = file.GetMonoMethod (source, token);
+
+			Console.WriteLine ("MANAGED MAIN #3: {0}", method);
+
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			Registers registers = inferior.GetRegisters ();
+
+			StackFrame main_frame = new StackFrame (
+				sse.thread, iframe.Address, iframe.StackPointer,
+				iframe.FrameAddress, registers, method, location);
+
+			sse.update_current_frame (main_frame);
+
+			while (pending_events.Count > 0) {
+				Event e = (Event) pending_events.Dequeue ();
+				Report.Debug (DebugFlags.SSE,
+					      "{0} managed main: {1}", sse, e);
+
+				Console.WriteLine ("MANAGED MAIN #5: {0} {1} {2}", sse,
+						   sse.CurrentFrame, sse.Client.CurrentFrame);
+
+				Breakpoint breakpoint = e as Breakpoint;
+				if (breakpoint == null)
+					continue;
+
+				BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
+				Console.WriteLine ("MANAGED MAIN #6: {0}", handle);
+				if (handle == null)
+					continue;
+
+				FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
+				if (fhandle == null) {
+					handle.Insert (sse.Client);
+					continue;
+				}
+
+				sse.PushOperation (new OperationMethodBreakpoint (
+					sse, fhandle.Function, fhandle.MethodLoaded));
+
+				Console.WriteLine ("MANAGED MAIN #6: {0}", HasChild);
+				if (HasChild)
+					return;
+			}
+
+			inferior.Continue ();
+		}
+
+		Queue pending_events;
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} managed main: {1} {2}", sse, cevent,
+				      inferior.CurrentFrame);
+
+			Console.WriteLine ("MANAGED MAIN PROCESS EVENT: {0} {1} {2}", sse,
+					   inferior.CurrentFrame, cevent);
+
+			DoExecute ();
+
+			args = null;
+			return EventResult.Completed;
 		}
 	}
 
@@ -2939,7 +3116,8 @@ namespace Mono.Debugger.Backends
 
 			StackFrame rti_frame = new StackFrame (
 				sse.thread, iframe.Address, iframe.StackPointer,
-				iframe.FrameAddress, registers, name);
+				iframe.FrameAddress, registers, sse.ProcessServant.MonoLanguage,
+				name);
 
 			sse.push_runtime_invoke (rti_frame);
 			rti_frame.ParentFrame = stack_data.Frame;

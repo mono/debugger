@@ -78,6 +78,10 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public bool HasFrame {
+			get { return current_frame != null; }
+		}
+
 		public StackFrame CurrentFrame {
 			get {
 				if (current_frame == null)

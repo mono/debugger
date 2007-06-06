@@ -666,6 +666,11 @@ namespace Mono.Debugger.Languages.Mono
 			return GetMethodByToken (token);
 		}
 
+		internal Method GetMonoMethod (MethodSource source, int domain)
+		{
+			return GetMonoMethod ((MonoMethodSource) source, domain);
+		}
+
 		protected MonoMethod GetMonoMethod (MonoMethodSource source, int domain)
 		{
 			ensure_sources ();
@@ -839,6 +844,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetVariable[] parameters;
 			TargetVariable[] locals;
 			bool has_variables;
+			bool has_types;
 			bool is_loaded;
 			MethodAddress address;
 
@@ -889,33 +895,53 @@ namespace Mono.Debugger.Languages.Mono
 					this, source, method, address.LineNumbers));
 			}
 
-			void get_variables ()
+			void get_types ()
 			{
-				if (has_variables || !is_loaded)
+				if (has_types)
 					return;
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				param_types = new TargetType [param_info.Count];
-				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
 					Cecil.TypeReference type = param_info [i].ParameterType;
 
 					param_types [i] = file.MonoLanguage.LookupMonoType (type);
 					if (param_types [i] == null)
 						param_types [i] = file.MonoLanguage.VoidType;
+				}
 
+				local_types = new TargetType [method.NumLocals];
+				for (int i = 0; i < method.NumLocals; i++) {
+					C.LocalVariableEntry local = method.Locals [i];
+					local_types [i] = MonoDebuggerSupport.GetLocalTypeFromSignature (
+						file, local.Signature);
+				}
+
+				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (mdef.DeclaringType);
+
+				
+				has_types = true;
+			}
+
+			void get_variables ()
+			{
+				if (has_variables || !is_loaded)
+					return;
+
+				get_types ();
+
+				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
+				parameters = new TargetVariable [param_info.Count];
+				for (int i = 0; i < param_info.Count; i++) {
 					parameters [i] = new MonoVariable (
 						file.process, param_info [i].Name, param_types [i],
 						false, param_types [i].IsByRef, this,
 						address.ParamVariableInfo [i], 0, 0);
 				}
 
-				local_types = new TargetType [method.NumLocals];
 				locals = new TargetVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
-					local_types [i] = MonoDebuggerSupport.GetLocalTypeFromSignature (
-						file, local.Signature);
 
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
@@ -932,8 +958,6 @@ namespace Mono.Debugger.Languages.Mono
 							address.LocalVariableInfo [local.Index]);
 					}
 				}
-
-				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (mdef.DeclaringType);
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
@@ -965,21 +989,15 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override TargetClassType DeclaringType {
 				get {
-					if (!is_loaded)
-						throw new InvalidOperationException ();
-
-					get_variables ();
+					get_types ();
 					return decl_type;
 				}
 			}
 
 			public override bool HasThis {
 				get {
-					if (!is_loaded)
-						throw new InvalidOperationException ();
-
-					get_variables ();
-					return this_var != null;
+					get_types ();
+					return !mdef.IsStatic;
 				}
 			}
 

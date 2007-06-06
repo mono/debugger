@@ -757,6 +757,11 @@ namespace Mono.Debugger.Languages.Mono
 			return -1;
 		}
 
+		internal void RegisterMethodLoadHandler (int index, MethodLoadedHandler handler)
+		{
+			method_load_handlers.Add (index, handler);
+		}
+
 		internal void RemoveMethodLoadHandler (Thread target, int index)
 		{
 			target.CallMethod (info.RemoveMethodBreakpoint, TargetAddress.Null, 0);

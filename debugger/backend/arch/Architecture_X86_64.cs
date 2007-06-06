@@ -732,7 +732,8 @@ namespace Mono.Debugger.Backends
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
-			return new StackFrame (frame.Thread, rip, rsp, rbp, regs, name);
+			return new StackFrame (
+				frame.Thread, rip, rsp, rbp, regs, frame.Thread.NativeLanguage, name);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame frame,

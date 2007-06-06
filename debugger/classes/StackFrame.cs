@@ -191,6 +191,8 @@ namespace Mono.Debugger
 		SourceAddress source;
 		StackFrame parent_frame;
 		TargetObject exc_object;
+		SourceLocation location;
+		Language language;
 		bool has_source;
 		Symbol name;
 
@@ -206,9 +208,10 @@ namespace Mono.Debugger
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
-				     Symbol name)
+				     Language language, Symbol name)
 			: this (thread, address, stack_ptr, frame_address, registers)
 		{
+			this.language = language;
 			this.name = name;
 		}
 
@@ -218,9 +221,20 @@ namespace Mono.Debugger
 			: this (thread, address, stack_ptr, frame_address, registers)
 		{
 			this.method = method;
-			this.name = new Symbol (method.Name, method.StartAddress, 0);
+			this.language = method.Module.Language;
+			if (method.IsLoaded)
+				this.name = new Symbol (method.Name, method.StartAddress, 0);
+			else
+				this.name = new Symbol (method.Name, address, 0);
 		}
 
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
+				     TargetAddress frame_address, Registers registers,
+				     Method method, SourceLocation location)
+			: this (thread, address, stack_ptr, frame_address, registers, method)
+		{
+			this.location = location;
+		}
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
@@ -228,6 +242,7 @@ namespace Mono.Debugger
 			: this (thread, address, stack_ptr, frame_address, registers, method)
 		{
 			this.source = source;
+			this.location = source.Location;
 			this.has_source = true;
 		}
 
@@ -249,6 +264,10 @@ namespace Mono.Debugger
 				has_source = true;
 				return source;
 			}
+		}
+
+		public SourceLocation SourceLocation {
+			get { return location; }
 		}
 
 		public TargetAddress TargetAddress {
@@ -293,12 +312,7 @@ namespace Mono.Debugger
 		}
 
 		public Language Language {
-			get {
-				if (method != null)
-					return method.Module.Language;
-				else
-					return thread.NativeLanguage;
-			}
+			get { return language; }
 		}
 
 		internal StackFrame ParentFrame {

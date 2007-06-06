@@ -12,6 +12,8 @@ namespace Mono.Debugger.Backends
 			this.Breakpoint = breakpoint;
 		}
 
+		internal abstract bool Insert (SingleSteppingEngine sse);
+
 		public abstract void Insert (Thread target);
 
 		public abstract void Remove (Thread target);
@@ -25,6 +27,11 @@ namespace Mono.Debugger.Backends
 			: base (breakpoint)
 		{
 			this.index = index;
+		}
+
+		internal override bool Insert (SingleSteppingEngine sse)
+		{
+			throw new InternalError ();
 		}
 
 		public override void Insert (Thread target)
@@ -49,6 +56,12 @@ namespace Mono.Debugger.Backends
 			: base (breakpoint)
 		{
 			this.Address = address;
+		}
+
+		internal override bool Insert (SingleSteppingEngine sse)
+		{
+			index = sse.Inferior.InsertBreakpoint (Breakpoint, Address);
+			return false;
 		}
 
 		public override void Insert (Thread target)
@@ -81,15 +94,28 @@ namespace Mono.Debugger.Backends
 			this.line = line;
 		}
 
+		internal TargetFunctionType Function {
+			get { return function; }
+		}
+
+		internal override bool Insert (SingleSteppingEngine sse)
+		{
+			if (has_load_handler || (index > 0))
+				return false;
+
+			// sse.PushOperation (new OperationInsertMethodBreakpoint (function, method_loaded));
+			return true;
+		}
+
 		public override void Insert (Thread target)
 		{
 			if (has_load_handler || (index > 0))
 				return;
 
-			has_load_handler = function.InsertBreakpoint (target, method_loaded);
+			has_load_handler = function.InsertBreakpoint (target, MethodLoaded);
 		}
 
-		void method_loaded (TargetMemoryAccess target, Method method)
+		internal void MethodLoaded (TargetMemoryAccess target, Method method)
 		{
 			Console.WriteLine ("BREAKPOINT HANDLE LOADED: {0}", method);
 

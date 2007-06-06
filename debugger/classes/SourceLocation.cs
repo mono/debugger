@@ -308,6 +308,11 @@ namespace Mono.Debugger
 				Console.WriteLine ("MODULE LOADED: {0} {1}", module);
 			}
 
+			internal override bool Insert (SingleSteppingEngine sse)
+			{
+				throw new InternalError ();
+			}
+
 			public override void Insert (Thread target)
 			{
 				module.ModuleLoadedEvent += module_loaded;

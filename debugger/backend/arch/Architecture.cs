@@ -163,7 +163,8 @@ namespace Mono.Debugger
 
 			Symbol name = process.SymbolTableManager.SimpleLookup (address, false);
 			return new StackFrame (
-				thread, address, stack, frame_pointer, regs, name);
+				thread, address, stack, frame_pointer, regs,
+				thread.NativeLanguage, name);
 		}
 
 		//

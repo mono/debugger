@@ -17,7 +17,8 @@ namespace Mono.Debugger
 	// </summary>
 	public abstract class Breakpoint : Event
 	{
-		internal abstract BreakpointHandle Resolve (Thread target);
+		internal abstract BreakpointHandle Resolve (TargetMemoryAccess target,
+							    StackFrame frame);
 
 		public override void Remove (Thread target)
 		{
