@@ -64,13 +64,10 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, BreakpointWriteLine, "X.Main()", LineWriteLine);
 
-			AssertListAndBreak ("Main");
-			AssertListAndBreak ("X.Main");
-			AssertListAndBreak ("Main()");
-			AssertListAndBreak ("X.Main()");
-
 			AssertListAndBreak ("Hello");
+			AssertListAndBreak ("X.Hello");
 			AssertListAndBreak ("Hello()");
+			AssertListAndBreak ("X.Hello()");
 
 			AssertListAndBreak ("Simple");
 			AssertListAndBreak ("Simple(Foo.Bar.Test)");

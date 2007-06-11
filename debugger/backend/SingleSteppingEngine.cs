@@ -522,9 +522,6 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedManagedMain (TargetAddress method)
 		{
-			// process.MonoLanguage.ReachedMain (inferior, method);
-			// TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
-			// PushOperation (new OperationCompileMethod (this, compile, method, null));
 			PushOperation (new OperationManagedMain (this, method));
 		}
 
@@ -2208,7 +2205,8 @@ namespace Mono.Debugger.Backends
 					Report.Error ("Cannot insert breakpoint {0}: {1}",
 						      e.Index, ex.Message);
 				} catch (Exception ex) {
-					Console.WriteLine ("MANAGED MAIN EX: {0}", ex);
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
 				}
 			}
 
