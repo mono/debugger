@@ -122,7 +122,6 @@ namespace Mono.Debugger.Frontend
 			try {
 				return DoParse (target, frame, type, arg);
 			} catch (ScriptingException ex) {
-				Console.WriteLine ("FUCK: {0} {1} {2}", type, arg, ex);
 				throw new TargetException (TargetError.LocationInvalid, ex.Message);
 			} catch (Exception ex) {
 				Console.WriteLine ("FUCK: {0} {1} {2}", type, arg, ex);

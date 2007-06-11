@@ -488,7 +488,7 @@ namespace Mono.Debugger.Backends
 				pending_bpt = current_operation.PendingBreakpoint;
 			if (pending_bpt >= 0) {
 				Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (pending_bpt);
-				if ((bpt != null) && bpt.Breaks (thread.ID)) {
+				if ((bpt != null) && bpt.Breaks (thread.ID) && !bpt.HideFromUser) {
 					result = new TargetEventArgs (
 						TargetEventType.TargetHitBreakpoint, bpt.Index,
 						current_frame);
@@ -522,7 +522,8 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedManagedMain (TargetAddress method)
 		{
-			TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
+			process.MonoLanguage.ReachedMain (inferior, method);
+			// TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
 			// PushOperation (new OperationCompileMethod (this, compile, method, null));
 			PushOperation (new OperationManagedMain (this, method));
 		}
@@ -2164,6 +2165,17 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
+			if (do_execute ())
+				return;
+			inferior.Continue ();
+		}
+
+		StackFrame main_frame;
+		bool completed;
+		bool has_main;
+
+		bool do_execute ()
+		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} managed main execute: {1} {2}", sse,
 				      inferior.CurrentFrame, pending_events.Count);
@@ -2186,49 +2198,94 @@ namespace Mono.Debugger.Backends
 
 			Method method = file.GetMonoMethod (source, token);
 
-			Console.WriteLine ("MANAGED MAIN #3: {0}", method);
+			Console.WriteLine ("MANAGED MAIN #3: {0} {1}", method,
+					   sse.start.Options.StopInMain);
 
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
 
-			StackFrame main_frame = new StackFrame (
+			main_frame = new StackFrame (
 				sse.thread, iframe.Address, iframe.StackPointer,
 				iframe.FrameAddress, registers, method, location);
-
 			sse.update_current_frame (main_frame);
+
+#if FIXME
+			if (!has_main && sse.start.Options.StopInMain) {
+				has_main = true;
+				sse.PushOperation (new OperationMethodBreakpoint (
+					sse, source.Function, main_loaded));
+				return true;
+
+#if FIXME
+				Breakpoint main_bpt = new MainMethodBreakpoint (source.Function);
+				if (activate_breakpoint (main_bpt))
+					return true;
+#endif
+			}
+#endif
 
 			while (pending_events.Count > 0) {
 				Event e = (Event) pending_events.Dequeue ();
 				Report.Debug (DebugFlags.SSE,
 					      "{0} managed main: {1}", sse, e);
 
-				Console.WriteLine ("MANAGED MAIN #5: {0} {1} {2}", sse,
-						   sse.CurrentFrame, sse.Client.CurrentFrame);
+				Console.WriteLine ("MANAGED MAIN #5: {0} {1} {2} {3}", sse,
+						   sse.CurrentFrame, sse.Client.CurrentFrame, e);
+
+				if (!e.IsEnabled)
+					continue;
 
 				Breakpoint breakpoint = e as Breakpoint;
 				if (breakpoint == null)
 					continue;
 
-				BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
-				Console.WriteLine ("MANAGED MAIN #6: {0}", handle);
-				if (handle == null)
-					continue;
-
-				FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
-				if (fhandle == null) {
-					handle.Insert (sse.Client);
-					continue;
+				try {
+					if (activate_breakpoint (breakpoint))
+						return true;
+				} catch (TargetException ex) {
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
+				} catch (Exception ex) {
+					Console.WriteLine ("MANAGED MAIN EX: {0}", ex);
 				}
-
-				sse.PushOperation (new OperationMethodBreakpoint (
-					sse, fhandle.Function, fhandle.MethodLoaded));
-
-				Console.WriteLine ("MANAGED MAIN #6: {0}", HasChild);
-				if (HasChild)
-					return;
 			}
 
-			inferior.Continue ();
+			completed = true;
+			return false;
+		}
+
+		bool activate_breakpoint (Breakpoint breakpoint)
+		{
+			Console.WriteLine ("MANAGED MAIN #5: {0} {1} {2} {3}", sse,
+					   sse.CurrentFrame, sse.Client.CurrentFrame, breakpoint);
+
+			BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
+			Console.WriteLine ("MANAGED MAIN #6: {0}", handle);
+			if (handle == null)
+				return false;
+
+			FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
+			if (fhandle == null) {
+				handle.Insert (sse.Client);
+				return false;
+			}
+
+			sse.PushOperation (new OperationMethodBreakpoint (
+				sse, fhandle.Function, fhandle.MethodLoaded));
+			return true;
+		}
+
+		void main_loaded (TargetMemoryAccess target, Method method)
+		{
+			Console.WriteLine ("MAIN LOADED: {0}", method);
+
+			TargetAddress address = method.HasMethodBounds ?
+				method.MethodStartAddress : method.StartAddress;
+
+			sse.insert_temporary_breakpoint (address);
+
+			// int index = inferior.InsertBreakpoint (address);
+			// Console.WriteLine ("MAIN LOADED #1: {0} {1}", index, address);
 		}
 
 		Queue pending_events;
@@ -2243,10 +2300,69 @@ namespace Mono.Debugger.Backends
 			Console.WriteLine ("MANAGED MAIN PROCESS EVENT: {0} {1} {2}", sse,
 					   inferior.CurrentFrame, cevent);
 
-			DoExecute ();
-
 			args = null;
-			return EventResult.Completed;
+			if (completed)
+				return EventResult.Completed;
+
+			DoExecute ();
+			return EventResult.Running;
+		}
+
+		protected class MainMethodBreakpoint : Breakpoint
+		{
+			public readonly TargetFunctionType Function;
+			BreakpointHandle handle;
+
+			public override bool IsPersistent {
+				get { return false; }
+			}
+
+			public override bool IsActivated {
+				get { return handle != null; }
+			}
+
+			internal override BreakpointHandle Resolve (TargetMemoryAccess target,
+								    StackFrame frame)
+			{
+				if (handle != null)
+					return handle;
+
+				handle = new FunctionBreakpointHandle (this, 0, Function, -1);
+				return handle;
+			}
+
+			public override void Activate (Thread target)
+			{
+				Resolve (target, target.CurrentFrame);
+				if (handle == null)
+					throw new TargetException (TargetError.LocationInvalid);
+				handle.Insert (target);
+			}
+
+			public override void Deactivate (Thread target)
+			{
+				if (handle != null) {
+					handle.Remove (target);
+					handle = null;
+				}
+			}
+
+			internal override void OnTargetExited ()
+			{
+				handle = null;
+			}
+
+			protected override void GetSessionData (System.Xml.XmlElement root,
+								System.Xml.XmlElement element)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal MainMethodBreakpoint (TargetFunctionType function)
+				: base (EventType.Breakpoint, function.Name, ThreadGroup.Global)
+			{
+				this.Function = function;
+			}
 		}
 	}
 

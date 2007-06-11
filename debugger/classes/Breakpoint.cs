@@ -20,6 +20,10 @@ namespace Mono.Debugger
 		internal abstract BreakpointHandle Resolve (TargetMemoryAccess target,
 							    StackFrame frame);
 
+		public virtual bool HideFromUser {
+			get { return false; }
+		}
+
 		public override void Remove (Thread target)
 		{
 			Deactivate (target);

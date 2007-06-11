@@ -262,6 +262,9 @@ namespace Mono.Debugger.Frontend
 
 		protected void CheckLastEvent (Thread thread)
 		{
+			if (thread == null)
+				return;
+
 			TargetEventArgs args = thread.GetLastTargetEvent ();
 			if (args == null)
 				return;
