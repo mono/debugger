@@ -236,8 +236,6 @@ debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 	gchar *name_space, *name, *pos;
 	MonoClass *klass;
 
-	g_message (G_STRLOC ": %p - %p", image, full_name);
-	g_message (G_STRLOC ": %p - %s", image, full_name);
 	pos = strrchr (full_name, '.');
 	if (pos) {
 		name_space = full_name;
@@ -249,7 +247,6 @@ debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint64 dummy,
 	}
 
 	klass = mono_class_from_name (image, name_space ? name_space : "", name);
-	g_message (G_STRLOC ": %p - %s - %p", image, full_name, klass);
 	if (!klass)
 		return -1;
 
@@ -291,9 +288,6 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 	MonoDomain *domain = mono_get_root_domain ();
 	MonoJitInfo *info;
 
-	g_message (G_STRLOC ": %p - %p - %s.%s.%s", method, domain,
-		   method->klass->name_space, method->klass->name, method->name);
-
 	mono_domain_lock (domain);
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
@@ -319,11 +313,9 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 
 	if ((info = g_hash_table_lookup (domain->jit_code_hash, method))) {
 		mono_domain_unlock (domain);
-		g_message (G_STRLOC ": %p - %p", method, info->code_start);
 		return (gint64) (gssize) info->code_start;
 	}
 
-	g_message (G_STRLOC ": %p - %Ld", method, index);
 	mono_debugger_insert_method_breakpoint (method, index);
 	mono_domain_unlock (domain);
 	return 0;
@@ -333,7 +325,6 @@ static void
 debugger_remove_method_breakpoint (G_GNUC_UNUSED guint64 dummy, guint64 index)
 {
 	mono_debugger_lock ();
-	g_message (G_STRLOC ": %Ld", index);
 	mono_debugger_remove_method_breakpoint (index);
 	mono_debugger_unlock ();
 }
