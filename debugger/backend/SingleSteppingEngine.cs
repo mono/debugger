@@ -2025,7 +2025,6 @@ namespace Mono.Debugger.Backends
 		{ }
 
 		bool initialized;
-		bool has_lmf;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
@@ -2056,13 +2055,8 @@ namespace Mono.Debugger.Backends
 					return EventResult.Running;
 				}
 
-				if (!has_lmf) {
-					has_lmf = true;
-					sse.PushOperation (new OperationGetLMFAddr (sse, null));
-					return EventResult.Running;
-				}
-
-				return EventResult.Completed;
+				// Never reached; we get replaced by OperationManagedMain.
+				throw new InternalError ();
 			}
 
 			if (sse.ProcessServant.IsAttached)
@@ -2164,6 +2158,7 @@ namespace Mono.Debugger.Backends
 
 		StackFrame main_frame;
 		bool completed;
+		bool has_lmf;
 
 		bool do_execute ()
 		{
@@ -2172,6 +2167,12 @@ namespace Mono.Debugger.Backends
 				      inferior.CurrentFrame, pending_events.Count);
 
 			MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
+
+			if (!has_lmf) {
+				has_lmf = true;
+				sse.PushOperation (new OperationGetLMFAddr (sse, null));
+				return true;
+			}
 
 			MethodSource source = mono.ReachedMain (inferior, MainMethod);
 			SourceLocation location = new SourceLocation (source);
@@ -2445,7 +2446,7 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			result = EventResult.Completed;
+			result = EventResult.AskParent;
 			return true;
 		}
 
