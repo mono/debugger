@@ -46,17 +46,11 @@ namespace Mono.Debugger.Frontend
 		protected SourceLocation DoParseExpression (TargetMemoryAccess target, StackFrame frame,
 							    LocationType type, string arg)
 		{
-			Console.WriteLine ("DO PARSE EXPR: {0} {1} {2} {3}", type, arg,
-					   frame, frame != null);
-
 			ScriptingContext context = new ScriptingContext (Interpreter);
 			context.CurrentThread = frame.Thread;
 			context.CurrentFrame = frame;
 
-			Console.WriteLine ("DO PARSE EXPR #1");
-
 			Expression expr = Interpreter.ExpressionParser.Parse (arg);
-			Console.WriteLine ("DO PARSE EXPR #2: {0} {1}", expr, expr != null);
 			if (expr == null)
 				throw new ScriptingException ("Cannot resolve expression `{0}'.", arg);
 
@@ -117,15 +111,10 @@ namespace Mono.Debugger.Frontend
 		public SourceLocation Parse (TargetMemoryAccess target, StackFrame frame,
 					     LocationType type, string arg)
 		{
-			Console.WriteLine ("PARSE: {0} {1}", type, arg);
-
 			try {
 				return DoParse (target, frame, type, arg);
 			} catch (ScriptingException ex) {
 				throw new TargetException (TargetError.LocationInvalid, ex.Message);
-			} catch (Exception ex) {
-				Console.WriteLine ("FUCK: {0} {1} {2}", type, arg, ex);
-				throw;
 			}
 
 			return null;
