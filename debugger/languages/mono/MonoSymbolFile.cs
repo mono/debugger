@@ -1347,7 +1347,7 @@ namespace Mono.Debugger.Languages.Mono
 			WrapperMethod wrapper;
 
 			public WrapperLineNumberTable (WrapperMethod wrapper)
-				: base (wrapper, false)
+				: base (wrapper, true)
 			{
 				this.wrapper = wrapper;
 			}

@@ -17,6 +17,7 @@ namespace Mono.Debugger
 			this.start = method.StartAddress;
 			this.end = method.EndAddress;
 			this.name = method.Name;
+			this.is_dynamic = is_dynamic;
 
 			if (method.HasMethodBounds) {
 				method_start = method.MethodStartAddress;
