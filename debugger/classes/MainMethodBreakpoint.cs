@@ -28,8 +28,6 @@ namespace Mono.Debugger
 			if (handle != null)
 				return handle;
 
-			Console.WriteLine ("RESOLVE MAIN BREAKPOINT: {0}", frame);
-
 			if (frame.Thread.Process.IsManaged) {
 				MonoLanguageBackend mono = frame.Thread.Process.Servant.MonoLanguage;
 				MethodSource main = mono.MainMethod;

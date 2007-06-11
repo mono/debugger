@@ -171,12 +171,9 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InternalError ();
 
 			TargetAddress method = klass.MonoClassInfo.GetMethodAddress (Token);
-			Console.WriteLine ("GET METHOD ADDRESS OR BPT: {0}", method);
 
 			load_handler = klass.File.MonoLanguage.RegisterMethodLoadHandler (
 				target, method, handler);
-
-			Console.WriteLine ("GET METHOD ADDRESS OR BPT #1: {0}", load_handler);
 
 			return load_handler > 0;
 		}

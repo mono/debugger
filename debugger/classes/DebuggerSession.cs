@@ -71,7 +71,8 @@ namespace Mono.Debugger
 		{
 			this.Options = options;
 
-			BreakInMain ();
+			if (Options.StopInMain)
+				AddEvent (new MainMethodBreakpoint (this));
 		}
 
 		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)
@@ -217,13 +218,6 @@ namespace Mono.Debugger
 				return null;
 
 			return main_process.FindFile (name);
-		}
-
-		public void BreakInMain ()
-		{
-			Console.WriteLine ("BREAK IN MAIN!");
-			Event handle = new MainMethodBreakpoint (this);
-			AddEvent (handle);
 		}
 
 		//

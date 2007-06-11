@@ -522,7 +522,7 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedManagedMain (TargetAddress method)
 		{
-			process.MonoLanguage.ReachedMain (inferior, method);
+			// process.MonoLanguage.ReachedMain (inferior, method);
 			// TargetAddress compile = process.MonoLanguage.CompileMethodFunc;
 			// PushOperation (new OperationCompileMethod (this, compile, method, null));
 			PushOperation (new OperationManagedMain (this, method));
@@ -2112,15 +2112,10 @@ namespace Mono.Debugger.Backends
 
 		protected override bool CallbackCompleted (long data1, long data2)
 		{
-			Console.WriteLine ("INSERT METHOD BREAKPOINT: {0:x} {1:x}", data1, data2);
 			if (!class_resolved) {
 				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
-				Console.WriteLine ("RESOLVE CLASS #1: {0}", klass);
 				MonoClassInfo info = Function.MonoClass.ClassResolved (sse.Client, klass);
-				Console.WriteLine ("RESOLVE CLASS #2: {0}", info);
-
 				TargetAddress method = info.GetMethodAddress (Function.Token);
-				Console.WriteLine ("GET METHOD ADDRESS OR BPT: {0}", method);
 
 				index = MonoLanguageBackend.GetUniqueID ();
 
@@ -2172,7 +2167,6 @@ namespace Mono.Debugger.Backends
 
 		StackFrame main_frame;
 		bool completed;
-		bool has_main;
 
 		bool do_execute ()
 		{
@@ -2180,26 +2174,12 @@ namespace Mono.Debugger.Backends
 				      "{0} managed main execute: {1} {2}", sse,
 				      inferior.CurrentFrame, pending_events.Count);
 
-			Console.WriteLine ("MANAGED MAIN: {0} {1} {2}", sse,
-					   inferior.CurrentFrame, MainMethod);
+			MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
 
-			int token = inferior.ReadInteger (MainMethod + 4);
-			TargetAddress klass = inferior.ReadAddress (MainMethod + 8);
-			TargetAddress image = inferior.ReadAddress (klass);
-
-			Console.WriteLine ("MANAGED MAIN #1: {0:x} {1} {2}", token, klass, image);
-
-			MonoSymbolFile file = sse.ProcessServant.MonoLanguage.GetImage (image);
-
-			Console.WriteLine ("MANAGED MAIN #2: {0}", file);
-
-			MethodSource source = file.GetMethodByToken (token);
+			MethodSource source = mono.ReachedMain (inferior, MainMethod);
 			SourceLocation location = new SourceLocation (source);
 
-			Method method = file.GetMonoMethod (source, token);
-
-			Console.WriteLine ("MANAGED MAIN #3: {0} {1}", method,
-					   sse.start.Options.StopInMain);
+			Method method = source.GetMethod (0);
 
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
@@ -2209,28 +2189,10 @@ namespace Mono.Debugger.Backends
 				iframe.FrameAddress, registers, method, location);
 			sse.update_current_frame (main_frame);
 
-#if FIXME
-			if (!has_main && sse.start.Options.StopInMain) {
-				has_main = true;
-				sse.PushOperation (new OperationMethodBreakpoint (
-					sse, source.Function, main_loaded));
-				return true;
-
-#if FIXME
-				Breakpoint main_bpt = new MainMethodBreakpoint (source.Function);
-				if (activate_breakpoint (main_bpt))
-					return true;
-#endif
-			}
-#endif
-
 			while (pending_events.Count > 0) {
 				Event e = (Event) pending_events.Dequeue ();
 				Report.Debug (DebugFlags.SSE,
 					      "{0} managed main: {1}", sse, e);
-
-				Console.WriteLine ("MANAGED MAIN #5: {0} {1} {2} {3}", sse,
-						   sse.CurrentFrame, sse.Client.CurrentFrame, e);
 
 				if (!e.IsEnabled)
 					continue;
@@ -2256,11 +2218,7 @@ namespace Mono.Debugger.Backends
 
 		bool activate_breakpoint (Breakpoint breakpoint)
 		{
-			Console.WriteLine ("MANAGED MAIN #5: {0} {1} {2} {3}", sse,
-					   sse.CurrentFrame, sse.Client.CurrentFrame, breakpoint);
-
 			BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
-			Console.WriteLine ("MANAGED MAIN #6: {0}", handle);
 			if (handle == null)
 				return false;
 
@@ -2275,19 +2233,6 @@ namespace Mono.Debugger.Backends
 			return true;
 		}
 
-		void main_loaded (TargetMemoryAccess target, Method method)
-		{
-			Console.WriteLine ("MAIN LOADED: {0}", method);
-
-			TargetAddress address = method.HasMethodBounds ?
-				method.MethodStartAddress : method.StartAddress;
-
-			sse.insert_temporary_breakpoint (address);
-
-			// int index = inferior.InsertBreakpoint (address);
-			// Console.WriteLine ("MAIN LOADED #1: {0} {1}", index, address);
-		}
-
 		Queue pending_events;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -2296,9 +2241,6 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE,
 				      "{0} managed main: {1} {2}", sse, cevent,
 				      inferior.CurrentFrame);
-
-			Console.WriteLine ("MANAGED MAIN PROCESS EVENT: {0} {1} {2}", sse,
-					   inferior.CurrentFrame, cevent);
 
 			args = null;
 			if (completed)

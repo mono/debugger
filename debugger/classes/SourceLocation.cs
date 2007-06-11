@@ -247,9 +247,6 @@ namespace Mono.Debugger
 			if (!module.IsLoaded)
 				return new ModuleBreakpointHandle (breakpoint, module);
 
-			Console.WriteLine ("RESOLVE BREAKPOINT: {0} {1} {2}", breakpoint,
-					   function, source);
-
 			if ((function == null) && (source == null)) {
 				if (method != null) {
 					source = module.FindMethod (method);

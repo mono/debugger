@@ -117,8 +117,6 @@ namespace Mono.Debugger.Backends
 
 		internal void MethodLoaded (TargetMemoryAccess target, Method method)
 		{
-			Console.WriteLine ("BREAKPOINT HANDLE LOADED: {0}", method);
-
 			TargetAddress address;
 			if (line != -1) {
 				if (method.HasLineNumbers)

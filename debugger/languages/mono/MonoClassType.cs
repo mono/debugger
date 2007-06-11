@@ -625,8 +625,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal bool ResolveClass (Thread target)
 		{
-			Console.WriteLine ("RESOLVE CLASS: {0}", type_info);
-
 			if (type_info != null)
 				return true;
 
@@ -634,9 +632,7 @@ namespace Mono.Debugger.Languages.Mono
 				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
 				file.MonoImage, 0, Name);
 
-			Console.WriteLine ("RESOLVE CLASS #1: {0}", klass_address);
 			type_info = file.MonoLanguage.GetClassInfo (target, klass_address);
-			Console.WriteLine ("RESOLVE CLASS #2: {0} {1}", klass_address, type_info);
 			return type_info != null;
 		}
 	}

@@ -367,7 +367,7 @@ namespace Mono.Debugger.Languages.Mono
 			initialized = true;
 		}
 
-		internal void ReachedMain (TargetMemoryAccess target, TargetAddress method)
+		internal MethodSource ReachedMain (TargetMemoryAccess target, TargetAddress method)
 		{
 			int token = target.ReadInteger (method + 4);
 			TargetAddress klass = target.ReadAddress (method + 8);
@@ -380,6 +380,8 @@ namespace Mono.Debugger.Languages.Mono
 			main_method = file.GetMethodByToken (token);
 			if (main_method == null)
 				throw new InternalError ();
+
+			return main_method;
 		}
 
 		internal MethodSource MainMethod {
@@ -705,8 +707,6 @@ namespace Mono.Debugger.Languages.Mono
 				info.RegisterClassInitCallback,
 				klass.File.MonoImage, index, klass.Name);
 
-			Console.WriteLine ("TEST #1: {0} {1} {2}", klass, index, retval);
-
 			if (retval.IsNull) {
 				class_init_handlers.Add (index, handler);
 				return index;
@@ -723,34 +723,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Method method_from_jit_info (TargetMemoryAccess target, TargetAddress data)
 		{
-			Console.WriteLine ("JIT INFO: {0}", data);
-
-			Method the_method = process.SymbolTableManager.Lookup (data);
-
-			Console.WriteLine ("JIT INFO #1: {0}", data, the_method);
-
-			return the_method;
-
-			try {
-				TargetBinaryReader reader = target.ReadMemory (data, 16).GetReader ();
-				int size = reader.ReadInt32 ();
-				int symfile_id = reader.ReadInt32 ();
-				int domain_id = reader.ReadInt32 ();
-				int method_id = reader.ReadInt32 ();
-
-				MonoSymbolFile file = (MonoSymbolFile) symbol_files [symfile_id];
-				if (file == null)
-					return null;
-
-				Console.WriteLine ("JIT INFO #1: {0} {1} {2} {3} {4}", size,
-						   symfile_id, domain_id, method_id, file);
-
-				Method method = file.GetMethod (domain_id, method_id);
-				Console.WriteLine ("JIT INFO #2: {0}", method);
-				return method;
-			} catch (TargetException) {
-				return null;
-			}
+			return process.SymbolTableManager.Lookup (data);
 		}
 
 		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
@@ -760,8 +733,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress retval = target.CallMethod (
 				info.GetMethodAddressOrBpt, method_address, index);
-
-			Console.WriteLine ("METHOD LOAD HANDLER: {0} {1}", method_address, retval);
 
 			if (retval.IsNull) {
 				method_load_handlers.Add (index, handler);
@@ -1032,10 +1003,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void JitBreakpoint (Inferior inferior, int idx, TargetAddress data)
 		{
-			Console.WriteLine ("JIT BREAKPOINT: {0} {1}", idx, data);
-
 			Method method = method_from_jit_info (inferior, data);
-			Console.WriteLine ("JIT BREAKPOINT #1: {0} {1} {2}", idx, data, method);
 			if (method == null)
 				return;
 
@@ -1067,7 +1035,6 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 
 			case NotificationType.MethodCompiled: {
-				Console.WriteLine ("METHOD COMPILED: {0} {1:x}", data, arg);
 				do_update_symbol_table (inferior);
 				break;
 			}
