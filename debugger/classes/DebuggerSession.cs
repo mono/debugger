@@ -234,20 +234,6 @@ namespace Mono.Debugger
 		public void MainProcessReachedMain (Process process)
 		{
 			main_process = process;
-
-#if FIXME
-			foreach (Event e in events.Values) {
-				if (!e.IsEnabled)
-					continue;
-
-				try {
-					e.Activate (process.MainThread);
-				} catch (TargetException ex) {
-					Report.Error ("Cannot insert breakpoint {0}: {1}",
-						      e.Index, ex.Message);
-				}
-			}
-#endif
 		}
 
 		internal void OnProcessCreated (Process process)
