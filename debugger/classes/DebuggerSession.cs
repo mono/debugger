@@ -365,6 +365,8 @@ namespace Mono.Debugger
 			} else if (navigator.Name == "Exception") {
 				string exc = navigator.GetAttribute ("type", "");
 				return new ExceptionCatchPoint (index, group, exc);
+			} else if (navigator.Name == "MainMethod") {
+				return new MainMethodBreakpoint (this);
 			} else
 				throw new InternalError ();
 		}

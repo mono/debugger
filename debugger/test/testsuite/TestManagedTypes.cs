@@ -28,7 +28,7 @@ namespace Mono.Debugger.Tests
 		const int LineFunctionStructType = 213;
 
 		[Test]
-		[Category("Test")]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Start ();
