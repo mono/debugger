@@ -30,11 +30,11 @@ namespace Mono.Debugger
 
 			if (frame.Thread.Process.IsManaged) {
 				MonoLanguageBackend mono = frame.Thread.Process.Servant.MonoLanguage;
-				MethodSource main = mono.MainMethod;
+				MonoFunctionType main = mono.MainMethod;
 				if (main == null)
 					return null;
 
-				handle = new FunctionBreakpointHandle (this, 0, main.Function, -1);
+				handle = new FunctionBreakpointHandle (this, 0, main, -1);
 			} else {
 				BfdContainer bfd_container = frame.Thread.Process.Servant.BfdContainer;
 				TargetAddress main = bfd_container.LookupSymbol ("main");

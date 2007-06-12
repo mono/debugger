@@ -2093,26 +2093,30 @@ namespace Mono.Debugger.Backends
 
 		void compute_main_frame ()
 		{
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			Registers registers = inferior.GetRegisters ();
+
 			if (sse.ProcessServant.MonoManager != null) {
 				MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
 
-				MethodSource source = mono.MainMethod;
-				SourceLocation location = new SourceLocation (source);
+				MonoFunctionType main = mono.MainMethod;
 
-				Method method = source.GetMethod (0);
+				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
+				if (source != null) {
+					SourceLocation location = new SourceLocation (source);
+					Method method = source.GetMethod (0);
 
-				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-				Registers registers = inferior.GetRegisters ();
-
-				main_frame = new StackFrame (
+					main_frame = new StackFrame (
 						sse.thread, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers, method, location);
+				} else {
+					main_frame = new StackFrame (
+						sse.thread, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers);
+				}
 				sse.update_current_frame (main_frame);
 			} else {
 				Method method = sse.Lookup (inferior.MainMethodAddress);
-
-				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-				Registers registers = inferior.GetRegisters ();
 
 				main_frame = new StackFrame (
 					sse.thread, iframe.Address, iframe.StackPointer,

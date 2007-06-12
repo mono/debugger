@@ -189,7 +189,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable class_info_by_type;
 		MonoSymbolFile corlib;
 		MonoBuiltinTypeInfo builtin_types;
-		MethodSource main_method;
+		MonoFunctionType main_method;
 
 		int last_num_data_tables;
 		int last_data_table_offset;
@@ -367,25 +367,21 @@ namespace Mono.Debugger.Languages.Mono
 			initialized = true;
 		}
 
-		internal MethodSource ReachedMain (TargetMemoryAccess target, TargetAddress method)
+		internal MonoFunctionType ReachedMain (TargetMemoryAccess target, TargetAddress method)
 		{
 			int token = target.ReadInteger (method + 4);
 			TargetAddress klass = target.ReadAddress (method + 8);
 			TargetAddress image = target.ReadAddress (klass);
 
 			MonoSymbolFile file = GetImage (image);
-			Console.WriteLine ("REACHED MAIN: {0:x} {1} {2} {3} {4}", token,
-					   method, klass, image, file);
-
 			if (file == null)
 				return null;
 
-			main_method = file.GetMethodByToken (token);
-			Console.WriteLine ("REACHED MAIN #1: {0}", main_method);
+			main_method = file.GetFunctionByToken (token);
 			return main_method;
 		}
 
-		internal MethodSource MainMethod {
+		internal MonoFunctionType MainMethod {
 			get { return main_method; }
 		}
 
