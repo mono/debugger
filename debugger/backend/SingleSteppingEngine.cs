@@ -2034,8 +2034,6 @@ namespace Mono.Debugger.Backends
 				      cevent, sse.ProcessServant.IsAttached,
 				      inferior.CurrentFrame);
 
-			Console.WriteLine ("START: {0} {1} {2}", sse, cevent, inferior.CurrentFrame);
-
 			args = null;
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
 			    ((NotificationType) cevent.Argument == NotificationType.ReachedMain))
@@ -2069,9 +2067,6 @@ namespace Mono.Debugger.Backends
 			} else {
 				has_main = true;
 			}
-
-			Console.WriteLine ("START MANAGED: {0} {1}", inferior.CurrentFrame,
-					   has_main);
 
 			if (!has_main)
 				return EventResult.Completed;

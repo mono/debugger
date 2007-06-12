@@ -24,11 +24,9 @@ namespace Mono.Debugger.Backends
 		MonoDebuggerInfo debugger_info;
 		TargetAddress notification_address = TargetAddress.Null;
 		Inferior inferior;
-		bool stop_in_main;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
-							    Inferior inferior, bool attach,
-							    bool stop_in_main)
+							    Inferior inferior, bool attach)
 		{
 			TargetAddress info = inferior.GetSectionAddress (".mdb_debug_info");
 			if (!info.IsNull)
@@ -38,16 +36,14 @@ namespace Mono.Debugger.Backends
 			if (info.IsNull)
 				return null;
 
-			return new MonoThreadManager (
-				thread_manager, inferior, info, attach, stop_in_main);
+			return new MonoThreadManager (thread_manager, inferior, info, attach);
 		}
 
 		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
-					     TargetAddress info, bool attach, bool stop_in_main)
+					     TargetAddress info, bool attach)
 		{
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
-			this.stop_in_main = stop_in_main;
 
 			TargetBinaryReader header = inferior.ReadMemory (info, 16).GetReader ();
 			long magic = header.ReadInt64 ();

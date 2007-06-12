@@ -305,8 +305,7 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 			if (!is_forked || is_exec) {
 				mono_manager = MonoThreadManager.Initialize (
-					manager, inferior, (start.PID != 0) && !is_exec,
-					!is_exec);
+					manager, inferior, (start.PID != 0) && !is_exec);
 				if (!is_forked && !is_exec && !is_attached &&
 				    !start.IsNative && (mono_manager == null))
 					throw new TargetException (TargetError.CannotStartTarget,
