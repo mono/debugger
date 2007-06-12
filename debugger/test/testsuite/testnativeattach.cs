@@ -41,7 +41,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("Attach")]
+		[Category("Test")]
 		public void Main ()
 		{
 			Process process = Attach (child.Id);

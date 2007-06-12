@@ -268,16 +268,16 @@ namespace Mono.Debugger.Languages.Mono
 			try {
 				File = C.MonoSymbolFile.ReadSymbolFile (mdb_file);
 			} catch (Exception ex) {
-				throw new SymbolTableException (
-					"Cannot load symbol file `{0}': {1}", mdb_file, ex.Message);
+				Report.Error ("Cannot load symbol file `{0}': {1}", mdb_file, ex.Message);
 			}
-			if (File == null)
-				throw new SymbolTableException (
-					"Cannot load symbol file `{0}'", mdb_file);
 
-			if (ModuleDefinition.Mvid != File.Guid)
-				throw new SymbolTableException (
-					"Symbol file `{0}' does not match assembly `{1}'", mdb_file, ImageFile);
+			if (File == null)
+				Report.Error ("Cannot load symbol file `{0}'", mdb_file);
+			else if (ModuleDefinition.Mvid != File.Guid) {
+				Report.Error ("Symbol file `{0}' does not match assembly `{1}'",
+					      mdb_file, ImageFile);
+				File = null;
+			}
 
 			symtab = new MonoSymbolTable (this);
 
@@ -463,7 +463,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (function != null)
 				return function;
 
-			C.MethodEntry entry = File.GetMethodByToken (token);
+			C.MethodEntry entry = File != null ? File.GetMethodByToken (token) : null;
 			if (entry != null) {
 				C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
 				SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
@@ -475,6 +475,19 @@ namespace Mono.Debugger.Languages.Mono
 
 			function_hash.Add (token, function);
 			return function;
+		}
+
+		public MonoFunctionType GetFunctionByToken (int token)
+		{
+			ensure_sources ();
+			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
+				ModuleDefinition, token);
+
+			MonoClassType klass = LookupMonoType (mdef.DeclaringType) as MonoClassType;
+			if (klass == null)
+				throw new InternalError ();
+
+			return LookupFunction (klass, mdef);
 		}
 
 		MonoMethodSource GetMethodSource (int index)

@@ -522,7 +522,8 @@ namespace Mono.Debugger.Backends
 
 		internal void ReachedManagedMain (TargetAddress method)
 		{
-			PushOperation (new OperationManagedMain (this, method));
+			process.MonoLanguage.ReachedMain (inferior, method);
+			PushOperation (new OperationManagedMain (this));
 		}
 
 		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
@@ -2025,6 +2026,7 @@ namespace Mono.Debugger.Backends
 		{ }
 
 		bool initialized;
+		bool has_main;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
@@ -2035,7 +2037,8 @@ namespace Mono.Debugger.Backends
 				      inferior.CurrentFrame);
 
 			args = null;
-			if (cevent.Type != Inferior.ChildEventType.CHILD_STOPPED)
+			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
 				return EventResult.Completed;
 
 			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
@@ -2056,7 +2059,12 @@ namespace Mono.Debugger.Backends
 				}
 
 				// Never reached; we get replaced by OperationManagedMain.
-				throw new InternalError ();
+				// throw new InternalError ();
+			} else {
+				if (!has_main) {
+					has_main = true;
+					sse.PushOperation (new OperationManagedMain (sse));
+				}
 			}
 
 			if (sse.ProcessServant.IsAttached)
@@ -2065,8 +2073,7 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE,
 				      "{0} start #1: {1} {2} {3}", sse, cevent,
 				      sse.ProcessServant.IsAttached, inferior.MainMethodAddress);
-			sse.PushOperation (new OperationRun (
-				sse, inferior.MainMethodAddress, true, Result));
+			sse.PushOperation (new OperationRun (sse, true, Result));
 			return EventResult.Running;
 		}
 	}
@@ -2136,12 +2143,9 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationManagedMain : Operation
 	{
-		public readonly TargetAddress MainMethod;
-
-		public OperationManagedMain (SingleSteppingEngine sse, TargetAddress method)
+		public OperationManagedMain (SingleSteppingEngine sse)
 			: base (sse, null)
 		{
-			this.MainMethod = method;
 			pending_events = new Queue (sse.ProcessServant.Session.Events);
 		}
 
@@ -2151,9 +2155,44 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
+			if (sse.ProcessServant.MonoManager != null) {
+				MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
+
+				MethodSource source = mono.MainMethod;
+				SourceLocation location = new SourceLocation (source);
+
+				Method method = source.GetMethod (0);
+
+				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+				Registers registers = inferior.GetRegisters ();
+
+				main_frame = new StackFrame (
+					sse.thread, iframe.Address, iframe.StackPointer,
+					iframe.FrameAddress, registers, method, location);
+				sse.update_current_frame (main_frame);
+
+				if (!has_lmf) {
+					has_lmf = true;
+					sse.PushOperation (new OperationGetLMFAddr (sse, null));
+					return;
+				}
+			} else {
+				Method method = sse.Lookup (inferior.MainMethodAddress);
+
+				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+				Registers registers = inferior.GetRegisters ();
+
+				main_frame = new StackFrame (
+					sse.thread, iframe.Address, iframe.StackPointer,
+					iframe.FrameAddress, registers, method);
+				sse.update_current_frame (main_frame);
+			}
+
 			if (do_execute ())
 				return;
-			inferior.Continue ();
+
+			if (sse.ProcessServant.IsManaged)
+				inferior.Continue ();
 		}
 
 		StackFrame main_frame;
@@ -2166,31 +2205,10 @@ namespace Mono.Debugger.Backends
 				      "{0} managed main execute: {1} {2}", sse,
 				      inferior.CurrentFrame, pending_events.Count);
 
-			MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
-
-			if (!has_lmf) {
-				has_lmf = true;
-				sse.PushOperation (new OperationGetLMFAddr (sse, null));
-				return true;
-			}
-
-			MethodSource source = mono.ReachedMain (inferior, MainMethod);
-			SourceLocation location = new SourceLocation (source);
-
-			Method method = source.GetMethod (0);
-
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-			Registers registers = inferior.GetRegisters ();
-
-			main_frame = new StackFrame (
-				sse.thread, iframe.Address, iframe.StackPointer,
-				iframe.FrameAddress, registers, method, location);
-			sse.update_current_frame (main_frame);
-
 			while (pending_events.Count > 0) {
 				Event e = (Event) pending_events.Dequeue ();
 				Report.Debug (DebugFlags.SSE,
-					      "{0} managed main: {1}", sse, e);
+					      "{0} managed main: {1} {2}", sse, e, e.IsEnabled);
 
 				if (!e.IsEnabled)
 					continue;
@@ -2210,6 +2228,8 @@ namespace Mono.Debugger.Backends
 						      e.Index, ex.Message);
 				}
 			}
+
+			Report.Debug (DebugFlags.SSE, "{0} managed main done", sse);
 
 			completed = true;
 			return false;
@@ -2242,11 +2262,10 @@ namespace Mono.Debugger.Backends
 				      inferior.CurrentFrame);
 
 			args = null;
-			if (completed)
-				return EventResult.Completed;
+			if (do_execute ())
+				return EventResult.Running;
 
-			DoExecute ();
-			return EventResult.Running;
+			return EventResult.AskParent;
 		}
 
 		protected class MainMethodBreakpoint : Breakpoint

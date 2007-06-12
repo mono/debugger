@@ -374,13 +374,14 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress image = target.ReadAddress (klass);
 
 			MonoSymbolFile file = GetImage (image);
+			Console.WriteLine ("REACHED MAIN: {0:x} {1} {2} {3} {4}", token,
+					   method, klass, image, file);
+
 			if (file == null)
-				throw new InternalError ();
+				return null;
 
 			main_method = file.GetMethodByToken (token);
-			if (main_method == null)
-				throw new InternalError ();
-
+			Console.WriteLine ("REACHED MAIN #1: {0}", main_method);
 			return main_method;
 		}
 

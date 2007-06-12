@@ -41,6 +41,9 @@ namespace Mono.Debugger
 
 		public SourceLocation Location {
 			get {
+				if (source.IsDynamic)
+					return null;
+
 				return new SourceLocation (source.MethodSource, row);
 			}
 		}
