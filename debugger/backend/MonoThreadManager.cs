@@ -186,11 +186,10 @@ namespace Mono.Debugger.Backends
 						inferior.AddressDomain, cevent.Data1);
 
 					inferior.InitializeModules ();
+					engine.ProcessServant.MonoLanguage.ReachedMain (inferior, data);
 
-					if (stop_in_main)
-						engine.ReachedManagedMain (data);
-					resume_target = !stop_in_main;
-					return true;
+					resume_target = false;
+					return false;
 				}
 
 				case NotificationType.WrapperMain:

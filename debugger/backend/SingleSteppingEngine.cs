@@ -520,12 +520,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void ReachedManagedMain (TargetAddress method)
-		{
-			process.MonoLanguage.ReachedMain (inferior, method);
-			PushOperation (new OperationManagedMain (this));
-		}
-
 		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
 		{
 			this.tid = tid;
@@ -2025,8 +2019,12 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute ()
 		{ }
 
+		Queue pending_events;
+		StackFrame main_frame;
 		bool initialized;
 		bool has_main;
+		bool has_lmf;
+		bool completed;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
@@ -2036,9 +2034,14 @@ namespace Mono.Debugger.Backends
 				      cevent, sse.ProcessServant.IsAttached,
 				      inferior.CurrentFrame);
 
+			Console.WriteLine ("START: {0} {1} {2}", sse, cevent, inferior.CurrentFrame);
+
 			args = null;
-			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
-			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
+			    ((NotificationType) cevent.Argument == NotificationType.ReachedMain))
+				has_main = true;
+			else if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
+				 (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
 				return EventResult.Completed;
 
 			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
@@ -2058,13 +2061,29 @@ namespace Mono.Debugger.Backends
 					return EventResult.Running;
 				}
 
-				// Never reached; we get replaced by OperationManagedMain.
-				// throw new InternalError ();
-			} else {
-				if (!has_main) {
-					has_main = true;
-					sse.PushOperation (new OperationManagedMain (sse));
+				if (!has_lmf) {
+					has_lmf = true;
+					sse.PushOperation (new OperationGetLMFAddr (sse, null));
+					return EventResult.Running;
 				}
+			} else {
+				has_main = true;
+			}
+
+			Console.WriteLine ("START MANAGED: {0} {1}", inferior.CurrentFrame,
+					   has_main);
+
+			if (!has_main)
+				return EventResult.Completed;
+
+			if (pending_events == null) {
+				pending_events = new Queue (sse.ProcessServant.Session.Events);
+				compute_main_frame ();
+			}
+
+			while (!completed) {
+				if (do_execute ())
+					return EventResult.Running;
 			}
 
 			if (sse.ProcessServant.IsAttached)
@@ -2075,6 +2094,146 @@ namespace Mono.Debugger.Backends
 				      sse.ProcessServant.IsAttached, inferior.MainMethodAddress);
 			sse.PushOperation (new OperationRun (sse, true, Result));
 			return EventResult.Running;
+		}
+
+		void compute_main_frame ()
+		{
+			if (sse.ProcessServant.MonoManager != null) {
+				MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
+
+				MethodSource source = mono.MainMethod;
+				SourceLocation location = new SourceLocation (source);
+
+				Method method = source.GetMethod (0);
+
+				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+				Registers registers = inferior.GetRegisters ();
+
+				main_frame = new StackFrame (
+						sse.thread, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, method, location);
+				sse.update_current_frame (main_frame);
+			} else {
+				Method method = sse.Lookup (inferior.MainMethodAddress);
+
+				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+				Registers registers = inferior.GetRegisters ();
+
+				main_frame = new StackFrame (
+					sse.thread, iframe.Address, iframe.StackPointer,
+					iframe.FrameAddress, registers, method);
+				sse.update_current_frame (main_frame);
+			}
+		}
+
+		bool do_execute ()
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} managed main execute: {1} {2}", sse,
+				      inferior.CurrentFrame, pending_events.Count);
+
+			while (pending_events.Count > 0) {
+				Event e = (Event) pending_events.Dequeue ();
+				Report.Debug (DebugFlags.SSE,
+					      "{0} managed main: {1} {2}", sse, e, e.IsEnabled);
+
+				if (!e.IsEnabled)
+					continue;
+
+				Breakpoint breakpoint = e as Breakpoint;
+				if (breakpoint == null)
+					continue;
+
+				try {
+					if (activate_breakpoint (breakpoint))
+						return true;
+				} catch (TargetException ex) {
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
+				} catch (Exception ex) {
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
+				}
+			}
+
+			Report.Debug (DebugFlags.SSE, "{0} managed main done", sse);
+
+			completed = true;
+			return false;
+		}
+
+		bool activate_breakpoint (Breakpoint breakpoint)
+		{
+			BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
+			if (handle == null)
+				return false;
+
+			FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
+			if (fhandle == null) {
+				handle.Insert (sse.Client);
+				return false;
+			}
+
+			sse.PushOperation (new OperationMethodBreakpoint (
+				sse, fhandle.Function, fhandle.MethodLoaded));
+			return true;
+		}
+
+		protected class MainMethodBreakpoint : Breakpoint
+		{
+			public readonly TargetFunctionType Function;
+			BreakpointHandle handle;
+
+			public override bool IsPersistent {
+				get { return false; }
+			}
+
+			public override bool IsActivated {
+				get { return handle != null; }
+			}
+
+			internal override BreakpointHandle Resolve (TargetMemoryAccess target,
+								    StackFrame frame)
+			{
+				if (handle != null)
+					return handle;
+
+				handle = new FunctionBreakpointHandle (this, 0, Function, -1);
+				return handle;
+			}
+
+			public override void Activate (Thread target)
+			{
+				Resolve (target, target.CurrentFrame);
+				if (handle == null)
+					throw new TargetException (TargetError.LocationInvalid);
+				handle.Insert (target);
+			}
+
+			public override void Deactivate (Thread target)
+			{
+				if (handle != null) {
+					handle.Remove (target);
+					handle = null;
+				}
+			}
+
+			internal override void OnTargetExited ()
+			{
+				handle = null;
+			}
+
+			protected override void GetSessionData (System.Xml.XmlElement root,
+								System.Xml.XmlElement element)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal MainMethodBreakpoint (TargetFunctionType function)
+				: base (EventType.Breakpoint, function.Name, ThreadGroup.Global)
+			{
+				this.Function = function;
+			}
 		}
 	}
 
@@ -2138,191 +2297,6 @@ namespace Mono.Debugger.Backends
 
 			args = null;
 			return EventResult.AskParent;
-		}
-	}
-
-	protected class OperationManagedMain : Operation
-	{
-		public OperationManagedMain (SingleSteppingEngine sse)
-			: base (sse, null)
-		{
-			pending_events = new Queue (sse.ProcessServant.Session.Events);
-		}
-
-		public override bool IsSourceOperation {
-			get { return true; }
-		}
-
-		protected override void DoExecute ()
-		{
-			if (sse.ProcessServant.MonoManager != null) {
-				MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
-
-				MethodSource source = mono.MainMethod;
-				SourceLocation location = new SourceLocation (source);
-
-				Method method = source.GetMethod (0);
-
-				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-				Registers registers = inferior.GetRegisters ();
-
-				main_frame = new StackFrame (
-					sse.thread, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, method, location);
-				sse.update_current_frame (main_frame);
-
-				if (!has_lmf) {
-					has_lmf = true;
-					sse.PushOperation (new OperationGetLMFAddr (sse, null));
-					return;
-				}
-			} else {
-				Method method = sse.Lookup (inferior.MainMethodAddress);
-
-				Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-				Registers registers = inferior.GetRegisters ();
-
-				main_frame = new StackFrame (
-					sse.thread, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, method);
-				sse.update_current_frame (main_frame);
-			}
-
-			if (do_execute ())
-				return;
-
-			if (sse.ProcessServant.IsManaged)
-				inferior.Continue ();
-		}
-
-		StackFrame main_frame;
-		bool completed;
-		bool has_lmf;
-
-		bool do_execute ()
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} managed main execute: {1} {2}", sse,
-				      inferior.CurrentFrame, pending_events.Count);
-
-			while (pending_events.Count > 0) {
-				Event e = (Event) pending_events.Dequeue ();
-				Report.Debug (DebugFlags.SSE,
-					      "{0} managed main: {1} {2}", sse, e, e.IsEnabled);
-
-				if (!e.IsEnabled)
-					continue;
-
-				Breakpoint breakpoint = e as Breakpoint;
-				if (breakpoint == null)
-					continue;
-
-				try {
-					if (activate_breakpoint (breakpoint))
-						return true;
-				} catch (TargetException ex) {
-					Report.Error ("Cannot insert breakpoint {0}: {1}",
-						      e.Index, ex.Message);
-				} catch (Exception ex) {
-					Report.Error ("Cannot insert breakpoint {0}: {1}",
-						      e.Index, ex.Message);
-				}
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} managed main done", sse);
-
-			completed = true;
-			return false;
-		}
-
-		bool activate_breakpoint (Breakpoint breakpoint)
-		{
-			BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
-			if (handle == null)
-				return false;
-
-			FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
-			if (fhandle == null) {
-				handle.Insert (sse.Client);
-				return false;
-			}
-
-			sse.PushOperation (new OperationMethodBreakpoint (
-				sse, fhandle.Function, fhandle.MethodLoaded));
-			return true;
-		}
-
-		Queue pending_events;
-
-		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
-							       out TargetEventArgs args)
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} managed main: {1} {2}", sse, cevent,
-				      inferior.CurrentFrame);
-
-			args = null;
-			if (do_execute ())
-				return EventResult.Running;
-
-			return EventResult.AskParent;
-		}
-
-		protected class MainMethodBreakpoint : Breakpoint
-		{
-			public readonly TargetFunctionType Function;
-			BreakpointHandle handle;
-
-			public override bool IsPersistent {
-				get { return false; }
-			}
-
-			public override bool IsActivated {
-				get { return handle != null; }
-			}
-
-			internal override BreakpointHandle Resolve (TargetMemoryAccess target,
-								    StackFrame frame)
-			{
-				if (handle != null)
-					return handle;
-
-				handle = new FunctionBreakpointHandle (this, 0, Function, -1);
-				return handle;
-			}
-
-			public override void Activate (Thread target)
-			{
-				Resolve (target, target.CurrentFrame);
-				if (handle == null)
-					throw new TargetException (TargetError.LocationInvalid);
-				handle.Insert (target);
-			}
-
-			public override void Deactivate (Thread target)
-			{
-				if (handle != null) {
-					handle.Remove (target);
-					handle = null;
-				}
-			}
-
-			internal override void OnTargetExited ()
-			{
-				handle = null;
-			}
-
-			protected override void GetSessionData (System.Xml.XmlElement root,
-								System.Xml.XmlElement element)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			internal MainMethodBreakpoint (TargetFunctionType function)
-				: base (EventType.Breakpoint, function.Name, ThreadGroup.Global)
-			{
-				this.Function = function;
-			}
 		}
 	}
 
