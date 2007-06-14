@@ -370,6 +370,12 @@ namespace Mono.Debugger.Backends
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
 				break;
 
+			case Inferior.ChildEventType.CHILD_CALLBACK:
+				StackData data = (StackData) callback_stack.Peek ();
+				if (data.AutoPop)
+					callback_stack.Pop ();
+				break;
+
 			case Inferior.ChildEventType.CHILD_CALLBACK_COMPLETED:
 				callback_stack.Pop ();
 
@@ -1202,8 +1208,18 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			PushOperation (new OperationCompileMethod (this, compile, trampoline, handler));
+			Report.Debug (DebugFlags.SSE,
+				      "{0} doing trampoline: {1} {2}", this, current_operation,
+				      trampoline);
+
+			PushOperation (new OperationTrampoline (this, trampoline, handler));
 			return;
+		}
+
+		void trampoline_callback (TargetAddress address)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} trampoline callback: {1}", this, address);
 		}
 
 		protected bool MethodHasSource (Method method)
@@ -1271,20 +1287,34 @@ namespace Mono.Debugger.Backends
 			return new StepFrame (language, mode);
 		}
 
-		StackData save_stack ()
+		StackData save_stack (long id)
 		{
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			Registers cb_registers = inferior.GetRegisters ();
+
+			StackFrame callback_frame = new StackFrame (
+				thread, iframe.Address, iframe.StackPointer,
+				iframe.FrameAddress, cb_registers, process.NativeLanguage,
+				new Symbol ("<method called from mdb>", iframe.Address, 0));
+			callback_frame.ParentFrame = current_frame;
+
 			//
 			// Save current state.
 			//
 			StackData stack_data = new StackData (
-				current_method, inferior.CurrentFrame, current_frame,
-				current_backtrace, registers);
+				id, current_method, inferior.CurrentFrame, current_frame,
+				current_backtrace, registers, callback_frame);
 
 			current_method = null;
 			current_frame = null;
 			current_backtrace = null;
 			registers = null;
 
+			Report.Debug (DebugFlags.SSE,
+				      "{0} saved stack: {1} {2} {3}", this, stack_data.Frame,
+				      inferior.CurrentFrame, callback_stack.Count);
+
+			callback_stack.Push (stack_data);
 			return stack_data;
 		}
 
@@ -1303,14 +1333,22 @@ namespace Mono.Debugger.Backends
 			current_frame = stack.Frame;
 			current_backtrace = stack.Backtrace;
 			registers = stack.Registers;
-			Report.Debug (DebugFlags.SSE,
-				      "{0} restored stack: {1}", this, current_frame);
+
+			callback_stack.Pop ();
+
+			Report.Debug (DebugFlags.SSE, "{0} restored stack: {1} {2}",
+				      this, current_frame, callback_stack.Count);
 		}
 
 		void discard_stack (StackData stack)
 		{
+			callback_stack.Pop ();
+
+			Report.Debug (DebugFlags.SSE, "{0} discarding saved stack: {1}",
+				      this, callback_stack.Count);
 		}
 
+#if FIXME
 		void push_runtime_invoke (StackFrame rti_frame)
 		{
 			callback_stack.Push (rti_frame);
@@ -1320,6 +1358,7 @@ namespace Mono.Debugger.Backends
 		{
 			callback_stack.Pop ();
 		}
+#endif
 
 		// <summary>
 		//   Interrupt any currently running stepping operation, but don't send
@@ -1491,8 +1530,10 @@ namespace Mono.Debugger.Backends
 		protected void return_finished (StackFrame parent_frame)
 		{
 			StackFrame rti_frame = null;
-			if (callback_stack.Count > 0)
-				rti_frame = (StackFrame) callback_stack.Peek ();
+			if (callback_stack.Count > 0) {
+				StackData data = (StackData) callback_stack.Peek ();
+				rti_frame = data.CallbackFrame;
+			}
 
 			/*
 			 * Check whether we're crossing a runtime-invoke boundary and
@@ -1543,11 +1584,11 @@ namespace Mono.Debugger.Backends
 				if ((callback_stack.Count == 0) || !process.IsManagedApplication)
 					throw new InvalidOperationException ();
 
-				StackFrame rti_frame = (StackFrame) callback_stack.Peek ();
+				StackData data = (StackData) callback_stack.Peek ();
 				MonoLanguageBackend language = process.MonoLanguage;
 
 				return StartOperation (new OperationAbortInvocation (
-					this, language, current_backtrace, rti_frame));
+					this, language, current_backtrace, data.CallbackFrame));
 			});
 		}
 
@@ -1569,7 +1610,9 @@ namespace Mono.Debugger.Backends
 
 				current_backtrace = new Backtrace (current_frame);
 
-				foreach (StackFrame rti_frame in callback_stack) {
+				foreach (StackData stack in callback_stack) {
+					StackFrame rti_frame = stack.CallbackFrame;
+
 					current_backtrace.GetBacktrace (
 						this, mode, rti_frame.StackPointer, max_frames);
 
@@ -1822,23 +1865,30 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_method_retaddr = TargetAddress.Null;
 
 #region Nested SSE classes
-		internal sealed class StackData : DebuggerMarshalByRefObject
+		protected sealed class StackData : DebuggerMarshalByRefObject
 		{
+			public readonly long ID;
 			public readonly Method Method;
 			public readonly TargetAddress Address;
 			public readonly StackFrame Frame;
 			public readonly Backtrace Backtrace;
 			public readonly Registers Registers;
 
-			public StackData (Method method, TargetAddress address,
+			public readonly StackFrame CallbackFrame;
+
+			public bool AutoPop;
+
+			public StackData (long id, Method method, TargetAddress address,
 					  StackFrame frame, Backtrace backtrace,
-					  Registers registers)
+					  Registers registers, StackFrame callback_frame)
 			{
+				this.ID = id;
 				this.Method = method;
 				this.Address = address;
 				this.Frame = frame;
 				this.Backtrace = backtrace;
 				this.Registers = registers;
+				this.CallbackFrame = callback_frame;
 			}
 		}
 #endregion
@@ -2266,8 +2316,12 @@ namespace Mono.Debugger.Backends
 					     0, Function.MonoClass.Name, ID);
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} method breakpoint callback: {1} {2:x} {3:x} {4}",
+				      sse, inferior.CurrentFrame, data1, data2, class_resolved);
+
 			if (!class_resolved) {
 				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
 				MonoClassInfo info = Function.MonoClass.ClassResolved (sse.Client, klass);
@@ -2281,20 +2335,10 @@ namespace Mono.Debugger.Backends
 				language.RegisterMethodLoadHandler (index, Handler);
 
 				class_resolved = true;
-				return false;
+				return EventResult.Running;
 			}
 
-			return true;
-		}
-
-		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
-							       out TargetEventArgs args)
-		{
-			if (!class_resolved)
-				return base.DoProcessEvent (cevent, out args);
-
-
-			args = null;
+			RestoreStack ();
 			return EventResult.AskParent;
 		}
 	}
@@ -2350,17 +2394,15 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (info.GetCurrentThread, 0, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} get current thread: {1:x} {2:x} {3}",
 				      sse, data1, data2, Result);
 
-			RestoreStack ();
-
 			if (data1 == 0) {
 				sse.PushOperation (new OperationRun (sse, null));
-				return false;
+				return EventResult.Running;
 			}
 
 			TargetAddress thread = new TargetAddress (inferior.AddressDomain, data1);
@@ -2374,7 +2416,7 @@ namespace Mono.Debugger.Backends
 			sse.OnManagedThreadCreated (tid, thread + info.ThreadEndStackOffset);
 
 			sse.PushOperation (new OperationGetLMFAddr (sse, null));
-			return false;
+			return EventResult.Running;
 		}
 	}
 
@@ -2394,17 +2436,16 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (info.Attach, 0, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} attach done: {1:x} {2:x} {3}",
 				      sse, data1, data2, Result);
 
-			RestoreStack ();
 			inferior.InitializeModules ();
 
 			sse.PushOperation (new OperationGetLMFAddr (sse, null));
-			return false;
+			return EventResult.Running;
 		}
 	}
 
@@ -2424,25 +2465,7 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (info.GetLMFAddress, 0, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (Inferior.ChildEvent cevent,
-							   out TargetEventArgs args,
-							   out EventResult result)
-		{
-			Report.Debug (DebugFlags.SSE, "{0} get lmf done: {1} {2}",
-				      sse, cevent, Result);
-
-			args = null;
-
-			if (!CallbackCompleted (cevent.Data1, cevent.Data2)) {
-				result = EventResult.Running;
-				return true;
-			}
-
-			result = EventResult.AskParent;
-			return true;
-		}
-
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} get lmf: {1:x} {2:x} {3}",
@@ -2450,7 +2473,7 @@ namespace Mono.Debugger.Backends
 
 			RestoreStack ();
 			sse.lmf_address = new TargetAddress (inferior.AddressDomain, data1);
-			return true;
+			return EventResult.AskParent;
 		}
 	}
 
@@ -2470,23 +2493,12 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (info.Detach, 0, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (Inferior.ChildEvent cevent,
-							   out TargetEventArgs args,
-							   out EventResult result)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
-			Report.Debug (DebugFlags.SSE, "{0} detach done: {1} {2}",
-				      sse, cevent, Result);
+			Report.Debug (DebugFlags.SSE, "{0} detach done: {1}", sse, Result);
 
 			sse.DoDetach ();
-
-			args = null;
-			result = EventResult.CompletedCallback;
-			return true;
-		}
-
-		protected override bool CallbackCompleted (long data1, long data2)
-		{
-			throw new InternalError ();
+			return EventResult.CompletedCallback;
 		}
 	}
 
@@ -3064,7 +3076,7 @@ namespace Mono.Debugger.Backends
 
 		public override void Execute ()
 		{
-			stack_data = sse.save_stack ();
+			stack_data = sse.save_stack (ID);
 			base.Execute ();
 		}
 
@@ -3082,28 +3094,26 @@ namespace Mono.Debugger.Backends
 				sse.do_continue ();
 				return EventResult.Running;
 			} else if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
-				Report.Debug (DebugFlags.SSE, "{0} aborting callback {1} at {2}: {3}",
-					      sse, this, inferior.CurrentFrame, cevent);
-				RestoreStack ();
-				return EventResult.CompletedCallback;
+				Report.Debug (DebugFlags.SSE,
+					      "{0} aborting callback {1} ({2}) at {3}: {4}",
+					      sse, this, ID, inferior.CurrentFrame, cevent);
+				AbortOperation ();
+				goto out_frame_changed;
 			}
 
 			if (ID != cevent.Argument) {
-				AbortCallback ();
+				Report.Debug (DebugFlags.SSE,
+					      "{0} aborting callback {1} ({2}) at {3}: {4}",
+					      sse, this, ID, inferior.CurrentFrame, cevent);
+				AbortOperation ();
 				goto out_frame_changed;
 			}
 
 			try {
-				EventResult result;
-				if (CallbackCompleted (cevent, out args, out result))
-					return result;
+				args = null;
+				return CallbackCompleted (cevent.Data1, cevent.Data2);
 			} catch (Exception ex) {
 				RestoreStack ();
-				return EventResult.CompletedCallback;
-			}
-
-			if (stack_data != null) {
-				sse.restore_stack (stack_data);
 				return EventResult.CompletedCallback;
 			}
 
@@ -3114,31 +3124,16 @@ namespace Mono.Debugger.Backends
 			return EventResult.Completed;
 		}
 
-		protected virtual bool CallbackCompleted (Inferior.ChildEvent cevent,
-							  out TargetEventArgs args,
-							  out EventResult result)
-		{
-			if (!CallbackCompleted (cevent.Data1, cevent.Data2)) {
-				args = null;
-				result = EventResult.Running;
-				return true;
-			}
-
-			args = null;
-			result = EventResult.CompletedCallback;
-			return false;
-		}
-
-		protected abstract bool CallbackCompleted (long data1, long data2);
+		protected abstract EventResult CallbackCompleted (long data1, long data2);
 
 		public override bool IsSourceOperation {
 			get { return false; }
 		}
 
-		public void AbortCallback ()
+		protected void AbortOperation ()
 		{
 			if (stack_data != null)
-				sse.discard_stack (stack_data);
+				stack_data.AutoPop = true;
 			stack_data = null;
 		}
 
@@ -3158,6 +3153,7 @@ namespace Mono.Debugger.Backends
 
 		protected void PushRuntimeInvoke ()
 		{
+#if FIXME
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
 
@@ -3170,6 +3166,7 @@ namespace Mono.Debugger.Backends
 
 			sse.push_runtime_invoke (rti_frame);
 			rti_frame.ParentFrame = stack_data.Frame;
+#endif
 		}
 	}
 
@@ -3318,7 +3315,7 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			switch (stage) {
 			case Stage.Uninitialized: {
@@ -3330,7 +3327,7 @@ namespace Mono.Debugger.Backends
 				Function.MonoClass.ClassResolved (sse.Thread, klass);
 				stage = Stage.ResolvedClass;
 				do_execute ();
-				return false;
+				return EventResult.Running;
 			}
 
 			case Stage.BoxingInstance: {
@@ -3343,7 +3340,7 @@ namespace Mono.Debugger.Backends
 				instance = (MonoClassObject) instance.Type.ParentType.GetObject (new_loc);
 				stage = Stage.HasMethodAddress;
 				do_execute ();
-				return false;
+				return EventResult.Running;
 			}
 
 			case Stage.GettingVirtualMethod: {
@@ -3359,7 +3356,8 @@ namespace Mono.Debugger.Backends
 					Result.ExceptionMessage = String.Format (
 						"Unable to get virtual method `{0}'.", Function.FullName);
 					Result.InvocationCompleted = true;
-					return true;
+					RestoreStack ();
+					return EventResult.CompletedCallback;
 				}
 
 				if (!class_type.IsByRef) {
@@ -3370,7 +3368,7 @@ namespace Mono.Debugger.Backends
 
 				stage = Stage.HasVirtualMethod;
 				do_execute ();
-				return false;
+				return EventResult.Running;
 			}
 
 			case Stage.CompilingMethod: {
@@ -3381,7 +3379,7 @@ namespace Mono.Debugger.Backends
 
 				stage = Stage.CompiledMethod;
 				do_execute ();
-				return false;
+				return EventResult.Running;
 			}
 
 			case Stage.InvokedMethod: {
@@ -3389,10 +3387,12 @@ namespace Mono.Debugger.Backends
 					      "{0} rti done: {1:x} {2:x}",
 					      sse, data1, data2);
 
+#if FIXME
 				if (pushed_rti_frame) {
 					sse.pop_runtime_invoke ();
 					pushed_rti_frame = false;
 				}
+#endif
 
 				if (data2 != 0) {
 					TargetAddress exc_address = new TargetAddress (
@@ -3413,7 +3413,8 @@ namespace Mono.Debugger.Backends
 				}
 
 				Result.InvocationCompleted = true;
-				return true;
+				RestoreStack ();
+				return EventResult.CompletedCallback;
 			}
 
 			default:
@@ -3524,7 +3525,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			if (inferior.TargetAddressSize == 4)
 				data1 &= 0xffffffffL;
@@ -3532,48 +3533,65 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE,
 				      "{0} call method done: {1:x} {2:x} {3}",
 				      sse, data1, data2, Result);
-				
-			Result.Result = new TargetAddress (inferior.AddressDomain, data1);
 
-			return true;
+			RestoreStack ();
+			Result.Result = new TargetAddress (inferior.AddressDomain, data1);
+			return EventResult.CompletedCallback;
 		}
 	}
 
-	protected class OperationCompileMethod : OperationCallback
+	protected delegate void MyTrampolineHandler (TargetAddress address);
+
+	protected class OperationTrampoline : Operation
 	{
-		public readonly TargetAddress CompileMethod;
-		public readonly TargetAddress MethodAddress;
+		public readonly TargetAddress Method;
 		public readonly TrampolineHandler TrampolineHandler;
 
+		TargetAddress address = TargetAddress.Null;
+		bool compiled;
 		bool completed;
 
-		public OperationCompileMethod (SingleSteppingEngine sse,
-					       TargetAddress compile, TargetAddress address,
-					       TrampolineHandler handler)
-			: base (sse)
+		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress method,
+					    TrampolineHandler handler)
+			: base (sse, null)
 		{
-			this.CompileMethod = compile;
-			this.MethodAddress = address;
+			this.Method = method;
 			this.TrampolineHandler = handler;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
 		}
 
 		protected override void DoExecute ()
 		{
-			Report.Debug (DebugFlags.SSE, "{0} compiling method: {1}", sse, MethodAddress);
-			inferior.CallMethod (CompileMethod, MethodAddress.Address, 0, ID);
+			sse.PushOperation (new OperationRuntimeClassInit (sse, Method));
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
 		{
-			TargetAddress address = new TargetAddress (
-				inferior.AddressDomain, data1);
+			Report.Debug (DebugFlags.SSE,
+				      "{0} trampoline event: {1}", sse, cevent);
 
-			Report.Debug (DebugFlags.SSE, "{0} done compiling method: {1}",
-				      sse, address);
+			args = null;
 
-			RestoreStack ();
+			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}: {2} {3} {4} {5}",
+				      sse, this, address, inferior.CurrentFrame, compiled, completed);
+
+			if (completed)
+				return EventResult.ResumeOperation;
+
+			if (!compiled) {
+				compiled = true;
+				sse.PushOperation (new OperationCompileMethod (sse, Method,
+					delegate (TargetAddress address) {
+						this.address = address;
+				}));
+				return EventResult.Running;
+			}
+
 			completed = true;
-
 			Method method = sse.Lookup (address);
 			Report.Debug (DebugFlags.SSE,
 				      "{0} compiled method: {1} {2} {3} {4} {5}",
@@ -3583,25 +3601,72 @@ namespace Mono.Debugger.Backends
 
 			if ((TrampolineHandler != null) && !TrampolineHandler (method)) {
 				sse.do_next_native ();
-				return false;
+				return EventResult.Running;
 			}
 
 			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
-				      sse, inferior.CurrentFrame, address);
+				      sse, address, inferior.CurrentFrame);
 
 			sse.do_continue (address, true);
-			return false;
+			return EventResult.Running;
+		}
+	}
+
+	protected class OperationCompileMethod : OperationCallback
+	{
+		public readonly TargetAddress Method;
+		public readonly MyTrampolineHandler MyTrampolineHandler;
+
+		MonoDebuggerInfo debugger_info;
+
+		public OperationCompileMethod (SingleSteppingEngine sse, TargetAddress method,
+					       MyTrampolineHandler handler)
+			: base (sse)
+		{
+			this.Method = method;
+			this.MyTrampolineHandler = handler;
 		}
 
-		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
-							       out TargetEventArgs args)
+		protected override void DoExecute ()
 		{
-			if (!completed)
-				return base.DoProcessEvent (cevent, out args);
+			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			inferior.CallMethod (debugger_info.CompileMethod, Method.Address, 0, ID);
+		}
 
+		protected override EventResult CallbackCompleted (long data1, long data2)
+		{
+			TargetAddress address = new TargetAddress (inferior.AddressDomain, data1);
+			MyTrampolineHandler (address);
+			RestoreStack ();
+			return EventResult.ResumeOperation;
+		}
+	}
 
-			args = null;
-			return EventResult.AskParent;
+	protected class OperationRuntimeClassInit : OperationCallback
+	{
+		public readonly TargetAddress Method;
+		MonoDebuggerInfo debugger_info;
+
+		public OperationRuntimeClassInit (SingleSteppingEngine sse, TargetAddress method)
+			: base (sse)
+		{
+			this.Method = method;
+		}
+
+		protected override void DoExecute ()
+		{
+			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			TargetAddress klass = inferior.ReadAddress (Method + 8);
+			Report.Debug (DebugFlags.SSE, "{0} runtime class init: {1} {2}",
+				      sse, Method, klass);
+			inferior.CallMethod (debugger_info.RuntimeClassInit, klass.Address, 0, ID);
+		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} runtime class init done", sse);
+			RestoreStack ();
+			return EventResult.ResumeOperation;
 		}
 	}
 
@@ -3632,7 +3697,7 @@ namespace Mono.Debugger.Backends
 						 method.Address, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			address = new TargetAddress (inferior.AddressDomain, data1);
 
@@ -3640,7 +3705,8 @@ namespace Mono.Debugger.Backends
 				inferior, Breakpoint, address);
 
 			Result.Result = index;
-			return true;
+			RestoreStack ();
+			return EventResult.CompletedCallback;
 		}
 	}
 
@@ -3766,11 +3832,11 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			DiscardStack ();
 			sse.return_finished (ParentFrame);
-			return true;
+			return EventResult.CompletedCallback;
 		}
 	}
 
@@ -3796,7 +3862,7 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
 		}
 
-		protected override bool CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			StackFrame parent_frame = Backtrace.Frames [++level];
 
@@ -3804,12 +3870,12 @@ namespace Mono.Debugger.Backends
 				inferior.AbortInvoke ();
 				sse.callback_stack.Pop ();
 				DiscardStack ();
-				return true;
+				return EventResult.CompletedCallback;
 			}
 
 			inferior.SetRegisters (parent_frame.Registers);
 			inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
-			return false;
+			return EventResult.Running;
 		}
 	}
 #endregion
