@@ -57,6 +57,7 @@ struct _MonoDebuggerInfo {
 	guint64 (*get_current_thread) (void);
 	gint64 (*get_method_addr_or_bpt) (guint64 method_argument, guint64 index);
 	void (*remove_method_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
+	void (*runtime_class_init) (guint64 klass_arg);
 	void (*attach) (void);
 	void (*detach) (void);
 	void (*initialize) (void);
