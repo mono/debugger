@@ -9,11 +9,24 @@ public class Foo
 	}
 }
 
+public class Bar
+{
+	static Bar ()
+	{
+		Console.WriteLine ("BAR STATIC CCTOR!");
+	}
+
+	public static void Hello ()
+	{
+		Console.WriteLine ("Irish Pub");
+	}
+}
+
 class X
 {
 	static X ()
 	{
-		Console.WriteLine ("STATIC CCTOR!");
+		Console.WriteLine ("X STATIC CCTOR!");
 	}
 
 	static void Test ()
@@ -26,5 +39,6 @@ class X
 	static void Main ()
 	{
 		Test ();
+		Bar.Hello ();
 	}
 }

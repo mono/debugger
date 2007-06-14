@@ -1348,17 +1348,11 @@ namespace Mono.Debugger.Backends
 				      this, callback_stack.Count);
 		}
 
-#if FIXME
 		void push_runtime_invoke (StackFrame rti_frame)
 		{
-			callback_stack.Push (rti_frame);
+			StackData data = (StackData) callback_stack.Peek ();
+			data.CallbackFrame = rti_frame;
 		}
-
-		void pop_runtime_invoke ()
-		{
-			callback_stack.Pop ();
-		}
-#endif
 
 		// <summary>
 		//   Interrupt any currently running stepping operation, but don't send
@@ -1874,8 +1868,7 @@ namespace Mono.Debugger.Backends
 			public readonly Backtrace Backtrace;
 			public readonly Registers Registers;
 
-			public readonly StackFrame CallbackFrame;
-
+			public StackFrame CallbackFrame;
 			public bool AutoPop;
 
 			public StackData (long id, Method method, TargetAddress address,
@@ -3098,7 +3091,7 @@ namespace Mono.Debugger.Backends
 					      "{0} aborting callback {1} ({2}) at {3}: {4}",
 					      sse, this, ID, inferior.CurrentFrame, cevent);
 				AbortOperation ();
-				goto out_frame_changed;
+				return EventResult.Completed;
 			}
 
 			if (ID != cevent.Argument) {
@@ -3106,7 +3099,7 @@ namespace Mono.Debugger.Backends
 					      "{0} aborting callback {1} ({2}) at {3}: {4}",
 					      sse, this, ID, inferior.CurrentFrame, cevent);
 				AbortOperation ();
-				goto out_frame_changed;
+				return EventResult.Completed;
 			}
 
 			try {
@@ -3116,12 +3109,6 @@ namespace Mono.Debugger.Backends
 				RestoreStack ();
 				return EventResult.CompletedCallback;
 			}
-
-		out_frame_changed:
-			sse.frame_changed (inferior.CurrentFrame, null);
-			args = new TargetEventArgs (
-				TargetEventType.TargetStopped, 0, sse.current_frame);
-			return EventResult.Completed;
 		}
 
 		protected abstract EventResult CallbackCompleted (long data1, long data2);
@@ -3153,7 +3140,6 @@ namespace Mono.Debugger.Backends
 
 		protected void PushRuntimeInvoke ()
 		{
-#if FIXME
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
 
@@ -3166,7 +3152,6 @@ namespace Mono.Debugger.Backends
 
 			sse.push_runtime_invoke (rti_frame);
 			rti_frame.ParentFrame = stack_data.Frame;
-#endif
 		}
 	}
 
@@ -3836,7 +3821,7 @@ namespace Mono.Debugger.Backends
 		{
 			DiscardStack ();
 			sse.return_finished (ParentFrame);
-			return EventResult.CompletedCallback;
+			return EventResult.Completed;
 		}
 	}
 
@@ -3868,9 +3853,9 @@ namespace Mono.Debugger.Backends
 
 			if (parent_frame.StackPointer >= RuntimeInvokeFrame.StackPointer) {
 				inferior.AbortInvoke ();
-				sse.callback_stack.Pop ();
 				DiscardStack ();
-				return EventResult.CompletedCallback;
+				sse.callback_stack.Pop ();
+				return EventResult.Completed;
 			}
 
 			inferior.SetRegisters (parent_frame.Registers);
