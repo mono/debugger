@@ -21,6 +21,7 @@ namespace Mono.Debugger.Tests
 
 		int bpt_x_cctor;
 		int bpt_bar_cctor;
+		int bpt_bar_hello;
 
 		[Test]
 		[Category("ManagedTypes")]
@@ -66,12 +67,24 @@ namespace Mono.Debugger.Tests
 			AssertFrame (bt_bar_cctor [0], 0, "Bar..cctor()", LineBarCCtor);
 			AssertFrame (bt_bar_cctor [4], 4, "X.Main()", LineMain + 1);
 
+			// This triggers a recursive callback.
+			bpt_bar_hello = AssertBreakpoint ("Bar.Hello");
+
 			AssertExecute ("continue");
 			AssertTargetOutput ("BAR STATIC CCTOR!");
 
 			AssertStopped (thread, "X.Main()", LineMain + 1);
 
+			bt_main = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
+			Assert.IsTrue (bt_main.Count == 1);
+			AssertFrame (bt_main [0], 0, "X.Main()", LineMain + 1);
+
 			AssertExecute ("continue");
+
+			AssertHitBreakpoint (thread, bpt_bar_hello, "Bar.Hello()", LineBarHello);
+
+			AssertExecute ("continue");
+
 			AssertTargetOutput ("Irish Pub");
 			AssertTargetExited (thread.Process);
 		}
