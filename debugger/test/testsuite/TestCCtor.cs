@@ -37,6 +37,14 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_x_cctor, "X..cctor()", LineXCCtor);
 
+			//
+			// Dublin Milestone I (completed): "break-before-main"
+			//
+			// Insert a breakpoint in the main class'es ..cctor before starting the
+			// application; make sure we correctly stop in that ..cctor before reaching
+			// main.
+			//
+
 			Backtrace bt_x_cctor = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
 			Assert.IsTrue (bt_x_cctor.Count == 1);
 			AssertFrame (bt_x_cctor [0], 0, "X..cctor()", LineXCCtor);
@@ -58,6 +66,13 @@ namespace Mono.Debugger.Tests
 
 			AssertStopped (thread, "X.Main()", LineMain + 1);
 
+			//
+			// Dublin Milestone II (completed): "interrupted-trampolines"
+			//
+			// Step into a method which isn't compiled yet where that method's
+			// static class ..cctor causes the debugger to stop (because of a breakpoint).
+			//
+
 			AssertExecute ("step");
 
 			AssertHitBreakpoint (thread, bpt_bar_cctor, "Bar..cctor()", LineBarCCtor);
@@ -66,6 +81,20 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (bt_bar_cctor.Count == 5);
 			AssertFrame (bt_bar_cctor [0], 0, "Bar..cctor()", LineBarCCtor);
 			AssertFrame (bt_bar_cctor [4], 4, "X.Main()", LineMain + 1);
+
+			//
+			// Dublin Milestone III (completed on i386): "recursive-callbacks"
+			//
+			// We stopped in Bar's static ..cctor.  The important point here is that
+			// we previously attempted to step into Bar.Hello() which wan't compiled
+			// at that time.  The debugger triggered a compilation which was interrupted
+			// because we hit that breakpoint.
+			//
+			// Now we attempt to do something which'll trigger a callback.
+			//
+			// The new code also keeps a correct callback stack which is used for stack
+			// unwinding; we can now correctly unwind the stack across callback boundaries.
+			//
 
 			// This triggers a recursive callback.
 			bpt_bar_hello = AssertBreakpoint ("Bar.Hello");
@@ -87,6 +116,19 @@ namespace Mono.Debugger.Tests
 
 			AssertTargetOutput ("Irish Pub");
 			AssertTargetExited (thread.Process);
+
+			//
+			// Dublin Milestone IV (next week):
+			//
+			// In the situation above, move the class init up when stepping over a breakpoint;
+			// ie. initialize the class before acquiring the thread lock and also compile the
+			// method without it.  Just acquire the lock to do the trampoline stuff; ie.
+			// acquire the lock, remove the breakpoint, let mono_magic_trampoline() patch the
+			// callsite, reinsert the breakpoint and remove the lock.
+			//
+			// The current code will only deadlock in very rare cases, but that task will
+			// completely eliminate that and it shouldn't be too hard.
+			//
 		}
 	}
 }
