@@ -1,3 +1,4 @@
+#define DEBUG
 #include <server.h>
 #include <breakpoints.h>
 #include <sys/stat.h>
@@ -131,11 +132,6 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
-#ifdef DEBUG
-	g_message (G_STRLOC ": %x - %x - %x", INFERIOR_REG_EIP (arch->current_regs),
-		   INFERIOR_REG_ESP (arch->current_regs), new_esp);
-#endif
-
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
 	cdata->call_address = new_esp + 26;
@@ -157,11 +153,6 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 		return result;
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
-
-#ifdef DEBUG
-	g_message (G_STRLOC ": %p - %x - %x - %x - %x", cdata, new_esp, cdata->call_address,
-		   cdata->stack_pointer, INFERIOR_REG_EIP (cdata->saved_regs));
-#endif
 
 	g_ptr_array_add (arch->callback_stack, cdata);
 
@@ -200,11 +191,6 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	cdata = g_new0 (CallbackData, 1);
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
-
-#ifdef DEBUG
-	g_message (G_STRLOC ": %x - %x", INFERIOR_REG_EIP (arch->current_regs),
-		   INFERIOR_REG_ESP (arch->current_regs));
-#endif
 
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
