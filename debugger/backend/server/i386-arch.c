@@ -326,10 +326,16 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	*((guint32 *) (code+12)) = new_esp + static_size + blob_size + 4;
 	*((guint32 *) (code+16)) = new_esp + 20;
 
+#ifdef DEBUG
+	g_message (G_STRLOC ": %x - %x,%x,%x - %x,%x,%x - %x", new_esp, static_size, blob_size, size,
+		   new_esp - size, new_esp - static_size, new_esp - 20, new_esp + size);
+#endif
+
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
 	cdata->call_address = new_esp + static_size;
+	cdata->stack_pointer = new_esp + 4;
 	cdata->exc_address = new_esp + 20;
 	cdata->callback_argument = callback_argument;
 	cdata->debug = debug;
@@ -343,6 +349,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 
 	INFERIOR_REG_EIP (arch->current_regs) = invoke_method;
 	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
+	INFERIOR_REG_EBP (arch->current_regs) = 0;
 
 	g_ptr_array_add (arch->callback_stack, cdata);
 
@@ -985,8 +992,9 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 	for (i = 0; i < handle->arch->callback_stack->len; i++) {
 		CallbackData *cdata = g_ptr_array_index (handle->arch->callback_stack, i);
 #ifdef DEBUG
-		g_message (G_STRLOC ": %p - %x,%Lx - %d", cdata, cdata->stack_pointer, stack_pointer,
-			   exact_match);
+		g_message (G_STRLOC ": %p - %x,%Lx - %Ld - %d",
+			   cdata, cdata->stack_pointer, stack_pointer,
+			   stack_pointer - cdata->stack_pointer, exact_match);
 #endif
 
 		if (exact_match) {
