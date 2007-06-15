@@ -984,3 +984,9 @@ server_ptrace_abort_invoke (ServerHandle *handle)
 
 	return COMMAND_ERROR_NONE;
 }
+
+static ServerCommandError
+server_ptrace_get_callback_frame (ServerHandle *handle, guint64 callback_stack, guint64 *registers)
+{
+	return COMMAND_ERROR_NO_CALLBACK_FRAME;
+}

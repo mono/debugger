@@ -28,7 +28,8 @@ typedef enum {
 	COMMAND_ERROR_DR_OCCUPIED,
 	COMMAND_ERROR_MEMORY_ACCESS,
 	COMMAND_ERROR_NOT_IMPLEMENTED,
-	COMMAND_ERROR_IO_ERROR
+	COMMAND_ERROR_IO_ERROR,
+	COMMAND_ERROR_NO_CALLBACK_FRAME,
 } ServerCommandError;
 
 typedef enum {
@@ -331,6 +332,11 @@ struct InferiorVTable {
 						       guint64           *new_rsp);
 
 	ServerCommandError    (* pop_registers)       (ServerHandle      *handle);
+
+	ServerCommandError    (* get_callback_frame)  (ServerHandle      *handle,
+						       guint64            stack_pointer,
+						       gboolean           exact_match,
+						       guint64           *registers);
 };
 
 /*
@@ -535,6 +541,12 @@ mono_debugger_server_push_registers      (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_pop_registers       (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_get_callback_frame  (ServerHandle        *handle,
+					  guint64              stack_pointer,
+					  gboolean             exact_match,
+					  guint64             *registers);
 
 /* POSIX semaphores */
 

@@ -137,23 +137,36 @@ namespace Mono.Debugger
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
 							       TargetMemoryAccess memory);
 
-		internal abstract StackFrame CreateFrame (Thread thread, Registers regs);
+		internal abstract StackFrame CreateFrame (Thread thread, Registers regs,
+							  bool adjust_retaddr);
 
 		protected abstract TargetAddress AdjustReturnAddress (Thread thread,
 								      TargetAddress address);
 
+		internal StackFrame GetCallbackFrame (ThreadServant servant, StackFrame frame,
+						      bool exact_match)
+		{
+			Registers callback = servant.GetCallbackFrame (frame.StackPointer, exact_match);
+			if (callback != null)
+				return CreateFrame (frame.Thread, callback, false);
+
+			return null;
+		}
+
 		internal StackFrame CreateFrame (Thread thread, TargetAddress address,
 						 TargetAddress stack, TargetAddress frame_pointer,
-						 Registers regs)
+						 Registers regs, bool adjust_retaddr)
 		{
 			if ((address.IsNull) || (address.Address == 0))
 				return null;
 
-			TargetAddress old_address = address;
-			try {
-				address = AdjustReturnAddress (thread, old_address);
-			} catch {
-				address = old_address;
+			if (adjust_retaddr) {
+				TargetAddress old_address = address;
+				try {
+					address = AdjustReturnAddress (thread, old_address);
+				} catch {
+					address = old_address;
+				}
 			}
 
 			Method method = process.SymbolTableManager.Lookup (address);

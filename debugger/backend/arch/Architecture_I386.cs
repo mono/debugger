@@ -440,7 +440,7 @@ namespace Mono.Debugger.Backends
 				ebp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -473,7 +473,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
+				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
 			}
 
 			// push %ebp
@@ -495,7 +495,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
+				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
 			}
 
 			// mov %ebp, %esp
@@ -579,7 +579,7 @@ namespace Mono.Debugger.Backends
 			esp += 0x40;
 			regs [(int)I386Register.ESP].SetValue (esp.Address);
 
-			return CreateFrame (frame.Thread, eip, esp, ebp, regs);
+			return CreateFrame (frame.Thread, eip, esp, ebp, regs, true);
 		}
 
 		StackFrame try_syscall_trampoline (StackFrame frame, TargetMemoryAccess memory)
@@ -602,7 +602,7 @@ namespace Mono.Debugger.Backends
 			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
 			regs [(int)I386Register.EBP].SetValue (new_ebp);
 
-			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
 		}
 
 		StackFrame do_hacks (StackFrame frame, TargetMemoryAccess memory)
@@ -630,12 +630,16 @@ namespace Mono.Debugger.Backends
 		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory,
 							  byte[] code, int offset)
 		{
-			if ((code != null) && (code.Length > 3))
-				return read_prologue (frame, memory, code, offset);
+			StackFrame new_frame;
+			if ((code != null) && (code.Length > 3)) {
+				new_frame = read_prologue (frame, memory, code, offset);
+				if (new_frame != null)
+					return new_frame;
+			}
 
 			TargetAddress ebp = frame.FrameAddress;
 
-			StackFrame new_frame = do_hacks (frame, memory);
+			new_frame = do_hacks (frame, memory);
 			if (new_frame != null)
 				return new_frame;
 
@@ -654,7 +658,7 @@ namespace Mono.Debugger.Backends
 
 			ebp -= addr_size;
 
-			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,
@@ -703,7 +707,8 @@ namespace Mono.Debugger.Backends
 			return address;
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, Registers regs,
+							  bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
 				AddressDomain, regs [(int) I386Register.EIP].GetValue ());
@@ -712,12 +717,18 @@ namespace Mono.Debugger.Backends
 			TargetAddress frame_pointer = new TargetAddress (
 				AddressDomain, regs [(int) I386Register.EBP].GetValue ());
 
-			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
+			Console.WriteLine ("CREATE FRAME: {0} {1} {2}", address, stack_pointer,
+					   frame_pointer);
+
+			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
+					    adjust_retaddr);
 		}
 
 		internal override StackFrame GetLMF (Thread thread)
 		{
 			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
+
+			Console.WriteLine ("GET LMF: {0}", lmf);
 
 			TargetBinaryReader reader = thread.ReadMemory (lmf, 32).GetReader ();
 
@@ -727,6 +738,9 @@ namespace Mono.Debugger.Backends
 			TargetAddress edi = reader.ReadTargetAddress ();
 			TargetAddress esi = reader.ReadTargetAddress ();
 			TargetAddress ebp = reader.ReadTargetAddress ();
+
+			Console.WriteLine ("GET LMF #1: {0} - {1} {2} {3} {4}", lmf,
+					   ebx, edi, esi, ebp);
 
 			Registers regs = new Registers (this);
 			regs [(int) I386Register.EBX].SetValue (lmf + 12, ebx);
@@ -745,7 +759,7 @@ namespace Mono.Debugger.Backends
 
 			ebp -= 4;
 
-			return CreateFrame (thread, new_eip, new_esp, new_ebp, regs);
+			return CreateFrame (thread, new_eip, new_esp, new_ebp, regs, true);
 		}
 	}
 }

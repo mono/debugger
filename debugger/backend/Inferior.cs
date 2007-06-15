@@ -172,6 +172,9 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_pop_registers (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr registers);
+
+		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_set_notification (IntPtr handle, long address);
 
 		internal enum ChildEventType {
@@ -1226,6 +1229,29 @@ namespace Mono.Debugger.Backends
 		{
 			pushed_regs = false;
 			check_error (mono_debugger_server_pop_registers (server_handle));
+		}
+
+		internal Registers GetCallbackFrame (TargetAddress stack_pointer, bool exact_match)
+		{
+			IntPtr buffer = IntPtr.Zero;
+			try {
+				int count = arch.CountRegisters;
+				int buffer_size = count * 8;
+				buffer = Marshal.AllocHGlobal (buffer_size);
+				TargetError result = mono_debugger_server_get_callback_frame (
+					server_handle, stack_pointer.Address, exact_match, buffer);
+				Console.WriteLine ("GET CALLBACK FRAME: {0}", result);
+				if (result == TargetError.NoCallbackFrame)
+					return null;
+				check_error (result);
+				long[] retval = new long [count];
+				Marshal.Copy (buffer, retval, 0, count);
+
+				return new Registers (arch, retval);
+			} finally {
+				if (buffer != IntPtr.Zero)
+					Marshal.FreeHGlobal (buffer);
+			}
 		}
 
 		internal void SetNotificationAddress (TargetAddress notification)

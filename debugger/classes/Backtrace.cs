@@ -88,10 +88,37 @@ namespace Mono.Debugger
 			}
 		}
 
+		private bool TryCallback (ThreadServant target, StackFrame last_frame, bool exact_match)
+		{
+			StackFrame new_frame = null;
+			try{
+				new_frame = target.Architecture.GetCallbackFrame (
+					target, last_frame, exact_match);
+			} catch (TargetException) {
+				return false;
+			}
+
+			if (new_frame == null)
+				return false;
+
+			Console.WriteLine ("TRY CALLBACK: {0} {1} {2} {3}", new_frame,
+					   new_frame.TargetAddress, new_frame.StackPointer,
+					   new_frame.FrameAddress);
+
+			AddFrame (new StackFrame (
+				target.Client, new_frame.TargetAddress, new_frame.StackPointer,
+				new_frame.FrameAddress, new_frame.Registers, target.NativeLanguage,
+				new Symbol ("<method called from mdb>", new_frame.TargetAddress, 0)));
+			AddFrame (new_frame);
+			return true;
+		}
+
 		internal bool TryUnwind (ThreadServant target, Mode mode, TargetAddress until)
 		{
 			StackFrame new_frame = null;
 			if ((mode == Mode.Managed) && !last_frame.Language.IsManaged) {
+				if (TryCallback (target, last_frame, false))
+					return true;
 				new_frame = TryLMF (target);
 			} else {
 				try {
@@ -99,6 +126,12 @@ namespace Mono.Debugger
 				} catch (TargetException) {
 				}
 			}
+
+			Console.WriteLine ("TRY UNWIND: {0} {1} {2}", last_frame, new_frame != null,
+					   new_frame);
+
+			if ((new_frame != null) && TryCallback (target, new_frame, true))
+				return true;
 
 			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
 				if (!last_frame.Language.IsManaged && (mode != Mode.Native))

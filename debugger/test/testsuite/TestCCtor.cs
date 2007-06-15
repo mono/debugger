@@ -23,7 +23,7 @@ namespace Mono.Debugger.Tests
 		int bpt_bar_cctor;
 
 		[Test]
-		[Category("ManagedTypes")]
+		[Category("Test")]
 		public void Main ()
 		{
 			bpt_x_cctor = AssertBreakpoint (LineXCCtor);
@@ -62,8 +62,12 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_bar_cctor, "Bar..cctor()", LineBarCCtor);
 
 			Backtrace bt_bar_cctor = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
-			Assert.IsTrue (bt_bar_cctor.Count >= 1);
+			Console.WriteLine ("TEST: {0}", bt_bar_cctor.Count);
+			foreach (StackFrame frame in bt_bar_cctor.Frames)
+				Console.WriteLine (frame);
+			Assert.IsTrue (bt_bar_cctor.Count == 5);
 			AssertFrame (bt_bar_cctor [0], 0, "Bar..cctor()", LineBarCCtor);
+			AssertFrame (bt_bar_cctor [4], 4, "X.Main()", LineMain + 1);
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("BAR STATIC CCTOR!");

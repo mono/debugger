@@ -208,6 +208,9 @@ namespace Mono.Debugger.Backends
 
 		public abstract string PrintType (Style style, TargetType type);
 
+		internal abstract Registers GetCallbackFrame (TargetAddress stack_pointer,
+							      bool exact_match);
+
 		public abstract void RuntimeInvoke (TargetFunctionType function,
 						    TargetClassObject object_argument,
 						    TargetObject[] param_objects,

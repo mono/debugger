@@ -415,6 +415,17 @@ mono_debugger_server_pop_registers (ServerHandle *handle)
 	return (* global_vtable->pop_registers) (handle);
 }
 
+ServerCommandError
+mono_debugger_server_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
+					 gboolean exact_match, guint64 *registers)
+{
+	if (!global_vtable->get_callback_frame)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->get_callback_frame) (
+		handle, stack_pointer, exact_match, registers);
+}
+
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;
 static int pending_sigint = 0;

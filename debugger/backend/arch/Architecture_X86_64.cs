@@ -578,7 +578,7 @@ namespace Mono.Debugger.Backends
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -610,7 +610,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
 			}
 
 			// push %ebp
@@ -633,7 +633,7 @@ namespace Mono.Debugger.Backends
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
 			}
 
 			if (code [pos++] != 0x48) {
@@ -678,7 +678,7 @@ namespace Mono.Debugger.Backends
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, TargetMemoryAccess memory)
@@ -786,7 +786,8 @@ namespace Mono.Debugger.Backends
 			return address;
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, Registers regs,
+							  bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
 				AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
@@ -795,7 +796,8 @@ namespace Mono.Debugger.Backends
 			TargetAddress frame_pointer = new TargetAddress (
 				AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
-			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs);
+			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
+					    adjust_retaddr);
 		}
 
 
@@ -832,7 +834,7 @@ namespace Mono.Debugger.Backends
 
 			rbp -= 8;
 
-			return CreateFrame (thread, new_rip, rsp, new_rbp, regs);
+			return CreateFrame (thread, new_rip, rsp, new_rbp, regs, true);
 		}
 	}
 }

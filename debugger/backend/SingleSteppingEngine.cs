@@ -1292,11 +1292,22 @@ namespace Mono.Debugger.Backends
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers cb_registers = inferior.GetRegisters ();
 
+			StackFrame parent_frame;
+			if (callback_stack.Count > 0) {
+				StackData parent = (StackData) callback_stack.Peek ();
+				parent_frame = parent.CallbackFrame;
+			} else {
+				parent_frame = current_frame;
+			}
+
+			Language language = parent_frame != null ?
+				parent_frame.Language : process.NativeLanguage;
+
 			StackFrame callback_frame = new StackFrame (
 				thread, iframe.Address, iframe.StackPointer,
-				iframe.FrameAddress, cb_registers, process.NativeLanguage,
+				iframe.FrameAddress, cb_registers, language,
 				new Symbol ("<method called from mdb>", iframe.Address, 0));
-			callback_frame.ParentFrame = current_frame;
+			callback_frame.ParentFrame = parent_frame;
 
 			//
 			// Save current state.
@@ -1604,14 +1615,16 @@ namespace Mono.Debugger.Backends
 
 				current_backtrace = new Backtrace (current_frame);
 
+#if FIXME
 				foreach (StackData stack in callback_stack) {
 					StackFrame rti_frame = stack.CallbackFrame;
 
-					current_backtrace.GetBacktrace (
-						this, mode, rti_frame.StackPointer, max_frames);
-
 					current_backtrace.AddFrame (rti_frame);
+					current_backtrace.AddFrame (rti_frame.ParentFrame);
+					current_backtrace.GetBacktrace (
+						this, mode, until, max_frames);
 				}
+#endif
 
 				current_backtrace.GetBacktrace (this, mode, until, max_frames);
 
@@ -1742,6 +1755,14 @@ namespace Mono.Debugger.Backends
 		{
 			return (string) SendCommand (delegate {
 				return inferior.ReadString (address);
+			});
+		}
+
+		internal override Registers GetCallbackFrame (TargetAddress stack_pointer,
+							      bool exact_match)
+		{
+			return (Registers) SendCommand (delegate {
+				return inferior.GetCallbackFrame (stack_pointer, exact_match);
 			});
 		}
 

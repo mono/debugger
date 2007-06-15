@@ -15,35 +15,31 @@
 
 struct ArchInfo
 {
-	guint32 call_address;
-	guint64 callback_argument;
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
-	INFERIOR_REGS_TYPE *saved_regs;
-	INFERIOR_FPREGS_TYPE *saved_fpregs;
-	int saved_signal;
-	GPtrArray *rti_stack;
+	GPtrArray *callback_stack;
 	guint64 dr_control, dr_status;
 	int dr_regs [DR_NADDR];
 };
 
 typedef struct
 {
-	INFERIOR_REGS_TYPE *saved_regs;
-	INFERIOR_FPREGS_TYPE *saved_fpregs;
-	int saved_signal;
-	guint32 call_address;
-	guint32 exc_address;
-	gboolean debug;
+	INFERIOR_REGS_TYPE saved_regs;
+	INFERIOR_FPREGS_TYPE saved_fpregs;
 	guint64 callback_argument;
-} RuntimeInvokeData;
+	guint32 call_address;
+	guint32 stack_pointer;
+	guint32 exc_address;
+	int saved_signal;
+	gboolean debug;
+} CallbackData;
 
 ArchInfo *
 x86_arch_initialize (void)
 {
 	ArchInfo *arch = g_new0 (ArchInfo, 1);
 
-	arch->rti_stack = g_ptr_array_new ();
+	arch->callback_stack = g_ptr_array_new ();
 
 	return arch;
 }
@@ -51,9 +47,7 @@ x86_arch_initialize (void)
 void
 x86_arch_finalize (ArchInfo *arch)
 {
-	g_ptr_array_free (arch->rti_stack, TRUE);
-	g_free (arch->saved_regs);
-     	g_free (arch->saved_fpregs);
+	g_ptr_array_free (arch->callback_stack, TRUE);
 	g_free (arch);
 }
 
@@ -125,6 +119,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	guint32 new_esp, call_disp;
+	CallbackData *cdata;
 
 	guint8 code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
 			  0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
@@ -132,16 +127,19 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 			  0x00, 0xcc };
 	int size = sizeof (code);
 
-	if (arch->saved_regs)
-		return COMMAND_ERROR_RECURSIVE_CALL;
+	cdata = g_new0 (CallbackData, 1);
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
-	arch->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
-	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
-	arch->call_address = new_esp + 26;
-	arch->callback_argument = callback_argument;
-	arch->saved_signal = handle->inferior->last_signal;
+	g_message (G_STRLOC ": %x - %x - %x", INFERIOR_REG_EIP (arch->current_regs),
+		   INFERIOR_REG_ESP (arch->current_regs), new_esp);
+
+	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
+	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
+	cdata->call_address = new_esp + 26;
+	cdata->stack_pointer = new_esp - 16;
+	cdata->callback_argument = callback_argument;
+	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
 	call_disp = (int) method_address - new_esp;
@@ -157,6 +155,11 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 		return result;
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
+
+	g_message (G_STRLOC ": %p - %x - %x - %x - %x", cdata, new_esp, cdata->call_address,
+		   cdata->stack_pointer, INFERIOR_REG_EIP (cdata->saved_regs));
+
+	g_ptr_array_add (arch->callback_stack, cdata);
 
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
@@ -178,6 +181,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	guint32 new_esp, call_disp;
+	CallbackData *cdata;
 
 	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
 					0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
@@ -189,16 +193,19 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	memcpy (code, static_code, static_size);
 	strcpy ((char *) (code + static_size), string_argument);
 
-	if (arch->saved_regs)
-		return COMMAND_ERROR_RECURSIVE_CALL;
+	cdata = g_new0 (CallbackData, 1);
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
-	arch->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
-	arch->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
-	arch->call_address = new_esp + 31;
-	arch->callback_argument = callback_argument;
-	arch->saved_signal = handle->inferior->last_signal;
+	g_message (G_STRLOC ": %x - %x", INFERIOR_REG_EIP (arch->current_regs),
+		   INFERIOR_REG_ESP (arch->current_regs));
+
+	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
+	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
+	cdata->call_address = new_esp + 31;
+	cdata->stack_pointer = new_esp - 20;
+	cdata->callback_argument = callback_argument;
+	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
 	call_disp = (int) method_address - new_esp;
@@ -216,6 +223,8 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
+	g_ptr_array_add (arch->callback_stack, cdata);
+
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -229,16 +238,16 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
-	RuntimeInvokeData *rdata;
+	CallbackData *cdata;
 	guint32 new_esp;
 
 	int size = 57;
 	guint8 *code = g_malloc0 (size);
 
-	if (arch->saved_regs)
-		return COMMAND_ERROR_RECURSIVE_CALL;
-
 	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
+
+	g_message (G_STRLOC ": %x - %x", INFERIOR_REG_EIP (arch->current_regs),
+		   INFERIOR_REG_ESP (arch->current_regs));
 
 	*((guint32 *) code) = new_esp + size - 1;
 	*((guint64 *) (code+4)) = new_esp + 20;
@@ -254,13 +263,14 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+52)) = INFERIOR_REG_EIP (arch->current_regs);
 	*((guint8 *) (code+56)) = 0xcc;
 
-	rdata = g_new0 (RuntimeInvokeData, 1);
-	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
-	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
-	rdata->call_address = new_esp + size;
-	rdata->exc_address = 0;
-	rdata->callback_argument = callback_argument;
-	rdata->saved_signal = handle->inferior->last_signal;
+	cdata = g_new0 (CallbackData, 1);
+	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
+	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
+	cdata->call_address = new_esp + size;
+	cdata->stack_pointer = new_esp;
+	cdata->exc_address = 0;
+	cdata->callback_argument = callback_argument;
+	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
 	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
@@ -271,7 +281,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	INFERIOR_REG_EIP (arch->current_regs) = method_address;
 	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
 
-	g_ptr_array_add (arch->rti_stack, rdata);
+	g_ptr_array_add (arch->callback_stack, cdata);
 
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
@@ -289,7 +299,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
-	RuntimeInvokeData *rdata;
+	CallbackData *cdata;
 	guint32 new_esp;
 	int i;
 
@@ -305,9 +315,6 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 
 	memcpy (code, static_code, static_size);
 	memcpy (code + static_size, blob_data, blob_size);
-
-	if (arch->saved_regs)
-		return COMMAND_ERROR_RECURSIVE_CALL;
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 	blob_start = new_esp + static_size;
@@ -325,14 +332,14 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	*((guint32 *) (code+12)) = new_esp + static_size + blob_size + 4;
 	*((guint32 *) (code+16)) = new_esp + 20;
 
-	rdata = g_new0 (RuntimeInvokeData, 1);
-	rdata->saved_regs = g_memdup (&arch->current_regs, sizeof (arch->current_regs));
-	rdata->saved_fpregs = g_memdup (&arch->current_fpregs, sizeof (arch->current_fpregs));
-	rdata->call_address = new_esp + static_size;
-	rdata->exc_address = new_esp + 20;
-	rdata->callback_argument = callback_argument;
-	rdata->debug = debug;
-	rdata->saved_signal = handle->inferior->last_signal;
+	cdata = g_new0 (CallbackData, 1);
+	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
+	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
+	cdata->call_address = new_esp + static_size;
+	cdata->exc_address = new_esp + 20;
+	cdata->callback_argument = callback_argument;
+	cdata->debug = debug;
+	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
 	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
@@ -343,7 +350,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	INFERIOR_REG_EIP (arch->current_regs) = invoke_method;
 	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
 
-	g_ptr_array_add (arch->rti_stack, rdata);
+	g_ptr_array_add (arch->callback_stack, cdata);
 
 	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
 	if (result != COMMAND_ERROR_NONE)
@@ -369,13 +376,13 @@ check_breakpoint (ServerHandle *handle, guint64 address, guint64 *retval)
 	return TRUE;
 }
 
-static RuntimeInvokeData *
-get_runtime_invoke_data (ArchInfo *arch)
+static CallbackData *
+get_callback_data (ArchInfo *arch)
 {
-	if (!arch->rti_stack->len)
+	if (!arch->callback_stack->len)
 		return NULL;
 
-	return g_ptr_array_index (arch->rti_stack, arch->rti_stack->len - 1);
+	return g_ptr_array_index (arch->callback_stack, arch->callback_stack->len - 1);
 }
 
 static ServerCommandError
@@ -404,7 +411,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
-	RuntimeInvokeData *rdata;
+	CallbackData *cdata;
+	guint64 code;
 	int i;
 
 	x86_arch_get_registers (handle);
@@ -441,42 +449,56 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		return STOP_ACTION_BREAKPOINT_HIT;
 	}
 
-	rdata = get_runtime_invoke_data (arch);
-	if (rdata && (rdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
+	cdata = get_callback_data (arch);
+	if (cdata && (cdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
 		guint64 exc_object;
 
-		if (_server_ptrace_set_registers (inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
+		if (_server_ptrace_set_registers (inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
-		if (_server_ptrace_set_fp_registers (inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
+		if (_server_ptrace_set_fp_registers (inferior, &cdata->saved_fpregs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
-		*callback_arg = rdata->callback_argument;
+		*callback_arg = cdata->callback_argument;
 		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
 
-		if (rdata->exc_address &&
-		    (server_ptrace_peek_word (handle, rdata->exc_address, &exc_object) != COMMAND_ERROR_NONE))
+		if (cdata->exc_address &&
+		    (server_ptrace_peek_word (handle, cdata->exc_address, &exc_object) != COMMAND_ERROR_NONE))
 			g_error (G_STRLOC ": Can't get exc object");
 
 		*retval2 = (guint32) exc_object;
 
-		inferior->last_signal = rdata->saved_signal;
-		g_free (rdata->saved_regs);
-		g_free (rdata->saved_fpregs);
-		g_ptr_array_remove (arch->rti_stack, rdata);
+		inferior->last_signal = cdata->saved_signal;
+		g_ptr_array_remove (arch->callback_stack, cdata);
 
 		x86_arch_get_registers (handle);
 
-		if (rdata->debug) {
+		if (cdata->debug) {
 			*retval = 0;
-			g_free (rdata);
+			g_free (cdata);
 			return STOP_ACTION_CALLBACK_COMPLETED;
 		}
 
-		g_free (rdata);
+		g_free (cdata);
 		return STOP_ACTION_CALLBACK;
 	}
 
+#if defined(__linux__) || defined(__FreeBSD__)
+	if (stopsig != SIGTRAP)
+		return STOP_ACTION_STOPPED;
+#endif
+
+	if (server_ptrace_peek_word (handle, GPOINTER_TO_SIZE (INFERIOR_REG_EIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
+		return STOP_ACTION_STOPPED;
+
+	if ((code & 0xff) == 0xcc) {
+		*retval = 0;
+		return STOP_ACTION_BREAKPOINT_HIT;
+	}
+
+	return STOP_ACTION_STOPPED;
+
+#if FIXME
 	if (!arch->call_address || arch->call_address != INFERIOR_REG_EIP (arch->current_regs)) {
 		guint64 code;
 
@@ -519,6 +541,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	x86_arch_get_registers (handle);
 
 	return STOP_ACTION_CALLBACK;
+#endif
 }
 
 static ServerCommandError
@@ -933,25 +956,72 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 static ServerCommandError
 server_ptrace_abort_invoke (ServerHandle *handle)
 {
-	RuntimeInvokeData *rdata;
+	CallbackData *cdata;
 
-	rdata = get_runtime_invoke_data (handle->arch);
-	if (!rdata)
+	cdata = get_callback_data (handle->arch);
+	if (!cdata)
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 
-	if (_server_ptrace_set_registers (handle->inferior, rdata->saved_regs) != COMMAND_ERROR_NONE)
+	if (_server_ptrace_set_registers (handle->inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
-	if (_server_ptrace_set_fp_registers (handle->inferior, rdata->saved_fpregs) != COMMAND_ERROR_NONE)
+	if (_server_ptrace_set_fp_registers (handle->inferior, &cdata->saved_fpregs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
 
-	handle->inferior->last_signal = rdata->saved_signal;
-	g_free (rdata->saved_regs);
-	g_free (rdata->saved_fpregs);
-	g_ptr_array_remove (handle->arch->rti_stack, rdata);
+	handle->inferior->last_signal = cdata->saved_signal;
+	g_ptr_array_remove (handle->arch->callback_stack, cdata);
 
 	x86_arch_get_registers (handle);
-	g_free (rdata);
+	g_free (cdata);
 
 	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
+				  gboolean exact_match, guint64 *registers)
+{
+	int i;
+
+	g_message (G_STRLOC ": %d - %Lx - %d", handle->arch->callback_stack->len,
+		   stack_pointer, exact_match);
+
+	for (i = 0; i < handle->arch->callback_stack->len; i++) {
+		CallbackData *cdata = g_ptr_array_index (handle->arch->callback_stack, i);
+		g_message (G_STRLOC ": %p - %x,%Lx - %d", cdata, cdata->stack_pointer, stack_pointer,
+			   exact_match);
+
+		if (exact_match) {
+			if (cdata->stack_pointer != stack_pointer)
+				continue;
+		} else {
+			if (cdata->stack_pointer < stack_pointer)
+				continue;
+		}
+
+		g_message (G_STRLOC ": %p - %x,%x,%x", cdata, INFERIOR_REG_EIP (cdata->saved_regs),
+			   cdata->call_address, cdata->stack_pointer);
+
+		registers [DEBUGGER_REG_EBX] = (guint32) INFERIOR_REG_EBX (cdata->saved_regs);
+		registers [DEBUGGER_REG_ECX] = (guint32) INFERIOR_REG_ECX (cdata->saved_regs);
+		registers [DEBUGGER_REG_EDX] = (guint32) INFERIOR_REG_EDX (cdata->saved_regs);
+		registers [DEBUGGER_REG_ESI] = (guint32) INFERIOR_REG_ESI (cdata->saved_regs);
+		registers [DEBUGGER_REG_EDI] = (guint32) INFERIOR_REG_EDI (cdata->saved_regs);
+		registers [DEBUGGER_REG_EBP] = (guint32) INFERIOR_REG_EBP (cdata->saved_regs);
+		registers [DEBUGGER_REG_EAX] = (guint32) INFERIOR_REG_EAX (cdata->saved_regs);
+		registers [DEBUGGER_REG_DS] = (guint32) INFERIOR_REG_DS (cdata->saved_regs);
+		registers [DEBUGGER_REG_ES] = (guint32) INFERIOR_REG_ES (cdata->saved_regs);
+		registers [DEBUGGER_REG_FS] = (guint32) INFERIOR_REG_FS (cdata->saved_regs);
+		registers [DEBUGGER_REG_GS] = (guint32) INFERIOR_REG_GS (cdata->saved_regs);
+		registers [DEBUGGER_REG_EIP] = (guint32) INFERIOR_REG_EIP (cdata->saved_regs);
+		registers [DEBUGGER_REG_CS] = (guint32) INFERIOR_REG_CS (cdata->saved_regs);
+		registers [DEBUGGER_REG_EFLAGS] = (guint32) INFERIOR_REG_EFLAGS (cdata->saved_regs);
+		registers [DEBUGGER_REG_ESP] = (guint32) INFERIOR_REG_ESP (cdata->saved_regs);
+		registers [DEBUGGER_REG_SS] = (guint32) INFERIOR_REG_SS (cdata->saved_regs);
+
+		return COMMAND_ERROR_NONE;
+	}
+
+	g_message (G_STRLOC);
+	return COMMAND_ERROR_NO_CALLBACK_FRAME;
 }
