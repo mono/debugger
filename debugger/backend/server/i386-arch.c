@@ -1,4 +1,3 @@
-#define DEBUG
 #include <server.h>
 #include <breakpoints.h>
 #include <sys/stat.h>
@@ -261,7 +260,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
 	cdata->call_address = new_esp + size;
-	cdata->stack_pointer = new_esp;
+	cdata->stack_pointer = new_esp + 4;
 	cdata->exc_address = 0;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
