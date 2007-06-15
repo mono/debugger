@@ -717,9 +717,6 @@ namespace Mono.Debugger.Backends
 			TargetAddress frame_pointer = new TargetAddress (
 				AddressDomain, regs [(int) I386Register.EBP].GetValue ());
 
-			Console.WriteLine ("CREATE FRAME: {0} {1} {2}", address, stack_pointer,
-					   frame_pointer);
-
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
 					    adjust_retaddr);
 		}
@@ -727,8 +724,6 @@ namespace Mono.Debugger.Backends
 		internal override StackFrame GetLMF (Thread thread)
 		{
 			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
-
-			Console.WriteLine ("GET LMF: {0}", lmf);
 
 			TargetBinaryReader reader = thread.ReadMemory (lmf, 32).GetReader ();
 
@@ -738,9 +733,6 @@ namespace Mono.Debugger.Backends
 			TargetAddress edi = reader.ReadTargetAddress ();
 			TargetAddress esi = reader.ReadTargetAddress ();
 			TargetAddress ebp = reader.ReadTargetAddress ();
-
-			Console.WriteLine ("GET LMF #1: {0} - {1} {2} {3} {4}", lmf,
-					   ebx, edi, esi, ebp);
 
 			Registers regs = new Registers (this);
 			regs [(int) I386Register.EBX].SetValue (lmf + 12, ebx);

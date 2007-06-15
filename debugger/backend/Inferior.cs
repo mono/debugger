@@ -1240,7 +1240,6 @@ namespace Mono.Debugger.Backends
 				buffer = Marshal.AllocHGlobal (buffer_size);
 				TargetError result = mono_debugger_server_get_callback_frame (
 					server_handle, stack_pointer.Address, exact_match, buffer);
-				Console.WriteLine ("GET CALLBACK FRAME: {0}", result);
 				if (result == TargetError.NoCallbackFrame)
 					return null;
 				check_error (result);
