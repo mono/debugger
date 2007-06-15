@@ -131,8 +131,10 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
+#ifdef DEBUG
 	g_message (G_STRLOC ": %x - %x - %x", INFERIOR_REG_EIP (arch->current_regs),
 		   INFERIOR_REG_ESP (arch->current_regs), new_esp);
+#endif
 
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
@@ -156,8 +158,10 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
+#ifdef DEBUG
 	g_message (G_STRLOC ": %p - %x - %x - %x - %x", cdata, new_esp, cdata->call_address,
 		   cdata->stack_pointer, INFERIOR_REG_EIP (cdata->saved_regs));
+#endif
 
 	g_ptr_array_add (arch->callback_stack, cdata);
 
@@ -197,8 +201,10 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 	new_esp = (guint32) INFERIOR_REG_ESP (arch->current_regs) - size;
 
+#ifdef DEBUG
 	g_message (G_STRLOC ": %x - %x", INFERIOR_REG_EIP (arch->current_regs),
 		   INFERIOR_REG_ESP (arch->current_regs));
+#endif
 
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
@@ -246,8 +252,10 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 
 	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
 
+#ifdef DEBUG
 	g_message (G_STRLOC ": %x - %x", INFERIOR_REG_EIP (arch->current_regs),
 		   INFERIOR_REG_ESP (arch->current_regs));
+#endif
 
 	*((guint32 *) code) = new_esp + size - 1;
 	*((guint64 *) (code+4)) = new_esp + 20;
@@ -983,13 +991,17 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 {
 	int i;
 
+#ifdef DEBUG
 	g_message (G_STRLOC ": %d - %Lx - %d", handle->arch->callback_stack->len,
 		   stack_pointer, exact_match);
+#endif
 
 	for (i = 0; i < handle->arch->callback_stack->len; i++) {
 		CallbackData *cdata = g_ptr_array_index (handle->arch->callback_stack, i);
+#ifdef DEBUG
 		g_message (G_STRLOC ": %p - %x,%Lx - %d", cdata, cdata->stack_pointer, stack_pointer,
 			   exact_match);
+#endif
 
 		if (exact_match) {
 			if (cdata->stack_pointer != stack_pointer)
@@ -999,8 +1011,10 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 				continue;
 		}
 
+#ifdef DEBUG
 		g_message (G_STRLOC ": %p - %x,%x,%x", cdata, INFERIOR_REG_EIP (cdata->saved_regs),
 			   cdata->call_address, cdata->stack_pointer);
+#endif
 
 		registers [DEBUGGER_REG_EBX] = (guint32) INFERIOR_REG_EBX (cdata->saved_regs);
 		registers [DEBUGGER_REG_ECX] = (guint32) INFERIOR_REG_ECX (cdata->saved_regs);
@@ -1022,6 +1036,5 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 		return COMMAND_ERROR_NONE;
 	}
 
-	g_message (G_STRLOC);
 	return COMMAND_ERROR_NO_CALLBACK_FRAME;
 }
