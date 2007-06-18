@@ -1180,8 +1180,9 @@ namespace Mono.Debugger.Backends
 			inferior.Step ();
 		}
 
-		void do_trampoline (ILanguageBackend language, TargetAddress trampoline,
-				    TrampolineHandler handler, bool is_start)
+		void do_trampoline (ILanguageBackend language, TargetAddress call,
+				    TargetAddress trampoline, TrampolineHandler handler,
+				    bool is_start)
 		{
 			TargetAddress compile = language.CompileMethodFunc;
 
@@ -1209,8 +1210,8 @@ namespace Mono.Debugger.Backends
 			}
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} doing trampoline: {1} {2}", this, current_operation,
-				      trampoline);
+				      "{0} doing trampoline: {1} {2} {3}", this, current_operation,
+				      call, trampoline);
 
 			PushOperation (new OperationTrampoline (this, trampoline, handler));
 			return;
@@ -2536,8 +2537,38 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
+		bool check_trampolines ()
+		{
+			if (is_trampoline || !sse.process.IsManaged)
+				return false;
+
+			int insn_size;
+			TargetAddress call = inferior.Architecture.GetCallTarget (
+				inferior, inferior.CurrentFrame, out insn_size);
+			if (call.IsNull)
+				return false;
+
+			bool is_start;
+			TargetAddress trampoline = sse.process.MonoLanguage.GetTrampolineAddress (
+				inferior, call, out is_start);
+
+			if (trampoline.IsNull)
+				return false;
+
+			Console.WriteLine ("TRAMPOLINE: {0}", trampoline);
+			sse.PushOperation (new OperationTrampoline (sse, trampoline, null));
+			return true;
+		}
+
 		protected override void DoExecute ()
 		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} stepping over breakpoint: {1} {2}", sse,
+				      is_trampoline, until);
+
+			if (check_trampolines ())
+				return;
+
 			sse.process.AcquireGlobalThreadLock (sse);
 			inferior.DisableBreakpoint (Index);
 
@@ -2554,32 +2585,7 @@ namespace Mono.Debugger.Backends
 				return;
 			}
 
-			Method method = sse.Lookup (inferior.CurrentFrame);
-
-			if (method == null) {
-				inferior.Step ();
-				return;
-			}
-
-			ILanguageBackend language = method.Module.LanguageBackend;
-
-			int insn_size;
-			TargetAddress current_frame = inferior.CurrentFrame;
-			TargetAddress call = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out insn_size);
-			if (call.IsNull) {
-				inferior.Step ();
-				return;
-			}
-
-			bool is_start;
-			TargetAddress trampoline_address = language.GetTrampolineAddress (
-				inferior, call, out is_start);
-
-			if (!trampoline_address.IsNull)
-				sse.do_trampoline (language, trampoline_address, null, is_start);
-			else
-				inferior.Step ();
+			inferior.Step ();
 		}
 
 		bool ReleaseThreadLock (Inferior.ChildEvent cevent)
@@ -2683,7 +2689,7 @@ namespace Mono.Debugger.Backends
 				 */
 				if (!trampoline.IsNull) {
 					sse.do_trampoline (
-						language, trampoline, TrampolineHandler, is_start);
+						language, call, trampoline, TrampolineHandler, is_start);
 					return true;
 				}
 			}
@@ -3598,6 +3604,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			completed = true;
+
 			Method method = sse.Lookup (address);
 			Report.Debug (DebugFlags.SSE,
 				      "{0} compiled method: {1} {2} {3} {4} {5}",
