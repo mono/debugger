@@ -358,6 +358,7 @@ namespace Mono.Debugger.Backends
 
 		public override string PrintRegisters (StackFrame frame)
 		{
+			Registers registers = frame.Registers;
 			return String.Format (
 				"EAX={0}  EBX={1}  ECX={2}  EDX={3}  ESI={4}  EDI={5}\n" +
 				"EBP={6}  ESP={7}  EIP={8}  EFLAGS={9}\n",

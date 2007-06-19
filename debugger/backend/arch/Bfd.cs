@@ -916,30 +916,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetAddress ILanguageBackend.RuntimeInvokeFunc {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
-		TargetAddress ILanguageBackend.CompileMethodFunc {
-			get {
-				return TargetAddress.Null;
-			}
-		}
-
-		TargetAddress ILanguageBackend.GetVirtualMethodFunc {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
-		TargetAddress ILanguageBackend.GetBoxedObjectFunc {
-			get {
-				throw new InvalidOperationException ();
-			}
-		}
-
 		TargetAddress ILanguageBackend.GetTrampolineAddress (TargetMemoryAccess memory,
 								     TargetAddress address,
 								     out bool is_start)
