@@ -713,7 +713,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
 	cdata->call_address = new_rsp + 16;
-	cdata->stack_pointer = new_rsp - 16;
+	cdata->stack_pointer = new_rsp + 8;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
@@ -771,7 +771,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
 	cdata->call_address = new_rsp + 16;
-	cdata->stack_pointer = new_rsp - 20;
+	cdata->stack_pointer = new_rsp + 8;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
@@ -782,7 +782,8 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
-	INFERIOR_REG_RSI (arch->current_regs) = new_rsp + static_size;
+	INFERIOR_REG_RSI (arch->current_regs) = data_argument;
+	INFERIOR_REG_RDX (arch->current_regs) = new_rsp + static_size;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
 
 	g_ptr_array_add (arch->callback_stack, cdata);
