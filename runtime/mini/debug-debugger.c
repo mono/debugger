@@ -171,27 +171,20 @@ debugger_remove_class_init_callback (guint64 index)
 	return 0;
 }
 
-static gpointer
-debugger_compile_method_cb (MonoMethod *method)
-{
-	gpointer retval;
-
-	mono_debugger_lock ();
-	retval = mono_compile_method (method);
-	mono_debugger_unlock ();
-
-	mono_debugger_notification_function (
-		MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) retval, 0);
-
-	return retval;
-}
-
 static guint64
 debugger_compile_method (guint64 method_arg)
 {
 	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER ((gsize) method_arg);
+	gpointer addr;
 
-	return (guint64) (gsize) debugger_compile_method_cb (method);
+	mono_debugger_lock ();
+	addr = mono_compile_method (method);
+	mono_debugger_unlock ();
+
+	mono_debugger_notification_function (
+		MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) addr, 0);
+
+	return (guint64) (gsize) addr;
 }
 
 static guint64
