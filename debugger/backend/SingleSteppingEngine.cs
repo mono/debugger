@@ -724,6 +724,10 @@ namespace Mono.Debugger.Backends
 			get { return inferior.CurrentFrame; }
 		}
 
+		protected MonoDebuggerInfo MonoDebuggerInfo {
+			get { return process.MonoManager.MonoDebuggerInfo; }
+		}
+
 		public override TargetState State {
 			get {
 				if (inferior == null)
@@ -1175,20 +1179,16 @@ namespace Mono.Debugger.Backends
 				    TargetAddress trampoline, TrampolineHandler handler,
 				    bool is_start)
 		{
-			TargetAddress compile = language.CompileMethodFunc;
-
 			Report.Debug (DebugFlags.SSE,
-				      "{0} found trampoline {1}/{3} (compile is {2}) while running {4}",
-				      this, trampoline, compile, is_start, current_operation);
+				      "{0} found trampoline {1}/{2} while running {3}",
+				      this, trampoline, is_start, current_operation);
 
 			if (is_start) {
-				Console.WriteLine ("DO TRAMPOLINE: {0}", trampoline);
-				// PushOperation (new OperationFinish (this, true, null));
 				do_continue (trampoline);
 				return;
 			}
 
-			if (compile.IsNull) {
+			if (!language.Language.IsManaged) {
 				Method method = null;
 				method = Lookup (trampoline);
 				if (!MethodHasSource (method)) {
@@ -2216,7 +2216,6 @@ namespace Mono.Debugger.Backends
 		public readonly MethodLoadedHandler Handler;
 
 		MonoLanguageBackend language;
-		MonoDebuggerInfo debugger_info;
 		int index;
 
 		bool class_resolved;
@@ -2232,11 +2231,10 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute ()
 		{
 			language = sse.process.MonoLanguage;
-			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
 
 			TargetAddress image = Function.MonoClass.File.MonoImage;
 
-			inferior.CallMethod (debugger_info.LookupClass, image.Address,
+			inferior.CallMethod (sse.MonoDebuggerInfo.LookupClass, image.Address,
 					     0, Function.MonoClass.Name, ID);
 		}
 
@@ -2253,7 +2251,7 @@ namespace Mono.Debugger.Backends
 
 				index = MonoLanguageBackend.GetUniqueID ();
 
-				inferior.CallMethod (debugger_info.GetMethodAddressOrBpt,
+				inferior.CallMethod (sse.MonoDebuggerInfo.GetMethodAddressOrBpt,
 						     method.Address, index, ID);
 
 				language.RegisterMethodLoadHandler (index, Handler);
@@ -3130,7 +3128,7 @@ namespace Mono.Debugger.Backends
 					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
 
 				inferior.CallMethod (
-					language.LookupClassFunc, image.Address, 0,
+					sse.MonoDebuggerInfo.LookupClass, image.Address, 0,
 					Function.MonoClass.Name, ID);
 				return;
 			}
@@ -3158,7 +3156,7 @@ namespace Mono.Debugger.Backends
 
 				stage = Stage.CompilingMethod;
 				inferior.CallMethod (
-					language.CompileMethodFunc, method.Address, 0, ID);
+					sse.MonoDebuggerInfo.CompileMethod, method.Address, 0, ID);
 				return;
 			}
 
@@ -3166,7 +3164,7 @@ namespace Mono.Debugger.Backends
 				sse.insert_temporary_breakpoint (invoke);
 
 				inferior.RuntimeInvoke (
-					sse.Thread, language.RuntimeInvokeFunc,
+					sse.Thread, sse.MonoDebuggerInfo.RuntimeInvoke,
 					method, instance, ParamObjects, ID, Debug);
 
 				stage = Stage.InvokedMethod;
@@ -3193,7 +3191,7 @@ namespace Mono.Debugger.Backends
 				TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
-					language.GetBoxedObjectFunc, klass.Address,
+					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
 					instance.Location.Address.Address, ID);
 				return false;
 			}
@@ -3209,7 +3207,7 @@ namespace Mono.Debugger.Backends
 
 			stage = Stage.GettingVirtualMethod;
 			inferior.CallMethod (
-				language.GetVirtualMethodFunc, instance.Location.Address.Address,
+				sse.MonoDebuggerInfo.GetVirtualMethod, instance.Location.Address.Address,
 				method.Address, ID);
 			return false;
 		}
@@ -3509,8 +3507,6 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Method;
 		public readonly MyTrampolineHandler MyTrampolineHandler;
 
-		MonoDebuggerInfo debugger_info;
-
 		public OperationCompileMethod (SingleSteppingEngine sse, TargetAddress method,
 					       MyTrampolineHandler handler)
 			: base (sse)
@@ -3521,8 +3517,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			inferior.CallMethod (debugger_info.CompileMethod, Method.Address, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.CompileMethod, Method.Address, 0, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3537,7 +3532,6 @@ namespace Mono.Debugger.Backends
 	protected class OperationRuntimeClassInit : OperationCallback
 	{
 		public readonly TargetAddress Method;
-		MonoDebuggerInfo debugger_info;
 
 		public OperationRuntimeClassInit (SingleSteppingEngine sse, TargetAddress method)
 			: base (sse)
@@ -3547,11 +3541,10 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
 			TargetAddress klass = inferior.ReadAddress (Method + 8);
 			Report.Debug (DebugFlags.SSE, "{0} runtime class init: {1} {2}",
 				      sse, Method, klass);
-			inferior.CallMethod (debugger_info.RuntimeClassInit, klass.Address, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RuntimeClassInit, klass.Address, 0, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3567,7 +3560,6 @@ namespace Mono.Debugger.Backends
 		public readonly Breakpoint Breakpoint;
 		public readonly MonoFunctionType Function;
 
-		MonoLanguageBackend language;
 		TargetAddress method, address;
 
 		public OperationInsertBreakpoint (SingleSteppingEngine sse,
@@ -3580,13 +3572,8 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			if (language == null)
-				language = sse.process.MonoLanguage;
-
 			method = Function.GetMethodAddress (sse.Thread);
-
-			inferior.CallMethod (language.CompileMethodFunc,
-						 method.Address, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.CompileMethod, method.Address, 0, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3721,7 +3708,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			inferior.CallMethod (Language.RunFinallyFunc, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3738,8 +3725,6 @@ namespace Mono.Debugger.Backends
 		public readonly Backtrace Backtrace;
 		int level = 0;
 
-		MonoDebuggerInfo debugger_info;
-
 		public OperationAbortInvocation (SingleSteppingEngine sse, Backtrace backtrace)
 			: base (sse)
 		{
@@ -3748,8 +3733,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			debugger_info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			inferior.CallMethod (debugger_info.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3762,7 +3746,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			inferior.SetRegisters (parent_frame.Registers);
-			inferior.CallMethod (debugger_info.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
 			return EventResult.Running;
 		}
 	}

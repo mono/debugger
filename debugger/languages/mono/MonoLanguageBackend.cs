@@ -956,26 +956,6 @@ namespace Mono.Debugger.Languages.Mono
 			return TargetAddress.Null;
 		}
 
-		public TargetAddress CompileMethodFunc {
-			get { return info.CompileMethod; }
-		}
-
-		public TargetAddress GetVirtualMethodFunc {
-			get { return info.GetVirtualMethod; }
-		}
-
-		public TargetAddress GetBoxedObjectFunc {
-			get { return info.GetBoxedObjectMethod; }
-		}
-
-		public TargetAddress LookupClassFunc {
-			get { return info.LookupClass; }
-		}
-
-		public TargetAddress RunFinallyFunc {
-			get { return info.RunFinally; }
-		}
-
 		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
