@@ -29,6 +29,7 @@ typedef struct
 	guint64 callback_argument;
 	guint32 call_address;
 	guint32 stack_pointer;
+	guint32 rti_frame;
 	guint32 exc_address;
 	int saved_signal;
 	gboolean debug;
@@ -237,11 +238,6 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 
 	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
 
-#ifdef DEBUG
-	g_message (G_STRLOC ": %x - %x", INFERIOR_REG_EIP (arch->current_regs),
-		   INFERIOR_REG_ESP (arch->current_regs));
-#endif
-
 	*((guint32 *) code) = new_esp + size - 1;
 	*((guint64 *) (code+4)) = new_esp + 20;
 	*((guint64 *) (code+12)) = method_argument;
@@ -324,11 +320,6 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	*((guint32 *) (code+8)) = ptr [0];
 	*((guint32 *) (code+12)) = new_esp + static_size + blob_size + 4;
 	*((guint32 *) (code+16)) = new_esp + 20;
-
-#ifdef DEBUG
-	g_message (G_STRLOC ": %x - %x,%x,%x - %x,%x,%x - %x", new_esp, static_size, blob_size, size,
-		   new_esp - size, new_esp - static_size, new_esp - 20, new_esp + size);
-#endif
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
@@ -952,15 +943,32 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 	return COMMAND_ERROR_NONE;	
 }
 
-
 static ServerCommandError
-server_ptrace_abort_invoke (ServerHandle *handle)
+server_ptrace_mark_rti_frame (ServerHandle *handle)
 {
 	CallbackData *cdata;
 
 	cdata = get_callback_data (handle->arch);
 	if (!cdata)
-		return COMMAND_ERROR_UNKNOWN_ERROR;
+		return COMMAND_ERROR_NO_CALLBACK_FRAME;
+
+	cdata->rti_frame = INFERIOR_REG_ESP (handle->arch->current_regs) + 4;
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_abort_invoke (ServerHandle *handle, guint64 stack_pointer)
+{
+	CallbackData *cdata;
+
+	cdata = get_callback_data (handle->arch);
+	if (!cdata)
+		return COMMAND_ERROR_NO_CALLBACK_FRAME;
+
+	if (cdata->rti_frame && (stack_pointer < cdata->rti_frame))
+		return COMMAND_ERROR_NO_CALLBACK_FRAME;
+	if (stack_pointer < cdata->stack_pointer)
+		return COMMAND_ERROR_NO_CALLBACK_FRAME;
 
 	if (_server_ptrace_set_registers (handle->inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 		g_error (G_STRLOC ": Can't restore registers after returning from a call");
@@ -983,31 +991,26 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 {
 	int i;
 
-#ifdef DEBUG
-	g_message (G_STRLOC ": %d - %Lx - %d", handle->arch->callback_stack->len,
-		   stack_pointer, exact_match);
-#endif
-
 	for (i = 0; i < handle->arch->callback_stack->len; i++) {
 		CallbackData *cdata = g_ptr_array_index (handle->arch->callback_stack, i);
-#ifdef DEBUG
-		g_message (G_STRLOC ": %p - %x,%Lx - %Ld - %d",
-			   cdata, cdata->stack_pointer, stack_pointer,
-			   stack_pointer - cdata->stack_pointer, exact_match);
-#endif
 
-		if (exact_match) {
-			if (cdata->stack_pointer != stack_pointer)
-				continue;
+		if (cdata->rti_frame) {
+			if (exact_match) {
+				if (cdata->rti_frame != stack_pointer)
+					continue;
+			} else {
+				if (cdata->rti_frame < stack_pointer)
+					continue;
+			}
 		} else {
-			if (cdata->stack_pointer < stack_pointer)
-				continue;
+			if (exact_match) {
+				if (cdata->stack_pointer != stack_pointer)
+					continue;
+			} else {
+				if (cdata->stack_pointer < stack_pointer)
+					continue;
+			}
 		}
-
-#ifdef DEBUG
-		g_message (G_STRLOC ": %p - %x,%x,%x", cdata, INFERIOR_REG_EIP (cdata->saved_regs),
-			   cdata->call_address, cdata->stack_pointer);
-#endif
 
 		registers [DEBUGGER_REG_EBX] = (guint32) INFERIOR_REG_EBX (cdata->saved_regs);
 		registers [DEBUGGER_REG_ECX] = (guint32) INFERIOR_REG_ECX (cdata->saved_regs);

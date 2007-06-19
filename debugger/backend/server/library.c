@@ -244,12 +244,21 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 }
 
 ServerCommandError
-mono_debugger_server_abort_invoke (ServerHandle *handle)
+mono_debugger_server_mark_rti_frame (ServerHandle *handle)
+{
+	if (!global_vtable->mark_rti_frame)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->mark_rti_frame) (handle);
+}
+
+ServerCommandError
+mono_debugger_server_abort_invoke (ServerHandle *handle, guint64 stack_pointer)
 {
 	if (!global_vtable->abort_invoke)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->abort_invoke) (handle);
+	return (* global_vtable->abort_invoke) (handle, stack_pointer);
 }
 
 ServerCommandError

@@ -34,13 +34,13 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Hello()", line_hello);
 
 			Backtrace bt = thread.GetBacktrace (-1);
-			if (bt.Count != 5)
+			if (bt.Count != 3)
 				Assert.Fail ("Backtrace has {0} frames, but expected {1}.",
 					     bt.Count, 5);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
-			AssertInternalFrame (bt [3], 3);
-			AssertFrame (bt [4], 4, "X.Main()", line_main);
+			AssertInternalFrame (bt [1], 1);
+			AssertFrame (bt [2], 2, "X.Main()", line_main);
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Hello World");
@@ -81,14 +81,14 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Hello()", line_hello);
 
 			bt = thread.GetBacktrace (-1);
-			if (bt.Count != 6)
+			if (bt.Count != 4)
 				Assert.Fail ("Backtrace has {0} frames, but expected {1}.",
 					     bt.Count, 6);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
 			AssertFrame (bt [1], 1, "X.Hello(int)", line_hello_3);
-			AssertInternalFrame (bt [4], 4);
-			AssertFrame (bt [5], 5, "X.Main()", line_main);
+			AssertInternalFrame (bt [2], 2);
+			AssertFrame (bt [3], 3, "X.Main()", line_main);
 
 			AssertExecute ("return -yes -invocation");
 			AssertTargetOutput ("Done: 7 14 2");
