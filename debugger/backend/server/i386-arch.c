@@ -488,51 +488,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	}
 
 	return STOP_ACTION_STOPPED;
-
-#if FIXME
-	if (!arch->call_address || arch->call_address != INFERIOR_REG_EIP (arch->current_regs)) {
-		guint64 code;
-
-#if defined(__linux__) || defined(__FreeBSD__)
-		if (stopsig != SIGTRAP)
-			return STOP_ACTION_STOPPED;
-#endif
-
-		if (server_ptrace_peek_word (handle, GPOINTER_TO_SIZE (INFERIOR_REG_EIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
-			return STOP_ACTION_STOPPED;
-
-		if ((code & 0xff) == 0xcc) {
-			*retval = 0;
-			return STOP_ACTION_BREAKPOINT_HIT;
-		}
-
-		return STOP_ACTION_STOPPED;
-	}
-
-	if (_server_ptrace_set_registers (inferior, arch->saved_regs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't restore registers after returning from a call");
-
-	if (_server_ptrace_set_fp_registers (inferior, arch->saved_fpregs) != COMMAND_ERROR_NONE)
-		g_error (G_STRLOC ": Can't restore FP registers after returning from a call");
-
-	*callback_arg = arch->callback_argument;
-	*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
-	*retval2 = (guint32) INFERIOR_REG_EDX (arch->current_regs);
-
-	inferior->last_signal = arch->saved_signal;
-	g_free (arch->saved_regs);
-	g_free (arch->saved_fpregs);
-
-	arch->saved_regs = NULL;
-	arch->saved_fpregs = NULL;
-	arch->saved_signal = 0;
-	arch->call_address = 0;
-	arch->callback_argument = 0;
-
-	x86_arch_get_registers (handle);
-
-	return STOP_ACTION_CALLBACK;
-#endif
 }
 
 static ServerCommandError
