@@ -1,0 +1,255 @@
+Two weeks ago, I started a larger set of changes in the
+`/branches/martin/debugger-dublin/debugger' branch.
+
+* Method, MethodSource and TargetFunctionType API changes:
+
+  The old `SourceMethod' is gone.  We now have:
+
+  - `MethodSource' which is the source code of a method; it may or may
+    not have a `LineNumberTable' associated with it' the LNT may or
+    may not be loaded in memory.
+
+  - `TargetFunctionType' is a "high-level" representation of a method;
+    each `MethodSource' has exactly one `TargetFunctionType', but a
+    `TargetFunctionType' may also describe a method without source
+    code.
+
+    A `TargetFunctionType' doesn't contain any information about how
+    the method is currently loaded in memory; it's a symbol-file
+    thing.
+
+  - `Method' is a low-level representation of a method and is
+    domain-specific.
+
+    When the application is running, each `TargetFunctionType' has one
+    `Method' for each appdomain.  In multi-appdomain applications, we
+    create a separate `Method' in each domain.
+
+    A `Method' may or may not be loaded (JITed in the appdomain).
+
+  This API change was done in preparation for full appdomain support
+  and it was also required by the new breakpoint code.
+
+* The new breakpoint code - done and fully tested.
+
+  I made substancial changes to the breakpoint code which also affects
+  the way how we deal with breakpoints in method which aren't JITed
+  yet.
+
+  Key features:
+  - There's no technical requirement to stop in Main() anymore.
+  - Prepared multi-appdomain support:
+    Each source code breakpoint location may now have multiple
+    addresses.
+  - We don't need to compile a method anymore to insert a breakpoint
+    in it.
+
+  Note: In the following, `source method' represents a method in the
+  source code, identified by either its name or a filename and line
+  number - it's basically a method in the symbol file.
+  `target method' is a method in the target application; ie. a
+  `MonoMethod *' in the JIT.  In multi-appdomain scenarios there is
+  more than one `target method' for each `source method'.
+
+  The long story:
+
+  Key component of the new breakpoint code is the new way how we
+  insert a breakpoint on a method which isn't JITed yet.
+
+  Both the old and the new code have one fundamental problem in
+  common: before we can insert a breakpoint, we need to know reliably
+  whether that method has already been JITed or not.
+
+  The new code works like this:
+  a) We acquire the metadata loader lock
+  b) We lookup the method's address in the current domain's code hash.
+  c) If it's not yet JITed, we register the JIT callback while still
+     holding the loader lock.
+  d) We release the metadata loader lock and tell the debugger the
+     address or the callback ID.
+
+  This has to be done in one single callback.
+
+  The important thing is that we need to do both the address lookup
+  and register the callback while holding the loader lock to avoid
+  race conditions.
+
+  The old code explicitly triggered a JIT compilation of the method to
+  get its address and then inserted the breakpoint on that address.
+  This is bad as it has side-effects and modifies the application's
+  flow of execution.
+
+  One key policy of the new code is not to change the application's
+  flow of execution - the application shouldn't behave any differently
+  when running inside the debugger.
+
+  As a side-effect of the new JIT interface, callbacks are now done
+  per target method and not per source method anymore.
+
+  When the user requests a breakpoint on a source method, the debugger
+  actually needs to insert multiple breakpoints since there is one
+  target method for each appdomain.
+
+  After designing the new JIT breakpoint interface, I also needed to
+  modify several things on the debugger side, especially in the
+  session code.
+
+  There is no technical requirement to stop in Main() anymore.
+  Previously, we had to stop in Main() to enable breakpoints - we now
+  do that before initializing Main()'s class to make sure breakpoints
+  are enabled before running any static .cctors.
+
+  We now automatically do this from inside the SingleSteppingEngine,
+  the code has been removed from DebuggerSession.
+
+  When starting the application, the session code inserts a breakpoint
+  on Main() - but this is just a regular breakpoint and it can be
+  disabled and/or removed by the user.
+
+  I liked the idea that the debugger stops in Main() from a usability
+  point of view, but now the user has the freedom to control this.
+
+  The biggest user-visible improvement is that we can now have
+  breakpoints before Main() is executed - ie. in static .cctors.
+
+* Recursive callbacks
+
+  This is something debugger-internal which had to be done to support
+  the next thing.
+
+  Basically, I improved the way how the debugger calls methods in the
+  target application - we now support recursive callbacks and the
+  stack unwinding code now also knows about callbacks, so we get
+  correct stack traces.
+
+* Trampolines:
+
+  After the breakpoint code was fixed, I also needed to fix the way
+  how we handle trampolines wrt stepping over breakpoints.
+
+  It's a bit difficult to explain what this code is doing and why it
+  is implemented in the way it is, but let me try ....
+
+  Let's have a look at this little test case:
+
+  =====
+  1  using System;
+
+     public class Foo
+     {
+  5      static Foo ()
+         {
+  7          Console.WriteLine ("STATIC CCTOR!");
+         }
+
+  10     public static void Hello ()
+         {
+  12         Console.WriteLine ("Hello World!");
+  13         Console.WriteLine ("Second line");
+         }
+  15 }
+
+     class X
+     {
+         static void Main ()
+         {
+  21         Foo.Hello ();
+         }
+     }
+  ====
+
+  Looks trivial, right ?  Well, it's not so trivial at all from the
+  debugger's point of view.
+
+  Let's assume we're stopped a line 21 and the user issued a `step'
+  command.
+
+  At that time, Foo.Hello() isn't JITed yet so we're actually stepping
+  into a JIT trampoline.  There's nothing special about that, we
+  manually compile the method, get its address, insert a breakpoint on
+  it and continue.
+
+  In the new code, the first thing we do here is manually initializing
+  the class `Foo' - which'll execute the static .cctor.  The new code
+  has been designed in a way that the debugger basically "expects" to
+  be interrupted while doing that, ie. that the user may have a
+  breakpoint on that .cctor.
+
+  But that's not the problem here - let's assume we already
+  initialized the class, we're done with any .cctors and already
+  compiled the method.
+
+  The real problem here is that we have a breakpoint on line 21 and if
+  we just continue, mono_magic_trampoline() would abort when
+  attempting to patch the callsite because it get confused by the
+  breakpoint instruction.
+
+  So, the code does the following:
+
+  - initialize the class `Foo' (the debugger expects to be interrupted
+    here and we correctly handle the case where the user has
+    breakpoints on the .cctor).
+  - compile the method, insert a temporary breakpoint.
+  - acquire the thread lock
+  - remove the breakpoint instruction from line 21
+  - resume the target:
+    mono_magic_trampoline() won't trigger any compilation here because
+    we already compiled the method before; all it needs to do is
+    patching the callsite for us.
+
+    [There is still a very rare deadlock possible here:
+     Although mono_magic_trampoline() will never actually compile the
+     method, it may still block when trying to lookup its address if
+     any other thread is holding the loader lock.  We should find a
+     way to explicitly pass it the address and just do the callsite
+     patching.
+     However, after extensive testing I couldn't trigger any deadlock
+     here, so let's not worry unless we run into problems.  The old
+     code was way more problematic: we were also running the .cctor
+     inside the thread lock.]
+  - re-insert the breakpoint instruction on line 21
+  - release the thread lock
+
+  The important difference to the old code is:
+  a) We support static .cctors here and correctly handle breakpoints.
+  b) We do not run the any managed code while holding the thread-lock
+
+  NOTE:
+  This is where recursive callbacks are used:
+  The debugger calls mono_runtime_class_init() and if that stops at a
+  breakpoint, the debugger is still inside a callback.  If the user
+  does anything which triggers another callback, we have a recursive
+  callback.  There's a testcase in TestCCtors.cs for that.
+
+  I think we can call this done and working.
+
+TODO (as of June 19th, 2007):
+=============================
+
+* x86_64 is currently broken; need to reflect the latest
+  call_method*() changes there.
+
+  Trivial and absolutely straightforward.
+
+* Fix `return'
+
+  Make things work correctly when crossing callback boundaries; check
+  whether there are no pending callbacks when doing `return's; remove
+  the `rti_frame' from the SSE and use the new callback code instead.
+
+  Working on that today.
+
+After that, we reached the next Dublin-Milestone.
+
+* Multi-Appdomain support:
+
+  With the new breakpoint code in place, it isn't difficult anymore to
+  add real multi-appdomain support.
+
+  What's missing is basically a way of notifying the debugger about
+  appdomain loads/unloads and insert/remove breakpoints.
+
+  Shouldn't take more than 2-3 days to fully implement this.
+
+Last updated June 19th, 2007.
+Martin Baulig
