@@ -231,14 +231,6 @@ TODO (as of June 19th, 2007):
 
   Trivial and absolutely straightforward.
 
-* Fix `return'
-
-  Make things work correctly when crossing callback boundaries; check
-  whether there are no pending callbacks when doing `return's; remove
-  the `rti_frame' from the SSE and use the new callback code instead.
-
-  Working on that today.
-
 After that, we reached the next Dublin-Milestone.
 
 * Multi-Appdomain support:
