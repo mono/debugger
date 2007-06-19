@@ -260,10 +260,6 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress CompileMethod;
 		public readonly TargetAddress GetVirtualMethod;
 		public readonly TargetAddress GetBoxedObjectMethod;
-		public readonly TargetAddress InsertBreakpoint;
-		public readonly TargetAddress RemoveBreakpoint;
-		public readonly TargetAddress RegisterClassInitCallback;
-		public readonly TargetAddress RemoveClassInitCallback;
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
@@ -296,10 +292,6 @@ namespace Mono.Debugger.Backends
 			CompileMethod             = reader.ReadAddress ();
 			GetVirtualMethod          = reader.ReadAddress ();
 			GetBoxedObjectMethod      = reader.ReadAddress ();
-			InsertBreakpoint          = reader.ReadAddress ();
-			RemoveBreakpoint          = reader.ReadAddress ();
-			RegisterClassInitCallback = reader.ReadAddress ();
-			RemoveClassInitCallback   = reader.ReadAddress ();
 			RuntimeInvoke             = reader.ReadAddress ();
 			CreateString              = reader.ReadAddress ();
 			ClassGetStaticFieldData   = reader.ReadAddress ();
@@ -318,15 +310,6 @@ namespace Mono.Debugger.Backends
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
 			Report.Debug (DebugFlags.JitSymtab, this);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x})",
-				MonoTrampolineCode, SymbolTable, SymbolTableSize,
-				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
-				RuntimeInvoke);
 		}
 	}
 

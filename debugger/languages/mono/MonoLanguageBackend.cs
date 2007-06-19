@@ -651,39 +651,6 @@ namespace Mono.Debugger.Languages.Mono
 		}
 #endregion
 
-#region jit breakpoint handling
-		private struct MyBreakpointHandle
-		{
-			public readonly int Index;
-			public readonly BreakpointHandler Handler;
-			public readonly object UserData;
-
-			public MyBreakpointHandle (int index, BreakpointHandler handler, object user_data)
-			{
-				this.Index = index;
-				this.Handler = handler;
-				this.UserData = user_data;
-			}
-		}
-
-		Hashtable breakpoints = new Hashtable ();
-
-		internal int InsertBreakpoint (Thread target, string method_name,
-					       BreakpointHandler handler, object user_data)
-		{
-			TargetAddress retval = target.CallMethod (
-				info.InsertBreakpoint, TargetAddress.Null, 0, method_name);
-
-			int index = (int) retval.Address;
-
-			if (index <= 0)
-				return -1;
-
-			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
-			return index;
-		}
-#endregion
-
 #region Class Init Handlers
 
 		static int next_unique_id;
@@ -693,25 +660,6 @@ namespace Mono.Debugger.Languages.Mono
 			return ++next_unique_id;
 		}
 
-		Hashtable class_init_handlers = new Hashtable ();
-
-		internal int InsertClassInitHandler (Thread target, MonoClassType klass,
-						     ClassInitHandler handler)
-		{
-			int index = GetUniqueID ();
-
-			TargetAddress retval = target.CallMethod (
-				info.RegisterClassInitCallback,
-				klass.File.MonoImage, index, klass.Name);
-
-			if (retval.IsNull) {
-				class_init_handlers.Add (index, handler);
-				return index;
-			}
-
-			handler (target, retval);
-			return -1;
-		}
 #endregion
 
 #region Method Load Handlers
@@ -1013,16 +961,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			case NotificationType.MethodCompiled: {
 				do_update_symbol_table (inferior);
-				break;
-			}
-
-			case NotificationType.ClassInitialized: {
-				int idx = (int) arg;
-				ClassInitHandler handler = (ClassInitHandler) class_init_handlers [idx];
-				if (handler != null) {
-					class_init_handlers.Remove (idx);
-					handler (inferior, data);
-				}
 				break;
 			}
 
