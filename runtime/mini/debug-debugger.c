@@ -26,12 +26,6 @@
 #error "Some clown #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
 #endif
 
-static guint64 debugger_insert_breakpoint (guint64 index, G_GNUC_UNUSED guint64 dummy_argument,
-					   const gchar *string_argument);
-static guint64 debugger_remove_breakpoint (guint64 breakpoint);
-static guint64 debugger_register_class_init_callback (guint64 index, G_GNUC_UNUSED guint64 dummy,
-						      const gchar *string_argument);
-static guint64 debugger_remove_class_init_callback (guint64 index);
 static guint64 debugger_compile_method (guint64 method_arg);
 static guint64 debugger_get_virtual_method (guint64 class_arg, guint64 method_arg);
 static guint64 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg);
@@ -115,10 +109,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_compile_method,
 	&debugger_get_virtual_method,
 	&debugger_get_boxed_object,
-	&debugger_insert_breakpoint,
-	&debugger_remove_breakpoint,
-	&debugger_register_class_init_callback,
-	&debugger_remove_class_init_callback,
 	&mono_debugger_runtime_invoke,
 	&debugger_create_string,
 	&debugger_class_get_static_field_data,
@@ -134,42 +124,6 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_initialize,
 	(void*)&mono_get_lmf_addr
 };
-
-static guint64
-debugger_insert_breakpoint (guint64 index, G_GNUC_UNUSED guint64 dummy_argument,
-			    const gchar *string_argument)
-{
-	MonoMethodDesc *desc;
-
-	desc = mono_method_desc_new (string_argument, TRUE);
-	if (!desc)
-		return 0;
-
-	return (guint64) mono_debugger_insert_breakpoint_full (desc);
-}
-
-static guint64
-debugger_remove_breakpoint (guint64 breakpoint)
-{
-	return mono_debugger_remove_breakpoint (breakpoint);
-}
-
-static guint64
-debugger_register_class_init_callback (guint64 image_arg, guint64 index,
-				       const gchar *string_argument)
-{
-	MonoImage *image = (MonoImage *) GUINT_TO_POINTER ((gsize) image_arg);
-
-	return (guint64) (gsize) mono_debugger_register_class_init_callback (
-		image, index, string_argument);
-}
-
-static guint64
-debugger_remove_class_init_callback (guint64 index)
-{
-	mono_debugger_remove_class_init_callback (index);
-	return 0;
-}
 
 static guint64
 debugger_compile_method (guint64 method_arg)

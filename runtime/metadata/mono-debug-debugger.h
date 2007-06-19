@@ -33,8 +33,7 @@ typedef enum {
 	MONO_DEBUGGER_EVENT_THROW_EXCEPTION,
 	MONO_DEBUGGER_EVENT_HANDLE_EXCEPTION,
 	MONO_DEBUGGER_EVENT_REACHED_MAIN,
-	MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE,
-	MONO_DEBUGGER_EVENT_CLASS_INITIALIZED
+	MONO_DEBUGGER_EVENT_FINALIZE_MANAGED_CODE
 } MonoDebuggerEvent;
 
 struct _MonoDebuggerBreakpointInfo {
@@ -53,10 +52,6 @@ void            mono_debugger_event                         (MonoDebuggerEvent e
 
 void            mono_debugger_add_symbol_file               (MonoDebugHandle *handle);
 void            mono_debugger_add_type                      (MonoDebugHandle *symfile, MonoClass *klass);
-
-MonoClass      *mono_debugger_register_class_init_callback  (MonoImage *image, guint64 index,
-							     const gchar *full_name);
-void            mono_debugger_remove_class_init_callback    (int index);
 
 void            mono_debugger_register_method_load_callback (guint64 index, MonoMethod *method);
 void            mono_debugger_remove_method_load_callback   (int index);
