@@ -292,50 +292,9 @@ mono_debugger_lookup_assembly (const gchar *name)
 	goto again;
 }
 
-static GPtrArray *method_load_callbacks = NULL;
-
 void
 mono_debugger_add_type (MonoDebugHandle *symfile, MonoClass *klass)
 {
 	must_reload_symtabs = TRUE;
 
-}
-
-typedef struct {
-	guint64 index;
-	MonoMethod *method;
-} MethodLoadCallback;
-
-void
-mono_debugger_register_method_load_callback (guint64 index, MonoMethod *method)
-{
-	MethodLoadCallback *info;
-
-	info = g_new0 (MethodLoadCallback, 1);
-	info->index = index;
-	info->method = method;
-
-	if (!method_load_callbacks)
-		method_load_callbacks = g_ptr_array_new ();
-
-	g_ptr_array_add (method_load_callbacks, info);
-}
-
-void
-mono_debugger_remove_method_load_callback (int index)
-{
-	int i;
-
-	if (!method_load_callbacks)
-		return;
-
-	for (i = 0; i < method_load_callbacks->len; i++) {
-		MethodLoadCallback *info = g_ptr_array_index (method_load_callbacks, i);
-
-		if (info->index != index)
-			continue;
-
-		g_ptr_array_remove (method_load_callbacks, info);
-		g_free (info);
-	}
 }
