@@ -25,6 +25,11 @@ typedef struct
 {
 	guint64 index;
 	MonoMethod *method;
+} MiniDebugMethodBreakpointInfo;
+
+typedef struct {
+	guint32 index;
+	MonoMethodDesc *desc;
 } MiniDebugBreakpointInfo;
 
 typedef struct
@@ -648,9 +653,9 @@ static GPtrArray *method_breakpoints = NULL;
 void
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
 {
-	MiniDebugBreakpointInfo *info;
+	MiniDebugMethodBreakpointInfo *info;
 
-	info = g_new0 (MiniDebugBreakpointInfo, 1);
+	info = g_new0 (MiniDebugMethodBreakpointInfo, 1);
 	info->method = method;
 	info->index = index;
 
@@ -669,7 +674,7 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 		return 0;
 
 	for (i = 0; i < method_breakpoints->len; i++) {
-		MiniDebugBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
+		MiniDebugMethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
 		if (info->index != index)
 			continue;
@@ -692,7 +697,7 @@ mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address)
 		return;
 
 	for (i = 0; i < method_breakpoints->len; i++) {
-		MiniDebugBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
+		MiniDebugMethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
 		if (method != info->method)
 			continue;
@@ -723,9 +728,9 @@ int
 mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc)
 {
 	static int last_breakpoint_id = 0;
-	MonoDebuggerBreakpointInfo *info;
+	MiniDebugBreakpointInfo *info;
 
-	info = g_new0 (MonoDebuggerBreakpointInfo, 1);
+	info = g_new0 (MiniDebugBreakpointInfo, 1);
 	info->desc = desc;
 	info->index = ++last_breakpoint_id;
 
@@ -746,7 +751,7 @@ mono_debugger_remove_breakpoint (int breakpoint_id)
 		return 0;
 
 	for (i = 0; i < breakpoints->len; i++) {
-		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+		MiniDebugBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 
 		if (info->index != breakpoint_id)
 			continue;
@@ -781,7 +786,7 @@ mono_debugger_method_has_breakpoint (MonoMethod *method)
 		return 0;
 
 	for (i = 0; i < breakpoints->len; i++) {
-		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+		MiniDebugBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 
 		if (!mono_method_desc_full_match (info->desc, method))
 			continue;
