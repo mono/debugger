@@ -160,7 +160,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	if (!size)
 		return COMMAND_ERROR_NONE;
 
-	result = server_ptrace_read_memory (handle, addr, sizeof (long), &temp);
+	result = _server_ptrace_read_memory (handle, addr, sizeof (long), &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 	memcpy (&temp, ptr, size);

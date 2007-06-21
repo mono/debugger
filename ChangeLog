@@ -1,5 +1,16 @@
 2007-06-21  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-linux-ptrace.c
+	(server_ptrace_read_memory): Moved the actual reading into
+	_server_ptrace_read_memory(), just remove the breakpoints here.
+	(_server_ptrace_read_memory): Like server_ptrace_read_memory(),
+	but don't remove any breakpoints.
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_write_memory): Use _server_ptrace_read_memory().
+
+2007-06-21  Martin Baulig  <martin@ximian.com>
+
 	* backend/MonoThreadManager.cs
 	(MonoDebuggerInfo.MaxDynamicVersion): Allow 59 here; keep
 	`MinDynamicVersion' at 58.  The new `debugger-dublin' branch uses

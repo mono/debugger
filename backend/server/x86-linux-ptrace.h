@@ -16,6 +16,10 @@ static ServerCommandError
 _server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs);
 
 static ServerCommandError
+_server_ptrace_read_memory (ServerHandle *handle, guint64 start,
+			    guint32 size, gpointer buffer);
+
+static ServerCommandError
 server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer);
 
 static ServerCommandError

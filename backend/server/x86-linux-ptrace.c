@@ -59,8 +59,7 @@ _server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE 
 }
 
 static ServerCommandError
-server_ptrace_read_memory (ServerHandle *handle, guint64 start,
-			   guint32 size, gpointer buffer)
+_server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer)
 {
 	guint8 *ptr = buffer;
 	guint32 old_size = size;
@@ -81,8 +80,16 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start,
 		ptr += ret;
 	}
 
-	x86_arch_remove_breakpoints_from_target_memory (handle, start, old_size, buffer);
+	return COMMAND_ERROR_NONE;
+}
 
+static ServerCommandError
+server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gpointer buffer)
+{
+	ServerCommandError result = _server_ptrace_read_memory (handle, start, size, buffer);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+	x86_arch_remove_breakpoints_from_target_memory (handle, start, size, buffer);
 	return COMMAND_ERROR_NONE;
 }
 
