@@ -292,20 +292,24 @@ namespace Mono.Debugger.Backends
 			CompileMethod             = reader.ReadAddress ();
 			GetVirtualMethod          = reader.ReadAddress ();
 			GetBoxedObjectMethod      = reader.ReadAddress ();
+			reader.Offset += 16;
 			RuntimeInvoke             = reader.ReadAddress ();
-			CreateString              = reader.ReadAddress ();
+			reader.Offset += 8;
 			ClassGetStaticFieldData   = reader.ReadAddress ();
-			LookupClass               = reader.ReadAddress ();
-			LookupAssembly            = reader.ReadAddress ();
+			reader.Offset += 24;
 			RunFinally                = reader.ReadAddress ();
 			GetCurrentThread          = reader.ReadAddress ();
-			GetMethodAddressOrBpt     = reader.ReadAddress ();
-			RemoveMethodBreakpoint    = reader.ReadAddress ();
-			RuntimeClassInit          = reader.ReadAddress ();
 			Attach                    = reader.ReadAddress ();
 			Detach                    = reader.ReadAddress ();
 			Initialize                = reader.ReadAddress ();
 			GetLMFAddress             = reader.ReadAddress ();
+
+			CreateString              = reader.ReadAddress ();
+			LookupClass               = reader.ReadAddress ();
+			LookupAssembly            = reader.ReadAddress ();
+			GetMethodAddressOrBpt     = reader.ReadAddress ();
+			RemoveMethodBreakpoint    = reader.ReadAddress ();
+			RuntimeClassInit          = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
