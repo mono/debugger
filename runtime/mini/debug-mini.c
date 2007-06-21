@@ -36,7 +36,7 @@ typedef struct
 } MiniDebugMethodInfo;
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, gpointer address);
+mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address);
 
 static inline void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
@@ -643,7 +643,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
  * breakpoint when the method is JITed.
  */
 
-static GPtrArray *breakpoints = NULL;
+static GPtrArray *method_breakpoints = NULL;
 
 void
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
@@ -654,10 +654,10 @@ mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
 	info->method = method;
 	info->index = index;
 
-	if (!breakpoints)
-		breakpoints = g_ptr_array_new ();
+	if (!method_breakpoints)
+		method_breakpoints = g_ptr_array_new ();
 
-	g_ptr_array_add (breakpoints, info);
+	g_ptr_array_add (method_breakpoints, info);
 }
 
 int
@@ -665,16 +665,16 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 {
 	int i;
 
-	if (!breakpoints)
+	if (!method_breakpoints)
 		return 0;
 
-	for (i = 0; i < breakpoints->len; i++) {
-		MiniDebugBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+	for (i = 0; i < method_breakpoints->len; i++) {
+		MiniDebugBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
 		if (info->index != index)
 			continue;
 
-		g_ptr_array_remove (breakpoints, info);
+		g_ptr_array_remove (method_breakpoints, info);
 		g_free (info);
 		return 1;
 	}
@@ -683,17 +683,16 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 }
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, gpointer address)
+mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address)
 {
-	MiniDebugBreakpointInfo *info;
 	gboolean first = TRUE;
 	int i;
 
-	if (!breakpoints)
+	if (!method_breakpoints)
 		return;
 
-	for (i = 0; i < breakpoints->len; i++) {
-		MiniDebugBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+	for (i = 0; i < method_breakpoints->len; i++) {
+		MiniDebugBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
 		if (method != info->method)
 			continue;
@@ -708,4 +707,93 @@ mono_debugger_check_breakpoints (MonoMethod *method, gpointer address)
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
 				     (guint64) (gsize) address, info->index);
 	}
+}
+
+/*
+ * The old Debugger breakpoint interface.
+ *
+ * This interface is used to insert breakpoints on methods which are not yet JITed.
+ * The debugging code keeps a list of all such breakpoints and automatically inserts the
+ * breakpoint when the method is JITed.
+ */
+
+static GPtrArray *breakpoints = NULL;
+
+int
+mono_debugger_insert_breakpoint_full (MonoMethodDesc *desc)
+{
+	static int last_breakpoint_id = 0;
+	MonoDebuggerBreakpointInfo *info;
+
+	info = g_new0 (MonoDebuggerBreakpointInfo, 1);
+	info->desc = desc;
+	info->index = ++last_breakpoint_id;
+
+	if (!breakpoints)
+		breakpoints = g_ptr_array_new ();
+
+	g_ptr_array_add (breakpoints, info);
+
+	return info->index;
+}
+
+int
+mono_debugger_remove_breakpoint (int breakpoint_id)
+{
+	int i;
+
+	if (!breakpoints)
+		return 0;
+
+	for (i = 0; i < breakpoints->len; i++) {
+		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+
+		if (info->index != breakpoint_id)
+			continue;
+
+		mono_method_desc_free (info->desc);
+		g_ptr_array_remove (breakpoints, info);
+		g_free (info);
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+mono_debugger_insert_breakpoint (const gchar *method_name, gboolean include_namespace)
+{
+	MonoMethodDesc *desc;
+
+	desc = mono_method_desc_new (method_name, include_namespace);
+	if (!desc)
+		return 0;
+
+	return mono_debugger_insert_breakpoint_full (desc);
+}
+
+int
+mono_debugger_method_has_breakpoint (MonoMethod *method)
+{
+	int i;
+
+	if (!breakpoints || (method->wrapper_type != MONO_WRAPPER_NONE))
+		return 0;
+
+	for (i = 0; i < breakpoints->len; i++) {
+		MonoDebuggerBreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+
+		if (!mono_method_desc_full_match (info->desc, method))
+			continue;
+
+		return info->index;
+	}
+
+	return 0;
+}
+
+void
+mono_debugger_breakpoint_callback (MonoMethod *method, guint32 index)
+{
+	mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT, (guint64) (gsize) method, index);
 }

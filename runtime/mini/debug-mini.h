@@ -7,4 +7,8 @@
 void            mono_debugger_insert_method_breakpoint    (MonoMethod *method, guint64 idx);
 int             mono_debugger_remove_method_breakpoint    (guint64 index);
 
+int             mono_debugger_insert_breakpoint_full      (MonoMethodDesc *desc);
+int             mono_debugger_remove_breakpoint           (int breakpoint_id);
+void            mono_debugger_breakpoint_callback         (MonoMethod *method, guint32 idx);
+
 #endif

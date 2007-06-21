@@ -56,10 +56,6 @@ void            mono_debugger_add_type                      (MonoDebugHandle *sy
 void            mono_debugger_register_method_load_callback (guint64 index, MonoMethod *method);
 void            mono_debugger_remove_method_load_callback   (int index);
 
-int             mono_debugger_insert_breakpoint_full        (MonoMethodDesc *desc);
-int             mono_debugger_remove_breakpoint             (int breakpoint_id);
-void            mono_debugger_breakpoint_callback           (MonoMethod *method, guint32 idx);
-
 MonoObject     *mono_debugger_runtime_invoke                (MonoMethod *method, void *obj,
 							     void **params, MonoObject **exc);
 
