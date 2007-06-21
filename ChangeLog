@@ -1,3 +1,10 @@
+2007-06-21  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo.MaxDynamicVersion): Allow 59 here; keep
+	`MinDynamicVersion' at 58.  The new `debugger-dublin' branch uses
+	59, but it's backwards-compatible.
+
 2007-05-29  Wade Berrier  <wberrier@novell.com>
 
 	* classes/Makefile.am: fix make dist (remove MethodSource.cs)
