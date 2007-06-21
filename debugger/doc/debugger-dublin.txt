@@ -223,15 +223,10 @@ Two weeks ago, I started a larger set of changes in the
 
   I think we can call this done and working.
 
-TODO (as of June 19th, 2007):
+TODO (as of June 21th, 2007):
 =============================
 
-* x86_64 is currently broken; need to reflect the latest
-  call_method*() changes there.
-
-  Trivial and absolutely straightforward.
-
-After that, we reached the next Dublin-Milestone.
+We reached the next Dublin-Milestone.
 
 * Multi-Appdomain support:
 
