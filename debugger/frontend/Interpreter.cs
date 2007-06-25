@@ -484,6 +484,9 @@ namespace Mono.Debugger.Frontend
 				wait_list.Remove (stopped);
 			} while (wait && (stopped != null) && (stopped != thread));
 
+			if (!HasTarget)
+				return stopped;
+
 			foreach (Process process in Processes) {
 				foreach (Thread t in process.GetThreads ()) {
 					if (t == stopped)
