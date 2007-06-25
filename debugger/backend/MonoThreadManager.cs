@@ -282,6 +282,8 @@ namespace Mono.Debugger.Backends
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
 
+			int address_size          = memory.TargetInfo.TargetAddressSize;
+
 			SymbolTableSize           = reader.ReadInteger ();
 
 			reader.Offset = 24;
@@ -292,11 +294,11 @@ namespace Mono.Debugger.Backends
 			CompileMethod             = reader.ReadAddress ();
 			GetVirtualMethod          = reader.ReadAddress ();
 			GetBoxedObjectMethod      = reader.ReadAddress ();
-			reader.Offset += 16;
+			reader.Offset            += 2 * address_size;
 			RuntimeInvoke             = reader.ReadAddress ();
-			reader.Offset += 8;
+			reader.Offset            += address_size;
 			ClassGetStaticFieldData   = reader.ReadAddress ();
-			reader.Offset += 24;
+			reader.Offset            += 3 * address_size;
 			RunFinally                = reader.ReadAddress ();
 			GetCurrentThread          = reader.ReadAddress ();
 			Attach                    = reader.ReadAddress ();
