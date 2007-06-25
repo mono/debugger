@@ -6730,15 +6730,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_TYPELOAD (klass);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (&klass->byval_arg)) {
-				MonoMethod* helper = mono_marshal_get_stelemref ();
-				MonoInst *iargs [3];
-				handle_loaded_temps (cfg, bblock, stack_start, sp);
+				/* storing a NULL doesn't need any of the complex checks in stelemref */
+				if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
+					MonoInst *load;
+					NEW_LDELEMA (cfg, load, sp, mono_defaults.object_class);
+					load->cil_code = ip;
+					MONO_INST_NEW (cfg, ins, stelem_to_stind [*ip - CEE_STELEM_I]);
+					ins->cil_code = ip;
+					ins->inst_left = load;
+					ins->inst_right = sp [2];
+					MONO_ADD_INS (bblock, ins);
+				} else {
+					MonoMethod* helper = mono_marshal_get_stelemref ();
+					MonoInst *iargs [3];
+					handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-				iargs [2] = sp [2];
-				iargs [1] = sp [1];
-				iargs [0] = sp [0];
-				
-				mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
+					iargs [2] = sp [2];
+					iargs [1] = sp [1];
+					iargs [0] = sp [0];
+
+					mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
+				}
 			} else {
 				NEW_LDELEMA (cfg, load, sp, klass);
 				load->cil_code = ip;
@@ -6772,24 +6784,26 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			handle_loaded_temps (cfg, bblock, stack_start, sp);
 
-			iargs [2] = sp [2];
-			iargs [1] = sp [1];
-			iargs [0] = sp [0];
+			/* storing a NULL doesn't need any of the complex checks in stelemref */
+			if (sp [2]->opcode == OP_PCONST && sp [2]->inst_p0 == NULL) {
+				MonoInst *load;
+				NEW_LDELEMA (cfg, load, sp, mono_defaults.object_class);
+				load->cil_code = ip;
+				MONO_INST_NEW (cfg, ins, stelem_to_stind [*ip - CEE_STELEM_I]);
+				ins->cil_code = ip;
+				ins->inst_left = load;
+				ins->inst_right = sp [2];
+				MONO_ADD_INS (bblock, ins);
+			} else {
+				iargs [2] = sp [2];
+				iargs [1] = sp [1];
+				iargs [0] = sp [0];
 			
-			mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
-
-			/*
-			MonoInst *group;
-			NEW_GROUP (cfg, group, sp [0], sp [1]);
-			MONO_INST_NEW (cfg, ins, CEE_STELEM_REF);
-			ins->cil_code = ip;
-			ins->inst_left = group;
-			ins->inst_right = sp [2];
-			MONO_ADD_INS (bblock, ins);
-			*/
+				mono_emit_method_call_spilled (cfg, bblock, helper, mono_method_signature (helper), iargs, ip, NULL);
+				inline_costs += 1;
+			}
 
 			++ip;
-			inline_costs += 1;
 			break;
 		}
 		case CEE_CKFINITE: {
@@ -10718,11 +10732,8 @@ static gpointer
 mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, int opt)
 {
 	MonoCompile *cfg;
-	GHashTable *jit_code_hash;
 	gpointer code = NULL;
 	MonoJitInfo *info;
-
-	jit_code_hash = target_domain->jit_code_hash;
 
 	method = mono_get_inflated_method (method);
 
@@ -10849,7 +10860,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	/* Check if some other thread already did the job. In this case, we can
        discard the code this thread generated. */
 
-	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&target_domain->jit_code_hash, method))) {
 		/* We can't use a domain specific method in another domain */
 		if ((target_domain == mono_domain_get ()) || info->domain_neutral) {
 			code = info->code_start;
@@ -10858,7 +10869,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 	
 	if (code == NULL) {
-		g_hash_table_insert (jit_code_hash, method, cfg->jit_info);
+		mono_internal_hash_table_insert (&target_domain->jit_code_hash, method, cfg->jit_info);
 		code = cfg->native_code;
 	}
 
@@ -10917,7 +10928,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt)
 
 	mono_domain_lock (target_domain);
 
-	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&target_domain->jit_code_hash, method))) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_domain_unlock (target_domain);
@@ -10978,7 +10989,7 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 		return;
 	mono_domain_lock (domain);
 	g_hash_table_remove (domain->dynamic_code_hash, method);
-	g_hash_table_remove (domain->jit_code_hash, method);
+	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	g_hash_table_remove (domain->jump_trampoline_hash, method);
 	mono_domain_unlock (domain);
 
@@ -11023,7 +11034,7 @@ mono_jit_find_compiled_method (MonoDomain *domain, MonoMethod *method)
 
 	mono_domain_lock (target_domain);
 
-	if ((info = g_hash_table_lookup (target_domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&target_domain->jit_code_hash, method))) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			mono_domain_unlock (target_domain);
@@ -12021,6 +12032,11 @@ print_jit_stats (void)
 			 mono_stats.inflated_method_count);
 		g_print ("Inflated types:         %ld\n", mono_stats.inflated_type_count);
 		g_print ("Generics metadata size: %ld\n", mono_stats.generics_metadata_size);
+		g_print ("Generics virtual invokes: %ld\n", mono_jit_stats.generic_virtual_invocations);
+
+		g_print ("Dynamic code allocs:    %ld\n", mono_stats.dynamic_code_alloc_count);
+		g_print ("Dynamic code bytes:     %ld\n", mono_stats.dynamic_code_bytes_count);
+		g_print ("Dynamic code frees:     %ld\n", mono_stats.dynamic_code_frees_count);
 
 		if (mono_use_security_manager) {
 			g_print ("\nDecl security check   : %ld\n", mono_jit_stats.cas_declsec_check);

@@ -324,7 +324,7 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 		method = nm;
 	}
 
-	if ((info = g_hash_table_lookup (domain->jit_code_hash, method))) {
+	if ((info = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
 		mono_domain_unlock (domain);
 		return (gint64) (gssize) info->code_start;
 	}

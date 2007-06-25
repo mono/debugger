@@ -21,16 +21,16 @@
 #include <valgrind/valgrind.h>
 #endif
 
+typedef struct {
+	guint32 index;
+	MonoMethodDesc *desc;
+} MiniDebugBreakpointInfo;
+
 typedef struct
 {
 	guint64 index;
 	MonoMethod *method;
 } MiniDebugMethodBreakpointInfo;
-
-typedef struct {
-	guint32 index;
-	MonoMethodDesc *desc;
-} MiniDebugBreakpointInfo;
 
 typedef struct
 {
