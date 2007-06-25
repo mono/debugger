@@ -66,6 +66,14 @@ namespace Mono.Debugger
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
+
+			// Ugly hack: in Mode == Mode.Default, we accept wrappers but not as the
+			//            last frame.
+			if ((mode == Mode.Default) && (frames.Count > 1)) {
+				StackFrame last = this [frames.Count - 1];
+				if (!IsFrameOkForMode (last, Mode.Managed))
+					frames.Remove (last);
+			}
 		}
 
 		private StackFrame TryLMF (ThreadServant target)
@@ -109,27 +117,36 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		private bool IsFrameOkForMode (StackFrame frame, Mode mode)
+		{
+			if (mode == Mode.Native)
+				return true;
+			if (!frame.Language.IsManaged)
+				return false;
+			if (mode == Mode.Default)
+				return true;
+			if ((frame.SourceAddress == null) || (frame.Method == null))
+				return false;
+			return frame.Method.WrapperType == WrapperType.None;
+		}
+
 		internal bool TryUnwind (ThreadServant target, Mode mode, TargetAddress until)
 		{
 			StackFrame new_frame = null;
-			if ((mode == Mode.Managed) && !last_frame.Language.IsManaged) {
+			try {
+				new_frame = last_frame.UnwindStack (target);
+			} catch (TargetException) {
+			}
+
+			if ((new_frame == null) || !IsFrameOkForMode (new_frame, mode)) {
 				if (TryCallback (target, last_frame, false))
 					return true;
+
 				new_frame = TryLMF (target);
-			} else {
-				try {
-					new_frame = last_frame.UnwindStack (target);
-				} catch (TargetException) {
-				}
-			}
-
-			if ((new_frame != null) && TryCallback (target, new_frame, true))
+				if (new_frame == null)
+					return false;
+			} else if (TryCallback (target, new_frame, true))
 				return true;
-
-			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
-				if (!last_frame.Language.IsManaged && (mode != Mode.Native))
-					new_frame = TryLMF (target);
-			}
 
 			if (new_frame == null)
 				return false;

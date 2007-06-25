@@ -401,11 +401,6 @@ namespace Mono.Debugger.Backends
 						ret_frame = null;
 					}
 
-					if (!process.IsAttached && (ret_frame != null)) {
-						main_method_stackptr = ret_frame.StackPointer;
-						main_method_retaddr = ret_frame.TargetAddress;
-					}
-
 					if (!process.IsManaged)
 						inferior.InitializeModules ();
 				}
@@ -444,14 +439,6 @@ namespace Mono.Debugger.Backends
 			// new stack frame and then send the result to our caller.
 			//
 			TargetAddress frame = inferior.CurrentFrame;
-
-			// After returning from `main', resume the target and keep
-			// running until it exits (or hit a breakpoint or receives
-			// a signal).
-			if (!main_method_retaddr.IsNull && (frame == main_method_retaddr)) {
-				do_continue ();
-				return;
-			}
 
 			//
 			// We're done with our stepping operation, but first we need to
@@ -1537,11 +1524,9 @@ namespace Mono.Debugger.Backends
 				if (current_frame == null)
 					throw new TargetException (TargetError.NoStack);
 
-				TargetAddress until = main_method_stackptr;
-
 				current_backtrace = new Backtrace (current_frame);
 
-				current_backtrace.GetBacktrace (this, mode, until, max_frames);
+				current_backtrace.GetBacktrace (this, mode, TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			});
@@ -1789,9 +1774,6 @@ namespace Mono.Debugger.Backends
 		TargetAddress lmf_address = TargetAddress.Null;
 
 		TargetAddress end_stack_address = TargetAddress.Null;
-
-		TargetAddress main_method_stackptr = TargetAddress.Null;
-		TargetAddress main_method_retaddr = TargetAddress.Null;
 
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject
