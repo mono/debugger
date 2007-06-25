@@ -3474,8 +3474,8 @@ namespace Mono.Debugger.Backends
 			if (!compiled) {
 				compiled = true;
 				sse.PushOperation (new OperationCompileMethod (sse, Method,
-					delegate (TargetAddress address) {
-						this.address = address;
+					delegate (TargetAddress the_address) {
+						this.address = the_address;
 				}));
 				return EventResult.Running;
 			}
