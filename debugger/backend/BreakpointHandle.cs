@@ -103,8 +103,7 @@ namespace Mono.Debugger.Backends
 			if (has_load_handler || (index > 0))
 				return false;
 
-			// sse.PushOperation (new OperationInsertMethodBreakpoint (function, method_loaded));
-			return true;
+			throw new InternalError ();
 		}
 
 		public override void Insert (Thread target)

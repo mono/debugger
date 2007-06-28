@@ -393,14 +393,6 @@ namespace Mono.Debugger.Backends
 				    (cevent.Type != Inferior.ChildEventType.CHILD_SIGNALED)) {
 					reached_main = true;
 
-					StackFrame ret_frame;
-					try {
-						ret_frame = inferior.Architecture.UnwindStack (
-							current_frame, inferior, null, 0);
-					} catch {
-						ret_frame = null;
-					}
-
 					if (!process.IsManaged)
 						inferior.InitializeModules ();
 				}
@@ -2132,63 +2124,6 @@ namespace Mono.Debugger.Backends
 			sse.PushOperation (new OperationMethodBreakpoint (
 				sse, fhandle.Function, fhandle.MethodLoaded));
 			return true;
-		}
-
-		protected class MainMethodBreakpoint : Breakpoint
-		{
-			public readonly TargetFunctionType Function;
-			BreakpointHandle handle;
-
-			public override bool IsPersistent {
-				get { return false; }
-			}
-
-			public override bool IsActivated {
-				get { return handle != null; }
-			}
-
-			internal override BreakpointHandle Resolve (TargetMemoryAccess target,
-								    StackFrame frame)
-			{
-				if (handle != null)
-					return handle;
-
-				handle = new FunctionBreakpointHandle (this, 0, Function, -1);
-				return handle;
-			}
-
-			public override void Activate (Thread target)
-			{
-				Resolve (target, target.CurrentFrame);
-				if (handle == null)
-					throw new TargetException (TargetError.LocationInvalid);
-				handle.Insert (target);
-			}
-
-			public override void Deactivate (Thread target)
-			{
-				if (handle != null) {
-					handle.Remove (target);
-					handle = null;
-				}
-			}
-
-			internal override void OnTargetExited ()
-			{
-				handle = null;
-			}
-
-			protected override void GetSessionData (System.Xml.XmlElement root,
-								System.Xml.XmlElement element)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			internal MainMethodBreakpoint (TargetFunctionType function)
-				: base (EventType.Breakpoint, function.Name, ThreadGroup.Global)
-			{
-				this.Function = function;
-			}
 		}
 	}
 
