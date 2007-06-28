@@ -274,6 +274,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
+		public readonly TargetAddress DebuggerVersion;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -305,6 +306,8 @@ namespace Mono.Debugger.Backends
 			Detach                    = reader.ReadAddress ();
 			Initialize                = reader.ReadAddress ();
 			GetLMFAddress             = reader.ReadAddress ();
+
+			DebuggerVersion           = reader.ReadAddress ();
 
 			CreateString              = reader.ReadAddress ();
 			LookupClass               = reader.ReadAddress ();
