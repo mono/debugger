@@ -301,9 +301,9 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 {
 	MonoMethod *method = GUINT_TO_POINTER ((gsize) method_argument);
 	MonoDomain *domain = mono_get_root_domain ();
-	MonoJitInfo *info;
+	MonoDebugMethodAddress *address;
 
-	mono_domain_lock (domain);
+	mono_debugger_lock ();
 
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) {
 		const char *name = method->name;
@@ -319,20 +319,21 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 		}
 
 		if (!nm) {
-			mono_domain_unlock (domain);
+			mono_debugger_unlock ();
 			return -1;
 		}
 
 		method = nm;
 	}
 
-	if ((info = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
-		mono_domain_unlock (domain);
-		return (gint64) (gssize) info->code_start;
+	address = mono_debug_find_method (method, domain);
+	if (address) {
+		mono_debugger_unlock ();
+		return (gint64) (gssize) address;
 	}
 
 	mono_debugger_insert_method_breakpoint (method, index);
-	mono_domain_unlock (domain);
+	mono_debugger_unlock ();
 	return 0;
 }
 

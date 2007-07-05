@@ -41,7 +41,7 @@ typedef struct
 } MiniDebugMethodInfo;
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address);
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info);
 
 static inline void
 record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
@@ -52,6 +52,16 @@ record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 	lne.il_offset = offset;
 
 	g_array_append_val (info->line_numbers, lne);
+}
+
+static void
+mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit)
+{
+	g_free (jit->line_numbers);
+	g_free (jit->this_var);
+	g_free (jit->params);
+	g_free (jit->locals);
+	g_free (jit);
 }
 
 void
@@ -259,7 +269,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	if (info->breakpoint_id)
 		mono_debugger_breakpoint_callback (method, info->breakpoint_id);
 
-	mono_debugger_check_breakpoints (method, jit->code_start);
+	mono_debugger_check_breakpoints (method, debug_info);
 
 	mono_debug_free_method_jit_info (jit);
 	g_array_free (info->line_numbers, TRUE);
@@ -607,18 +617,13 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitInfo *ji = mono_jit_info_table_find (domain, ip);
-	MonoDebugMethodInfo *minfo;
 	MonoDebugMethodJitInfo *jit;
 	int i;
 
 	if (!ji)
 		return;
 
-	minfo = mono_debug_lookup_method (mono_jit_info_get_method (ji));
-	if (!minfo)
-		return;
-
-	jit = mono_debug_find_method (minfo, domain);
+	jit = mono_debug_find_method (mono_jit_info_get_method (ji), domain);
 	if (!jit)
 		return;
 
@@ -688,7 +693,7 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 }
 
 static void
-mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address)
+mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
 {
 	gboolean first = TRUE;
 	int i;
@@ -705,12 +710,12 @@ mono_debugger_check_breakpoints (MonoMethod *method, gconstpointer address)
 		if (first) {
 			mono_debugger_event (
 				MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) method,
-				(guint64) (gsize) address);
+				(guint64) (gsize) debug_info);
 			first = FALSE;
 		}
 
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
-				     (guint64) (gsize) address, info->index);
+				     (guint64) (gsize) debug_info, info->index);
 	}
 }
 

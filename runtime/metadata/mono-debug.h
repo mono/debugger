@@ -24,7 +24,6 @@ typedef struct _MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
 typedef struct _MonoDebugVarInfo		MonoDebugVarInfo;
 typedef struct _MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
 typedef struct _MonoDebugMethodAddress		MonoDebugMethodAddress;
-typedef struct _MonoDebugWrapperData		MonoDebugWrapperData;
 typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 
 typedef struct _MonoDebugMethodInfo		MonoDebugMethodInfo;
@@ -95,9 +94,10 @@ struct _MonoSymbolTable {
 
 typedef enum {
 	MONO_DEBUG_DATA_ITEM_UNKNOWN		= 0,
-	MONO_DEBUG_DATA_ITEM_METHOD,
+	MONO_DEBUG_DATA_ITEM_OLD_METHOD,
 	MONO_DEBUG_DATA_ITEM_CLASS,
-	MONO_DEBUG_DATA_ITEM_WRAPPER
+	MONO_DEBUG_DATA_ITEM_OLD_WRAPPER,
+	MONO_DEBUG_DATA_ITEM_METHOD
 } MonoDebugDataItemType;
 
 struct _MonoDebugHandle {
@@ -109,7 +109,6 @@ struct _MonoDebugHandle {
 };
 
 struct _MonoDebugMethodJitInfo {
-	MonoDebugMethodAddress *address;
 	const guint8 *code_start;
 	guint32 code_size;
 	guint32 prologue_end;
@@ -124,29 +123,6 @@ struct _MonoDebugMethodJitInfo {
 	MonoDebugVarInfo *params;
 	guint32 num_locals;
 	MonoDebugVarInfo *locals;
-};
-
-struct _MonoDebugMethodAddress {
-	guint32 size;
-	guint32 symfile_id;
-	guint32 domain_id;
-	guint32 method_id;
-	guint32 code_size;
-	guint32 dummy;
-	const guint8 *code_start;
-	const guint8 *wrapper_addr;
-	MonoDebugMethodJitInfo *jit;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
-};
-
-struct _MonoDebugWrapperData {
-	guint32 size;
-	guint32 code_size;
-	MonoMethod *method;
-	const guint8 *code_start;
-	const gchar *name;
-	const gchar *cil_code;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
 struct _MonoDebugClassEntry {
@@ -192,7 +168,7 @@ struct _MonoDebugVarInfo {
 extern MonoSymbolTable *mono_symbol_table;
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
-extern guint32 mono_debug_debugger_version;
+extern gint32 mono_debug_debugger_version;
 
 void mono_debug_init (MonoDebugFormat format);
 void mono_debug_init_1 (MonoDomain *domain);
@@ -202,15 +178,14 @@ void mono_debug_cleanup (void);
 
 gboolean mono_debug_using_mono_debugger (void);
 
-MonoDebugMethodAddress *mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit,
-					       MonoDomain *domain);
-MonoDebugMethodJitInfo *mono_debug_read_method (MonoDebugMethodAddress *address);
-void mono_debug_free_method_jit_info (MonoDebugMethodJitInfo *jit);
+MonoDebugMethodAddress *
+mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain);
 
-MonoDebugMethodInfo *mono_debug_lookup_method (MonoMethod *method);
+MonoDebugMethodInfo *
+mono_debug_lookup_method (MonoMethod *method);
 
 MonoDebugMethodJitInfo*
-mono_debug_find_method (MonoDebugMethodInfo *minfo, MonoDomain *domain);
+mono_debug_find_method (MonoMethod *method, MonoDomain *domain);
 
 /*
  * Line number support.
