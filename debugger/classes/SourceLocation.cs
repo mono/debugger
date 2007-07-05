@@ -232,6 +232,7 @@ namespace Mono.Debugger
 
 		internal void DumpLineNumbers ()
 		{
+#if FIXME
 			if (source == null)
 				throw new TargetException (TargetError.LocationInvalid);
 
@@ -240,6 +241,7 @@ namespace Mono.Debugger
 				throw new TargetException (TargetError.LocationInvalid);
 
 			method.LineNumberTable.DumpLineNumbers ();
+#endif
 		}
 
 		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint, int domain)
@@ -260,22 +262,22 @@ namespace Mono.Debugger
 			if (function != null)
 				return new FunctionBreakpointHandle (breakpoint, domain, function, line);
 
-			if (source == null)
+			if ((source == null) || source.IsManaged)
 				throw new TargetException (TargetError.LocationInvalid);
 
-			TargetAddress address = GetAddress (domain);
+			TargetAddress address = GetAddress ();
 			if (!address.IsNull)
 				return new AddressBreakpointHandle (breakpoint, address);
 
 			return null;
 		}
 
-		protected TargetAddress GetAddress (int domain)
+		protected TargetAddress GetAddress ()
 		{
-			if (source == null)
+			if ((source == null) || source.IsManaged)
 				return TargetAddress.Null;
 
-			Method method = source.GetMethod (domain);
+			Method method = source.NativeMethod;
 			if (method == null)
 				return TargetAddress.Null;
 

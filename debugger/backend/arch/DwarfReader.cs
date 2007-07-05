@@ -2468,9 +2468,8 @@ namespace Mono.Debugger.Backends
 				get { return end_row; }
 			}
 
-			public override Method GetMethod (int domain)
-			{
-				return subprog.Method;
+			public override Method NativeMethod {
+				get {return subprog.Method; }
 			}
 		}
 

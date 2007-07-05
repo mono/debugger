@@ -983,9 +983,14 @@ namespace Mono.Debugger.Backends
 						return new_operation;
 				}
 
-				update_current_frame (new StackFrame (
-					thread, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, current_method, source));
+				if (source != null)
+					update_current_frame (new StackFrame (
+						thread, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, current_method, source));
+				else
+					update_current_frame (new StackFrame (
+						thread, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, current_method));
 			} else {
 				if (!same_method && (current_method != null)) {
 					Operation new_operation = check_method_operation (
@@ -2052,11 +2057,12 @@ namespace Mono.Debugger.Backends
 				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
 				if (source != null) {
 					SourceLocation location = new SourceLocation (source);
-					Method method = source.GetMethod (0);
+					// Method method = source.GetMethod (0);
+					Method method = null;
 
 					main_frame = new StackFrame (
 						sse.thread, iframe.Address, iframe.StackPointer,
-						iframe.FrameAddress, registers, method, location);
+						iframe.FrameAddress, registers, main, location);
 				} else {
 					main_frame = new StackFrame (
 						sse.thread, iframe.Address, iframe.StackPointer,

@@ -41,6 +41,8 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract Method GetMethod (int domain);
+		public abstract Method NativeMethod {
+			get;
+		}
 	}
 }

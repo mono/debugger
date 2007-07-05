@@ -535,9 +535,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		private enum DataItemType {
 			Unknown		= 0,
-			Method,
+			OldMethod,
 			Class,
-			Wrapper
+			OldWrapper,
+			Method
 		}
 
 		void read_data_items (TargetMemoryAccess memory, TargetAddress address, int start, int end)
@@ -562,23 +563,22 @@ namespace Mono.Debugger.Languages.Mono
 
 				switch (item_type) {
 				case DataItemType.Method:
-					read_range_entry (reader);
+					read_range_entry (memory, reader);
 					break;
 
 				case DataItemType.Class:
 					read_class_entry (memory, reader);
 					break;
 
-				case DataItemType.Wrapper:
-					read_wrapper_entry (memory, reader);
-					break;
+				default:
+					throw new InternalError ("Got unknown data item: {0}", item_type);
 				}
 
 				reader.BinaryReader.Position = pos + item_size;
 			}
 		}
 
-		void read_range_entry (TargetReader reader)
+		void read_range_entry (TargetMemoryAccess memory, TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
@@ -588,7 +588,7 @@ namespace Mono.Debugger.Languages.Mono
 				      size, file_idx);
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 			if (file != null)
-				file.AddRangeEntry (reader, contents);
+				file.AddRangeEntry (memory, reader, contents);
 		}
 
 		void read_class_entry (TargetMemoryAccess memory, TargetReader reader)
@@ -607,13 +607,20 @@ namespace Mono.Debugger.Languages.Mono
 			GetClassInfo (memory, klass_address);
 		}
 
+#if FIXME
 		void read_wrapper_entry (TargetMemoryAccess memory, TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
-			corlib.AddWrapperEntry (memory, reader, contents);
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+			Report.Debug (DebugFlags.JitSymtab, "READ WRAPPER ITEM: {0} {1}",
+				      size, file_idx);
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
+			if (file != null)
+				file.AddWrapperEntry (memory, reader, contents);
 		}
+#endif
 
 		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
 		{
@@ -668,7 +675,18 @@ namespace Mono.Debugger.Languages.Mono
 
 		Method method_from_jit_info (TargetMemoryAccess target, TargetAddress data)
 		{
-			return process.SymbolTableManager.Lookup (data);
+			int size = target.ReadInteger (data);
+			TargetReader reader = new TargetReader (target.ReadMemory (data, size));
+			byte[] contents = reader.BinaryReader.PeekBuffer (size);
+
+			reader.BinaryReader.ReadInt32 ();
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+			int domain_id = reader.BinaryReader.ReadInt32 ();
+			int index = reader.BinaryReader.ReadInt32 ();
+			TargetAddress method_addr = reader.ReadAddress ();
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
+
+			return file.GetMonoMethod (method_addr, domain_id, index, contents);
 		}
 
 		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
@@ -952,7 +970,7 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 
 			case NotificationType.ReloadSymtabs:
-				do_update_symbol_table (inferior);
+				// do_update_symbol_table (inferior);
 				break;
 
 			case NotificationType.JitBreakpoint:

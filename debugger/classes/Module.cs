@@ -59,7 +59,7 @@ namespace Mono.Debugger
 
 		public abstract MethodSource[] GetMethods (SourceFile file);
 
-		public abstract Method GetMethod (int domain, long handle);
+		// public abstract Method GetMethod (int domain, long handle);
 
 		public abstract MethodSource FindMethod (string name);
 
@@ -418,10 +418,12 @@ namespace Mono.Debugger
 			return SymbolFile.GetMethods (file);
 		}
 
+#if FIXME
 		public Method GetMethod (int domain, long handle)
 		{
 			return SymbolFile.GetMethod (domain, handle);
 		}
+#endif
 
 		// <summary>
 		//   Find method @name, which must be a full method name including the

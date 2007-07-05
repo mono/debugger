@@ -80,6 +80,8 @@ namespace Mono.Debugger.Backends
 			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
 			inferior.SetNotificationAddress (notification_address);
 
+			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
+
 			if (notification_bpt > 0) {
 				inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
 				notification_bpt = -1;

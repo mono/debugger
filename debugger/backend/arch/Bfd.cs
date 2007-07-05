@@ -557,6 +557,7 @@ namespace Mono.Debugger.Backends
 			throw new InvalidOperationException ();
 		}
 
+#if FIXME
 		public override Method GetMethod (int domain, long handle)
 		{
 			if (dwarf != null)
@@ -564,6 +565,7 @@ namespace Mono.Debugger.Backends
 
 			throw new InvalidOperationException ();
 		}
+#endif
 
 		public override MethodSource FindMethod (string name)
 		{

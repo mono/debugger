@@ -192,6 +192,7 @@ namespace Mono.Debugger
 		StackFrame parent_frame;
 		TargetObject exc_object;
 		SourceLocation location;
+		TargetFunctionType function;
 		Language language;
 		bool has_source;
 		Symbol name;
@@ -226,6 +227,17 @@ namespace Mono.Debugger
 				this.name = new Symbol (method.Name, method.StartAddress, 0);
 			else
 				this.name = new Symbol (method.Name, address, 0);
+		}
+
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
+				     TargetAddress frame_address, Registers registers,
+				     TargetFunctionType function, SourceLocation location)
+			: this (thread, address, stack_ptr, frame_address, registers)
+		{
+			this.function = function;
+			this.language = function.DeclaringType.Language;
+			this.name = new Symbol (function.FullName, address, 0);
+			this.location = location;
 		}
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
@@ -292,6 +304,10 @@ namespace Mono.Debugger
 
 		public Method Method {
 			get { return method; }
+		}
+
+		public TargetFunctionType Function {
+			get { return function; }
 		}
 
 		public Symbol Name {

@@ -865,6 +865,17 @@ namespace Mono.Debugger.Frontend
 		MemberExpression LookupMember (ScriptingContext context, StackFrame frame,
 					       string full_name)
 		{
+			MemberExpression member;
+
+			TargetFunctionType function = frame.Function;
+			if (function != null) {
+				member = StructAccessExpression.FindMember (
+					frame.Thread, function.DeclaringType, null,
+					full_name, true, true);
+				if (member != null)
+					return member;
+			}
+
 			Method method = frame.Method;
 			if ((method == null) || (method.DeclaringType == null))
 				return null;
@@ -873,7 +884,7 @@ namespace Mono.Debugger.Frontend
 			if (method.HasThis)
 				instance = (TargetClassObject) method.This.GetObject (frame);
 
-			MemberExpression member = StructAccessExpression.FindMember (
+			member = StructAccessExpression.FindMember (
 				frame.Thread, method.DeclaringType, instance, full_name, true, true);
 			if (member == null)
 				return null;
