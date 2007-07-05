@@ -681,9 +681,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			reader.BinaryReader.ReadInt32 ();
 			int file_idx = reader.BinaryReader.ReadInt32 ();
-			// int domain_id = reader.BinaryReader.ReadInt32 ();
-			// int index = reader.BinaryReader.ReadInt32 ();
-			// TargetAddress method_addr = reader.ReadAddress ();
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 
 			return file.ReadRangeEntry (target, reader, contents);
