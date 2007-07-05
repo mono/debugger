@@ -695,7 +695,6 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 static void
 mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *debug_info)
 {
-	gboolean first = TRUE;
 	int i;
 
 	if (!method_breakpoints)
@@ -706,13 +705,6 @@ mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *deb
 
 		if (method != info->method)
 			continue;
-
-		if (first) {
-			mono_debugger_event (
-				MONO_DEBUGGER_EVENT_METHOD_COMPILED, (guint64) (gsize) method,
-				(guint64) (gsize) debug_info);
-			first = FALSE;
-		}
 
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
 				     (guint64) (gsize) debug_info, info->index);
