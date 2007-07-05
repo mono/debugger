@@ -184,6 +184,9 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 MonoDebugMethodInfo *
 mono_debug_lookup_method (MonoMethod *method);
 
+MonoDebugMethodAddress *
+mono_debug_lookup_method_address (MonoMethod *method, MonoDomain *domain);
+
 MonoDebugMethodJitInfo*
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain);
 

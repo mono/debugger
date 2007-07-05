@@ -326,7 +326,7 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 		method = nm;
 	}
 
-	address = mono_debug_find_method (method, domain);
+	address = mono_debug_lookup_method_address (method, domain);
 	if (address) {
 		mono_debugger_unlock ();
 		return (gint64) (gssize) address;

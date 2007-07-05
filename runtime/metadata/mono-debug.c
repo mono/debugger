@@ -1106,6 +1106,25 @@ mono_debug_find_method (MonoMethod *method, MonoDomain *domain)
 	return res;
 }
 
+MonoDebugMethodAddress *
+mono_debug_lookup_method_address (MonoMethod *method, MonoDomain *domain)
+{
+	MonoDebugMethodAddress *address;
+	MonoDebugMethodHash lookup;
+
+	g_assert (mono_debug_debugger_version == 2);
+
+	mono_debugger_lock ();
+
+	lookup.method = method;
+	lookup.domain_id = mono_domain_get_id (domain);
+
+	address = g_hash_table_lookup (method_hash, &lookup);
+
+	mono_debugger_unlock ();
+	return address;
+}
+
 static gint32
 il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_offset)
 {
