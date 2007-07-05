@@ -357,6 +357,17 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		internal Method ReadRangeEntry (TargetMemoryAccess memory, TargetReader reader,
+						byte[] contents)
+		{
+			RangeEntry range = RangeEntry.Create (this, memory, reader, contents);
+			if (!range_hash.Contains (range.Hash)) {
+				range_hash.Add (range.Hash, range);
+				ranges.Add (range);
+			}
+			return range.GetMethod ();
+		}
+
 #if FIXME
 		internal void AddWrapperEntry (TargetMemoryAccess memory, TargetReader reader,
 					       byte[] contents)

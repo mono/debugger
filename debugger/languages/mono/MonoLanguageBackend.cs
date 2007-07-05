@@ -681,12 +681,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			reader.BinaryReader.ReadInt32 ();
 			int file_idx = reader.BinaryReader.ReadInt32 ();
-			int domain_id = reader.BinaryReader.ReadInt32 ();
-			int index = reader.BinaryReader.ReadInt32 ();
-			TargetAddress method_addr = reader.ReadAddress ();
+			// int domain_id = reader.BinaryReader.ReadInt32 ();
+			// int index = reader.BinaryReader.ReadInt32 ();
+			// TargetAddress method_addr = reader.ReadAddress ();
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 
-			return file.GetMonoMethod (method_addr, domain_id, index, contents);
+			return file.ReadRangeEntry (target, reader, contents);
 		}
 
 		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
