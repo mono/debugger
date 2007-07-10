@@ -563,12 +563,6 @@ mono_debug_add_aot_method (MonoDomain *domain, MonoMethod *method, guint8 *code_
 
 	jit = deserialize_debug_info (method, code_start, debug_info, debug_info_len);
 
-#if 0
-	jit = mono_debug_read_method ((MonoDebugMethodAddress *) debug_info);
-	jit->code_start = code_start;
-	jit->wrapper_addr = NULL;
-#endif
-
 	mono_debug_add_method (method, jit, domain);
 
 	mono_debug_add_vg_method (method, jit);
@@ -700,11 +694,20 @@ mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *deb
 	if (!method_breakpoints)
 		return;
 
+	if (method->is_inflated)
+		method = ((MonoMethodInflated *) method)->declaring;
+
 	for (i = 0; i < method_breakpoints->len; i++) {
 		MiniDebugMethodBreakpointInfo *info = g_ptr_array_index (method_breakpoints, i);
 
 		if (method != info->method)
 			continue;
+
+#if 0
+		g_message (G_STRLOC ": %p - %s.%s.%s - %p - %x - %d", method,
+			   method->klass->name_space, method->klass->name, method->name, debug_info,
+			   mono_method_get_token (method), method->is_inflated);
+#endif
 
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
 				     (guint64) (gsize) debug_info, info->index);
