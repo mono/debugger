@@ -1203,6 +1203,13 @@ namespace Mono.Debugger.Backends
 			if ((method == null) || !method.HasLineNumbers || !method.HasMethodBounds)
 				return false;
 
+			if (method.WrapperType == WrapperType.ManagedToNative) {
+				DebuggerConfiguration config = process.Session.Config;
+				ModuleGroup native_group = config.GetModuleGroup ("native");
+				if (!native_group.StepInto)
+					return false;
+			}
+
 			if (current_method != null) {
 				if ((method.Module != current_method.Module) && !method.Module.StepInto)
 					return false;

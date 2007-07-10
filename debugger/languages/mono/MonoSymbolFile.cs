@@ -132,7 +132,9 @@ namespace Mono.Debugger.Languages.Mono
 			// here we read the MonoDebugMethodAddress structure
 			// as written out in mono_debug_add_method.
 			reader.Position = 16;
+			ReadAddress (reader, domain); // wrapper_data
 			ReadAddress (reader, domain); // method
+			ReadAddress (reader, domain); // address_list
 			StartAddress = ReadAddress (reader, domain);
 			WrapperAddress = ReadAddress (reader, domain);
 			int code_size = reader.ReadInt32 ();
@@ -217,7 +219,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable range_hash;
 		ArrayList ranges;
-		ArrayList wrappers;
 		Hashtable type_hash;
 		ArrayList sources;
 		Hashtable source_hash;
@@ -239,7 +240,6 @@ namespace Mono.Debugger.Languages.Mono
 			int int_size = TargetInfo.TargetIntegerSize;
 
 			ranges = ArrayList.Synchronized (new ArrayList ());
-			wrappers = ArrayList.Synchronized (new ArrayList ());
 			range_hash = Hashtable.Synchronized (new Hashtable ());
 			type_hash = Hashtable.Synchronized (new Hashtable ());
 			function_hash = Hashtable.Synchronized (new Hashtable ());
@@ -303,10 +303,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return ranges; }
 		}
 
-		protected ArrayList WrapperEntries {
-			get { return wrappers; }
-		}
-
 		public override Module Module {
 			get { return module; }
 		}
@@ -336,7 +332,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool SymbolsLoaded {
-			get { return File != null; }
+			get { return true; }
 		}
 
 		public override SourceFile[] Sources {
@@ -365,17 +361,11 @@ namespace Mono.Debugger.Languages.Mono
 				range_hash.Add (range.Hash, range);
 				ranges.Add (range);
 			}
+#if DEBUG_VERBOSE
+			Console.WriteLine ("READ RANGE ENTRY: {0}", range);
+#endif
 			return range.GetMethod ();
 		}
-
-#if FIXME
-		internal void AddWrapperEntry (TargetMemoryAccess memory, TargetReader reader,
-					       byte[] contents)
-		{
-			WrapperEntry wrapper = WrapperEntry.Create (this, memory, reader, contents);
-			wrappers.Add (wrapper);
-		}
-#endif
 
 		public TargetType LookupMonoType (Cecil.TypeReference type)
 		{
@@ -445,20 +435,6 @@ namespace Mono.Debugger.Languages.Mono
 				return new Symbol (
 					method.Name, range.StartAddress, (int) offset);
 			}
-
-#if FIXME
-			foreach (WrapperEntry wrapper in wrappers) {
-				if ((address < wrapper.StartAddress) || (address > wrapper.EndAddress))
-					continue;
-
-				long offset = address - wrapper.StartAddress;
-				if (exact_match && (offset != 0))
-					continue;
-
-				return new Symbol (
-					wrapper.Name, wrapper.StartAddress, (int) offset);
-			}
-#endif
 
 			return null;
 		}
@@ -564,18 +540,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_hash = Hashtable.Synchronized (new Hashtable ());
 		Hashtable wrapper_hash = Hashtable.Synchronized (new Hashtable ());
-
-#if FIXME
-		public override Method GetMethod (int domain, long handle)
-		{
-			MethodHashEntry index = new MethodHashEntry (domain, (int) handle);
-			MethodRangeEntry entry = (MethodRangeEntry) range_hash [index];
-			if (entry == null)
-				return null;
-
-			return entry.GetMethod ();
-		}
-#endif
 
 		public override MethodSource[] GetMethods (SourceFile file)
 		{
@@ -698,42 +662,6 @@ namespace Mono.Debugger.Languages.Mono
 			return GetMethodByToken (token);
 		}
 
-#if FIXME
-		internal Method GetMonoMethod (MethodSource source, int domain)
-		{
-			return GetMonoMethod ((MonoMethodSource) source, domain);
-		}
-
-		protected MonoMethod GetMonoMethod (MonoMethodSource source, int domain)
-		{
-			ensure_sources ();
-			MethodHashEntry index = new MethodHashEntry (domain, source.Index);
-
-			MonoMethod method = (MonoMethod) method_hash [index];
-			if (method == null) {
-				method = new MonoMethod (this, source, source.Entry, source.Method);
-				method_hash.Add (index, method);
-			}
-
-			if (method.IsLoaded)
-				return method;
-
-			MethodRangeEntry entry = (MethodRangeEntry) range_hash [index];
-			if (entry == null)
-				return method;
-
-			TargetBinaryReader reader = new TargetBinaryReader (entry.Contents, TargetInfo);
-			method.Load (reader, TargetInfo.AddressDomain);
-			return method;
-		}
-#endif
-
-		public Method GetMonoMethod (TargetAddress method, int domain, int index, byte[] contents)
-		{
-			MethodHashEntry hash = new MethodHashEntry (method, domain);
-			return GetMonoMethod (hash, index, contents);
-		}
-
 		protected MonoMethod GetMonoMethod (MethodHashEntry hash, int index, byte[] contents)
 		{
 			ensure_sources ();
@@ -748,6 +676,10 @@ namespace Mono.Debugger.Languages.Mono
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
 				method.Load (reader, TargetInfo.AddressDomain);
 			}
+
+#if DEBUG_VERBOSE
+			Console.WriteLine ("GET MONO METHOD: {0} {1} {2}", hash, index, method);
+#endif
 
 			return method;
 		}
@@ -1235,10 +1167,18 @@ namespace Mono.Debugger.Languages.Mono
 				int domain = reader.BinaryReader.ReadInt32 ();
 				int index = reader.BinaryReader.ReadInt32 ();
 
-				TargetAddress method = reader.ReadAddress ();
-				TargetAddress code_start = reader.ReadAddress ();
 				TargetAddress wrapper_data = reader.ReadAddress ();
+				TargetAddress method = reader.ReadAddress ();
+				TargetAddress address_list = reader.ReadAddress ();
+				TargetAddress code_start = reader.ReadAddress ();
+				TargetAddress wrapper_addr = reader.ReadAddress ();
 				int code_size = reader.BinaryReader.ReadInt32 ();
+
+#if DEBUG_VERBOSE
+				Console.WriteLine ("CREATE RANGE: {0} {1} - {2} {3} {4} - {5} {6} {7}",
+						   domain, index, wrapper_data, method, address_list,
+						   code_start, wrapper_addr, code_size);
+#endif
 
 				WrapperEntry wrapper = null;
 
@@ -1248,14 +1188,12 @@ namespace Mono.Debugger.Languages.Mono
 					TargetReader wrapper_reader = new TargetReader (
 						memory.ReadMemory (wrapper_data, wrapper_size));
 
-					TargetAddress wrapper_addr = wrapper_reader.ReadAddress ();
 					TargetAddress name_address = wrapper_reader.ReadAddress ();
 					TargetAddress cil_address = wrapper_reader.ReadAddress ();
+					int wrapper_type = wrapper_reader.BinaryReader.ReadInt32 ();
 
 					string name = "<" + memory.ReadString (name_address) + ">";
 					string cil_code = memory.ReadString (cil_address);
-
-					int wrapper_type = reader.BinaryReader.ReadInt32 ();
 
 					wrapper = new WrapperEntry (
 						wrapper_addr, (WrapperType) wrapper_type, name, cil_code);
@@ -1281,8 +1219,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override string ToString ()
 			{
-				return String.Format ("RangeEntry [{3}:{0:x}:{1:x}:{2:x}]",
-						      StartAddress, EndAddress, Index, File);
+				return String.Format ("RangeEntry [{0}:{1}:{2}:{3:x}:{4:x}]",
+						      File.ImageFile, Hash, Index,
+						      StartAddress, EndAddress);
 			}
 		}
 
@@ -1514,11 +1453,9 @@ namespace Mono.Debugger.Languages.Mono
 			public override ISymbolRange[] SymbolRanges {
 				get {
 					ArrayList ranges = file.SymbolRanges;
-					ArrayList wrappers = file.WrapperEntries;
 
-					ISymbolRange[] retval = new ISymbolRange [ranges.Count + wrappers.Count];
+					ISymbolRange[] retval = new ISymbolRange [ranges.Count];
 					ranges.CopyTo (retval, 0);
-					wrappers.CopyTo (retval, ranges.Count);
 					return retval;
 				}
 			}

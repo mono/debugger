@@ -673,10 +673,42 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_load_handlers = new Hashtable ();
 
-		Method method_from_jit_info (TargetMemoryAccess target, TargetAddress data)
+		void method_from_jit_info (TargetMemoryAccess target, TargetAddress data,
+					   MethodLoadedHandler handler)
 		{
 			int size = target.ReadInteger (data);
+#if DEBUG_VERBOSE
+			Console.WriteLine ("METHOD FROM JIT INFO: {0} {1}", data, size);
+#endif
 			TargetReader reader = new TargetReader (target.ReadMemory (data, size));
+
+			reader.BinaryReader.ReadInt32 ();
+			int count = reader.BinaryReader.ReadInt32 ();
+
+#if DEBUG_VERBOSE
+			Console.WriteLine ("METHOD FROM JIT INFO #1: {0} {1}", count,
+					   reader.BinaryReader.HexDump ());
+#endif
+
+			for (int i = 0; i < count; i++) {
+				TargetAddress address = reader.ReadAddress ();
+#if DEBUG_VERBOSE
+				Console.WriteLine ("METHOD FROM JT INFO #2: {0}", address);
+#endif
+				Method method = read_range_entry (target, address);
+#if DEBUG_VERBOSE
+				Console.WriteLine ("METHOD FROM JT INFO #3: {0} {1}", address, method);
+#endif
+
+				handler (target, method);
+			}
+		}
+
+		Method read_range_entry (TargetMemoryAccess target, TargetAddress address)
+		{
+			int size = target.ReadInteger (address);
+			TargetReader reader = new TargetReader (target.ReadMemory (address, size));
+
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 
 			reader.BinaryReader.ReadInt32 ();
@@ -694,18 +726,11 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress retval = target.CallMethod (
 				info.GetMethodAddressOrBpt, method_address, index);
 
-			if (retval.IsNull) {
-				method_load_handlers.Add (index, handler);
-				return index;
-			}
+			if (!retval.IsNull)
+				method_from_jit_info (target, retval, handler);
 
-			Method method = method_from_jit_info (target, retval);
-			if (method != null) {
-				handler (target, method);
-				return 0;
-			}
-
-			return -1;
+			method_load_handlers.Add (index, handler);
+			return index;
 		}
 
 		internal void RegisterMethodLoadHandler (int index, MethodLoadedHandler handler)
@@ -943,7 +968,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		void JitBreakpoint (Inferior inferior, int idx, TargetAddress data)
 		{
-			Method method = method_from_jit_info (inferior, data);
+			Method method = read_range_entry (inferior, data);
+#if DEBUG_VERBOSE
+			Console.WriteLine ("JIT BREAKPOINT: {0} {1} {2}", idx, data, method);
+#endif
 			if (method == null)
 				return;
 
