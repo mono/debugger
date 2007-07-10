@@ -269,7 +269,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress GetCurrentThread;
-		public readonly TargetAddress GetMethodAddressOrBpt;
+		public readonly TargetAddress InsertMethodBreakpoint;
 		public readonly TargetAddress RemoveMethodBreakpoint;
 		public readonly TargetAddress RuntimeClassInit;
 		public readonly TargetAddress Attach;
@@ -314,7 +314,7 @@ namespace Mono.Debugger.Backends
 			CreateString              = reader.ReadAddress ();
 			LookupClass               = reader.ReadAddress ();
 			LookupAssembly            = reader.ReadAddress ();
-			GetMethodAddressOrBpt     = reader.ReadAddress ();
+			InsertMethodBreakpoint    = reader.ReadAddress ();
 			RemoveMethodBreakpoint    = reader.ReadAddress ();
 			RuntimeClassInit          = reader.ReadAddress ();
 

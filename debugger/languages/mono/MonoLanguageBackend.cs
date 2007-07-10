@@ -724,7 +724,7 @@ namespace Mono.Debugger.Languages.Mono
 			int index = GetUniqueID ();
 
 			TargetAddress retval = target.CallMethod (
-				info.GetMethodAddressOrBpt, method_address, index);
+				info.InsertMethodBreakpoint, method_address, index);
 
 			if (!retval.IsNull)
 				method_from_jit_info (target, retval, handler);
