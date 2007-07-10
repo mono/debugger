@@ -30,6 +30,7 @@ typedef struct
 {
 	guint64 index;
 	MonoMethod *method;
+	MonoDebugMethodAddressList *address_list;
 } MiniDebugMethodBreakpointInfo;
 
 typedef struct
@@ -649,7 +650,7 @@ mono_debug_print_vars (gpointer ip, gboolean only_arguments)
 
 static GPtrArray *method_breakpoints = NULL;
 
-void
+MonoDebugMethodAddressList *
 mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
 {
 	MiniDebugMethodBreakpointInfo *info;
@@ -658,10 +659,14 @@ mono_debugger_insert_method_breakpoint (MonoMethod *method, guint64 index)
 	info->method = method;
 	info->index = index;
 
+	info->address_list = mono_debug_lookup_method_addresses (method);
+
 	if (!method_breakpoints)
 		method_breakpoints = g_ptr_array_new ();
 
 	g_ptr_array_add (method_breakpoints, info);
+
+	return info->address_list;
 }
 
 int
@@ -679,6 +684,7 @@ mono_debugger_remove_method_breakpoint (guint64 index)
 			continue;
 
 		g_ptr_array_remove (method_breakpoints, info);
+		g_free (info->address_list);
 		g_free (info);
 		return 1;
 	}

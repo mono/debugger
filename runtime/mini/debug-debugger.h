@@ -62,7 +62,7 @@ struct _MonoDebuggerInfo {
 				gchar *full_name);
 	guint64 (*lookup_assembly) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
 				    const gchar *string_argument);
-	guint64 (*get_method_addr_or_bpt) (guint64 method_argument, guint64 index);
+	guint64 (*insert_method_breakpoint) (guint64 method_argument, guint64 index);
 	void (*remove_method_breakpoint) (G_GNUC_UNUSED guint64 dummy, guint64 index);
 	void (*runtime_class_init) (guint64 klass_arg);
 };

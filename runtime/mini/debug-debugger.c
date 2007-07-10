@@ -49,7 +49,7 @@ static gint64 debugger_lookup_class (guint64 image_argument, G_GNUC_UNUSED guint
 				     gchar *full_name);
 static guint64 debugger_lookup_assembly (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy2,
 					 const gchar *string_argument);
-static guint64 debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index);
+static guint64 debugger_insert_method_breakpoint (guint64 method_argument, guint64 index);
 static void debugger_remove_method_breakpoint (G_GNUC_UNUSED guint64 dummy, guint64 index);
 static void debugger_runtime_class_init (guint64 klass_arg);
 
@@ -137,34 +137,10 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	&debugger_create_string,
 	&debugger_lookup_class,
 	&debugger_lookup_assembly,
-	&debugger_get_method_addr_or_bpt,
+	&debugger_insert_method_breakpoint,
 	&debugger_remove_method_breakpoint,
 	&debugger_runtime_class_init
 };
-
-#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
-
-#if NO_UNALIGNED_ACCESS
-#define RETURN_UNALIGNED(type, addr) \
-	{ \
-		type val; \
-		memcpy(&val, p + offset, sizeof(val)); \
-		return val; \
-	}
-#define WRITE_UNALIGNED(type, addr, val) \
-	memcpy(addr, &val, sizeof(type))
-#else
-#define RETURN_UNALIGNED(type, addr) \
-	return *(type*)(p + offset);
-#define WRITE_UNALIGNED(type, addr, val) \
-	(*(type *)(addr) = (val))
-#endif
-
-typedef struct {
-	guint32 size;
-	guint32 count;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
-} MonoDebuggerBreakpointInfo;
 
 static guint64
 old_debugger_insert_breakpoint (guint64 method_argument, const gchar *string_argument)
@@ -321,14 +297,10 @@ debugger_class_get_static_field_data (guint64 value)
 }
 
 static guint64
-debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
+debugger_insert_method_breakpoint (guint64 method_argument, guint64 index)
 {
 	MonoMethod *method = GUINT_TO_POINTER ((gsize) method_argument);
-	MonoDebuggerBreakpointInfo *info;
-	MonoDebugMethodHeader *header;
-	int count, size;
-	GSList *list;
-	guint8 *ptr;
+	MonoDebugMethodAddressList *info;
 
 	mono_debugger_lock ();
 
@@ -353,30 +325,7 @@ debugger_get_method_addr_or_bpt (guint64 method_argument, guint64 index)
 		method = nm;
 	}
 
-	mono_debugger_insert_method_breakpoint (method, index);
-
-	header = mono_debug_lookup_method_header (method);
-	if (!header) {
-		mono_debugger_unlock ();
-		return 0;
-	}
-
-	count = g_slist_length (header->address_list) + 1;
-	size = sizeof (MonoDebuggerBreakpointInfo) + count * sizeof (gpointer);
-
-	info = g_malloc0 (size);
-	info->size = size;
-	info->count = count;
-
-	ptr = info->data;
-
-	WRITE_UNALIGNED (gpointer, ptr, header);
-	ptr += sizeof (gpointer);
-
-	for (list = header->address_list; list; list = list->next) {
-		WRITE_UNALIGNED (gpointer, ptr, list->data);
-		ptr += sizeof (gpointer);
-	}
+	info = mono_debugger_insert_method_breakpoint (method, index);
 
 	mono_debugger_unlock ();
 	return (guint64) (gsize) info;

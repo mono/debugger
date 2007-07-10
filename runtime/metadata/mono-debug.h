@@ -23,9 +23,8 @@ typedef struct _MonoDebugLexicalBlockEntry	MonoDebugLexicalBlockEntry;
 
 typedef struct _MonoDebugVarInfo		MonoDebugVarInfo;
 typedef struct _MonoDebugMethodJitInfo		MonoDebugMethodJitInfo;
-typedef struct _MonoDebugMethodHeader		MonoDebugMethodHeader;
 typedef struct _MonoDebugMethodAddress		MonoDebugMethodAddress;
-typedef struct _MonoDebugWrapperData		MonoDebugWrapperData;
+typedef struct _MonoDebugMethodAddressList	MonoDebugMethodAddressList;
 typedef struct _MonoDebugClassEntry		MonoDebugClassEntry;
 
 typedef struct _MonoDebugMethodInfo		MonoDebugMethodInfo;
@@ -127,14 +126,10 @@ struct _MonoDebugMethodJitInfo {
 	MonoDebugVarInfo *locals;
 };
 
-struct _MonoDebugMethodHeader {
+struct _MonoDebugMethodAddressList {
 	guint32 size;
-	guint32 symfile_id;
-	guint32 domain_id;
-	guint32 method_id;
-	MonoDebugWrapperData *wrapper_data;
-	MonoMethod *method;
-	GSList *address_list;
+	guint32 count;
+	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
 struct _MonoDebugClassEntry {
@@ -196,8 +191,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 MonoDebugMethodInfo *
 mono_debug_lookup_method (MonoMethod *method);
 
-MonoDebugMethodHeader *
-mono_debug_lookup_method_header (MonoMethod *method);
+MonoDebugMethodAddressList *
+mono_debug_lookup_method_addresses (MonoMethod *method);
 
 MonoDebugMethodJitInfo*
 mono_debug_find_method (MonoMethod *method, MonoDomain *domain);

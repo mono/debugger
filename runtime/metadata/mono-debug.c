@@ -31,11 +31,21 @@
 	(*(type *)(addr) = (val))
 #endif
 
-struct _MonoDebugWrapperData {
+typedef struct {
 	const gchar *method_name;
 	const gchar *cil_code;
 	guint32 wrapper_type;
-};
+} MonoDebugWrapperData;
+
+typedef struct {
+	guint32 size;
+	guint32 symfile_id;
+	guint32 domain_id;
+	guint32 method_id;
+	MonoDebugWrapperData *wrapper_data;
+	MonoMethod *method;
+	GSList *address_list;
+} MonoDebugMethodHeader;
 
 struct _MonoDebugMethodAddress {
 	MonoDebugMethodHeader header;
@@ -1121,11 +1131,15 @@ mono_debug_find_method (MonoMethod *method, MonoDomain *domain)
 	return res;
 }
 
-MonoDebugMethodHeader *
-mono_debug_lookup_method_header (MonoMethod *method)
+MonoDebugMethodAddressList *
+mono_debug_lookup_method_addresses (MonoMethod *method)
 {
+	MonoDebugMethodAddressList *info;
 	MonoDebugMethodHeader *header;
 	MonoMethod *declaring;
+	int count, size;
+	GSList *list;
+	guint8 *ptr;
 
 	g_assert (mono_debug_debugger_version == 2);
 
@@ -1134,8 +1148,29 @@ mono_debug_lookup_method_header (MonoMethod *method)
 	declaring = method->is_inflated ? ((MonoMethodInflated *) method)->declaring : method;
 	header = g_hash_table_lookup (method_hash, declaring);
 
-	mono_debugger_unlock ();
-	return header;
+	if (!header) {
+		mono_debugger_unlock ();
+		return NULL;
+	}
+
+	count = g_slist_length (header->address_list) + 1;
+	size = sizeof (MonoDebugMethodAddressList) + count * sizeof (gpointer);
+
+	info = g_malloc0 (size);
+	info->size = size;
+	info->count = count;
+
+	ptr = info->data;
+
+	WRITE_UNALIGNED (gpointer, ptr, header);
+	ptr += sizeof (gpointer);
+
+	for (list = header->address_list; list; list = list->next) {
+		WRITE_UNALIGNED (gpointer, ptr, list->data);
+		ptr += sizeof (gpointer);
+	}
+
+	return info;
 }
 
 static gint32
