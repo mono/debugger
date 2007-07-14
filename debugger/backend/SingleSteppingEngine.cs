@@ -3412,16 +3412,18 @@ namespace Mono.Debugger.Backends
 
 			completed = true;
 
-			Method method = sse.Lookup (address);
-			Report.Debug (DebugFlags.SSE,
-				      "{0} compiled method: {1} {2} {3} {4} {5}",
-				      sse, address, method,
-				      method != null ? method.Module : null,
-				      sse.MethodHasSource (method), TrampolineHandler);
+			if (TrampolineHandler != null) {
+				Method method = sse.Lookup (address);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} compiled method: {1} {2} {3} {4} {5}",
+					      sse, address, method,
+					      method != null ? method.Module : null,
+					      sse.MethodHasSource (method), TrampolineHandler);
 
-			if ((TrampolineHandler != null) && !TrampolineHandler (method)) {
-				sse.do_next_native ();
-				return EventResult.Running;
+				if (!TrampolineHandler (method)) {
+					sse.do_next_native ();
+					return EventResult.Running;
+				}
 			}
 
 			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
