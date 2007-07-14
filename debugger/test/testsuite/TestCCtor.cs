@@ -24,7 +24,7 @@ namespace Mono.Debugger.Tests
 		int bpt_bar_hello;
 
 		[Test]
-		[Category("ManagedTypes")]
+		[Category("New")]
 		public void Main ()
 		{
 			bpt_x_cctor = AssertBreakpoint (LineXCCtor);

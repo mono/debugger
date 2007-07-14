@@ -355,8 +355,7 @@ namespace Mono.Debugger.Backends
 			Dispose ();
 		}
 
-		// XXX This desperately needs to be renamed.
-		internal ILanguageBackend CreateDebuggerHandler (MonoDebuggerInfo info)
+		internal MonoLanguageBackend CreateMonoLanguage (MonoDebuggerInfo info)
 		{
 			mono_language = new MonoLanguageBackend (this, info);
 			languages.Add (mono_language);

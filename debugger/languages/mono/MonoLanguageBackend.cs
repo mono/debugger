@@ -191,6 +191,7 @@ namespace Mono.Debugger.Languages.Mono
 		MonoBuiltinTypeInfo builtin_types;
 		MonoFunctionType main_method;
 
+		TargetAddress current_data_table = TargetAddress.Null;
 		int last_num_data_tables;
 		int last_data_table_offset;
 
@@ -388,7 +389,9 @@ namespace Mono.Debugger.Languages.Mono
 #region symbol table management
 		internal void Update (TargetMemoryAccess target)
 		{
-			do_update_symbol_table (target);
+			Report.Debug (DebugFlags.JitSymtab, "Update requested: {0}",
+				      current_data_table);
+			read_data_table (target);
 		}
 
 		void do_update_symbol_table (TargetMemoryAccess memory)
@@ -486,51 +489,46 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			last_num_symbol_files = num_symbol_files;
-			read_data_table (memory, header);
+
+			if (current_data_table.IsNull) {
+				header.Offset += 2 * memory.TargetInfo.TargetAddressSize + 12;
+				current_data_table = header.ReadAddress ();
+			}
+
+			read_data_table (memory);
 		}
 
 		// This method reads a portion of the data table (defn in mono-debug.h)
-		void read_data_table (TargetMemoryAccess memory, TargetReader header)
+		void read_data_table (TargetMemoryAccess memory)
 		{
-			int num_data_tables = header.ReadInteger ();
-			TargetAddress data_tables = header.ReadAddress ();
+			int header_size = 16 + memory.TargetInfo.TargetAddressSize;
 
-			Report.Debug (DebugFlags.JitSymtab, "DATA TABLES: {0} {1} {2}",
-				      last_num_data_tables, num_data_tables, data_tables);
+		again:
+			TargetReader header = new TargetReader (
+				memory.ReadMemory (current_data_table, header_size));
 
-			if (num_data_tables != last_num_data_tables) {
-				int old_offset = last_data_table_offset;
-
-				data_tables += last_num_data_tables * memory.TargetInfo.TargetAddressSize;
-
-				for (int i = last_num_data_tables; i < num_data_tables; i++) {
-					TargetAddress old_table = memory.ReadAddress (data_tables);
-					data_tables += memory.TargetInfo.TargetAddressSize;
-
-					int old_size = memory.ReadInteger (old_table);
-					read_data_items (memory, old_table, old_offset, old_size);
-					old_offset = 0;
-				}
-
-				last_num_data_tables = num_data_tables;
-				last_data_table_offset = 0;
-			}
-
-			TargetAddress data_table_address = header.ReadAddress ();
-			int data_table_size = header.ReadInteger ();
-			int offset = header.ReadInteger ();
-
-			int size = offset - last_data_table_offset;
+			int size = header.ReadInteger ();
+			int allocated_size = header.ReadInteger ();
+			int current_offset = header.ReadInteger ();
+			header.ReadInteger (); /* dummy */
+			TargetAddress next = header.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab,
-				      "DATA TABLE: {0} {1} {2} - {3} {4}",
-				      data_table_address, data_table_size, offset,
-				      last_data_table_offset, size);
+				      "DATA TABLE: {0} {1} - {2} {3} {4} {5} - {6}",
+				      current_data_table, last_data_table_offset,
+				      size, allocated_size, current_offset, next,
+				      header.BinaryReader.HexDump ());
 
-			if (size != 0)
-				read_data_items (memory, data_table_address, last_data_table_offset, offset);
+			read_data_items (memory, current_data_table + header_size,
+					 last_data_table_offset, current_offset);
 
-			last_data_table_offset = offset;
+			last_data_table_offset = current_offset;
+
+			if (!next.IsNull && (current_offset == allocated_size)) {
+				current_data_table = next;
+				last_data_table_offset = 0;
+				goto again;
+			}
 		}
 
 		private enum DataItemType {
@@ -549,9 +547,6 @@ namespace Mono.Debugger.Languages.Mono
 			Report.Debug (DebugFlags.JitSymtab,
 				      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address, start, end,
 				      reader.BinaryReader.Position, reader.Size);
-
-			if (start == 0)
-				reader.BinaryReader.Position = memory.TargetInfo.TargetAddressSize;
 
 			while (reader.BinaryReader.Position + 4 < reader.Size) {
 				int item_size = reader.BinaryReader.ReadInt32 ();
@@ -980,11 +975,19 @@ namespace Mono.Debugger.Languages.Mono
 				handler (inferior, method);
 		}
 
+		internal void Initialize (Inferior inferior)
+		{
+			current_data_table = inferior.ReadAddress (info.DataTable);
+			Report.Debug (DebugFlags.JitSymtab, "Initialize mono language: {0}",
+				      current_data_table);
+		}
+
 		public void Notification (Inferior inferior, NotificationType type,
 					  TargetAddress data, long arg)
 		{
 			switch (type) {
 			case NotificationType.InitializeManagedCode:
+				Report.Debug (DebugFlags.JitSymtab, "Initialize managed code");
 				read_mono_debugger_info (inferior);
 				do_update_symbol_table (inferior);
 				break;
@@ -995,17 +998,17 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 
 			case NotificationType.ReloadSymtabs:
-				// do_update_symbol_table (inferior);
+				do_update_symbol_table (inferior);
 				break;
 
 			case NotificationType.JitBreakpoint:
 				JitBreakpoint (inferior, (int) arg, data);
 				break;
 
-			case NotificationType.MethodCompiled: {
-				do_update_symbol_table (inferior);
+			case NotificationType.MethodCompiled:
+				Report.Debug (DebugFlags.JitSymtab, "Method compiled");
+				// do_update_symbol_table (inferior);
 				break;
-			}
 
 			default:
 				Console.WriteLine ("Received unknown notification {0:x} / {1} {2:x}",

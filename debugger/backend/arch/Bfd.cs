@@ -931,10 +931,6 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		void ILanguageBackend.Notification (Inferior inferior, NotificationType type,
-						    TargetAddress data, long arg)
-		{ }
-
 		public TargetAddress GetTrampoline (TargetMemoryAccess memory,
 						    TargetAddress address, out bool is_start)
 		{

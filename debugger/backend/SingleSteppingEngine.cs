@@ -630,7 +630,10 @@ namespace Mono.Debugger.Backends
 		public override Method Lookup (TargetAddress address)
 		{
 			process.UpdateSymbolTable (inferior);
-			return process.SymbolTableManager.Lookup (address);
+			Method method = process.SymbolTableManager.Lookup (address);
+			Report.Debug (DebugFlags.JitSymtab, "{0} lookup {1}: {2}",
+				      this, address, method);
+			return method;
 		}
 
 		public override Symbol SimpleLookup (TargetAddress address, bool exact_match)

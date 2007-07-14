@@ -40,8 +40,5 @@ namespace Mono.Debugger.Backends
 
 		MethodSource GetTrampoline (TargetMemoryAccess memory,
 					    TargetAddress address);
-
-		void Notification (Inferior inferior, NotificationType type,
-				   TargetAddress data, long arg);
 	}
 }

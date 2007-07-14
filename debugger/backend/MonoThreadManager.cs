@@ -10,6 +10,11 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger;
+using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
+
+
 namespace Mono.Debugger.Backends
 {
 
@@ -114,7 +119,7 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress main_function;
 		TargetAddress main_thread;
-		ILanguageBackend csharp_language;
+		MonoLanguageBackend csharp_language;
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
 			get { return debugger_info; }
@@ -175,8 +180,9 @@ namespace Mono.Debugger.Backends
 					break;
 
 				case NotificationType.InitializeThreadManager:
-					csharp_language = inferior.Process.CreateDebuggerHandler (
+					csharp_language = inferior.Process.CreateMonoLanguage (
 						debugger_info);
+					csharp_language.Initialize (inferior);
 					break;
 
 				case NotificationType.ReachedMain: {
@@ -277,6 +283,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
 		public readonly TargetAddress DebuggerVersion;
+		public readonly TargetAddress DataTable;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -310,6 +317,7 @@ namespace Mono.Debugger.Backends
 			GetLMFAddress             = reader.ReadAddress ();
 
 			DebuggerVersion           = reader.ReadAddress ();
+			DataTable                 = reader.ReadAddress ();
 
 			CreateString              = reader.ReadAddress ();
 			LookupClass               = reader.ReadAddress ();
