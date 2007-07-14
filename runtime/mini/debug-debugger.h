@@ -55,6 +55,7 @@ struct _MonoDebuggerInfo {
 	void * (*get_lmf_addr) (void);
 
 	gint32 *debugger_version;
+	MonoDebugDataTable *data_table;
 
 	guint64 (*create_string) (G_GNUC_UNUSED guint64 dummy1, G_GNUC_UNUSED guint64 dummy2,
 				  const gchar *string_argument);

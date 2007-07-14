@@ -10,8 +10,11 @@
 #include <string.h>
 
 #define SYMFILE_TABLE_CHUNK_SIZE	16
+#define OLD_DATA_TABLE_PTR_CHUNK_SIZE	256
+#define OLD_DATA_TABLE_CHUNK_SIZE	32768
+
 #define DATA_TABLE_PTR_CHUNK_SIZE	256
-#define DATA_TABLE_CHUNK_SIZE		32768
+#define DATA_TABLE_CHUNK_SIZE		512
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
@@ -84,12 +87,15 @@ typedef struct {
 } MonoDebugMethodHash;
 
 MonoSymbolTable *mono_symbol_table = NULL;
+MonoDebugDataTable *mono_debug_data_table = NULL;
 MonoDebugFormat mono_debug_format = MONO_DEBUG_FORMAT_NONE;
-gint32 mono_debug_debugger_version = -1;
+gint32 mono_debug_debugger_version = 2;
 
 static gboolean in_the_mono_debugger = FALSE;
 static gboolean mono_debug_initialized = FALSE;
 GHashTable *mono_debug_handles = NULL;
+
+static MonoDebugDataTable *current_data_table = NULL;
 
 static GHashTable *old_method_hash = NULL;
 static GHashTable *method_address_hash = NULL;
@@ -151,6 +157,13 @@ mono_debug_init (MonoDebugFormat format)
 	mono_symbol_table->magic = MONO_DEBUGGER_MAGIC;
 	mono_symbol_table->version = MONO_DEBUGGER_VERSION;
 	mono_symbol_table->total_size = sizeof (MonoSymbolTable);
+
+	g_message (G_STRLOC ": %d", mono_debug_debugger_version);
+
+	mono_debug_data_table = g_malloc0 (sizeof (MonoDebugDataTable) + DATA_TABLE_CHUNK_SIZE);
+	mono_debug_data_table->total_size = DATA_TABLE_CHUNK_SIZE;
+
+	current_data_table = mono_debug_data_table;
 
 	mono_debug_handles = g_hash_table_new_full
 		(NULL, NULL, NULL, (GDestroyNotify) mono_debug_close_image);
@@ -292,7 +305,7 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
  * a pointer (in the `ptr' argument) which is to be used to write it.
  */
 static guint8 *
-allocate_data_item (MonoDebugDataItemType type, guint32 size)
+old_allocate_data_item (MonoDebugDataItemType type, guint32 size)
 {
 	guint32 chunk_size;
 	guint8 *data;
@@ -301,25 +314,25 @@ allocate_data_item (MonoDebugDataItemType type, guint32 size)
 
 	size = ALIGN_TO (size, sizeof (gpointer));
 
-	if (size + 16 < DATA_TABLE_CHUNK_SIZE)
-		chunk_size = DATA_TABLE_CHUNK_SIZE;
+	if (size + 16 < OLD_DATA_TABLE_CHUNK_SIZE)
+		chunk_size = OLD_DATA_TABLE_CHUNK_SIZE;
 	else
 		chunk_size = size + 16;
 
 	/* Initialize things if necessary. */
-	if (!mono_symbol_table->current_data_table) {
-		mono_symbol_table->current_data_table = g_malloc0 (chunk_size);
-		mono_symbol_table->current_data_table_size = chunk_size;
-		mono_symbol_table->current_data_table_offset = sizeof (gpointer);
+	if (!mono_symbol_table->old_current_data_table) {
+		mono_symbol_table->old_current_data_table = g_malloc0 (chunk_size);
+		mono_symbol_table->old_current_data_table_size = chunk_size;
+		mono_symbol_table->old_current_data_table_offset = sizeof (gpointer);
 
-		* ((guint32 *) mono_symbol_table->current_data_table) = chunk_size;
+		* ((guint32 *) mono_symbol_table->old_current_data_table) = chunk_size;
 	}
 
  again:
 	/* First let's check whether there's still enough room in the current_data_table. */
-	if (mono_symbol_table->current_data_table_offset + size + 8 < mono_symbol_table->current_data_table_size) {
-		data = ((guint8 *) mono_symbol_table->current_data_table) + mono_symbol_table->current_data_table_offset;
-		mono_symbol_table->current_data_table_offset += size + 8;
+	if (mono_symbol_table->old_current_data_table_offset + size + 8 < mono_symbol_table->old_current_data_table_size) {
+		data = ((guint8 *) mono_symbol_table->old_current_data_table) + mono_symbol_table->old_current_data_table_offset;
+		mono_symbol_table->old_current_data_table_offset += size + 8;
 
 		* ((guint32 *) data) = size;
 		data += 4;
@@ -328,28 +341,81 @@ allocate_data_item (MonoDebugDataItemType type, guint32 size)
 		return data;
 	}
 
+	if (in_the_mono_debugger)
+		g_warning (G_STRLOC);
+
 	/* Add the current_data_table to the data_tables vector and ... */
 	if (!mono_symbol_table->data_tables) {
-		guint32 tsize = sizeof (gpointer) * DATA_TABLE_PTR_CHUNK_SIZE;
+		guint32 tsize = sizeof (gpointer) * OLD_DATA_TABLE_PTR_CHUNK_SIZE;
 		mono_symbol_table->data_tables = g_malloc0 (tsize);
 	}
 
-	if (!((mono_symbol_table->num_data_tables + 1) % DATA_TABLE_PTR_CHUNK_SIZE)) {
-		guint32 chunks = (mono_symbol_table->num_data_tables + 1) / DATA_TABLE_PTR_CHUNK_SIZE;
-		guint32 tsize = sizeof (gpointer) * DATA_TABLE_PTR_CHUNK_SIZE * (chunks + 1);
+	if (!((mono_symbol_table->num_data_tables + 1) % OLD_DATA_TABLE_PTR_CHUNK_SIZE)) {
+		guint32 chunks = (mono_symbol_table->num_data_tables + 1) / OLD_DATA_TABLE_PTR_CHUNK_SIZE;
+		guint32 tsize = sizeof (gpointer) * OLD_DATA_TABLE_PTR_CHUNK_SIZE * (chunks + 1);
+
+		g_error (G_STRLOC ": REALLOC VECTOR!");
 
 		mono_symbol_table->data_tables = g_realloc (mono_symbol_table->data_tables, tsize);
 	}
 
-	mono_symbol_table->data_tables [mono_symbol_table->num_data_tables++] = mono_symbol_table->current_data_table;
+	mono_symbol_table->data_tables [mono_symbol_table->num_data_tables++] = mono_symbol_table->old_current_data_table;
 
 	/* .... allocate a new current_data_table. */
-	mono_symbol_table->current_data_table = g_malloc0 (chunk_size);
-	mono_symbol_table->current_data_table_size = chunk_size;
-	mono_symbol_table->current_data_table_offset = sizeof (gpointer);
-	* ((guint32 *) mono_symbol_table->current_data_table) = chunk_size;
+	mono_symbol_table->old_current_data_table = g_malloc0 (chunk_size);
+	mono_symbol_table->old_current_data_table_size = chunk_size;
+	mono_symbol_table->old_current_data_table_offset = sizeof (gpointer);
+	* ((guint32 *) mono_symbol_table->old_current_data_table) = chunk_size;
 
 	goto again;
+}
+
+static guint8 *
+allocate_data_item (MonoDebugDataItemType type, guint32 size)
+{
+	guint32 chunk_size;
+	guint8 *data;
+
+	if (mono_debug_debugger_version < 2)
+		return old_allocate_data_item (type, size);
+
+	size = ALIGN_TO (size, sizeof (gpointer));
+
+	if (size + 16 < DATA_TABLE_CHUNK_SIZE)
+		chunk_size = DATA_TABLE_CHUNK_SIZE;
+	else
+		chunk_size = size + 16;
+
+	g_assert (current_data_table);
+	g_assert (current_data_table->current_offset == current_data_table->allocated_size);
+
+	if (current_data_table->allocated_size + size + 8 >= current_data_table->total_size) {
+		MonoDebugDataTable *new_table;
+
+		new_table = g_malloc0 (sizeof (MonoDebugDataTable) + chunk_size);
+		new_table->total_size = chunk_size;
+
+		current_data_table->next = new_table;
+		current_data_table = new_table;
+	}
+
+	data = &current_data_table->data [current_data_table->allocated_size];
+	current_data_table->allocated_size += size + 8;
+
+	* ((guint32 *) data) = size;
+	data += 4;
+	* ((guint32 *) data) = type;
+	data += 4;
+	return data;
+}
+
+static void
+write_data_item (const guint8 *data)
+{
+	guint32 size = * ((guint32 *) (data - 8));
+
+	g_assert (current_data_table->current_offset + size + 8 == current_data_table->allocated_size);
+	current_data_table->current_offset = current_data_table->allocated_size;
 }
 
 struct LookupMethodData
@@ -492,7 +558,7 @@ mono_debug_old_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit, Mon
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugOldWrapperData);
 
-	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
+	if (total_size + 9 >= OLD_DATA_TABLE_CHUNK_SIZE) {
 		// FIXME: Maybe we should print a warning here.
 		//        This should only happen for very big methods, for instance
 		//        with more than 40.000 line numbers and more than 5.000
@@ -501,7 +567,7 @@ mono_debug_old_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit, Mon
 		return;
 	}
 
-	wrapper = (MonoDebugOldWrapperData *) allocate_data_item (MONO_DEBUG_DATA_ITEM_OLD_WRAPPER, total_size);
+	wrapper = (MonoDebugOldWrapperData *) old_allocate_data_item (MONO_DEBUG_DATA_ITEM_OLD_WRAPPER, total_size);
 
 	wrapper->method = method;
 	wrapper->size = total_size;
@@ -626,7 +692,7 @@ mono_debug_old_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, Mono
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugOldMethodAddress);
 
-	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
+	if (total_size + 9 >= OLD_DATA_TABLE_CHUNK_SIZE) {
 		// FIXME: Maybe we should print a warning here.
 		//        This should only happen for very big methods, for instance
 		//        with more than 40.000 line numbers and more than 5.000
@@ -635,7 +701,7 @@ mono_debug_old_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, Mono
 		return;
 	}
 
-	address = (MonoDebugOldMethodAddress *) allocate_data_item (MONO_DEBUG_DATA_ITEM_OLD_METHOD, total_size);
+	address = (MonoDebugOldMethodAddress *) old_allocate_data_item (MONO_DEBUG_DATA_ITEM_OLD_METHOD, total_size);
 
 	address->size = total_size;
 	address->symfile_id = handle->index;
@@ -768,16 +834,18 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
+#if 0
 	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
 		// FIXME: Maybe we should print a warning here.
 		//        This should only happen for very big methods, for instance
 		//        with more than 40.000 line numbers and more than 5.000
 		//        local variables.
-		g_warning (G_STRLOC ": %p - %s.%s.%s - %d", method, method->klass->name_space,
+		g_error (G_STRLOC ": %p - %s.%s.%s - %d", method, method->klass->name_space,
 			   method->klass->name, method->name, total_size);
 		mono_debugger_unlock ();
 		return NULL;
 	}
+#endif
 
 	address = (MonoDebugMethodAddress *) allocate_data_item (MONO_DEBUG_DATA_ITEM_METHOD, total_size);
 
@@ -834,6 +902,8 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	hash->domain_id = mono_domain_get_id (domain);
 
 	g_hash_table_insert (method_address_hash, hash, address);
+
+	write_data_item ((guint8 *) address);
 
 	mono_debugger_unlock ();
 	return address;
@@ -1079,7 +1149,7 @@ mono_debug_add_type (MonoClass *klass)
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugClassEntry);
 
-	g_assert (total_size + 9 < DATA_TABLE_CHUNK_SIZE);
+	g_assert (total_size + 9 < OLD_DATA_TABLE_CHUNK_SIZE);
 
 	entry = (MonoDebugClassEntry *) allocate_data_item (MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
@@ -1087,6 +1157,9 @@ mono_debug_add_type (MonoClass *klass)
 	entry->symfile_id = handle->index;
 
 	memcpy (&entry->data, oldptr, size);
+
+	if (mono_debug_debugger_version >= 2)
+		write_data_item ((guint8 *) entry);
 
 	if (max_size > BUFSIZ)
 		g_free (oldptr);

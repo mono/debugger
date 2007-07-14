@@ -11,6 +11,7 @@
 #include <mono/metadata/appdomain.h>
 
 typedef struct _MonoSymbolTable			MonoSymbolTable;
+typedef struct _MonoDebugDataTable		MonoDebugDataTable;
 
 typedef struct _MonoSymbolFile			MonoSymbolFile;
 typedef struct _MonoSymbolFilePriv		MonoSymbolFilePriv;
@@ -85,12 +86,21 @@ struct _MonoSymbolTable {
 	 * The `current_data_table' points to a blob of `current_data_table_size'
 	 * bytes.
 	 */
-	gpointer current_data_table;
-	guint32 current_data_table_size;
+	gpointer old_current_data_table;
+	guint32 old_current_data_table_size;
 	/*
 	 * The offset in the `current_data_table'.
 	 */
-	guint32 current_data_table_offset;
+	guint32 old_current_data_table_offset;
+};
+
+struct _MonoDebugDataTable {
+	guint32 total_size;
+	guint32 allocated_size;
+	guint32 current_offset;
+	guint32 dummy;
+	MonoDebugDataTable *next;
+	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
 typedef enum {
@@ -173,6 +183,7 @@ struct _MonoDebugVarInfo {
 #define MONO_DEBUGGER_MAGIC				0x7aff65af4253d427ULL
 
 extern MonoSymbolTable *mono_symbol_table;
+extern MonoDebugDataTable *mono_debug_data_table;
 extern MonoDebugFormat mono_debug_format;
 extern GHashTable *mono_debug_handles;
 extern gint32 mono_debug_debugger_version;

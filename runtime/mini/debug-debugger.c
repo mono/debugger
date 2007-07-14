@@ -133,6 +133,7 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
 	(void*)&mono_get_lmf_addr,
 
 	&mono_debug_debugger_version,
+	&mono_debug_data_table,
 
 	&debugger_create_string,
 	&debugger_lookup_class,
