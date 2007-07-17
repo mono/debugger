@@ -2496,7 +2496,7 @@ namespace Mono.Debugger.Backends
 					subprog, out start_row, out end_row, out lines);
 				if (file == null) {
 					Report.Error ("WARNING: Can't find source for method {0} in {1}",
-						      subprog.Name, subprob.ImageFile);
+						      subprog.Name, subprog.ImageFile);
 					return;
 				}
 
