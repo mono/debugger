@@ -2494,8 +2494,11 @@ namespace Mono.Debugger.Backends
 			{
 				string file = engine.GetSource (
 					subprog, out start_row, out end_row, out lines);
-				if (file == null)
-					throw new InternalError ();
+				if (file == null) {
+					Report.Error ("WARNING: Can't find source for method {0} in {1}",
+						      subprog.Name, subprob.ImageFile);
+					return;
+				}
 
 				source = subprog.dwarf.GetSourceMethod (
 					subprog, StartRow, EndRow);
