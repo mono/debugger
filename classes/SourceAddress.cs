@@ -77,11 +77,14 @@ namespace Mono.Debugger
 
 		public string Name {
 			get {
-				if (!source.IsDynamic)
-					return String.Format (
-						"{0}:{1}", source.SourceMethod.SourceFile.FileName, Row);
-				else
+				if ((source.IsDynamic) || (source.SourceMethod == null))
 					return String.Format ("{0}", Row);
+
+				SourceFile file = source.SourceMethod.SourceFile;
+				if (file == null)
+					return String.Format ("{0}", Row);
+				else
+					return String.Format ("{0}:{1}", file.FileName, Row);
 			}
 		}
 

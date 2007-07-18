@@ -2517,8 +2517,10 @@ namespace Mono.Debugger.Backends
 				if (sc.IsContinuous)
 					SetAddresses (sc.StartAddress, sc.EndAddress);
 
-				line_numbers = new DwarfTargetLineNumberTable (this);
-				SetLineNumbers (line_numbers);
+				if (lines != null) {
+					line_numbers = new DwarfTargetLineNumberTable (this);
+					SetLineNumbers (line_numbers);
+				}
 
 				if ((lines != null) && (lines.Length > 2)) {
 					LineNumber start = lines [1];
