@@ -158,8 +158,6 @@ mono_debug_init (MonoDebugFormat format)
 	mono_symbol_table->version = MONO_DEBUGGER_VERSION;
 	mono_symbol_table->total_size = sizeof (MonoSymbolTable);
 
-	g_message (G_STRLOC ": %d", mono_debug_debugger_version);
-
 	mono_debug_data_table = g_malloc0 (sizeof (MonoDebugDataTable) + DATA_TABLE_CHUNK_SIZE);
 	mono_debug_data_table->total_size = DATA_TABLE_CHUNK_SIZE;
 
@@ -1131,6 +1129,8 @@ mono_debug_add_type (MonoClass *klass)
 	    (klass->byval_arg.type == MONO_TYPE_VAR) || (klass->byval_arg.type == MONO_TYPE_MVAR))
 		return;
 
+	mono_debugger_lock ();
+
 	max_size = 12 + sizeof (gpointer);
 	if (max_size > BUFSIZ)
 		ptr = oldptr = g_malloc (max_size);
@@ -1165,6 +1165,8 @@ mono_debug_add_type (MonoClass *klass)
 		g_free (oldptr);
 
 	mono_debugger_add_type (handle, klass);
+
+	mono_debugger_unlock ();
 }
 
 static MonoDebugMethodJitInfo *
@@ -1243,6 +1245,7 @@ mono_debug_lookup_method_addresses (MonoMethod *method)
 		ptr += sizeof (gpointer);
 	}
 
+	mono_debugger_unlock ();
 	return info;
 }
 
