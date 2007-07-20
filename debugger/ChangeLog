@@ -1,3 +1,22 @@
+2007-07-20  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoFundamentalType.cs: New file.
+	(MonoFundamentalType): New type.
+
+	* languages/mono/MonoStringType.cs
+	(MonoStringType): Derive from `MonoFundamentalType'.
+
+	* languages/mono/MonoObjectType.cs
+	(MonoObjectType): Create the MonoClassType in the .ctor.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.LookupMonoClass): New public method; calls
+	LookupMonoType() and then returns a `MonoClassType', this also
+	works for fundamental types.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoBuiltinTypeInfo): Use the new `MonoFundamentalType'.
+
 2007-06-28  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadManager.cs

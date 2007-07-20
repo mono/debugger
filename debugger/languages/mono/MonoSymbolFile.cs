@@ -367,6 +367,23 @@ namespace Mono.Debugger.Languages.Mono
 			return range.GetMethod ();
 		}
 
+		public MonoClassType LookupMonoClass (Cecil.TypeReference typeref)
+		{
+			TargetType type = LookupMonoType (typeref);
+			if (type == null)
+				return null;
+
+			MonoClassType class_type = type as MonoClassType;
+			if (class_type != null)
+				return class_type;
+
+			MonoFundamentalType fundamental = type as MonoFundamentalType;
+			if (fundamental != null)
+				return fundamental.ClassType;
+
+			throw new InternalError ("UNKNOWN TYPE: {0}", type);
+		}
+
 		public TargetType LookupMonoType (Cecil.TypeReference type)
 		{
 			TargetType result = (TargetType) type_hash [type];
@@ -475,7 +492,7 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, token);
 
-			MonoClassType klass = LookupMonoType (mdef.DeclaringType) as MonoClassType;
+			MonoClassType klass = LookupMonoClass (mdef.DeclaringType);
 			if (klass == null)
 				throw new InternalError ();
 
@@ -513,7 +530,7 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
 
-			MonoClassType klass = LookupMonoType (mdef.DeclaringType) as MonoClassType;
+			MonoClassType klass = LookupMonoClass (mdef.DeclaringType);
 			if (klass == null)
 				throw new InternalError ();
 
@@ -711,7 +728,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (type.FullName != class_name)
 					continue;
 
-				klass = LookupMonoType (type) as MonoClassType;
+				klass = LookupMonoClass (type);
 				break;
 			}
 
@@ -905,8 +922,7 @@ namespace Mono.Debugger.Languages.Mono
 						file, local.Signature);
 				}
 
-				decl_type = (MonoClassType) file.MonoLanguage.LookupMonoType (mdef.DeclaringType);
-
+				decl_type = file.LookupMonoClass (mdef.DeclaringType);
 				
 				has_types = true;
 			}

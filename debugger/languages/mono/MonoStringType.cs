@@ -3,15 +3,16 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoStringType : TargetFundamentalType
+	internal class MonoStringType : MonoFundamentalType
 	{
 		static int max_string_length = 10000;
 
 		public readonly int ObjectSize;
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (MonoSymbolFile file, string name, int object_size, int size)
-			: base (file.MonoLanguage, name, FundamentalKind.String, size)
+		public MonoStringType (MonoSymbolFile file, Cecil.TypeDefinition type,
+				       int object_size, int size)
+			: base (file, type, FundamentalKind.String, size)
 		{
 			this.ObjectSize = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
