@@ -17,41 +17,41 @@ namespace Mono.Debugger
 	// </summary>
 	public class SourceAddress : DebuggerMarshalByRefObject
 	{
+		SourceFile file;
 		LineNumberTable source;
 		int row;
 		int source_offset;
 		int source_range;
 
-		public static SourceAddress Null = new SourceAddress (null, 0);
+		public static SourceAddress Null = new SourceAddress (null, null, 0);
 
-		public SourceAddress (LineNumberTable source, int row)
-			: this (source, row, 0, 0)
-		{ }
-
-		public SourceAddress (LineNumberTable source, int row, int offset, int range)
+		public SourceAddress (LineNumberTable source, SourceFile file, int row)
 		{
 			this.source = source;
+			this.file = file;
 			this.row = row;
-			this.source_offset = offset;
-			this.source_range = range;
 
 			if ((source != null) && (row == 0))
 				throw new InvalidOperationException ();
 		}
 
-		public SourceLocation Location {
-			get {
-				if (source.IsDynamic)
-					return null;
-
-				return new SourceLocation (source.MethodSource, row);
-			}
+		public SourceAddress (LineNumberTable source, SourceFile file, int row,
+				      int offset, int range)
+			: this (source, file, row)
+		{
+			this.source_offset = offset;
+			this.source_range = range;
 		}
 
 		public LineNumberTable LineNumberTable {
 			get {
 				return source;
 			}
+		}
+
+		public SourceFile SourceFile {
+			get {
+				return file; }
 		}
 
 		public int Row {
@@ -81,8 +81,7 @@ namespace Mono.Debugger
 		public string Name {
 			get {
 				if (!source.IsDynamic)
-					return String.Format (
-						"{0}:{1}", source.MethodSource.SourceFile.FileName, Row);
+					return String.Format ("{0}:{1}", file.FileName, Row);
 				else
 					return String.Format ("{0}", Row);
 			}

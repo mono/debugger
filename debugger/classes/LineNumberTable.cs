@@ -85,7 +85,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		public MethodSource MethodSource {
+		private MethodSource MethodSource {
 			get {
 				if (IsDynamic)
 					throw new InvalidOperationException ();
@@ -94,27 +94,22 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected LineEntry[] Addresses {
+		private LineEntry[] Addresses {
 			get {
 				return Data.Addresses;
 			}
 		}
 
-		public virtual int StartRow {
+		private int StartRow {
 			get {
 				return Data.StartRow;
 			}
 		}
 
-		public virtual int EndRow {
+		private int EndRow {
 			get {
 				return Data.EndRow;
 			}
-		}
-
-		public virtual string[] GetNamespaces ()
-		{
-			return null;
 		}
 
 		public TargetAddress Lookup (int line)
@@ -137,9 +132,11 @@ namespace Mono.Debugger
 			if (address.IsNull || (address < start) || (address >= end))
 				return null;
 
+			SourceFile file = is_dynamic ? null : MethodSource.SourceFile;
+
 			if (address < method_start)
 				return new SourceAddress (
-					this, StartRow, (int) (address - start),
+					this, file, StartRow, (int) (address - start),
 					(int) (method_start - address));
 
 			TargetAddress next_address = end;
@@ -155,12 +152,12 @@ namespace Mono.Debugger
 
 				int offset = (int) (address - next_address);
 
-				return new SourceAddress (this, entry.Line, offset, range);
+				return new SourceAddress (this, file, entry.Line, offset, range);
 			}
 
 			if (Addresses.Length > 0)
 				return new SourceAddress (
-					this, Addresses [0].Line, (int) (address - start),
+					this, file, Addresses [0].Line, (int) (address - start),
 					(int) (end - address));
 
 			return null;

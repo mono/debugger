@@ -242,20 +242,13 @@ namespace Mono.Debugger
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
-				     Method method, SourceLocation location)
-			: this (thread, address, stack_ptr, frame_address, registers, method)
-		{
-			this.location = location;
-		}
-
-		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
-				     TargetAddress frame_address, Registers registers,
 				     Method method, SourceAddress source)
 			: this (thread, address, stack_ptr, frame_address, registers, method)
 		{
 			this.source = source;
-			this.location = source.Location;
-			this.has_source = true;
+			if (method.HasSource)
+				location = new SourceLocation (method.MethodSource, source.Row);
+			has_source = true;
 		}
 
 		public int Level {
@@ -267,19 +260,33 @@ namespace Mono.Debugger
 			level = new_level;
 		}
 
+		void compute_source ()
+		{
+			lock (this) {
+				if (has_source)
+					return;
+				has_source = true;
+				if ((method == null) || !method.HasSource || !method.HasLineNumbers)
+					return;
+				source = method.LineNumberTable.Lookup (address);
+				if (source == null)
+					return;
+				location = new SourceLocation (method.MethodSource, source.Row);
+			}
+		}
+
 		public SourceAddress SourceAddress {
 			get {
-				if (has_source)
-					return source;
-				if ((method != null) && method.HasLineNumbers)
-					source = method.LineNumberTable.Lookup (address);
-				has_source = true;
+				compute_source ();
 				return source;
 			}
 		}
 
 		public SourceLocation SourceLocation {
-			get { return location; }
+			get {
+				compute_source ();
+				return location;
+			}
 		}
 
 		public TargetAddress TargetAddress {

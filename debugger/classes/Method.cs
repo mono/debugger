@@ -174,11 +174,11 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract int StartRow {
+		public abstract bool HasSource {
 			get;
 		}
 
-		public abstract int EndRow {
+		public abstract MethodSource MethodSource {
 			get;
 		}
 
@@ -285,6 +285,8 @@ namespace Mono.Debugger
 		public abstract TargetVariable[] Locals {
 			get;
 		}
+
+		public abstract string[] GetNamespaces ();
 
 		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);

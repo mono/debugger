@@ -2689,11 +2689,12 @@ namespace Mono.Debugger.Frontend
 
 			if (Argument == "") {
 				StackFrame frame = context.CurrentFrame;
+
 				if (frame.SourceAddress == null)
 					return false;
 
-				if (frame.SourceAddress.Location != null)
-					location = frame.SourceAddress.Location;
+				if (frame.SourceLocation != null)
+					location = frame.SourceLocation;
 				else
 					address = frame.SourceAddress;
 

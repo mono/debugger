@@ -835,7 +835,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { throw new InvalidOperationException (); }
 			}
 		}
-
+		
 		protected class MonoMethod : Method
 		{
 			MonoSymbolFile file;
@@ -875,12 +875,12 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source.SourceFile; }
 			}
 
-			public override int StartRow {
-				get { return method.StartRow; }
+			public override bool HasSource {
+				get { return true; }
 			}
 
-			public override int EndRow {
-				get { return method.EndRow; }
+			public override MethodSource MethodSource {
+				get { return source; }
 			}
 
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
@@ -896,7 +896,7 @@ namespace Mono.Debugger.Languages.Mono
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
-				SetLineNumbers (new MonoLineNumberTable (
+				SetLineNumbers (new MonoMethodLineNumberTable (
 					this, source, method, address.LineNumbers));
 			}
 
@@ -1020,9 +1020,45 @@ namespace Mono.Debugger.Languages.Mono
 			{
 				return file.LanguageBackend.GetTrampoline (memory, address);
 			}
+
+			public override string[] GetNamespaces ()
+			{
+				int index = method.NamespaceID;
+
+				Hashtable namespaces = new Hashtable ();
+
+				C.SourceFileEntry source = method.SourceFile;
+				foreach (C.NamespaceEntry nse in source.Namespaces)
+					namespaces.Add (nse.Index, nse);
+
+				ArrayList list = new ArrayList ();
+
+				while ((index > 0) && namespaces.Contains (index)) {
+					C.NamespaceEntry ns = (C.NamespaceEntry) namespaces [index];
+					list.Add (ns.Name);
+					list.AddRange (ns.UsingClauses);
+
+					index = ns.Parent;
+				}
+
+				string[] retval = new string [list.Count];
+				list.CopyTo (retval, 0);
+				return retval;
+			}
 		}
 
-		protected class MonoLineNumberTable : LineNumberTable
+		protected abstract class MonoLineNumberTable : LineNumberTable
+		{
+			Method method;
+
+			protected MonoLineNumberTable (Method method, bool is_dynamic)
+				: base (method, is_dynamic)
+			{
+				this.method = method;
+			}
+		}
+
+		protected class MonoMethodLineNumberTable : MonoLineNumberTable
 		{
 			int start_row, end_row;
 			JitLineNumberEntry[] line_numbers;
@@ -1031,16 +1067,16 @@ namespace Mono.Debugger.Languages.Mono
 			Method method;
 			Hashtable namespaces;
 
-			public MonoLineNumberTable (Method method, MethodSource source,
-						    C.MethodEntry entry, JitLineNumberEntry[] jit_lnt)
+			public MonoMethodLineNumberTable (Method method, MethodSource source,
+							  C.MethodEntry entry, JitLineNumberEntry[] jit_lnt)
 				: base (method, false)
 			{
 				this.method = method;
 				this.entry = entry;
 				this.line_numbers = jit_lnt;
 				this.source = source;
-				this.start_row = method.StartRow;
-				this.end_row = method.EndRow;
+				this.start_row = entry.StartRow;
+				this.end_row = entry.EndRow;
 			}
 
 			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
@@ -1080,33 +1116,6 @@ namespace Mono.Debugger.Languages.Mono
 
 				return new LineNumberTableData (
 					start_row, end_row, addresses, source, null, method.Module);
-			}
-
-			public override string[] GetNamespaces ()
-			{
-				int index = entry.NamespaceID;
-
-				if (namespaces == null) {
-					namespaces = new Hashtable ();
-
-					C.SourceFileEntry source = entry.SourceFile;
-					foreach (C.NamespaceEntry nse in source.Namespaces)
-						namespaces.Add (nse.Index, nse);
-				}
-
-				ArrayList list = new ArrayList ();
-
-				while ((index > 0) && namespaces.Contains (index)) {
-					C.NamespaceEntry ns = (C.NamespaceEntry) namespaces [index];
-					list.Add (ns.Name);
-					list.AddRange (ns.UsingClauses);
-
-					index = ns.Parent;
-				}
-
-				string[] retval = new string [list.Count];
-				list.CopyTo (retval, 0);
-				return retval;
 			}
 
 			public override void DumpLineNumbers ()
@@ -1291,11 +1300,11 @@ namespace Mono.Debugger.Languages.Mono
 				get { throw new InvalidOperationException (); }
 			}
 
-			public override int StartRow {
-				get { throw new InvalidOperationException (); }
+			public override bool HasSource {
+				get { return false; }
 			}
 
-			public override int EndRow {
+			public override MethodSource MethodSource {
 				get { throw new InvalidOperationException (); }
 			}
 
@@ -1317,6 +1326,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override TargetVariable[] Locals {
 				get { return null; }
+			}
+
+			public override string[] GetNamespaces ()
+			{
+				return null;
 			}
 
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
@@ -1341,7 +1355,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected class WrapperLineNumberTable : LineNumberTable
+		protected class WrapperLineNumberTable : MonoLineNumberTable
 		{
 			WrapperMethod wrapper;
 			MethodAddress address;

@@ -354,10 +354,10 @@ namespace Mono.Debugger.Tests
 				Assert.AreEqual (level, frame.Level,
 						 "Stack frame is from level {0}, but expected {1}.",
 						 frame.Level, level);
-				if (frame.SourceAddress == null)
+				if (frame.SourceLocation == null)
 					Assert.Fail ("Current frame `{0}' has no source code.", frame);
 
-				SourceLocation location = frame.SourceAddress.Location;
+				SourceLocation location = frame.SourceLocation;
 
 				string name = location.Name;
 				int pos = name.IndexOf (':');

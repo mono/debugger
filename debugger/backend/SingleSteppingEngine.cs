@@ -1227,9 +1227,7 @@ namespace Mono.Debugger.Backends
 
 			SourceAddress addr = lnt.Lookup (method.MethodStartAddress);
 			if (addr == null) {
-				Console.WriteLine ("OOOOPS - No source for method: " +
-						   "{0} {1} - {2} {3}",
-						   method, lnt, lnt.StartRow, lnt.EndRow);
+				Report.Error ("OOOOPS - No source for method: {0}", method);
 				lnt.DumpLineNumbers ();
 				return false;
 			}

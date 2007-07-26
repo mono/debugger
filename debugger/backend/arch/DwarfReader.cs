@@ -2530,11 +2530,16 @@ namespace Mono.Debugger.Backends
 				get { return subprog.Locals; }
 			}
 
-			public override int StartRow {
+			public override string[] GetNamespaces ()
+			{
+				return null;
+			}
+
+			public int StartRow {
 				get { return start_row; }
 			}
 
-			public override int EndRow {
+			public int EndRow {
 				get { return end_row; }
 			}
 
@@ -2542,7 +2547,11 @@ namespace Mono.Debugger.Backends
 				get { return lines; }
 			}
 
-			public MethodSource MethodSource {
+			public override bool HasSource {
+				get { return source != null; }
+			}
+
+			public override MethodSource MethodSource {
 				get { return source; }
 			}
 

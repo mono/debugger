@@ -131,11 +131,7 @@ namespace Mono.Debugger.Frontend
 			if ((method == null) || !method.HasLineNumbers)
 				return null;
 
-			LineNumberTable msource = method.LineNumberTable;
-			if (msource.IsDynamic)
-				return null;
-
-			return msource.GetNamespaces ();
+			return method.GetNamespaces ();
 		}
 
 		public string[] GetNamespaces ()
@@ -146,12 +142,11 @@ namespace Mono.Debugger.Frontend
 		public SourceLocation CurrentLocation {
 			get {
 				StackFrame frame = CurrentFrame;
-				if ((frame.SourceAddress == null) ||
-				    (frame.SourceAddress.Location == null))
+				if (frame.SourceLocation == null)
 					throw new ScriptingException (
 						"Current location doesn't have source code");
 
-				return frame.SourceAddress.Location;
+				return frame.SourceLocation;
 			}
 		}
 

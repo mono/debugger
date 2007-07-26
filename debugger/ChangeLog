@@ -1,3 +1,20 @@
+2007-07-26  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceAddress.cs
+	(SourceAddress.Location): Removed.
+	(SourceAddress.SourceFile): New public property.
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable): Removed `MethodSource', `Addresses',
+	`StartRow', `EndRow' and `GetNamespaces()'.
+
+	* classes/Method.cs
+	(Method.HasSource): New public property.
+	(Method.MethodSource): New public property.
+	(Method.GetNamespaces): New public method.
+	(Method): Removed `StartRow' and `EndRow'; get them from the
+	`MethodSource' instead.
+
 2007-07-20  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoFundamentalType.cs: New file.
