@@ -56,18 +56,6 @@ namespace Mono.Debugger
 
 		protected abstract LineNumberTableData ReadLineNumbers ();
 
-		public virtual string Name {
-			get {
-				return name;
-			}
-		}
-
-		public Module Module {
-			get {
-				return Data.Module;
-			}
-		}
-
 		private MethodSource MethodSource {
 			get {
 				return Data.MethodSource;

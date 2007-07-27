@@ -1,5 +1,11 @@
 2007-07-27  Martin Baulig  <martin@ximian.com>
 
+	* classes/LineNumberTable.cs
+	(LineNumberTable.Name): Removed.
+	(LineNumberTable.Module): Removed.
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
 	* classes/SourceAddress.cs
 	(SourceAddress.Null): Removed.
 	(SourceAddress.LineNumberTable): Removed.
