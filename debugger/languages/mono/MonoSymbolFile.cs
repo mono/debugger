@@ -795,6 +795,10 @@ namespace Mono.Debugger.Languages.Mono
 				get { return true; }
 			}
 
+			public override bool IsDynamic {
+				get { return false; }
+			}
+
 			public override TargetClassType DeclaringType {
 				get { return klass; }
 			}
@@ -803,12 +807,20 @@ namespace Mono.Debugger.Languages.Mono
 				get { return function; }
 			}
 
-			public override bool HasSourceCode {
+			public override bool HasSourceFile {
 				get { return true; }
 			}
 
 			public override SourceFile SourceFile {
 				get { return source_file; }
+			}
+
+			public override bool HasSourceBuffer {
+				get { return false; }
+			}
+
+			public override SourceBuffer SourceBuffer {
+				get { throw new InvalidOperationException (); }
 			}
 
 			public override int StartRow {
@@ -865,14 +877,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override object MethodHandle {
 				get { return mdef; }
-			}
-
-			public override bool HasSourceFile {
-				get { return source.HasSourceCode; }
-			}
-
-			public override SourceFile SourceFile {
-				get { return source.SourceFile; }
 			}
 
 			public override bool HasSource {
@@ -1273,23 +1277,41 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected class WrapperMethod : Method
+		protected class WrapperMethodSource : MethodSource
 		{
-			public readonly MonoSymbolFile File;
-			public readonly WrapperEntry Entry;
-			bool is_loaded;
-			MethodAddress address;
+			protected readonly WrapperMethod wrapper;
+			protected readonly SourceBuffer buffer;
 
-			public WrapperMethod (MonoSymbolFile file, WrapperEntry entry)
-				: base (entry.Name, file.ImageFile, file.Module)
+			public WrapperMethodSource (WrapperMethod wrapper)
 			{
-				this.File = file;
-				this.Entry = entry;
-				SetWrapperType (entry.WrapperType);
+				this.wrapper = wrapper;
+
+				string[] cil_code = wrapper.Entry.CILCode.Split ('\n');
+				buffer = new SourceBuffer (wrapper.Name, cil_code);
 			}
 
-			public override object MethodHandle {
-				get { return Entry.WrapperMethod; }
+			public override Module Module {
+				get { return wrapper.Module; }
+			}
+
+			public override string Name {
+				get { return wrapper.Name; }
+			}
+
+			public override bool IsManaged {
+				get { return false; }
+			}
+
+			public override bool IsDynamic {
+				get { return true; }
+			}
+
+			public override TargetClassType DeclaringType {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override TargetFunctionType Function {
+				get { throw new InvalidOperationException (); }
 			}
 
 			public override bool HasSourceFile {
@@ -1300,12 +1322,54 @@ namespace Mono.Debugger.Languages.Mono
 				get { throw new InvalidOperationException (); }
 			}
 
+			public override bool HasSourceBuffer {
+				get { return true; }
+			}
+
+			public override SourceBuffer SourceBuffer {
+				get { return buffer; }
+			}
+
+			public override int StartRow {
+				get { return 1; }
+			}
+
+			public override int EndRow {
+				get { return buffer.Contents.Length; }
+			}
+
+			public override Method NativeMethod {
+				get { return wrapper; }
+			}
+		}
+
+		protected class WrapperMethod : Method
+		{
+			public readonly MonoSymbolFile File;
+			public readonly WrapperEntry Entry;
+			bool is_loaded;
+			MethodAddress address;
+			WrapperMethodSource source;
+
+			public WrapperMethod (MonoSymbolFile file, WrapperEntry entry)
+				: base (entry.Name, file.ImageFile, file.Module)
+			{
+				this.File = file;
+				this.Entry = entry;
+				source = new WrapperMethodSource (this);
+				SetWrapperType (entry.WrapperType);
+			}
+
+			public override object MethodHandle {
+				get { return Entry.WrapperMethod; }
+			}
+
 			public override bool HasSource {
-				get { return false; }
+				get { return true; }
 			}
 
 			public override MethodSource MethodSource {
-				get { throw new InvalidOperationException (); }
+				get { return source; }
 			}
 
 			public override TargetClassType DeclaringType {

@@ -136,9 +136,7 @@ namespace Mono.Debugger.Backends
 				AssemblerLine[] lines = new AssemblerLine [list.Count];
 				list.CopyTo (lines, 0);
 
-				return new AssemblerMethod (
-					method.Module, method.StartAddress, method.EndAddress,
-					method.Name, lines);
+				return new AssemblerMethod (method, lines);
 			}
 		}
 

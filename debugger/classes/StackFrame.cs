@@ -246,7 +246,7 @@ namespace Mono.Debugger
 			: this (thread, address, stack_ptr, frame_address, registers, method)
 		{
 			this.source = source;
-			if (method.HasSource)
+			if (method.HasSource && !method.MethodSource.IsDynamic)
 				location = new SourceLocation (method.MethodSource, source.Row);
 			has_source = true;
 		}
@@ -270,6 +270,8 @@ namespace Mono.Debugger
 					return;
 				source = method.LineNumberTable.Lookup (address);
 				if (source == null)
+					return;
+				if (method.MethodSource.IsDynamic)
 					return;
 				location = new SourceLocation (method.MethodSource, source.Row);
 			}

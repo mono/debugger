@@ -1,3 +1,22 @@
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/MethodSource.cs
+	(MethodSource.IsDynamic): New public property.
+	(MethodSource.HasSourceCode): Renamed into `HasSourceFile'.
+	(MethodSource.HasSourceBuffer): New public property.
+	(MethodSource.SourceBuffer): New public property.
+
+	* classes/AssemblerMethod.cs
+	(AssemblerMethod): Derive from `MethodSource', not
+	`LineNumberTable'.
+
+	* classes/Method.cs
+	(Method.HasSourceFile): Removed.
+	(Method.SourceFile): Removed.
+
+	* languages/mono/MonoSymbolFile.cs
+	(WrapperMethod): Also create a MethodSource for wrappers.
+
 2007-07-26  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceAddress.cs

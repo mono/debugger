@@ -2444,6 +2444,10 @@ namespace Mono.Debugger.Backends
 				get { return false; }
 			}
 
+			public override bool IsDynamic {
+				get { return false; }
+			}
+
 			public override TargetClassType DeclaringType {
 				get { throw new InvalidOperationException (); }
 			}
@@ -2452,12 +2456,20 @@ namespace Mono.Debugger.Backends
 				get { throw new InvalidOperationException (); }
 			}
 
-			public override bool HasSourceCode {
+			public override bool HasSourceFile {
 				get { return subprog.SourceFile != null; }
 			}
 
 			public override SourceFile SourceFile {
 				get { return subprog.SourceFile; }
+			}
+
+			public override bool HasSourceBuffer {
+				get { return false; }
+			}
+
+			public override SourceBuffer SourceBuffer {
+				get { throw new InvalidOperationException (); }
 			}
 
 			public override int StartRow {
@@ -2498,14 +2510,6 @@ namespace Mono.Debugger.Backends
 
 			public override object MethodHandle {
 				get { return this; }
-			}
-
-			public override bool HasSourceFile {
-				get { return subprog.SourceFile != null; }
-			}
-
-			public override SourceFile SourceFile {
-				get { return subprog.SourceFile; }
 			}
 
 			public override TargetClassType DeclaringType {

@@ -17,6 +17,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract bool IsDynamic {
+			get;
+		}
+
 		public abstract TargetClassType DeclaringType {
 			get;
 		}
@@ -25,11 +29,19 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract bool HasSourceCode {
+		public abstract bool HasSourceFile {
 			get;
 		}
 
 		public abstract SourceFile SourceFile {
+			get;
+		}
+
+		public abstract bool HasSourceBuffer {
+			get;
+		}
+
+		public abstract SourceBuffer SourceBuffer {
 			get;
 		}
 
