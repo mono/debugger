@@ -1055,10 +1055,142 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			Method method;
 
+			TargetAddress start, end;
+			TargetAddress method_start, method_end;
+
 			protected MonoLineNumberTable (Method method)
-				: base (method)
 			{
 				this.method = method;
+
+				this.start = method.StartAddress;
+				this.end = method.EndAddress;
+
+				if (method.HasMethodBounds) {
+					method_start = method.MethodStartAddress;
+					method_end = method.MethodEndAddress;
+				} else {
+					method_start = start;
+					method_end = end;
+				}
+			}
+
+			ObjectCache cache = null;
+			object read_line_numbers (object user_data)
+			{
+				return ReadLineNumbers ();
+			}
+
+			protected LineNumberTableData Data {
+				get {
+					if (cache == null)
+						cache = new ObjectCache
+							(new ObjectCacheFunc (read_line_numbers), null, 5);
+
+					return (LineNumberTableData) cache.Data;
+				}
+			}
+
+			protected abstract LineNumberTableData ReadLineNumbers ();
+
+			private LineEntry[] Addresses {
+				get {
+					return Data.Addresses;
+				}
+			}
+
+			private int StartRow {
+				get {
+					return Data.StartRow;
+				}
+			}
+
+			private int EndRow {
+				get {
+					return Data.EndRow;
+				}
+			}
+
+			public override TargetAddress Lookup (int line)
+			{
+				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
+					return TargetAddress.Null;
+
+				for (int i = 0; i < Addresses.Length; i++) {
+					LineEntry entry = (LineEntry) Addresses [i];
+
+					if (line <= entry.Line)
+						return entry.Address;
+				}
+
+				return TargetAddress.Null;
+			}
+
+			public override SourceAddress Lookup (TargetAddress address)
+			{
+				if (address.IsNull || (address < start) || (address >= end))
+					return null;
+
+				SourceFile file = null;
+				if (method.MethodSource.HasSourceFile)
+					file = method.MethodSource.SourceFile;
+				SourceBuffer buffer = null;
+				if (method.MethodSource.HasSourceBuffer)
+					buffer = method.MethodSource.SourceBuffer;
+
+				if (address < method_start)
+					return new SourceAddress (
+						file, buffer, StartRow, (int) (address - start),
+						(int) (method_start - address));
+
+				TargetAddress next_address = end;
+
+				for (int i = Addresses.Length-1; i >= 0; i--) {
+					LineEntry entry = (LineEntry) Addresses [i];
+
+					int range = (int) (next_address - address);
+					next_address = entry.Address;
+
+					if (next_address > address)
+						continue;
+
+					int offset = (int) (address - next_address);
+
+					return new SourceAddress (file, buffer, entry.Line, offset, range);
+				}
+
+				if (Addresses.Length > 0)
+					return new SourceAddress (
+						file, buffer, Addresses [0].Line, (int) (address - start),
+						(int) (end - address));
+
+				return null;
+			}
+
+			public override void DumpLineNumbers ()
+			{
+				Console.WriteLine ("--------");
+				Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0}", method);
+				Console.WriteLine ("--------");
+				for (int i = 0; i < Addresses.Length; i++) {
+					LineEntry entry = (LineEntry) Addresses [i];
+					Console.WriteLine ("{0,4} {1,4}  {2}", i,
+							   entry.Line, entry.Address);
+				}
+				Console.WriteLine ("--------");
+			}
+
+			protected class LineNumberTableData
+			{
+				public readonly int StartRow;
+				public readonly int EndRow;
+				public readonly LineEntry[] Addresses;
+
+				public LineNumberTableData (int start, int end, LineEntry[] addresses)
+				{
+					this.StartRow = start;
+					this.EndRow = end;
+					this.Addresses = addresses;
+				}
 			}
 		}
 
@@ -1118,8 +1250,7 @@ namespace Mono.Debugger.Languages.Mono
 				LineEntry[] addresses = new LineEntry [lines.Count];
 				lines.CopyTo (addresses, 0);
 
-				return new LineNumberTableData (
-					start_row, end_row, addresses, source, method.Module);
+				return new LineNumberTableData (start_row, end_row, addresses);
 			}
 
 			public override void DumpLineNumbers ()
@@ -1484,9 +1615,7 @@ namespace Mono.Debugger.Languages.Mono
 				LineEntry[] addresses = new LineEntry [lines.Count];
 				lines.CopyTo (addresses, 0);
 
-				return new LineNumberTableData (
-					1, cil_code.Length, addresses, wrapper.MethodSource,
-					wrapper.File.Module);
+				return new LineNumberTableData (1, cil_code.Length, addresses);
 			}
 		}
 

@@ -1,6 +1,13 @@
 2007-07-27  Martin Baulig  <martin@ximian.com>
 
 	* classes/LineNumberTable.cs
+	(LineNumberTable): Made Lookup() and DumpLineNumbers() abstract;
+	move the actual implementation into MonoSymbolFile.cs and
+	DwarfReader.cs.	
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/LineNumberTable.cs
 	(LineNumberTable.Name): Removed.
 	(LineNumberTable.Module): Removed.
 
