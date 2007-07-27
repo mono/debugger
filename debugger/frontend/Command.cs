@@ -2765,13 +2765,17 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException (
 						"Cannot read source file `{0}'", location.FileName);
 			} else if (address != null) {
-				LineNumberTable lnt = address.LineNumberTable;
-
-				if ((lnt == null) || !lnt.IsDynamic)
+				if (address.SourceFile != null) {
+					buffer = context.Interpreter.ReadFile (address.SourceFile.FileName);
+					if (buffer == null)
+						throw new ScriptingException (
+							"Cannot read source file `{0}'",
+							address.SourceFile.FileName);
+				} else if (address.SourceBuffer != null)
+					buffer = address.SourceBuffer;
+				else
 					throw new ScriptingException (
 						"Current location doesn't have any source code.");
-
-				buffer = lnt.SourceBuffer;
 			} else
 				throw new ScriptingException (
 					"Current location doesn't have any source code.");

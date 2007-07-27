@@ -7,17 +7,15 @@ namespace Mono.Debugger
 	public abstract class LineNumberTable : DebuggerMarshalByRefObject
 	{
 		string name;
-		bool is_dynamic;
 
 		TargetAddress start, end;
 		TargetAddress method_start, method_end;
 
-		protected LineNumberTable (Method method, bool is_dynamic)
+		protected LineNumberTable (Method method)
 		{
 			this.start = method.StartAddress;
 			this.end = method.EndAddress;
 			this.name = method.Name;
-			this.is_dynamic = is_dynamic;
 
 			if (method.HasMethodBounds) {
 				method_start = method.MethodStartAddress;
@@ -64,21 +62,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		public bool IsDynamic {
-			get {
-				return is_dynamic;
-			}
-		}
-
-		public SourceBuffer SourceBuffer {
-			get {
-				if (!IsDynamic)
-					throw new InvalidOperationException ();
-
-				return Data.SourceBuffer;
-			}
-		}
-
 		public Module Module {
 			get {
 				return Data.Module;
@@ -87,9 +70,6 @@ namespace Mono.Debugger
 
 		private MethodSource MethodSource {
 			get {
-				if (IsDynamic)
-					throw new InvalidOperationException ();
-
 				return Data.MethodSource;
 			}
 		}
@@ -132,11 +112,16 @@ namespace Mono.Debugger
 			if (address.IsNull || (address < start) || (address >= end))
 				return null;
 
-			SourceFile file = is_dynamic ? null : MethodSource.SourceFile;
+			SourceFile file = null;
+			if (MethodSource.HasSourceFile)
+				file = MethodSource.SourceFile;
+			SourceBuffer buffer = null;
+			if (MethodSource.HasSourceBuffer)
+				buffer = MethodSource.SourceBuffer;
 
 			if (address < method_start)
 				return new SourceAddress (
-					this, file, StartRow, (int) (address - start),
+					file, buffer, StartRow, (int) (address - start),
 					(int) (method_start - address));
 
 			TargetAddress next_address = end;
@@ -152,12 +137,12 @@ namespace Mono.Debugger
 
 				int offset = (int) (address - next_address);
 
-				return new SourceAddress (this, file, entry.Line, offset, range);
+				return new SourceAddress (file, buffer, entry.Line, offset, range);
 			}
 
 			if (Addresses.Length > 0)
 				return new SourceAddress (
-					this, file, Addresses [0].Line, (int) (address - start),
+					file, buffer, Addresses [0].Line, (int) (address - start),
 					(int) (end - address));
 
 			return null;
@@ -183,22 +168,14 @@ namespace Mono.Debugger
 			public readonly int EndRow;
 			public readonly LineEntry[] Addresses;
 			public readonly MethodSource MethodSource;
-			public readonly SourceBuffer SourceBuffer;
 			public readonly Module Module;
 
 			public LineNumberTableData (int start, int end, LineEntry[] addresses,
-						    SourceBuffer buffer, Module module)
-				: this (start, end, addresses, null, buffer, module)
-			{ }
-
-			public LineNumberTableData (int start, int end, LineEntry[] addresses,
-						    MethodSource source, SourceBuffer buffer,
-						    Module module)
+						    MethodSource source, Module module)
 			{
 				this.StartRow = start;
 				this.EndRow = end;
 				this.MethodSource = source;
-				this.SourceBuffer = buffer;
 				this.Addresses = addresses;
 				this.Module = module;
 			}

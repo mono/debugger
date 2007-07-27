@@ -1055,8 +1055,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			Method method;
 
-			protected MonoLineNumberTable (Method method, bool is_dynamic)
-				: base (method, is_dynamic)
+			protected MonoLineNumberTable (Method method)
+				: base (method)
 			{
 				this.method = method;
 			}
@@ -1073,7 +1073,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			public MonoMethodLineNumberTable (Method method, MethodSource source,
 							  C.MethodEntry entry, JitLineNumberEntry[] jit_lnt)
-				: base (method, false)
+				: base (method)
 			{
 				this.method = method;
 				this.entry = entry;
@@ -1119,7 +1119,7 @@ namespace Mono.Debugger.Languages.Mono
 				lines.CopyTo (addresses, 0);
 
 				return new LineNumberTableData (
-					start_row, end_row, addresses, source, null, method.Module);
+					start_row, end_row, addresses, source, method.Module);
 			}
 
 			public override void DumpLineNumbers ()
@@ -1425,7 +1425,7 @@ namespace Mono.Debugger.Languages.Mono
 			MethodAddress address;
 
 			public WrapperLineNumberTable (WrapperMethod wrapper, MethodAddress address)
-				: base (wrapper, true)
+				: base (wrapper)
 			{
 				this.wrapper = wrapper;
 				this.address = address;
@@ -1456,8 +1456,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				JitLineNumberEntry[] line_numbers = address.LineNumbers;
 
-				string[] cil_code = wrapper.Entry.CILCode.Split ('\n');
-				SourceBuffer buffer = new SourceBuffer (wrapper.Name, cil_code);
+				string[] cil_code = wrapper.MethodSource.SourceBuffer.Contents;
 
 				int[] cil_offsets = new int [cil_code.Length];
 				int last_cil_offset = 0;
@@ -1486,7 +1485,7 @@ namespace Mono.Debugger.Languages.Mono
 				lines.CopyTo (addresses, 0);
 
 				return new LineNumberTableData (
-					1, cil_code.Length, addresses, null, buffer,
+					1, cil_code.Length, addresses, wrapper.MethodSource,
 					wrapper.File.Module);
 			}
 		}

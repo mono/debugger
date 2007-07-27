@@ -2393,7 +2393,7 @@ namespace Mono.Debugger.Backends
 			DwarfTargetMethod method;
 
 			public DwarfTargetLineNumberTable (DwarfTargetMethod method)
-				: base (method, false)
+				: base (method)
 			{
 				this.method = method;
 			}
@@ -2411,7 +2411,7 @@ namespace Mono.Debugger.Backends
 
 				return new LineNumberTableData (
 					method.StartRow, method.EndRow, addresses,
-					method.MethodSource, null, method.Module);
+					method.MethodSource, method.Module);
 			}
 		}
 

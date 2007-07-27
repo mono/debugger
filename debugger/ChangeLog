@@ -1,5 +1,16 @@
 2007-07-27  Martin Baulig  <martin@ximian.com>
 
+	* classes/SourceAddress.cs
+	(SourceAddress.Null): Removed.
+	(SourceAddress.LineNumberTable): Removed.
+	(SourceAddress.SourceBuffer): New public property.
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable.IsDynamic): Removed.
+	(LineNumberTable.SourceBuffer): Removed.
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
 	* classes/MethodSource.cs
 	(MethodSource.IsDynamic): New public property.
 	(MethodSource.HasSourceCode): Renamed into `HasSourceFile'.
