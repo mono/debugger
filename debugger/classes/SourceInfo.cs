@@ -73,7 +73,7 @@ namespace Mono.Debugger
 				if (!method.HasSourceFile)
 					continue;
 				if ((method.StartRow <= line) && (method.EndRow >= line))
-					return new SourceLocation (method, line);
+					return new SourceLocation (method, this, line);
 			}
 
 			return new SourceLocation (this, line);

@@ -3179,20 +3179,11 @@ namespace Mono.Debugger.Frontend
 			public string Documentation { get { return ""; } }
 		}
 
-		protected class DumpLineNumberTableCommand : SourceCommand, IDocumentableCommand
+		protected class DumpLineNumberTableCommand : FrameCommand, IDocumentableCommand
 		{
-			protected override bool DoResolve (ScriptingContext context)
-			{
-				bool resolved = base.DoResolve (context);
-				if (!resolved)
-					throw new ScriptingException ("No such method: `{0}'", Argument);
-
-				return true;
-			}
-
 			protected override object DoExecute (ScriptingContext context)
 			{
-				Location.DumpLineNumbers ();
+				context.CurrentFrame.Method.LineNumberTable.DumpLineNumbers ();
 				return null;
 			}
 

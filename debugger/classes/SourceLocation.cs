@@ -39,14 +39,14 @@ namespace Mono.Debugger
 		}
 
 		public SourceLocation (MethodSource source)
-			: this (source, -1)
+			: this (source, source.SourceFile, -1)
 		{ }
 
-		public SourceLocation (MethodSource source, int line)
-			: this (new DynamicSourceLocation (source, line))
+		public SourceLocation (MethodSource source, SourceFile file, int line)
+			: this (new DynamicSourceLocation (source, file, line))
 		{
-			Module = source.SourceFile.Module.Name;
-			FileName = source.SourceFile.FileName;
+			Module = file.Module.Name;
+			FileName = file.FileName;
 			Method = source.Name;
 
 			if (line != -1)
@@ -73,14 +73,6 @@ namespace Mono.Debugger
 			this.Name = file + ":" + line;
 		}
 
-		public void DumpLineNumbers ()
-		{
-			if (dynamic == null)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			dynamic.DumpLineNumbers ();
-		}
-
 		protected bool Resolve (DebuggerSession session)
 		{
 			if (dynamic != null)
@@ -93,7 +85,7 @@ namespace Mono.Debugger
 				if (source == null)
 					return false;
 
-				dynamic = new DynamicSourceLocation (source, Line);
+				dynamic = new DynamicSourceLocation (source, source.SourceFile, Line);
 				return true;
 			}
 
@@ -197,10 +189,10 @@ namespace Mono.Debugger
 		int line;
 
 		public DynamicSourceLocation (MethodSource source)
-			: this (source, -1)
+			: this (source, source.SourceFile, -1)
 		{ }
 
-		public DynamicSourceLocation (MethodSource source, int line)
+		public DynamicSourceLocation (MethodSource source, SourceFile file, int line)
 		{
 			if (source.IsManaged) {
 				this.function = source.Function;
@@ -210,7 +202,7 @@ namespace Mono.Debugger
 				this.source = source;
 			}
 
-			this.file = source.SourceFile;
+			this.file = file;
 			this.line = line;
 		}
 
@@ -228,20 +220,6 @@ namespace Mono.Debugger
 			this.module = function.Module;
 
 			this.line = line;
-		}
-
-		internal void DumpLineNumbers ()
-		{
-#if FIXME
-			if (source == null)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			Method method = source.GetMethod (0);
-			if ((method == null) || !method.HasLineNumbers)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			method.LineNumberTable.DumpLineNumbers ();
-#endif
 		}
 
 		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint, int domain)

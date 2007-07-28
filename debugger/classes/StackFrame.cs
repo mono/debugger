@@ -247,7 +247,8 @@ namespace Mono.Debugger
 		{
 			this.source = source;
 			if (method.HasSource && !method.MethodSource.IsDynamic)
-				location = new SourceLocation (method.MethodSource, source.Row);
+				location = new SourceLocation (
+					method.MethodSource, source.SourceFile, source.Row);
 			has_source = true;
 		}
 
@@ -273,7 +274,8 @@ namespace Mono.Debugger
 					return;
 				if (method.MethodSource.IsDynamic)
 					return;
-				location = new SourceLocation (method.MethodSource, source.Row);
+				location = new SourceLocation (
+					method.MethodSource, source.SourceFile, source.Row);
 			}
 		}
 

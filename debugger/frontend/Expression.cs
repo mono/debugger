@@ -40,7 +40,7 @@ namespace Mono.Debugger.Frontend
 					"Cannot find method corresponding to line {0} in `{1}'.",
 					line, file.Name);
 
-			return new SourceLocation (source, line);
+			return new SourceLocation (source, file, line);
 		}
 
 		protected SourceLocation DoParseExpression (TargetMemoryAccess target, StackFrame frame,
