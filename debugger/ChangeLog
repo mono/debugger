@@ -1,3 +1,15 @@
+2007-07-28  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/DwarfReader.cs: Almost completely redesign the line
+	number table; it's no longer based on methods and now also works
+	with newer versions of gcc and g++.
+
+2007-07-28  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceLocation.cs
+	(SourceLocation): Add a .ctor which takes a `SourceFile' in
+	addition to a `MethodSource'.
+
 2007-07-27  Martin Baulig  <martin@ximian.com>
 
 	* classes/LineNumberTable.cs
