@@ -2065,8 +2065,6 @@ namespace Mono.Debugger.Backends
 				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
 				if (source != null) {
 					SourceLocation location = new SourceLocation (source);
-					// Method method = source.GetMethod (0);
-					Method method = null;
 
 					main_frame = new StackFrame (
 						sse.thread, iframe.Address, iframe.StackPointer,
