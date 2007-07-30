@@ -2801,6 +2801,11 @@ namespace Mono.Debugger.Frontend
 			} else 
 				start = last_line;
 
+			if (start >= source_code.Length)
+				throw new ScriptingException (
+					"Requested line is out of range; the selected file only " +
+					"has {0} lines.", source_code.Length);
+
 			last_line = System.Math.Min (start + count, source_code.Length);
 
 			if (start > last_line){
