@@ -517,6 +517,7 @@ namespace Mono.Debugger.Backends
 				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
 			else
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
+			temp_breakpoint_id = 0;
 			OperationCompleted (result);
 
 			process.OnThreadExitedEvent (this);
