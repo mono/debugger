@@ -10,8 +10,6 @@
 #include <string.h>
 
 #define SYMFILE_TABLE_CHUNK_SIZE	16
-#define OLD_DATA_TABLE_PTR_CHUNK_SIZE	256
-#define OLD_DATA_TABLE_CHUNK_SIZE	32768
 
 #define DATA_TABLE_PTR_CHUNK_SIZE	256
 #define DATA_TABLE_CHUNK_SIZE		512
@@ -59,29 +57,6 @@ struct _MonoDebugMethodAddress {
 };
 
 typedef struct {
-	guint32 size;
-	guint32 symfile_id;
-	guint32 domain_id;
-	guint32 method_id;
-	guint32 code_size;
-	guint32 dummy;
-	const guint8 *code_start;
-	const guint8 *wrapper_addr;
-	MonoDebugMethodJitInfo *jit;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
-} MonoDebugOldMethodAddress;
-
-typedef struct {
-	guint32 size;
-	guint32 code_size;
-	MonoMethod *method;
-	const guint8 *code_start;
-	const gchar *name;
-	const gchar *cil_code;
-	guint8 data [MONO_ZERO_LEN_ARRAY];
-} MonoDebugOldWrapperData;
-
-typedef struct {
 	MonoMethod *method;
 	guint32 domain_id;
 } MonoDebugMethodHash;
@@ -97,7 +72,6 @@ GHashTable *mono_debug_handles = NULL;
 
 static MonoDebugDataTable *current_data_table = NULL;
 
-static GHashTable *old_method_hash = NULL;
 static GHashTable *method_address_hash = NULL;
 static GHashTable *method_hash = NULL;
 
@@ -165,7 +139,6 @@ mono_debug_init (MonoDebugFormat format)
 
 	mono_debug_handles = g_hash_table_new_full
 		(NULL, NULL, NULL, (GDestroyNotify) mono_debug_close_image);
-	old_method_hash = g_hash_table_new (method_hash_hash, method_hash_equal);
 	method_address_hash = g_hash_table_new (method_hash_hash, method_hash_equal);
 	method_hash = g_hash_table_new (NULL, NULL);
 
@@ -217,11 +190,22 @@ mono_debug_using_mono_debugger (void)
 void
 mono_debug_cleanup (void)
 {
+	MonoDebugDataTable *table, *next_table;
+
 	mono_debugger_cleanup ();
 
 	if (mono_debug_handles)
 		g_hash_table_destroy (mono_debug_handles);
 	mono_debug_handles = NULL;
+
+	table = mono_debug_data_table;
+	while (table) {
+		next_table = table->next;
+		g_free (table);
+		table = next_table;
+	}
+
+	mono_debug_data_table = current_data_table = NULL;
 }
 
 static MonoDebugHandle *
@@ -297,85 +281,11 @@ mono_debug_add_assembly (MonoAssembly *assembly, gpointer user_data)
 	mono_debugger_unlock ();
 }
 
-/*
- * Allocate a new data item of size `size'.
- * Returns the global offset which is to be used to reference this data item and
- * a pointer (in the `ptr' argument) which is to be used to write it.
- */
-static guint8 *
-old_allocate_data_item (MonoDebugDataItemType type, guint32 size)
-{
-	guint32 chunk_size;
-	guint8 *data;
-
-	g_assert (mono_symbol_table);
-
-	size = ALIGN_TO (size, sizeof (gpointer));
-
-	if (size + 16 < OLD_DATA_TABLE_CHUNK_SIZE)
-		chunk_size = OLD_DATA_TABLE_CHUNK_SIZE;
-	else
-		chunk_size = size + 16;
-
-	/* Initialize things if necessary. */
-	if (!mono_symbol_table->old_current_data_table) {
-		mono_symbol_table->old_current_data_table = g_malloc0 (chunk_size);
-		mono_symbol_table->old_current_data_table_size = chunk_size;
-		mono_symbol_table->old_current_data_table_offset = sizeof (gpointer);
-
-		* ((guint32 *) mono_symbol_table->old_current_data_table) = chunk_size;
-	}
-
- again:
-	/* First let's check whether there's still enough room in the current_data_table. */
-	if (mono_symbol_table->old_current_data_table_offset + size + 8 < mono_symbol_table->old_current_data_table_size) {
-		data = ((guint8 *) mono_symbol_table->old_current_data_table) + mono_symbol_table->old_current_data_table_offset;
-		mono_symbol_table->old_current_data_table_offset += size + 8;
-
-		* ((guint32 *) data) = size;
-		data += 4;
-		* ((guint32 *) data) = type;
-		data += 4;
-		return data;
-	}
-
-	if (in_the_mono_debugger)
-		g_warning (G_STRLOC);
-
-	/* Add the current_data_table to the data_tables vector and ... */
-	if (!mono_symbol_table->data_tables) {
-		guint32 tsize = sizeof (gpointer) * OLD_DATA_TABLE_PTR_CHUNK_SIZE;
-		mono_symbol_table->data_tables = g_malloc0 (tsize);
-	}
-
-	if (!((mono_symbol_table->num_data_tables + 1) % OLD_DATA_TABLE_PTR_CHUNK_SIZE)) {
-		guint32 chunks = (mono_symbol_table->num_data_tables + 1) / OLD_DATA_TABLE_PTR_CHUNK_SIZE;
-		guint32 tsize = sizeof (gpointer) * OLD_DATA_TABLE_PTR_CHUNK_SIZE * (chunks + 1);
-
-		g_error (G_STRLOC ": REALLOC VECTOR!");
-
-		mono_symbol_table->data_tables = g_realloc (mono_symbol_table->data_tables, tsize);
-	}
-
-	mono_symbol_table->data_tables [mono_symbol_table->num_data_tables++] = mono_symbol_table->old_current_data_table;
-
-	/* .... allocate a new current_data_table. */
-	mono_symbol_table->old_current_data_table = g_malloc0 (chunk_size);
-	mono_symbol_table->old_current_data_table_size = chunk_size;
-	mono_symbol_table->old_current_data_table_offset = sizeof (gpointer);
-	* ((guint32 *) mono_symbol_table->old_current_data_table) = chunk_size;
-
-	goto again;
-}
-
 static guint8 *
 allocate_data_item (MonoDebugDataItemType type, guint32 size)
 {
 	guint32 chunk_size;
 	guint8 *data;
-
-	if (mono_debug_debugger_version < 2)
-		return old_allocate_data_item (type, size);
 
 	size = ALIGN_TO (size, sizeof (gpointer));
 
@@ -512,216 +422,6 @@ write_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
-static void
-mono_debug_old_add_wrapper (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain)
-{
-	MonoMethodHeader *mheader;
-	MonoDebugOldWrapperData *wrapper;
-	guint8 buffer [BUFSIZ];
-	guint8 *ptr, *oldptr;
-	guint32 i, size, total_size, max_size;
-	gint32 last_il_offset = 0, last_native_offset = 0;
-	const unsigned char* il_code;
-	guint32 il_codesize;
-
-	if (!in_the_mono_debugger)
-		return;
-
-	mono_debugger_lock ();
-
-	mheader = mono_method_get_header (method);
-
-	max_size = 28 * jit->num_line_numbers;
-	if (max_size > BUFSIZ)
-		ptr = oldptr = g_malloc (max_size);
-	else
-		ptr = oldptr = buffer;
-
-	write_leb128 (jit->prologue_end, ptr, &ptr);
-	write_leb128 (jit->epilogue_begin, ptr, &ptr);
-	write_leb128 (jit->num_line_numbers, ptr, &ptr);
-	for (i = 0; i < jit->num_line_numbers; i++) {
-		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
-
-		write_sleb128 (lne->il_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lne->native_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lne->il_offset;
-		last_native_offset = lne->native_offset;
-	}
-
-	write_leb128 (method->wrapper_type, ptr, &ptr);
-
-	size = ptr - oldptr;
-	g_assert (size < max_size);
-	total_size = size + sizeof (MonoDebugOldWrapperData);
-
-	if (total_size + 9 >= OLD_DATA_TABLE_CHUNK_SIZE) {
-		// FIXME: Maybe we should print a warning here.
-		//        This should only happen for very big methods, for instance
-		//        with more than 40.000 line numbers and more than 5.000
-		//        local variables.
-		mono_debugger_unlock ();
-		return;
-	}
-
-	wrapper = (MonoDebugOldWrapperData *) old_allocate_data_item (MONO_DEBUG_DATA_ITEM_OLD_WRAPPER, total_size);
-
-	wrapper->method = method;
-	wrapper->size = total_size;
-	wrapper->code_start = jit->code_start;
-	wrapper->code_size = jit->code_size;
-	wrapper->name = mono_method_full_name (method, TRUE);
-
-	il_code = mono_method_header_get_code (mheader, &il_codesize, NULL);
-	wrapper->cil_code = mono_disasm_code (NULL, method, il_code, il_code + il_codesize);
-
-	memcpy (&wrapper->data, oldptr, size);
-	if (max_size > BUFSIZ)
-		g_free (oldptr);
-
-	mono_debugger_unlock ();
-}
-
-/*
- * This is called by the JIT to tell the debugging code about a newly
- * compiled method.
- */
-static void
-mono_debug_old_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain)
-{
-	MonoDebugMethodHash *hash;
-	MonoDebugOldMethodAddress *address;
-	guint8 buffer [BUFSIZ];
-	guint8 *ptr, *oldptr;
-	guint32 i, size, total_size, max_size;
-	gint32 last_il_offset = 0, last_native_offset = 0;
-	MonoDebugHandle *handle;
-	MonoDebugMethodInfo *minfo;
-
-	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
-	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-	    (method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
-	    (method->wrapper_type != MONO_WRAPPER_NONE)) {
-		mono_debug_old_add_wrapper (method, jit, domain);
-		return;
-	}
-
-	mono_debugger_lock ();
-
-	handle = _mono_debug_get_image (method->klass->image);
-	if (!handle || !handle->symfile || !handle->symfile->offset_table) {
-		mono_debug_old_add_wrapper (method, jit, domain);
-		mono_debugger_unlock ();
-		return;
-	}
-
-	minfo = _mono_debug_lookup_method (method);
-	if (!minfo) {
-		mono_debugger_unlock ();
-		return;
-	}
-
-	max_size = 24 + 8 * jit->num_line_numbers + 16 * minfo->num_lexical_blocks + 20 * (1 + jit->num_params + jit->num_locals);
-	if (max_size > BUFSIZ)
-		ptr = oldptr = g_malloc (max_size);
-	else
-		ptr = oldptr = buffer;
-
-	write_leb128 (jit->prologue_end, ptr, &ptr);
-	write_leb128 (jit->epilogue_begin, ptr, &ptr);
-
-	write_leb128 (jit->num_line_numbers, ptr, &ptr);
-	for (i = 0; i < jit->num_line_numbers; i++) {
-		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
-
-		write_sleb128 (lne->il_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lne->native_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lne->il_offset;
-		last_native_offset = lne->native_offset;
-	}
-
-	jit->num_lexical_blocks = minfo->num_lexical_blocks;
-	jit->lexical_blocks = g_new0 (MonoDebugLexicalBlockEntry, jit->num_lexical_blocks);
-	for (i = 0; i < jit->num_lexical_blocks; i ++) {
-		MonoDebugLexicalBlockEntry *jit_lbe = &jit->lexical_blocks [i];
-		MonoSymbolFileLexicalBlockEntry *minfo_lbe = &minfo->lexical_blocks [i];
-		jit_lbe->il_start_offset = read32 (&(minfo_lbe->_start_offset));
-		jit_lbe->native_start_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_start_offset);
-
-		jit_lbe->il_end_offset = read32 (&(minfo_lbe->_end_offset));
-		jit_lbe->native_end_offset = _mono_debug_address_from_il_offset (jit, jit_lbe->il_end_offset);
-	}
-
-	last_il_offset = 0;
-	last_native_offset = 0;
-	write_leb128 (jit->num_lexical_blocks, ptr, &ptr);
-	for (i = 0; i < jit->num_lexical_blocks; i++) {
-		MonoDebugLexicalBlockEntry *lbe = &jit->lexical_blocks [i];
-
-		write_sleb128 (lbe->il_start_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lbe->native_start_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lbe->il_start_offset;
-		last_native_offset = lbe->native_start_offset;
-
-		write_sleb128 (lbe->il_end_offset - last_il_offset, ptr, &ptr);
-		write_sleb128 (lbe->native_end_offset - last_native_offset, ptr, &ptr);
-
-		last_il_offset = lbe->il_end_offset;
-		last_native_offset = lbe->native_end_offset;
-	}
-
-	*ptr++ = jit->this_var ? 1 : 0;
-	if (jit->this_var)
-		write_variable (jit->this_var, ptr, &ptr);
-
-	write_leb128 (jit->num_params, ptr, &ptr);
-	for (i = 0; i < jit->num_params; i++)
-		write_variable (&jit->params [i], ptr, &ptr);
-
-	write_leb128 (jit->num_locals, ptr, &ptr);
-	for (i = 0; i < jit->num_locals; i++)
-		write_variable (&jit->locals [i], ptr, &ptr);
-
-	size = ptr - oldptr;
-	g_assert (size < max_size);
-	total_size = size + sizeof (MonoDebugOldMethodAddress);
-
-	if (total_size + 9 >= OLD_DATA_TABLE_CHUNK_SIZE) {
-		// FIXME: Maybe we should print a warning here.
-		//        This should only happen for very big methods, for instance
-		//        with more than 40.000 line numbers and more than 5.000
-		//        local variables.
-		mono_debugger_unlock ();
-		return;
-	}
-
-	address = (MonoDebugOldMethodAddress *) old_allocate_data_item (MONO_DEBUG_DATA_ITEM_OLD_METHOD, total_size);
-
-	address->size = total_size;
-	address->symfile_id = handle->index;
-	address->domain_id = mono_domain_get_id (domain);
-	address->method_id = minfo->index;
-	address->code_start = jit->code_start;
-	address->code_size = jit->code_size;
-	address->wrapper_addr = jit->wrapper_addr;
-
-	memcpy (&address->data, oldptr, size);
-	if (max_size > BUFSIZ)
-		g_free (oldptr);
-
-	hash = g_new0 (MonoDebugMethodHash, 1);
-	hash->method = method;
-	hash->domain_id = mono_domain_get_id (domain);
-
-	g_hash_table_insert (old_method_hash, hash, address);
-
-	mono_debugger_unlock ();
-}
-
 MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain)
 {
@@ -736,11 +436,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	guint32 i, size, total_size, max_size;
 	gint32 last_il_offset = 0, last_native_offset = 0;
 	gboolean is_wrapper = FALSE;
-
-	if (mono_debug_debugger_version < 2) {
-		mono_debug_old_add_method (method, jit, domain);
-		return NULL;
-	}
 
 	mono_debugger_lock ();
 
@@ -961,76 +656,6 @@ read_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 }
 
 static MonoDebugMethodJitInfo *
-mono_debug_old_read_method (MonoDebugOldMethodAddress *address)
-{
-	MonoDebugMethodJitInfo *jit;
-	guint32 i, il_offset = 0, native_offset = 0;
-	guint8 *ptr;
-
-	if (address->jit)
-		return address->jit;
-
-	jit = address->jit = g_new0 (MonoDebugMethodJitInfo, 1);
-	jit->code_start = address->code_start;
-	jit->code_size = address->code_size;
-	jit->wrapper_addr = address->wrapper_addr;
-
-	ptr = (guint8 *) &address->data;
-
-	jit->prologue_end = read_leb128 (ptr, &ptr);
-	jit->epilogue_begin = read_leb128 (ptr, &ptr);
-
-	jit->num_line_numbers = read_leb128 (ptr, &ptr);
-	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
-	for (i = 0; i < jit->num_line_numbers; i++) {
-		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
-
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lne->il_offset = il_offset;
-		lne->native_offset = native_offset;
-	}
-
-	il_offset = 0;
-	native_offset = 0;
-	jit->num_lexical_blocks = read_leb128 (ptr, &ptr);
-	jit->lexical_blocks = g_new0 (MonoDebugLexicalBlockEntry, jit->num_lexical_blocks);
-	for (i = 0; i < jit->num_lexical_blocks; i ++) {
-		MonoDebugLexicalBlockEntry *lbe = &jit->lexical_blocks [i];
-
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lbe->il_start_offset = il_offset;
-		lbe->native_start_offset = native_offset;
-
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lbe->il_end_offset = il_offset;
-		lbe->native_end_offset = native_offset;
-	}
-
-	if (*ptr++) {
-		jit->this_var = g_new0 (MonoDebugVarInfo, 1);
-		read_variable (jit->this_var, ptr, &ptr);
-	}
-
-	jit->num_params = read_leb128 (ptr, &ptr);
-	jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
-	for (i = 0; i < jit->num_params; i++)
-		read_variable (&jit->params [i], ptr, &ptr);
-
-	jit->num_locals = read_leb128 (ptr, &ptr);
-	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
-	for (i = 0; i < jit->num_locals; i++)
-		read_variable (&jit->locals [i], ptr, &ptr);
-
-	return jit;
-}
-
-static MonoDebugMethodJitInfo *
 mono_debug_read_method (MonoDebugMethodAddress *address)
 {
 	MonoDebugMethodJitInfo *jit;
@@ -1149,7 +774,7 @@ mono_debug_add_type (MonoClass *klass)
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugClassEntry);
 
-	g_assert (total_size + 9 < OLD_DATA_TABLE_CHUNK_SIZE);
+	g_assert (total_size + 9 < DATA_TABLE_CHUNK_SIZE);
 
 	entry = (MonoDebugClassEntry *) allocate_data_item (MONO_DEBUG_DATA_ITEM_CLASS, total_size);
 
@@ -1173,27 +798,16 @@ static MonoDebugMethodJitInfo *
 find_method (MonoMethod *method, MonoDomain *domain)
 {
 	MonoDebugMethodHash lookup;
+	MonoDebugMethodAddress *address;
 
 	lookup.method = method;
 	lookup.domain_id = mono_domain_get_id (domain);
 
-	if (mono_debug_debugger_version < 2) {
-		MonoDebugOldMethodAddress *address;
+	address = g_hash_table_lookup (method_address_hash, &lookup);
+	if (!address)
+		return NULL;
 
-		address = g_hash_table_lookup (old_method_hash, &lookup);
-		if (!address)
-			return NULL;
-
-		return mono_debug_old_read_method (address);
-	} else {
-		MonoDebugMethodAddress *address;
-
-		address = g_hash_table_lookup (method_address_hash, &lookup);
-		if (!address)
-			return NULL;
-
-		return mono_debug_read_method (address);
-	}
+	return mono_debug_read_method (address);
 }
 
 MonoDebugMethodJitInfo *

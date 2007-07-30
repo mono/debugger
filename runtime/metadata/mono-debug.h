@@ -81,17 +81,6 @@ struct _MonoSymbolTable {
 	 */
 	guint32 num_data_tables;
 	gpointer *data_tables;
-	/*
-	 * Current data table.
-	 * The `current_data_table' points to a blob of `current_data_table_size'
-	 * bytes.
-	 */
-	gpointer old_current_data_table;
-	guint32 old_current_data_table_size;
-	/*
-	 * The offset in the `current_data_table'.
-	 */
-	guint32 old_current_data_table_offset;
 };
 
 struct _MonoDebugDataTable {
@@ -105,9 +94,7 @@ struct _MonoDebugDataTable {
 
 typedef enum {
 	MONO_DEBUG_DATA_ITEM_UNKNOWN		= 0,
-	MONO_DEBUG_DATA_ITEM_OLD_METHOD,
 	MONO_DEBUG_DATA_ITEM_CLASS,
-	MONO_DEBUG_DATA_ITEM_OLD_WRAPPER,
 	MONO_DEBUG_DATA_ITEM_METHOD
 } MonoDebugDataItemType;
 

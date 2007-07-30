@@ -1,3 +1,7 @@
+2007-07-30  Martin Baulig  <martin@ximian.com>
+
+	* mono-debug.c: Drop support for the old symbol tables.
+
 2007-06-28  Martin Baulig  <martin@ximian.com>
 
 	* mono-debug.c (mono_debug_debugger_version): New public variable.
