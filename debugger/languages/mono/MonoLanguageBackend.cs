@@ -532,9 +532,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		private enum DataItemType {
 			Unknown		= 0,
-			OldMethod,
 			Class,
-			OldWrapper,
 			Method
 		}
 
