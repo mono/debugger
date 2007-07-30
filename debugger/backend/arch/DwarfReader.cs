@@ -2794,9 +2794,14 @@ namespace Mono.Debugger.Backends
 					is_regoffset = false;
 				} else if (opcode == 0x91) { // DW_OP_fbreg
 					off = locreader.ReadSLeb128 ();
+
 					if (subprog.FrameBase != null) {
-						return new RelativeTargetLocation (
+						TargetLocation rloc = new RelativeTargetLocation (
 							subprog.FrameBase.GetLocation (frame), off);
+						if (is_byref)
+							return new DereferencedTargetLocation (rloc);
+						else
+							return rloc;
 					} else {
 						is_regoffset = true;
 						reg = 2;
