@@ -380,7 +380,7 @@ namespace Mono.Debugger.Backends
 					continue;
 				if (obj.Location.HasAddress) {
 					blob_offsets [i] = -1;
-					addresses [i] = obj.Location.Address.Address;
+					addresses [i] = obj.Location.GetAddress (this).Address;
 					continue;
 				}
 				blobs [i] = obj.Location.ReadBuffer (target, obj.Type.Size);

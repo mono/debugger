@@ -17,17 +17,11 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		// <summary>
-		//   If the variable has an address (HasAddress must be true), compute the
-		//   address of its actual contents.
-		// </summary>
-		public abstract TargetAddress Address {
-			get;
-		}
+		public abstract TargetAddress GetAddress (TargetMemoryAccess target);
 
 		internal virtual TargetBlob ReadMemory (Thread target, int size)
 		{
-			return target.ReadMemory (Address, size);
+			return target.ReadMemory (GetAddress (target), size);
 		}
 
 		// <summary>
@@ -40,12 +34,12 @@ namespace Mono.Debugger.Languages
 
 		internal virtual void WriteBuffer (Thread target, byte[] data)
 		{
-			target.WriteBuffer (Address, data);
+			target.WriteBuffer (GetAddress (target), data);
 		}
 
 		internal virtual void WriteAddress (Thread target, TargetAddress address)
 		{
-			target.WriteAddress (Address, address);
+			target.WriteAddress (GetAddress (target), address);
 		}
 
 		// <summary>
@@ -65,10 +59,9 @@ namespace Mono.Debugger.Languages
 				return this;
 		}
 
-		internal TargetLocation GetDereferencedLocation (Thread target)
+		internal TargetLocation GetDereferencedLocation ()
 		{
-			TargetAddress address = target.ReadAddress (Address);
-			return new AbsoluteTargetLocation (address);
+			return new DereferencedTargetLocation (this);
 		}
 
 		protected virtual string MyToString ()

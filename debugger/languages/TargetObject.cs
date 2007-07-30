@@ -38,26 +38,16 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public bool IsNull {
-			get {
-				if (!Location.HasAddress)
-					return false;
-				else
-					return Location.Address.IsNull;
-			}
-		}
-
 		public bool HasAddress {
 			get { return Location.HasAddress; }
 		}
 
-		public TargetAddress Address {
-			get {
-				if (!Location.HasAddress)
-					throw new InvalidOperationException ();
+		public TargetAddress GetAddress (Thread target)
+		{
+			if (!Location.HasAddress)
+				throw new InvalidOperationException ();
 
-				return Location.Address;
-			}
+			return Location.GetAddress (target);
 		}
 
 		internal abstract long GetDynamicSize (Thread target, TargetBlob blob,

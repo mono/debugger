@@ -530,9 +530,9 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
-			if (field_loc.Address.IsNull)
+			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
 				return null;
 
 			return finfo.Type.GetObject (field_loc);
@@ -547,7 +547,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
@@ -564,7 +564,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
 			return finfo.Type.GetObject (field_loc);
 		}
@@ -582,7 +582,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
@@ -595,7 +595,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (!IsByRef && parent_type.IsByRef) {
 				TargetAddress boxed = target.CallMethod (
 					File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
-					MonoClassInfo.KlassAddress, location.Address.Address);
+					MonoClassInfo.KlassAddress, location.GetAddress (target).Address);
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
 				return new MonoClassObject (parent_type, new_loc);
 			}
@@ -609,7 +609,7 @@ namespace Mono.Debugger.Languages.Mono
 			// dereferencing it once gives us the vtable, dereferencing it
 			// twice the class.
 			TargetAddress address;
-			address = target.ReadAddress (location.Address);
+			address = target.ReadAddress (location.GetAddress (target));
 			address = target.ReadAddress (address);
 
 			TargetType current = File.MonoLanguage.GetClass (target, address);

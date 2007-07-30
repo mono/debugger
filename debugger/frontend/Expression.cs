@@ -1483,7 +1483,7 @@ namespace Mono.Debugger.Frontend
 				return (long) val;
 			else if (val is TargetPointerObject) {
 				TargetPointerObject pobj = (TargetPointerObject) val;
-				return pobj.Address.Address;
+				return pobj.GetAddress (context.CurrentThread).Address;
 			} else
 				throw new ScriptingException ("Cannot evaluate expression `{0}'", expr);
 		}
@@ -1597,7 +1597,7 @@ namespace Mono.Debugger.Frontend
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
 			TargetPointerObject pobj = (TargetPointerObject) EvaluateObject (context);
-			return pobj.Address;
+			return pobj.GetAddress (context.CurrentThread);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject tobj)
@@ -2015,7 +2015,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Expression `{0}' is not a pointer type.", expr.Name);
 
-			return pobj.Address;
+			return pobj.GetAddress (context.CurrentThread);
 		}
 	}
 
@@ -2076,7 +2076,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Cannot take address of expression `{0}'", expr.Name);
 
-			return obj.Address;
+			return obj.GetAddress (context.CurrentThread);
 		}
 	}
 

@@ -55,13 +55,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return is_regoffset || is_byref; }
 		}
 
-		public override TargetAddress Address {
-			get {
-				if (!is_valid)
-					throw new LocationInvalidException ();
+		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		{
+			if (!is_valid)
+				throw new LocationInvalidException ();
 
-				return address;
-			}
+			return address;
 		}
 
 		internal override TargetBlob ReadMemory (Thread target, int size)

@@ -51,7 +51,7 @@ namespace Mono.Debugger.Languages
 
 			if (IsByRef) {
 				if (obj.Type.IsByRef) {
-					location.WriteAddress (target, obj.Location.Address);
+					location.WriteAddress (target, obj.Location.GetAddress (target));
 					return;
 				}
 

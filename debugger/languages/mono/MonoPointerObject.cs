@@ -37,7 +37,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override string Print (Thread target)
 		{
 			if (HasAddress)
-				return String.Format ("{0}", Address);
+				return String.Format ("{0}", GetAddress (target));
 			else
 				return String.Format ("{0}", Location);
 		}

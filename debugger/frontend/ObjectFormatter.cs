@@ -111,11 +111,11 @@ namespace Mono.Debugger.Frontend
 			try {
 				if (DisplayFormat == DisplayFormat.Address) {
 					if (obj.HasAddress)
-						Append (obj.Address.ToString ());
+						Append (obj.GetAddress (target).ToString ());
 					else
 						Append ("<cannot get address>");
 					return;
-				} else if (obj.IsNull) {
+				} else if (obj.HasAddress && obj.GetAddress (target).IsNull) {
 					Append ("null");
 					return;
 				} else if (!recursed) {

@@ -1,5 +1,20 @@
 2007-07-30  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetLocation.cs
+	(TargetLocation.Address): Replaced by GetAddress().
+	(TargetLocation.GetAddress): New public function; replaces the
+	`Address' property.
+	(TargetLocation.GetDereferencedTargetLocation): Removed the
+	`Thread' argument; returns a `DereferencedTargetLocation'.
+
+	* languages/TargetObject.cs
+	(TargetObject.Address): Replaced by GetAddress().
+	(TargetObject.GetAddress): New public function; replaces the
+	`Address' property.
+	(TargetObject.IsNull): Removed.
+
+2007-07-30  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/testnativetypes.cs: New test.
 	* test/src/testnativetypes.c: New test.
 

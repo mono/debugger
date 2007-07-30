@@ -18,8 +18,9 @@ namespace Mono.Debugger.Languages
 			get { return true; }
 		}
 
-		public override TargetAddress Address {
-			get { return address; }
+		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		{
+			return address;
 		}
 
 		public override string Print ()

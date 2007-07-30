@@ -12,33 +12,21 @@ namespace Mono.Debugger.Languages
 		}
 
 		public override bool HasAddress {
-			get { return false; }
+			get { return reference.HasAddress; }
 		}
 
-		public override TargetAddress Address {
-			get { throw new InvalidOperationException (); }
-		}
-
-		internal override TargetBlob ReadMemory (Thread target, int size)
+		public override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
-			TargetAddress address = target.ReadAddress (reference.Address);
-			return target.ReadMemory (address, size);
-		}
-
-		internal override void WriteBuffer (Thread target, byte[] data)
-		{
-			TargetAddress address = target.ReadAddress (reference.Address);
-			target.WriteBuffer (address, data);
-		}
-
-		internal override void WriteAddress (Thread target, TargetAddress address)
-		{
-			reference.WriteAddress (target, address);
+			TargetAddress address = reference.GetAddress (target);
+			if (address.IsNull)
+				return TargetAddress.Null;
+			else
+				return target.ReadAddress (address);
 		}
 
 		public override string Print ()
 		{
-			return String.Format ("*{0}", reference.Address);
+			return String.Format ("*{0}", reference);
 		}
 
 		protected override string MyToString ()

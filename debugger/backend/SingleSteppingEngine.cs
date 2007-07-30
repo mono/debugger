@@ -3121,7 +3121,7 @@ namespace Mono.Debugger.Backends
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
-					instance.Location.Address.Address, ID);
+					instance.Location.GetAddress (sse).Address, ID);
 				return false;
 			}
 
@@ -3136,7 +3136,8 @@ namespace Mono.Debugger.Backends
 
 			stage = Stage.GettingVirtualMethod;
 			inferior.CallMethod (
-				sse.MonoDebuggerInfo.GetVirtualMethod, instance.Location.Address.Address,
+				sse.MonoDebuggerInfo.GetVirtualMethod,
+				instance.Location.GetAddress (sse).Address,
 				method.Address, ID);
 			return false;
 		}

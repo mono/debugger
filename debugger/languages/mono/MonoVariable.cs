@@ -121,7 +121,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			if (location.HasAddress && location.Address.IsNull)
+			if (location.HasAddress && location.GetAddress (frame.Thread).IsNull)
 				return process.MonoLanguage.CreateNullObject (
 					frame.Thread, type);
 

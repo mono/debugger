@@ -41,7 +41,7 @@ namespace Mono.Debugger.Languages.Native
 			TargetLocation new_loc = Location.GetLocationAtOffset (index * size);
 
 			if (Type.StaticType.IsByRef)
-				new_loc = new_loc.GetDereferencedLocation (target);
+				new_loc = new_loc.GetDereferencedLocation ();
 
 			return Type.StaticType.GetObject (new_loc);
 		}
@@ -64,10 +64,11 @@ namespace Mono.Debugger.Languages.Native
 			}
 
 			if (HasAddress) {
-				if (Address.IsNull)
+				TargetAddress address = GetAddress (target);
+				if (address.IsNull)
 					return "0x0";
 				else
-					return String.Format ("{0}", Address);
+					return String.Format ("{0}", address);
 			} else {
 				byte[] data = Location.ReadBuffer (target, type.Size);
 
