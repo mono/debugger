@@ -24,7 +24,8 @@ EXTRA_DIST = \
 	TestCCtor.cs
 
 noinst_PROGRAMS = \
-	testnativefork testnativeexec testnativechild testnativeattach
+	testnativefork testnativeexec testnativechild testnativeattach \
+	testnativetypes
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<

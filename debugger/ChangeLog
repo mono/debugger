@@ -1,5 +1,10 @@
 2007-07-30  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/testnativetypes.cs: New test.
+	* test/src/testnativetypes.c: New test.
+
+2007-07-30  Martin Baulig  <martin@ximian.com>
+
 	* languages/DeferencedTargetLocation.cs: New file.
 
 2007-07-28  Martin Baulig  <martin@ximian.com>
