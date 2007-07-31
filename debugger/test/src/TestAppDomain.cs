@@ -23,6 +23,9 @@ class X
 		Foo bar = new Foo ();
 		bar.Hello ();
 
+		foo.Hello ();
+		bar.Hello ();
+
 		AppDomain.Unload (domain);
 	}
 }
