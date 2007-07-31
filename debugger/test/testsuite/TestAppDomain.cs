@@ -14,8 +14,12 @@ namespace Mono.Debugger.Tests
 			: base ("TestAppDomain")
 		{ }
 
+		const int LineHello = 9;
 		const int LineMain = 17;
 		const int LineUnload = 26;
+
+		int bpt_unload;
+		int bpt_hello;
 
 		[Test]
 		[Category("AppDomain")]
@@ -27,7 +31,8 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			int bpt_unload = AssertBreakpoint (LineUnload);
+			bpt_unload = AssertBreakpoint (LineUnload);
+			bpt_hello = AssertBreakpoint ("Foo.Hello");
 
 			AssertStopped (thread, "X.Main()", LineMain);
 			AssertExecute ("next");
@@ -42,9 +47,20 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 
 			AssertTargetOutput ("TEST: Foo");
+
+			AssertHitBreakpoint (thread, bpt_hello, "Foo.Hello()", LineHello);
+			AssertExecute ("next");
 			AssertTargetOutput ("Hello World from Test!");
+			AssertStopped (thread, "Foo.Hello()", LineHello + 1);
+
+			AssertExecute ("continue");
+
+			AssertHitBreakpoint (thread, bpt_hello, "Foo.Hello()", LineHello);
+			AssertExecute ("next");
 			AssertTargetOutput ("Hello World from TestAppDomain.exe!");
-			AssertNoTargetOutput ();
+			AssertStopped (thread, "Foo.Hello()", LineHello + 1);
+
+			AssertExecute ("continue");
 
 			AssertHitBreakpoint (thread, bpt_unload, "X.Main()", LineUnload);
 			AssertExecute ("next -wait");
