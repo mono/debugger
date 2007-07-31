@@ -14,14 +14,14 @@ namespace Mono.Debugger.Tests
 			: base ("testnativetypes", "testnativetypes.c")
 		{ }
 
-		const int LineMain = 140;
-		const int LineSimple = 52;
-		const int LineStruct = 71;
-		const int LineStruct2 = 84;
-		const int LineStruct3 = 95;
-		const int LineFunctionStruct = 109;
-		const int LineBitField = 123;
-		const int LineList = 134;
+		const int LineMain = 142;
+		const int LineSimple = 53;
+		const int LineStruct = 72;
+		const int LineStruct2 = 85;
+		const int LineStruct3 = 96;
+		const int LineFunctionStruct = 110;
+		const int LineBitField = 125;
+		const int LineList = 136;
 
 		[Test]
 		[Category("NativeTypes")]
@@ -86,10 +86,10 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_bitfield, "test_bitfield", LineBitField);
 
 			AssertPrint (thread, "bitfield",
-				     "(BitField) { a = 1, b = 3, c = 4, d = 9, e = 15 }");
+				     "(BitField) { a = 1, b = 3, c = 4, d = 9, e = 15, f = 8 }");
 
 			AssertExecute ("continue");
-			AssertTargetOutput ("Bitfield: 3d307");
+			AssertTargetOutput ("Bitfield: 403d307");
 			AssertHitBreakpoint (thread, bpt_list, "test_list", LineList);
 
 			AssertPrint (thread, "list.a", "(int) 9");

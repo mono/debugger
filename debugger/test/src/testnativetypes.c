@@ -31,6 +31,7 @@ typedef struct
 	int c : 3;
 	int d : 5;
 	int e : 9;
+	int f : 8;
 } BitField;
 
 typedef struct _List List;
@@ -119,6 +120,7 @@ test_bitfield (void)
 	bitfield.c = 4;
 	bitfield.d = 9;
 	bitfield.e = 15;
+	bitfield.f = 8;
 
 	printf ("Bitfield: %x\n", * ((int *) &bitfield));
 }
