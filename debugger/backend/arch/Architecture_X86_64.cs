@@ -63,64 +63,61 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override TargetAddress GetCallTarget (TargetMemoryAccess target,
-							       TargetAddress address,
-							       out int insn_size)
+		TargetAddress GetJumpOrCallTarget (TargetMemoryAccess target, TargetAddress address,
+						   bool is_call, out int insn_size)
 		{
-			if (address.Address == 0xffffe002) {
-				insn_size = 0;
-				return TargetAddress.Null;
-			}
-
-			TargetBinaryReader reader = target.ReadMemory (address, 6).GetReader ();
+			TargetBinaryReader reader = target.ReadMemory (address, 10).GetReader ();
 
 			byte opcode = reader.ReadByte ();
 			byte original_opcode = opcode;
 
-			if ((opcode == 0x48) || (opcode == 0x49))
+			bool has_rex_prefix = (opcode & 0xf0) == 0x40;
+			if (has_rex_prefix)
 				opcode = reader.ReadByte ();
 
-			if (opcode == 0xe8) {
+			if (opcode == (is_call ? 0xe8 : 0xe9)) {
 				int call_target = reader.ReadInt32 ();
 				insn_size = 5;
 				return address + reader.Position + call_target;
-			} else if (opcode != 0xff) {
+			}
+
+			byte address_byte = reader.ReadByte ();
+			if ((opcode != 0xff) || ((address_byte & 0x38) != (is_call ? 0x10 : 0x20))) {
 				insn_size = 0;
 				return TargetAddress.Null;
 			}
 
-			byte address_byte = reader.ReadByte ();
 			byte register;
 			int disp;
 			bool dereference_addr;
 
-			if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 1)) {
+			if ((address_byte >> 6) == 1) {
 				register = (byte) (address_byte & 0x07);
 				disp = reader.ReadByte ();
 				insn_size = 3;
 				dereference_addr = true;
-			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 2)) {
+			} else if ((address_byte >> 6) == 2) {
 				register = (byte) (address_byte & 0x07);
 				disp = reader.ReadInt32 ();
 				insn_size = 6;
 				dereference_addr = true;
-			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 3)) {
+			} else if ((address_byte >> 6) == 3) {
 				register = (byte) (address_byte & 0x07);
 				disp = 0;
 				insn_size = 2;
 				dereference_addr = false;
-			} else if (((address_byte & 0x38) == 0x10) && ((address_byte >> 6) == 0)) {
+			} else if ((address_byte >> 6) == 0) {
 				register = (byte) (address_byte & 0x07);
 				disp = 0;
 				insn_size = 2;
 				dereference_addr = true;
 			} else {
-				insn_size = 0;
-				return TargetAddress.Null;
+				// Can never happen
+				throw new InvalidOperationException ();
 			}
 
 			X86_64_Register reg;
-			if (original_opcode == 0x49) {
+			if (has_rex_prefix && ((original_opcode & 0x01) == 1)) {
 				switch (register) {
 				case 0: /* r8 */
 					reg = X86_64_Register.R8;
@@ -163,6 +160,15 @@ namespace Mono.Debugger.Backends
 				case 3: /* rbx */
 					reg = X86_64_Register.RBX;
 					break;
+				case 5:
+					if ((address_byte >> 6) == 0) {
+						disp = reader.ReadInt32 ();
+						return address + disp + 6;
+					} else {
+						reg = X86_64_Register.RBP;
+					}
+					break;
+
 				case 6: /* rsi */
 					reg = X86_64_Register.RSI;
 					break;
@@ -174,7 +180,7 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			if ((original_opcode == 0x48) || (original_opcode == 0x49))
+			if (has_rex_prefix)
 				insn_size++;
 
 			Registers regs = target.GetRegisters ();
@@ -189,30 +195,24 @@ namespace Mono.Debugger.Backends
 				return vtable_addr;
 		}
 
+
+		internal override TargetAddress GetCallTarget (TargetMemoryAccess target,
+							       TargetAddress address,
+							       out int insn_size)
+		{
+			if (address.Address == 0xffffe002) {
+				insn_size = 0;
+				return TargetAddress.Null;
+			}
+
+			return GetJumpOrCallTarget (target, address, true, out insn_size);
+		}
+
 		internal override TargetAddress GetJumpTarget (TargetMemoryAccess target,
 							       TargetAddress address,
 							       out int insn_size)
 		{
-			TargetBinaryReader reader = target.ReadMemory (address, 10).GetReader ();
-
-			byte opcode = reader.ReadByte ();
-			byte opcode2 = reader.ReadByte ();
-
-			if ((opcode == 0xff) && (opcode2 == 0x25)) {
-				insn_size = 6;
-				int offset = reader.ReadInt32 ();
-				return address + offset + 6;
-			} else if ((opcode == 0xff) && (opcode2 == 0xa3)) {
-				int offset = reader.ReadInt32 ();
-				Registers regs = target.GetRegisters ();
-				long rbx = regs [(int) X86_64_Register.RBX].Value;
-
-				insn_size = 6;
-				return new TargetAddress (AddressDomain, rbx + offset);
-			}
-
-			insn_size = 0;
-			return TargetAddress.Null;
+			return GetJumpOrCallTarget (target, address, false, out insn_size);
 		}
 
 		internal override TargetAddress GetTrampoline (TargetMemoryAccess target,

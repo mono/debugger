@@ -954,7 +954,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			is_start = true;
-			return memory.ReadAddress (got_start + 2 * info.TargetAddressSize);
+			return memory.ReadAddress (got_start + 3 * info.TargetAddressSize);
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)

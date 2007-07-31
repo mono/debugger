@@ -1171,19 +1171,24 @@ namespace Mono.Debugger.Backends
 				      "{0} found trampoline {1}/{2} while running {3}",
 				      this, trampoline, is_start, current_operation);
 
-			if (is_start) {
-				do_continue (trampoline);
-				return;
-			}
-
 			if (!language.Language.IsManaged) {
-				Method method = null;
-				method = Lookup (trampoline);
+				if (is_start) {
+					PushOperation (new OperationNativeTrampoline (
+						this, trampoline, handler));
+					return;
+				}
+
+				Method method = Lookup (trampoline);
 				if (!MethodHasSource (method)) {
 					do_next_native ();
 					return;
 				}
 
+				do_continue (trampoline);
+				return;
+			}
+
+			if (is_start) {
 				do_continue (trampoline);
 				return;
 			}
@@ -3432,6 +3437,103 @@ namespace Mono.Debugger.Backends
 
 			sse.do_continue (address, true);
 			return EventResult.Running;
+		}
+	}
+
+	protected class OperationNativeTrampoline : Operation
+	{
+		public readonly TrampolineHandler TrampolineHandler;
+		public readonly TargetAddress Trampoline;
+
+		TargetAddress stack_pointer;
+		bool entered_trampoline;
+		bool done;
+
+		public OperationNativeTrampoline (SingleSteppingEngine sse, TargetAddress trampoline,
+						  TrampolineHandler handler)
+			: base (sse, null)
+		{
+			this.TrampolineHandler = handler;
+			this.Trampoline = trampoline;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
+			stack_pointer = frame.StackPointer;
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} starting native trampoline {1} at {2}: {3}",
+				      sse, Trampoline, frame.Address, stack_pointer);
+
+			sse.do_continue (Trampoline);
+		}
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} native trampoline event: {1}", sse, cevent);
+
+			args = null;
+
+			Inferior.StackFrame frame = inferior.GetCurrentFrame ();
+
+			if (done)
+				return EventResult.Completed;
+
+			if (!entered_trampoline) {
+				stack_pointer = frame.StackPointer;
+
+				sse.do_step_native ();
+				entered_trampoline = true;
+				return EventResult.Running;
+			}
+
+			if (frame.StackPointer <= stack_pointer) {
+				sse.do_next_native ();
+				return EventResult.Running;
+			}
+
+			done = true;
+
+			int insn_size;
+			TargetAddress jump_target = sse.Architecture.GetJumpTarget (
+				inferior, frame.Address, out insn_size);
+
+			if (!jump_target.IsNull) {
+				sse.do_step_native ();
+				return EventResult.Running;
+			}
+
+			return EventResult.Completed;
+
+#if FIXME
+
+			if (TrampolineHandler != null) {
+				Method method = sse.Lookup (address);
+				Report.Debug (DebugFlags.SSE,
+					      "{0} compiled method: {1} {2} {3} {4} {5}",
+					      sse, address, method,
+					      method != null ? method.Module : null,
+					      sse.MethodHasSource (method), TrampolineHandler);
+
+				if (!TrampolineHandler (method)) {
+					sse.do_next_native ();
+					return EventResult.Running;
+				}
+			}
+
+			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
+				      sse, address, inferior.CurrentFrame);
+
+			sse.do_continue (address, true);
+			return EventResult.Running;
+#endif
 		}
 	}
 

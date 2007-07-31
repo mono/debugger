@@ -233,6 +233,11 @@ namespace Mono.Debugger
 		//
 		public void MainProcessReachedMain (Process process)
 		{
+			if (!process.IsManaged) {
+				Config.GetModuleGroup ("dll").StepInto = true;
+				Config.GetModuleGroup ("native").StepInto = true;
+			}
+
 			main_process = process;
 		}
 

@@ -1,3 +1,14 @@
+2007-07-31  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_X86_64.cs
+	(Architecture_X86_64.GetJumpOrCallTarget): New private method; fix
+	and improve GetCallTarget() and also add support for jump
+	instructions.
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OperationNativeTrampoline): New operation;
+	keep stepping while we're in the trampoline like `finish -native'.
+
 2007-07-30  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetLocation.cs
