@@ -103,7 +103,7 @@ namespace Mono.Debugger.Tests
 
 		public DebuggerEvent Wait ()
 		{
-			for (int i = 0; i < 3; i++) {
+			for (int i = 0; i < 5; i++) {
 				lock (queue.SyncRoot) {
 					if (queue.Count > 0)
 						return (DebuggerEvent) queue.Dequeue ();
@@ -111,7 +111,7 @@ namespace Mono.Debugger.Tests
 					wait_event.Reset ();
 				}
 
-				wait_event.WaitOne (2500, false);
+				wait_event.WaitOne (3000, false);
 			}
 
 			return null;

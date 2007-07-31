@@ -1,5 +1,10 @@
 2007-07-31  Martin Baulig  <martin@ximian.com>
 
+	* test/src/TestAppDomain.cs: New test.
+	* test/testsuite/TestAppDomain.cs: New test.
+
+2007-07-31  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Architecture_X86_64.cs
 	(Architecture_X86_64.GetJumpOrCallTarget): New private method; fix
 	and improve GetCallTarget() and also add support for jump

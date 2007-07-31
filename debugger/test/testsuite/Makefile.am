@@ -7,5 +7,5 @@ EXTRA_DIST = \
 	testnativeattach.cs testnativeexec.cs testnativefork.cs \
 	TestNull.cs TestObject.cs TestProperty.cs TestRestart.cs \
 	TestToString.cs TestMultiThread.cs TestSession.cs \
-	TestCCtor.cs
+	TestCCtor.cs TestAppDomain.cs
 

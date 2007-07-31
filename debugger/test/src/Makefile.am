@@ -11,7 +11,8 @@ noinst_SCRIPTS = \
 	TestToString.exe TestObject.exe TestProperty.exe TestAbort.exe \
 	TestBreakpoint.exe TestNamespace.exe TestException.exe \
 	TestRestart.exe TestExec.exe TestChild.exe TestAttach.exe \
-	TestMethodLookup.exe TestMultiThread.exe TestCCtor.exe
+	TestMethodLookup.exe TestMultiThread.exe TestCCtor.exe \
+	TestAppDomain.exe
 
 EXTRA_DIST = \
 	TestManagedTypes.cs TestInvocation.cs TestInheritance.cs \
@@ -21,7 +22,7 @@ EXTRA_DIST = \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
 	TestRestart.cs TestExec.cs TestChild.cs TestAttach.cs \
 	TestMethodLookup.cs TestMultiThread.cs TestSession.cs \
-	TestCCtor.cs
+	TestCCtor.cs TestAppDomain.cs
 
 noinst_PROGRAMS = \
 	testnativefork testnativeexec testnativechild testnativeattach \
