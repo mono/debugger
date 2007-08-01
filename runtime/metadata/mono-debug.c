@@ -12,7 +12,7 @@
 #define SYMFILE_TABLE_CHUNK_SIZE	16
 
 #define DATA_TABLE_PTR_CHUNK_SIZE	256
-#define DATA_TABLE_CHUNK_SIZE		512
+#define DATA_TABLE_CHUNK_SIZE		4096
 
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
