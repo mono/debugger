@@ -191,6 +191,9 @@ namespace Mono.Debugger
 		SourceAddress source;
 		StackFrame parent_frame;
 		TargetObject exc_object;
+		SourceLocation location;
+		TargetFunctionType function;
+		Language language;
 		bool has_source;
 		Symbol name;
 
@@ -206,9 +209,10 @@ namespace Mono.Debugger
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
-				     Symbol name)
+				     Language language, Symbol name)
 			: this (thread, address, stack_ptr, frame_address, registers)
 		{
+			this.language = language;
 			this.name = name;
 		}
 
@@ -218,9 +222,23 @@ namespace Mono.Debugger
 			: this (thread, address, stack_ptr, frame_address, registers)
 		{
 			this.method = method;
-			this.name = new Symbol (method.Name, method.StartAddress, 0);
+			this.language = method.Module.Language;
+			if (method.IsLoaded)
+				this.name = new Symbol (method.Name, method.StartAddress, 0);
+			else
+				this.name = new Symbol (method.Name, address, 0);
 		}
 
+		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
+				     TargetAddress frame_address, Registers registers,
+				     TargetFunctionType function, SourceLocation location)
+			: this (thread, address, stack_ptr, frame_address, registers)
+		{
+			this.function = function;
+			this.language = function.DeclaringType.Language;
+			this.name = new Symbol (function.FullName, address, 0);
+			this.location = location;
+		}
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers,
@@ -228,7 +246,10 @@ namespace Mono.Debugger
 			: this (thread, address, stack_ptr, frame_address, registers, method)
 		{
 			this.source = source;
-			this.has_source = true;
+			if (method.HasSource && !method.MethodSource.IsDynamic)
+				location = new SourceLocation (
+					method.MethodSource, source.SourceFile, source.Row);
+			has_source = true;
 		}
 
 		public int Level {
@@ -240,14 +261,35 @@ namespace Mono.Debugger
 			level = new_level;
 		}
 
+		void compute_source ()
+		{
+			lock (this) {
+				if (has_source)
+					return;
+				has_source = true;
+				if ((method == null) || !method.HasSource || !method.HasLineNumbers)
+					return;
+				source = method.LineNumberTable.Lookup (address);
+				if (source == null)
+					return;
+				if (method.MethodSource.IsDynamic)
+					return;
+				location = new SourceLocation (
+					method.MethodSource, source.SourceFile, source.Row);
+			}
+		}
+
 		public SourceAddress SourceAddress {
 			get {
-				if (has_source)
-					return source;
-				if ((method != null) && method.HasLineNumbers)
-					source = method.LineNumberTable.Lookup (address);
-				has_source = true;
+				compute_source ();
 				return source;
+			}
+		}
+
+		public SourceLocation SourceLocation {
+			get {
+				compute_source ();
+				return location;
 			}
 		}
 
@@ -275,6 +317,10 @@ namespace Mono.Debugger
 			get { return method; }
 		}
 
+		public TargetFunctionType Function {
+			get { return function; }
+		}
+
 		public Symbol Name {
 			get { return name; }
 		}
@@ -293,12 +339,7 @@ namespace Mono.Debugger
 		}
 
 		public Language Language {
-			get {
-				if (method != null)
-					return method.Module.Language;
-				else
-					return thread.NativeLanguage;
-			}
+			get { return language; }
 		}
 
 		internal StackFrame ParentFrame {

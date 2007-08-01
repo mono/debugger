@@ -47,16 +47,18 @@ namespace Mono.Debugger
 		//   It is used when inserting a breakpoint by source line to find the
 		//   method this line is contained in.
 		// </summary>
-		public SourceMethod[] Methods {
+		public MethodSource[] Methods {
 			get {
 				return module.GetMethods (this);
 			}
 		}
 
-		public SourceMethod FindMethod (int line)
+		public MethodSource FindMethod (int line)
 		{
-			SourceMethod[] methods = module.GetMethods (this);
-			foreach (SourceMethod method in methods) {
+			MethodSource[] methods = module.GetMethods (this);
+			foreach (MethodSource method in methods) {
+				if (!method.HasSourceFile)
+					continue;
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return method;
 			}
@@ -66,10 +68,12 @@ namespace Mono.Debugger
 
 		public SourceLocation FindLine (int line)
 		{
-			SourceMethod[] methods = module.GetMethods (this);
-			foreach (SourceMethod method in methods) {
+			MethodSource[] methods = module.GetMethods (this);
+			foreach (MethodSource method in methods) {
+				if (!method.HasSourceFile)
+					continue;
 				if ((method.StartRow <= line) && (method.EndRow >= line))
-					return new SourceLocation (method, line);
+					return new SourceLocation (method, this, line);
 			}
 
 			return new SourceLocation (this, line);
@@ -104,97 +108,6 @@ namespace Mono.Debugger
 		public override string ToString ()
 		{
 			return String.Format ("SourceFile ({0}:{1})", ID, FileName);
-		}
-	}
-
-	// <summary>
-	//   This is a handle to a method which persists across different invocations of
-	//   the same target and which doesn't consume too much memory.
-	// </summary>
-	[Serializable]
-	public class SourceMethod
-	{
-		public long Handle {
-			get {
-				return handle;
-			}
-		}
-
-		public SourceFile SourceFile {
-			get {
-				return source;
-			}
-		}
-
-		public string ClassName {
-			get {
-				return class_name;
-			}
-		}
-
-		public string Name {
-			get {
-				return name;
-			}
-		}
-
-		public int StartRow {
-			get {
-				return start_row;
-			}
-		}
-
-		public int EndRow {
-			get {
-				return end_row;
-			}
-		}
-
-		public Method GetMethod (int domain)
-		{
-			return module.GetMethod (domain, handle);
-		}
-
-		// <summary>
-		//   If true, you may use RegisterLoadHandler() to register a delegate to
-		//   be invoked when the method is loaded.
-		// </summary>
-		// <remarks>
-		//   If both IsLoaded and IsDynamic are false, then the method isn't
-		//   currently loaded, but there's also no way of getting a notification.
-		// </remarks>
-		public bool IsDynamic {
-			get {
-				return is_dynamic;
-			}
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("Method ({0}:{1}:{2}:{3})", Name, SourceFile,
-					      StartRow, EndRow);
-		}
-
-		Module module;
-		SourceFile source;
-		string name;
-		string class_name;
-		int  start_row, end_row;
-		bool is_dynamic;
-		long handle;
-
-		public SourceMethod (Module module, SourceFile source,
-				     long handle, string class_name, string name,
-				     int start, int end, bool is_dynamic)
-		{
-			this.module = module;
-			this.source = source;
-			this.handle = handle;
-			this.class_name = class_name;
-			this.name = name;
-			this.start_row = start;
-			this.end_row = end;
-			this.is_dynamic = is_dynamic;
 		}
 	}
 }

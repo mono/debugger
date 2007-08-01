@@ -52,9 +52,9 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation new_loc = dynamic_location.GetLocationAtOffset (offset);
 
 			if (Type.ElementType.IsByRef)
-				new_loc = new_loc.GetDereferencedLocation (target);
+				new_loc = new_loc.GetDereferencedLocation ();
 
-			if (new_loc.HasAddress && new_loc.Address.IsNull)
+			if (new_loc.HasAddress && new_loc.GetAddress (target).IsNull)
 				return new MonoNullObject (Type.ElementType, new_loc);
 
 			return Type.ElementType.GetObject (new_loc);
@@ -101,7 +101,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override string Print (Thread target)
 		{
 			if (Location.HasAddress)
-				return String.Format ("{0}", Location.Address);
+				return String.Format ("{0}", Location.GetAddress (target));
 			else
 				return String.Format ("{0}", Location);
 		}

@@ -29,31 +29,25 @@ namespace Mono.Debugger
 			: this (new DynamicSourceLocation (function, -1))
 		{
 			Module = function.Module.Name;
-			Method = function.DeclaringType.Name + ':' + function.Name;
+			Method = function.FullName;
 			Name = function.FullName;
 
-			if (function.Source != null) {
-				FileName = function.Source.SourceFile.FileName;
-				Line = function.Source.StartRow;
+			if (function.HasSourceCode) {
+				FileName = function.SourceFile.FileName;
+				Line = function.StartRow;
 			}
 		}
 
-		public SourceLocation (SourceMethod source)
-			: this (source, -1)
+		public SourceLocation (MethodSource source)
+			: this (source, source.SourceFile, -1)
 		{ }
 
-		public SourceLocation (SourceMethod source, int line)
-			: this (new DynamicSourceLocation (source, line))
+		public SourceLocation (MethodSource source, SourceFile file, int line)
+			: this (new DynamicSourceLocation (source, file, line))
 		{
-			Module = source.SourceFile.Module.Name;
-			FileName = source.SourceFile.FileName;
-
-			if (source.ClassName != null) {
-				string klass = source.ClassName;
-				string name = source.Name.Substring (klass.Length + 1);
-				Method = klass + ':' + name;
-			} else
-				Method = source.Name;
+			Module = file.Module.Name;
+			FileName = file.FileName;
+			Method = source.Name;
 
 			if (line != -1)
 				Name = source.Name + ':' + line;
@@ -79,14 +73,6 @@ namespace Mono.Debugger
 			this.Name = file + ":" + line;
 		}
 
-		public void DumpLineNumbers ()
-		{
-			if (dynamic == null)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			dynamic.DumpLineNumbers ();
-		}
-
 		protected bool Resolve (DebuggerSession session)
 		{
 			if (dynamic != null)
@@ -94,19 +80,12 @@ namespace Mono.Debugger
 
 			if (Method != null) {
 				Module module = session.GetModule (Module);
+				MethodSource source = module.FindMethod (Method);
 
-				int pos = Method.IndexOf (':');
-				if (pos > 0) {
-					string class_name = Method.Substring (0, pos);
-					string method_name = Method.Substring (pos + 1);
+				if (source == null)
+					return false;
 
-					dynamic = new DynamicSourceLocation (
-						module.LookupMethod (class_name, method_name), Line);
-				} else {
-					dynamic = new DynamicSourceLocation (
-						module.FindMethod (Method), Line);
-				}
-
+				dynamic = new DynamicSourceLocation (source, source.SourceFile, Line);
 				return true;
 			}
 
@@ -204,20 +183,26 @@ namespace Mono.Debugger
 	{
 		Module module;
 		SourceFile file;
-		SourceMethod source;
+		MethodSource source;
 		TargetFunctionType function;
 		string method;
 		int line;
 
-		public DynamicSourceLocation (SourceMethod source)
-			: this (source, -1)
+		public DynamicSourceLocation (MethodSource source)
+			: this (source, source.SourceFile, -1)
 		{ }
 
-		public DynamicSourceLocation (SourceMethod source, int line)
+		public DynamicSourceLocation (MethodSource source, SourceFile file, int line)
 		{
-			this.module = source.SourceFile.Module;
-			this.file = source.SourceFile;
-			this.source = source;
+			if (source.IsManaged) {
+				this.function = source.Function;
+				this.module = function.Module;
+			} else {
+				this.module = source.Module;
+				this.source = source;
+			}
+
+			this.file = file;
 			this.line = line;
 		}
 
@@ -231,25 +216,10 @@ namespace Mono.Debugger
 		public DynamicSourceLocation (TargetFunctionType function, int line)
 		{
 			this.function = function;
+			this.file = null;
 			this.module = function.Module;
-			this.source = function.Source;
-
-			if (source != null)
-				file = source.SourceFile;
 
 			this.line = line;
-		}
-
-		internal void DumpLineNumbers ()
-		{
-			if (source == null)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			Method method = source.GetMethod (0);
-			if ((method == null) || !method.HasLineNumbers)
-				throw new TargetException (TargetError.LocationInvalid);
-
-			method.LineNumberTable.DumpLineNumbers ();
 		}
 
 		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint, int domain)
@@ -259,15 +229,7 @@ namespace Mono.Debugger
 
 			if ((function == null) && (source == null)) {
 				if (method != null) {
-					int pos = method.IndexOf (':');
-					if (pos > 0) {
-						string class_name = method.Substring (0, pos);
-						string method_name = method.Substring (pos + 1);
-
-						function = module.LookupMethod (class_name, method_name);
-					} else {
-						source = module.FindMethod (method);
-					}
+					source = module.FindMethod (method);
 				} else if (file != null) {
 					source = file.FindMethod (line);
 				} else {
@@ -275,40 +237,25 @@ namespace Mono.Debugger
 				}
 			}
 
-			if (function != null) {
-				if (line > 0)
-					source = function.Source;
-				else if (function.IsLoaded)
-					return new FunctionBreakpointHandle (breakpoint, domain, function);
-				else {
-					source = function.Source;
-					return new FunctionBreakpointHandle (breakpoint, domain, source);
-				}
-			}
+			if (function != null)
+				return new FunctionBreakpointHandle (breakpoint, domain, function, line);
 
-			if (source == null)
+			if ((source == null) || source.IsManaged)
 				throw new TargetException (TargetError.LocationInvalid);
 
-			TargetAddress address = GetAddress (domain);
-			if (!address.IsNull) {
+			TargetAddress address = GetAddress ();
+			if (!address.IsNull)
 				return new AddressBreakpointHandle (breakpoint, address);
-			} else if (source.IsDynamic) {
-				// A dynamic method is a method which may emit a
-				// callback when it's loaded.  We register this
-				// callback here and do the actual insertion when
-				// the method is loaded.
-				return new FunctionBreakpointHandle (breakpoint, domain, source, line);
-			}
 
 			return null;
 		}
 
-		protected TargetAddress GetAddress (int domain)
+		protected TargetAddress GetAddress ()
 		{
-			if (source == null)
+			if ((source == null) || source.IsManaged)
 				return TargetAddress.Null;
 
-			Method method = source.GetMethod (domain);
+			Method method = source.NativeMethod;
 			if (method == null)
 				return TargetAddress.Null;
 
@@ -336,6 +283,11 @@ namespace Mono.Debugger
 			void module_loaded (Module module)
 			{
 				Console.WriteLine ("MODULE LOADED: {0} {1}", module);
+			}
+
+			internal override bool Insert (SingleSteppingEngine sse)
+			{
+				throw new InternalError ();
 			}
 
 			public override void Insert (Thread target)

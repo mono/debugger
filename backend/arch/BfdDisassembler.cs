@@ -86,7 +86,7 @@ namespace Mono.Debugger.Backends
 
 			if (current_method != null) {
 				try {
-					SourceMethod method = current_method.GetTrampoline (
+					MethodSource method = current_method.GetTrampoline (
 						memory, maddress);
 
 					if (method != null) {
@@ -136,9 +136,7 @@ namespace Mono.Debugger.Backends
 				AssemblerLine[] lines = new AssemblerLine [list.Count];
 				list.CopyTo (lines, 0);
 
-				return new AssemblerMethod (
-					method.Module, method.StartAddress, method.EndAddress,
-					method.Name, lines);
+				return new AssemblerMethod (method, lines);
 			}
 		}
 

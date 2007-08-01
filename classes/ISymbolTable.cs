@@ -8,11 +8,6 @@ namespace Mono.Debugger
 		Method Lookup (TargetAddress address);
 	}
 
-	public interface ISourceLookup
-	{
-		SourceMethod Lookup (string method_name);
-	}
-
 	public interface ISymbolContainer
 	{
 		// <summary>

@@ -103,13 +103,16 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method (IntPtr handle, long method_address, long method_argument1, long method_argument2, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, string string_argument, long callback_argument);
+		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, long data_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, long method_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_abort_invoke (IntPtr handle);
+		static extern TargetError mono_debugger_server_mark_rti_frame (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_abort_invoke (IntPtr handle, long stack_pointer);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
@@ -170,6 +173,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_pop_registers (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr registers);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_set_notification (IntPtr handle, long address);
@@ -319,16 +325,16 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void CallMethod (TargetAddress method, long arg1, string arg2,
-					long callback_arg)
+		public void CallMethod (TargetAddress method, long arg1, long arg2,
+					string arg3, long callback_arg)
 		{
 			check_disposed ();
 
 			TargetState old_state = change_target_state (TargetState.Running);
 			try {
 				check_error (mono_debugger_server_call_method_1 (
-					server_handle, method.Address, arg1,
-					arg2, callback_arg));
+					server_handle, method.Address, arg1, arg2,
+					arg3, callback_arg));
 			} catch {
 				change_target_state (old_state);
 				throw;
@@ -374,7 +380,7 @@ namespace Mono.Debugger.Backends
 					continue;
 				if (obj.Location.HasAddress) {
 					blob_offsets [i] = -1;
-					addresses [i] = obj.Location.Address.Address;
+					addresses [i] = obj.Location.GetAddress (this).Address;
 					continue;
 				}
 				blobs [i] = obj.Location.ReadBuffer (target, obj.Type.Size);
@@ -417,9 +423,19 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void AbortInvoke ()
+		public void MarkRuntimeInvokeFrame ()
 		{
-			check_error (mono_debugger_server_abort_invoke (server_handle));
+			check_error (mono_debugger_server_mark_rti_frame (server_handle));
+		}
+
+		public bool AbortInvoke (TargetAddress stack_pointer)
+		{
+			TargetError result = mono_debugger_server_abort_invoke (
+				server_handle, stack_pointer.Address);
+			if (result == TargetError.NoCallbackFrame)
+				return false;
+			check_error (result);
+			return true;
 		}
 
 		public int InsertBreakpoint (TargetAddress address)
@@ -1157,6 +1173,13 @@ namespace Mono.Debugger.Backends
 			IntPtr buffer = IntPtr.Zero;
 			try {
 				int count = arch.CountRegisters;
+
+				Registers old_regs = GetRegisters ();
+				for (int i = 0; i < count; i++) {
+					if (!registers [i].Valid)
+						registers [i].SetValue (old_regs [i].Value);
+				}
+
 				int buffer_size = count * 8;
 				buffer = Marshal.AllocHGlobal (buffer_size);
 				Marshal.Copy (registers.Values, 0, buffer, count);
@@ -1226,6 +1249,28 @@ namespace Mono.Debugger.Backends
 		{
 			pushed_regs = false;
 			check_error (mono_debugger_server_pop_registers (server_handle));
+		}
+
+		internal Registers GetCallbackFrame (TargetAddress stack_pointer, bool exact_match)
+		{
+			IntPtr buffer = IntPtr.Zero;
+			try {
+				int count = arch.CountRegisters;
+				int buffer_size = count * 8;
+				buffer = Marshal.AllocHGlobal (buffer_size);
+				TargetError result = mono_debugger_server_get_callback_frame (
+					server_handle, stack_pointer.Address, exact_match, buffer);
+				if (result == TargetError.NoCallbackFrame)
+					return null;
+				check_error (result);
+				long[] retval = new long [count];
+				Marshal.Copy (buffer, retval, 0, count);
+
+				return new Registers (arch, retval);
+			} finally {
+				if (buffer != IntPtr.Zero)
+					Marshal.FreeHGlobal (buffer);
+			}
 		}
 
 		internal void SetNotificationAddress (TargetAddress notification)

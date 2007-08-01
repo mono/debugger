@@ -31,10 +31,10 @@ namespace Mono.Debugger.Tests
 
 			int bpt_test = AssertBreakpoint ("Test");
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, bpt_test, "X.Test(System.Int32&)", line_test);
+			AssertHitBreakpoint (thread, bpt_test, "X.Test(int&)", line_test);
 
 			AssertExecute ("step");
-			AssertStopped (thread, "X.Test(System.Int32&)", line_test + 1);
+			AssertStopped (thread, "X.Test(int&)", line_test + 1);
 
 			AssertPrint (thread, "foo", "(System.Int32&) &(System.Int32) 3");
 			int bpt_unsafe = AssertBreakpoint (line_unsafe);
@@ -43,8 +43,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("3");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_unsafe, "X.UnsafeTest(System.Int32)",
-					     line_unsafe);
+			AssertHitBreakpoint (thread, bpt_unsafe, "X.UnsafeTest(int)", line_unsafe);
 
 			AssertPrint (thread, "ptr", "(System.Int32&) &(System.Int32) 3");
 			AssertPrint (thread, "*ptr", "(System.Int32) 3");

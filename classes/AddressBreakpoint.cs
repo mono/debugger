@@ -34,7 +34,8 @@ namespace Mono.Debugger
 			get { return handle != null; }
 		}
 
-		internal override BreakpointHandle Resolve (Thread target)
+		internal override BreakpointHandle Resolve (TargetMemoryAccess target,
+							    StackFrame frame)
 		{
 			if (handle != null)
 				return handle;

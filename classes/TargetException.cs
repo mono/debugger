@@ -22,6 +22,7 @@ namespace Mono.Debugger
 		MemoryAccess,
 		NotImplemented,
 		IOError,
+		NoCallbackFrame,
 
 		NoStack			= 101,
 		NoMethod,

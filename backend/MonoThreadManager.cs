@@ -10,6 +10,11 @@ using System.Collections;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
+using Mono.Debugger;
+using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
+
+
 namespace Mono.Debugger.Backends
 {
 
@@ -24,11 +29,9 @@ namespace Mono.Debugger.Backends
 		MonoDebuggerInfo debugger_info;
 		TargetAddress notification_address = TargetAddress.Null;
 		Inferior inferior;
-		bool stop_in_main;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
-							    Inferior inferior, bool attach,
-							    bool stop_in_main)
+							    Inferior inferior, bool attach)
 		{
 			TargetAddress info = inferior.GetSectionAddress (".mdb_debug_info");
 			if (!info.IsNull)
@@ -38,16 +41,14 @@ namespace Mono.Debugger.Backends
 			if (info.IsNull)
 				return null;
 
-			return new MonoThreadManager (
-				thread_manager, inferior, info, attach, stop_in_main);
+			return new MonoThreadManager (thread_manager, inferior, info, attach);
 		}
 
 		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
-					     TargetAddress info, bool attach, bool stop_in_main)
+					     TargetAddress info, bool attach)
 		{
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
-			this.stop_in_main = stop_in_main;
 
 			TargetBinaryReader header = inferior.ReadMemory (info, 16).GetReader ();
 			long magic = header.ReadInt64 ();
@@ -84,6 +85,8 @@ namespace Mono.Debugger.Backends
 			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
 			inferior.SetNotificationAddress (notification_address);
 
+			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
+
 			if (notification_bpt > 0) {
 				inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
 				notification_bpt = -1;
@@ -116,7 +119,7 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress main_function;
 		TargetAddress main_thread;
-		ILanguageBackend csharp_language;
+		MonoLanguageBackend csharp_language;
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
 			get { return debugger_info; }
@@ -177,8 +180,9 @@ namespace Mono.Debugger.Backends
 					break;
 
 				case NotificationType.InitializeThreadManager:
-					csharp_language = inferior.Process.CreateDebuggerHandler (
+					csharp_language = inferior.Process.CreateMonoLanguage (
 						debugger_info);
+					csharp_language.Initialize (inferior);
 					break;
 
 				case NotificationType.ReachedMain: {
@@ -186,11 +190,10 @@ namespace Mono.Debugger.Backends
 						inferior.AddressDomain, cevent.Data1);
 
 					inferior.InitializeModules ();
+					engine.ProcessServant.MonoLanguage.ReachedMain (inferior, data);
 
-					if (stop_in_main)
-						engine.ReachedManagedMain (data);
-					resume_target = !stop_in_main;
-					return true;
+					resume_target = false;
+					return false;
 				}
 
 				case NotificationType.WrapperMain:
@@ -254,7 +257,7 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 58;
+		public const int  MinDynamicVersion = 59;
 		public const int  MaxDynamicVersion = 59;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
@@ -265,20 +268,22 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress CompileMethod;
 		public readonly TargetAddress GetVirtualMethod;
 		public readonly TargetAddress GetBoxedObjectMethod;
-		public readonly TargetAddress InsertBreakpoint;
-		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeInvoke;
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
 		public readonly TargetAddress LookupClass;
-		public readonly TargetAddress LookupType;
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress GetCurrentThread;
+		public readonly TargetAddress InsertBreakpoint;
+		public readonly TargetAddress RemoveBreakpoint;
+		public readonly TargetAddress RuntimeClassInit;
 		public readonly TargetAddress Attach;
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
+		public readonly TargetAddress DebuggerVersion;
+		public readonly TargetAddress DataTable;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -287,43 +292,40 @@ namespace Mono.Debugger.Backends
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
 
-			SymbolTableSize         = reader.ReadInteger ();
+			int address_size          = memory.TargetInfo.TargetAddressSize;
+
+			SymbolTableSize           = reader.ReadInteger ();
 
 			reader.Offset = 24;
-			NotificationAddress     = reader.ReadAddress ();
-			MonoTrampolineCode      = reader.ReadAddress ();
-			SymbolTable             = reader.ReadAddress ();
+			NotificationAddress       = reader.ReadAddress ();
+			MonoTrampolineCode        = reader.ReadAddress ();
+			SymbolTable               = reader.ReadAddress ();
 			TargetAddress metadata_info = reader.ReadAddress ();
-			CompileMethod           = reader.ReadAddress ();
-			GetVirtualMethod        = reader.ReadAddress ();
-			GetBoxedObjectMethod    = reader.ReadAddress ();
-			InsertBreakpoint        = reader.ReadAddress ();
-			RemoveBreakpoint        = reader.ReadAddress ();
-			RuntimeInvoke           = reader.ReadAddress ();
-			CreateString            = reader.ReadAddress ();
-			ClassGetStaticFieldData = reader.ReadAddress ();
-			LookupClass             = reader.ReadAddress ();
-			LookupType              = reader.ReadAddress ();
-			LookupAssembly          = reader.ReadAddress ();
-			RunFinally              = reader.ReadAddress ();
-			GetCurrentThread        = reader.ReadAddress ();
-			Attach                  = reader.ReadAddress ();
-			Detach                  = reader.ReadAddress ();
-			Initialize              = reader.ReadAddress ();
-			GetLMFAddress           = reader.ReadAddress ();
+			CompileMethod             = reader.ReadAddress ();
+			GetVirtualMethod          = reader.ReadAddress ();
+			GetBoxedObjectMethod      = reader.ReadAddress ();
+			RuntimeInvoke             = reader.ReadAddress ();
+			ClassGetStaticFieldData   = reader.ReadAddress ();
+			RunFinally                = reader.ReadAddress ();
+			GetCurrentThread          = reader.ReadAddress ();
+			Attach                    = reader.ReadAddress ();
+			Detach                    = reader.ReadAddress ();
+			Initialize                = reader.ReadAddress ();
+			GetLMFAddress             = reader.ReadAddress ();
+
+			DebuggerVersion           = reader.ReadAddress ();
+			DataTable                 = reader.ReadAddress ();
+
+			CreateString              = reader.ReadAddress ();
+			LookupClass               = reader.ReadAddress ();
+			LookupAssembly            = reader.ReadAddress ();
+			InsertBreakpoint          = reader.ReadAddress ();
+			RemoveBreakpoint          = reader.ReadAddress ();
+			RuntimeClassInit          = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
 			Report.Debug (DebugFlags.JitSymtab, this);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format (
-				"MonoDebuggerInfo ({0:x}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6:x})",
-				MonoTrampolineCode, SymbolTable, SymbolTableSize,
-				CompileMethod, InsertBreakpoint, RemoveBreakpoint,
-				RuntimeInvoke);
 		}
 	}
 

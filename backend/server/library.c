@@ -206,14 +206,15 @@ mono_debugger_server_call_method (ServerHandle *handle, guint64 method_address,
 
 ServerCommandError
 mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address,
-				    guint64 method_argument, const gchar *string_argument,
-				    guint64 callback_argument)
+				    guint64 method_argument, guint64 data_argument,
+				    const gchar *string_argument, guint64 callback_argument)
 {
 	if (!global_vtable->call_method_1)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->call_method_1) (
-		handle, method_address, method_argument, string_argument, callback_argument);
+		handle, method_address, method_argument, data_argument,
+		string_argument, callback_argument);
 }
 
 ServerCommandError
@@ -243,12 +244,21 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 }
 
 ServerCommandError
-mono_debugger_server_abort_invoke (ServerHandle *handle)
+mono_debugger_server_mark_rti_frame (ServerHandle *handle)
+{
+	if (!global_vtable->mark_rti_frame)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->mark_rti_frame) (handle);
+}
+
+ServerCommandError
+mono_debugger_server_abort_invoke (ServerHandle *handle, guint64 stack_pointer)
 {
 	if (!global_vtable->abort_invoke)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->abort_invoke) (handle);
+	return (* global_vtable->abort_invoke) (handle, stack_pointer);
 }
 
 ServerCommandError
@@ -412,6 +422,17 @@ mono_debugger_server_pop_registers (ServerHandle *handle)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->pop_registers) (handle);
+}
+
+ServerCommandError
+mono_debugger_server_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
+					 gboolean exact_match, guint64 *registers)
+{
+	if (!global_vtable->get_callback_frame)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->get_callback_frame) (
+		handle, stack_pointer, exact_match, registers);
 }
 
 static gboolean initialized = FALSE;

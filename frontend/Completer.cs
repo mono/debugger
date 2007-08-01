@@ -243,7 +243,7 @@ namespace Mono.Debugger.Frontend
 						continue;
 
 					foreach (SourceFile sf in sources) {
-						foreach (SourceMethod method in sf.Methods) {
+						foreach (MethodSource method in sf.Methods) {
 							if (method.Name.StartsWith (text)) {
 								int parameter_start = method.Name.IndexOf ('(');
 								if (parameter_start != -1)

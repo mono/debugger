@@ -78,6 +78,10 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public bool HasFrame {
+			get { return current_frame != null; }
+		}
+
 		public StackFrame CurrentFrame {
 			get {
 				if (current_frame == null)
@@ -127,11 +131,7 @@ namespace Mono.Debugger.Frontend
 			if ((method == null) || !method.HasLineNumbers)
 				return null;
 
-			LineNumberTable msource = method.LineNumberTable;
-			if (msource.IsDynamic)
-				return null;
-
-			return msource.GetNamespaces ();
+			return method.GetNamespaces ();
 		}
 
 		public string[] GetNamespaces ()
@@ -142,12 +142,11 @@ namespace Mono.Debugger.Frontend
 		public SourceLocation CurrentLocation {
 			get {
 				StackFrame frame = CurrentFrame;
-				if ((frame.SourceAddress == null) ||
-				    (frame.SourceAddress.Location == null))
+				if (frame.SourceLocation == null)
 					throw new ScriptingException (
 						"Current location doesn't have source code");
 
-				return frame.SourceAddress.Location;
+				return frame.SourceLocation;
 			}
 		}
 
@@ -251,7 +250,7 @@ namespace Mono.Debugger.Frontend
 			return (formatted);
 		}
 
-		public void PrintMethods (SourceMethod[] methods)
+		public void PrintMethods (MethodSource[] methods)
 		{
 			for (int i = 0; i < methods.Length; i++) {
 				interpreter.Print ("{0,4}  {1}", i+1, methods [i].Name);

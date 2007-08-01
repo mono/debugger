@@ -122,6 +122,11 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerType (this, type.Name + "*", type, type.Size);
 		}
 
+		internal TargetAddress LookupSymbol (string name)
+		{
+			return bfd_container.LookupSymbol (name);
+		}
+
 		private bool disposed = false;
 
 		private void Dispose (bool disposing)

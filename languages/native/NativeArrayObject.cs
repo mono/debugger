@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Native
 
 			TargetLocation new_location = Location.GetLocationAtOffset (index * size);
 			if (Type.ElementType.IsByRef)
-				new_location = new_location.GetDereferencedLocation (target);
+				new_location = new_location.GetDereferencedLocation ();
 
 			return Type.ElementType.GetObject (new_location);
 		}
@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Native
 		public override string Print (Thread target)
 		{
 			if (Location.HasAddress)
-				return String.Format ("{0}", Location.Address);
+				return String.Format ("{0}", Location.GetAddress (target));
 			else
 				return String.Format ("{0}", Location);
 		}

@@ -34,30 +34,27 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Cannot find source file `{0}'.",
 							      filename);
 
-			SourceMethod source = file.FindMethod (line);
+			MethodSource source = file.FindMethod (line);
 			if (source == null)
 				throw new ScriptingException (
 					"Cannot find method corresponding to line {0} in `{1}'.",
 					line, file.Name);
 
-			return new SourceLocation (source, line);
+			return new SourceLocation (source, file, line);
 		}
 
-		protected SourceLocation DoParseExpression (Thread target, LocationType type, string arg)
+		protected SourceLocation DoParseExpression (TargetMemoryAccess target, StackFrame frame,
+							    LocationType type, string arg)
 		{
 			ScriptingContext context = new ScriptingContext (Interpreter);
-			context.CurrentFrame = target.CurrentFrame;
+			context.CurrentThread = frame.Thread;
+			context.CurrentFrame = frame;
 
 			Expression expr = Interpreter.ExpressionParser.Parse (arg);
 			if (expr == null)
 				throw new ScriptingException ("Cannot resolve expression `{0}'.", arg);
 
-			MethodExpression mexpr;
-			try {
-				mexpr = expr.ResolveMethod (context, type);
-			} catch {
-				return null;
-			}
+			MethodExpression mexpr = expr.ResolveMethod (context, type);
 
 			if (mexpr != null)
 				return mexpr.EvaluateSource (context);
@@ -65,7 +62,8 @@ namespace Mono.Debugger.Frontend
 				return context.FindMethod (arg);
 		}
 
-		public static bool ParseLocation (Thread target, string arg, out SourceLocation location)
+		public static bool ParseLocation (TargetMemoryAccess target, StackFrame frame,
+						  string arg, out SourceLocation location)
 		{
 			int line;
 			int pos = arg.IndexOf (':');
@@ -77,7 +75,7 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException ("Expected filename:line");
 				}
 
-				location = FindFile (target, filename, line);
+				location = FindFile (frame.Thread, filename, line);
 				return true;
 			}
 
@@ -88,36 +86,33 @@ namespace Mono.Debugger.Frontend
 				return false;
 			}
 
-			StackFrame frame = target.CurrentFrame;
-			if ((frame.SourceAddress == null) || (frame.SourceAddress.Location == null))
+			if ((frame == null) || (frame.SourceLocation == null) ||
+			    (frame.SourceLocation.FileName == null))
 				throw new ScriptingException (
 					"Current stack frame doesn't have source code");
 
-			location = frame.SourceAddress.Location;
-			if (location.FileName == null)
-				throw new ScriptingException (
-					"Current stack frame doesn't have source code");
-
-			location = FindFile (target, location.FileName, line);
+			location = FindFile (frame.Thread, frame.SourceLocation.FileName, line);
 			return true;
 		}
 
-		protected SourceLocation DoParse (Thread target, LocationType type, string arg)
+		protected SourceLocation DoParse (TargetMemoryAccess target, StackFrame frame,
+						  LocationType type, string arg)
 		{
 			if (type != LocationType.Default)
-				return DoParseExpression (target, type, arg);
+				return DoParseExpression (target, frame, type, arg);
 
 			SourceLocation location;
-			if (ParseLocation (target, arg, out location))
+			if (ParseLocation (target, frame, arg, out location))
 				return location;
 
-			return DoParseExpression (target, type, arg);
+			return DoParseExpression (target, frame, type, arg);
 		}
 
-		public SourceLocation Parse (Thread target, LocationType type, string arg)
+		public SourceLocation Parse (TargetMemoryAccess target, StackFrame frame,
+					     LocationType type, string arg)
 		{
 			try {
-				return DoParse (target, type, arg);
+				return DoParse (target, frame, type, arg);
 			} catch (ScriptingException ex) {
 				throw new TargetException (TargetError.LocationInvalid, ex.Message);
 			}
@@ -870,6 +865,17 @@ namespace Mono.Debugger.Frontend
 		MemberExpression LookupMember (ScriptingContext context, StackFrame frame,
 					       string full_name)
 		{
+			MemberExpression member;
+
+			TargetFunctionType function = frame.Function;
+			if (function != null) {
+				member = StructAccessExpression.FindMember (
+					frame.Thread, function.DeclaringType, null,
+					full_name, true, true);
+				if (member != null)
+					return member;
+			}
+
 			Method method = frame.Method;
 			if ((method == null) || (method.DeclaringType == null))
 				return null;
@@ -878,7 +884,7 @@ namespace Mono.Debugger.Frontend
 			if (method.HasThis)
 				instance = (TargetClassObject) method.This.GetObject (frame);
 
-			MemberExpression member = StructAccessExpression.FindMember (
+			member = StructAccessExpression.FindMember (
 				frame.Thread, method.DeclaringType, instance, full_name, true, true);
 			if (member == null)
 				return null;
@@ -908,25 +914,27 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame;
-			if (frame.Method != null) {
-				TargetVariable var = frame.Method.GetVariableByName (
-					frame.TargetAddress, name);
-				if (var != null)
-					return new VariableAccessExpression (var);
-			}
+			if (context.HasFrame) {
+				StackFrame frame = context.CurrentFrame;
+				if ((frame.Method != null) && frame.Method.IsLoaded) {
+					TargetVariable var = frame.Method.GetVariableByName (
+						frame.TargetAddress, name);
+					if (var != null)
+						return new VariableAccessExpression (var);
+				}
 
-			Expression expr = Lookup (context, frame);
-			if (expr != null)
-				return expr;
+				Expression expr = Lookup (context, frame);
+				if (expr != null)
+					return expr;
+			}
 
 			SourceLocation location = context.FindMethod (name);
 			if (location != null)
 				return new SourceExpression (location);
 
-			expr = DoResolveType (context);
-			if (expr != null)
-				return expr;
+			Expression texpr = DoResolveType (context);
+			if (texpr != null)
+				return texpr;
 
 			throw new ScriptingException ("No symbol `{0}' in current context.", Name);
 		}
@@ -934,9 +942,7 @@ namespace Mono.Debugger.Frontend
 		protected override MethodExpression DoResolveMethod (ScriptingContext context,
 								     LocationType type)
 		{
-			StackFrame frame = context.CurrentFrame;
-
-			MemberExpression member;
+			MemberExpression member = null;
 			if (type == LocationType.Constructor) {
 				Expression texpr = ResolveType (context);
 				if (texpr == null)
@@ -947,9 +953,9 @@ namespace Mono.Debugger.Frontend
 					return null;
 
 				member = StructAccessExpression.FindMember (
-					frame.Thread, ctype, null, ".ctor", false, true);
-			} else {
-				member = Lookup (context, frame);
+					context.CurrentThread, ctype, null, ".ctor", false, true);
+			} else if (context.HasFrame) {
+				member = Lookup (context, context.CurrentFrame);
 			}
 
 			if (member != null)
@@ -1477,7 +1483,7 @@ namespace Mono.Debugger.Frontend
 				return (long) val;
 			else if (val is TargetPointerObject) {
 				TargetPointerObject pobj = (TargetPointerObject) val;
-				return pobj.Address.Address;
+				return pobj.GetAddress (context.CurrentThread).Address;
 			} else
 				throw new ScriptingException ("Cannot evaluate expression `{0}'", expr);
 		}
@@ -1591,7 +1597,7 @@ namespace Mono.Debugger.Frontend
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
 		{
 			TargetPointerObject pobj = (TargetPointerObject) EvaluateObject (context);
-			return pobj.Address;
+			return pobj.GetAddress (context.CurrentThread);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject tobj)
@@ -2009,7 +2015,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Expression `{0}' is not a pointer type.", expr.Name);
 
-			return pobj.Address;
+			return pobj.GetAddress (context.CurrentThread);
 		}
 	}
 
@@ -2070,7 +2076,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Cannot take address of expression `{0}'", expr.Name);
 
-			return obj.Address;
+			return obj.GetAddress (context.CurrentThread);
 		}
 	}
 

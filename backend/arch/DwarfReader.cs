@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger.Languages;
@@ -108,6 +109,7 @@ namespace Mono.Debugger.Backends
 		ObjectCache debug_str_reader;
 
 		Hashtable source_hash;
+		Hashtable source_file_hash;
 		Hashtable method_source_hash;
 		Hashtable method_hash;
 		Hashtable compile_unit_hash;
@@ -153,6 +155,7 @@ namespace Mono.Debugger.Backends
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
 			method_hash = Hashtable.Synchronized (new Hashtable ());
 			source_hash = Hashtable.Synchronized (new Hashtable ());
+			source_file_hash = Hashtable.Synchronized (new Hashtable ());
 
 			if (bfd.IsLoaded) {
 				aranges = ArrayList.Synchronized (read_aranges ());
@@ -230,26 +233,28 @@ namespace Mono.Debugger.Backends
 			return method;
 		}
 
-		public SourceMethod[] GetMethods (SourceFile file)
+		public MethodSource[] GetMethods (SourceFile file)
 		{
 			DieCompileUnit die = (DieCompileUnit) source_hash [file];
+			if (die == null)
+				return null;
 
 			ArrayList list = new ArrayList ();
 
 			foreach (Die child in die.Subprograms) {
 				DieSubprogram subprog = child as DieSubprogram;
-				if ((subprog == null) || (subprog.SourceMethod == null))
+				if ((subprog == null) || (subprog.MethodSource == null))
 					continue;
 
-				list.Add (subprog.SourceMethod);
+				list.Add (subprog.MethodSource);
 			}
 
-			SourceMethod[] methods = new SourceMethod [list.Count];
+			MethodSource[] methods = new MethodSource [list.Count];
 			list.CopyTo (methods, 0);
 			return methods;
 		}
 
-		public SourceMethod FindMethod (string name)
+		public MethodSource FindMethod (string name)
 		{
 			if (pubnames == null)
 				return null;
@@ -258,8 +263,8 @@ namespace Mono.Debugger.Backends
 			if (entry == null)
 				return null;
 
-			SourceMethod source;
-			source = (SourceMethod) method_source_hash [entry.AbsoluteOffset];
+			MethodSource source;
+			source = (MethodSource) method_source_hash [entry.AbsoluteOffset];
 			if (source != null)
 				return source;
 
@@ -267,24 +272,32 @@ namespace Mono.Debugger.Backends
 			return block.GetMethod (entry.AbsoluteOffset);
 		}
 
-		protected SourceMethod GetSourceMethod (DieSubprogram subprog,
-							int start_row, int end_row)
+		protected DwarfMethodSource GetMethodSource (DieSubprogram subprog,
+							     int start_row, int end_row)
 		{
-			SourceMethod source;
-			source = (SourceMethod) method_source_hash [subprog.Offset];
+			DwarfMethodSource source;
+			source = (DwarfMethodSource) method_source_hash [subprog.Offset];
 			if (source != null)
 				return source;
 
-			source = new SourceMethod (
-				module, subprog.SourceFile, subprog.Offset, null, subprog.Name,
-				start_row, end_row, true);
+			source = new DwarfMethodSource (subprog, start_row, end_row);
 			method_source_hash.Add (subprog.Offset, source);
 			return source;
 		}
 
+		protected SourceFile GetSourceFile (string filename)
+		{
+			SourceFile file = (SourceFile) source_file_hash [filename];
+			if (file == null) {
+				file = new SourceFile (module, filename);
+				source_file_hash.Add (filename, file);
+			}
+			return file;
+		}
+
 		protected SourceFile AddSourceFile (DieCompileUnit die, string filename)
 		{
-			SourceFile file = new SourceFile (module, filename);
+			SourceFile file = GetSourceFile (filename);
 			source_hash.Add (file, die);
 			return file;
 		}
@@ -348,7 +361,7 @@ namespace Mono.Debugger.Backends
 				return null;
 			}
 
-			public SourceMethod GetMethod (long offset)
+			public MethodSource GetMethod (long offset)
 			{
 				build_symtabs ();
 				CompilationUnit comp_unit = get_comp_unit (offset);
@@ -360,7 +373,7 @@ namespace Mono.Debugger.Backends
 				if (subprog == null)
 					return null;
 
-				return subprog.SourceMethod;
+				return subprog.MethodSource;
 			}
 
 			void read_children ()
@@ -790,6 +803,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		[Conditional("REAL_DEBUG")]
 		static void debug (string message, params object[] args)
 		{
 			// Console.WriteLine (String.Format (message, args));
@@ -968,11 +982,13 @@ namespace Mono.Debugger.Backends
 		{
 			public readonly long Offset;
 			public readonly int Line;
+			public readonly int File;
 
-			public LineNumber (long offset, int line)
+			public LineNumber (int file, int line, long offset)
 			{
-				this.Offset = offset;
+				this.File = file;
 				this.Line = line;
+				this.Offset = offset;
 			}
 
 			public int CompareTo (object obj)
@@ -989,19 +1005,20 @@ namespace Mono.Debugger.Backends
 
 			public override string ToString ()
 			{
-				return String.Format ("LineNumber ({0}:{1})",
-						      Line, Offset);
+				return String.Format ("LineNumber ({0}:{1}:{2:x})",
+						      File, Line, Offset);
 			}
 		}
 
-		protected class LineNumberEngine
+		protected class LineNumberEngine : LineNumberTable
 		{
-			protected DwarfReader dwarf;
+			protected DieCompileUnit comp_unit;
 			protected DwarfBinaryReader reader;
 			protected byte minimum_insn_length;
 			protected bool default_is_stmt;
 			protected byte opcode_base;
 			protected int line_base, line_range;
+			protected int const_add_pc_range;
 			protected ArrayList source_files;
 
 			long offset;
@@ -1010,15 +1027,14 @@ namespace Mono.Debugger.Backends
 			int version;
 			long header_length, data_offset, end_offset;
 
-			DieSubprogram next_method, current_method;
-			long next_method_address;
-			int next_method_index;
-
 			int[] standard_opcode_lengths;
-			ArrayList include_directories;
+			ArrayList include_dirs;
 			string compilation_dir;
-			ArrayList methods;
-			Hashtable method_hash;
+			ArrayList lines;
+
+			LineNumber[] addresses;
+
+			StatementMachine stm;
 
 			protected class StatementMachine
 			{
@@ -1037,7 +1053,6 @@ namespace Mono.Debugger.Backends
 
 				public int start_file;
 				public int start_line, end_line;
-				public ArrayList lines;
 
 				bool creating;
 				DwarfBinaryReader reader;
@@ -1065,198 +1080,28 @@ namespace Mono.Debugger.Backends
 					this.const_add_pc_range =
 						((0xff - engine.opcode_base) / engine.line_range) *
 						engine.minimum_insn_length;
-					this.lines = new ArrayList ();
 				}
 
-				public StatementMachine (StatementMachine stm)
-				{
-					this.engine = stm.engine;
-					this.reader = this.engine.reader;
-					this.creating = false;
-					this.start_offset = stm.start_offset;
-					this.end_offset = stm.end_offset;
-					this.st_address = stm.st_address;
-					this.st_file = stm.st_file;
-					this.st_line = stm.st_line;
-					this.st_column = stm.st_column;
-					this.is_stmt = this.engine.default_is_stmt;
-					this.basic_block = stm.basic_block;
-					this.end_sequence = stm.end_sequence;
-					this.prologue_end = stm.prologue_end;
-					this.epilogue_begin = stm.epilogue_begin;
-					this.start_file = stm.st_file;
-
-					engine.debug ("CLONE: {0} {1} {2}",
-						      stm.start_line, stm.end_line, stm.st_file);
-
-					this.start_line = stm.start_line;
-					this.end_line = stm.end_line;
-
-					this.const_add_pc_range =
-						((0xff - engine.opcode_base) / engine.line_range) *
-						engine.minimum_insn_length;
-
-					this.lines = stm.lines;
-					this.lines.Sort ();
-
-					stm.start_line = stm.st_line;
-					stm.lines = new ArrayList ();
-				}
-
-				void commit ()
-				{
-					if (creating) {
-						if (start_line == 0)
-							start_line = st_line;
-						engine.commit (this);
-						end_line = st_line;
-					}
-
-					engine.debug ("COMMIT: {0} {1} {2}:{3} - {4} {5}",
-						      engine.current_method, creating, st_file,
-						      start_file, st_address, st_line);
-
-					if (st_file == start_file)
-						lines.Add (new LineNumber (st_address, st_line));
-
-					basic_block = false;
-					prologue_end = false;
-					epilogue_begin = false;
-				}
-
-				void set_end_sequence ()
+				public void set_end_sequence ()
 				{
 					engine.debug ("SET END SEQUENCE");
 
 					end_sequence = true;
 
-					if (!creating)
-						return;
-
-					engine.end_sequence (this);
-
 					end_line = st_line;
-				}
 
-				void do_standard_opcode (byte opcode)
-				{
-					engine.debug ("STANDARD OPCODE: {0:x}", opcode);
-
-					switch ((StandardOpcode) opcode) {
-					case StandardOpcode.copy:
-						commit ();
-						break;
-
-					case StandardOpcode.advance_pc:
-						st_address += engine.minimum_insn_length * reader.ReadLeb128 ();
-						break;
-
-					case StandardOpcode.advance_line:
-						st_line += reader.ReadSLeb128 ();
-						break;
-
-					case StandardOpcode.set_file:
-						st_file = reader.ReadLeb128 ();
-						engine.debug ("FILE: {0}", st_file);
-						break;
-
-					case StandardOpcode.set_column:
-						st_column = reader.ReadLeb128 ();
-						break;
-
-					case StandardOpcode.const_add_pc:
-						st_address += const_add_pc_range;
-						break;
-
-					case StandardOpcode.set_prologue_end:
-						prologue_end = true;
-						break;
-
-					case StandardOpcode.set_epilogue_begin:
-						epilogue_begin = true;
-						break;
-
-					default:
-						engine.error (String.Format (
-							"Unknown standard opcode {0:x} in line number engine",
-							opcode));
-						break;
-					}
-				}
-
-				void do_extended_opcode ()
-				{
-					byte size = reader.ReadByte ();
-					long end_pos = reader.Position + size;
-					byte opcode = reader.ReadByte ();
-
-					engine.debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
-
-					switch ((ExtendedOpcode) opcode) {
-					case ExtendedOpcode.set_address:
-						st_address = reader.ReadAddress ();
-						engine.debug ("SETTING ADDRESS TO {0:x}", st_address);
-						break;
-
-					case ExtendedOpcode.end_sequence:
-						set_end_sequence ();
-						break;
-
-					default:
-						engine.warning (String.Format (
-							"Unknown extended opcode {0:x} in line number " +
-							"engine at offset {1}", opcode, reader.Position));
-						break;
-					}
-
-					reader.Position = end_pos;
-				}
-
-				void dump ()
-				{
-					FileEntry file = (FileEntry) engine.source_files [st_file];
-					Console.WriteLine ("DUMP: {0} {1} {2:x} - {3:x}",
-							   file, st_line, st_address,
-							   engine.next_method_address);
-				}
-
-				public void Read ()
-				{
-					reader.Position = start_offset;
+					st_address = 0;
+					st_file = 1;
+					st_line = 1;
+					st_column = 0;
+					is_stmt = engine.default_is_stmt;
+					basic_block = false;
 					end_sequence = false;
-
-					while (!end_sequence && (reader.Position < end_offset)) {
-						byte opcode = reader.ReadByte ();
-						engine.debug ("OPCODE: {0:x}", opcode);
-
-						if (opcode == 0)
-							do_extended_opcode ();
-						else if (opcode < engine.opcode_base)
-							do_standard_opcode (opcode);
-						else {
-							opcode -= engine.opcode_base;
-
-							int addr_inc = (opcode / engine.line_range) *
-								engine.minimum_insn_length;
-							int line_inc = engine.line_base +
-								(opcode % engine.line_range);
-
-							engine.debug (
-								"INC: {0:x} {1:x} {2:x} {3:x} - {4} {5}",
-								opcode, engine.opcode_base, addr_inc, line_inc,
-								opcode % engine.line_range,
-								opcode / engine.line_range);
-
-							st_line += line_inc;
-							st_address += addr_inc;
-
-							commit ();
-						}
-					}
+					prologue_end = false;
+					epilogue_begin = false;
+					start_file = st_file;
 				}
 			}
-
-			// StatementMachine stm;
 
 			protected enum StandardOpcode
 			{
@@ -1288,12 +1133,28 @@ namespace Mono.Debugger.Backends
 				public readonly int LastModificationTime;
 				public readonly int Length;
 
-				public FileEntry (DwarfBinaryReader reader)
+				public readonly SourceFile File;
+
+				public FileEntry (LineNumberEngine engine, DwarfBinaryReader reader)
 				{
 					FileName = reader.ReadString ();
 					Directory = reader.ReadLeb128 ();
 					LastModificationTime = reader.ReadLeb128 ();
 					Length = reader.ReadLeb128 ();
+
+					string dir_name;
+					if (Directory > 0)
+						dir_name = (string) engine.include_dirs [Directory - 1];
+					else
+						dir_name = engine.compilation_dir;
+
+					string full_name;
+					if (dir_name != null)
+						full_name = Path.Combine (dir_name, FileName);
+					else
+						full_name = FileName;
+
+					File = engine.comp_unit.dwarf.GetSourceFile (full_name);
 				}
 
 				public override string ToString ()
@@ -1302,58 +1163,43 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			void end_sequence (StatementMachine stm)
+			void commit ()
 			{
-				debug ("NEXT: {0:x} {1:x} {2} {3} {4} {5}", stm.st_address,
-				       next_method_address, stm.lines.Count, methods.Count,
-				       current_method, next_method);
+				debug ("COMMIT: {0:x} {1} {2} {3}", stm.st_address, stm.st_line,
+				       stm.st_file, stm.start_file);
 
-				if (current_method != null)
-					method_hash.Add (current_method, new StatementMachine (stm));
-				current_method = next_method;
-				if (next_method_index < methods.Count) {
-					next_method = (DieSubprogram) methods [next_method_index++];
-					next_method_address = next_method.StartAddress;
-				} else
-					next_method_address = 0;
+				lines.Add (new LineNumber (stm.st_file, stm.st_line, stm.st_address));
 
-				debug ("NEW NEXT: {0:x} {1} - {2}:{3}",
-				       next_method_address, current_method, stm.start_file, stm.st_file);
-				stm.start_file = stm.st_file;
+				stm.basic_block = false;
+				stm.prologue_end = false;
+				stm.epilogue_begin = false;
 			}
 
-			void commit (StatementMachine stm)
+			void warning (string message, params object[] args)
 			{
-				debug ("COMMIT: {0:x} {1} {2:x}", stm.st_address, stm.st_line,
-				       next_method_address);
-
-				if ((next_method_address > 0) && (stm.st_address >= next_method_address))
-					end_sequence (stm);
+				Console.WriteLine (message, args);
 			}
 
-			void warning (string message)
+			void error (string message, params object[] args)
 			{
-				Console.WriteLine (message);
+				throw new DwarfException (comp_unit.dwarf.bfd, message, args);
 			}
 
-			void error (string message)
-			{
-				throw new DwarfException (dwarf.bfd, message);
-			}
-
+			[Conditional("REAL_DEBUG")]
 			void debug (string message, params object[] args)
 			{
 				// Console.WriteLine (String.Format (message, args));
 			}
 
-			public LineNumberEngine (DwarfReader dwarf, long offset, string compilation_dir,
-						 ArrayList methods)
+			public LineNumberEngine (DieCompileUnit comp_unit, long offset,
+						 string compilation_dir)
 			{
-				this.dwarf = dwarf;
+				this.comp_unit = comp_unit;
 				this.offset = offset;
-				this.reader = dwarf.DebugLineReader;
-				this.methods = methods;
+				this.reader = comp_unit.dwarf.DebugLineReader;
 				this.compilation_dir = compilation_dir;
+
+				debug ("NEW LNE: {0}", offset);
 
 				reader.Position = offset;
 				length = reader.ReadInitialLength ();
@@ -1369,68 +1215,207 @@ namespace Mono.Debugger.Backends
 				standard_opcode_lengths = new int [opcode_base - 1];
 				for (int i = 0; i < opcode_base - 1; i++)
 					standard_opcode_lengths [i] = reader.ReadByte ();
-				include_directories = new ArrayList ();
+				include_dirs = new ArrayList ();
 				while (reader.PeekByte () != 0)
-					include_directories.Add (reader.ReadString ());
+					include_dirs.Add (reader.ReadString ());
 				reader.Position++;
 				source_files = new ArrayList ();
 				while (reader.PeekByte () != 0)
-					source_files.Add (new FileEntry (reader));
+					source_files.Add (new FileEntry (this, reader));
 				reader.Position++;
 
-				next_method_index = 1;
-				if (methods.Count > 0) {
-					next_method = (DieSubprogram) methods [0];
-					next_method_address = next_method.StartAddress;
-				}
+				const_add_pc_range = ((0xff - opcode_base) / line_range) *
+					minimum_insn_length;
 
-				method_hash = new Hashtable ();
+				debug ("NEW LNE #1: {0} {1} - {2} {3} {4}",
+				       reader.Position, offset, length,
+				       data_offset, end_offset);
 
-				StatementMachine stm = new StatementMachine (this, data_offset, end_offset);
-				stm.Read ();
+				lines = new ArrayList ();
 
-				if ((current_method != null) && !method_hash.Contains (current_method))
-					method_hash.Add (current_method, new StatementMachine (stm));
+				stm = new StatementMachine (this, data_offset, end_offset);
+				Read ();
+
+				lines.Sort ();
+				addresses = new LineNumber [lines.Count];
+				lines.CopyTo (addresses, 0);
 			}
 
-			public string GetSource (DieSubprogram method, out int start_row, out int end_row,
-						 out LineNumber[] lines)
+			protected void Read ()
 			{
-				start_row = end_row = 0;
-				lines = null;
+				reader.Position = data_offset;
 
-				StatementMachine stm = (StatementMachine) method_hash [method];
-				if ((stm == null) || (stm.st_file == 0))
-					return null;
+				while (reader.Position < end_offset) {
+					byte opcode = reader.ReadByte ();
+					debug ("OPCODE: {0:x}", opcode);
 
-				FileEntry file = (FileEntry) source_files [stm.st_file - 1];
-				start_row = stm.start_line;
-				end_row = stm.end_line;
+					if (opcode == 0)
+						do_extended_opcode ();
+					else if (opcode < opcode_base)
+						do_standard_opcode (opcode);
+					else {
+						opcode -= opcode_base;
 
-#if FIXME
-				addresses = new LineEntry [stm.lines.Count];
-				for (int i = 0; i < addresses.Length; i++) {
-					LineNumber line = (LineNumber) stm.lines [i];
-					     addresses [i] = new LineEntry (
-						     dwarf.GetAddress (line.Offset), line.Line);
+						int addr_inc = (opcode / line_range) * minimum_insn_length;
+						int line_inc = line_base + (opcode % line_range);
+
+						debug ("INC: {0:x} {1:x} {2:x} {3:x} - {4} {5}",
+						       opcode, opcode_base, addr_inc, line_inc,
+						       opcode % line_range, opcode / line_range);
+
+						stm.st_line += line_inc;
+						stm.st_address += addr_inc;
+
+						commit ();
+					}
 				}
-#endif
+			}
 
-				lines = new LineNumber [stm.lines.Count];
-				stm.lines.CopyTo (lines, 0);
+			void do_standard_opcode (byte opcode)
+			{
+				debug ("STANDARD OPCODE: {0:x} {1}", opcode, (StandardOpcode) opcode);
 
-				string dir_name;
-				if (file.Directory > 0)
-					dir_name = (string) include_directories [file.Directory - 1];
-				else
-					dir_name = compilation_dir;
+				switch ((StandardOpcode) opcode) {
+				case StandardOpcode.copy:
+					commit ();
+					break;
 
-				if (dir_name != null)
-					return String.Format (
-						"{0}{1}{2}", dir_name, Path.DirectorySeparatorChar,
-						file.FileName);
-				else
-					return file.FileName;
+				case StandardOpcode.advance_pc:
+					stm.st_address += minimum_insn_length * reader.ReadLeb128 ();
+					break;
+
+				case StandardOpcode.advance_line:
+					stm.st_line += reader.ReadSLeb128 ();
+					break;
+
+				case StandardOpcode.set_file:
+					stm.st_file = reader.ReadLeb128 ();
+					debug ("FILE: {0}", stm.st_file);
+					break;
+
+				case StandardOpcode.set_column:
+					debug ("SET COLUMN");
+					stm.st_column = reader.ReadLeb128 ();
+					break;
+
+				case StandardOpcode.const_add_pc:
+					stm.st_address += const_add_pc_range;
+					break;
+
+				case StandardOpcode.set_prologue_end:
+					debug ("PROLOGUE END");
+					stm.prologue_end = true;
+					break;
+
+				case StandardOpcode.set_epilogue_begin:
+					debug ("EPILOGUE BEGIN");
+					stm.epilogue_begin = true;
+					break;
+
+				default:
+					error ("Unknown standard opcode {0:x} in line number engine",
+					       opcode);
+					break;
+				}
+			}
+
+			void do_extended_opcode ()
+			{
+				byte size = reader.ReadByte ();
+				long end_pos = reader.Position + size;
+				byte opcode = reader.ReadByte ();
+
+				debug ("EXTENDED OPCODE: {0:x} {1:x}", size, opcode);
+
+				switch ((ExtendedOpcode) opcode) {
+				case ExtendedOpcode.set_address:
+					stm.st_address = reader.ReadAddress ();
+					debug ("SETTING ADDRESS TO {0:x}", stm.st_address);
+					break;
+
+				case ExtendedOpcode.end_sequence:
+					stm.set_end_sequence ();
+					break;
+
+				default:
+					warning ("Unknown extended opcode {0:x} in line number " +
+						 "engine at offset {1}", opcode, reader.Position);
+					break;
+				}
+
+				reader.Position = end_pos;
+			}
+
+			public override TargetAddress Lookup (int line)
+			{
+				for (int i = 0; i < addresses.Length; i++) {
+					LineNumber entry = (LineNumber) addresses [i];
+
+					if (entry.Line != line)
+						continue;
+
+					return comp_unit.dwarf.GetAddress (entry.Offset);
+				}
+
+				return TargetAddress.Null;
+			}
+
+			SourceAddress do_lookup (TargetAddress address, int start_pos, int end_pos)
+			{
+				if (end_pos - start_pos >= 4) {
+					int middle_pos = (start_pos + end_pos) / 2;
+					LineNumber middle = (LineNumber) addresses [middle_pos];
+
+					TargetAddress maddr = comp_unit.dwarf.GetAddress (middle.Offset);
+					if (address < maddr)
+						return do_lookup (address, start_pos, middle_pos);
+					else
+						return do_lookup (address, middle_pos, end_pos);
+				}
+
+				TargetAddress next_address;
+				if (end_pos == addresses.Length)
+					next_address = comp_unit.EndAddress;
+				else {
+					LineNumber end_line = addresses [end_pos];
+					next_address = comp_unit.dwarf.GetAddress (end_line.Offset);
+				}
+
+				for (int i = end_pos-1; i >= start_pos; i--) {
+					LineNumber line = addresses [i];
+
+					int range = (int) (next_address - address);
+					next_address = comp_unit.dwarf.GetAddress (line.Offset);
+
+					if (next_address > address)
+						continue;
+
+					int offset = (int) (address - next_address);
+
+					FileEntry file = (FileEntry) source_files [line.File - 1];
+					return new SourceAddress (
+						file.File, null, line.Line, offset, range);
+				}
+
+				return null;
+			}
+
+			public override SourceAddress Lookup (TargetAddress address)
+			{
+				return do_lookup (address, 0, addresses.Length-1);
+			}
+
+			public override void DumpLineNumbers ()
+			{
+				Console.WriteLine ("--------");
+				Console.WriteLine ("DUMPING DWARF LINE NUMBER TABLE");
+				Console.WriteLine ("--------");
+				for (int i = 0; i < addresses.Length; i++) {
+					LineNumber line = (LineNumber) addresses [i];
+					Console.WriteLine ("{0,4} {1,4}  {2:x}", i,
+							   line.Line, line.Offset);
+				}
+				Console.WriteLine ("--------");
 			}
 
 			public override string ToString ()
@@ -1805,6 +1790,9 @@ namespace Mono.Debugger.Backends
 				ChildrenOffset = Offset + ReadAttributes (reader);
 				reader.Position = ChildrenOffset;
 
+				debug ("NEW DIE: {0} {1} {2} {3}", GetType (),
+				       abbrev, Offset, ChildrenOffset);
+
 				if (this is DieCompileUnit)
 					return;
 
@@ -1875,6 +1863,10 @@ namespace Mono.Debugger.Backends
 
 				case DwarfTag.member:
 					return new DieMember (reader, comp_unit, abbrev);
+
+				case DwarfTag.inlined_subroutine:
+					debug ("INLINED SUBROUTINE!");
+					return new DieSubprogram (reader, comp_unit, offset, abbrev);
 
 				default:
 					return new Die (reader, comp_unit, abbrev);
@@ -1956,8 +1948,7 @@ namespace Mono.Debugger.Backends
 				children.Sort ();
 
 				if (has_lines) {
-					engine = new LineNumberEngine (
-						dwarf, line_offset, comp_dir, children);
+					engine = new LineNumberEngine (this, line_offset, comp_dir);
 
 					foreach (DieSubprogram subprog in children)
 						subprog.SetEngine (engine);
@@ -2072,33 +2063,21 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			TargetAddress ISymbolContainer.StartAddress {
-				get {
-					return dwarf.GetAddress (StartAddress);
-				}
-			}
-
-			TargetAddress ISymbolContainer.EndAddress {
-				get {
-					return dwarf.GetAddress (EndAddress);
-				}
-			}
-
-			public long StartAddress {
+			public TargetAddress StartAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return start_pc;
+					return dwarf.GetAddress (start_pc);
 				}
 			}
 
-			public long EndAddress {
+			public TargetAddress EndAddress {
 				get {
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return end_pc;
+					return dwarf.GetAddress (end_pc);
 				}
 			}
 
@@ -2157,8 +2136,9 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		protected class DieSubprogram : Die, IComparable, ISymbolContainer
 		{
+			long abstract_origin, specification;
 			long real_offset, start_pc, end_pc;
-			bool is_continuous;
+			bool is_continuous, resolved;
 			string name;
 			DwarfTargetMethod method;
 			LineNumberEngine engine;
@@ -2168,17 +2148,22 @@ namespace Mono.Debugger.Backends
 
 			protected override void ProcessAttribute (Attribute attribute)
 			{
+				debug ("SUBPROG PROCESS ATTRIBUTE: {0} {1}", Offset, attribute);
+
 				switch (attribute.DwarfAttribute) {
 				case DwarfAttribute.low_pc:
 					start_pc = (long) attribute.Data;
+					// Console.WriteLine ("{0}: start_pc = {1:x}", Offset, start_pc);
 					break;
 
 				case DwarfAttribute.high_pc:
 					end_pc = (long) attribute.Data;
+					// Console.WriteLine ("{0}: end_pc = {1:x}", Offset, end_pc);
 					break;
 
 				case DwarfAttribute.name:
 					name = (string) attribute.Data;
+					// Console.WriteLine ("{0}: name = {1}", Offset, name);
 					break;
 
 				case DwarfAttribute.frame_base:
@@ -2186,15 +2171,28 @@ namespace Mono.Debugger.Backends
 					break;
 
 				case DwarfAttribute.decl_file:
-					//Console.WriteLine ("decl_file = {0}", (long) attribute.Data);
+					debug ("{0}: decl_file = {1}",
+					       Offset, (long) attribute.Data);
 					break;
 
 				case DwarfAttribute.decl_line:
-					//Console.WriteLine ("decl_line = {0}", (long) attribute.Data);
+					debug ("{0}: decl_line = {1}",
+					       Offset, (long) attribute.Data);
 					break;
 
 				case DwarfAttribute.inline:
-					//Console.WriteLine ("inline = {0}", (DwarfInline) (long)attribute.Data);
+					debug ("{0}: inline = {1}",
+					       Offset, (DwarfInline) (long)attribute.Data);
+					break;
+
+				case DwarfAttribute.abstract_origin:
+					abstract_origin = (long) attribute.Data;
+					// debug ("{0} ABSTRACT ORIGIN: {1}", Offset, abstract_origin);
+					break;
+
+				case DwarfAttribute.specification:
+					specification = (long) attribute.Data;
+					debug ("{0} SPECIFICATION: {1}", Offset, specification);
 					break;
 				}
 			}
@@ -2221,6 +2219,8 @@ namespace Mono.Debugger.Backends
 				this.real_offset = offset;
 				if ((start_pc != 0) && (end_pc != 0))
 					is_continuous = true;
+
+				comp_unit.AddSubprogram (offset, this);
 			}
 
 			public SourceFile SourceFile {
@@ -2229,12 +2229,12 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			public SourceMethod SourceMethod {
+			public MethodSource MethodSource {
 				get {
 					if (method == null)
 						return null;
 
-					return method.SourceMethod;
+					return method.MethodSource;
 				}
 			}
 
@@ -2383,37 +2383,109 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
+			public void ReadLineNumbers ()
+			{
+				if (resolved)
+					return;
+
+				resolved = true;
+
+				if (abstract_origin != 0) {
+					debug ("READ LINE NUMBERS: {0} {1}", this,
+					       abstract_origin);
+					DieSubprogram aorigin = comp_unit.GetSubprogram (abstract_origin);
+					debug ("READ LINE NUMBERS #1: {0}", aorigin);
+					if (aorigin == null)
+						throw new InternalError ();
+
+					aorigin.ReadLineNumbers ();
+				}
+
+				if (specification != 0) {
+					debug ("READ LINE NUMBERS #2: {0} {1}", this, specification);
+					DieSubprogram ssubprog = comp_unit.GetSubprogram (specification);
+					debug ("READ LINE NUMBERS #1: {0}", ssubprog);
+					if (ssubprog == null)
+						throw new InternalError ();
+
+					ssubprog.ReadLineNumbers ();
+				}
+			}
+
 			public override string ToString ()
 			{
-				return String.Format ("{0} ({1}:{2:x}:{3:x})", GetType (),
-						      Name, start_pc, end_pc);
+				return String.Format ("{0} ({1}:{2}:{3}:{4:x}:{5:x})", GetType (),
+						      Name, Offset, RealOffset, start_pc, end_pc);
 			}
 		}
 
-		protected class DwarfTargetLineNumberTable : LineNumberTable
+		protected class DwarfMethodSource : MethodSource
 		{
-			DwarfTargetMethod method;
+			DieSubprogram subprog;
+			int start_row;
+			int end_row;
 
-			public DwarfTargetLineNumberTable (DwarfTargetMethod method)
-				: base (method, false)
+			public DwarfMethodSource (DieSubprogram subprog, int start_row, int end_row)
 			{
-				this.method = method;
+				this.subprog = subprog;
+				this.start_row = start_row;
+				this.end_row = end_row;
 			}
 
-			protected override LineNumberTableData ReadLineNumbers ()
-			{
-				LineNumber[] lines = method.LineNumbers;
-				LineEntry[] addresses = new LineEntry [lines.Length];
-				for (int i = 0; i < lines.Length; i++) {
-					LineNumber line = lines [i];
-					addresses [i] = new LineEntry (
-						method.DwarfReader.GetAddress (line.Offset),
-						line.Line);
-				}
+			internal long Handle {
+				get { return subprog.Offset; }
+			}
 
-				return new LineNumberTableData (
-					method.StartRow, method.EndRow, addresses,
-					method.SourceMethod, null, method.Module);
+			public override Module Module {
+				get { return subprog.dwarf.module; }
+			}
+
+			public override string Name {
+				get { return subprog.Name; }
+			}
+
+			public override bool IsManaged {
+				get { return false; }
+			}
+
+			public override bool IsDynamic {
+				get { return false; }
+			}
+
+			public override TargetClassType DeclaringType {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override TargetFunctionType Function {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override bool HasSourceFile {
+				get { return subprog.SourceFile != null; }
+			}
+
+			public override SourceFile SourceFile {
+				get { return subprog.SourceFile; }
+			}
+
+			public override bool HasSourceBuffer {
+				get { return false; }
+			}
+
+			public override SourceBuffer SourceBuffer {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override int StartRow {
+				get { return start_row; }
+			}
+
+			public override int EndRow {
+				get { return end_row; }
+			}
+
+			public override Method NativeMethod {
+				get {return subprog.Method; }
 			}
 		}
 
@@ -2421,10 +2493,8 @@ namespace Mono.Debugger.Backends
 		{
 			LineNumberEngine engine;
 			DieSubprogram subprog;
-			SourceMethod source;
-			DwarfTargetLineNumberTable line_numbers;
+			DwarfMethodSource source;
 			int start_row, end_row;
-			LineNumber[] lines;
 
 			public DwarfTargetMethod (DieSubprogram subprog, LineNumberEngine engine)
 				: base (subprog.Name, subprog.ImageFile, subprog.dwarf.module)
@@ -2432,7 +2502,6 @@ namespace Mono.Debugger.Backends
 				this.subprog = subprog;
 				this.engine = engine;
 
-				read_line_numbers ();
 				CheckLoaded ();
 			}
 
@@ -2442,14 +2511,6 @@ namespace Mono.Debugger.Backends
 
 			public override object MethodHandle {
 				get { return this; }
-			}
-
-			public override bool HasSourceFile {
-				get { return subprog.SourceFile != null; }
-			}
-
-			public override SourceFile SourceFile {
-				get { return subprog.SourceFile; }
 			}
 
 			public override TargetClassType DeclaringType {
@@ -2474,34 +2535,59 @@ namespace Mono.Debugger.Backends
 				get { return subprog.Locals; }
 			}
 
-			public override int StartRow {
+			public override bool HasSource {
+				get {
+					read_line_numbers ();
+					return source != null;
+				}
+			}
+
+			public override MethodSource MethodSource {
+				get {
+					read_line_numbers ();
+					return source;
+				}
+			}
+
+			public override string[] GetNamespaces ()
+			{
+				return null;
+			}
+
+			public int StartRow {
 				get { return start_row; }
 			}
 
-			public override int EndRow {
+			public int EndRow {
 				get { return end_row; }
-			}
-
-			public LineNumber[] LineNumbers {
-				get { return lines; }
-			}
-
-			public SourceMethod SourceMethod {
-				get { return source; }
 			}
 
 			void read_line_numbers ()
 			{
-				string file = engine.GetSource (
-					subprog, out start_row, out end_row, out lines);
-				if (file == null) {
-					Report.Error ("WARNING: Can't find source for method {0} in {1}",
-						      subprog.Name, subprog.ImageFile);
+				if (source != null)
 					return;
-				}
 
-				source = subprog.dwarf.GetSourceMethod (
-					subprog, StartRow, EndRow);
+				subprog.ReadLineNumbers ();
+
+				SourceAddress start = engine.Lookup (StartAddress);
+				SourceAddress end = engine.Lookup (EndAddress);
+
+				debug ("DTM - READ LNT #0: {0} {1} - {2} {3}",
+				       this, subprog, start, end);
+
+				if ((start == null) || (end == null))
+					return;
+
+				start_row = start.Row;
+				end_row = end.Row;
+
+				debug ("DTM - READ LNT: {0} {1} - {2} {3}", start.SourceOffset,
+				       start.SourceRange, end.SourceOffset, end.SourceRange);
+
+				SetMethodBounds (StartAddress + start.SourceRange,
+						 EndAddress - end.SourceOffset);
+
+				source = subprog.dwarf.GetMethodSource (subprog, start_row, end_row);
 
 				subprog.dwarf.method_hash.Add (source.Handle, this);
 			}
@@ -2510,18 +2596,16 @@ namespace Mono.Debugger.Backends
 			{
 				if (!subprog.dwarf.bfd.IsLoaded)
 					return false;
-				if (line_numbers != null)
-					return true;
 
 				ISymbolContainer sc = (ISymbolContainer) subprog;
 				if (sc.IsContinuous)
 					SetAddresses (sc.StartAddress, sc.EndAddress);
 
-				if (lines != null) {
-					line_numbers = new DwarfTargetLineNumberTable (this);
-					SetLineNumbers (line_numbers);
-				}
+				SetLineNumbers (engine);
 
+				read_line_numbers ();
+
+#if FIXME
 				if ((lines != null) && (lines.Length > 2)) {
 					LineNumber start = lines [1];
 					LineNumber end = lines [lines.Length - 1];
@@ -2530,11 +2614,12 @@ namespace Mono.Debugger.Backends
 						subprog.dwarf.GetAddress (start.Offset),
 						subprog.dwarf.GetAddress (end.Offset));
 				}
+#endif
 
 				return true;
 			}
 
-			internal override SourceMethod GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
+			internal override MethodSource GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
 			{
 				return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
 			}
@@ -2548,6 +2633,7 @@ namespace Mono.Debugger.Backends
 			DieCompileUnit comp_unit_die;
 			Hashtable abbrevs;
 			Hashtable types;
+			Hashtable subprogs;
 
 			public CompilationUnit (DwarfReader dwarf, DwarfBinaryReader reader)
 			{
@@ -2567,6 +2653,7 @@ namespace Mono.Debugger.Backends
 
 				abbrevs = new Hashtable ();
 				types = new Hashtable ();
+				subprogs = new Hashtable ();
 
 				DwarfBinaryReader abbrev_reader = dwarf.DebugAbbrevReader;
 
@@ -2627,9 +2714,19 @@ namespace Mono.Debugger.Backends
 				types.Add (offset, type);
 			}
 
+			public void AddSubprogram (long offset, DieSubprogram subprog)
+			{
+				subprogs.Add (offset, subprog);
+			}
+
 			public DieType GetType (long offset)
 			{
 				return (DieType) types [real_start_offset + offset];
+			}
+
+			public DieSubprogram GetSubprogram (long offset)
+			{
+				return (DieSubprogram) subprogs [real_start_offset + offset];
 			}
 
 			public override string ToString ()
@@ -2697,9 +2794,14 @@ namespace Mono.Debugger.Backends
 					is_regoffset = false;
 				} else if (opcode == 0x91) { // DW_OP_fbreg
 					off = locreader.ReadSLeb128 ();
+
 					if (subprog.FrameBase != null) {
-						return new RelativeTargetLocation (
+						TargetLocation rloc = new RelativeTargetLocation (
 							subprog.FrameBase.GetLocation (frame), off);
+						if (is_byref)
+							return new DereferencedTargetLocation (rloc);
+						else
+							return rloc;
 					} else {
 						is_regoffset = true;
 						reg = 2;
@@ -2733,8 +2835,8 @@ namespace Mono.Debugger.Backends
 				DwarfBinaryReader reader = subprog.dwarf.DebugLocationReader;
 				reader.Position = loclist_offset;
 
-				long address = frame.TargetAddress.Address;
-				long base_address = subprog.DieCompileUnit.StartAddress;
+				TargetAddress address = frame.TargetAddress;
+				TargetAddress base_address = subprog.DieCompileUnit.StartAddress;
 
 				while (true) {
 					long start = reader.ReadAddress ();
@@ -2742,7 +2844,7 @@ namespace Mono.Debugger.Backends
 
 					if (start == -1) {
 						Console.WriteLine ("BASE SELECTION: {0:x}", end);
-						base_address = end;
+						base_address = subprog.dwarf.GetAddress (end);
 						continue;
 					}
 

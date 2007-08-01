@@ -1,3 +1,7 @@
+2007-08-01  Martin Baulig  <martin@ximian.com>
+
+	Merged the `debugger-dublin' branch.
+
 2007-06-21  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/x86-linux-ptrace.c
@@ -15,6 +19,173 @@
 	(MonoDebuggerInfo.MaxDynamicVersion): Allow 59 here; keep
 	`MinDynamicVersion' at 58.  The new `debugger-dublin' branch uses
 	59, but it's backwards-compatible.
+
+2007-07-31  Martin Baulig  <martin@ximian.com>
+
+	* test/src/TestAppDomain.cs: New test.
+	* test/testsuite/TestAppDomain.cs: New test.
+
+2007-07-31  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_X86_64.cs
+	(Architecture_X86_64.GetJumpOrCallTarget): New private method; fix
+	and improve GetCallTarget() and also add support for jump
+	instructions.
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OperationNativeTrampoline): New operation;
+	keep stepping while we're in the trampoline like `finish -native'.
+
+2007-07-30  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetLocation.cs
+	(TargetLocation.Address): Replaced by GetAddress().
+	(TargetLocation.GetAddress): New public function; replaces the
+	`Address' property.
+	(TargetLocation.GetDereferencedTargetLocation): Removed the
+	`Thread' argument; returns a `DereferencedTargetLocation'.
+
+	* languages/TargetObject.cs
+	(TargetObject.Address): Replaced by GetAddress().
+	(TargetObject.GetAddress): New public function; replaces the
+	`Address' property.
+	(TargetObject.IsNull): Removed.
+
+2007-07-30  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/testnativetypes.cs: New test.
+	* test/src/testnativetypes.c: New test.
+
+2007-07-30  Martin Baulig  <martin@ximian.com>
+
+	* languages/DeferencedTargetLocation.cs: New file.
+
+2007-07-28  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/DwarfReader.cs: Almost completely redesign the line
+	number table; it's no longer based on methods and now also works
+	with newer versions of gcc and g++.
+
+2007-07-28  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceLocation.cs
+	(SourceLocation): Add a .ctor which takes a `SourceFile' in
+	addition to a `MethodSource'.
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable): Made Lookup() and DumpLineNumbers() abstract;
+	move the actual implementation into MonoSymbolFile.cs and
+	DwarfReader.cs.	
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable.Name): Removed.
+	(LineNumberTable.Module): Removed.
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceAddress.cs
+	(SourceAddress.Null): Removed.
+	(SourceAddress.LineNumberTable): Removed.
+	(SourceAddress.SourceBuffer): New public property.
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable.IsDynamic): Removed.
+	(LineNumberTable.SourceBuffer): Removed.
+
+2007-07-27  Martin Baulig  <martin@ximian.com>
+
+	* classes/MethodSource.cs
+	(MethodSource.IsDynamic): New public property.
+	(MethodSource.HasSourceCode): Renamed into `HasSourceFile'.
+	(MethodSource.HasSourceBuffer): New public property.
+	(MethodSource.SourceBuffer): New public property.
+
+	* classes/AssemblerMethod.cs
+	(AssemblerMethod): Derive from `MethodSource', not
+	`LineNumberTable'.
+
+	* classes/Method.cs
+	(Method.HasSourceFile): Removed.
+	(Method.SourceFile): Removed.
+
+	* languages/mono/MonoSymbolFile.cs
+	(WrapperMethod): Also create a MethodSource for wrappers.
+
+2007-07-26  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceAddress.cs
+	(SourceAddress.Location): Removed.
+	(SourceAddress.SourceFile): New public property.
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable): Removed `MethodSource', `Addresses',
+	`StartRow', `EndRow' and `GetNamespaces()'.
+
+	* classes/Method.cs
+	(Method.HasSource): New public property.
+	(Method.MethodSource): New public property.
+	(Method.GetNamespaces): New public method.
+	(Method): Removed `StartRow' and `EndRow'; get them from the
+	`MethodSource' instead.
+
+2007-07-20  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoFundamentalType.cs: New file.
+	(MonoFundamentalType): New type.
+
+	* languages/mono/MonoStringType.cs
+	(MonoStringType): Derive from `MonoFundamentalType'.
+
+	* languages/mono/MonoObjectType.cs
+	(MonoObjectType): Create the MonoClassType in the .ctor.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.LookupMonoClass): New public method; calls
+	LookupMonoType() and then returns a `MonoClassType', this also
+	works for fundamental types.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoBuiltinTypeInfo): Use the new `MonoFundamentalType'.
+
+2007-06-28  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo): Reflect latest runtime changes; add the new
+	`DebuggerVersion' field.
+
+2007-06-04  Martin Baulig  <martin@ximian.com>
+
+	* classes/Thread.cs
+	(Thread.CallMethod (long,string)): Added second `long' argument
+	so we can now pass a long value in addition to the string to the
+	target.
+
+	* backends/Inferior.cs
+	(Inferior.CallMethod (long,string)): Added second `long' argument
+	so we can now pass a long value in addition to the string to the
+	target.
+
+	* backends/server/server.h
+	(mono_debugger_server_call_method_1): Added `guint64 data_arg'
+	argument.
+
+2007-06-04  Martin Baulig  <martin@ximian.com>
+
+	Replace `SourceMethod' with a new abstract `MethodSource'.
+
+	* classes/MethodSource.cs: New file.
+	(MethodSource): New public abstract class.
+
+	* classes/SourceInfo.cs
+	(SourceMethod): Removed; we now use the new `MethodSource'.
+
+	* classes/Module.cs
+	(Module.LookupMethod): Removed; use FindMethod() instead.
+	(Module.RegisterLoadHandler): Removed.
 
 2007-05-29  Wade Berrier  <wberrier@novell.com>
 

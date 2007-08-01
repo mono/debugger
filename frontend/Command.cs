@@ -2607,7 +2607,9 @@ namespace Mono.Debugger.Frontend
 	public abstract class SourceCommand : FrameCommand
 	{
 		LocationType type = LocationType.Method;
-		SourceLocation location;
+		protected SourceLocation location;
+		protected SourceAddress address;
+		int line;
 
 		public bool Ctor {
 			get { return type == LocationType.Constructor; }
@@ -2646,9 +2648,16 @@ namespace Mono.Debugger.Frontend
 
 				return location;
 			}
+		}
 
-			set {
-				location = value;
+		public int Line {
+			get {
+				if (location != null)
+					return location.Line;
+				else if (address != null)
+					return address.Row;
+				else
+					throw new ScriptingException ("Location is invalid.");
 			}
 		}
 
@@ -2679,8 +2688,17 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (Argument == "") {
-				location = context.CurrentLocation;
-				return location != null;
+				StackFrame frame = context.CurrentFrame;
+
+				if (frame.SourceAddress == null)
+					return false;
+
+				if (frame.SourceLocation != null)
+					location = frame.SourceLocation;
+				else
+					address = frame.SourceAddress;
+
+				return true;
 			}
 
 			try {
@@ -2729,35 +2747,51 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			if (Argument == "-"){
-				Location = context.CurrentLocation;
 				reverse = true;
-				return true;
-			}
+				location = context.CurrentLocation;
+				if (location == null)
+					return false;
+			} else if (!base.DoResolve (context))
+				return false;
 
-			return base.DoResolve (context);
+			SourceBuffer buffer;
+			if (location != null) {
+				if (location.FileName == null) 
+					throw new ScriptingException (
+						"Current location doesn't have any source code.");
+
+				buffer = context.Interpreter.ReadFile (location.FileName);
+				if (buffer == null)
+					throw new ScriptingException (
+						"Cannot read source file `{0}'", location.FileName);
+			} else if (address != null) {
+				if (address.SourceFile != null) {
+					buffer = context.Interpreter.ReadFile (address.SourceFile.FileName);
+					if (buffer == null)
+						throw new ScriptingException (
+							"Cannot read source file `{0}'",
+							address.SourceFile.FileName);
+				} else if (address.SourceBuffer != null)
+					buffer = address.SourceBuffer;
+				else
+					throw new ScriptingException (
+						"Current location doesn't have any source code.");
+			} else
+				throw new ScriptingException (
+					"Current location doesn't have any source code.");
+
+			source_code = buffer.Contents;
+			return true;
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
 			int count = Lines * (reverse ? -1 : 1);
 			if (!Repeating) {
-				SourceBuffer buffer;
-
-				if (Location.FileName == null) 
-					throw new ScriptingException (
-						"Current location doesn't have any source code.");
-
-				buffer = context.Interpreter.ReadFile (Location.FileName);
-				if (buffer == null)
-					throw new ScriptingException (
-						"Cannot read source file `{0}'", Location.FileName);
-
-				source_code = buffer.Contents;
-
 				if (count < 0)
-					last_line = System.Math.Max (Location.Line + 2, 0);
+					last_line = System.Math.Max (Line + 2, 0);
 				else 
-					last_line = System.Math.Max (Location.Line - 2, 0);
+					last_line = System.Math.Max (Line - 2, 0);
 			}
 
 			int start;
@@ -2766,6 +2800,11 @@ namespace Mono.Debugger.Frontend
 				count = -count;
 			} else 
 				start = last_line;
+
+			if (start >= source_code.Length)
+				throw new ScriptingException (
+					"Requested line is out of range; the selected file only " +
+					"has {0} lines.", source_code.Length);
 
 			last_line = System.Math.Min (start + count, source_code.Length);
 
@@ -2927,7 +2966,8 @@ namespace Mono.Debugger.Frontend
 
 				context.CurrentFrame = frame;
 
-				if (ExpressionParser.ParseLocation (thread, Argument, out location))
+				if (ExpressionParser.ParseLocation (
+					    thread, thread.CurrentFrame, Argument, out location))
 					return true;
 			}
 
@@ -3144,20 +3184,11 @@ namespace Mono.Debugger.Frontend
 			public string Documentation { get { return ""; } }
 		}
 
-		protected class DumpLineNumberTableCommand : SourceCommand, IDocumentableCommand
+		protected class DumpLineNumberTableCommand : FrameCommand, IDocumentableCommand
 		{
-			protected override bool DoResolve (ScriptingContext context)
-			{
-				bool resolved = base.DoResolve (context);
-				if (!resolved)
-					throw new ScriptingException ("No such method: `{0}'", Argument);
-
-				return true;
-			}
-
 			protected override object DoExecute (ScriptingContext context)
 			{
-				Location.DumpLineNumbers ();
+				context.CurrentFrame.Method.LineNumberTable.DumpLineNumbers ();
 				return null;
 			}
 

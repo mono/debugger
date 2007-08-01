@@ -228,9 +228,6 @@ namespace Mono.Debugger.Frontend
 			ArrayList list = new ArrayList ();
 
 			foreach (TargetFunctionType method in methods) {
-				if (method.Source == null)
-					continue;
-
 				list.Add (method);
 				Report.Print ("{0,4}  {1}\n", list.Count, method.Name);
 			}
@@ -265,6 +262,9 @@ namespace Mono.Debugger.Frontend
 
 		protected void CheckLastEvent (Thread thread)
 		{
+			if (thread == null)
+				return;
+
 			TargetEventArgs args = thread.GetLastTargetEvent ();
 			if (args == null)
 				return;

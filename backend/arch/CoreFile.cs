@@ -238,7 +238,7 @@ namespace Mono.Debugger.Backends
 				get {
 					if (current_frame == null)
 						current_frame = CoreFile.Architecture.CreateFrame (
-							Thread, Registers);
+							Thread, Registers, true);
 
 					return current_frame;
 				}
@@ -362,6 +362,12 @@ namespace Mono.Debugger.Backends
 			public override byte[] ReadBuffer (TargetAddress address, int size)
 			{
 				return CoreFile.CoreBfd.GetReader (address).BinaryReader.ReadBuffer (size);
+			}
+
+			internal override Registers GetCallbackFrame (TargetAddress stack_pointer,
+								      bool exact_match)
+			{
+				throw new InvalidOperationException ();
 			}
 
 			public override bool CanWrite {
@@ -505,14 +511,13 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override CommandResult CallMethod (TargetAddress method,
-								  TargetAddress arg1,
-								  TargetAddress arg2)
+								  long arg1, long arg2)
 			{
 				throw new InvalidOperationException ();
 			}
 
 			public override CommandResult CallMethod (TargetAddress method,
-								  long method_arg,
+								  long arg1, long arg2,
 								  string string_arg)
 			{
 				throw new InvalidOperationException ();

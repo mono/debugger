@@ -29,7 +29,7 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main(System.String[])", line_main);
+			AssertStopped (thread, "X.Main(string[])", line_main);
 			bpt_main = AssertBreakpoint ("-local " + line_main_3);
 			AssertExecute ("continue -wait");
 
@@ -85,7 +85,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "X.Main(System.String[])", line_main_3);
+			AssertFrame (thread, "X.Main(string[])", line_main_3);
 			AssertPrint (thread, "process.ExitCode", "(System.Int32) 0");
 			AssertTargetOutput ("Hello World!");
 			AssertExecute ("continue");
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main(System.String[])", line_main);
+			AssertStopped (thread, "X.Main(string[])", line_main);
 			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -163,7 +163,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "X.Main(System.String[])", line_main_3);
+			AssertFrame (thread, "X.Main(string[])", line_main_3);
 			AssertPrint (thread, "process.ExitCode", "(System.Int32) 0");
 			AssertTargetOutput ("Hello World");
 			AssertExecute ("continue");

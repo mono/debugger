@@ -102,13 +102,14 @@ namespace Mono.Debugger.Frontend
 			if (location == null)
 				return false;
 
-			Method method = frame.Method;
-			if ((method == null) || !method.HasSourceFile)
-				return false;
+			SourceBuffer buffer;
+			if (location.SourceFile != null) {
+				string filename = location.SourceFile.FileName;
+				buffer = interpreter.SourceFileFactory.FindFile (filename);
+			} else
+				buffer = location.SourceBuffer;
 
-			SourceFile file = method.SourceFile;
-			SourceBuffer buffer = interpreter.SourceFileFactory.FindFile (file.FileName);
-			if (buffer.Contents == null)
+			if ((buffer == null) || (buffer.Contents == null))
 				return false;
 
 			string line = buffer.Contents [location.Row - 1];

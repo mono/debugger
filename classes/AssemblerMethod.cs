@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger
 {
 	[Serializable]
@@ -30,114 +32,95 @@ namespace Mono.Debugger
 		}
 	}
 
-	public sealed class AssemblerMethod : LineNumberTable
+	public sealed class AssemblerMethod : MethodSource
 	{
-		SourceBuffer buffer;
-		int start_row;
-		int end_row;
-		Module module;
-		ArrayList addresses, lines;
-		TargetAddress start_address, end_address;
-		ArrayList contents;
-		string name;
+		protected readonly Method method;
+		protected readonly SourceBuffer buffer;
+		protected readonly int start_row, end_row;
+		protected readonly AssemblerLine[] lines;
+		ArrayList addresses;
 
-		public AssemblerMethod (Module module, TargetAddress start, TargetAddress end,
-					string name, AssemblerLine[] lines)
-			: base (start, start)
+		public AssemblerMethod (Method method, AssemblerLine[] lines)
 		{
-			start_row = end_row = 0;
-			addresses = null;
-
-			this.module = module;
-			this.name = name;
-			this.start_address = start;
-			this.end_address = start;
-
-			this.lines = new ArrayList ();
-			this.addresses = new ArrayList ();
-			this.contents = new ArrayList ();
-
-			foreach (AssemblerLine line in lines)
-				add_one_line (line);
-		}
-
-		public AssemblerMethod (AssemblerLine line)
-			: base (line.Address, line.Address)
-		{
-			start_row = end_row = 0;
-			addresses = null;
-
-			this.name = line.Address.ToString ();
-			this.start_address = line.Address;
-			this.end_address = line.Address;
-
-			lines = new ArrayList ();
+			this.lines = lines;
 			addresses = new ArrayList ();
-			contents = new ArrayList ();
 
-			add_one_line (line);
-		}
-
-		void add_one_line (AssemblerLine line)
-		{
-			if (line.Label != null) {
-				if (end_row > 0) {
-					contents.Add ("");
+			ArrayList contents = new ArrayList ();
+			foreach (AssemblerLine line in lines) {
+				if (line.Label != null) {
+					if (end_row > 0) {
+						contents.Add ("");
+						end_row++;
+					} else
+						start_row++;
+					contents.Add (String.Format ("{0}:", line.Label));
 					end_row++;
-				} else
-					start_row++;
-				contents.Add (String.Format ("{0}:", line.Label));
-				end_row++;
+				}
+
+				addresses.Add (new LineEntry (line.Address, ++end_row));
+				contents.Add (String.Format ("  {0:x}   {1}", line.Address, line.Text));
 			}
 
-			AppendOneLine (line);
+			string[] text = new string [contents.Count];
+			contents.CopyTo (text);
+
+			buffer = new SourceBuffer (method.Name, text);
 		}
 
-		public void AppendOneLine (AssemblerLine line)
-		{
-			if (line.Address != EndAddress)
-				throw new ArgumentException (String.Format (
-					"Requested to add instruction at address {0}, but " +
-					"method ends at {1}.", line.Address, EndAddress));
-
-			lines.Add (line);
-			addresses.Add (new LineEntry (line.Address, ++end_row));
-			contents.Add (String.Format ("  {0:x}   {1}", line.Address, line.Text));
-			SetEndAddress (line.Address + line.InstructionSize);
-		}
-
-		protected override void SetEndAddress (TargetAddress end)
-		{
-			this.end_address = end;
-			base.SetEndAddress (end);
+		public override Module Module {
+			get { return method.Module; }
 		}
 
 		public override string Name {
-			get { return name; }
+			get { return method.Name; }
 		}
 
-		public TargetAddress StartAddress {
-			get { return start_address; }
+		public override bool IsManaged {
+			get { return false; }
 		}
 
-		public TargetAddress EndAddress {
-			get { return end_address; }
+		public override bool IsDynamic {
+			get { return true; }
+		}
+
+		public override TargetClassType DeclaringType {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override TargetFunctionType Function {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override bool HasSourceFile {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override SourceFile SourceFile {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override bool HasSourceBuffer {
+			get { return true; }
+		}
+
+		public override SourceBuffer SourceBuffer {
+			get { return buffer; }
+		}
+
+		public override int StartRow {
+			get { return start_row; }
+		}
+
+		public override int EndRow {
+			get { return end_row; }
+		}
+
+		public override Method NativeMethod {
+			get { return method; }
 		}
 
 		public AssemblerLine[] Lines {
-			get {
-				AssemblerLine[] retval = new AssemblerLine [lines.Count];
-				lines.CopyTo (retval, 0);
-				return retval;
-			}
-		}
-
-		protected override LineNumberTableData ReadLineNumbers ()
-		{
-			buffer = new SourceBuffer (name, contents);
-			LineEntry[] lines = new LineEntry [addresses.Count];
-			addresses.CopyTo (lines);
-			return new LineNumberTableData (start_row, end_row, lines, buffer, module);
+			get { return lines; }
 		}
 	}
 }

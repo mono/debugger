@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages
 		public override string Print (Thread target)
 		{
 			if (HasAddress)
-				return String.Format ("{0} ({1})", Type.Name, Address);
+				return String.Format ("{0} ({1})", Type.Name, GetAddress (target));
 			else
 				return String.Format ("{0} ({1})", Type.Name, Location);
 		}

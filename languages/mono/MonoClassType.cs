@@ -8,6 +8,8 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
+	internal delegate void ClassInitHandler (TargetMemoryAccess target, TargetAddress klass);
+
 	internal class MonoClassType : TargetClassType
 	{
 		MonoFieldInfo[] fields;
@@ -29,6 +31,9 @@ namespace Mono.Debugger.Languages.Mono
 		MonoSymbolFile file;
 		MonoClassType parent_type;
 		MonoClassInfo type_info;
+
+		Hashtable load_handlers;
+		int load_handler_id;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage, TargetObjectKind.Class)
@@ -525,9 +530,9 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
-			if (field_loc.Address.IsNull)
+			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
 				return null;
 
 			return finfo.Type.GetObject (field_loc);
@@ -542,7 +547,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
@@ -551,7 +556,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				MonoClassInfo.KlassAddress, TargetAddress.Null);
+				MonoClassInfo.KlassAddress, 0);
 
 			int offset = GetFieldOffset (finfo);
 
@@ -559,7 +564,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
 			return finfo.Type.GetObject (field_loc);
 		}
@@ -571,13 +576,13 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				MonoClassInfo.KlassAddress, TargetAddress.Null);
+				MonoClassInfo.KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation (target);
+				field_loc = field_loc.GetDereferencedLocation ();
 
 			finfo.Type.SetObject (target, field_loc, obj);
 		}
@@ -590,7 +595,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (!IsByRef && parent_type.IsByRef) {
 				TargetAddress boxed = target.CallMethod (
 					File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
-					MonoClassInfo.KlassAddress, location.Address);
+					MonoClassInfo.KlassAddress, location.GetAddress (target).Address);
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
 				return new MonoClassObject (parent_type, new_loc);
 			}
@@ -604,7 +609,7 @@ namespace Mono.Debugger.Languages.Mono
 			// dereferencing it once gives us the vtable, dereferencing it
 			// twice the class.
 			TargetAddress address;
-			address = target.ReadAddress (location.Address);
+			address = target.ReadAddress (location.GetAddress (target));
 			address = target.ReadAddress (address);
 
 			TargetType current = File.MonoLanguage.GetClass (target, address);
@@ -616,6 +621,19 @@ namespace Mono.Debugger.Languages.Mono
 					2 * target.TargetInfo.TargetAddressSize);
 
 			return (MonoClassObject) current.GetObject (location);
+		}
+
+		internal bool ResolveClass (Thread target)
+		{
+			if (type_info != null)
+				return true;
+
+			TargetAddress klass_address = target.CallMethod (
+				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
+				file.MonoImage, 0, Name);
+
+			type_info = file.MonoLanguage.GetClassInfo (target, klass_address);
+			return type_info != null;
 		}
 	}
 }

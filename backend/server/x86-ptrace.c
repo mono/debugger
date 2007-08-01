@@ -163,6 +163,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	result = _server_ptrace_read_memory (handle, addr, sizeof (long), &temp);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
+
 	memcpy (&temp, ptr, size);
 
 	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
@@ -533,6 +534,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_call_method_1,
 	server_ptrace_call_method_2,
 	server_ptrace_call_method_invoke,
+	server_ptrace_mark_rti_frame,
 	server_ptrace_abort_invoke,
 	server_ptrace_insert_breakpoint,
 	server_ptrace_insert_hw_breakpoint,
@@ -551,5 +553,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_get_application,
 	server_ptrace_init_after_fork,
 	server_ptrace_push_registers,
-	server_ptrace_pop_registers
+	server_ptrace_pop_registers,
+	server_ptrace_get_callback_frame
 };

@@ -30,7 +30,8 @@ namespace Mono.Debugger
 
 	public interface IExpressionParser
 	{
-		SourceLocation Parse (Thread target, LocationType type, string name);
+		SourceLocation Parse (TargetMemoryAccess target, StackFrame frame,
+				      LocationType type, string name);
 	}
 
 	[Serializable]
@@ -69,6 +70,9 @@ namespace Mono.Debugger
 			: this (config, name, parser)
 		{
 			this.Options = options;
+
+			if (Options.StopInMain)
+				AddEvent (new MainMethodBreakpoint (this));
 		}
 
 		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)
@@ -202,9 +206,10 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		internal SourceLocation ParseLocation (Thread target, LocationType type, string name)
+		internal SourceLocation ParseLocation (TargetMemoryAccess target, StackFrame frame,
+						       LocationType type, string name)
 		{
-			return parser.Parse (target, type, name);
+			return parser.Parse (target, frame, type, name);
 		}
 
 		public SourceFile FindFile (string name)
@@ -228,19 +233,12 @@ namespace Mono.Debugger
 		//
 		public void MainProcessReachedMain (Process process)
 		{
-			main_process = process;
-
-			foreach (Event e in events.Values) {
-				if (!e.IsEnabled)
-					continue;
-
-				try {
-					e.Activate (process.MainThread);
-				} catch (TargetException ex) {
-					Report.Error ("Cannot insert breakpoint {0}: {1}",
-						      e.Index, ex.Message);
-				}
+			if (!process.IsManaged) {
+				Config.GetModuleGroup ("dll").StepInto = true;
+				Config.GetModuleGroup ("native").StepInto = true;
 			}
+
+			main_process = process;
 		}
 
 		internal void OnProcessCreated (Process process)
@@ -352,6 +350,8 @@ namespace Mono.Debugger
 			} else if (navigator.Name == "Exception") {
 				string exc = navigator.GetAttribute ("type", "");
 				return new ExceptionCatchPoint (index, group, exc);
+			} else if (navigator.Name == "MainMethod") {
+				return new MainMethodBreakpoint (this);
 			} else
 				throw new InternalError ();
 		}

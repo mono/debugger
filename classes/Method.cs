@@ -166,19 +166,11 @@ namespace Mono.Debugger
 			}
 		}
 
-		public abstract bool HasSourceFile {
+		public abstract bool HasSource {
 			get;
 		}
 
-		public abstract SourceFile SourceFile {
-			get;
-		}
-
-		public abstract int StartRow {
-			get;
-		}
-
-		public abstract int EndRow {
+		public abstract MethodSource MethodSource {
 			get;
 		}
 
@@ -286,7 +278,9 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract SourceMethod GetTrampoline (TargetMemoryAccess memory,
+		public abstract string[] GetNamespaces ();
+
+		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
 
 		public TargetVariable GetVariableByName (TargetAddress address, string name)

@@ -22,7 +22,6 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly MonoSymbolFile Corlib;
 		public readonly MonoObjectType ObjectType;
-		public readonly MonoClassType ObjectClass;
 		public readonly TargetFundamentalType ByteType;
 		public readonly MonoOpaqueType VoidType;
 		public readonly TargetFundamentalType BooleanType;
@@ -57,13 +56,12 @@ namespace Mono.Debugger.Languages.Mono
 			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
 			Cecil.TypeDefinition object_type = corlib.ModuleDefinition.Types ["System.Object"];
 			ObjectType = new MonoObjectType (corlib, object_type, object_size);
-			ObjectClass = new MonoClassType (memory, corlib, object_type, klass);
-			language.AddCoreType (ObjectClass, object_type, klass);
+			language.AddCoreType (ObjectType.ClassType, object_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsByteOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition byte_type = corlib.ModuleDefinition.Types ["System.Byte"];
-			ByteType = new TargetFundamentalType (language, byte_type.FullName, FundamentalKind.Byte, 1);
+			ByteType = new MonoFundamentalType (corlib, byte_type, FundamentalKind.Byte, 1);
 			language.AddCoreType (ByteType, byte_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsVoidOffset;
@@ -75,86 +73,87 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.Offset = info.MonoDefaultsBooleanOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition bool_type = corlib.ModuleDefinition.Types ["System.Boolean"];
-			BooleanType = new TargetFundamentalType (language, bool_type.FullName, FundamentalKind.Boolean, 1);
+			BooleanType = new MonoFundamentalType (corlib, bool_type, FundamentalKind.Boolean, 1);
 			language.AddCoreType (BooleanType, bool_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsSByteOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition sbyte_type = corlib.ModuleDefinition.Types ["System.SByte"];
-			SByteType = new TargetFundamentalType (language, sbyte_type.FullName, FundamentalKind.SByte, 1);
+			SByteType = new MonoFundamentalType (corlib, sbyte_type, FundamentalKind.SByte, 1);
+
 			language.AddCoreType (SByteType, sbyte_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsInt16Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition short_type = corlib.ModuleDefinition.Types ["System.Int16"];
-			Int16Type = new TargetFundamentalType (language, short_type.FullName, FundamentalKind.Int16, 2);
+			Int16Type = new MonoFundamentalType (corlib, short_type, FundamentalKind.Int16, 2);
 			language.AddCoreType (Int16Type, short_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsUInt16Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition ushort_type = corlib.ModuleDefinition.Types ["System.UInt16"];
-			UInt16Type = new TargetFundamentalType (language, ushort_type.FullName, FundamentalKind.UInt16, 2);
+			UInt16Type = new MonoFundamentalType (corlib, ushort_type, FundamentalKind.UInt16, 2);
 			language.AddCoreType (UInt16Type, ushort_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsInt32Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition int_type = corlib.ModuleDefinition.Types ["System.Int32"];
-			Int32Type = new TargetFundamentalType (language, int_type.FullName, FundamentalKind.Int32, 4);
+			Int32Type = new MonoFundamentalType (corlib, int_type, FundamentalKind.Int32, 4);
+
 			language.AddCoreType (Int32Type, int_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsUInt32Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition uint_type = corlib.ModuleDefinition.Types ["System.UInt32"];
-			UInt32Type = new TargetFundamentalType (language, uint_type.FullName, FundamentalKind.UInt32, 4);
+			UInt32Type = new MonoFundamentalType (corlib, uint_type, FundamentalKind.UInt32, 4);
 			language.AddCoreType (UInt32Type, uint_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsIntOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition intptr_type = corlib.ModuleDefinition.Types ["System.IntPtr"];
-			IntType = new TargetFundamentalType (language, intptr_type.FullName, FundamentalKind.IntPtr, 4);
+			IntType = new MonoFundamentalType (corlib, intptr_type, FundamentalKind.IntPtr, 4);
 			language.AddCoreType (IntType, intptr_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsUIntOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition uintptr_type = corlib.ModuleDefinition.Types ["System.UIntPtr"];
-			UIntType = new TargetFundamentalType (language, uintptr_type.FullName, FundamentalKind.Object, 4);
+			UIntType = new MonoFundamentalType (corlib, uintptr_type, FundamentalKind.Object, 4);
 			language.AddCoreType (UIntType, uintptr_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsInt64Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition long_type = corlib.ModuleDefinition.Types ["System.Int64"];
-			Int64Type = new TargetFundamentalType (language, long_type.FullName, FundamentalKind.Int64, 8);
+			Int64Type = new MonoFundamentalType (corlib, long_type, FundamentalKind.Int64, 8);
 			language.AddCoreType (Int64Type, long_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsUInt64Offset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition ulong_type = corlib.ModuleDefinition.Types ["System.UInt64"];
-			UInt64Type = new TargetFundamentalType (language, ulong_type.FullName, FundamentalKind.UInt64, 8);
+			UInt64Type = new MonoFundamentalType (corlib, ulong_type, FundamentalKind.UInt64, 8);
 			language.AddCoreType (UInt64Type, ulong_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsSingleOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition float_type = corlib.ModuleDefinition.Types ["System.Single"];
-			SingleType = new TargetFundamentalType (language, float_type.FullName, FundamentalKind.Single, 4);
+			SingleType = new MonoFundamentalType (corlib, float_type, FundamentalKind.Single, 4);
 			language.AddCoreType (SingleType, float_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsDoubleOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition double_type = corlib.ModuleDefinition.Types ["System.Double"];
-			DoubleType = new TargetFundamentalType (language, double_type.FullName, FundamentalKind.Double, 8);
+			DoubleType = new MonoFundamentalType (corlib, double_type, FundamentalKind.Double, 8);
 			language.AddCoreType (DoubleType, double_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsCharOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition char_type = corlib.ModuleDefinition.Types ["System.Char"];
-			CharType = new TargetFundamentalType (language, char_type.FullName, FundamentalKind.Char, 2);
+			CharType = new MonoFundamentalType (corlib, char_type, FundamentalKind.Char, 2);
 			language.AddCoreType (CharType, char_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsStringOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition string_type = corlib.ModuleDefinition.Types ["System.String"];
-			StringType = new MonoStringType (
-				corlib, string_type.FullName, object_size, object_size + 4);
+			StringType = new MonoStringType (corlib, string_type, object_size, object_size + 4);
 			language.AddCoreType (StringType, string_type, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
@@ -189,7 +188,9 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable class_info_by_type;
 		MonoSymbolFile corlib;
 		MonoBuiltinTypeInfo builtin_types;
+		MonoFunctionType main_method;
 
+		TargetAddress current_data_table = TargetAddress.Null;
 		int last_num_data_tables;
 		int last_data_table_offset;
 
@@ -366,10 +367,30 @@ namespace Mono.Debugger.Languages.Mono
 			initialized = true;
 		}
 
+		internal MonoFunctionType ReachedMain (TargetMemoryAccess target, TargetAddress method)
+		{
+			int token = target.ReadInteger (method + 4);
+			TargetAddress klass = target.ReadAddress (method + 8);
+			TargetAddress image = target.ReadAddress (klass);
+
+			MonoSymbolFile file = GetImage (image);
+			if (file == null)
+				return null;
+
+			main_method = file.GetFunctionByToken (token);
+			return main_method;
+		}
+
+		internal MonoFunctionType MainMethod {
+			get { return main_method; }
+		}
+
 #region symbol table management
 		internal void Update (TargetMemoryAccess target)
 		{
-			do_update_symbol_table (target);
+			Report.Debug (DebugFlags.JitSymtab, "Update requested: {0}",
+				      current_data_table);
+			read_data_table (target);
 		}
 
 		void do_update_symbol_table (TargetMemoryAccess memory)
@@ -379,7 +400,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			Report.Debug (DebugFlags.JitSymtab, "Starting to update symbol table");
 			try {
+				DateTime start = DateTime.Now;
 				do_update (memory);
+				update_time += DateTime.Now - start;
 			} catch (ThreadAbortException) {
 				return;
 			} catch (Exception e) {
@@ -390,10 +413,46 @@ namespace Mono.Debugger.Languages.Mono
 			Report.Debug (DebugFlags.JitSymtab, "Done updating symbol table");
 		}
 
+		static int manual_update_count;
+		static int full_update_count;
+		static int update_count;
+		static TimeSpan data_table_time;
+		static TimeSpan update_time;
+		static int range_entry_count;
+		static TimeSpan range_entry_time;
+		static TimeSpan range_entry_method_time;
+
+		public static void RangeEntryCreated (TimeSpan time)
+		{
+			range_entry_count++;
+			range_entry_time += time;
+		}
+
+		public static void RangeEntryGetMethod (TimeSpan time)
+		{
+			range_entry_method_time += time;
+		}
+
+		public static void PrintStatistics ()
+		{
+#if FIXME
+			Console.WriteLine ("MONO LANGUAGE: {0} {1} {2} - {3} {4} - {5} {6} {7} - {8}",
+					   manual_update_count, full_update_count,
+					   update_count, data_table_time, update_time,
+					   range_entry_count, range_entry_time,
+					   range_entry_method_time,
+
+					   data_table_time + update_time + range_entry_time +
+					   range_entry_method_time);
+#endif
+		}
+
 		// This method reads the MonoDebuggerSymbolTable structure
 		// (struct definition is in mono-debug-debugger.h)
 		void do_update (TargetMemoryAccess memory)
 		{
+			++full_update_count;
+
 			TargetAddress symtab_address = memory.ReadAddress (info.SymbolTable);
 			if (symtab_address.IsNull)
 				return;
@@ -467,58 +526,52 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			last_num_symbol_files = num_symbol_files;
-			read_data_table (memory, header);
+
+			if (current_data_table.IsNull) {
+				header.Offset += 2 * memory.TargetInfo.TargetAddressSize + 12;
+				current_data_table = header.ReadAddress ();
+			}
+
+			read_data_table (memory);
 		}
 
 		// This method reads a portion of the data table (defn in mono-debug.h)
-		void read_data_table (TargetMemoryAccess memory, TargetReader header)
+		void read_data_table (TargetMemoryAccess memory)
 		{
-			int num_data_tables = header.ReadInteger ();
-			TargetAddress data_tables = header.ReadAddress ();
+			int header_size = 16 + memory.TargetInfo.TargetAddressSize;
 
-			Report.Debug (DebugFlags.JitSymtab, "DATA TABLES: {0} {1} {2}",
-				      last_num_data_tables, num_data_tables, data_tables);
+		again:
+			TargetReader header = new TargetReader (
+				memory.ReadMemory (current_data_table, header_size));
 
-			if (num_data_tables != last_num_data_tables) {
-				int old_offset = last_data_table_offset;
-
-				data_tables += last_num_data_tables * memory.TargetInfo.TargetAddressSize;
-
-				for (int i = last_num_data_tables; i < num_data_tables; i++) {
-					TargetAddress old_table = memory.ReadAddress (data_tables);
-					data_tables += memory.TargetInfo.TargetAddressSize;
-
-					int old_size = memory.ReadInteger (old_table);
-					read_data_items (memory, old_table, old_offset, old_size);
-					old_offset = 0;
-				}
-
-				last_num_data_tables = num_data_tables;
-				last_data_table_offset = 0;
-			}
-
-			TargetAddress data_table_address = header.ReadAddress ();
-			int data_table_size = header.ReadInteger ();
-			int offset = header.ReadInteger ();
-
-			int size = offset - last_data_table_offset;
+			int size = header.ReadInteger ();
+			int allocated_size = header.ReadInteger ();
+			int current_offset = header.ReadInteger ();
+			header.ReadInteger (); /* dummy */
+			TargetAddress next = header.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab,
-				      "DATA TABLE: {0} {1} {2} - {3} {4}",
-				      data_table_address, data_table_size, offset,
-				      last_data_table_offset, size);
+				      "DATA TABLE: {0} {1} - {2} {3} {4} {5} - {6}",
+				      current_data_table, last_data_table_offset,
+				      size, allocated_size, current_offset, next,
+				      header.BinaryReader.HexDump ());
 
-			if (size != 0)
-				read_data_items (memory, data_table_address, last_data_table_offset, offset);
+			read_data_items (memory, current_data_table + header_size,
+					 last_data_table_offset, current_offset);
 
-			last_data_table_offset = offset;
+			last_data_table_offset = current_offset;
+
+			if (!next.IsNull && (current_offset == allocated_size)) {
+				current_data_table = next;
+				last_data_table_offset = 0;
+				goto again;
+			}
 		}
 
 		private enum DataItemType {
 			Unknown		= 0,
-			Method,
 			Class,
-			Wrapper
+			Method
 		}
 
 		void read_data_items (TargetMemoryAccess memory, TargetAddress address, int start, int end)
@@ -530,9 +583,6 @@ namespace Mono.Debugger.Languages.Mono
 				      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address, start, end,
 				      reader.BinaryReader.Position, reader.Size);
 
-			if (start == 0)
-				reader.BinaryReader.Position = memory.TargetInfo.TargetAddressSize;
-
 			while (reader.BinaryReader.Position + 4 < reader.Size) {
 				int item_size = reader.BinaryReader.ReadInt32 ();
 				if (item_size == 0)
@@ -543,23 +593,22 @@ namespace Mono.Debugger.Languages.Mono
 
 				switch (item_type) {
 				case DataItemType.Method:
-					read_range_entry (reader);
+					read_range_entry (memory, reader);
 					break;
 
 				case DataItemType.Class:
 					read_class_entry (memory, reader);
 					break;
 
-				case DataItemType.Wrapper:
-					read_wrapper_entry (memory, reader);
-					break;
+				default:
+					throw new InternalError ("Got unknown data item: {0}", item_type);
 				}
 
 				reader.BinaryReader.Position = pos + item_size;
 			}
 		}
 
-		void read_range_entry (TargetReader reader)
+		void read_range_entry (TargetMemoryAccess memory, TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
@@ -569,7 +618,7 @@ namespace Mono.Debugger.Languages.Mono
 				      size, file_idx);
 			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 			if (file != null)
-				file.AddRangeEntry (reader, contents);
+				file.AddRangeEntry (memory, reader, contents);
 		}
 
 		void read_class_entry (TargetMemoryAccess memory, TargetReader reader)
@@ -588,13 +637,20 @@ namespace Mono.Debugger.Languages.Mono
 			GetClassInfo (memory, klass_address);
 		}
 
+#if FIXME
 		void read_wrapper_entry (TargetMemoryAccess memory, TargetReader reader)
 		{
 			int size = reader.BinaryReader.PeekInt32 ();
 			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 			reader.BinaryReader.ReadInt32 ();
-			corlib.AddWrapperEntry (memory, reader, contents);
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+			Report.Debug (DebugFlags.JitSymtab, "READ WRAPPER ITEM: {0} {1}",
+				      size, file_idx);
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
+			if (file != null)
+				file.AddWrapperEntry (memory, reader, contents);
 		}
+#endif
 
 		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
 		{
@@ -632,35 +688,90 @@ namespace Mono.Debugger.Languages.Mono
 		}
 #endregion
 
-#region jit breakpoint handling
-		private struct MyBreakpointHandle
-		{
-			public readonly int Index;
-			public readonly BreakpointHandler Handler;
-			public readonly object UserData;
+#region Class Init Handlers
 
-			public MyBreakpointHandle (int index, BreakpointHandler handler, object user_data)
-			{
-				this.Index = index;
-				this.Handler = handler;
-				this.UserData = user_data;
+		static int next_unique_id;
+
+		internal static int GetUniqueID ()
+		{
+			return ++next_unique_id;
+		}
+
+#endregion
+
+#region Method Load Handlers
+
+		Hashtable method_load_handlers = new Hashtable ();
+
+		void method_from_jit_info (TargetMemoryAccess target, TargetAddress data,
+					   MethodLoadedHandler handler)
+		{
+			int size = target.ReadInteger (data);
+#if DEBUG_VERBOSE
+			Console.WriteLine ("METHOD FROM JIT INFO: {0} {1}", data, size);
+#endif
+			TargetReader reader = new TargetReader (target.ReadMemory (data, size));
+
+			reader.BinaryReader.ReadInt32 ();
+			int count = reader.BinaryReader.ReadInt32 ();
+
+#if DEBUG_VERBOSE
+			Console.WriteLine ("METHOD FROM JIT INFO #1: {0} {1}", count,
+					   reader.BinaryReader.HexDump ());
+#endif
+
+			for (int i = 0; i < count; i++) {
+				TargetAddress address = reader.ReadAddress ();
+#if DEBUG_VERBOSE
+				Console.WriteLine ("METHOD FROM JT INFO #2: {0}", address);
+#endif
+				Method method = read_range_entry (target, address);
+#if DEBUG_VERBOSE
+				Console.WriteLine ("METHOD FROM JT INFO #3: {0} {1}", address, method);
+#endif
+
+				handler (target, method);
 			}
 		}
 
-		Hashtable breakpoints = new Hashtable ();
-
-		internal int InsertBreakpoint (Thread target, string method_name,
-					       BreakpointHandler handler, object user_data)
+		Method read_range_entry (TargetMemoryAccess target, TargetAddress address)
 		{
-			TargetAddress retval = target.CallMethod (info.InsertBreakpoint, 0, method_name);
+			int size = target.ReadInteger (address);
+			TargetReader reader = new TargetReader (target.ReadMemory (address, size));
 
-			int index = (int) retval.Address;
+			byte[] contents = reader.BinaryReader.PeekBuffer (size);
 
-			if (index <= 0)
-				return -1;
+			reader.BinaryReader.ReadInt32 ();
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
 
-			breakpoints.Add (index, new MyBreakpointHandle (index, handler, user_data));
+			return file.ReadRangeEntry (target, reader, contents);
+		}
+
+		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
+							MethodLoadedHandler handler)
+		{
+			int index = GetUniqueID ();
+
+			TargetAddress retval = target.CallMethod (
+				info.InsertBreakpoint, method_address, index);
+
+			if (!retval.IsNull)
+				method_from_jit_info (target, retval, handler);
+
+			method_load_handlers.Add (index, handler);
 			return index;
+		}
+
+		internal void RegisterMethodLoadHandler (int index, MethodLoadedHandler handler)
+		{
+			method_load_handlers.Add (index, handler);
+		}
+
+		internal void RemoveMethodLoadHandler (Thread target, int index)
+		{
+			target.CallMethod (info.RemoveBreakpoint, TargetAddress.Null, 0);
+			method_load_handlers.Remove (index);
 		}
 #endregion
 
@@ -831,7 +942,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetClassType ObjectType {
-			get { return builtin_types.ObjectClass; }
+			get { return builtin_types.ObjectType.ClassType; }
 		}
 
 		public override TargetClassType ArrayType {
@@ -863,27 +974,7 @@ namespace Mono.Debugger.Languages.Mono
 			return TargetAddress.Null;
 		}
 
-		public TargetAddress CompileMethodFunc {
-			get { return info.CompileMethod; }
-		}
-
-		public TargetAddress GetVirtualMethodFunc {
-			get { return info.GetVirtualMethod; }
-		}
-
-		public TargetAddress GetBoxedObjectFunc {
-			get { return info.GetBoxedObjectMethod; }
-		}
-
-		public TargetAddress LookupClassFunc {
-			get { return info.LookupClass; }
-		}
-
-		public TargetAddress RunFinallyFunc {
-			get { return info.RunFinally; }
-		}
-
-		public SourceMethod GetTrampoline (TargetMemoryAccess memory,
+		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
 			bool is_start;
@@ -905,11 +996,33 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
+		void JitBreakpoint (Inferior inferior, int idx, TargetAddress data)
+		{
+			Method method = read_range_entry (inferior, data);
+#if DEBUG_VERBOSE
+			Console.WriteLine ("JIT BREAKPOINT: {0} {1} {2}", idx, data, method);
+#endif
+			if (method == null)
+				return;
+
+			MethodLoadedHandler handler = (MethodLoadedHandler) method_load_handlers [idx];
+			if (handler != null)
+				handler (inferior, method);
+		}
+
+		internal void Initialize (Inferior inferior)
+		{
+			current_data_table = inferior.ReadAddress (info.DataTable);
+			Report.Debug (DebugFlags.JitSymtab, "Initialize mono language: {0}",
+				      current_data_table);
+		}
+
 		public void Notification (Inferior inferior, NotificationType type,
 					  TargetAddress data, long arg)
 		{
 			switch (type) {
 			case NotificationType.InitializeManagedCode:
+				Report.Debug (DebugFlags.JitSymtab, "Initialize managed code");
 				read_mono_debugger_info (inferior);
 				do_update_symbol_table (inferior);
 				break;
@@ -920,22 +1033,16 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 
 			case NotificationType.ReloadSymtabs:
-				do_update_symbol_table (inferior);
+				// do_update_symbol_table (inferior);
 				break;
 
 			case NotificationType.JitBreakpoint:
-				if (!breakpoints.Contains ((int) arg))
-					break;
-
-				do_update_symbol_table (inferior);
-
-				MyBreakpointHandle handle = (MyBreakpointHandle) breakpoints [(int) arg];
-				handle.Handler (inferior, data, handle.UserData);
-				breakpoints.Remove (arg);
+				JitBreakpoint (inferior, (int) arg, data);
 				break;
 
 			case NotificationType.MethodCompiled:
-				do_update_symbol_table (inferior);
+				Report.Debug (DebugFlags.JitSymtab, "Method compiled");
+				// do_update_symbol_table (inferior);
 				break;
 
 			default:

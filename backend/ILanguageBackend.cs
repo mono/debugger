@@ -34,30 +34,11 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		TargetAddress RuntimeInvokeFunc {
-			get;
-		}
-
-		TargetAddress CompileMethodFunc {
-			get;
-		}
-
-		TargetAddress GetVirtualMethodFunc {
-			get;
-		}
-
-		TargetAddress GetBoxedObjectFunc {
-			get;
-		}
-
 		TargetAddress GetTrampolineAddress (TargetMemoryAccess memory,
 						    TargetAddress address,
 						    out bool is_start);
 
-		SourceMethod GetTrampoline (TargetMemoryAccess memory,
+		MethodSource GetTrampoline (TargetMemoryAccess memory,
 					    TargetAddress address);
-
-		void Notification (Inferior inferior, NotificationType type,
-				   TargetAddress data, long arg);
 	}
 }

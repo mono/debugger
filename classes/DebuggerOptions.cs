@@ -29,6 +29,7 @@ namespace Mono.Debugger
 		DebugFlags debug_flags = DebugFlags.None;
 		string debug_output;
 		bool in_emacs;
+		bool stop_in_main = true;
 		string mono_prefix, mono_path;
 
 		/* The executable file we're debugging */
@@ -108,6 +109,11 @@ namespace Mono.Debugger
 		public string MonoPath {
 			get { return mono_path; }
 			set { mono_path = value; }
+		}
+
+		public bool StopInMain {
+			get { return stop_in_main; }
+			set { stop_in_main = value; }
 		}
 
 		Hashtable user_environment;

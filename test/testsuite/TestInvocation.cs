@@ -39,8 +39,7 @@ namespace Mono.Debugger.Tests
 			bpt_main = AssertBreakpoint (LineMain2);
 			AssertExecute ("continue");
 
-			AssertHitBreakpoint (thread, bpt_test,
-					     "X.Test(System.Int32,System.String)", LineTest);
+			AssertHitBreakpoint (thread, bpt_test, "X.Test(int,string)", LineTest);
 
 			AssertPrint (thread, "a", "(System.Int32) 5");
 			AssertPrint (thread, "Hello (4)", "(System.Int32) 16");
@@ -71,7 +70,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Static Hello: 5");
 
 			AssertHitBreakpoint (thread, bpt_test_static,
-					     "X.TestStatic(X,System.Int32,System.String)", LineTestStatic);
+					     "X.TestStatic(X,int,string)", LineTestStatic);
 
 			AssertPrint (thread, "a", "(System.Int32) 9");
 			AssertPrint (thread, "b", "(System.String) \"Boston\"");

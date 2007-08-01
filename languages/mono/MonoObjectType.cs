@@ -6,11 +6,14 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoObjectType : TargetObjectType
 	{
 		MonoSymbolFile file;
+		MonoClassType class_type;
 
 		public MonoObjectType (MonoSymbolFile file, Cecil.TypeDefinition typedef, int size)
 			: base (file.MonoLanguage, "object", size)
 		{
 			this.file = file;
+
+			class_type = new MonoClassType (file, typedef);
 		}
 
 		public MonoSymbolFile File {
@@ -18,7 +21,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetClassType ClassType {
-			get { return file.MonoLanguage.ObjectType; }
+			get { return class_type; }
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)

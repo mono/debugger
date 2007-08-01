@@ -20,19 +20,17 @@ namespace Mono.Debugger.Languages
 			get { return relative_to.HasAddress; }
 		}
 
-		public override TargetAddress Address {
-			get {
-				return relative_to.Address + offset;
-			}
+		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		{
+			return relative_to.GetAddress (target) + offset;
 		}
 
 		public override string Print ()
 		{
-			TargetAddress address = relative_to.Address;
 			if (offset > 0)
-				return String.Format ("{0}+{1}", address, offset);
+				return String.Format ("{0}+{1}", relative_to, offset);
 			else
-				return String.Format ("{0}-{1}", address, -offset);
+				return String.Format ("{0}-{1}", relative_to, -offset);
 		}
 
 		protected override string MyToString ()

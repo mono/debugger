@@ -36,7 +36,7 @@ namespace Mono.Debugger.Tests
 			Backtrace bt = thread.GetBacktrace (-1);
 			if (bt.Count != 3)
 				Assert.Fail ("Backtrace has {0} frames, but expected {1}.",
-					     bt.Count, 3);
+					     bt.Count, 5);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
 			AssertInternalFrame (bt [1], 1);
@@ -53,14 +53,14 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (8)");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_2);
+			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("return -yes");
 			AssertStopped (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (9)");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_2);
+			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_3);
+			AssertStopped (thread, "X.Hello(int)", line_hello_3);
 			AssertExecute ("return -yes");
 			AssertTargetOutput ("Done: 9 18 1");
 			AssertNoTargetOutput ();
@@ -74,19 +74,19 @@ namespace Mono.Debugger.Tests
 			AssertFrame (bt [0], 0, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (7)");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_2);
+			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.Hello(System.Int32)", line_hello_3);
+			AssertStopped (thread, "X.Hello(int)", line_hello_3);
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Hello()", line_hello);
 
 			bt = thread.GetBacktrace (-1);
 			if (bt.Count != 4)
 				Assert.Fail ("Backtrace has {0} frames, but expected {1}.",
-					     bt.Count, 4);
+					     bt.Count, 6);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
-			AssertFrame (bt [1], 1, "X.Hello(System.Int32)", line_hello_3);
+			AssertFrame (bt [1], 1, "X.Hello(int)", line_hello_3);
 			AssertInternalFrame (bt [2], 2);
 			AssertFrame (bt [3], 3, "X.Main()", line_main);
 

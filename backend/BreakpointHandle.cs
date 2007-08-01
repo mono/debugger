@@ -12,6 +12,8 @@ namespace Mono.Debugger.Backends
 			this.Breakpoint = breakpoint;
 		}
 
+		internal abstract bool Insert (SingleSteppingEngine sse);
+
 		public abstract void Insert (Thread target);
 
 		public abstract void Remove (Thread target);
@@ -25,6 +27,11 @@ namespace Mono.Debugger.Backends
 			: base (breakpoint)
 		{
 			this.index = index;
+		}
+
+		internal override bool Insert (SingleSteppingEngine sse)
+		{
+			throw new InternalError ();
 		}
 
 		public override void Insert (Thread target)
@@ -51,6 +58,12 @@ namespace Mono.Debugger.Backends
 			this.Address = address;
 		}
 
+		internal override bool Insert (SingleSteppingEngine sse)
+		{
+			index = sse.Inferior.InsertBreakpoint (Breakpoint, Address);
+			return false;
+		}
+
 		public override void Insert (Thread target)
 		{
 			index = target.InsertBreakpoint (Breakpoint, Address);
@@ -66,87 +79,54 @@ namespace Mono.Debugger.Backends
 
 	internal class FunctionBreakpointHandle : BreakpointHandle
 	{
-		ILoadHandler load_handler;
 		TargetFunctionType function;
-		SourceMethod source;
+		bool has_load_handler;
 		int line = -1;
 		int index = -1;
 		int domain;
 
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain, SourceMethod source)
+		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
+						 TargetFunctionType function, int line)
 			: base (bpt)
 		{
+			this.function = function;
 			this.domain = domain;
-			this.source = source;
-		}
-
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-						 SourceMethod source, int line)
-			: this (bpt, domain, source)
-		{
 			this.line = line;
 		}
 
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-						 TargetFunctionType function)
-			: this (bpt, domain, function.Source, -1)
+		internal TargetFunctionType Function {
+			get { return function; }
+		}
+
+		internal override bool Insert (SingleSteppingEngine sse)
 		{
-			this.function = function;
+			if (has_load_handler || (index > 0))
+				return false;
+
+			throw new InternalError ();
 		}
 
 		public override void Insert (Thread target)
 		{
-			if ((load_handler != null) || (index > 0))
+			if (has_load_handler || (index > 0))
 				return;
 
-			if ((function != null) && function.IsLoaded) {
-				index = target.InsertBreakpoint (Breakpoint, function);
-				return;
-			}
-
-			load_handler = source.SourceFile.Module.SymbolFile.RegisterLoadHandler (
-				target, source, method_loaded, null);
+			has_load_handler = function.InsertBreakpoint (target, MethodLoaded);
 		}
 
-		public override void Remove (Thread target)
+		internal void MethodLoaded (TargetMemoryAccess target, Method method)
 		{
-			if (index > 0)
-				target.RemoveBreakpoint (index);
-
-			if (load_handler != null)
-				load_handler.Remove ();
-
-			load_handler = null;
-			index = -1;
-		}
-
-		protected TargetAddress GetAddress (int domain)
-		{
-			Method method = source.GetMethod (domain);
-			if (method == null)
-				return TargetAddress.Null;
-
+			TargetAddress address;
 			if (line != -1) {
 				if (method.HasLineNumbers)
-					return method.LineNumberTable.Lookup (line);
+					address = method.LineNumberTable.Lookup (line);
 				else
-					return TargetAddress.Null;
+					address = TargetAddress.Null;
 			} else if (method.HasMethodBounds)
-				return method.MethodStartAddress;
+				address = method.MethodStartAddress;
 			else
-				return method.StartAddress;
-		}
+				address = method.StartAddress;
 
-		// <summary>
-		//   The method has just been loaded, lookup the breakpoint
-		//   address and actually insert it.
-		// </summary>
-		public void method_loaded (TargetMemoryAccess target,
-					   SourceMethod source, object data)
-		{
-			load_handler = null;
-
-			TargetAddress address = GetAddress (domain);
 			if (address.IsNull)
 				return;
 
@@ -157,6 +137,18 @@ namespace Mono.Debugger.Backends
 					      Breakpoint.Index, address, ex.Message);
 				index = -1;
 			}
+		}
+
+		public override void Remove (Thread target)
+		{
+			if (index > 0)
+				target.RemoveBreakpoint (index);
+
+			if (has_load_handler)
+				function.RemoveBreakpoint (target);
+
+			has_load_handler = false;
+			index = -1;
 		}
 	}
 }

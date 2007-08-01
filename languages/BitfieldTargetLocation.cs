@@ -20,10 +20,9 @@ namespace Mono.Debugger.Languages
 			get { return false; }
 		}
 
-		public override TargetAddress Address {
-			get {
-				throw new InvalidOperationException ();
-			}
+		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		{
+			throw new InvalidOperationException ();
 		}
 
 		private string Print (bool[] data)

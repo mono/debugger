@@ -305,8 +305,7 @@ namespace Mono.Debugger.Backends
 			initialized = true;
 			if (!is_forked || is_exec) {
 				mono_manager = MonoThreadManager.Initialize (
-					manager, inferior, (start.PID != 0) && !is_exec,
-					!is_exec);
+					manager, inferior, (start.PID != 0) && !is_exec);
 				if (!is_forked && !is_exec && !is_attached &&
 				    !start.IsNative && (mono_manager == null))
 					throw new TargetException (TargetError.CannotStartTarget,
@@ -356,8 +355,7 @@ namespace Mono.Debugger.Backends
 			Dispose ();
 		}
 
-		// XXX This desperately needs to be renamed.
-		internal ILanguageBackend CreateDebuggerHandler (MonoDebuggerInfo info)
+		internal MonoLanguageBackend CreateMonoLanguage (MonoDebuggerInfo info)
 		{
 			mono_language = new MonoLanguageBackend (this, info);
 			languages.Add (mono_language);
@@ -416,7 +414,7 @@ namespace Mono.Debugger.Backends
 		public SourceLocation FindMethod (string name)
 		{
 			foreach (Module module in Modules) {
-				SourceMethod method = module.FindMethod (name);
+				MethodSource method = module.FindMethod (name);
 				
 				if (method != null)
 					return new SourceLocation (method);

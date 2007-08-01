@@ -66,6 +66,14 @@ namespace Mono.Debugger
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
+
+			// Ugly hack: in Mode == Mode.Default, we accept wrappers but not as the
+			//            last frame.
+			if ((mode == Mode.Default) && (frames.Count > 1)) {
+				StackFrame last = this [frames.Count - 1];
+				if (!IsFrameOkForMode (last, Mode.Managed))
+					frames.Remove (last);
+			}
 		}
 
 		private StackFrame TryLMF (ThreadServant target)
@@ -88,22 +96,57 @@ namespace Mono.Debugger
 			}
 		}
 
+		private bool TryCallback (ThreadServant target, StackFrame last_frame, bool exact_match)
+		{
+			StackFrame new_frame = null;
+			try{
+				new_frame = target.Architecture.GetCallbackFrame (
+					target, last_frame, exact_match);
+			} catch (TargetException) {
+				return false;
+			}
+
+			if (new_frame == null)
+				return false;
+
+			AddFrame (new StackFrame (
+				target.Client, new_frame.TargetAddress, new_frame.StackPointer,
+				new_frame.FrameAddress, new_frame.Registers, target.NativeLanguage,
+				new Symbol ("<method called from mdb>", new_frame.TargetAddress, 0)));
+			AddFrame (new_frame);
+			return true;
+		}
+
+		private bool IsFrameOkForMode (StackFrame frame, Mode mode)
+		{
+			if (mode == Mode.Native)
+				return true;
+			if (!frame.Language.IsManaged)
+				return false;
+			if (mode == Mode.Default)
+				return true;
+			if ((frame.SourceAddress == null) || (frame.Method == null))
+				return false;
+			return frame.Method.WrapperType == WrapperType.None;
+		}
+
 		internal bool TryUnwind (ThreadServant target, Mode mode, TargetAddress until)
 		{
 			StackFrame new_frame = null;
-			if ((mode == Mode.Managed) && !last_frame.Language.IsManaged) {
-				new_frame = TryLMF (target);
-			} else {
-				try {
-					new_frame = last_frame.UnwindStack (target);
-				} catch (TargetException) {
-				}
+			try {
+				new_frame = last_frame.UnwindStack (target);
+			} catch (TargetException) {
 			}
 
-			if ((new_frame == null) || (new_frame.SourceAddress == null)) {
-				if (!last_frame.Language.IsManaged && (mode != Mode.Native))
-					new_frame = TryLMF (target);
-			}
+			if ((new_frame == null) || !IsFrameOkForMode (new_frame, mode)) {
+				if (TryCallback (target, last_frame, false))
+					return true;
+
+				new_frame = TryLMF (target);
+				if (new_frame == null)
+					return false;
+			} else if (TryCallback (target, new_frame, true))
+				return true;
 
 			if (new_frame == null)
 				return false;

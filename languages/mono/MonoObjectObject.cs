@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 			// dereferencing it once gives us the vtable, dereferencing it
 			// twice the class.
 			TargetAddress address;
-			address = target.ReadAddress (Location.Address);
+			address = target.ReadAddress (Location.GetAddress (target));
 			address = target.ReadAddress (address);
 
 			return Type.File.MonoLanguage.GetClass (target, address);

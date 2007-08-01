@@ -34,8 +34,8 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType Klass;
 
 		private MonoMethodInfo (MonoClassType klass, int index, Cecil.MethodDefinition minfo,
-					string full_name, MonoFunctionType type)
-			: base (type, minfo.Name, index, minfo.IsStatic, full_name)
+					MonoFunctionType type)
+			: base (type, minfo.Name, index, minfo.IsStatic, type.FullName)
 		{
 			Klass = klass;
 			FunctionType = type;
@@ -44,20 +44,8 @@ namespace Mono.Debugger.Languages.Mono
 		internal static MonoMethodInfo Create (MonoClassType klass, int index,
 						       Cecil.MethodDefinition minfo)
 		{
-			StringBuilder sb = new StringBuilder ();
-			bool first = true;
-			foreach (Cecil.ParameterDefinition pinfo in minfo.Parameters) {
-				if (first)
-					first = false;
-				else
-					sb.Append (",");
-				sb.Append (pinfo.ParameterType);
-			}
-
-			string name = String.Format ("{0}({1})", minfo.Name, sb.ToString ());
-
-			MonoFunctionType type = new MonoFunctionType (klass, minfo, name);
-			return new MonoMethodInfo (klass, index, minfo, klass.Name + '.' + name, type);
+			MonoFunctionType type = klass.File.LookupFunction (klass, minfo);
+			return new MonoMethodInfo (klass, index, minfo, type);
 		}
 	}
 
@@ -85,17 +73,17 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoFunctionType add, remove, raise;
 			if (einfo.AddMethod != null)
-				add = new MonoFunctionType (klass, einfo.AddMethod, einfo.Name);
+				add = klass.File.LookupFunction (klass, einfo.AddMethod);
 			else
 				add = null;
 
 			if (einfo.RemoveMethod != null)
-				remove = new MonoFunctionType (klass, einfo.RemoveMethod, einfo.Name);
+				remove = klass.File.LookupFunction (klass, einfo.RemoveMethod);
 			else
 				remove = null;
 
 			if (einfo.InvokeMethod != null)
-				raise = new MonoFunctionType (klass, einfo.InvokeMethod, einfo.Name);
+				raise = klass.File.LookupFunction (klass, einfo.InvokeMethod);
 			else
 				raise = null;
 
@@ -128,12 +116,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoFunctionType getter, setter;
 			if (pinfo.GetMethod != null)
-				getter = new MonoFunctionType (klass, pinfo.GetMethod, pinfo.Name);
+				getter = klass.File.LookupFunction (klass, pinfo.GetMethod);
 			else
 				getter = null;
 
 			if (pinfo.SetMethod != null)
-				setter = new MonoFunctionType (klass, pinfo.SetMethod, pinfo.Name);
+				setter = klass.File.LookupFunction (klass, pinfo.SetMethod);
 			else
 				setter = null;
 

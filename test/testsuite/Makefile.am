@@ -6,5 +6,6 @@ EXTRA_DIST = \
 	TestManagedTypes.cs TestMethodLookup.cs TestNamespace.cs \
 	testnativeattach.cs testnativeexec.cs testnativefork.cs \
 	TestNull.cs TestObject.cs TestProperty.cs TestRestart.cs \
-	TestToString.cs TestMultiThread.cs TestSession.cs
+	TestToString.cs TestMultiThread.cs TestSession.cs \
+	TestCCtor.cs TestAppDomain.cs
 

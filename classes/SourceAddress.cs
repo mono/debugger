@@ -17,37 +17,30 @@ namespace Mono.Debugger
 	// </summary>
 	public class SourceAddress : DebuggerMarshalByRefObject
 	{
-		LineNumberTable source;
+		SourceFile file;
+		SourceBuffer buffer;
 		int row;
 		int source_offset;
 		int source_range;
 
-		public static SourceAddress Null = new SourceAddress (null, 0);
-
-		public SourceAddress (LineNumberTable source, int row)
-			: this (source, row, 0, 0)
-		{ }
-
-		public SourceAddress (LineNumberTable source, int row, int offset, int range)
+		public SourceAddress (SourceFile file, SourceBuffer buffer, int row,
+				      int offset, int range)
 		{
-			this.source = source;
+			this.file = file;
+			this.buffer = buffer;
 			this.row = row;
 			this.source_offset = offset;
 			this.source_range = range;
-
-			if ((source != null) && (row == 0))
-				throw new InvalidOperationException ();
 		}
 
-		public SourceLocation Location {
+		public SourceFile SourceFile {
 			get {
-				return new SourceLocation (source.SourceMethod, row);
-			}
+				return file; }
 		}
 
-		public LineNumberTable LineNumberTable {
+		public SourceBuffer SourceBuffer {
 			get {
-				return source;
+				return buffer;
 			}
 		}
 
@@ -77,12 +70,8 @@ namespace Mono.Debugger
 
 		public string Name {
 			get {
-				if ((source.IsDynamic) || (source.SourceMethod == null))
-					return String.Format ("{0}", Row);
-
-				SourceFile file = source.SourceMethod.SourceFile;
-				if (file == null)
-					return String.Format ("{0}", Row);
+				if (file != null)
+					return String.Format ("{0}:{1}", file.FileName, Row);
 				else
 					return String.Format ("{0}:{1}", file.FileName, Row);
 			}
@@ -91,7 +80,8 @@ namespace Mono.Debugger
 		public override string ToString ()
 		{
 			StringBuilder builder = new StringBuilder ();
-			builder.Append (source.Name);
+			if (file != null)
+				builder.Append (file.FileName);
 			if (Row > 0) {
 				builder.Append (" line ");
 				builder.Append (Row);

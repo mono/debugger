@@ -28,7 +28,8 @@ typedef enum {
 	COMMAND_ERROR_DR_OCCUPIED,
 	COMMAND_ERROR_MEMORY_ACCESS,
 	COMMAND_ERROR_NOT_IMPLEMENTED,
-	COMMAND_ERROR_IO_ERROR
+	COMMAND_ERROR_IO_ERROR,
+	COMMAND_ERROR_NO_CALLBACK_FRAME,
 } ServerCommandError;
 
 typedef enum {
@@ -209,6 +210,7 @@ struct InferiorVTable {
 	ServerCommandError    (* call_method_1)       (ServerHandle     *handle,
 						       guint64           method,
 						       guint64           method_argument,
+						       guint64           data_argument,
 						       const gchar      *string_argument,
 						       guint64           callback_argument);
 
@@ -228,7 +230,10 @@ struct InferiorVTable {
 						       guint64           callback_argument,
 						       gboolean          debug);
 
-	ServerCommandError    (* abort_invoke)        (ServerHandle     *handle);
+	ServerCommandError    (* mark_rti_frame)      (ServerHandle     *handle);
+
+	ServerCommandError    (* abort_invoke)        (ServerHandle     *handle,
+						       guint64           stack_pointer);
 
 	/*
 	 * Insert a breakpoint at address `address' in the target's address space.
@@ -330,6 +335,11 @@ struct InferiorVTable {
 						       guint64           *new_rsp);
 
 	ServerCommandError    (* pop_registers)       (ServerHandle      *handle);
+
+	ServerCommandError    (* get_callback_frame)  (ServerHandle      *handle,
+						       guint64            stack_pointer,
+						       gboolean           exact_match,
+						       guint64           *registers);
 };
 
 /*
@@ -433,6 +443,7 @@ ServerCommandError
 mono_debugger_server_call_method_1        (ServerHandle       *handle,
 					   guint64             method_address,
 					   guint64             method_argument,
+					   guint64             data_argument,
 					   const gchar        *string_argument,
 					   guint64             callback_argument);
 
@@ -455,7 +466,11 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   gboolean            debug);
 
 ServerCommandError
-mono_debugger_server_abort_invoke        (ServerHandle        *handle);
+mono_debugger_mark_rti_framenvoke        (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_abort_invoke        (ServerHandle        *handle,
+					  guint64              stack_pointer);
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,
@@ -533,6 +548,12 @@ mono_debugger_server_push_registers      (ServerHandle        *handle,
 
 ServerCommandError
 mono_debugger_server_pop_registers       (ServerHandle        *handle);
+
+ServerCommandError
+mono_debugger_server_get_callback_frame  (ServerHandle        *handle,
+					  guint64              stack_pointer,
+					  gboolean             exact_match,
+					  guint64             *registers);
 
 /* POSIX semaphores */
 
