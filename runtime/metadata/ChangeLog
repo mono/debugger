@@ -1,3 +1,7 @@
+2007-08-01  Martin Baulig  <martin@ximian.com>
+
+	Merged the branch into HEAD.
+
 2007-07-30  Martin Baulig  <martin@ximian.com>
 
 	* mono-debug.c: Drop support for the old symbol tables.

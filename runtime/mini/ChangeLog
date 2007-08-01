@@ -1,5 +1,9 @@
 2007-08-01  Martin Baulig  <martin@ximian.com>
 
+	Merged the branch into HEAD.
+
+2007-08-01  Martin Baulig  <martin@ximian.com>
+
 	* debug-debugger.h (MonoDebuggerInfo):
 	Removed the `old_*' compatibility entries.
 	Added `debugger_version' and `data_table'.
