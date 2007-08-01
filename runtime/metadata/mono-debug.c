@@ -32,6 +32,21 @@
 	(*(type *)(addr) = (val))
 #endif
 
+typedef enum {
+	MONO_DEBUG_DATA_ITEM_UNKNOWN		= 0,
+	MONO_DEBUG_DATA_ITEM_CLASS,
+	MONO_DEBUG_DATA_ITEM_METHOD
+} MonoDebugDataItemType;
+
+struct _MonoDebugDataTable {
+	guint32 total_size;
+	guint32 allocated_size;
+	guint32 current_offset;
+	guint32 dummy;
+	MonoDebugDataTable *next;
+	guint8 data [MONO_ZERO_LEN_ARRAY];
+};
+
 typedef struct {
 	const gchar *method_name;
 	const gchar *cil_code;
