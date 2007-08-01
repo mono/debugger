@@ -442,13 +442,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	handle = _mono_debug_get_image (method->klass->image);
 	minfo = _mono_debug_lookup_method (method);
 
-#if 0
-	if (method->klass->image != mono_defaults.corlib)
-		g_message (G_STRLOC ": %p - %s.%s.%s - %p,%p - %x - %d", method,
-			   method->klass->name_space, method->klass->name, method->name, handle, minfo,
-			   mono_method_get_token (method), method->is_inflated);
-#endif
-
 	if (!minfo || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
@@ -527,19 +520,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 	g_assert (size < max_size);
 	total_size = size + sizeof (MonoDebugMethodAddress);
 
-#if 0
-	if (total_size + 9 >= DATA_TABLE_CHUNK_SIZE) {
-		// FIXME: Maybe we should print a warning here.
-		//        This should only happen for very big methods, for instance
-		//        with more than 40.000 line numbers and more than 5.000
-		//        local variables.
-		g_error (G_STRLOC ": %p - %s.%s.%s - %d", method, method->klass->name_space,
-			   method->klass->name, method->name, total_size);
-		mono_debugger_unlock ();
-		return NULL;
-	}
-#endif
-
 	address = (MonoDebugMethodAddress *) allocate_data_item (MONO_DEBUG_DATA_ITEM_METHOD, total_size);
 
 	address->header.size = total_size;
@@ -557,10 +537,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 
 	declaring = method->is_inflated ? ((MonoMethodInflated *) method)->declaring : method;
 	header = g_hash_table_lookup (method_hash, declaring);
-
-#if 0
-	g_message (G_STRLOC ": %p - %p - %p", method, declaring, header);
-#endif
 
 	if (!header) {
 		header = &address->header;
@@ -584,9 +560,6 @@ mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDoma
 		}
 	} else {
 		address->header.wrapper_data = header->wrapper_data;
-#if 0
-		g_message (G_STRLOC ": %p - %p", header->address_list, address);
-#endif
 		header->address_list = g_slist_prepend (header->address_list, address);
 	}
 
