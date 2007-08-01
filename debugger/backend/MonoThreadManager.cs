@@ -275,8 +275,8 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress GetCurrentThread;
-		public readonly TargetAddress InsertMethodBreakpoint;
-		public readonly TargetAddress RemoveMethodBreakpoint;
+		public readonly TargetAddress InsertBreakpoint;
+		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeClassInit;
 		public readonly TargetAddress Attach;
 		public readonly TargetAddress Detach;
@@ -304,11 +304,8 @@ namespace Mono.Debugger.Backends
 			CompileMethod             = reader.ReadAddress ();
 			GetVirtualMethod          = reader.ReadAddress ();
 			GetBoxedObjectMethod      = reader.ReadAddress ();
-			reader.Offset            += 2 * address_size;
 			RuntimeInvoke             = reader.ReadAddress ();
-			reader.Offset            += address_size;
 			ClassGetStaticFieldData   = reader.ReadAddress ();
-			reader.Offset            += 3 * address_size;
 			RunFinally                = reader.ReadAddress ();
 			GetCurrentThread          = reader.ReadAddress ();
 			Attach                    = reader.ReadAddress ();
@@ -322,8 +319,8 @@ namespace Mono.Debugger.Backends
 			CreateString              = reader.ReadAddress ();
 			LookupClass               = reader.ReadAddress ();
 			LookupAssembly            = reader.ReadAddress ();
-			InsertMethodBreakpoint    = reader.ReadAddress ();
-			RemoveMethodBreakpoint    = reader.ReadAddress ();
+			InsertBreakpoint          = reader.ReadAddress ();
+			RemoveBreakpoint          = reader.ReadAddress ();
 			RuntimeClassInit          = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);

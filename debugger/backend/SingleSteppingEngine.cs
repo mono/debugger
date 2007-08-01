@@ -2186,7 +2186,7 @@ namespace Mono.Debugger.Backends
 
 				index = MonoLanguageBackend.GetUniqueID ();
 
-				inferior.CallMethod (sse.MonoDebuggerInfo.InsertMethodBreakpoint,
+				inferior.CallMethod (sse.MonoDebuggerInfo.InsertBreakpoint,
 						     method.Address, index, ID);
 
 				language.RegisterMethodLoadHandler (index, Handler);

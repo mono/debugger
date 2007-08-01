@@ -716,7 +716,7 @@ namespace Mono.Debugger.Languages.Mono
 			int index = GetUniqueID ();
 
 			TargetAddress retval = target.CallMethod (
-				info.InsertMethodBreakpoint, method_address, index);
+				info.InsertBreakpoint, method_address, index);
 
 			if (!retval.IsNull)
 				method_from_jit_info (target, retval, handler);
@@ -732,7 +732,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal void RemoveMethodLoadHandler (Thread target, int index)
 		{
-			target.CallMethod (info.RemoveMethodBreakpoint, TargetAddress.Null, 0);
+			target.CallMethod (info.RemoveBreakpoint, TargetAddress.Null, 0);
 			method_load_handlers.Remove (index);
 		}
 #endregion
