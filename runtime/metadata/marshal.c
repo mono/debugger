@@ -116,6 +116,9 @@ mono_struct_delete_old (MonoClass *klass, char *ptr);
 void *
 mono_marshal_string_to_utf16 (MonoString *s);
 
+static void *
+mono_marshal_string_to_utf16_copy (MonoString *s);
+
 static gpointer
 mono_string_to_lpstr (MonoString *string_obj);
 
@@ -315,7 +318,7 @@ cominterop_method_signature (MonoMethod* method)
 	else {
 		// last arg is return type
 		if (!MONO_TYPE_IS_VOID (sig->ret)) {
-			res->params[param_count-1] = mono_metadata_type_dup_mp (image, sig->ret);
+			res->params[param_count-1] = mono_metadata_type_dup (image->mempool, sig->ret);
 			res->params[param_count-1]->byref = 1;
 			res->params[param_count-1]->attrs = PARAM_ATTRIBUTE_OUT;
 		}
@@ -569,6 +572,7 @@ mono_marshal_init (void)
 		load_type_info_tls_id = TlsAlloc ();
 
 		register_icall (mono_marshal_string_to_utf16, "mono_marshal_string_to_utf16", "ptr obj", FALSE);
+		register_icall (mono_marshal_string_to_utf16_copy, "mono_marshal_string_to_utf16_copy", "ptr obj", FALSE);
 		register_icall (mono_string_to_utf16, "mono_string_to_utf16", "ptr obj", FALSE);
 		register_icall (mono_string_from_utf16, "mono_string_from_utf16", "obj ptr", FALSE);
 		register_icall (mono_string_new_wrapper, "mono_string_new_wrapper", "obj ptr", FALSE);
@@ -1285,12 +1289,8 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		header->code = mb->code;
 
 		for (i = 0, l = mb->locals_list; l; l = l->next, i++) {
-			MonoType *local_type = (MonoType*)l->data;
-			int size = sizeof (MonoType) + ((gint32)local_type->num_mods - MONO_ZERO_LEN_ARRAY) * sizeof (MonoCustomMod);
-			header->locals [i] = g_malloc (size);
-			memcpy (header->locals [i], local_type, size);
+			header->locals [i] = mono_metadata_type_dup (NULL, (MonoType*)l->data);
 		}
-
 	} else {
 		/* Realloc the method info into a mempool */
 
@@ -6391,7 +6391,11 @@ emit_marshal_string (EmitMarshalContext *m, int argnum, MonoType *t,
 		break;	
 
 	case MARSHAL_ACTION_MANAGED_CONV_RESULT:
-		mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_STR_LPSTR));
+		if (conv_to_icall (conv) == mono_marshal_string_to_utf16)
+			/* We need to make a copy so the caller is able to free it */
+			mono_mb_emit_icall (mb, mono_marshal_string_to_utf16_copy);
+		else
+			mono_mb_emit_icall (mb, conv_to_icall (conv));
 		mono_mb_emit_stloc (mb, 3);
 		break;
 
@@ -9876,6 +9880,19 @@ void *
 mono_marshal_string_to_utf16 (MonoString *s)
 {
 	return s ? mono_string_chars (s) : NULL;
+}
+
+static void *
+mono_marshal_string_to_utf16_copy (MonoString *s)
+{
+	if (s == NULL) {
+		return NULL;
+	} else {
+		gunichar2 *res = mono_marshal_alloc ((mono_string_length (s) * 2) + 2);
+		memcpy (res, mono_string_chars (s), mono_string_length (s) * 2);
+		res [mono_string_length (s)] = 0;
+		return res;
+	}
 }
 
 /**

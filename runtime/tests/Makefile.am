@@ -228,7 +228,8 @@ TEST_CS_SRC=			\
 	desweak.cs		\
 	cominterop.cs		\
 	exists.cs		\
-	handleref.cs
+	handleref.cs	\
+	transparentproxy.cs
 
 if X86
 # bug #71274
@@ -268,7 +269,9 @@ TEST_IL_SRC=			\
 	reload-at-bb-end.il	\
 	test-enum-indstoreil.il	\
 	filter-bug.il		\
-	even-odd.il
+	even-odd.il		\
+	bug-82022.il	\
+	enum_types.il
 
 TEST_CS2_SRC = \
 	interlocked-2.2.cs	\
@@ -280,6 +283,7 @@ TEST_CS2_SRC = \
 	safehandle.2.cs		\
 	stackframes-async.2.cs		\
 	module-cctor-loader.2.cs	\
+	generics-invoke-byref.2.cs	\
 	bug-80392.2.cs
 
 TEST_IL2_SRC = find-method.2.il	\
@@ -317,13 +321,13 @@ EXTRA_DIST=test-driver $(TEST_CS_SRC) $(TEST_CS2_SRC) $(TEST_IL_SRC) $(TEST_IL2_
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
 if POWERPC
-test:	testjit test-type-load test-inline-call-stack test-bug-80307
+test:	testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691
 else
 # Can't use mkbundle on win32 since there is no static build there
 if PLATFORM_WIN32
-test:   testjit test-type-load test-inline-call-stack test-bug-80307
+test:   testjit test-type-load test-inline-call-stack test-bug-80307 test-bug-81673 test-bug-81691
 else
-test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307
+test:	testjit testbundle test-type-load test-inline-call-stack test-iomap-regression test-bug-80307 test-bug-81673 test-bug-81691
 endif
 endif
 
@@ -505,6 +509,25 @@ bug-80307.exe: $(srcdir)/bug-80307.cs
 test-bug-80307: bug-80307.exe
 	cd $(top_builddir)/runtime && $(MAKE) test-support-files
 	$(RUNTIME) bug-80307.exe
+
+EXTRA_DIST += bug-81673.cs bug-81673-interface.cs
+bug-81673.exe bug-81673-interface.dll: $(srcdir)/bug-81673.cs $(srcdir)/bug-81673-interface.cs
+	$(MCS) -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
+	$(MCS) -out:bug-81673.exe -r:bug-81673-interface.dll $(srcdir)/bug-81673.cs
+	$(MCS) -define:WITH_STOP -target:library -out:bug-81673-interface.dll $(srcdir)/bug-81673-interface.cs
+
+test-bug-81673 : bug-81673.exe bug-81673-interface.dll
+	$(RUNTIME) bug-81673.exe
+
+EXTRA_DIST += bug-81691.cs bug-81691-a.cs bug-81691-b.cs
+bug-81691.exe bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
+	$(GMCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs
+	$(GMCS) -target:library -out:bug-81691-b.dll -r:bug-81691-a.dll $(srcdir)/bug-81691-b.cs
+	$(GMCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
+	rm -f bug-81691-a.dll
+
+test-bug-81691 : bug-81691.exe bug-81691-b.dll
+	$(RUNTIME) bug-81691.exe
 
 # Useful if mono is compiled with --enable-shared=no
 patch-libtool:

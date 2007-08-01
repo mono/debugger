@@ -130,7 +130,15 @@ extern int mono_exc_esp_offset;
 #else
 extern gboolean mono_compile_aot;
 #endif
-extern gboolean mono_use_security_manager;
+
+typedef enum {
+	MONO_SECURITY_MODE_NONE,
+	MONO_SECURITY_MODE_CORE_CLR,
+	MONO_SECURITY_MODE_CAS,
+	MONO_SECURITY_MODE_SMCS_HACK
+} MonoSecurityMode;
+
+extern MonoSecurityMode mono_security_mode;
 
 struct MonoEdge {
 	MonoEdge *next;
@@ -440,6 +448,8 @@ typedef struct {
 	MonoLMF          *first_lmf;
 	gpointer         signal_stack;
 	guint32          signal_stack_size;
+	gpointer         stack_ovf_guard_base;
+	guint32          stack_ovf_guard_size;
 	void            (*abort_func) (MonoObject *object);
 } MonoJitTlsData;
 
@@ -988,6 +998,7 @@ MonoJitInfo *mono_arch_find_jit_info            (MonoDomain *domain,
 gpointer mono_arch_get_call_filter              (void) MONO_INTERNAL;
 gpointer mono_arch_get_restore_context          (void) MONO_INTERNAL;
 gboolean mono_arch_handle_exception             (void *sigctx, gpointer obj, gboolean test_only) MONO_INTERNAL;
+void     mono_arch_handle_altstack_exception    (void *sigctx, gpointer fault_addr, gboolean stack_ovf) MONO_INTERNAL;
 gpointer mono_arch_ip_from_context              (void *sigctx) MONO_INTERNAL;
 void     mono_arch_sigctx_to_monoctx            (void *sigctx, MonoContext *ctx) MONO_INTERNAL;
 void     mono_arch_monoctx_to_sigctx            (MonoContext *mctx, void *ctx) MONO_INTERNAL;
@@ -1012,6 +1023,10 @@ void     mono_arch_patch_delegate_trampoline    (guint8 *code, guint8 *tramp, gs
 gpointer mono_arch_get_this_arg_from_call       (MonoMethodSignature *sig, gssize *regs, guint8 *code);
 gpointer mono_arch_get_delegate_invoke_impl     (MonoMethodSignature *sig, gboolean has_target);
 gpointer mono_arch_create_specific_trampoline   (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len) MONO_INTERNAL;
+void        mono_arch_emit_imt_argument         (MonoCompile *cfg, MonoCallInst *call) MONO_INTERNAL;
+MonoMethod* mono_arch_find_imt_method           (gpointer *regs, guint8 *code) MONO_INTERNAL;
+MonoObject* mono_arch_find_this_argument        (gpointer *regs, MonoMethod *method) MONO_INTERNAL;
+gpointer    mono_arch_build_imt_thunk           (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count) MONO_INTERNAL;
 
 /* Exception handling */
 gboolean mono_handle_exception                  (MonoContext *ctx, gpointer obj,

@@ -222,6 +222,10 @@ mono_runtime_cleanup (MonoDomain *domain)
 	mono_type_initialization_cleanup ();
 
 	mono_monitor_cleanup ();
+
+#ifndef PLATFORM_WIN32
+	_wapi_cleanup ();
+#endif
 }
 
 static MonoDomainFunc quit_function = NULL;
@@ -819,6 +823,7 @@ shadow_copy_sibling (gchar *src, gint srclen, const char *extension, gchar *targ
 	strcpy (target + targetlen - tail_len, extension);
 	dest = g_utf8_to_utf16 (target, strlen (target), NULL, NULL, NULL);
 	
+	DeleteFile (dest);
 	copy_result = CopyFile (orig, dest, FALSE);
 	g_free (orig);
 	g_free (dest);
@@ -851,14 +856,14 @@ get_shadow_assembly_location (const char *filename)
 {
 	gint32 hash = 0, hash2 = 0;
 	char name_hash [9];
-	char path_hash [19];
+	char path_hash [30];
 	char *bname = g_path_get_basename (filename);
 	MonoDomain *domain = mono_domain_get ();
 	
 	hash = get_cstring_hash (bname);
 	hash2 = get_cstring_hash (g_path_get_dirname (filename));
 	g_snprintf (name_hash, sizeof (name_hash), "%08x", hash);
-	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x", hash ^ hash2, hash2);
+	g_snprintf (path_hash, sizeof (path_hash), "%08x_%08x_%08x", hash ^ hash2, hash2, domain->shadow_serial);
 	return g_build_filename (mono_string_to_utf8 (domain->setup->dynamic_base), 
 				 "assembly", 
 				 "shadow", 
@@ -969,6 +974,7 @@ make_shadow_copy (const char *filename)
 
 	orig = g_utf8_to_utf16 (filename, strlen (filename), NULL, NULL, NULL);
 	dest = g_utf8_to_utf16 (shadow, strlen (shadow), NULL, NULL, NULL);
+	DeleteFile (dest);
 	copy_result = CopyFile (orig, dest, FALSE);
 	g_free (dest);
 	g_free (orig);
@@ -1166,9 +1172,9 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoString *fname, MonoBoolean re
 
 MonoReflectionAssembly *
 ves_icall_System_AppDomain_LoadAssemblyRaw (MonoAppDomain *ad, 
-											MonoArray *raw_assembly,
-											MonoArray *raw_symbol_store, MonoObject *evidence,
-											MonoBoolean refonly)
+					    MonoArray *raw_assembly,
+					    MonoArray *raw_symbol_store, MonoObject *evidence,
+					    MonoBoolean refonly)
 {
 	MonoAssembly *ass;
 	MonoReflectionAssembly *refass = NULL;

@@ -27,6 +27,357 @@
 
 	* mono-debug.c (mono_debug_debugger_version): New public variable.
 
+2007-07-31  William Holmes  <billholmes54@gmail.com>
+
+	* metadata.c Changed mono_type_create_from_typespec to not insert
+	  the type into the has map until after
+	  do_mono_metadata_parse_type has completed.
+	Fixes Bug #82194
+	Code is contributed under MIT/X11 license.
+
+2007-07-31  Zoltan Varga  <vargaz@gmail.com>
+
+	* icall.c (ves_icall_Type_GetMethodsByName): Avoid a crash when called on a
+	generic parameter. Fixes #82211.
+
+2007-07-27  Jb Evain  <jbevain@novell.com>
+
+	* pedump.c (dump_metadata, dump_metadata_header): dump
+	versions contained in the metadata header.
+
+Fri Jul 27 17:07:40 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* threads.c: register small_id_table with the GC.
+
+2007-07-27  Mark Probst  <mark.probst@gmail.com>
+
+	* threads.c, threads.h, class-internals.h, object-internals.h:
+	Hazard pointers, to be used by lock-free parallel algorithms.
+
+2007-07-26  Dick Porter  <dick@ximian.com>
+
+	* appdomain.c (mono_runtime_cleanup): Invoke io-layer cleanup
+	routine on non-windows platforms, as I've not managed to think of
+	a non-kludgy way of doing this.  Finishes off bug 78739.
+
+Wed Jul 25 18:06:33 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* object.c: properly setup interface_bitmap in proxy vtables.
+
+2007-07-25  Marek Habersack  <mhabersack@novell.com>
+
+	* appdomain.c (get_shadow_assembly_location): do not use TickCount
+	to create unique shadow copy target directories, use the domain's
+	serial number instead. Each domain gets a unique target directory
+	that way.
+
+	* domain.c (mono_domain_create): added code to increment domain
+	shadow copy serial number and cache the value in the current
+	domain structure.
+
+	* domain-internals.h (struct _MonoDomain): added a new field -
+	shadow_serial to hold the serial number used in generation of
+	shadow-copy directories. This is to make sure that the directory
+	name is unique for each and every domain created. We avoid a race
+	condition with overriding assemblies already in use by other app
+	domains.
+
+2007-07-24  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* class.c (mono_bounded_array_class_get): fixed memory leak when 
+	binding generic parameters.
+
+2007-07-24  Raja R Harinath  <rharinath@novell.com>
+
+	* metadata.c (do_mono_metadata_parse_generic_class): Use
+	mono_metadata_lookup_generic_class.  Don't g_assert on a metadata
+	error.
+
+Tue Jul 24 15:15:19 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* loader.c, class-internals.h, reflection.c: removed the per-method
+	generics hashtable: we use the global one through the call of
+	mono_class_inflate_generic_method ().
+
+Mon Jul 23 19:43:14 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* class.c, metadata.c, class-internals.h: introduce yet another
+	generics global cache for inflated methods (fixes 98% of the perf
+	issue in bug #81806).
+
+2007-07-23  Raja R Harinath  <rharinath@novell.com>
+
+	Fix #81035 -- avoid allocating MonoGenericInsts willy-nilly
+	* metadata.c (mono_metadata_lookup_generic_inst): Kill.
+	(mono_metadata_get_generic_inst): New.  Given a list of MonoType*,
+	return a MonoGenericInst containing (a copy) of those types.
+	(mono_metadata_inflate_generic_inst): Update to changes.
+	(mono_metadata_parse_generic_inst): Likewise.
+	(mono_get_shared_generic_inst): Likewise.
+	* reflection.c (mono_class_bind_generic_parameters): Likewise.
+	(mono_reflection_bind_generic_method_parameters): Likewise.
+	* metadata-internals.h: Likewise.
+	* icall.c (free_generic_context): Kill.
+	(init_generic_context_from_args): Use mono_metadata_get_generic_inst.
+
+	* reflection.c (reflection_methodbuilder_to_mono_method): Use
+	mono_metadata_type_dup.
+	* marshal.c (mono_mb_create_method): Likewise.
+
+	* metadata.c (mono_metadata_type_dup): Rename from
+	mono_metadata_type_dup_mp.  Take an optional mempool instead of a
+	MonoImage.  Handle a few more cases, esp. when no mempool is given.
+	* marshal.c, metadata-internals.h: Update to changes.
+
+Mon Jul 23 11:43:31 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* class.c: fixed a small leak for array classes and removed warning.
+
+2007-07-22  Zoltan Varga  <vargaz@gmail.com>
+
+	* loader.c (mono_method_get_param_token): Make this work on generic methods.
+	Return 0x8000000 for return parameters. Fixes #82161.
+
+2007-07-21  Marek Habersack  <grendello@gmail.com>
+
+	* appdomain.c (get_shadow_assembly_location): append the current
+	ticks value to the path. Avoids overwriting the same assemblies by
+	several threads at the same time.
+
+2007-07-20  Atsushi Enomoto  <atsushi@ximian.com>
+	and Raja R Harinath  <rharinath@novell.com>
+
+	* icall.c (ves_icall_MonoMethod_get_IsGenericMethodDefinition):
+	Simplify slightly.
+	(ves_icall_MonoMethod_GetGenericMethodDefinition): Update
+	property for testing if a method is a generic method definition.
+
+2007-07-20  Atsushi Enomoto  <atsushi@ximian.com>
+
+	* domain-internals.h : added 2.0 member fields to MonoAppDomainSetup.
+
+2007-07-19  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c: used function from private branch, reverted to the one in class.h 
+
+2007-07-19  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c: a typo slipped in and the code wont compile
+
+2007-07-19  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c: now all code use IS_MANAGED_POINTER and UNMASK_TYPE macros.
+	disabled box instruction as it is doing the wrong thing
+	improved stack dump messages, now it is easier to debug type related issues
+
+
+2007-07-19  Juraj Skripsky  <js@hotfeet.ch>
+
+	* icall.c (ves_icall_System_MonoType_getFullName): Fix a leak. 
+
+2007-07-19  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c: changed MONO_TYPE_TYPEDBYREF stack type from 
+	TYPE_COMPLEX to TYPE_PTR, it did not make any sense to be
+	grouped with class and valuetype. This change will simply 
+	the code as it should be handled just like unmanaged pointers.
+
+2007-07-19  Mark Probst  <mark.probst@gmail.com>
+
+	* class.c (concat_two_strings_with_zero): Fixed a silly bug.
+
+2007-07-19  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c: several stack merge issues fixed, reference comparisons now
+	check the type size. strict type check now works correctly.
+	added more uses of IS_MANAGED_POINTER macro.
+	fixed issues pointed by running the test suite against .net.
+	
+
+2007-07-19  Mark Probst  <mark.probst@gmail.com>
+
+	* class.c, loader.c, class-internals.h: Removed the
+	MonoLoaderErrorKind enum and replaced it with the MONO_EXCEPTION_
+	defines.
+
+	* icall.c: Better error checking in some internal reflection
+	methods.
+
+2007-07-18  William Holmes  <billholmes54@gmail.com>
+
+        * filewatcher.c : removed unused variable 'filename' in 
+	  ves_icall_System_IO_FSW_SupportsFSW
+
+Mon Jul 16 19:36:16 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* reflection.c, class.c, icall.c, loader.c: mono_get_inflated_method () is
+	obsolete, removed.
+
+2007-07-15  Zoltan Varga  <vargaz@gmail.com>
+
+	* icall.c (ves_icall_System_Reflection_FieldInfo_GetTypeModifiers): New icall.
+	
+	* icall.c (ves_icall_System_Reflection_Module_ResolveSignature): New icall.
+
+2007-07-14  Zoltan Varga  <vargaz@gmail.com>
+
+	* icall.c (ves_icall_System_Reflection_Module_ResolveMethodToken): 
+	Implement generics support.
+	(ves_icall_System_Reflection_Module_ResolveFieldToken): Ditto.
+
+	* icall.c (ves_icall_System_Reflection_Module_ResolveTypeToken): Add new
+	type_args and method_args arguments.
+	(ves_icall_System_Reflection_Module_ResolveMethodToken): Ditto.
+	(ves_icall_System_Reflection_Module_ResolveFieldToken): Ditto.
+	(ves_icall_System_Reflection_Module_ResolveMemberToken): Ditto.
+
+2007-07-13  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* reflection.c: patch from Thong Nguyen to fix atribute resolution.
+	  It adds a rootimage parameter to mono_reflection_get_type_internal,
+	  adds new function mono_reflection_get_type_with_rootimage and use
+	  the rootimage to resolve the types instead of the current image
+
+2007-07-13  Rolf Bjarne Kvinge  <RKvinge@novell.com>
+
+	* culture-info-table.h: Forgot to update after r78304.
+
+2007-07-13  Raja R Harinath  <rharinath@novell.com>
+
+	* class.c (mono_class_is_open_constructed_type)
+	<MONO_TYPE_GENERICINST>: Don't recompute a computed field.
+
+2007-07-12  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* class.c (mono_bounded_array_class_get):  method fails if used with
+	an incomplete TypeBuilder enum (no basetype field), fixed it by 
+	avoiding calculating the size for such array as it cannot be instantiated.
+	Fix bug #82015
+
+2007-07-12  Raja R Harinath  <rharinath@novell.com>
+
+	* class-internals.h (_MonoGenericInst::is_reference): Remove bogus
+	field.
+	* metadata.c, reflection.c: Update to changes.
+
+2007-07-11  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* class.c, class-internal.h: added mono_type_is_valid_enum_basetype and
+	mono_class_is_valid_enum, they are used to valide a enum when loading.
+	* reflection.c: used new functions to throw TypeLoadException when and
+	invalid enum is build with TypeBuilder. Fixes #82018
+  
+Wed Jul 11 14:47:07 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* object.c: forgot commit of mono_class_setup_methods () to access
+	iface->methods.
+	* object-internals.h: added a few more handy fields to
+	MonoIMTCheckItem.
+
+2007-07-11  Zoltan Varga  <vargaz@gmail.com>
+
+	* object.c (build_imt): Call mono_class_setup_methods () before accessing 
+	iface->methods.
+
+Tue Jul 10 16:49:01 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* class-internals.h, object-internals.h, object.c: IMT-based
+	interface invocation core from Massimiliano Mantione
+	(massi@ximian.com) with a reworked arch-specific interface,
+	bsearch implementation and a few bugfixes and memory savings by me.
+
+2007-07-10  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* class.c (mono_class_create_from_typedef): mono would segfault if 
+	an enum did not have a __value field. It now throws a TypeLoadException
+	for such cases. Fix bug #82022
+
+2007-07-10  Zoltan Varga  <vargaz@gmail.com>
+
+	* marshal.c (mono_marshal_string_to_utf16_copy): Fix allocation size.
+
+2007-07-09  Mark Probst  <mark.probst@gmail.com>
+
+	* class.c (mono_class_init): If a class is already inited but has
+	an exception_type set, return FALSE, not TRUE.  Fixes: 82050.
+
+2007-07-09  Mark Probst  <mark.probst@gmail.com>
+
+	* class.c: Properly handle the case of an unimplemented interface
+	method.  Fixes: 81673.
+
+Mon Jul 9 16:21:43 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* class-internals.h, object.c: cleanup patch from massi: use
+	MonoVTable->interface_bitmap since the vtable interfaces offset array
+	is going away.
+
+2007-07-10  Zoltan Varga  <vargaz@gmail.com>
+
+	* icall-def.h icall.c: Remove Module:get_MDStreamVersion icall and add a new
+	GetMDStreamVersion icall instead.
+
+Mon Jul 9 11:34:17 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* filewatcher.c: patch from Thong Nguyen <tum@veridicus.com> to
+	not use mono_dl_build_path() with a full library name: makes
+	fallbacks to libgaim and libfam work.
+
+2007-07-06  William Holmes  <billholmes54@gmail.com>
+
+	* assembly.c: Added a continue statement in probe_for_partial_name when
+	 parse_assembly_directory_name fails.  Fixes : 82002
+
+2007-07-06  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c (check_unmanaged_pointer_type): renamed to check_unverifiable_type
+	and added a verification  for TYPEDBYREF.
+	* verify.c (verify_stack_type_compatibility): fix handling of byref types,
+	make native int interchangeable with int32 and some small cleanup and formating.
+	* verify.c (push_arg): only ldarg on invalid argument is valid (but not verifiable) and
+	handle byref of byref.
+	* verify.c (push_local): handle byref of byref.
+	* verify.c (do_binop): invalid mix of values is unverifiable
+	* verify.c (do_invoke_method): fixed the handling of bad params on stack and
+	added visibility checks
+	* verify.c (field related method): added visibility checks
+	* verify.c (do_push_field): cannot take the address of a temporary valuetype field
+
+2007-07-06  Zoltan Varga  <vargaz@gmail.com>
+
+	* marshal.c (mono_marshal_string_to_utf16_copy): Null terminate the
+	string.
+
+2007-07-05  Zoltan Varga  <vargaz@gmail.com>
+
+	* profiler.c (mono_profiler_load): Fix an off-by-one error.
+
+	* marshal.c (emit_marshal_string): When returning a string from managed code,
+	allways make a copy even for unicode strings. Fixes #81990.
+
+Wed Jul 4 11:53:57 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* object.c: cleaned up mono_runtime_invoke_array () and fixed handling
+	of byref generic inst types (bug #81997).
+
+2007-07-03  Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* class.c: moved methods mono_method_can_access_field and mono_method_can_access_method from mini/mini.c
+	* class.h: added declarations of mono_method_can_access_field() and mono_method_can_access_method()
+
+2007-07-02  Zoltan Varga  <vargaz@gmail.com>
+
+	* marshal.c (emit_marshal_string): Add support for unicode strings in
+	MARSHAL_ACTION_MANAGED_CONV_RESULT. Fixes #81990.
+
+2007-07-02 Rodrigo Kumpera  <rkumpera@novell.com>
+
+	* verify.c: field load/store are now verified, missing only access checks now
+
+2007-06-28  Martin Baulig  <martin@ximian.com>
+
+	* mono-debug.c (mono_debug_debugger_version): New public variable.
+
 2007-06-24  Gert Driesen  <drieseng@users.sourceforge.net>
 
 	* locales.c: When constructing DateTimeFormat or NumberFormat for

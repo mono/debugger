@@ -635,7 +635,8 @@ mini_usage (void)
 		"    --runtime=VERSION      Use the VERSION runtime, instead of autodetecting\n"
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
-		"    --security             Turns on the security manager (unsupported, default is off)\n");
+		"    --security[=mode]      Turns on the unsupported security manager (off by default)\n"
+		"                           mode is one of cas or core-clr\n");
 }
 
 static void
@@ -673,6 +674,12 @@ static const char info[] =
         "\tArchitecture:  " ARCHITECTURE "\n"
 	"\tDisabled:      " DISABLED_FEATURES "\n"
 	"";
+
+#ifndef MONO_ARCH_AOT_SUPPORTED
+#define error_if_aot_unsupported() do {fprintf (stderr, "AOT compilation is not supported on this platform.\n"); exit (1);} while (0)
+#else
+#define error_if_aot_unsupported()
+#endif
 
 int
 mono_main (int argc, char* argv[])
@@ -809,8 +816,10 @@ mono_main (int argc, char* argv[])
 			mono_jit_stats.enabled = TRUE;
 #ifndef DISABLE_AOT
 		} else if (strcmp (argv [i], "--aot") == 0) {
+			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
 		} else if (strncmp (argv [i], "--aot=", 6) == 0) {
+			error_if_aot_unsupported ();
 			mono_compile_aot = TRUE;
 			aot_options = &argv [i][6];
 #endif
@@ -853,8 +862,20 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--debug") == 0) {
 			enable_debugging = TRUE;
 		} else if (strcmp (argv [i], "--security") == 0) {
-			mono_use_security_manager = TRUE;
+			mono_security_mode = MONO_SECURITY_MODE_CAS;
 			mono_activate_security_manager ();
+		} else if (strncmp (argv [i], "--security=", 11) == 0) {
+			if (strcmp (argv [i] + 11, "temporary-smcs-hack") == 0) {
+				mono_security_mode = MONO_SECURITY_MODE_SMCS_HACK;
+			} else if (strcmp (argv [i] + 11, "core-clr") == 0) {
+				mono_security_mode = MONO_SECURITY_MODE_CORE_CLR;
+			} else if (strcmp (argv [i] + 11, "cas") == 0){
+				mono_security_mode = MONO_SECURITY_MODE_CAS;
+				mono_activate_security_manager ();
+			} else {
+				fprintf (stderr, "error: --security= option has invalid argument (cas or core-clr)\n");
+				return 1;
+			}
 		} else if (strcmp (argv [i], "--desktop") == 0) {
 #if defined (HAVE_BOEHM_GC)
 			GC_dont_expand = 1;
@@ -1170,6 +1191,25 @@ mono_jit_init (const char *file)
 	return mini_init (file, NULL);
 }
 
+/**
+ * mono_jit_init_version:
+ * @file: the initial assembly to load
+ * @runtime_version: the version of the runtime to load
+ *
+ * Use this version when you want to force a particular runtime
+ * version to be used.  By default Mono will pick the runtime that is
+ * referenced by the initial assembly (specified in @file), this
+ * routine allows programmers to specify the actual runtime to be used
+ * as the initial runtime is inherited by all future assemblies loaded
+ * (since Mono does not support having more than one mscorlib runtime
+ * loaded at once).
+ *
+ * The @runtime_version can be one of these strings: "v1.1.4322" for
+ * the 1.1 runtime or "v2.0.50727"  for the 2.0 runtime. 
+ *
+ * Returns: the MonoDomain representing the domain where the assembly
+ * was loaded.
+ */
 MonoDomain * 
 mono_jit_init_version (const char *file, const char *runtime_version)
 {

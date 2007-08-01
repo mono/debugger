@@ -1,3 +1,36 @@
+2007-07-26  Dick Porter  <dick@ximian.com>
+
+	* handles-private.h: 
+	* thread-private.h: 
+	* handles.h: 
+	* critical-sections.c: 
+	* handles.c: 
+	* critical-section-private.h:
+	* error.h: 
+	* threads.c: 
+	* error.c: Clean up TLS and pthreads structures.  Finishes off bug
+	78739.
+
+	* collection.c (collection_thread): Exit the collection thread if
+	the io-layer has been cleaned up.
+
+	* mono-mutex.h (mono_mutexattr_destroy): Add this define too
+
+Mon Jul 23 10:40:35 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* timefuncs.c: make TickCount measure from boot time if it's
+	available.
+
+2007-07-19  Juraj Skripsky  <js@hotfeet.ch>
+
+	* io.c (MoveFile): Fix a leak. 
+
+Fri Jul 13 12:46:15 CEST 2007 Paolo Molaro <lupus@ximian.com>
+
+	* handles-private.h, handles.c, thread-private.h, threads.c,
+	uglify.h, wait.c: temporarily revert the alertable wait changes
+	(r79386) until the deadlock issues are fixed.
+
 2007-06-22  Dick Porter  <dick@ximian.com>
 
 	* shared.c: The non-shared mutexes weren't being initialised properly
