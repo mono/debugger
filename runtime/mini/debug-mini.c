@@ -709,12 +709,6 @@ mono_debugger_check_breakpoints (MonoMethod *method, MonoDebugMethodAddress *deb
 		if (method != info->method)
 			continue;
 
-#if 0
-		g_message (G_STRLOC ": %p - %s.%s.%s - %p - %x - %d", method,
-			   method->klass->name_space, method->klass->name, method->name, debug_info,
-			   mono_method_get_token (method), method->is_inflated);
-#endif
-
 		mono_debugger_event (MONO_DEBUGGER_EVENT_JIT_BREAKPOINT,
 				     (guint64) (gsize) debug_info, info->index);
 	}
