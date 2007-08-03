@@ -292,8 +292,6 @@ namespace Mono.Debugger.Backends
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
 
-			int address_size          = memory.TargetInfo.TargetAddressSize;
-
 			SymbolTableSize           = reader.ReadInteger ();
 
 			reader.Offset = 24;

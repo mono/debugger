@@ -1329,7 +1329,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				TargetAddress wrapper_data = reader.ReadAddress ();
 				TargetAddress method = reader.ReadAddress ();
-				TargetAddress address_list = reader.ReadAddress ();
+				reader.ReadAddress (); /* address_list */
 				TargetAddress code_start = reader.ReadAddress ();
 				TargetAddress wrapper_addr = reader.ReadAddress ();
 				int code_size = reader.BinaryReader.ReadInt32 ();

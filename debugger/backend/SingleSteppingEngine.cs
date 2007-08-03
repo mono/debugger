@@ -2973,7 +2973,7 @@ namespace Mono.Debugger.Backends
 			try {
 				args = null;
 				return CallbackCompleted (cevent.Data1, cevent.Data2);
-			} catch (Exception ex) {
+			} catch (Exception) {
 				RestoreStack ();
 				return EventResult.CompletedCallback;
 			}

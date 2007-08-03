@@ -2767,7 +2767,6 @@ namespace Mono.Debugger.Backends
 					break;
 				default:
 					throw new InternalError  ();
-					break;
 				}
 			}
 

@@ -206,10 +206,7 @@ namespace Mono.Debugger.Backends
 				breakpoints.Keys.CopyTo (indices, 0);
 
 				for (int i = 0; i < indices.Length; i++) {
-					int idx = indices [i];
-					Breakpoint bpt = (Breakpoint) breakpoints [idx];
-
-					RemoveBreakpoint (inferior, idx);
+					RemoveBreakpoint (inferior, indices [i]);
 				}
 			} finally {
 				Unlock ();
