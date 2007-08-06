@@ -469,7 +469,8 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		internal override int InsertBreakpoint (Breakpoint breakpoint,
+							TargetAddress address)
 		{
 			check_alive ();
 			return servant.InsertBreakpoint (breakpoint, address);
@@ -479,31 +480,11 @@ namespace Mono.Debugger
 		//   Remove breakpoint @index.  @index is the breakpoint number which has
 		//   been returned by InsertBreakpoint().
 		// </summary>
-		public void RemoveBreakpoint (int index)
+		internal override void RemoveBreakpoint (int index)
 		{
 			check_disposed ();
 			if (servant != null)
 				servant.RemoveBreakpoint (index);
-		}
-
-		// <summary>
-		//   Insert a breakpoint at function @func.
-		//
-		//   Returns a number which may be passed to RemoveBreakpoint() to remove
-		//   the breakpoint.
-		// </summary>
-		public int InsertBreakpoint (Breakpoint breakpoint, TargetFunctionType func)
-		{
-			CommandResult result;
-
-			lock (this) {
-				check_alive ();
-				result = servant.InsertBreakpoint (breakpoint, func);
-			}
-
-			result.Wait ();
-
-			return (int) result.Result;
 		}
 
 		// <summary>

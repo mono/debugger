@@ -1563,7 +1563,7 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
 		{
 			return (int) SendCommand (delegate {
 				return process.BreakpointManager.InsertBreakpoint (
@@ -1571,18 +1571,12 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		public override void RemoveBreakpoint (int index)
+		internal override void RemoveBreakpoint (int index)
 		{
 			SendCommand (delegate {
 				process.BreakpointManager.RemoveBreakpoint (inferior, index);
 				return null;
 			});
-		}
-
-		public override CommandResult InsertBreakpoint (Breakpoint breakpoint,
-								TargetFunctionType func)
-		{
-			return StartOperation (new OperationInsertBreakpoint (this, breakpoint, func));
 		}
 
 		static int next_event_index = 0;
@@ -3587,40 +3581,6 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE, "{0} runtime class init done", sse);
 			RestoreStack ();
 			return EventResult.ResumeOperation;
-		}
-	}
-
-	protected class OperationInsertBreakpoint : OperationCallback
-	{
-		public readonly Breakpoint Breakpoint;
-		public readonly MonoFunctionType Function;
-
-		TargetAddress method, address;
-
-		public OperationInsertBreakpoint (SingleSteppingEngine sse,
-						  Breakpoint breakpoint, TargetFunctionType func)
-			: base (sse)
-		{
-			this.Breakpoint = breakpoint;
-			this.Function = (MonoFunctionType) func;
-		}
-
-		protected override void DoExecute ()
-		{
-			method = Function.GetMethodAddress (sse.Thread);
-			inferior.CallMethod (sse.MonoDebuggerInfo.CompileMethod, method.Address, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			address = new TargetAddress (inferior.AddressDomain, data1);
-
-			int index = sse.process.BreakpointManager.InsertBreakpoint (
-				inferior, Breakpoint, address);
-
-			Result.Result = index;
-			RestoreStack ();
-			return EventResult.CompletedCallback;
 		}
 	}
 

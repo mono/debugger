@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger
 {
 	public abstract class TargetMemoryAccess : DebuggerMarshalByRefObject
@@ -28,6 +30,9 @@ namespace Mono.Debugger
 
 		public abstract Registers GetRegisters ();
 
-		public abstract int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address);
+		internal abstract int InsertBreakpoint (Breakpoint breakpoint,
+							TargetAddress address);
+
+		internal abstract void RemoveBreakpoint (int index);
 	}
 }

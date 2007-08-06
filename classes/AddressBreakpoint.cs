@@ -6,7 +6,7 @@ namespace Mono.Debugger
 {
 	public class AddressBreakpoint : Breakpoint
 	{
-		BreakpointHandle handle;
+		AddressBreakpointHandle handle;
 		TargetAddress address = TargetAddress.Null;
 		int domain;
 
@@ -57,27 +57,28 @@ namespace Mono.Debugger
 			return handle;
 		}
 
+		internal void Insert (Inferior inferior)
+		{
+			if (handle == null)
+				handle = new AddressBreakpointHandle (this, address);
+
+			handle.Insert (inferior);
+		}
+
+		internal void Remove (Inferior inferior)
+		{
+			if (handle != null) {
+				handle.Remove (inferior);
+				handle = null;
+			}
+		}
+
 		public override void Activate (Thread target)
 		{
-			if (handle != null)
-				return;
-
-			int breakpoint_id;
-			switch (Type) {
-			case EventType.Breakpoint:
-				breakpoint_id = target.InsertBreakpoint (this, address);
-				handle = new SimpleBreakpointHandle (this, breakpoint_id);
-				break;
-
-			case EventType.WatchRead:
-			case EventType.WatchWrite:
-				breakpoint_id = target.InsertBreakpoint (this, address);
-				handle = new SimpleBreakpointHandle (this, breakpoint_id);
-				break;
-
-			default:
-				throw new InternalError ();
-			}
+			Resolve (target, target.CurrentFrame);
+			if (handle == null)
+				throw new TargetException (TargetError.LocationInvalid);
+			handle.Insert (target);
 		}
 
 		public override void Deactivate (Thread target)

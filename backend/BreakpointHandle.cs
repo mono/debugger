@@ -75,6 +75,18 @@ namespace Mono.Debugger.Backends
 				target.RemoveBreakpoint (index);
 			index = -1;
 		}
+
+		internal void Insert (TargetMemoryAccess target)
+		{
+			index = target.InsertBreakpoint (Breakpoint, Address);
+		}
+
+		internal void Remove (TargetMemoryAccess target)
+		{
+			if (index > 0)
+				target.RemoveBreakpoint (index);
+			index = -1;
+		}
 	}
 
 	internal class FunctionBreakpointHandle : BreakpointHandle
