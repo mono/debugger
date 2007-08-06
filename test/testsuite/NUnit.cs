@@ -258,16 +258,9 @@ namespace Mono.Debugger.Tests
 					     FileName, child.ExitCode, child.StandardError.ReadToEnd ());
 		}
 
-		static DateTime total_time = DateTime.MinValue;
-		DateTime start_time;
-
 		[TestFixtureSetUp]
 		public virtual void SetUp ()
 		{
-			if (total_time == DateTime.MinValue)
-				total_time = DateTime.Now;
-			start_time = DateTime.Now;
-
 			interpreter = new NUnitInterpreter (
 				config, options, inferior_stdout, inferior_stderr);
 
@@ -278,9 +271,6 @@ namespace Mono.Debugger.Tests
 		[TestFixtureTearDown]
 		public virtual void TearDown ()
 		{
-			Console.WriteLine ("TIMINGS: {0} {1} {2} {3}", Path.GetFileName (FileName),
-					   breakpoint_time, DateTime.Now - start_time,
-					   DateTime.Now - total_time);
 			interpreter.Dispose ();
 			interpreter = null;
 			GC.Collect ();
@@ -452,13 +442,9 @@ namespace Mono.Debugger.Tests
 			return AssertBreakpoint (location.ToString ());
 		}
 
-		static TimeSpan breakpoint_time;
-
 		public int AssertBreakpoint (string location)
 		{
-			DateTime start = DateTime.Now;
 			object result = AssertExecute ("break " + location);
-			breakpoint_time += DateTime.Now - start;
 			if (result == null) {
 				Assert.Fail ("Failed to insert breakpoint.");
 				return -1;
