@@ -67,7 +67,7 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_main2, "X.Main()", LineMain2);
 
-			AssertExecute ("disable " + bpt_hello);
+			AssertExecute ("delete " + bpt_hello);
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Hello World from Test!");

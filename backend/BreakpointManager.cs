@@ -8,7 +8,8 @@ namespace Mono.Debugger.Backends
 	internal class BreakpointManager : IDisposable
 	{
 		IntPtr _manager;
-		Hashtable breakpoints;
+		Hashtable index_hash;
+		Hashtable entry_hash;
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_breakpoint_manager_new ();
@@ -39,7 +40,8 @@ namespace Mono.Debugger.Backends
 
 		public BreakpointManager ()
 		{
-			breakpoints = new Hashtable ();
+			index_hash = new Hashtable ();
+			entry_hash = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_new ();
 		}
 
@@ -47,12 +49,18 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 
-			breakpoints = new Hashtable ();
+			index_hash = new Hashtable ();
+			entry_hash = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_clone (old.Manager);
 
-			foreach (int index in old.breakpoints.Keys) {
-				BreakpointHandle breakpoint = (BreakpointHandle) old.breakpoints [index];
-				breakpoints.Add (index, breakpoint);
+			foreach (int index in old.index_hash.Keys) {
+				BreakpointHandle handle = (BreakpointHandle) old.index_hash [index];
+				index_hash.Add (index, handle);
+			}
+
+			foreach (BreakpointEntry entry in old.entry_hash.Keys) {
+				int index = (int) old.entry_hash [entry];
+				entry_hash.Add (entry, index);
 			}
 
 			Unlock ();
@@ -87,7 +95,7 @@ namespace Mono.Debugger.Backends
 
 				index = mono_debugger_breakpoint_info_get_id (info);
 				is_enabled = mono_debugger_breakpoint_info_get_is_enabled (info);
-				return (BreakpointHandle) breakpoints [index];
+				return (BreakpointHandle) index_hash [index];
 			} finally {
 				Unlock ();
 			}
@@ -97,7 +105,7 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 			try {
-				return (BreakpointHandle) breakpoints [breakpoint];
+				return (BreakpointHandle) index_hash [breakpoint];
 			} finally {
 				Unlock ();
 			}
@@ -118,8 +126,8 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int InsertBreakpoint (Inferior inferior, BreakpointHandle breakpoint,
-					     TargetAddress address)
+		public int InsertBreakpoint (Inferior inferior, BreakpointHandle handle,
+					     TargetAddress address, int domain)
 		{
 			Lock ();
 			try {
@@ -134,7 +142,7 @@ namespace Mono.Debugger.Backends
 						old.Breakpoint.Index, address);
 
 				int dr_index = -1;
-				switch (breakpoint.Breakpoint.Type) {
+				switch (handle.Breakpoint.Type) {
 				case EventType.Breakpoint:
 					index = inferior.InsertBreakpoint (address);
 					break;
@@ -155,19 +163,31 @@ namespace Mono.Debugger.Backends
 					throw new InternalError ();
 				}
 
-				breakpoints.Add (index, breakpoint);
+				index_hash.Add (index, handle);
+				entry_hash.Add (new BreakpointEntry (handle, domain), index);
 				return index;
 			} finally {
 				Unlock ();
 			}
 		}
 
-		public void RemoveBreakpoint (Inferior inferior, int index)
+		public void RemoveBreakpoint (Inferior inferior, BreakpointHandle handle)
 		{
 			Lock ();
 			try {
-				inferior.RemoveBreakpoint (index);
-				breakpoints.Remove (index);
+				Console.WriteLine ("REMOVE BREAKPOINT: {0} {1}", handle, entry_hash.Count);
+				BreakpointEntry[] entries = new BreakpointEntry [entry_hash.Count];
+				entry_hash.Keys.CopyTo (entries, 0);
+				for (int i = 0; i < entries.Length; i++) {
+					Console.WriteLine ("REMOVE BPT: {0} {1} {2}", handle, i,
+							   entries [i]);
+					if (entries [i].Handle != handle)
+						continue;
+					int index = (int) entry_hash [entries [i]];
+					inferior.RemoveBreakpoint (index);
+					entry_hash.Remove (entries [i]);
+					index_hash.Remove (index);
+				}
 			} finally {
 				Unlock ();
 			}
@@ -177,17 +197,17 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 			try {
-				int[] indices = new int [breakpoints.Count];
-				breakpoints.Keys.CopyTo (indices, 0);
+				int[] indices = new int [index_hash.Count];
+				index_hash.Keys.CopyTo (indices, 0);
 
 				for (int i = 0; i < indices.Length; i++) {
 					int idx = indices [i];
-					BreakpointHandle handle = (BreakpointHandle) breakpoints [idx];
+					BreakpointHandle handle = (BreakpointHandle) index_hash [idx];
 					SourceBreakpoint bpt = handle.Breakpoint as SourceBreakpoint;
 
 					if ((bpt == null) || !bpt.ThreadGroup.IsSystem) {
 						try {
-							RemoveBreakpoint (inferior, idx);
+							inferior.RemoveBreakpoint (idx);
 						} catch (Exception ex) {
 							Report.Error ("Removing breakpoint {0} failed: {1}",
 								      idx, ex);
@@ -206,12 +226,12 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 			try {
-				int[] indices = new int [breakpoints.Count];
-				breakpoints.Keys.CopyTo (indices, 0);
+				int[] indices = new int [index_hash.Count];
+				index_hash.Keys.CopyTo (indices, 0);
 
 				for (int i = 0; i < indices.Length; i++) {
 					try {
-						RemoveBreakpoint (inferior, indices [i]);
+						inferior.RemoveBreakpoint (indices [i]);
 					} catch (Exception ex) {
 						Report.Error ("Removing breakpoint {0} failed: {1}",
 							      indices [i], ex);
@@ -261,6 +281,35 @@ namespace Mono.Debugger.Backends
 		~BreakpointManager ()
 		{
 			Dispose (false);
+		}
+
+		protected struct BreakpointEntry
+		{
+			public readonly BreakpointHandle Handle;
+			public readonly int Domain;
+
+			public BreakpointEntry (BreakpointHandle handle, int domain)
+			{
+				this.Handle = handle;
+				this.Domain = domain;
+			}
+
+			public override int GetHashCode ()
+			{
+				return Handle.GetHashCode ();
+			}
+
+			public override bool Equals (object obj)
+			{
+				BreakpointEntry entry = (BreakpointEntry) obj;
+
+				return (entry.Handle == Handle) && (entry.Domain == Domain);
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("BreakpointEntry ({0}:{1})", Handle, Domain);
+			}
 		}
 	}
 }

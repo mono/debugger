@@ -404,8 +404,13 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			internal override int InsertBreakpoint (BreakpointHandle handle,
-								TargetAddress address)
+			internal override void InsertBreakpoint (BreakpointHandle handle,
+								 TargetAddress address, int domain)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal override void RemoveBreakpoint (BreakpointHandle handle)
 			{
 				throw new InvalidOperationException ();
 			}
@@ -466,11 +471,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override void Stop ()
-			{
-				throw new InvalidOperationException ();
-			}
-
-			internal override void RemoveBreakpoint (int index)
 			{
 				throw new InvalidOperationException ();
 			}

@@ -465,7 +465,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override void RemoveBreakpoint (int breakpoint)
+		public void RemoveBreakpoint (int breakpoint)
 		{
 			check_error (mono_debugger_server_remove_breakpoint (
 				server_handle, breakpoint));
@@ -982,9 +982,15 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override int InsertBreakpoint (BreakpointHandle handle, TargetAddress address)
+		internal override void InsertBreakpoint (BreakpointHandle handle,
+							 TargetAddress address, int domain)
 		{
-			return breakpoint_manager.InsertBreakpoint (this, handle, address);
+			breakpoint_manager.InsertBreakpoint (this, handle, address, domain);
+		}
+
+		internal override void RemoveBreakpoint (BreakpointHandle handle)
+		{
+			breakpoint_manager.RemoveBreakpoint (this, handle);
 		}
 
 		//

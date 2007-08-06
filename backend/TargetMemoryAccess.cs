@@ -30,9 +30,9 @@ namespace Mono.Debugger
 
 		public abstract Registers GetRegisters ();
 
-		internal abstract int InsertBreakpoint (BreakpointHandle breakpoint,
-							TargetAddress address);
+		internal abstract void InsertBreakpoint (BreakpointHandle breakpoint,
+							 TargetAddress address, int domain);
 
-		internal abstract void RemoveBreakpoint (int index);
+		internal abstract void RemoveBreakpoint (BreakpointHandle handle);
 	}
 }

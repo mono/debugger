@@ -42,7 +42,7 @@ namespace Mono.Debugger.Backends
 		public override void Remove (Thread target)
 		{
 			if (index > 0)
-				target.RemoveBreakpoint (index);
+				target.RemoveBreakpoint (this);
 			index = -1;
 		}
 	}
@@ -50,7 +50,7 @@ namespace Mono.Debugger.Backends
 	internal class AddressBreakpointHandle : BreakpointHandle
 	{
 		public readonly TargetAddress Address;
-		int index = -1;
+		bool has_breakpoint;
 
 		public AddressBreakpointHandle (Breakpoint breakpoint, TargetAddress address)
 			: base (breakpoint)
@@ -60,32 +60,35 @@ namespace Mono.Debugger.Backends
 
 		internal override bool Insert (SingleSteppingEngine sse)
 		{
-			index = sse.Inferior.InsertBreakpoint (this, Address);
+			sse.Inferior.InsertBreakpoint (this, Address, -1);
+			has_breakpoint = true;
 			return false;
 		}
 
 		public override void Insert (Thread target)
 		{
-			index = target.InsertBreakpoint (this, Address);
+			target.InsertBreakpoint (this, Address, -1);
+			has_breakpoint = true;
 		}
 
 		public override void Remove (Thread target)
 		{
-			if (index > 0)
-				target.RemoveBreakpoint (index);
-			index = -1;
+			if (has_breakpoint)
+				target.RemoveBreakpoint (this);
+			has_breakpoint = false;
 		}
 
 		internal void Insert (Inferior inferior)
 		{
-			index = inferior.BreakpointManager.InsertBreakpoint (inferior, this, Address);
+			inferior.InsertBreakpoint (this, Address, -1);
+			has_breakpoint = true;
 		}
 
 		internal void Remove (Inferior inferior)
 		{
-			if (index > 0)
-				inferior.BreakpointManager.RemoveBreakpoint (inferior, index);
-			index = -1;
+			if (has_breakpoint)
+				inferior.RemoveBreakpoint (this);
+			has_breakpoint = false;
 		}
 	}
 
@@ -94,15 +97,12 @@ namespace Mono.Debugger.Backends
 		TargetFunctionType function;
 		bool has_load_handler;
 		int line = -1;
-		int index = -1;
-		int domain;
 
-		public FunctionBreakpointHandle (Breakpoint bpt, int domain,
-						 TargetFunctionType function, int line)
+		public FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function,
+						 int line)
 			: base (bpt)
 		{
 			this.function = function;
-			this.domain = domain;
 			this.line = line;
 		}
 
@@ -112,7 +112,7 @@ namespace Mono.Debugger.Backends
 
 		internal override bool Insert (SingleSteppingEngine sse)
 		{
-			if (has_load_handler || (index > 0))
+			if (has_load_handler)
 				return false;
 
 			throw new InternalError ();
@@ -120,7 +120,7 @@ namespace Mono.Debugger.Backends
 
 		public override void Insert (Thread target)
 		{
-			if (has_load_handler || (index > 0))
+			if (has_load_handler)
 				return;
 
 			has_load_handler = function.InsertBreakpoint (target, MethodLoaded);
@@ -143,24 +143,20 @@ namespace Mono.Debugger.Backends
 				return;
 
 			try {
-				index = target.InsertBreakpoint (this, address);
+				target.InsertBreakpoint (this, address, method.Domain);
 			} catch (TargetException ex) {
 				Report.Error ("Can't insert breakpoint {0} at {1}: {2}",
 					      Breakpoint.Index, address, ex.Message);
-				index = -1;
 			}
 		}
 
 		public override void Remove (Thread target)
 		{
-			if (index > 0)
-				target.RemoveBreakpoint (index);
+			target.RemoveBreakpoint (this);
 
 			if (has_load_handler)
 				function.RemoveBreakpoint (target);
-
 			has_load_handler = false;
-			index = -1;
 		}
 	}
 }

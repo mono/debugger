@@ -9,7 +9,6 @@ namespace Mono.Debugger
 		BreakpointHandle handle;
 		DebuggerSession session;
 		SourceLocation location;
-		int domain;
 
 		public override bool IsPersistent {
 			get { return true; }
@@ -62,7 +61,7 @@ namespace Mono.Debugger
 			if (handle != null)
 				return handle;
 
-			handle = location.ResolveBreakpoint (session, this, domain);
+			handle = location.ResolveBreakpoint (session, this);
 			return handle;
 		}
 

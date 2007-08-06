@@ -1572,19 +1572,20 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		internal override int InsertBreakpoint (BreakpointHandle handle,
-							TargetAddress address)
+		internal override void InsertBreakpoint (BreakpointHandle handle,
+							TargetAddress address, int domain)
 		{
-			return (int) SendCommand (delegate {
-				return process.BreakpointManager.InsertBreakpoint (
-					inferior, handle, address);
+			SendCommand (delegate {
+				process.BreakpointManager.InsertBreakpoint (
+					inferior, handle, address, domain);
+				return null;
 			});
 		}
 
-		internal override void RemoveBreakpoint (int index)
+		internal override void RemoveBreakpoint (BreakpointHandle handle)
 		{
 			SendCommand (delegate {
-				process.BreakpointManager.RemoveBreakpoint (inferior, index);
+				process.BreakpointManager.RemoveBreakpoint (inferior, handle);
 				return null;
 			});
 		}

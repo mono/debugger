@@ -1,5 +1,26 @@
 2007-08-06  Martin Baulig  <martin@ximian.com>
 
+	* backend/TargetMemoryAccess.cs
+	(TargetMemoryAccess.InsertBreakpoint): Return `void'.
+	(TargetMemoryAccess.RemoveBreakpoint): Take a `BreakpointHandle',
+	not an integer index.
+
+	* backend/BreakpointManager.cs
+	(BreakpointManager): Added a second hash table which maps
+	breakpoint handles and appdomains into indices.
+	(BreakpointManager.InsertBreakpoint): Added `int domain' argument.
+	(BreakpointManager.RemoveBreakpoint): Take a `BreakpointHandle'
+	instead of an integer index; remove all breakpoints in all
+	appdomains.
+
+	* classes/SourceLocation.cs
+	(SourceLocation.ResolveBreakpoint): Remove the `domain' argument.
+
+	* test/testsuite/TestAppDomain.cs: Remove the breakpoint instead
+	of disabling it; this must remove it from all appdomains.
+
+2007-08-06  Martin Baulig  <martin@ximian.com>
+
 	* classes/Method.cs
 	(Method.Domain): New public property.
 

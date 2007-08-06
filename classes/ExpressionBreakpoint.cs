@@ -9,7 +9,6 @@ namespace Mono.Debugger
 		public readonly DebuggerSession Session;
 		public readonly LocationType LocationType;
 		BreakpointHandle handle;
-		int domain;
 
 		public override bool IsPersistent {
 			get { return true; }
@@ -29,7 +28,7 @@ namespace Mono.Debugger
 			if (location == null)
 				throw new TargetException (TargetError.LocationInvalid);
 
-			handle = location.ResolveBreakpoint (Session, this, domain);
+			handle = location.ResolveBreakpoint (Session, this);
 			return handle;
 		}
 

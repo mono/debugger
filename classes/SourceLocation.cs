@@ -108,12 +108,12 @@ namespace Mono.Debugger
 		}
 
 		internal BreakpointHandle ResolveBreakpoint (DebuggerSession session,
-							     Breakpoint breakpoint, int domain)
+							     Breakpoint breakpoint)
 		{
 			if (!Resolve (session))
 				throw new TargetException (TargetError.LocationInvalid);
 
-			return dynamic.ResolveBreakpoint (breakpoint, domain);
+			return dynamic.ResolveBreakpoint (breakpoint);
 		}
 
 		internal void OnTargetExited ()
@@ -222,7 +222,7 @@ namespace Mono.Debugger
 			this.line = line;
 		}
 
-		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint, int domain)
+		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint)
 		{
 			if (!module.IsLoaded)
 				return new ModuleBreakpointHandle (breakpoint, module);
@@ -238,7 +238,7 @@ namespace Mono.Debugger
 			}
 
 			if (function != null)
-				return new FunctionBreakpointHandle (breakpoint, domain, function, line);
+				return new FunctionBreakpointHandle (breakpoint, function, line);
 
 			if ((source == null) || source.IsManaged)
 				throw new TargetException (TargetError.LocationInvalid);

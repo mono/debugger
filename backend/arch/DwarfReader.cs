@@ -2513,6 +2513,10 @@ namespace Mono.Debugger.Backends
 				get { return this; }
 			}
 
+			public override int Domain {
+				get { return -1; }
+			}
+
 			public override TargetClassType DeclaringType {
 				get { return null; }
 			}
@@ -2767,7 +2771,6 @@ namespace Mono.Debugger.Backends
 					break;
 				default:
 					throw new InternalError  ();
-					break;
 				}
 			}
 

@@ -34,7 +34,7 @@ namespace Mono.Debugger
 				if (main == null)
 					return null;
 
-				handle = new FunctionBreakpointHandle (this, 0, main, -1);
+				handle = new FunctionBreakpointHandle (this, main, -1);
 			} else {
 				BfdContainer bfd_container = frame.Thread.Process.Servant.BfdContainer;
 				TargetAddress main = bfd_container.LookupSymbol ("main");
