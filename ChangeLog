@@ -1,5 +1,10 @@
 2007-08-06  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(Method.Domain): New public property.
+
+2007-08-06  Martin Baulig  <martin@ximian.com>
+
 	* backend/BreakpointManager.cs
 	(BreakpointManager): Operate on `BreakpointHandle', not `Breakpoint'.
 

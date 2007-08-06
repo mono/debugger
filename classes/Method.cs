@@ -166,6 +166,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public abstract int Domain {
+			get;
+		}
+
 		public abstract bool HasSource {
 			get;
 		}

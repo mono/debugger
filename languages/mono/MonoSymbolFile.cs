@@ -685,7 +685,8 @@ namespace Mono.Debugger.Languages.Mono
 			MonoMethod method = (MonoMethod) method_hash [hash];
 			if (method == null) {
 				MonoMethodSource source = GetMethodSource (index);
-				method = new MonoMethod (this, source, source.Entry, source.Method);
+				method = new MonoMethod (
+					this, source, hash.Domain, source.Entry, source.Method);
 				method_hash.Add (hash, method);
 			}
 
@@ -706,7 +707,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			WrapperMethod method = (WrapperMethod) wrapper_hash [hash];
 			if (method == null) {
-				method = new WrapperMethod (this, wrapper);
+				method = new WrapperMethod (this, hash.Domain, wrapper);
 				wrapper_hash.Add (hash, method);
 			}
 
@@ -864,19 +865,25 @@ namespace Mono.Debugger.Languages.Mono
 			bool has_types;
 			bool is_loaded;
 			MethodAddress address;
+			int domain;
 
-			public MonoMethod (MonoSymbolFile file, MethodSource source,
+			public MonoMethod (MonoSymbolFile file, MethodSource source, int domain,
 					   C.MethodEntry method, Cecil.MethodDefinition mdef)
 				: base (source.Name, file.ImageFile, file.Module)
 			{
 				this.file = file;
 				this.source = source;
+				this.domain = domain;
 				this.method = method;
 				this.mdef = mdef;
 			}
 
 			public override object MethodHandle {
 				get { return mdef; }
+			}
+
+			public override int Domain {
+				get { return domain; }
 			}
 
 			public override bool HasSource {
@@ -1324,14 +1331,12 @@ namespace Mono.Debugger.Languages.Mono
 			public static RangeEntry Create (MonoSymbolFile file, TargetMemoryAccess memory,
 							 TargetReader reader, byte[] contents)
 			{
-				DateTime start_time = DateTime.Now;
-
 				int domain = reader.BinaryReader.ReadInt32 ();
 				int index = reader.BinaryReader.ReadInt32 ();
 
 				TargetAddress wrapper_data = reader.ReadAddress ();
 				TargetAddress method = reader.ReadAddress ();
-				TargetAddress address_list = reader.ReadAddress ();
+				reader.ReadAddress (); /* address_list */
 				TargetAddress code_start = reader.ReadAddress ();
 				TargetAddress wrapper_addr = reader.ReadAddress ();
 				int code_size = reader.BinaryReader.ReadInt32 ();
@@ -1483,18 +1488,24 @@ namespace Mono.Debugger.Languages.Mono
 			bool is_loaded;
 			MethodAddress address;
 			WrapperMethodSource source;
+			int domain;
 
-			public WrapperMethod (MonoSymbolFile file, WrapperEntry entry)
+			public WrapperMethod (MonoSymbolFile file, int domain, WrapperEntry entry)
 				: base (entry.Name, file.ImageFile, file.Module)
 			{
 				this.File = file;
 				this.Entry = entry;
+				this.domain = domain;
 				source = new WrapperMethodSource (this);
 				SetWrapperType (entry.WrapperType);
 			}
 
 			public override object MethodHandle {
 				get { return Entry.WrapperMethod; }
+			}
+
+			public override int Domain {
+				get { return domain; }
 			}
 
 			public override bool HasSource {
