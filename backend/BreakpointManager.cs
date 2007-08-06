@@ -175,12 +175,9 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 			try {
-				Console.WriteLine ("REMOVE BREAKPOINT: {0} {1}", handle, entry_hash.Count);
 				BreakpointEntry[] entries = new BreakpointEntry [entry_hash.Count];
 				entry_hash.Keys.CopyTo (entries, 0);
 				for (int i = 0; i < entries.Length; i++) {
-					Console.WriteLine ("REMOVE BPT: {0} {1} {2}", handle, i,
-							   entries [i]);
 					if (entries [i].Handle != handle)
 						continue;
 					int index = (int) entry_hash [entries [i]];
@@ -236,6 +233,25 @@ namespace Mono.Debugger.Backends
 						Report.Error ("Removing breakpoint {0} failed: {1}",
 							      indices [i], ex);
 					}
+				}
+			} finally {
+				Unlock ();
+			}
+		}
+
+		public void DomainUnload (Inferior inferior, int domain)
+		{
+			Lock ();
+			try {
+				BreakpointEntry[] entries = new BreakpointEntry [entry_hash.Count];
+				entry_hash.Keys.CopyTo (entries, 0);
+				for (int i = 0; i < entries.Length; i++) {
+					if (entries [i].Domain != domain)
+						continue;
+					int index = (int) entry_hash [entries [i]];
+					inferior.RemoveBreakpoint (index);
+					entry_hash.Remove (entries [i]);
+					index_hash.Remove (index);
 				}
 			} finally {
 				Unlock ();

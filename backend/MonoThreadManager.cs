@@ -224,6 +224,12 @@ namespace Mono.Debugger.Backends
 					csharp_language = null;
 					break;
 
+				case NotificationType.DomainUnload:
+					Console.WriteLine ("DOMAIN UNLOAD!!!");
+					engine.ProcessServant.BreakpointManager.DomainUnload (
+						inferior, (int) cevent.Data1);
+					break;
+
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);

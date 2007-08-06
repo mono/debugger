@@ -1,3 +1,17 @@
+2007-08-07  Martin Baulig  <martin@ximian.com>
+
+	* backend/ILanguageBackend.cs (NotificationType): Add `DomainUnload'.
+
+	* backend/BreakpointManager.cs
+	(BreakpointManager.DomainUnload): New public method; remove all
+	breakpoints from an appdomain.
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Added a new `DomainUnload'
+	notification; we're called from the JIT before unloading an
+	appdomain, call BreakpointManager.DomainUnload() to remove all its
+	breakpoints.	
+
 2007-08-06  Martin Baulig  <martin@ximian.com>
 
 	* backend/TargetMemoryAccess.cs

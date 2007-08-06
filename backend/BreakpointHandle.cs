@@ -158,5 +158,10 @@ namespace Mono.Debugger.Backends
 				function.RemoveBreakpoint (target);
 			has_load_handler = false;
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1}:{2})", GetType (), function, line);
+		}
 	}
 }
