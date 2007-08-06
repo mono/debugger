@@ -51,7 +51,7 @@ namespace Mono.Debugger.Backends
 			_manager = mono_debugger_breakpoint_manager_clone (old.Manager);
 
 			foreach (int index in old.breakpoints.Keys) {
-				Breakpoint breakpoint = (Breakpoint) old.breakpoints [index];
+				BreakpointHandle breakpoint = (BreakpointHandle) old.breakpoints [index];
 				breakpoints.Add (index, breakpoint);
 			}
 
@@ -72,8 +72,8 @@ namespace Mono.Debugger.Backends
 			get { return _manager; }
 		}
 
-		public Breakpoint LookupBreakpoint (TargetAddress address,
-						    out int index, out bool is_enabled)
+		public BreakpointHandle LookupBreakpoint (TargetAddress address,
+							  out int index, out bool is_enabled)
 		{
 			Lock ();
 			try {
@@ -87,17 +87,17 @@ namespace Mono.Debugger.Backends
 
 				index = mono_debugger_breakpoint_info_get_id (info);
 				is_enabled = mono_debugger_breakpoint_info_get_is_enabled (info);
-				return (Breakpoint) breakpoints [index];
+				return (BreakpointHandle) breakpoints [index];
 			} finally {
 				Unlock ();
 			}
 		}
 
-		public Breakpoint LookupBreakpoint (int breakpoint)
+		public BreakpointHandle LookupBreakpoint (int breakpoint)
 		{
 			Lock ();
 			try {
-				return (Breakpoint) breakpoints [breakpoint];
+				return (BreakpointHandle) breakpoints [breakpoint];
 			} finally {
 				Unlock ();
 			}
@@ -118,22 +118,23 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public int InsertBreakpoint (Inferior inferior, Breakpoint breakpoint,
+		public int InsertBreakpoint (Inferior inferior, BreakpointHandle breakpoint,
 					     TargetAddress address)
 		{
 			Lock ();
 			try {
 				int index;
 				bool is_enabled;
-				Breakpoint old = LookupBreakpoint (address, out index, out is_enabled);
+				BreakpointHandle old = LookupBreakpoint (
+					address, out index, out is_enabled);
 				if (old != null)
 					throw new TargetException (
 						TargetError.AlreadyHaveBreakpoint,
 						"Already have breakpoint {0} at address {1}.",
-						old.Index, address);
+						old.Breakpoint.Index, address);
 
 				int dr_index = -1;
-				switch (breakpoint.Type) {
+				switch (breakpoint.Breakpoint.Type) {
 				case EventType.Breakpoint:
 					index = inferior.InsertBreakpoint (address);
 					break;
@@ -181,12 +182,15 @@ namespace Mono.Debugger.Backends
 
 				for (int i = 0; i < indices.Length; i++) {
 					int idx = indices [i];
-					SourceBreakpoint bpt = breakpoints [idx] as SourceBreakpoint;
+					BreakpointHandle handle = (BreakpointHandle) breakpoints [idx];
+					SourceBreakpoint bpt = handle.Breakpoint as SourceBreakpoint;
 
 					if ((bpt == null) || !bpt.ThreadGroup.IsSystem) {
 						try {
 							RemoveBreakpoint (inferior, idx);
-						} catch {
+						} catch (Exception ex) {
+							Report.Error ("Removing breakpoint {0} failed: {1}",
+								      idx, ex);
 						}
 					} else if (bpt.ThreadGroup.IsGlobal) {
 						Breakpoint new_bpt = bpt.Clone (idx);
@@ -206,10 +210,12 @@ namespace Mono.Debugger.Backends
 				breakpoints.Keys.CopyTo (indices, 0);
 
 				for (int i = 0; i < indices.Length; i++) {
-					int idx = indices [i];
-					Breakpoint bpt = (Breakpoint) breakpoints [idx];
-
-					RemoveBreakpoint (inferior, idx);
+					try {
+						RemoveBreakpoint (inferior, indices [i]);
+					} catch (Exception ex) {
+						Report.Error ("Removing breakpoint {0} failed: {1}",
+							      indices [i], ex);
+					}
 				}
 			} finally {
 				Unlock ();

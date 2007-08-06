@@ -982,9 +982,9 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override int InsertBreakpoint (Breakpoint bpt, TargetAddress address)
+		internal override int InsertBreakpoint (BreakpointHandle handle, TargetAddress address)
 		{
-			return breakpoint_manager.InsertBreakpoint (this, bpt, address);
+			return breakpoint_manager.InsertBreakpoint (this, handle, address);
 		}
 
 		//

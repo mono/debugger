@@ -298,7 +298,7 @@ namespace Mono.Debugger.Backends
 					inferior.RemoveBreakpoint (temp_breakpoint_id);
 					temp_breakpoint_id = 0;
 
-					Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (arg);
+					Breakpoint bpt = lookup_breakpoint (arg);
 					Report.Debug (DebugFlags.SSE,
 						      "{0} hit temporary breakpoint {1} at {2} {3}",
 						      this, arg, inferior.CurrentFrame, bpt);
@@ -463,7 +463,7 @@ namespace Mono.Debugger.Backends
 			else if (current_operation != null)
 				pending_bpt = current_operation.PendingBreakpoint;
 			if (pending_bpt >= 0) {
-				Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (pending_bpt);
+				Breakpoint bpt = lookup_breakpoint (pending_bpt);
 				if ((bpt != null) && bpt.Breaks (thread.ID) && !bpt.HideFromUser) {
 					result = new TargetEventArgs (
 						TargetEventType.TargetHitBreakpoint, bpt.Index,
@@ -522,6 +522,15 @@ namespace Mono.Debugger.Backends
 
 			process.OnThreadExitedEvent (this);
 			Dispose ();
+		}
+
+		Breakpoint lookup_breakpoint (int index)
+		{
+			BreakpointHandle handle = process.BreakpointManager.LookupBreakpoint (index);
+			if (handle == null)
+				return null;
+
+			return handle.Breakpoint;
 		}
 
 		void set_registers (Registers registers)
@@ -856,7 +865,7 @@ namespace Mono.Debugger.Backends
 			if (index == 0)
 				return true;
 
-			Breakpoint bpt = process.BreakpointManager.LookupBreakpoint (index);
+			Breakpoint bpt = lookup_breakpoint (index);
 			if ((bpt == null) || !bpt.Breaks (thread.ID))
 				return false;
 
@@ -1563,11 +1572,12 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		internal override int InsertBreakpoint (Breakpoint breakpoint, TargetAddress address)
+		internal override int InsertBreakpoint (BreakpointHandle handle,
+							TargetAddress address)
 		{
 			return (int) SendCommand (delegate {
 				return process.BreakpointManager.InsertBreakpoint (
-					inferior, breakpoint, address);
+					inferior, handle, address);
 			});
 		}
 

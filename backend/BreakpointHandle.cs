@@ -60,13 +60,13 @@ namespace Mono.Debugger.Backends
 
 		internal override bool Insert (SingleSteppingEngine sse)
 		{
-			index = sse.Inferior.InsertBreakpoint (Breakpoint, Address);
+			index = sse.Inferior.InsertBreakpoint (this, Address);
 			return false;
 		}
 
 		public override void Insert (Thread target)
 		{
-			index = target.InsertBreakpoint (Breakpoint, Address);
+			index = target.InsertBreakpoint (this, Address);
 		}
 
 		public override void Remove (Thread target)
@@ -76,15 +76,15 @@ namespace Mono.Debugger.Backends
 			index = -1;
 		}
 
-		internal void Insert (TargetMemoryAccess target)
+		internal void Insert (Inferior inferior)
 		{
-			index = target.InsertBreakpoint (Breakpoint, Address);
+			index = inferior.BreakpointManager.InsertBreakpoint (inferior, this, Address);
 		}
 
-		internal void Remove (TargetMemoryAccess target)
+		internal void Remove (Inferior inferior)
 		{
 			if (index > 0)
-				target.RemoveBreakpoint (index);
+				inferior.BreakpointManager.RemoveBreakpoint (inferior, index);
 			index = -1;
 		}
 	}
@@ -143,7 +143,7 @@ namespace Mono.Debugger.Backends
 				return;
 
 			try {
-				index = target.InsertBreakpoint (Breakpoint, address);
+				index = target.InsertBreakpoint (this, address);
 			} catch (TargetException ex) {
 				Report.Error ("Can't insert breakpoint {0} at {1}: {2}",
 					      Breakpoint.Index, address, ex.Message);

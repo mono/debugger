@@ -166,7 +166,7 @@ namespace Mono.Debugger.Backends
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		internal abstract override int InsertBreakpoint (Breakpoint breakpoint,
+		internal abstract override int InsertBreakpoint (BreakpointHandle handle,
 								 TargetAddress address);
 
 		// <summary>

@@ -366,10 +366,11 @@ namespace Mono.Debugger.Backends
 			if (reader.ReadLongInteger () != 0)
 				return false;
 
-			if (inferior != null)
-				inferior.BreakpointManager.InsertBreakpoint (
-					inferior, new DynlinkBreakpoint (this, dynlink_breakpoint),
-					dynlink_breakpoint);
+			if (inferior != null) {
+				AddressBreakpoint dynlink_bpt = new DynlinkBreakpoint (
+					this, dynlink_breakpoint);
+				dynlink_bpt.Insert (inferior);
+			}
 
 			has_shlib_info = true;
 			return true;
@@ -556,16 +557,6 @@ namespace Mono.Debugger.Backends
 
 			throw new InvalidOperationException ();
 		}
-
-#if FIXME
-		public override Method GetMethod (int domain, long handle)
-		{
-			if (dwarf != null)
-				return dwarf.GetMethod (handle);
-
-			throw new InvalidOperationException ();
-		}
-#endif
 
 		public override MethodSource FindMethod (string name)
 		{
@@ -1014,10 +1005,11 @@ namespace Mono.Debugger.Backends
 				TargetAddress nptl_setxid = inferior.ReadAddress (
 					vtable + 51 * info.TargetAddressSize);
 
-				if (!nptl_setxid.IsNull)
-					inferior.BreakpointManager.InsertBreakpoint (
-						inferior, new SetXidBreakpoint (this, nptl_setxid),
-						nptl_setxid);
+				if (!nptl_setxid.IsNull) {
+					AddressBreakpoint setxid_bpt = new SetXidBreakpoint (
+						this, nptl_setxid);
+					setxid_bpt.Insert (inferior);
+				}
 			}
 
 			if (dwarf != null) {

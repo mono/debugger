@@ -469,11 +469,10 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		internal override int InsertBreakpoint (Breakpoint breakpoint,
-							TargetAddress address)
+		internal override int InsertBreakpoint (BreakpointHandle handle, TargetAddress address)
 		{
 			check_alive ();
-			return servant.InsertBreakpoint (breakpoint, address);
+			return servant.InsertBreakpoint (handle, address);
 		}
 
 		// <summary>

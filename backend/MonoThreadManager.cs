@@ -73,12 +73,11 @@ namespace Mono.Debugger.Backends
 			TargetReader reader = new TargetReader (inferior.ReadMemory (info, size));
 			debugger_info = new MonoDebuggerInfo (inferior, reader);
 
-			notification_bpt = inferior.BreakpointManager.InsertBreakpoint (
-				inferior, new InitializeBreakpoint (this, debugger_info.Initialize),
-				debugger_info.Initialize);
+			notification_bpt = new InitializeBreakpoint (this, debugger_info.Initialize);
+			notification_bpt.Insert (inferior);
 		}
 
-		int notification_bpt = -1;
+		AddressBreakpoint notification_bpt;
 
 		protected void initialize_notifications (Inferior inferior)
 		{
@@ -87,9 +86,9 @@ namespace Mono.Debugger.Backends
 
 			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
 
-			if (notification_bpt > 0) {
-				inferior.BreakpointManager.RemoveBreakpoint (inferior, notification_bpt);
-				notification_bpt = -1;
+			if (notification_bpt != null) {
+				notification_bpt.Remove (inferior);
+				notification_bpt = null;
 			}
 		}
 
@@ -291,8 +290,6 @@ namespace Mono.Debugger.Backends
 		{
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
-
-			int address_size          = memory.TargetInfo.TargetAddressSize;
 
 			SymbolTableSize           = reader.ReadInteger ();
 

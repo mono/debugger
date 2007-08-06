@@ -1,5 +1,10 @@
 2007-08-06  Martin Baulig  <martin@ximian.com>
 
+	* backend/BreakpointManager.cs
+	(BreakpointManager): Operate on `BreakpointHandle', not `Breakpoint'.
+
+2007-08-06  Martin Baulig  <martin@ximian.com>
+
 	* backend/TargetMemoryAccess.cs
 	(TargetMemoryAccess.InsertBreakpoint): Make this internal.
 	(TargetMemoryAccess.RemoveBreakpoint): Likewise.

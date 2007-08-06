@@ -404,7 +404,7 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			internal override int InsertBreakpoint (Breakpoint breakpoint,
+			internal override int InsertBreakpoint (BreakpointHandle handle,
 								TargetAddress address)
 			{
 				throw new InvalidOperationException ();
