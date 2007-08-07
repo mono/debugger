@@ -1,3 +1,14 @@
+2007-08-06  Wade Berrier  <wberrier@novell.com>
+
+	* classes/Makefile.am:
+	* languages/mono/Makefile.am:
+	* languages/Makefile.am:
+	Update filelists for new source files to fix 'make dist'
+	Beautify listing
+
+	* test/src/Makefile.am:
+	Clean up list duplication, only build .cs files during 'make check'
+
 2007-08-07  Martin Baulig  <martin@ximian.com>
 
 	* backend/ILanguageBackend.cs (NotificationType): Add `DomainUnload'.

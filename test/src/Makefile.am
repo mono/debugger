@@ -4,17 +4,7 @@ AM_CFLAGS = -g -O0
 
 INCLUDES = -DTEST_SRCDIR=\"$(top_srcdir)/test/src\" -DTEST_BUILDDIR=\"`pwd`\"
 
-noinst_SCRIPTS = \
-	TestManagedTypes.exe TestInvocation.exe TestInheritance.exe \
-	TestDelegate.exe TestIndexer.exe TestEnum.exe \
-	TestRestart.exe TestNull.exe TestByRef.exe \
-	TestToString.exe TestObject.exe TestProperty.exe TestAbort.exe \
-	TestBreakpoint.exe TestNamespace.exe TestException.exe \
-	TestRestart.exe TestExec.exe TestChild.exe TestAttach.exe \
-	TestMethodLookup.exe TestMultiThread.exe TestCCtor.exe \
-	TestAppDomain.exe
-
-EXTRA_DIST = \
+TEST_SRC = \
 	TestManagedTypes.cs TestInvocation.cs TestInheritance.cs \
 	TestDelegate.cs TestIndexer.cs TestEnum.cs \
 	TestRestart.cs TestNull.cs TestByRef.cs \
@@ -24,9 +14,15 @@ EXTRA_DIST = \
 	TestMethodLookup.cs TestMultiThread.cs TestSession.cs \
 	TestCCtor.cs TestAppDomain.cs
 
+TEST_EXE = $(TEST_SRC:.cs=.exe)
+
+EXTRA_DIST = $(TEST_SRC)
+
 noinst_PROGRAMS = \
 	testnativefork testnativeexec testnativechild testnativeattach \
 	testnativetypes
+
+check-local: $(TEST_EXE)
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<

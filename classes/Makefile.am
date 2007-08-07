@@ -16,6 +16,7 @@ EXTRA_DIST = \
 	ITargetNotification.cs \
 	InternalError.cs \
 	LineNumberTable.cs \
+	MainMethodBreakpoint.cs \
 	Method.cs \
 	MethodSource.cs \
 	Module.cs \
