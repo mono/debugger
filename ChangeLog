@@ -1,5 +1,12 @@
 2007-08-22  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs: Reflect latest runtime
+	changes; the method range entries are now stored on a per-domain
+	basis and are free'ed when the domain gets unloaded.  Add support
+	for unloading symbol files.
+
+2007-08-22  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(SSE.OnManagedThreadCreated): Remove the `tid' argument; this is
 	now computed by the ThreadDB.
