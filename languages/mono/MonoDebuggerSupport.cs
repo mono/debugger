@@ -44,8 +44,6 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoPointerType (type);
 			else
 				return type;
-
-			return type;
 		}
 
 		static int ReadCompressedInteger (TargetBinaryReader reader)
