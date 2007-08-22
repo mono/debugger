@@ -270,6 +270,10 @@ namespace Mono.Debugger.Backends
 				return String.Join (":", argv);
 		}
 
+		public string CommandLine {
+			get { return print_argv (argv); }
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3})",

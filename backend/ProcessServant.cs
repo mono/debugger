@@ -17,14 +17,16 @@ namespace Mono.Debugger.Backends
 		ThreadManager manager;
 		BfdContainer bfd_container;
 		SymbolTableManager symtab_manager;
-		MonoLanguageBackend mono_language;
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
 		ProcessStart start;
 		DebuggerSession session;
+		protected MonoLanguageBackend mono_language;
 		protected ThreadServant main_thread;
 		ArrayList languages;
 		Hashtable thread_hash;
+
+		ThreadDB thread_db;
 
 		bool is_attached;
 		bool is_forked;
@@ -177,6 +179,8 @@ namespace Mono.Debugger.Backends
 			if ((mono_manager != null) && !do_attach)
 				mono_manager.ThreadCreated (new_thread);
 
+			if (!do_attach)
+				get_thread_info (new_thread);
 			OnThreadCreatedEvent (new_thread);
 		}
 
@@ -331,9 +335,104 @@ namespace Mono.Debugger.Backends
 						continue;
 					ThreadCreated (inferior, thread, true);
 				}
+
+				inferior.InitializeModules ();
+				InitializeThreads (inferior);
+
+				if (mono_manager != null)
+					read_thread_table (inferior);
+
+				foreach (SingleSteppingEngine the_engine in thread_hash.Values) {
+					Console.WriteLine ("ATTACHED: {0} {1} {2}",
+							   the_engine, the_engine.LMFAddress,
+							   the_engine.EndStackAddress);
+				}
 			}
 
 			initialized_event.Set ();
+		}
+
+		void read_thread_table (Inferior inferior)
+		{
+			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);
+			while (!ptr.IsNull) {
+				int size = 24 + inferior.TargetInfo.TargetAddressSize;
+				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
+
+				long tid = reader.ReadLongInteger ();
+				TargetAddress lmf_addr = reader.ReadAddress ();
+				TargetAddress end_stack = reader.ReadAddress ();
+
+				ptr = reader.ReadAddress ();
+
+				bool found = false;
+				foreach (SingleSteppingEngine engine in thread_hash.Values) {
+					if (engine.TID != tid)
+						continue;
+
+					engine.SetLMFAddress (lmf_addr);
+					engine.OnManagedThreadCreated (end_stack);
+					found = true;
+					break;
+				}
+
+				if (!found)
+					Report.Error ("Cannot find thread {0:x} in {1}",
+						      tid, start.CommandLine);
+			}
+		}
+
+		internal void InitializeThreads (TargetMemoryAccess target)
+		{
+			thread_db = ThreadDB.Create (this, target);
+			if (thread_db == null) {
+				if (IsManaged)
+					Report.Error ("Failed to initialize thread_db on {0}",
+						      start.CommandLine);
+				return;
+			}
+
+			thread_db.GetThreadInfo (delegate (int lwp, long tid) {
+				SingleSteppingEngine engine = (SingleSteppingEngine) thread_hash [lwp];
+				if (engine == null) {
+					Report.Error ("Unknown thread {0} in {1}", lwp,
+						      start.CommandLine);
+					return;
+				}
+				engine.SetTID (tid);
+			});
+		}
+
+		void get_thread_info (SingleSteppingEngine engine)
+		{
+			if (thread_db == null) {
+				Report.Error ("Failed to initialize thread_db on {0}: {1} {2}",
+					      start.CommandLine, start, Environment.StackTrace);
+				throw new InternalError ();
+			}
+
+			bool found = false;
+			thread_db.GetThreadInfo (delegate (int lwp, long tid) {
+				if (lwp != engine.PID)
+					return;
+
+				engine.SetTID (tid);
+				found = true;
+			});
+
+			if (!found)
+				Report.Error ("Cannot find thread {0:x} in {1}",
+					      engine.PID, start.CommandLine);
+		}
+
+		internal SingleSteppingEngine GetEngineByTID (long tid)
+		{
+			foreach (SingleSteppingEngine engine in thread_hash.Values) {
+				if (engine.TID == tid)
+					return engine;
+			}
+
+			return null;
 		}
 
 		public void Kill ()
@@ -527,6 +626,9 @@ namespace Mono.Debugger.Backends
 
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
+
+			if (thread_db != null)
+				thread_db.Dispose ();
 
 			manager.RemoveProcess (this);
 		}

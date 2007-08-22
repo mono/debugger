@@ -1,3 +1,16 @@
+2007-08-22  Martin Baulig  <martin@ximian.com>
+
+	* backend/ProcessServant.cs: Use the new `ThreadDB' interface if
+	possible.  When attaching to a managed application, read the new
+	thread table from the runtime.	
+
+	* backend/ThreadDB.cs: New file. We now use glibc's `thread_db'
+	library to get information about threads.
+
+	* backend/server/thread-db.[ch]: New files.
+
+	* backend/server/linux-proc-service.h: New file; copied from glibc.
+
 2007-08-06  Wade Berrier  <wberrier@novell.com>
 
 	* classes/Makefile.am:

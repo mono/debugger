@@ -26,10 +26,13 @@ libmonodebuggerserver_la_SOURCES = \
 	breakpoints.c		\
 	breakpoints.h		\
 	mutex.c			\
-	mutex.h
+	mutex.h			\
+	thread-db.c		\
+	thread-db.h		\
+	linux-proc-service.h
 
 libmonodebuggerserver_la_LIBADD = \
-	@SERVER_DEPENDENCIES_LIBS@ \
+	@SERVER_DEPENDENCIES_LIBS@ -lthread_db \
 	../arch/libmonodebuggerbfdglue.la
 libmonodebuggerserver_la_LDFLAGS = \
 	 -no-undefined -export-dynamic -shared
