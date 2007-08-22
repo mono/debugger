@@ -50,28 +50,7 @@ namespace Mono.Debugger.Backends
 			this.inferior = inferior;
 			this.thread_manager = thread_manager;
 
-			TargetBinaryReader header = inferior.ReadMemory (info, 16).GetReader ();
-			long magic = header.ReadInt64 ();
-			if (magic != MonoDebuggerInfo.DynamicMagic)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
-
-			int version = header.ReadInt32 ();
-			if (version < MonoDebuggerInfo.MinDynamicVersion)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at least {1}.", version,
-					MonoDebuggerInfo.MinDynamicVersion);
-			if (version > MonoDebuggerInfo.MaxDynamicVersion)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at most {1}.", version,
-					MonoDebuggerInfo.MaxDynamicVersion);
-
-			int size = header.ReadInt32 ();
-
-			TargetReader reader = new TargetReader (inferior.ReadMemory (info, size));
-			debugger_info = new MonoDebuggerInfo (inferior, reader);
+			debugger_info = MonoDebuggerInfo.Create (inferior, info);
 
 			notification_bpt = new InitializeBreakpoint (this, debugger_info.Initialize);
 			notification_bpt.Insert (inferior);
@@ -161,17 +140,46 @@ namespace Mono.Debugger.Backends
 
 				case NotificationType.ThreadCreated: {
 					TargetAddress data = new TargetAddress (
-						inferior.AddressDomain, cevent.Data1);
+						inferior.AddressDomain, cevent.Data2);
+
+					TargetAddress lmf = inferior.ReadAddress (data + 8);
+					engine.SetLMFAddress (lmf);
 
 					Report.Debug (DebugFlags.Threads,
-						      "{0} created managed thread: {1:x} {2}",
-						      engine, cevent.Data2, data);
-
-					engine.OnManagedThreadCreated (cevent.Data2, data);
+						      "{0} managed thread created: {1:x} {2} {3} - {4}",
+						      engine, cevent.Data1, data, lmf, engine.LMFAddress);
 					break;
 				}
 
-				case NotificationType.ThreadExited:
+				case NotificationType.ThreadCleanup: {
+					TargetAddress data = new TargetAddress (
+						inferior.AddressDomain, cevent.Data1);
+
+					Report.Debug (DebugFlags.Threads,
+						      "{0} managed thread cleanup: {1:x} {2}",
+						      engine, cevent.Data2, data);
+					break;
+				}
+
+				case NotificationType.GcThreadCreated: {
+					TargetAddress data = new TargetAddress (
+						inferior.AddressDomain, cevent.Data1);
+					long tid = cevent.Data2;
+
+					Report.Debug (DebugFlags.Threads,
+						      "{0} created gc thread: {1:x} {2}",
+						      engine, tid, data);
+
+					engine = engine.ProcessServant.GetEngineByTID (tid);
+
+					if (engine == null)
+						throw new InternalError ();
+
+					engine.OnManagedThreadCreated (data);
+					break;
+				}
+
+				case NotificationType.GcThreadExited:
 					engine.OnManagedThreadExited ();
 					break;
 
@@ -181,14 +189,21 @@ namespace Mono.Debugger.Backends
 				case NotificationType.InitializeThreadManager:
 					csharp_language = inferior.Process.CreateMonoLanguage (
 						debugger_info);
-					csharp_language.Initialize (inferior);
+					if (engine.ProcessServant.IsAttached)
+						csharp_language.InitializeAttach (inferior);
+					else
+						csharp_language.Initialize (inferior);
+
+					inferior.InitializeModules ();
+					if (!engine.ProcessServant.IsAttached)
+						engine.ProcessServant.InitializeThreads (inferior);
+
 					break;
 
 				case NotificationType.ReachedMain: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					inferior.InitializeModules ();
 					engine.ProcessServant.MonoLanguage.ReachedMain (inferior, data);
 
 					resume_target = false;
@@ -224,12 +239,6 @@ namespace Mono.Debugger.Backends
 					csharp_language = null;
 					break;
 
-				case NotificationType.DomainUnload:
-					Console.WriteLine ("DOMAIN UNLOAD!!!");
-					engine.ProcessServant.BreakpointManager.DomainUnload (
-						inferior, (int) cevent.Data1);
-					break;
-
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
@@ -262,8 +271,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 59;
-		public const int  MaxDynamicVersion = 59;
+		public const int  MinDynamicVersion = 60;
+		public const int  MaxDynamicVersion = 60;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
@@ -277,9 +286,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress CreateString;
 		public readonly TargetAddress ClassGetStaticFieldData;
 		public readonly TargetAddress LookupClass;
-		public readonly TargetAddress LookupAssembly;
 		public readonly TargetAddress RunFinally;
-		public readonly TargetAddress GetCurrentThread;
 		public readonly TargetAddress InsertBreakpoint;
 		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RuntimeClassInit;
@@ -288,11 +295,37 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
 		public readonly TargetAddress DebuggerVersion;
-		public readonly TargetAddress DataTable;
+		public readonly TargetAddress ThreadTable;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
-		internal MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
+		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
+		{
+			TargetBinaryReader header = memory.ReadMemory (info, 16).GetReader ();
+			long magic = header.ReadInt64 ();
+			if (magic != DynamicMagic)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
+
+			int version = header.ReadInt32 ();
+			if (version < MinDynamicVersion)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					"but expected at least {1}.", version,
+					MonoDebuggerInfo.MinDynamicVersion);
+			if (version > MaxDynamicVersion)
+				throw new SymbolTableException (
+					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					"but expected at most {1}.", version,
+					MonoDebuggerInfo.MaxDynamicVersion);
+
+			int size = header.ReadInt32 ();
+
+			TargetReader reader = new TargetReader (memory.ReadMemory (info, size));
+			return new MonoDebuggerInfo (memory, reader);
+		}
+
+		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
 		{
 			/* skip past magic, version, and total_size */
 			reader.Offset = 16;
@@ -310,21 +343,19 @@ namespace Mono.Debugger.Backends
 			RuntimeInvoke             = reader.ReadAddress ();
 			ClassGetStaticFieldData   = reader.ReadAddress ();
 			RunFinally                = reader.ReadAddress ();
-			GetCurrentThread          = reader.ReadAddress ();
 			Attach                    = reader.ReadAddress ();
 			Detach                    = reader.ReadAddress ();
 			Initialize                = reader.ReadAddress ();
 			GetLMFAddress             = reader.ReadAddress ();
 
-			DebuggerVersion           = reader.ReadAddress ();
-			DataTable                 = reader.ReadAddress ();
-
 			CreateString              = reader.ReadAddress ();
 			LookupClass               = reader.ReadAddress ();
-			LookupAssembly            = reader.ReadAddress ();
 			InsertBreakpoint          = reader.ReadAddress ();
 			RemoveBreakpoint          = reader.ReadAddress ();
 			RuntimeClassInit          = reader.ReadAddress ();
+
+			DebuggerVersion           = reader.ReadAddress ();
+			ThreadTable               = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
