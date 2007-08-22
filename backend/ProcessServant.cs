@@ -341,12 +341,6 @@ namespace Mono.Debugger.Backends
 
 				if (mono_manager != null)
 					read_thread_table (inferior);
-
-				foreach (SingleSteppingEngine the_engine in thread_hash.Values) {
-					Console.WriteLine ("ATTACHED: {0} {1} {2}",
-							   the_engine, the_engine.LMFAddress,
-							   the_engine.EndStackAddress);
-				}
 			}
 
 			initialized_event.Set ();

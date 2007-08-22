@@ -496,10 +496,19 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void OnManagedThreadCreated (long tid, TargetAddress end_stack_address)
+		internal void OnManagedThreadCreated (TargetAddress end_stack_address)
+		{
+			this.end_stack_address = end_stack_address;
+		}
+
+		internal void SetTID (long tid)
 		{
 			this.tid = tid;
-			this.end_stack_address = end_stack_address;
+		}
+
+		internal void SetLMFAddress (TargetAddress lmf_address)
+		{
+			this.lmf_address = lmf_address;
 		}
 
 		internal void OnManagedThreadExited ()
@@ -2226,59 +2235,7 @@ namespace Mono.Debugger.Backends
 				      DebuggerWaitHandle.CurrentThread);
 
 			args = null;
-			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
-				inferior.Step ();
-				return EventResult.Running;
-			}
-
-			if (sse.ProcessServant.MonoManager != null) {
-				sse.PushOperation (new OperationGetCurrentThread (sse, null));
-				return EventResult.Running;
-			}
-
 			return EventResult.Completed;
-		}
-	}
-
-	protected class OperationGetCurrentThread : OperationCallback
-	{
-		public OperationGetCurrentThread (SingleSteppingEngine sse, CommandResult result)
-			: base (sse, result)
-		{ }
-
-		public override bool IsSourceOperation {
-			get { return false; }
-		}
-
-		protected override void DoExecute ()
-		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			inferior.CallMethod (info.GetCurrentThread, 0, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} get current thread: {1:x} {2:x} {3}",
-				      sse, data1, data2, Result);
-
-			if (data1 == 0) {
-				sse.PushOperation (new OperationRun (sse, null));
-				return EventResult.Running;
-			}
-
-			TargetAddress thread = new TargetAddress (inferior.AddressDomain, data1);
-			MonoMetadataInfo info = sse.ProcessServant.MonoManager.MonoMetadataInfo;
-			TargetReader reader = new TargetReader (
-				inferior.ReadMemory (thread, info.ThreadSize));
-
-			reader.Offset = info.ThreadTidOffset;
-			long tid = reader.BinaryReader.ReadInt64 ();
-
-			sse.OnManagedThreadCreated (tid, thread + info.ThreadEndStackOffset);
-
-			sse.PushOperation (new OperationGetLMFAddr (sse, null));
-			return EventResult.Running;
 		}
 	}
 
@@ -2978,7 +2935,7 @@ namespace Mono.Debugger.Backends
 			try {
 				args = null;
 				return CallbackCompleted (cevent.Data1, cevent.Data2);
-			} catch (Exception ex) {
+			} catch {
 				RestoreStack ();
 				return EventResult.CompletedCallback;
 			}

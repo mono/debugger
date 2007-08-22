@@ -1,5 +1,14 @@
 2007-08-22  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.OnManagedThreadCreated): Remove the `tid' argument; this is
+	now computed by the ThreadDB.
+	(SSE.SetTID): New internal method; called by ThreadDB.
+	(SSE.SetLMFAddress): Likewise.
+	(SSE.OperationGetCurrentThread): Removed; we now use ThreadDB for this.
+
+2007-08-22  Martin Baulig  <martin@ximian.com>
+
 	* backend/ProcessServant.cs: Use the new `ThreadDB' interface if
 	possible.  When attaching to a managed application, read the new
 	thread table from the runtime.	
