@@ -73,7 +73,7 @@ namespace Mono.Debugger
 				if (file != null)
 					return String.Format ("{0}:{1}", file.FileName, Row);
 				else
-					return String.Format ("{0}:{1}", file.FileName, Row);
+					return String.Format ("{0}", Row);
 			}
 		}
 
