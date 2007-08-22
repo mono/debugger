@@ -60,7 +60,6 @@ namespace Mono.Debugger.Backends
 
 		internal void OnTargetExitedEvent ()
 		{
-			MonoLanguageBackend.PrintStatistics ();
 			client.OnTargetExitedEvent ();
 		}
 
