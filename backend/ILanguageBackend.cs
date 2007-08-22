@@ -5,9 +5,7 @@ namespace Mono.Debugger.Backends
 {
 	internal enum NotificationType {
 		InitializeManagedCode	= 1,
-		AddModule,
-		ReloadSymtabs,
-		MethodCompiled,
+		InitializeCorlib,
 		JitBreakpoint,
 		InitializeThreadManager,
 		AcquireGlobalThreadLock,
@@ -15,13 +13,18 @@ namespace Mono.Debugger.Backends
 		WrapperMain,
 		MainExited,
 		UnhandledException,
-		ThreadCreated,
-		ThreadAbort,
-		ThreadExited,
 		ThrowException,
 		HandleException,
+		ThreadAbort,
+		ThreadCreated,
+		ThreadCleanup,
+		GcThreadCreated,
+		GcThreadExited,
 		ReachedMain,
 		FinalizeManagedCode,
+		LoadModule,
+		UnloadModule,
+		DomainCreate,
 		DomainUnload
 	}
 
