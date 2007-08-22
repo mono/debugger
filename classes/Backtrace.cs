@@ -121,7 +121,7 @@ namespace Mono.Debugger
 		{
 			if (mode == Mode.Native)
 				return true;
-			if (!frame.Language.IsManaged)
+			if ((frame.Language == null) || !frame.Language.IsManaged)
 				return false;
 			if (mode == Mode.Default)
 				return true;
