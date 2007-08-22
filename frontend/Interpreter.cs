@@ -353,8 +353,6 @@ namespace Mono.Debugger.Frontend
 
 				current_thread = current_process.MainThread;
 
-				CheckLastEvent (current_thread);
-
 				return current_process;
 			} catch (TargetException) {
 				debugger.Dispose ();
