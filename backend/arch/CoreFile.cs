@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections;
 using System.Runtime.InteropServices;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backends
 {
@@ -13,6 +14,8 @@ namespace Mono.Debugger.Backends
 		string core_file;
 		string application;
 		ArrayList threads;
+
+		MonoDebuggerInfo debugger_info;
 
 		public static CoreFile OpenCoreFile (ThreadManager manager, ProcessStart start)
 		{
@@ -27,6 +30,8 @@ namespace Mono.Debugger.Backends
 			bfd = BfdContainer.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,
 				start.LoadNativeSymbolTable, true);
+
+			BfdContainer.SetupInferior (info, bfd);
 
 			core_file = start.CoreFile;
 			application = bfd.FileName;
@@ -63,12 +68,81 @@ namespace Mono.Debugger.Backends
 			read_note_section ();
 			main_thread = (CoreFileThread) threads [0];
 
-			InitializeModules ();
+			bfd.UpdateSharedLibraryInfo (null, main_thread);
+
+			TargetAddress mdb_debug_info = bfd.GetSectionAddress (".mdb_debug_info");
+			if (!mdb_debug_info.IsNull) {
+				mdb_debug_info = main_thread.ReadAddress (mdb_debug_info);
+				debugger_info = MonoDebuggerInfo.Create (main_thread, mdb_debug_info);
+				read_thread_table ();
+				CreateMonoLanguage (debugger_info);
+				mono_language.InitializeCoreFile (main_thread);
+				mono_language.Update (main_thread);
+			}
 		}
 
-		public void InitializeModules ()
+		void read_thread_table ()
 		{
-			bfd.UpdateSharedLibraryInfo (null, main_thread);
+			TargetAddress ptr = main_thread.ReadAddress (debugger_info.ThreadTable);
+			Console.WriteLine ("READ THREAD TABLE: {0}", ptr);
+			while (!ptr.IsNull) {
+				int size = 56 + main_thread.TargetInfo.TargetAddressSize;
+				TargetReader reader = new TargetReader (main_thread.ReadMemory (ptr, size));
+
+				long tid = reader.ReadLongInteger ();
+				TargetAddress lmf_addr = reader.ReadAddress ();
+				TargetAddress end_stack = reader.ReadAddress ();
+
+				ptr = reader.ReadAddress ();
+
+				TargetAddress stack_start = reader.ReadAddress ();
+				TargetAddress signal_stack_start = reader.ReadAddress ();
+				int stack_size = reader.ReadInteger ();
+				int signal_stack_size = reader.ReadInteger ();
+
+				Console.WriteLine ("READ THREAD TABLE #1: {0:x} {1} {2} {3} {4} {5} {6}",
+						   tid, lmf_addr, end_stack,
+						   stack_start, stack_start + stack_size,
+						   signal_stack_start,
+						   signal_stack_start + signal_stack_size);
+
+				bool found = false;
+				foreach (CoreFileThread thread in threads) {
+					TargetAddress sp = thread.CurrentFrame.StackPointer;
+
+					if ((sp >= stack_start) && (sp < stack_start + stack_size)) {
+						Console.WriteLine ("SET LMF: {0} {1:x} {2}",
+								   thread, tid, lmf_addr);
+						thread.SetLMFAddress (tid, lmf_addr);
+						found = true;
+						break;
+					} else if (!signal_stack_start.IsNull &&
+						   (sp >= signal_stack_start) &&
+						   (sp < signal_stack_start + signal_stack_size)) {
+						Console.WriteLine ("SET LMF: {0} {1:x} {2}",
+								   thread, tid, lmf_addr);
+						thread.SetLMFAddress (tid, lmf_addr);
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+					Console.WriteLine ("FUCK!");
+			}
+		}
+
+		protected TargetReader GetReader (TargetAddress address)
+		{
+			TargetReader reader = core_bfd.GetReader (address, true);
+			if (reader != null)
+				return reader;
+
+			Bfd bfd = BfdContainer.LookupLibrary (address);
+			if (bfd != null)
+				return bfd.GetReader (address, false);
+
+			return null;
 		}
 
 		void read_note_section ()
@@ -84,18 +158,13 @@ namespace Mono.Debugger.Backends
 				threads.Add (thread);
 			}
 
-			return;
-
 #if FIXME
-			TargetReader reader = core_bfd.GetSectionReader ("note0", true);
+			TargetReader reader = core_bfd.GetSectionReader ("note0");
 			while (reader.Offset < reader.Size) {
 				long offset = reader.Offset;
 				int namesz = reader.ReadInteger ();
 				int descsz = reader.ReadInteger ();
 				int type = reader.ReadInteger ();
-
-				Console.WriteLine ("NOTE: {0} {1} {2} {3:x}", offset, namesz,
-						   descsz, type);
 
 				string name = null;
 				if (namesz != 0) {
@@ -110,8 +179,8 @@ namespace Mono.Debugger.Backends
 				if (descsz != 0)
 					desc = reader.BinaryReader.ReadBuffer (descsz);
 
-				Console.WriteLine ("NOTE #1: {0} {1} {2:x} - {3} {4}", namesz, descsz,
-						   type, name, TargetBinaryReader.HexDump (desc));
+				// Console.WriteLine ("NOTE: {0} {1:x} {2}", offset, type, name);
+				// Console.WriteLine (TargetBinaryReader.HexDump (desc));
 
 				reader.Offset += 4 - (reader.Offset % 4);
 			}
@@ -143,7 +212,10 @@ namespace Mono.Debugger.Backends
 			Backtrace current_backtrace;
 			StackFrame current_frame;
 			Method current_method;
+			long tid;
 			int pid;
+
+			TargetAddress lmf_address = TargetAddress.Null;
 
 			public CoreFileThread (CoreFile core, int pid)
 				: base (core.ThreadManager, core)
@@ -159,7 +231,7 @@ namespace Mono.Debugger.Backends
 			Registers read_registers ()
 			{
 				string sname = String.Format (".reg/{0}", PID);
-				TargetReader reader = CoreFile.CoreBfd.GetSectionReader (sname, true);
+				TargetReader reader = CoreFile.CoreBfd.GetSectionReader (sname);
 
 				Architecture arch = CoreFile.Architecture;
 				long[] values = new long [arch.CountRegisters];
@@ -174,6 +246,12 @@ namespace Mono.Debugger.Backends
 				}
 
 				return new Registers (arch, values);
+			}
+
+			internal void SetLMFAddress (long tid, TargetAddress lmf)
+			{
+				this.tid = tid;
+				this.lmf_address = lmf;
 			}
 
 			internal override ThreadManager ThreadManager {
@@ -197,15 +275,15 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override long TID {
-				get { return -1; }
+				get { return tid; }
 			}
 
 			public override TargetAddress LMFAddress {
-				get { return TargetAddress.Null; }
+				get { return lmf_address; }
 			}
 
 			public override bool IsAlive {
-				get { return false; }
+				get { return true; }
 			}
 
 			public override bool CanRun {
@@ -331,27 +409,27 @@ namespace Mono.Debugger.Backends
 
 			public override byte ReadByte (TargetAddress address)
 			{
-				return CoreFile.CoreBfd.GetReader (address).ReadByte ();
+				return CoreFile.GetReader (address).ReadByte ();
 			}
 
 			public override int ReadInteger (TargetAddress address)
 			{
-				return CoreFile.CoreBfd.GetReader (address).ReadInteger ();
+				return CoreFile.GetReader (address).ReadInteger ();
 			}
 
 			public override long ReadLongInteger (TargetAddress address)
 			{
-				return CoreFile.CoreBfd.GetReader (address).ReadLongInteger ();
+				return CoreFile.GetReader (address).ReadLongInteger ();
 			}
 
 			public override TargetAddress ReadAddress (TargetAddress address)
 			{
-				return CoreFile.CoreBfd.GetReader (address).ReadAddress ();
+				return CoreFile.GetReader (address).ReadAddress ();
 			}
 
 			public override string ReadString (TargetAddress address)
 			{
-				return CoreFile.CoreBfd.GetReader (address).BinaryReader.ReadString ();
+				return CoreFile.GetReader (address).BinaryReader.ReadString ();
 			}
 
 			public override TargetBlob ReadMemory (TargetAddress address, int size)
@@ -361,13 +439,13 @@ namespace Mono.Debugger.Backends
 
 			public override byte[] ReadBuffer (TargetAddress address, int size)
 			{
-				return CoreFile.CoreBfd.GetReader (address).BinaryReader.ReadBuffer (size);
+				return CoreFile.GetReader (address).BinaryReader.ReadBuffer (size);
 			}
 
 			internal override Registers GetCallbackFrame (TargetAddress stack_pointer,
 								      bool exact_match)
 			{
-				throw new InvalidOperationException ();
+				return null;
 			}
 
 			public override bool CanWrite {
@@ -456,9 +534,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			public override void Kill ()
-			{
-				throw new InvalidOperationException ();
-			}
+			{ }
 
 			public override void Detach ()
 			{
@@ -488,12 +564,12 @@ namespace Mono.Debugger.Backends
 			public override string PrintObject (Style style, TargetObject obj,
 							    DisplayFormat format)
 			{
-				throw new InvalidOperationException ();
+				return style.FormatObject (Thread, obj, format);
 			}
 
 			public override string PrintType (Style style, TargetType type)
 			{
-				throw new InvalidOperationException ();
+				return style.FormatType (Thread, type);
 			}
 
 			public override void RuntimeInvoke (TargetFunctionType function,

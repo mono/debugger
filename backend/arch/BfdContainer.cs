@@ -39,6 +39,19 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public Bfd LookupLibrary (TargetAddress address)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (!bfd.IsContinuous)
+					continue;
+
+				if ((address >= bfd.StartAddress) && (address < bfd.EndAddress))
+					return bfd;
+			}
+
+			return null;
+		}
+
 		internal void SetupInferior (TargetInfo info, Bfd main_bfd)
 		{
 			this.main_bfd = main_bfd;
@@ -101,6 +114,16 @@ namespace Mono.Debugger.Backends
 
 			bfd_hash.Remove (bfd.FileName);
 			bfd.Dispose ();
+		}
+
+		public Bfd FindLibrary (string name)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (Path.GetFileName (bfd.FileName) == name)
+					return bfd;
+			}
+
+			return null;
 		}
 
 		//

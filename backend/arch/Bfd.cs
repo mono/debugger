@@ -25,6 +25,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress entry_point = TargetAddress.Null;
 		bool is_loaded;
 		Hashtable symbols;
+		Hashtable local_symbols;
 		ArrayList simple_symbols;
 		BfdSymbolTable simple_symtab;
 		DwarfReader dwarf;
@@ -64,7 +65,7 @@ namespace Mono.Debugger.Backends
 
 				this.name = bfd_glue_get_section_name (section);
 				this.vma = bfd_glue_get_section_vma (section);
-				this.size = bfd_glue_get_section_size (section, true);
+				this.size = bfd_glue_get_section_size (section);
 				this.flags = bfd_glue_get_section_flags (section);
 
 				contents = new ObjectCache (
@@ -73,7 +74,7 @@ namespace Mono.Debugger.Backends
 
 			object get_section_contents (object user_data)
 			{
-				byte[] data = bfd.GetSectionContents (section, true);
+				byte[] data = bfd.GetSectionContents (section);
 				if (data == null)
 					throw new SymbolTableException ("Can't get bfd section {0}", name);
 				return new TargetReader (data, bfd.info);
@@ -82,7 +83,7 @@ namespace Mono.Debugger.Backends
 			public TargetReader GetReader (TargetAddress address)
 			{
 				TargetReader reader = (TargetReader) contents.Data;
-				reader.Offset = address.Address - vma;
+				reader.Offset = address.Address - bfd.BaseAddress.Address - vma;
 				return reader;
 			}
 
@@ -101,6 +102,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		extern static bool bfd_close (IntPtr bfd);
+
+		[DllImport("monodebuggerserver")]
+		extern static string bfd_glue_get_errormsg ();
 
 		[DllImport("monodebuggerserver")]
 		extern static string bfd_glue_get_target_name (IntPtr bfd);
@@ -145,7 +149,7 @@ namespace Mono.Debugger.Backends
 		extern static string bfd_glue_get_section_name (IntPtr section);
 
 		[DllImport("monodebuggerserver")]
-		extern static int bfd_glue_get_section_size (IntPtr section, bool raw_section);
+		extern static int bfd_glue_get_section_size (IntPtr section);
 
 		[DllImport("monodebuggerserver")]
 		extern static SectionFlags bfd_glue_get_section_flags (IntPtr section);
@@ -195,6 +199,7 @@ namespace Mono.Debugger.Backends
 
 				if (!is_coredump) {
 					Section text = GetSectionByName (".text", true);
+					Section bss = GetSectionByName (".bss", true);
 
 					if (!base_address.IsNull)
 						start_address = new TargetAddress (
@@ -203,10 +208,14 @@ namespace Mono.Debugger.Backends
 					else
 						start_address = new TargetAddress (
 							info.AddressDomain, text.vma);
-					end_address = start_address + text.size;
-				} else {
-					start_address = main_bfd.StartAddress;
-					end_address = main_bfd.EndAddress;
+
+					if (!base_address.IsNull)
+						end_address = new TargetAddress (
+							info.AddressDomain,
+							base_address.Address + bss.vma + bss.size);
+					else
+						end_address = new TargetAddress (
+							info.AddressDomain, bss.vma + bss.size);
 				}
 
 				read_bfd_symbols ();
@@ -258,6 +267,7 @@ namespace Mono.Debugger.Backends
 			int num_symbols = bfd_glue_get_symbols (bfd, out symtab);
 
 			symbols = new Hashtable ();
+			local_symbols = new Hashtable ();
 			simple_symbols = new ArrayList ();
 
 			for (int i = 0; i < num_symbols; i++) {
@@ -275,9 +285,8 @@ namespace Mono.Debugger.Backends
 					symbols.Add (name, relocated);
 				else if ((main_bfd == null) && name.StartsWith ("MONO_DEBUGGER__"))
 					symbols.Add (name, relocated);
-				else if (name.StartsWith ("__pthread_") ||
-					 (name == "__libc_pthread_functions"))
-					symbols.Add (name, relocated);
+				else if (!local_symbols.Contains (name))
+					local_symbols.Add (name, relocated);
 
 				simple_symbols.Add (new Symbol (name, relocated, 0));
 			}
@@ -592,7 +601,7 @@ namespace Mono.Debugger.Backends
 			long vma_base = base_address.IsNull ? 0 : base_address.Address;
 			Section section = GetSectionByName (".debug_frame", false);
 			if (section != null) {
-				byte[] contents = GetSectionContents (section.section, false);
+				byte[] contents = GetSectionContents (section.section);
 				TargetBlob blob = new TargetBlob (contents, info);
 				frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, false);
@@ -600,7 +609,7 @@ namespace Mono.Debugger.Backends
 
 			section = GetSectionByName (".eh_frame", false);
 			if (section != null) {
-				byte[] contents = GetSectionContents (section.section, false);
+				byte[] contents = GetSectionContents (section.section);
 				TargetBlob blob = new TargetBlob (contents, info);
 				eh_frame_reader = new DwarfFrameReader (
 					this, blob, vma_base + section.vma, true);
@@ -681,22 +690,41 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal Section this [long address] {
-			get {
-				read_sections ();
-				foreach (Section section in sections) {
-					if ((address < section.vma) || (address >= section.vma + section.size))
-						continue;
+		public TargetAddress LookupLocalSymbol (string name)
+		{
+			if (local_symbols == null)
+				return TargetAddress.Null;
+
+			if (local_symbols.Contains (name))
+				return (TargetAddress) local_symbols [name];
+
+			return TargetAddress.Null;
+		}
+
+		internal Section FindSection (long address)
+		{
+			read_sections ();
+			foreach (Section section in sections) {
+				long relocated = base_address.Address + section.vma;
+
+				if ((address < relocated) || (address >= relocated + section.size))
+					continue;
 
 					return section;
-				}
+			}
 
-				if (main_bfd != null)
-					return main_bfd [address];
+			return null;
+		}
 
-				throw new SymbolTableException (String.Format (
+		internal Section this [long address] {
+			get {
+				Section section = FindSection (address);
+				if (section != null)
+					return section;
+
+				throw new SymbolTableException (
 					"No section in file {1} contains address {0:x}.", address,
-					filename));
+					filename);
 			}
 		}
 
@@ -755,10 +783,18 @@ namespace Mono.Debugger.Backends
 			return maps;
 		}
 
-		public TargetReader GetReader (TargetAddress address)
+		public TargetReader GetReader (TargetAddress address, bool may_fail)
 		{
-			Section section = this [address.Address];
-			return section.GetReader (address);
+			Section section = FindSection (address.Address);
+			if (section != null)
+				return section.GetReader (address);
+
+			if (may_fail)
+				return null;
+
+			throw new SymbolTableException (
+				"No section in file {1} contains address {0:x}.", address,
+				filename);
 		}
 
 		public TargetAddress GetSectionAddress (string name)
@@ -773,36 +809,41 @@ namespace Mono.Debugger.Backends
 			return GetAddress (vma);
 		}
 
-		public byte[] GetSectionContents (string name, bool raw_section)
+		public byte[] GetSectionContents (string name)
 		{
 			IntPtr section;
 
 			section = bfd_get_section_by_name (bfd, name);
 			if (section == IntPtr.Zero)
-				throw new SymbolTableException ("Can't get bfd section {0}", name);
+				throw new SymbolTableException ("Can't find bfd section {0}", name);
 
-			byte[] contents = GetSectionContents (section, raw_section);
+			byte[] contents = GetSectionContents (section);
 			if (contents == null)
-				throw new SymbolTableException ("Can't get bfd section {0}", name);
+				throw new SymbolTableException ("Can't read bfd section {0}", name);
 			return contents;
 		}
 
-		public TargetReader GetSectionReader (string name, bool raw_section)
+		public TargetReader GetSectionReader (string name)
 		{
-			byte[] contents = GetSectionContents (name, raw_section);
+			byte[] contents = GetSectionContents (name);
 			if (contents == null)
-				throw new SymbolTableException ("Can't get bfd section {0}", name);
+				throw new SymbolTableException ("Can't read bfd section {0}", name);
 			return new TargetReader (contents, info);
 		}
 
-		byte[] GetSectionContents (IntPtr section, bool raw_section)
+		byte[] GetSectionContents (IntPtr section)
 		{
-			int size = bfd_glue_get_section_size (section, raw_section);
+			int size = bfd_glue_get_section_size (section);
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = Marshal.AllocHGlobal (size);
-				if (!bfd_glue_get_section_contents (bfd, section, data, size))
-					return null;
+				if (!bfd_glue_get_section_contents (bfd, section, data, size)) {
+					string error = bfd_glue_get_errormsg ();
+					string name = bfd_glue_get_section_name (section);
+
+					throw new SymbolTableException (
+						"Can't read bfd section {0}: {1}", name, error);
+				}
 				byte[] retval = new byte [size];
 				Marshal.Copy (data, retval, 0, size);
 				return retval;
@@ -877,7 +918,7 @@ namespace Mono.Debugger.Backends
 
 		public bool IsContinuous {
 			get {
-				return !end_address.IsNull;
+				return !is_coredump && !end_address.IsNull;
 			}
 		}
 
@@ -1026,18 +1067,16 @@ namespace Mono.Debugger.Backends
 		{
 			Bfd bfd;
 			Symbol[] list;
-			TargetAddress start, end;
 
 			public BfdSymbolTable (Bfd bfd)
 			{
 				this.bfd = bfd;
-				this.start = bfd.StartAddress;
-				this.end = bfd.EndAddress;
 			}
 
 			public Symbol SimpleLookup (TargetAddress address, bool exact_match)
 			{
-				if ((address < start) || (address >= end))
+				if (bfd.IsContinuous &&
+				    ((address < bfd.StartAddress) || (address >= bfd.EndAddress)))
 					return null;
 
 				if (list == null) {

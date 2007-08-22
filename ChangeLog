@@ -1,5 +1,22 @@
 2007-08-22  Martin Baulig  <martin@ximian.com>
 
+	* backend/arch/Bfd.cs
+	(Bfd): Several bug fixes; mostly for core files.
+	(Bfd.LookupLocalSymbol): New public method.
+	(bfd.FindSection): New internal method.
+
+	* backend/arch/BfdContainer.cs
+	(BfdContainer.LookupLibrary): New public method.
+	(BfdContainer.FindLibrary): New public method.
+
+	* backend/arch/CoreFile.cs: Make this work again.
+
+	* backend/arch/bfdglue.c
+	(bfd_glue_get_errormsg): New public function.
+	(bfd_glue_get_section_size): Removed the `raw_section' argument.
+
+2007-08-22  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoLanguageBackend.cs: Reflect latest runtime
 	changes; the method range entries are now stored on a per-domain
 	basis and are free'ed when the domain gets unloaded.  Add support

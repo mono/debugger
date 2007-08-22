@@ -47,6 +47,9 @@ typedef enum {
 extern bfd *
 bfd_glue_openr (const char *filename, const char *target);
 
+extern gchar *
+bfd_glue_get_errormsg (void);
+
 extern void
 bfd_glue_setup_disassembler (struct disassemble_info *info, BfdGlueReadMemoryHandler read_memory_cb,
 			     BfdGlueOutputHandler output_cb, BfdGluePrintAddressHandler print_address_cb);
@@ -67,7 +70,7 @@ extern gchar *
 bfd_glue_get_section_name (asection *p);
 
 extern guint32
-bfd_glue_get_section_size (asection *p, gboolean raw_section);
+bfd_glue_get_section_size (asection *p);
 
 extern BfdGlueSectionFlags
 bfd_glue_get_section_flags (asection *p);

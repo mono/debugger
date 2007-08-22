@@ -63,6 +63,8 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 
 	if ((symbol->flags & (BSF_WEAK | BSF_DYNAMIC)) == (BSF_WEAK | BSF_DYNAMIC))
 		return NULL;
+	if ((symbol->flags & BSF_DEBUGGING) || !symbol->name || !strlen (symbol->name))
+		return NULL;
 
 	flags = symbol->flags & ~(BSF_DYNAMIC | BSF_NOT_AT_END);
 
@@ -76,10 +78,12 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 		*is_function = 1;
 		*address = symbol->section->vma + symbol->value;
 	} else if (flags == (BSF_OBJECT | BSF_LOCAL)) {
+#if 0
 		if (strncmp (symbol->name, "__pthread_", 10) &&
 		    strncmp (symbol->name, "MONO_DEBUGGER_", 14) &&
 		    strcmp (symbol->name, "__libc_pthread_functions"))
 			return NULL;
+#endif
 
 		*is_function = 0;
 		*address = symbol->section->vma + symbol->value;
@@ -219,10 +223,16 @@ bfd_glue_get_section_name (asection *p)
 	return g_strdup (p->name);
 }
 
-guint32
-bfd_glue_get_section_size (asection *p, gboolean raw_section)
+gchar *
+bfd_glue_get_errormsg (void)
 {
-	return raw_section ? p->_raw_size : p->_cooked_size;
+	return g_strdup (bfd_errmsg (bfd_get_error ()));
+}
+
+guint32
+bfd_glue_get_section_size (asection *p)
+{
+	return p->_raw_size;
 }
 
 BfdGlueSectionFlags

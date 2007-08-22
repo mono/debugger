@@ -698,7 +698,7 @@ namespace Mono.Debugger.Backends
 		object create_reader_func (object user_data)
 		{
 			try {
-				byte[] contents = bfd.GetSectionContents ((string) user_data, false);
+				byte[] contents = bfd.GetSectionContents ((string) user_data);
 				return new TargetBlob (contents, bfd.TargetInfo);
 			} catch {
 				Report.Debug (DebugFlags.DwarfReader,
