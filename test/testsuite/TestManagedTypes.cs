@@ -31,8 +31,6 @@ namespace Mono.Debugger.Tests
 		[Category("ManagedTypes")]
 		public void Main ()
 		{
-			DateTime start = DateTime.Now;
-
 			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
@@ -245,8 +243,6 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
 			AssertTargetExited (thread.Process);
-
-			Console.WriteLine ("MANAGED TYPES: {0}", DateTime.Now - start);
 		}
 	}
 }
