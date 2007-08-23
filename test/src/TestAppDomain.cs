@@ -2,9 +2,9 @@ using System;
 using System.Runtime.Remoting;
 using System.Reflection;
 
-public class Foo : MarshalByRefObject
+public class Hello : MarshalByRefObject, IHello
 {
-	public void Hello ()
+	public void World ()
 	{
 		Console.WriteLine ("Hello World from {0}!", AppDomain.CurrentDomain);
 	}
@@ -16,15 +16,15 @@ class X
 	{
 		AppDomain domain = AppDomain.CreateDomain ("Test");
 		Assembly ass = Assembly.GetExecutingAssembly ();
-		Foo foo = (Foo) domain.CreateInstanceAndUnwrap (ass.FullName, "Foo");
-		Console.WriteLine ("TEST: {0}", foo);
-		foo.Hello ();
+		Hello hello = (Hello) domain.CreateInstanceAndUnwrap (ass.FullName, "Hello");
+		Console.WriteLine ("TEST: {0}", hello);
+		hello.World ();
 
-		Foo bar = new Foo ();
-		bar.Hello ();
+		Hello bar = new Hello ();
+		bar.World ();
 
-		foo.Hello ();
-		bar.Hello ();
+		hello.World ();
+		bar.World ();
 
 		AppDomain.Unload (domain);
 	}

@@ -12,22 +12,38 @@ TEST_SRC = \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
 	TestRestart.cs TestExec.cs TestChild.cs TestAttach.cs \
 	TestMethodLookup.cs TestMultiThread.cs TestSession.cs \
-	TestCCtor.cs TestAppDomain.cs
+	TestCCtor.cs
 
-TEST_EXE = $(TEST_SRC:.cs=.exe)
+EXTRA_TEST_SRC = \
+	TestAppDomain.cs TestAppDomain-Module.cs TestAppDomain-Hello.cs \
+	IHelloInterface.cs
 
-EXTRA_DIST = $(TEST_SRC)
+TEST_EXE = $(TEST_SRC:.cs=.exe) $(noinst_PROGRAMS) $(EXTRA_TEST_EXE)
+
+EXTRA_TEST_EXE = TestAppDomain.exe TestAppDomain-Module.exe TestAppDomain-Hello.dll \
+	IHelloInterface.dll
+
+EXTRA_DIST = $(TEST_SRC) $(EXTRA_TEST_SRC)
 
 noinst_PROGRAMS = \
 	testnativefork testnativeexec testnativechild testnativeattach \
 	testnativetypes
 
-check-local: $(TEST_EXE)
+all: $(TEST_EXE)
 
 %.exe:%.cs
 	$(MCS) $(MCS_FLAGS) -out:$@ $<
 
 %.dll:%.cs
 	$(MCS) $(MCS_FLAGS) /target:library -out:$@ $<
+
+TestAppDomain-Hello.dll: TestAppDomain-Hello.cs IHelloInterface.dll
+	$(MCS) $(MCS_FLAGS) /target:library /r:IHelloInterface.dll -out:$@ $<
+
+TestAppDomain.exe: TestAppDomain.cs IHelloInterface.dll
+	$(MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
+
+TestAppDomain-Module.exe: TestAppDomain-Module.cs IHelloInterface.dll
+	$(MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
 
 CLEANFILES = *.exe *.mdb *.dll *.so a.out *.log
