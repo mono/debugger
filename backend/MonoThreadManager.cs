@@ -183,9 +183,6 @@ namespace Mono.Debugger.Backends
 					engine.OnManagedThreadExited ();
 					break;
 
-				case NotificationType.ThreadAbort:
-					break;
-
 				case NotificationType.InitializeThreadManager:
 					csharp_language = inferior.Process.CreateMonoLanguage (
 						debugger_info);
