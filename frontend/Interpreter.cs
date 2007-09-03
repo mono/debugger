@@ -456,6 +456,8 @@ namespace Mono.Debugger.Frontend
 
 				int ret = WaitHandle.WaitAny (handles);
 
+				Console.WriteLine ("WAIT ANY: {0}", ret);
+
 				if (ret == 0) {
 					stopped = null;
 					result.Abort ();
@@ -473,7 +475,7 @@ namespace Mono.Debugger.Frontend
 
 				CheckLastEvent (stopped);
 				wait_list.Remove (stopped);
-			} while (wait && (stopped != null) && (stopped != thread));
+			} while ((stopped != null) && (stopped != thread) && (wait || !stopped.IsAlive));
 
 			if (!HasTarget)
 				return stopped;
