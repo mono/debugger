@@ -589,6 +589,9 @@ namespace Mono.Debugger.Backends
 
 		object SendCommand (TargetAccessDelegate target)
 		{
+			if (inferior == null)
+				throw new TargetException (TargetError.NoTarget);
+
 			if (ThreadManager.InBackgroundThread)
 				return target (thread, null);
 			else

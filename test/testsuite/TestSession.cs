@@ -139,7 +139,7 @@ namespace Mono.Debugger.Tests
 			//
 			bpt_world = AssertBreakpoint ("hello.World ()");
 
-			AssertExecute ("run -yes");
+			AssertExecute ("start -yes");
 			AssertTargetExited (thread.Process);
 
 			process = AssertMainProcessCreated ();
