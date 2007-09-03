@@ -149,9 +149,13 @@ namespace Mono.Debugger.Backends
 			if (inferior == null)
 				return;
 
-			Inferior.ChildEvent cevent = inferior.ProcessEvent (status);
-			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} ({2:x}){3}",
-				      this, cevent, status, stop_requested ? " - stop requested" : "");
+			ProcessEvent (inferior.ProcessEvent (status));
+		}
+
+		public void ProcessEvent (Inferior.ChildEvent cevent)
+		{
+			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} {2}",
+				      this, cevent, stop_requested ? " - stop requested" : "");
 
 			if (killed && (cevent.Type != Inferior.ChildEventType.CHILD_EXITED)) {
 				Report.Debug (DebugFlags.EventLoop,
@@ -172,19 +176,18 @@ namespace Mono.Debugger.Backends
 			}
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION)
 				Report.Debug (DebugFlags.Notification,
-					      "{0} received event {1} {2} ({3:x})",
-					      this, cevent, (NotificationType) cevent.Argument,
-					      status);
+					      "{0} received event {1} {2}",
+					      this, cevent, (NotificationType) cevent.Argument);
 			else if ((cevent.Type != Inferior.ChildEventType.CHILD_EXITED) &&
 				 (cevent.Type != Inferior.ChildEventType.CHILD_SIGNALED))
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} ({2:x}) at {3} while running {4}",
-					      this, cevent, status, inferior.CurrentFrame,
+					      "{0} received event {1} at {2} while running {3}",
+					      this, cevent, inferior.CurrentFrame,
 					      current_operation);
 			else
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} ({2:x}) while running {3}",
-					      this, cevent, status, current_operation);
+					      "{0} received event {1} while running {2}",
+					      this, cevent, current_operation);
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
 				stop_requested = false;
@@ -1340,14 +1343,15 @@ namespace Mono.Debugger.Backends
 		internal override void AcquireThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
-				      "{0} acquiring thread lock: {1} {2}", this, engine_stopped,
-				      current_operation);
+				      "{0} acquiring thread lock: {1} {2}",
+				      this, engine_stopped, current_operation);
 
 			has_thread_lock = true;
 			stopped = inferior.Stop (out stop_event);
 
 			Report.Debug (DebugFlags.Threads,
-				      "{0} acquiring thread lock #1", this, stopped, stop_event);
+				      "{0} acquiring thread lock #1: {1} {2}",
+				      this, stopped, stop_event);
 
 			if ((stop_event != null) &&
 			    ((stop_event.Type == Inferior.ChildEventType.CHILD_EXITED) ||
@@ -1357,9 +1361,9 @@ namespace Mono.Debugger.Backends
 			TargetAddress new_rsp = inferior.PushRegisters ();
 
 			Report.Debug (DebugFlags.Threads,
-				      "{0} acquired thread lock: {1} {2} {3} {4}",
+				      "{0} acquired thread lock: {1} {2} {3} {4} {5}",
 				      this, stopped, stop_event, EndStackAddress,
-				      new_rsp);
+				      new_rsp, inferior.CurrentFrame);
 
 			if (!EndStackAddress.IsNull)
 				inferior.WriteAddress (EndStackAddress, new_rsp);
@@ -1368,41 +1372,43 @@ namespace Mono.Debugger.Backends
 		internal override void ReleaseThreadLock ()
 		{
 			Report.Debug (DebugFlags.Threads,
-				      "{0} releasing thread lock: {1} {2} {3}",
-				      this, stopped, stop_event, current_operation);
+				      "{0} releasing thread lock: {1} {2} {3} {4}",
+				      this, stopped, stop_event, inferior.CurrentFrame,
+				      current_operation);
+
+			if (stop_event != null)
+				manager.AddPendingEvent (this, stop_event);
 
 			has_thread_lock = false;
 
 			inferior.PopRegisters ();
+		}
 
-			// If the target was already stopped, there's nothing to do for us.
-			if (!stopped)
+		internal void ReleaseThreadLock (Inferior.ChildEvent cevent)
+		{
+			// The target stopped before we were able to send the SIGSTOP,
+			// but we haven't processed this event yet.
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument == 0)) {
+				do_continue ();
 				return;
-			if (stop_event != null) {
-				// The target stopped before we were able to send the SIGSTOP,
-				// but we haven't processed this event yet.
-				Inferior.ChildEvent cevent = stop_event;
-				stop_event = null;
-
-				if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
-				    (cevent.Argument == 0)) {
-					do_continue ();
-					return;
-				}
-
-				if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
-					do_continue ();
-					return;
-				}
-
-				bool resume_target;
-				if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
-					if (resume_target)
-						inferior.Continue ();
-					return;
-				}
-				ProcessChildEvent (cevent);
 			}
+
+			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
+				do_continue ();
+				return;
+			}
+
+#if FIXME
+			bool resume_target;
+			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
+				if (resume_target)
+					inferior.Continue ();
+				return;
+			}
+#endif
+
+			ProcessEvent (cevent);
 		}
 
 		internal override void ReleaseThreadLockDone ()

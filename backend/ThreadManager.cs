@@ -26,6 +26,8 @@ namespace Mono.Debugger.Backends
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			engine_hash = Hashtable.Synchronized (new Hashtable ());
 			processes = ArrayList.Synchronized (new ArrayList ());
+
+			pending_events = Hashtable.Synchronized (new Hashtable ());
 			
 			address_domain = AddressDomain.Global;
 
@@ -64,6 +66,7 @@ namespace Mono.Debugger.Backends
 		ST.AutoResetEvent wait_event;
 		Hashtable thread_hash;
 		Hashtable engine_hash;
+		Hashtable pending_events;
 		ArrayList processes;
 
 		AddressDomain address_domain;
@@ -264,6 +267,11 @@ namespace Mono.Debugger.Backends
 				return (ProcessServant) command.Result;
 		}
 
+		internal void AddPendingEvent (SingleSteppingEngine engine, Inferior.ChildEvent cevent)
+		{
+			pending_events.Add (engine, cevent);
+		}
+
 		// <summary>
 		//   The heart of the SingleSteppingEngine.  This runs in a background
 		//   thread and processes stepping commands and events.
@@ -319,6 +327,8 @@ namespace Mono.Debugger.Backends
 					Console.WriteLine ("EXCEPTION: {0}", e);
 				}
 
+				check_pending_events ();
+
 				engine_event.Set ();
 				RequestWait ();
 			}
@@ -364,6 +374,36 @@ namespace Mono.Debugger.Backends
 				engine_event.Set ();
 			} else {
 				throw new InvalidOperationException ();
+			}
+		}
+
+		void check_pending_events ()
+		{
+			SingleSteppingEngine[] list = new SingleSteppingEngine [pending_events.Count];
+			pending_events.Keys.CopyTo (list, 0);
+
+			for (int i = 0; i < list.Length; i++) {
+				SingleSteppingEngine engine = list [i];
+				if (engine.Process.HasThreadLock)
+					continue;
+
+				Inferior.ChildEvent cevent = (Inferior.ChildEvent) pending_events [engine];
+				pending_events.Remove (engine);
+
+				try {
+					Report.Debug (DebugFlags.Wait,
+						      "ThreadManager {0} process pending event: {1} {2}",
+						      DebuggerWaitHandle.CurrentThread, engine, cevent);
+					engine.ReleaseThreadLock (cevent);
+					Report.Debug (DebugFlags.Wait,
+						      "ThreadManager {0} process pending event done: {1}",
+						      DebuggerWaitHandle.CurrentThread, engine);
+				} catch (ST.ThreadAbortException) {
+					;
+				} catch (Exception e) {
+					Report.Debug (DebugFlags.Wait,
+					      "ThreadManager caught exception: {0}", e);
+				}
 			}
 		}
 

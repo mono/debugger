@@ -1,5 +1,21 @@
 2007-09-03  Martin Baulig  <martin@ximian.com>
 
+	Fix a race condition in the thread-lock code.
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ReleaseThreadLock): If we have a `stop_event',
+	don't process it here while we're called from the ProcessServant;
+	added a new overloaded version of this function which is now
+	called from the ThreadManager's event loop.
+
+	* backend/ThreadManager.cs
+	(ThreadManager.AddPendingEvent): New internal method; we're called
+	from SingleSteppingEngine.ReleaseThreadLock(); just queue the
+	event and process it next time we run the event loop.
+	(ThreadManager.engine_thread_main): Check for pending events.
+
+2007-09-03  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.WaitAll): Don't stop if another than the current
 	thread exited.

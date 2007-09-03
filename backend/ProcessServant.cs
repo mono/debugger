@@ -542,6 +542,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		internal bool HasThreadLock {
+			get { return has_thread_lock; }
+		}
+
 		// <summary>
 		//   Stop all currently running threads without sending any notifications.
 		//   The threads are automatically resumed to their previos state when
@@ -549,6 +553,9 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		internal void AcquireGlobalThreadLock (SingleSteppingEngine caller)
 		{
+			if (has_thread_lock)
+				throw new InternalError ("Recursive thread lock");
+
 			thread_lock_mutex.Lock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Acquiring global thread lock: {0}", caller);
