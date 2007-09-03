@@ -63,6 +63,11 @@ namespace Mono.Debugger
 			}
 		}
 
+		public override bool CheckBreakpointHit (Thread target, TargetAddress address)
+		{
+			return target.Process.ProcessStart.StopInMain;
+		}
+
 		internal override void OnTargetExited ()
 		{
 			handle = null;

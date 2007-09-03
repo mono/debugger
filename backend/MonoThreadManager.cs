@@ -197,16 +197,6 @@ namespace Mono.Debugger.Backends
 
 					break;
 
-				case NotificationType.ReachedMain: {
-					TargetAddress data = new TargetAddress (
-						inferior.AddressDomain, cevent.Data1);
-
-					engine.ProcessServant.MonoLanguage.ReachedMain (inferior, data);
-
-					resume_target = false;
-					return false;
-				}
-
 				case NotificationType.WrapperMain:
 				case NotificationType.MainExited:
 					break;
@@ -240,9 +230,9 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 
-					csharp_language.Notification (
-						inferior, type, data, cevent.Data2);
-					break;
+					resume_target = csharp_language.Notification (
+						engine, inferior, type, data, cevent.Data2);
+					return true;
 				}
 				}
 

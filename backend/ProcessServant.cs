@@ -325,8 +325,10 @@ namespace Mono.Debugger.Backends
 				thread_hash.Add (engine.PID, engine);
 			session.MainThreadGroup.AddThread (engine.Thread.ID);
 
-			if (!is_forked && !is_exec)
+			if (!is_forked && !is_exec) {
+				session.OnMainProcessCreated (client);
 				manager.Debugger.OnMainProcessCreatedEvent (this);
+			}
 
 			if ((start.PID != 0) && !is_exec) {
 				int[] threads = inferior.GetThreads ();

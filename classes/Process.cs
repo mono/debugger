@@ -43,6 +43,10 @@ namespace Mono.Debugger
 			get { return servant; }
 		}
 
+		internal ProcessStart ProcessStart {
+			get { return servant.ProcessStart; }
+		}
+
 		public Thread MainThread {
 			get { return servant.MainThread.Client; }
 		}

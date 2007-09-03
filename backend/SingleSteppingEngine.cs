@@ -1420,6 +1420,68 @@ namespace Mono.Debugger.Backends
 			manager.Debugger.OnInferiorOutput (is_stderr, line);
 		}
 
+		internal bool OnModuleLoaded ()
+		{
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+			Registers registers = inferior.GetRegisters ();
+
+			StackFrame main_frame;
+			if (process.MonoManager != null) {
+				MonoLanguageBackend mono = process.MonoLanguage;
+
+				MonoFunctionType main = mono.MainMethod;
+
+				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
+				if (source != null) {
+					SourceLocation location = new SourceLocation (source);
+
+					main_frame = new StackFrame (
+						thread, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, main, location);
+				} else {
+					main_frame = new StackFrame (
+						thread, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers);
+				}
+				update_current_frame (main_frame);
+			} else {
+				Method method = Lookup (inferior.MainMethodAddress);
+
+				main_frame = new StackFrame (
+					thread, iframe.Address, iframe.StackPointer,
+					iframe.FrameAddress, registers, method);
+				update_current_frame (main_frame);
+			}
+
+			Queue pending = new Queue ();
+			foreach (Event e in process.Session.Events) {
+				Breakpoint breakpoint = e as Breakpoint;
+				if (breakpoint == null)
+					continue;
+
+				if (!e.IsEnabled || e.IsActivated)
+					continue;
+
+				BreakpointHandle handle = breakpoint.Resolve (this, main_frame);
+				if (handle == null)
+					continue;
+
+				FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
+				if (fhandle == null) {
+					handle.Insert (thread);
+					continue;
+				}
+
+				pending.Enqueue (fhandle);
+			}
+
+			if (pending.Count == 0)
+				return false;
+
+			PushOperation (new OperationActivateBreakpoints (this, pending));
+			return true;
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("SSE ({0}:{1}:{2:x})", ID, PID, TID);
@@ -2000,12 +2062,8 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute ()
 		{ }
 
-		Queue pending_events;
-		StackFrame main_frame;
 		bool initialized;
-		bool has_main;
 		bool has_lmf;
-		bool completed;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
@@ -2016,11 +2074,8 @@ namespace Mono.Debugger.Backends
 				      inferior.CurrentFrame);
 
 			args = null;
-			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
-			    ((NotificationType) cevent.Argument == NotificationType.ReachedMain))
-				has_main = true;
-			else if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
-				 (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
+			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
 				return EventResult.Completed;
 
 			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
@@ -2046,19 +2101,7 @@ namespace Mono.Debugger.Backends
 					return EventResult.Running;
 				}
 			} else {
-				has_main = true;
-			}
-
-			if (!has_main)
-				return EventResult.Completed;
-
-			if (pending_events == null) {
-				pending_events = new Queue (sse.ProcessServant.Session.Events);
-				compute_main_frame ();
-			}
-
-			while (!completed) {
-				if (do_execute ())
+				if (sse.OnModuleLoaded ())
 					return EventResult.Running;
 			}
 
@@ -2072,89 +2115,64 @@ namespace Mono.Debugger.Backends
 			return EventResult.Running;
 		}
 
-		void compute_main_frame ()
+	}
+
+	protected class OperationActivateBreakpoints : Operation
+	{
+		public OperationActivateBreakpoints (SingleSteppingEngine sse, Queue pending)
+			: base (sse, null)
 		{
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-			Registers registers = inferior.GetRegisters ();
+			this.pending_events = pending;
+		}
 
-			if (sse.ProcessServant.MonoManager != null) {
-				MonoLanguageBackend mono = sse.ProcessServant.MonoLanguage;
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
 
-				MonoFunctionType main = mono.MainMethod;
+		protected override void DoExecute ()
+		{
+			do_execute ();
+		}
 
-				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
-				if (source != null) {
-					SourceLocation location = new SourceLocation (source);
+		Queue pending_events;
+		bool completed;
 
-					main_frame = new StackFrame (
-						sse.thread, iframe.Address, iframe.StackPointer,
-						iframe.FrameAddress, registers, main, location);
-				} else {
-					main_frame = new StackFrame (
-						sse.thread, iframe.Address, iframe.StackPointer,
-						iframe.FrameAddress, registers);
-				}
-				sse.update_current_frame (main_frame);
-			} else {
-				Method method = sse.Lookup (inferior.MainMethodAddress);
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			args = null;
 
-				main_frame = new StackFrame (
-					sse.thread, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, method);
-				sse.update_current_frame (main_frame);
+			while (!completed) {
+				if (do_execute ())
+					return EventResult.Running;
+
+
+				sse.do_continue ();
+				return EventResult.Running;
 			}
+
+			return EventResult.AskParent;
 		}
 
 		bool do_execute ()
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} managed main execute: {1} {2}", sse,
+				      "{0} activate breakpoints execute: {1} {2}", sse,
 				      inferior.CurrentFrame, pending_events.Count);
 
-			while (pending_events.Count > 0) {
-				Event e = (Event) pending_events.Dequeue ();
-				Report.Debug (DebugFlags.SSE,
-					      "{0} managed main: {1} {2}", sse, e, e.IsEnabled);
-
-				if (!e.IsEnabled)
-					continue;
-
-				Breakpoint breakpoint = e as Breakpoint;
-				if (breakpoint == null)
-					continue;
-
-				try {
-					if (activate_breakpoint (breakpoint))
-						return true;
-				} catch (TargetException ex) {
-					Report.Error ("Cannot insert breakpoint {0}: {1}",
-						      e.Index, ex.Message);
-				} catch (Exception ex) {
-					Report.Error ("Cannot insert breakpoint {0}: {1}",
-						      e.Index, ex.Message);
-				}
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} managed main done", sse);
-
-			completed = true;
-			return false;
-		}
-
-		bool activate_breakpoint (Breakpoint breakpoint)
-		{
-			BreakpointHandle handle = breakpoint.Resolve (sse, main_frame);
-			if (handle == null)
-				return false;
-
-			FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
-			if (fhandle == null) {
-				handle.Insert (sse.Client);
+			if (pending_events.Count == 0) {
+				completed = true;
 				return false;
 			}
+
+			FunctionBreakpointHandle handle =
+				(FunctionBreakpointHandle) pending_events.Dequeue ();
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} activate breakpoints: {1}", sse, handle);
 
 			sse.PushOperation (new OperationMethodBreakpoint (
-				sse, fhandle.Function, fhandle.MethodLoaded));
+				sse, handle.Function, handle.MethodLoaded));
 			return true;
 		}
 	}

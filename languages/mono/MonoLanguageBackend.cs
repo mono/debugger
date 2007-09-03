@@ -372,7 +372,7 @@ namespace Mono.Debugger.Languages.Mono
 			class_info_by_type = new Hashtable ();
 		}
 
-		internal MonoFunctionType ReachedMain (TargetMemoryAccess target, TargetAddress method)
+		void reached_main (TargetMemoryAccess target, TargetAddress method)
 		{
 			int token = target.ReadInteger (method + 4);
 			TargetAddress klass = target.ReadAddress (method + 8);
@@ -380,10 +380,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoSymbolFile file = GetImage (image);
 			if (file == null)
-				return null;
+				return;
 
 			main_method = file.GetFunctionByToken (token);
-			return main_method;
 		}
 
 		internal MonoFunctionType MainMethod {
@@ -1094,8 +1093,8 @@ namespace Mono.Debugger.Languages.Mono
 			read_builtin_types (memory);
 		}
 
-		public void Notification (Inferior inferior, NotificationType type,
-					  TargetAddress data, long arg)
+		public bool Notification (SingleSteppingEngine engine, Inferior inferior,
+					  NotificationType type, TargetAddress data, long arg)
 		{
 			switch (type) {
 			case NotificationType.InitializeCorlib:
@@ -1107,12 +1106,23 @@ namespace Mono.Debugger.Languages.Mono
 			case NotificationType.InitializeManagedCode:
 				Report.Debug (DebugFlags.JitSymtab, "Initialize managed code");
 				read_builtin_types (inferior);
+				reached_main (inferior, data);
 				break;
 
-			case NotificationType.LoadModule:
-				load_symfile (inferior, data);
+			case NotificationType.LoadModule: {
+				MonoSymbolFile symfile = load_symfile (inferior, data);
 				Report.Debug (DebugFlags.JitSymtab,
-					      "Module load: {0}", data);
+					      "Module load: {0} {1}", data, symfile);
+				if ((builtin_types != null) && (symfile != null)) {
+					if (engine.OnModuleLoaded ())
+						return false;
+				}
+				break;
+			}
+
+			case NotificationType.ReachedMain:
+				if (engine.OnModuleLoaded ())
+					return false;
 				break;
 
 			case NotificationType.UnloadModule:
@@ -1142,6 +1152,8 @@ namespace Mono.Debugger.Languages.Mono
 						   (int) type, data, arg);
 				break;
 			}
+
+			return true;
 		}
 #endregion
 

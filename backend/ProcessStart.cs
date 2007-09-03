@@ -15,6 +15,7 @@ namespace Mono.Debugger.Backends
 
 		string cwd;
 		string base_dir;
+		bool stop_in_main = true;
 		string[] argv;
 		string[] envp;
 		DebuggerOptions options;
@@ -73,6 +74,8 @@ namespace Mono.Debugger.Backends
 			if (options.InferiorArgs == null)
 				throw new ArgumentException ();
 
+			stop_in_main = options.StopInMain;
+
 			cwd = options.WorkingDirectory;
 			if (cwd == null)
 				cwd = options.WorkingDirectory = System.Environment.CurrentDirectory;
@@ -123,6 +126,8 @@ namespace Mono.Debugger.Backends
 			this.options = session.Options;
 			this.PID = pid;
 
+			stop_in_main = options.StopInMain;
+
 			IsNative = true;
 		}
 
@@ -159,6 +164,8 @@ namespace Mono.Debugger.Backends
 			options.InferiorArgs = cmdline_args;
 			options.WorkingDirectory = cwd;
 
+			stop_in_main = false;
+
 			SetupEnvironment ();
 		}
 
@@ -188,6 +195,10 @@ namespace Mono.Debugger.Backends
 
 		public string WorkingDirectory {
 			get { return cwd; }
+		}
+
+		public bool StopInMain {
+			get { return stop_in_main; }
 		}
 
 		void AddUserEnvironment (Hashtable hash)

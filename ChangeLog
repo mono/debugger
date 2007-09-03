@@ -1,3 +1,24 @@
+2007-09-03  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OnModuleLoaded): New internal method; check
+	whether we need to activate any breakpoints and start an
+	`OperationActivateBreakpoints' if neccessary.
+	(OperationActivateBreakpoints): New operation.
+	(OperationStart): Don't activate any breakpoints here; just call
+	sse.OnModuleLoaded() and let the new `OperationActivateBreakpoints'
+	do the job.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.StopInMain): New public property.
+	(ProcessStart.SetupApplication): We're called on exec() -> set
+	`StopInMain' to false.	
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.Notification): Added `SingleSteppingEngine'
+	argument; return a `bool' denoting whether or not to resume the
+	target.
+
 2007-08-24  Wade Berrier  <wberrier@novell.com>
 
 	* backend/Makefile.am: Glob .cs for EXTRA_DIST so these don't

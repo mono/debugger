@@ -12,7 +12,7 @@ namespace Mono.Debugger.Backends
 			this.Breakpoint = breakpoint;
 		}
 
-		internal abstract bool Insert (SingleSteppingEngine sse);
+		public abstract void Insert (Inferior target);
 
 		public abstract void Insert (Thread target);
 
@@ -29,7 +29,7 @@ namespace Mono.Debugger.Backends
 			this.index = index;
 		}
 
-		internal override bool Insert (SingleSteppingEngine sse)
+		public override void Insert (Inferior target)
 		{
 			throw new InternalError ();
 		}
@@ -58,13 +58,6 @@ namespace Mono.Debugger.Backends
 			this.Address = address;
 		}
 
-		internal override bool Insert (SingleSteppingEngine sse)
-		{
-			sse.Inferior.InsertBreakpoint (this, Address, -1);
-			has_breakpoint = true;
-			return false;
-		}
-
 		public override void Insert (Thread target)
 		{
 			target.InsertBreakpoint (this, Address, -1);
@@ -78,7 +71,7 @@ namespace Mono.Debugger.Backends
 			has_breakpoint = false;
 		}
 
-		internal void Insert (Inferior inferior)
+		public override void Insert (Inferior inferior)
 		{
 			inferior.InsertBreakpoint (this, Address, -1);
 			has_breakpoint = true;
@@ -110,11 +103,16 @@ namespace Mono.Debugger.Backends
 			get { return function; }
 		}
 
-		internal override bool Insert (SingleSteppingEngine sse)
+		internal bool Insert (SingleSteppingEngine sse)
 		{
 			if (has_load_handler)
 				return false;
 
+			throw new InternalError ();
+		}
+
+		public override void Insert (Inferior target)
+		{
 			throw new InternalError ();
 		}
 
