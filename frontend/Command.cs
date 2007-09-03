@@ -78,6 +78,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("library", typeof (LibraryCommand));
 			RegisterCommand ("run", typeof (RunCommand));
 			RegisterAlias   ("r", typeof (RunCommand));
+			RegisterCommand ("start", typeof (StartCommand));
 			RegisterCommand ("attach", typeof (AttachCommand));
 			RegisterCommand ("core", typeof (OpenCoreFileCommand));
 			RegisterCommand ("about", typeof (AboutCommand));
@@ -1515,7 +1516,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public class RunCommand : DebuggerCommand, IDocumentableCommand
+	public abstract class RunCommandBase : DebuggerCommand, IDocumentableCommand
 	{
 		bool yes;
 
@@ -1569,6 +1570,24 @@ namespace Mono.Debugger.Frontend
 		public CommandFamily Family { get { return CommandFamily.Running; } }
 		public string Description { get { return "Start debugged program."; } }
 		public string Documentation { get { return ""; } }
+	}
+
+	public class RunCommand : RunCommandBase
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			context.Interpreter.Options.StopInMain = false;
+			return base.DoResolve (context);
+		}
+	}
+
+	public class StartCommand : RunCommandBase
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			context.Interpreter.Options.StopInMain = true;
+			return base.DoResolve (context);
+		}
 	}
 
 	public class AttachCommand : DebuggerCommand, IDocumentableCommand

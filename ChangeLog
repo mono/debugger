@@ -1,5 +1,16 @@
 2007-09-03  Martin Baulig  <martin@ximian.com>
 
+	User-visible change:
+	- `run' no longer stops in main
+	- there's a new `start' command which starts the target and stops
+	  in main.
+
+	* frontend/Command.cs
+	(StartCommand): New command; start the target and stop in main.
+	(RunCommand): Don't stop in main anymore.
+
+2007-09-03  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(SingleSteppingEngine.OnModuleLoaded): New internal method; check
 	whether we need to activate any breakpoints and start an
