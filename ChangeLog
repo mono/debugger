@@ -1,5 +1,9 @@
 2007-09-03  Martin Baulig  <martin@ximian.com>
 
+	*** Milestone: Appdomains are now fully functional ***
+
+2007-09-03  Martin Baulig  <martin@ximian.com>
+
 	Fix a race condition in the thread-lock code.
 
 	* backend/SingleSteppingEngine.cs
