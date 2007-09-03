@@ -29,8 +29,6 @@ namespace Mono.Debugger.Tests
 		[Category("AppDomain")]
 		public void Main ()
 		{
-			bpt_world = AssertBreakpoint ("Hello.World");
-
 			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
@@ -40,6 +38,8 @@ namespace Mono.Debugger.Tests
 
 			bpt_unload = AssertBreakpoint (LineUnload);
 			bpt_end = AssertBreakpoint (LineEnd);
+
+			bpt_world = AssertBreakpoint (true, "Hello.World");
 
 			AssertExecute ("next");
 			AssertStopped (thread, "X.Main()", LineMain+1);

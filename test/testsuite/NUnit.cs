@@ -444,7 +444,14 @@ namespace Mono.Debugger.Tests
 
 		public int AssertBreakpoint (string location)
 		{
-			object result = AssertExecute ("break " + location);
+			return AssertBreakpoint (false, location);
+		}
+
+		public int AssertBreakpoint (bool lazy, string location)
+		{
+			string command = String.Concat (
+				"break ", lazy ? "-lazy " : "", location);
+			object result = AssertExecute (command);
 			if (result == null) {
 				Assert.Fail ("Failed to insert breakpoint.");
 				return -1;
