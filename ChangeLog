@@ -1,6 +1,12 @@
 2007-09-03  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs
+	(SteppingCommand.DoExecute): Only switch threads if the new thread
+	is alive.
+
+2007-09-03  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
 	(BreakCommand): Add new `lazy' argument to disable error checking.
 
 	* test/testsuite/TestAppDomain-Module.cs:

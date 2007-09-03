@@ -1286,7 +1286,8 @@ namespace Mono.Debugger.Frontend
 			if (ret == null)
 				return null;
 
-			context.Interpreter.CurrentThread = ret;
+			if (ret.IsAlive)
+				context.Interpreter.CurrentThread = ret;
 			return ret;
 		}
 
