@@ -14,6 +14,8 @@ namespace Mono.Debugger.Tests
 			: base ("TestAppDomain-Module")
 		{ }
 
+		const int LineHelloWorld = 7;
+
 		const int LineMain = 9;
 		const int LineMain2 = 12;
 		const int LineUnload = 14;
@@ -21,11 +23,14 @@ namespace Mono.Debugger.Tests
 
 		int bpt_unload;
 		int bpt_end;
+		int bpt_world;
 
 		[Test]
 		[Category("AppDomain")]
 		public void Main ()
 		{
+			bpt_world = AssertBreakpoint ("Hello.World");
+
 			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
@@ -43,6 +48,9 @@ namespace Mono.Debugger.Tests
 			Thread child = AssertThreadCreated ();
 			AssertStopped (thread, "X.Main()", LineMain2);
 
+			AssertExecute ("continue");
+
+			AssertHitBreakpoint (thread, bpt_world, "Hello.World()", LineHelloWorld);
 			AssertExecute ("continue");
 
 			AssertTargetOutput ("Hello World from Test!");

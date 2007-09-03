@@ -1,5 +1,13 @@
 2007-09-03  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(BreakCommand): Add new `lazy' argument to disable error checking.
+
+	* test/testsuite/TestAppDomain-Module.cs:
+	Insert a breakpoint on Hello.World(), which is dynamically loaded.
+
+2007-09-03  Martin Baulig  <martin@ximian.com>
+
 	User-visible change:
 	- `run' no longer stops in main
 	- there's a new `start' command which starts the target and stops

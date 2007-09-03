@@ -2870,6 +2870,7 @@ namespace Mono.Debugger.Frontend
 		int p_index = -1, t_index = -1, f_index = -1;
 		string group;
 		bool global, local;
+		bool lazy;
 		int domain = 0;
 		ThreadGroup tgroup;
 
@@ -2886,6 +2887,11 @@ namespace Mono.Debugger.Frontend
 		public bool Local {
 			get { return local; }
 			set { local = value; }
+		}
+
+		public bool Lazy {
+			get { return lazy; }
+			set { lazy = true; }
 		}
 
 		public int Domain {
@@ -3015,6 +3021,8 @@ namespace Mono.Debugger.Frontend
 			try {
 				mexpr = expr.ResolveMethod (context, type);
 			} catch {
+				if (lazy)
+					return true;
 				throw new ScriptingException ("No such method: `{0}'.", Argument);
 			}
 
@@ -3022,6 +3030,9 @@ namespace Mono.Debugger.Frontend
 				location = mexpr.EvaluateSource (context);
 			else
 				location = context.FindMethod (Argument);
+
+			if (lazy)
+				return true;
 
 			if (location == null)
 				throw new ScriptingException ("No such method: `{0}'.", Argument);
@@ -3047,8 +3058,15 @@ namespace Mono.Debugger.Frontend
 				context.Print ("Breakpoint {0} at {1}", handle.Index, Argument);
 			}
 
-			if (context.Interpreter.HasTarget)
+			if (!context.Interpreter.HasTarget)
+				return handle.Index;
+
+			try {
 				handle.Activate (context.Interpreter.CurrentThread);
+			} catch {
+				if (!lazy)
+					throw;
+			}
 
 			return handle.Index;
 		}

@@ -1462,17 +1462,25 @@ namespace Mono.Debugger.Backends
 				if (!e.IsEnabled || e.IsActivated)
 					continue;
 
-				BreakpointHandle handle = breakpoint.Resolve (this, main_frame);
-				if (handle == null)
-					continue;
+				try {
+					BreakpointHandle handle = breakpoint.Resolve (this, main_frame);
+					if (handle == null)
+						continue;
 
-				FunctionBreakpointHandle fhandle = handle as FunctionBreakpointHandle;
-				if (fhandle == null) {
-					handle.Insert (thread);
-					continue;
+					FunctionBreakpointHandle fh = handle as FunctionBreakpointHandle;
+					if (fh == null) {
+						handle.Insert (thread);
+						continue;
+					}
+
+					pending.Enqueue (fh);
+				} catch (TargetException ex) {
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
+				} catch (Exception ex) {
+					Report.Error ("Cannot insert breakpoint {0}: {1}",
+						      e.Index, ex.Message);
 				}
-
-				pending.Enqueue (fhandle);
 			}
 
 			if (pending.Count == 0)
