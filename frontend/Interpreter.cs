@@ -456,8 +456,6 @@ namespace Mono.Debugger.Frontend
 
 				int ret = WaitHandle.WaitAny (handles);
 
-				Console.WriteLine ("WAIT ANY: {0}", ret);
-
 				if (ret == 0) {
 					stopped = null;
 					result.Abort ();
