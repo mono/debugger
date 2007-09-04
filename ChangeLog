@@ -1,3 +1,8 @@
+2007-09-04  Martin Baulig  <martin@ximian.com>
+
+	* backend/BreakpointManager.cs: Kill the `entry_hash'; only use
+	the `index_hash'.
+
 2007-09-03  Martin Baulig  <martin@ximian.com>
 
 	*** Milestone: Appdomains are now fully functional ***

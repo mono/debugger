@@ -9,7 +9,6 @@ namespace Mono.Debugger.Backends
 	{
 		IntPtr _manager;
 		Hashtable index_hash;
-		Hashtable entry_hash;
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_breakpoint_manager_new ();
@@ -41,7 +40,6 @@ namespace Mono.Debugger.Backends
 		public BreakpointManager ()
 		{
 			index_hash = new Hashtable ();
-			entry_hash = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_new ();
 		}
 
@@ -50,17 +48,11 @@ namespace Mono.Debugger.Backends
 			Lock ();
 
 			index_hash = new Hashtable ();
-			entry_hash = new Hashtable ();
 			_manager = mono_debugger_breakpoint_manager_clone (old.Manager);
 
 			foreach (int index in old.index_hash.Keys) {
-				BreakpointHandle handle = (BreakpointHandle) old.index_hash [index];
-				index_hash.Add (index, handle);
-			}
-
-			foreach (BreakpointEntry entry in old.entry_hash.Keys) {
-				int index = (int) old.entry_hash [entry];
-				entry_hash.Add (entry, index);
+				BreakpointEntry entry = (BreakpointEntry) old.index_hash [index];
+				index_hash.Add (index, entry);
 			}
 
 			Unlock ();
@@ -95,17 +87,21 @@ namespace Mono.Debugger.Backends
 
 				index = mono_debugger_breakpoint_info_get_id (info);
 				is_enabled = mono_debugger_breakpoint_info_get_is_enabled (info);
-				return (BreakpointHandle) index_hash [index];
+				if (!index_hash.Contains (index))
+					return null;
+				return ((BreakpointEntry) index_hash [index]).Handle;
 			} finally {
 				Unlock ();
 			}
 		}
 
-		public BreakpointHandle LookupBreakpoint (int breakpoint)
+		public BreakpointHandle LookupBreakpoint (int index)
 		{
 			Lock ();
 			try {
-				return (BreakpointHandle) index_hash [breakpoint];
+				if (!index_hash.Contains (index))
+					return null;
+				return ((BreakpointEntry) index_hash [index]).Handle;
 			} finally {
 				Unlock ();
 			}
@@ -163,8 +159,7 @@ namespace Mono.Debugger.Backends
 					throw new InternalError ();
 				}
 
-				index_hash.Add (index, handle);
-				entry_hash.Add (new BreakpointEntry (handle, domain), index);
+				index_hash.Add (index, new BreakpointEntry (handle, domain));
 				return index;
 			} finally {
 				Unlock ();
@@ -175,15 +170,15 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 			try {
-				BreakpointEntry[] entries = new BreakpointEntry [entry_hash.Count];
-				entry_hash.Keys.CopyTo (entries, 0);
-				for (int i = 0; i < entries.Length; i++) {
-					if (entries [i].Handle != handle)
+				int[] indices = new int [index_hash.Count];
+				index_hash.Keys.CopyTo (indices, 0);
+
+				for (int i = 0; i < indices.Length; i++) {
+					BreakpointEntry entry = (BreakpointEntry) index_hash [indices [i]];
+					if (entry.Handle != handle)
 						continue;
-					int index = (int) entry_hash [entries [i]];
-					inferior.RemoveBreakpoint (index);
-					entry_hash.Remove (entries [i]);
-					index_hash.Remove (index);
+					inferior.RemoveBreakpoint (indices [i]);
+					index_hash.Remove (indices [i]);
 				}
 			} finally {
 				Unlock ();
@@ -199,8 +194,8 @@ namespace Mono.Debugger.Backends
 
 				for (int i = 0; i < indices.Length; i++) {
 					int idx = indices [i];
-					BreakpointHandle handle = (BreakpointHandle) index_hash [idx];
-					SourceBreakpoint bpt = handle.Breakpoint as SourceBreakpoint;
+					BreakpointEntry entry = (BreakpointEntry) index_hash [idx];
+					SourceBreakpoint bpt = entry.Handle.Breakpoint as SourceBreakpoint;
 
 					if ((bpt == null) || !bpt.ThreadGroup.IsSystem) {
 						try {
@@ -243,15 +238,15 @@ namespace Mono.Debugger.Backends
 		{
 			Lock ();
 			try {
-				BreakpointEntry[] entries = new BreakpointEntry [entry_hash.Count];
-				entry_hash.Keys.CopyTo (entries, 0);
-				for (int i = 0; i < entries.Length; i++) {
-					if (entries [i].Domain != domain)
+				int[] indices = new int [index_hash.Count];
+				index_hash.Keys.CopyTo (indices, 0);
+
+				for (int i = 0; i < indices.Length; i++) {
+					BreakpointEntry entry = (BreakpointEntry) index_hash [indices [i]];
+					if (entry.Domain != domain)
 						continue;
-					int index = (int) entry_hash [entries [i]];
-					inferior.RemoveBreakpoint (index);
-					entry_hash.Remove (entries [i]);
-					index_hash.Remove (index);
+					inferior.RemoveBreakpoint (indices [i]);
+					index_hash.Remove (indices [i]);
 				}
 			} finally {
 				Unlock ();
