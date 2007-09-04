@@ -1145,6 +1145,7 @@ namespace Mono.Debugger.Languages.Mono
 				Report.Debug (DebugFlags.JitSymtab,
 					      "Domain unload: {0} {1:x}", data, arg);
 				destroy_data_table ((int) arg, data);
+				engine.Process.BreakpointManager.DomainUnload (inferior, (int) arg);
 				break;
 
 			default:
