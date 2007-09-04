@@ -724,6 +724,8 @@ namespace Mono.Debugger.Frontend.CSharp
 					return Token.COLON;
 				else if (c == '?')
 					return Token.QUESTION;
+				else if (c == '`')
+					return Token.BACKTICK;
 
 				if (c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\r' || c == '\n'){
 					if (current_token == Token.HASH) {

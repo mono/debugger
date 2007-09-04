@@ -35,7 +35,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		private MonoMethodInfo (MonoClassType klass, int index, Cecil.MethodDefinition minfo,
 					MonoFunctionType type)
-			: base (type, minfo.Name, index, minfo.IsStatic, type.FullName)
+			: base (type, MonoFunctionType.GetMethodName (minfo), index,
+				minfo.IsStatic, type.FullName)
 		{
 			Klass = klass;
 			FunctionType = type;

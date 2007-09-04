@@ -306,7 +306,7 @@ namespace Mono.Debugger.Frontend
 					first = false;
 				else
 					sb.Append (", ");
-				sb.Append (ptype.Name);
+				sb.Append (ptype != null ? ptype.Name : "<unknown type>");
 			}
 			sb.Append (");\n");
 			return sb.ToString ();

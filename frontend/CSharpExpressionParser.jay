@@ -81,6 +81,7 @@ namespace Mono.Debugger.Frontend.CSharp
 %token QUESTION
 %token AMPERSAND
 %token ARROW
+%token BACKTICK
 
 %token LENGTH
 %token LOWER
@@ -274,20 +275,31 @@ variable_or_type_name
 	  }
 	;
 
-variable_or_type_name_0
+member_name
 	: IDENTIFIER
+	  {
+		$$ = (string) $1;
+	  }
+	| IDENTIFIER BACKTICK INT
+	  {
+		$$ = String.Format ("{0}`{1}", (string) $1, (int) $3);
+	  }
+	;
+
+variable_or_type_name_0
+	: member_name
 	  {
 		$$ = new SimpleNameExpression ((string) $1);
 	  }
-	| expression DOT IDENTIFIER
+	| expression DOT member_name
 	  { 
 		$$ = new MemberAccessExpression ((Expression) $1, (string) $3);
 	  }
-	| expression DOTDOT IDENTIFIER
+	| expression DOTDOT member_name
 	  { 
 		$$ = new MemberAccessExpression ((Expression) $1, "." + (string) $3);
 	  }
-	| expression ARROW IDENTIFIER
+	| expression ARROW member_name
 	  {
 		Expression expr = new PointerDereferenceExpression ((Expression) $1, true);
 		$$ = new MemberAccessExpression (expr, (string) $3);

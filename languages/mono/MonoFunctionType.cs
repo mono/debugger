@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.klass = klass;
 			this.method_info = mdef;
 			this.token = MonoDebuggerSupport.GetMethodToken (mdef);
-			this.name = mdef.Name + MonoSymbolFile.GetMethodSignature (mdef);
+			this.name = GetMethodName (mdef) + MonoSymbolFile.GetMethodSignature (mdef);
 
 			Cecil.TypeReference rtype;
 			if (mdef.IsConstructor) {
@@ -54,6 +54,15 @@ namespace Mono.Debugger.Languages.Mono
 			this.file = file;
 			this.start_row = start_row;
 			this.end_row = end_row;
+		}
+
+		internal static string GetMethodName (Cecil.MethodDefinition mdef)
+		{
+			Cecil.GenericParameterCollection gen_params = mdef.GenericParameters;
+			if ((gen_params == null) || (gen_params.Count == 0))
+				return mdef.Name;
+			else
+				return mdef.Name + "`" + gen_params.Count;
 		}
 
 		public override string Name {

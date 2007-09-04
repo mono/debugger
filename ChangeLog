@@ -1,5 +1,18 @@
 2007-09-04  Martin Baulig  <martin@ximian.com>
 
+	* frontend/CSharpExpressionParser.jay
+	(member_name): New rule; support member names with generic arity.
+	(variable_or_type_name_0): Use `member_name' instead of
+	`IDENTIFIER' to allow names with generic arity.
+
+	* languages/mono/MonoMember.cs
+	(MonoMethodInfo): Include the generic arity in the method name.
+
+	* languages/mono/MonoFunctionType.cs
+	(MonoFunctionType): Include the generic arity in the method name.
+
+2007-09-04  Martin Baulig  <martin@ximian.com>
+
 	* backend/BreakpointManager.cs: Kill the `entry_hash'; only use
 	the `index_hash'.
 
