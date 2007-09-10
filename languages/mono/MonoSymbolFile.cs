@@ -947,11 +947,13 @@ namespace Mono.Debugger.Languages.Mono
 
 				MonoGenericInst class_inst = null;
 				if (!class_inst_addr.IsNull)
-					class_inst = new MonoGenericInst (target, class_inst_addr);
+					class_inst = new MonoGenericInst (
+						file.MonoLanguage, target, class_inst_addr);
 
 				MonoGenericInst method_inst = null;
 				if (!method_inst_addr.IsNull)
-					method_inst = new MonoGenericInst (target, method_inst_addr);
+					method_inst = new MonoGenericInst (
+						file.MonoLanguage, target, method_inst_addr);
 
 				return new MonoMethodFrameInfo (this, declaring, class_inst, method_inst);
 			}
@@ -1100,30 +1102,6 @@ namespace Mono.Debugger.Languages.Mono
 				string[] retval = new string [list.Count];
 				list.CopyTo (retval, 0);
 				return retval;
-			}
-		}
-
-		protected class MonoMethodFrameInfo : TargetMethodFrameInfo
-		{
-			public readonly MonoMethod Method;
-			public readonly TargetAddress Declaring;
-			public readonly MonoGenericInst ClassInst;
-			public readonly MonoGenericInst MethodInst;
-
-			public MonoMethodFrameInfo (MonoMethod method, TargetAddress declaring,
-						    MonoGenericInst class_inst,
-						    MonoGenericInst method_inst)
-			{
-				this.Method = method;
-				this.Declaring = declaring;
-				this.ClassInst = class_inst;
-				this.MethodInst = method_inst;
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("MonoMethodFrameInfo ({0}:{1}:{2}:{3})",
-						      Method, Declaring, ClassInst, MethodInst);
 			}
 		}
 

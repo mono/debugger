@@ -359,6 +359,10 @@ namespace Mono.Debugger
 			get { return exc_object; }
 		}
 
+		internal TargetMethodFrameInfo MethodFrameInfo {
+			get { return method_frame_info; }
+		}
+
 		internal void SetExceptionObject (TargetAddress exc)
 		{
 			try {

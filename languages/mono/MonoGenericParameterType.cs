@@ -37,8 +37,20 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal TargetObject GetObject (StackFrame frame, TargetLocation location)
 		{
-			Console.WriteLine ("GET OBJECT: {0} {1} {2}", this, frame, location);
-			return null;
+			MonoMethodFrameInfo info = (MonoMethodFrameInfo) frame.MethodFrameInfo;
+			if (info == null)
+				return null;
+
+			Console.WriteLine ("GET OBJECT: {0} {1}", info, gen_param.Owner.GetType ());
+
+			MonoGenericInst inst;
+			if (gen_param.Owner is Cecil.MethodDefinition)
+				inst = info.MethodInst;
+			else
+				inst = info.ClassInst;
+
+			TargetType type = inst.Types [gen_param.Position];
+			return type.GetObject (location);
 		}
 	}
 }
