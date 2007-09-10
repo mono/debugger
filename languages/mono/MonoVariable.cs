@@ -125,6 +125,10 @@ namespace Mono.Debugger.Languages.Mono
 				return process.MonoLanguage.CreateNullObject (
 					frame.Thread, type);
 
+			MonoGenericParameterType gen_param = type as MonoGenericParameterType;
+			if (gen_param != null)
+				return gen_param.GetObject (frame, location);
+
 			return type.GetObject (location);
 		}
 

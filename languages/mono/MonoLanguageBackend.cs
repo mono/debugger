@@ -286,6 +286,10 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoPointerType (element_type);
 			}
 
+			Cecil.GenericParameter gen_param = type as Cecil.GenericParameter;
+			if (gen_param != null)
+				return new MonoGenericParameterType (this, gen_param);
+
 			int rank = 0;
 
 			string full_name = type.FullName;

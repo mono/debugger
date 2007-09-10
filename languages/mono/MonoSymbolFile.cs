@@ -105,6 +105,7 @@ namespace Mono.Debugger.Languages.Mono
 	// managed version of struct _MonoDebugMethodAddress
 	internal class MethodAddress
 	{
+		public readonly TargetAddress MonoMethodPtr;
 		public readonly TargetAddress StartAddress;
 		public readonly TargetAddress EndAddress;
 		public readonly TargetAddress MethodStartAddress;
@@ -133,7 +134,7 @@ namespace Mono.Debugger.Languages.Mono
 			// as written out in mono_debug_add_method.
 			reader.Position = 16;
 			ReadAddress (reader, domain); // wrapper_data
-			ReadAddress (reader, domain); // method
+			MonoMethodPtr = ReadAddress (reader, domain); // method
 			ReadAddress (reader, domain); // address_list
 			StartAddress = ReadAddress (reader, domain);
 			WrapperAddress = ReadAddress (reader, domain);
@@ -904,11 +905,55 @@ namespace Mono.Debugger.Languages.Mono
 				address = new MethodAddress (
 					dynamic_reader, domain, file.Architecture);
 
+				Console.WriteLine ("LOAD: {0} {1} {2} {3}", method, mdef, address,
+						   address.MonoMethodPtr);
+
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
 				SetLineNumbers (new MonoMethodLineNumberTable (
 					this, source, method, address.LineNumbers));
+			}
+
+			internal override TargetMethodFrameInfo GetFrameInfo (Thread target, StackFrame frame)
+			{
+				Console.WriteLine ("GET METHOD INFO: {0} {1} {2}", this, frame, address);
+				if (!is_loaded)
+					return null;
+
+				MonoMetadataInfo metadata = file.MonoLanguage.MonoMetadataInfo;
+
+				Console.WriteLine ("GET FRAME INFO #1: {0} {1} {2}",
+						   address.MonoMethodPtr,
+						   metadata.MonoMethodFlagsOffset,
+						   metadata.MonoMethodInflatedOffset);
+
+				int flags = target.ReadInteger (
+					address.MonoMethodPtr + metadata.MonoMethodFlagsOffset);
+				if ((flags & 0x0400) == 0)
+					return null;
+
+				TargetReader reader = new TargetReader (target.ReadMemory (
+					address.MonoMethodPtr + metadata.MonoMethodInflatedOffset,
+					3 * target.TargetAddressSize));
+
+				TargetAddress declaring = reader.ReadAddress ();
+				TargetAddress class_inst_addr = reader.ReadAddress ();
+				TargetAddress method_inst_addr = reader.ReadAddress ();
+
+				Console.WriteLine ("GET FRAME INFO #2: {0} - {1} {2} {3}",
+						   reader.BinaryReader.HexDump (),
+						   declaring, class_inst_addr, method_inst_addr);
+
+				MonoGenericInst class_inst = null;
+				if (!class_inst_addr.IsNull)
+					class_inst = new MonoGenericInst (target, class_inst_addr);
+
+				MonoGenericInst method_inst = null;
+				if (!method_inst_addr.IsNull)
+					method_inst = new MonoGenericInst (target, method_inst_addr);
+
+				return new MonoMethodFrameInfo (this, declaring, class_inst, method_inst);
 			}
 
 			void get_types ()
@@ -1055,6 +1100,30 @@ namespace Mono.Debugger.Languages.Mono
 				string[] retval = new string [list.Count];
 				list.CopyTo (retval, 0);
 				return retval;
+			}
+		}
+
+		protected class MonoMethodFrameInfo : TargetMethodFrameInfo
+		{
+			public readonly MonoMethod Method;
+			public readonly TargetAddress Declaring;
+			public readonly MonoGenericInst ClassInst;
+			public readonly MonoGenericInst MethodInst;
+
+			public MonoMethodFrameInfo (MonoMethod method, TargetAddress declaring,
+						    MonoGenericInst class_inst,
+						    MonoGenericInst method_inst)
+			{
+				this.Method = method;
+				this.Declaring = declaring;
+				this.ClassInst = class_inst;
+				this.MethodInst = method_inst;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("MonoMethodFrameInfo ({0}:{1}:{2}:{3})",
+						      Method, Declaring, ClassInst, MethodInst);
 			}
 		}
 
@@ -1554,6 +1623,11 @@ namespace Mono.Debugger.Languages.Mono
 				SetAddresses (address.StartAddress, address.EndAddress);
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 				SetLineNumbers (new WrapperLineNumberTable (this, address));
+			}
+
+			internal override TargetMethodFrameInfo GetFrameInfo (Thread target, StackFrame frame)
+			{
+				return null;
 			}
 
 			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,

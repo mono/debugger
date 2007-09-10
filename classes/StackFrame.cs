@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Backends;
 
+using MonoLanguage = Mono.Debugger.Languages.Mono;
+
 namespace Mono.Debugger
 {
 	[Serializable]
@@ -196,6 +198,7 @@ namespace Mono.Debugger
 		Language language;
 		bool has_source;
 		Symbol name;
+		TargetMethodFrameInfo method_frame_info;
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
 				     TargetAddress frame_address, Registers registers)
@@ -227,6 +230,9 @@ namespace Mono.Debugger
 				this.name = new Symbol (method.Name, method.StartAddress, 0);
 			else
 				this.name = new Symbol (method.Name, address, 0);
+
+			Console.WriteLine ("NEW FRAME: {0}", method);
+			method_frame_info = method.GetFrameInfo (thread, this);
 		}
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
@@ -238,6 +244,8 @@ namespace Mono.Debugger
 			this.language = function.DeclaringType.Language;
 			this.name = new Symbol (function.FullName, address, 0);
 			this.location = location;
+
+			Console.WriteLine ("NEW FRAME #1: {0}", function);
 		}
 
 		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,

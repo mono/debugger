@@ -399,6 +399,9 @@ namespace Mono.Debugger.Backends
 		public readonly int MonoDefaultsDelegateOffset;
 		public readonly int MonoDefaultsExceptionOffset;
 
+		public readonly int MonoMethodFlagsOffset;
+		public readonly int MonoMethodInflatedOffset;
+
 		public MonoMetadataInfo (TargetMemoryAccess memory, TargetAddress address)
 		{
 			int size = memory.ReadInteger (address);
@@ -454,6 +457,9 @@ namespace Mono.Debugger.Backends
 			MonoDefaultsArrayOffset = reader.ReadInt32 ();
 			MonoDefaultsDelegateOffset = reader.ReadInt32 ();
 			MonoDefaultsExceptionOffset = reader.ReadInt32 ();
+
+			MonoMethodFlagsOffset = reader.ReadInt32 ();
+			MonoMethodInflatedOffset = reader.ReadInt32 ();
 		}
 	}
 }

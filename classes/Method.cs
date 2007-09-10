@@ -287,6 +287,8 @@ namespace Mono.Debugger
 		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
 
+		internal abstract TargetMethodFrameInfo GetFrameInfo (Thread target, StackFrame frame);
+
 		public TargetVariable GetVariableByName (TargetAddress address, string name)
 		{
 			foreach (TargetVariable var in Locals) {

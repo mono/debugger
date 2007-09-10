@@ -2623,6 +2623,11 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
+			internal override TargetMethodFrameInfo GetFrameInfo (Thread target, StackFrame frame)
+			{
+				return null;
+			}
+
 			internal override MethodSource GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
 			{
 				return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
