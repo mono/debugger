@@ -1,3 +1,9 @@
+2007-09-11  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs
+	(MonoMetadataInfo): Add `MonoMethodFlagsOffset' and
+	`MonoMethodInflatedOffset'.	
+
 2007-09-04  Martin Baulig  <martin@ximian.com>
 
 	* frontend/CSharpExpressionParser.jay
