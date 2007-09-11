@@ -92,17 +92,65 @@ namespace Mono.Debugger.Languages.Mono
 				return mono.BuiltinTypes.DoubleType;
 			case MonoTypeEnum.MONO_TYPE_STRING:
 				return mono.BuiltinTypes.StringType;
+			case MonoTypeEnum.MONO_TYPE_OBJECT:
+				return mono.BuiltinTypes.ObjectType;
+			case MonoTypeEnum.MONO_TYPE_I:
+				return mono.BuiltinTypes.IntType;
+			case MonoTypeEnum.MONO_TYPE_U:
+				return mono.BuiltinTypes.UIntType;
 
 			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
 			case MonoTypeEnum.MONO_TYPE_CLASS:
 				return mono.GetClass (memory, data);
 
-			default:
-				break;
-
+			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
+				TargetType element_type = mono.GetClass (memory, data);
+				return new MonoArrayType (element_type, 1);
 			}
 
-			return null;
+			case MonoTypeEnum.MONO_TYPE_ARRAY: {
+				TargetReader reader = new TargetReader (memory.ReadMemory (
+					data, 4 * memory.TargetInfo.TargetAddressSize));
+				TargetType element_type = mono.GetClass (memory, reader.ReadAddress ());
+				int rank = reader.ReadByte ();
+				int numsizes = reader.ReadByte ();
+				int numlobounds = reader.ReadByte ();
+
+				if ((numsizes != 0) || (numlobounds != 0))
+					throw new InternalError ();
+
+				return new MonoArrayType (element_type, rank);
+			}
+
+			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
+				TargetReader reader = new TargetReader (memory.ReadMemory (
+					data, 3 * memory.TargetInfo.TargetAddressSize));
+
+				TargetAddress container_addr = reader.ReadAddress ();
+				TargetAddress class_inst_addr = reader.ReadAddress ();
+				TargetAddress method_inst_addr = reader.ReadAddress ();
+
+				TargetType container_type = mono.GetClass (memory, container_addr);
+
+				MonoGenericInst class_inst = null;
+				if (!class_inst_addr.IsNull)
+					class_inst = new MonoGenericInst (mono, memory, class_inst_addr);
+
+				MonoGenericInst method_inst = null;
+				if (!method_inst_addr.IsNull)
+					method_inst = new MonoGenericInst (mono, memory, method_inst_addr);
+
+				Console.WriteLine ("GENERIC CLASS: {0} {1} {2} {3}",
+						   container_addr, container_type,
+						   class_inst, method_inst);
+
+				return null;
+			}
+
+			default:
+				Report.Error ("UNKNOWN TYPE: {0}", type);
+				return null;
+			}
 		}
 	}
 }

@@ -19,10 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool IsByRef {
-			get {
-				Console.WriteLine ("GP ISBYREF: {0}", Environment.StackTrace);
-				return false;
-			}
+			get { return false; }
 		}
 
 		public override bool HasFixedSize {
@@ -43,8 +40,6 @@ namespace Mono.Debugger.Languages.Mono
 			MonoMethodFrameInfo info = (MonoMethodFrameInfo) frame.MethodFrameInfo;
 			if (info == null)
 				return null;
-
-			Console.WriteLine ("GET OBJECT: {0} {1}", info, gen_param.Owner.GetType ());
 
 			MonoGenericInst inst;
 			if (gen_param.Owner is Cecil.MethodDefinition)
