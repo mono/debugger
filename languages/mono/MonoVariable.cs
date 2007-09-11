@@ -11,13 +11,12 @@ namespace Mono.Debugger.Languages.Mono
 		ProcessServant process;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
-		bool has_liveness_info, is_byref;
+		bool has_liveness_info;
 
 		public MonoVariable (ProcessServant process, string name, TargetType type,
-				     bool is_local, bool is_byref, Method method,
-				     VariableInfo info, int start_scope_offset,
-				     int end_scope_offset)
-			: this (process, name, type, is_local, is_byref, method, info)
+				     bool is_local, Method method, VariableInfo info,
+				     int start_scope_offset, int end_scope_offset)
+			: this (process, name, type, is_local, method, info)
 		{
 			if (is_local) {
 				start_scope = method.StartAddress + start_scope_offset;
@@ -43,14 +42,12 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public MonoVariable (ProcessServant process, string name, TargetType type,
-				     bool is_local, bool is_byref, Method method,
-				     VariableInfo info)
+				     bool is_local, Method method, VariableInfo info)
 		{
 			this.process = process;
 			this.name = name;
 			this.type = type;
 			this.info = info;
-			this.is_byref = is_byref;
 
 			start_scope = method.StartAddress;
 			end_scope = method.EndAddress;
@@ -82,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return end_liveness; }
 		}
 
-		public TargetLocation GetLocation (StackFrame frame)
+		protected TargetLocation GetLocation (StackFrame frame, bool is_byref)
 		{
 			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
@@ -105,9 +102,22 @@ namespace Mono.Debugger.Languages.Mono
 			return (address >= start_liveness) && (address <= end_liveness);
 		}
 
+		protected TargetType GetType (StackFrame frame)
+		{
+			MonoGenericParameterType gen_param = type as MonoGenericParameterType;
+			if (gen_param != null)
+				return gen_param.GetType (frame);
+			else
+				return type;
+		}
+
 		public override string PrintLocation (StackFrame frame)
 		{
-			TargetLocation location = GetLocation (frame);
+			TargetType effective_type = GetType (frame);
+			if (effective_type == null)
+				return null;
+
+			TargetLocation location = GetLocation (frame, effective_type.IsByRef);
 			if (location == null)
 				return null;
 
@@ -116,7 +126,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetObject (StackFrame frame)
 		{
-			TargetLocation location = GetLocation (frame);
+			TargetType effective_type = GetType (frame);
+			if (effective_type == null)
+				throw new LocationInvalidException ();
+
+			TargetLocation location = GetLocation (frame, effective_type.IsByRef);
 
 			if (location == null)
 				throw new LocationInvalidException ();
@@ -125,11 +139,7 @@ namespace Mono.Debugger.Languages.Mono
 				return process.MonoLanguage.CreateNullObject (
 					frame.Thread, type);
 
-			MonoGenericParameterType gen_param = type as MonoGenericParameterType;
-			if (gen_param != null)
-				return gen_param.GetObject (frame, location);
-
-			return type.GetObject (location);
+			return effective_type.GetObject (location);
 		}
 
 		public override bool CanWrite {
@@ -138,12 +148,16 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override void SetObject (StackFrame frame, TargetObject obj)
 		{
-			TargetLocation location = GetLocation (frame);
+			TargetType effective_type = GetType (frame);
+			if (effective_type == null)
+				throw new LocationInvalidException ();
+
+			TargetLocation location = GetLocation (frame, effective_type.IsByRef);
 
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			type.SetObject (frame.Thread, location, (TargetObject) obj);
+			effective_type.SetObject (frame.Thread, location, (TargetObject) obj);
 		}
 
 		public override string ToString ()

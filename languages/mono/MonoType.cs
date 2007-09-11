@@ -93,6 +93,10 @@ namespace Mono.Debugger.Languages.Mono
 			case MonoTypeEnum.MONO_TYPE_STRING:
 				return mono.BuiltinTypes.StringType;
 
+			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
+			case MonoTypeEnum.MONO_TYPE_CLASS:
+				return mono.GetClass (memory, data);
+
 			default:
 				break;
 

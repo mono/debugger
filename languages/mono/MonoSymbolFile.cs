@@ -997,8 +997,7 @@ namespace Mono.Debugger.Languages.Mono
 				for (int i = 0; i < param_info.Count; i++) {
 					parameters [i] = new MonoVariable (
 						file.process, param_info [i].Name, param_types [i],
-						false, param_types [i].IsByRef, this,
-						address.ParamVariableInfo [i], 0, 0);
+						false, this, address.ParamVariableInfo [i], 0, 0);
 				}
 
 				locals = new TargetVariable [method.NumLocals];
@@ -1009,21 +1008,19 @@ namespace Mono.Debugger.Languages.Mono
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
 						locals [i] = new MonoVariable (
-							file.process, local.Name, local_types [i],
-							true, local_types [i].IsByRef, this,
-							address.LocalVariableInfo [local.Index],
+							file.process, local.Name, local_types [i], true,
+							this, address.LocalVariableInfo [local.Index],
 							block.StartAddress, block.EndAddress);
 					} else {
 						locals [i] = new MonoVariable (
-							file.process, local.Name, local_types [i],
-							true, local_types [i].IsByRef, this,
-							address.LocalVariableInfo [local.Index]);
+							file.process, local.Name, local_types [i], true,
+							this, address.LocalVariableInfo [local.Index]);
 					}
 				}
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
-						file.process, "this", decl_type, true,
+						file.process, "this", decl_type,
 						true, this, address.ThisVariableInfo);
 
 				has_variables = true;

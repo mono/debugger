@@ -19,7 +19,10 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool IsByRef {
-			get { return false; }
+			get {
+				Console.WriteLine ("GP ISBYREF: {0}", Environment.StackTrace);
+				return false;
+			}
 		}
 
 		public override bool HasFixedSize {
@@ -35,7 +38,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new NotImplementedException ();
 		}
 
-		internal TargetObject GetObject (StackFrame frame, TargetLocation location)
+		internal TargetType GetType (StackFrame frame)
 		{
 			MonoMethodFrameInfo info = (MonoMethodFrameInfo) frame.MethodFrameInfo;
 			if (info == null)
@@ -49,8 +52,7 @@ namespace Mono.Debugger.Languages.Mono
 			else
 				inst = info.ClassInst;
 
-			TargetType type = inst.Types [gen_param.Position];
-			return type.GetObject (location);
+			return inst.Types [gen_param.Position];
 		}
 	}
 }

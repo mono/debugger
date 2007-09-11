@@ -18,10 +18,14 @@ namespace Mono.Debugger.Languages.Mono
 
 			int addr_size = memory.TargetInfo.TargetAddressSize;
 
-			int header = memory.ReadInteger (address);
+			TargetReader blob = new TargetReader (memory.ReadMemory (address, 16));
+			Console.WriteLine ("NEW GENERIC INST #1: {0} {1}",
+					   address, blob.BinaryReader.HexDump ());
+
+			int header = memory.ReadInteger (address + 4);
 			TargetAddress type_argv_ptr = memory.ReadAddress (address + addr_size);
 
-			int type_argc = (header & 0x7ff8) >> 3;
+			int type_argc = header & 0x3fffff;
 
 			Console.WriteLine ("NEW GENERIC INST #2: {0:x} {1} {2}",
 					   header, type_argc, type_argv_ptr);
