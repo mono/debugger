@@ -124,11 +124,14 @@ namespace Mono.Debugger.Languages.Mono
 
 			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
 				TargetReader reader = new TargetReader (memory.ReadMemory (
-					data, 3 * memory.TargetInfo.TargetAddressSize));
+					data, 5 * memory.TargetInfo.TargetAddressSize));
 
 				TargetAddress container_addr = reader.ReadAddress ();
 				TargetAddress class_inst_addr = reader.ReadAddress ();
 				TargetAddress method_inst_addr = reader.ReadAddress ();
+
+				reader.ReadAddress ();
+				TargetAddress cached = reader.ReadAddress ();
 
 				TargetType container_type = mono.GetClass (memory, container_addr);
 
@@ -140,9 +143,15 @@ namespace Mono.Debugger.Languages.Mono
 				if (!method_inst_addr.IsNull)
 					method_inst = new MonoGenericInst (mono, memory, method_inst_addr);
 
-				Console.WriteLine ("GENERIC CLASS: {0} {1} {2} {3}",
+				Console.WriteLine ("GENERIC CLASS: {0} {1} {2} {3} - {4}",
 						   container_addr, container_type,
-						   class_inst, method_inst);
+						   class_inst, method_inst, cached);
+
+				if (!cached.IsNull) {
+					TargetType klass = mono.GetClass (memory, cached);
+					Console.WriteLine ("GENERIC CLASS #1: {0}", klass);
+					return klass;
+				}
 
 				return null;
 			}

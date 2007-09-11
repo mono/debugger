@@ -457,6 +457,8 @@ namespace Mono.Debugger.Languages.Mono
 			reader.ReadAddress ();
 			TargetAddress element_class = reader.ReadAddress ();
 
+			Console.WriteLine ("READ MONO CLASS: {0} {1} {2}", address, element_class, file);
+
 			if (file == null)
 				return null;
 
@@ -474,10 +476,16 @@ namespace Mono.Debugger.Languages.Mono
 			reader.Offset = language.MonoMetadataInfo.KlassGenericContainerOffset;
 			TargetAddress generic_container = reader.ReadAddress ();
 
+			Console.WriteLine ("READ MONO CLASS #1: {0:x} {1:x} {2} {3}",
+					   token, type, generic_class, generic_container);
+
+#if FIXME
 			if (!generic_class.IsNull || !generic_container.IsNull)
 				return null;
+#endif
 
-			if ((type == 0x11) || (type == 0x12)) { // MONO_TYPE_(VALUETYPE|CLASS)
+			if ((type == 0x11) || (type == 0x12) || (type == 0x15)) {
+				// MONO_TYPE_(VALUETYPE|CLASS), MONO_TYPE_GENERICINST
 				Cecil.TypeDefinition tdef;
 
 				if ((token & 0xff000000) != 0x02000000)
@@ -509,6 +517,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				return new MonoArrayType (eklass, rank);
 			}
+
+			Console.WriteLine ("UNKNOWN CLASS: {0:x}", type);
 
 			return null;
 		}
