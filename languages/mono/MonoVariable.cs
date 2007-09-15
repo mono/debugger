@@ -104,6 +104,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected TargetType GetType (StackFrame frame)
 		{
+			Console.WriteLine ("GET TYPE: {0}", type);
 			MonoGenericParameterType gen_param = type as MonoGenericParameterType;
 			if (gen_param != null)
 				return gen_param.GetType (frame);
@@ -126,7 +127,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetObject (StackFrame frame)
 		{
+			try {
 			TargetType effective_type = GetType (frame);
+			Console.WriteLine ("GET OBJECT: {0} {1}", this, effective_type);
 			if (effective_type == null)
 				throw new LocationInvalidException ();
 
@@ -139,7 +142,17 @@ namespace Mono.Debugger.Languages.Mono
 				return process.MonoLanguage.CreateNullObject (
 					frame.Thread, type);
 
-			return effective_type.GetObject (location);
+			Console.WriteLine ("GET OBJECT #1: {0}", location);
+
+			TargetObject obj = effective_type.GetObject (location);
+
+			Console.WriteLine ("GET OBJECT #2: {0}", obj);
+
+			return obj;
+			} catch (Exception ex) {
+				Console.WriteLine ("FUCK: {0}", ex);
+				throw;
+			}
 		}
 
 		public override bool CanWrite {

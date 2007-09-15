@@ -30,9 +30,23 @@ namespace Mono.Debugger.Languages.Mono
 			get { throw new InvalidOperationException (); }
 		}
 
+		public int Position {
+			get { return gen_param.Position; }
+		}
+
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			throw new NotImplementedException ();
+		}
+
+		internal override TargetObject GetObject (StackFrame frame, TargetLocation location)
+		{
+			TargetType effective_type = GetType (frame);
+			Console.WriteLine ("GET OBJECT: {0} {1}", this, effective_type != null);
+			if (effective_type == null)
+				return null;
+
+			return effective_type.GetObject (location);
 		}
 
 		internal TargetType GetType (StackFrame frame)

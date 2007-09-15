@@ -252,6 +252,24 @@ namespace Mono.Debugger.Languages.Mono
 			return true;
 		}
 
+		TargetType lookup_generic_inst (Cecil.GenericInstanceType type)
+		{
+			MonoClassType underlying = (MonoClassType) LookupMonoType (type.ElementType);
+			if (underlying == null)
+				return null;
+
+			TargetType[] args = new TargetType [type.GenericArguments.Count];
+
+			for (int i = 0; i < args.Length; i++) {
+				args [i] = LookupMonoType (type.GenericArguments [i]);
+				if (args [i] == null)
+					return null;
+			}
+
+			MonoGenericInst ginst = new MonoGenericInst (args);
+			return new MonoGenericInstanceType (underlying, ginst);
+		}
+
 		public TargetType LookupMonoType (Cecil.TypeReference type)
 		{
 			MonoSymbolFile file;
@@ -289,6 +307,10 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.GenericParameter gen_param = type as Cecil.GenericParameter;
 			if (gen_param != null)
 				return new MonoGenericParameterType (this, gen_param);
+
+			Cecil.GenericInstanceType gen_inst = type as Cecil.GenericInstanceType;
+			if (gen_inst != null)
+				return lookup_generic_inst (gen_inst);
 
 			int rank = 0;
 

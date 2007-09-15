@@ -69,6 +69,11 @@ namespace Mono.Debugger.Languages
 
 		internal abstract TargetObject GetObject (TargetLocation location);
 
+		internal virtual TargetObject GetObject (StackFrame frame, TargetLocation location)
+		{
+			return GetObject (location);
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}]", GetType (), Name);

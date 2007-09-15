@@ -495,8 +495,31 @@ namespace Mono.Debugger.Languages.Mono
 				tdef = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
 					Cecil.Metadata.TokenType.TypeDef, (int) token);
 
-				if (tdef != null)
-					return file.LookupMonoType (tdef);
+				if (tdef == null)
+					return null;
+
+				MonoClassType klass = (MonoClassType) file.LookupMonoType (tdef);
+				if (klass == null)
+					return null;
+
+				Console.WriteLine ("READ MONO CLASS #2: {0} {1} {2}", klass,
+						   generic_class, generic_container);
+
+				if (!generic_class.IsNull) {
+					TargetAddress class_inst_addr = target.ReadAddress (
+						generic_class + target.TargetInfo.TargetAddressSize);
+
+					Console.WriteLine ("READ MONO CLASS #3: {0}", class_inst_addr);
+
+					MonoGenericInst class_inst = new MonoGenericInst (
+						language, target, class_inst_addr);
+
+					Console.WriteLine ("READ MONO CLASS #4: {0}", class_inst);
+
+					return new MonoGenericInstanceType (klass, class_inst);
+				}
+
+				return klass;
 			} else if (type == 0x1d) { // MONO_TYPE_SZARRAY
 				TargetType eklass = ReadMonoClass (language, target, element_class);
 				if (eklass == null)
@@ -531,13 +554,20 @@ namespace Mono.Debugger.Languages.Mono
 			return MonoClassInfo.FieldOffsets [field.Position - FirstField];
 		}
 
-		internal TargetObject GetField (Thread target, TargetLocation location,
-						TargetFieldInfo finfo)
+		internal virtual TargetObject GetField (Thread target, TargetLocation location,
+							MonoFieldInfo finfo)
 		{
+			Console.WriteLine ("GET FIELD: {0} {1}", this, finfo);
+
 			int offset = GetFieldOffset (finfo);
+			Console.WriteLine ("GET FIELD #1: {0} {1} {2}", this, offset, IsByRef);
 			if (!IsByRef)
 				offset -= 2 * target.TargetInfo.TargetAddressSize;
+
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+			Console.WriteLine ("GET FIELD #2: {0} {1} {2}", finfo.Type, finfo.Type.IsByRef,
+					   field_loc);
 
 			if (finfo.Type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation ();

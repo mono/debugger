@@ -11,6 +11,11 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly TargetType[] Types;
 
+		public MonoGenericInst (TargetType[] types)
+		{
+			this.Types = types;
+		}
+
 		public MonoGenericInst (MonoLanguageBackend mono, TargetMemoryAccess memory,
 					TargetAddress address)
 		{

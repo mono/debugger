@@ -161,5 +161,43 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 			}
 		}
+
+		public static TargetType ReadGenericClass (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory,
+							   TargetAddress address)
+		{
+			TargetReader reader = new TargetReader (memory.ReadMemory (
+				address, 5 * memory.TargetInfo.TargetAddressSize));
+
+			TargetAddress container_addr = reader.ReadAddress ();
+			TargetAddress class_inst_addr = reader.ReadAddress ();
+			TargetAddress method_inst_addr = reader.ReadAddress ();
+
+			reader.ReadAddress ();
+			TargetAddress cached = reader.ReadAddress ();
+
+			// TargetType container_type = mono.GetClass (memory, container_addr);
+
+			MonoGenericInst class_inst = null;
+			if (!class_inst_addr.IsNull)
+				class_inst = new MonoGenericInst (mono, memory, class_inst_addr);
+
+			MonoGenericInst method_inst = null;
+			if (!method_inst_addr.IsNull)
+				method_inst = new MonoGenericInst (mono, memory, method_inst_addr);
+
+			Console.WriteLine ("READ GENERIC CLASS: {0} {1} {2} {3}",
+					   container_addr, class_inst, method_inst, cached);
+
+			return null;
+
+			if (!cached.IsNull) {
+				TargetType klass = mono.GetClass (memory, cached);
+				Console.WriteLine ("READ GENERIC CLASS #1: {0}", klass);
+				return klass;
+			}
+
+			return null;
+		}
 	}
 }

@@ -134,8 +134,10 @@ namespace Mono.Debugger.Languages.Mono
 				for (int i = 0; i < arity; i++)
 					type_args [i] = GetTypeFromSignature (file, reader);
 
+				MonoGenericInst ginst = new MonoGenericInst (type_args);
+
 				return new MonoGenericInstanceType (
-					file, (MonoClassType) underlying_type, type_args);
+					(MonoClassType) underlying_type, ginst);
 			}
 
 			case 0x18:
