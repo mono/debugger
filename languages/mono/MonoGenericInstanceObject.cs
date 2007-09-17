@@ -4,7 +4,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericInstanceObject : TargetObject
+	internal class MonoGenericInstanceObject : TargetClassObject
 	{
 		new MonoGenericInstanceType type;
 
@@ -20,5 +20,24 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			throw new InvalidOperationException ();
 		}
+
+		public override TargetClassObject GetParentObject (Thread target)
+		{
+			return null;
+		}
+
+		public override TargetClassObject GetCurrentObject (Thread target)
+		{
+			return this;
+		}
+
+		public override TargetObject GetField (Thread target, TargetFieldInfo field)
+		{
+			return null;
+		}
+
+		public override void SetField (Thread target, TargetFieldInfo field,
+					       TargetObject obj)
+		{ }
 	}
 }

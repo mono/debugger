@@ -4,14 +4,14 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericInstanceType : TargetType
+	internal class MonoGenericInstanceType : TargetClassType
 	{
-		public readonly TargetType UnderlyingType;
+		public readonly MonoClassType UnderlyingType;
 		public readonly MonoGenericContext GenericContext;
 		string full_name;
 
 		public MonoGenericInstanceType (MonoClassType underlying, MonoGenericContext context)
-			: base (underlying.File.MonoLanguage, TargetObjectKind.Object)
+			: base (underlying.File.MonoLanguage, TargetObjectKind.Class)
 		{
 			this.UnderlyingType = underlying;
 			this.GenericContext = context;
@@ -38,16 +38,84 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasFixedSize {
-			get { return false; }
+			get { return true; }
 		}
 
 		public override int Size {
-			get { throw new InvalidOperationException (); }
+			get { return UnderlyingType.Size; }
 		}
 
 		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			return new MonoGenericInstanceObject (this, location);
+		}
+
+		public override bool HasParent {
+			get { return false; }
+		}
+
+		public override Module Module {
+			get { return UnderlyingType.Module; }
+		}
+
+		public override TargetClassType ParentType {
+			get { return null; }
+		}
+
+		public override TargetFieldInfo[] Fields {
+			get { return new TargetFieldInfo [0]; }
+		}
+
+		public override TargetFieldInfo[] StaticFields {
+			get { return new TargetFieldInfo [0]; }
+		}
+
+		public override TargetObject GetStaticField (Thread target,
+							     TargetFieldInfo field)
+		{
+			return null;
+		}
+
+		public override void SetStaticField (Thread target, TargetFieldInfo field,
+						     TargetObject obj)
+		{ }
+
+		public override TargetPropertyInfo[] Properties {
+			get { return new TargetPropertyInfo [0]; }
+		}
+
+		public override TargetPropertyInfo[] StaticProperties {
+			get { return new TargetPropertyInfo [0]; }
+		}
+
+		public override TargetEventInfo[] Events {
+			get { return new TargetEventInfo [0]; }
+		}
+
+		public override TargetEventInfo[] StaticEvents {
+			get { return new TargetEventInfo [0]; }
+		}
+
+		public override TargetMethodInfo[] Methods {
+			get { return new TargetMethodInfo [0]; }
+		}
+
+		public override TargetMethodInfo[] StaticMethods {
+			get { return new TargetMethodInfo [0]; }
+		}
+
+		public override TargetMethodInfo[] Constructors {
+			get { return new TargetMethodInfo [0]; }
+		}
+
+		public override TargetMethodInfo[] StaticConstructors {
+			get { return new TargetMethodInfo [0]; }
+		}
+
+		public override TargetMemberInfo FindMember (string name, bool search_static,
+							     bool search_instance)
+		{
+			return null;
 		}
 	}
 }
