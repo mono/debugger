@@ -94,7 +94,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-	        internal override TargetObject GetObject (TargetLocation location)
+	        protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			throw new NotSupportedException ();
 		}

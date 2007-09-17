@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages
 			return Value.Type.GetObject (location);
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			return new TargetEnumObject (this, location);
 		}

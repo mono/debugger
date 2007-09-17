@@ -1,3 +1,16 @@
+2007-09-17  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetType.cs
+	(TargetType): Renamed the abstract GetObject() into DoGetObject()
+	and made it protected; added a new non-abstract GetObject() which
+	just calls DoGetObject().
+
+	* languages/TargetLocation.cs
+	(TargetLocation): Made this class public; but removed all public
+	API entry points from it.
+	(TargetLocation.HasAddress): Made this internal.
+	(TargetLocation.GetAddress): Likewise.
+
 2007-09-04  Martin Baulig  <martin@ximian.com>
 
 	* frontend/CSharpExpressionParser.jay

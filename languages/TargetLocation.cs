@@ -7,17 +7,17 @@ namespace Mono.Debugger.Languages
 	//   not always have an address for a variable (for instance if it's stored in a
 	//   register) and that an addresses lifetime may be limited.
 	// </summary>
-	internal abstract class TargetLocation
+	public abstract class TargetLocation
 	{
 		// <summary>
 		//   Whether this variable has an address.  A variable may not have an
 		//   address, for instance if it's stored in a register.
 		// </summary>
-		public abstract bool HasAddress {
+		internal abstract bool HasAddress {
 			get;
 		}
 
-		public abstract TargetAddress GetAddress (TargetMemoryAccess target);
+		internal abstract TargetAddress GetAddress (TargetMemoryAccess target);
 
 		internal virtual TargetBlob ReadMemory (Thread target, int size)
 		{

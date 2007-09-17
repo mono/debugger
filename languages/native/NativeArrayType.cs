@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return true; }
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			return new NativeArrayObject (this, location, lower_bound, upper_bound);
 		}

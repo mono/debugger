@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoArrayType (ElementType.InflateType (context), Rank);
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			return new MonoArrayObject (this, location);
 		}

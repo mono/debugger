@@ -51,11 +51,11 @@ namespace Mono.Debugger.Languages.Mono
 			is_valid = true;
 		}
 
-		public override bool HasAddress {
+		internal override bool HasAddress {
 			get { return is_regoffset || is_byref; }
 		}
 
-		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();

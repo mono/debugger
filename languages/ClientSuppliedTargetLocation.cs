@@ -14,11 +14,11 @@ namespace Mono.Debugger.Languages
 			this.blob = blob;
 		}
 
-		public override bool HasAddress {
+		internal override bool HasAddress {
 			get { return false; }
 		}
 
-		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			throw new InvalidOperationException ();
 		}

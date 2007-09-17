@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return pos; }
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			throw new NotImplementedException ();
 		}

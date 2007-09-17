@@ -70,7 +70,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			Console.WriteLine ("GENERIC INST GET OBJECT: {0}", this);
 			return new MonoClassObject (this, location);

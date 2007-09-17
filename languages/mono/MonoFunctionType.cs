@@ -165,7 +165,7 @@ namespace Mono.Debugger.Languages.Mono
 			return klass.MonoClassInfo.GetMethodAddress (Token);
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}
