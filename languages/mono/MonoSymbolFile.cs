@@ -933,29 +933,16 @@ namespace Mono.Debugger.Languages.Mono
 				if ((flags & 0x0400) == 0)
 					return null;
 
-				TargetReader reader = new TargetReader (target.ReadMemory (
-					address.MonoMethodPtr + metadata.MonoMethodInflatedOffset,
-					3 * target.TargetAddressSize));
+				TargetAddress ptr = address.MonoMethodPtr +
+					metadata.MonoMethodInflatedOffset;
 
-				TargetAddress declaring = reader.ReadAddress ();
-				TargetAddress class_inst_addr = reader.ReadAddress ();
-				TargetAddress method_inst_addr = reader.ReadAddress ();
+				TargetAddress declaring = target.ReadAddress (ptr);
+				ptr += target.TargetAddressSize;
 
-				Console.WriteLine ("GET FRAME INFO #2: {0} - {1} {2} {3}",
-						   reader.BinaryReader.HexDump (),
-						   declaring, class_inst_addr, method_inst_addr);
+				MonoGenericContext context = MonoGenericContext.ReadGenericContext (
+					file.MonoLanguage, target, ptr);
 
-				MonoGenericInst class_inst = null;
-				if (!class_inst_addr.IsNull)
-					class_inst = new MonoGenericInst (
-						file.MonoLanguage, target, class_inst_addr);
-
-				MonoGenericInst method_inst = null;
-				if (!method_inst_addr.IsNull)
-					method_inst = new MonoGenericInst (
-						file.MonoLanguage, target, method_inst_addr);
-
-				return new MonoMethodFrameInfo (this, declaring, class_inst, method_inst);
+				return new MonoMethodFrameInfo (this, declaring, context);
 			}
 
 			void get_types ()

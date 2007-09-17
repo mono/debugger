@@ -69,9 +69,9 @@ namespace Mono.Debugger.Languages
 
 		internal abstract TargetObject GetObject (TargetLocation location);
 
-		internal virtual TargetObject GetObject (StackFrame frame, TargetLocation location)
+		internal virtual TargetType InflateType (Mono.MonoGenericContext context)
 		{
-			return GetObject (location);
+			return this;
 		}
 
 		public override string ToString ()

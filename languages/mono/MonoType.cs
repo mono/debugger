@@ -123,29 +123,22 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
-				TargetReader reader = new TargetReader (memory.ReadMemory (
-					data, 5 * memory.TargetInfo.TargetAddressSize));
+				TargetAddress ptr = data;
 
-				TargetAddress container_addr = reader.ReadAddress ();
-				TargetAddress class_inst_addr = reader.ReadAddress ();
-				TargetAddress method_inst_addr = reader.ReadAddress ();
+				TargetAddress container_addr = memory.ReadAddress (ptr);
+				ptr += memory.TargetInfo.TargetAddressSize;
 
-				reader.ReadAddress ();
-				TargetAddress cached = reader.ReadAddress ();
+				MonoGenericContext context = MonoGenericContext.ReadGenericContext (
+					mono, memory, ptr);
+
+				ptr += 3 * memory.TargetInfo.TargetAddressSize;
+
+				TargetAddress cached = memory.ReadAddress (ptr);
 
 				TargetType container_type = mono.GetClass (memory, container_addr);
 
-				MonoGenericInst class_inst = null;
-				if (!class_inst_addr.IsNull)
-					class_inst = new MonoGenericInst (mono, memory, class_inst_addr);
-
-				MonoGenericInst method_inst = null;
-				if (!method_inst_addr.IsNull)
-					method_inst = new MonoGenericInst (mono, memory, method_inst_addr);
-
-				Console.WriteLine ("GENERIC CLASS: {0} {1} {2} {3} - {4}",
-						   container_addr, container_type,
-						   class_inst, method_inst, cached);
+				Console.WriteLine ("GENERIC CLASS: {0} {1} {2} - {3}",
+						   container_addr, container_type, context, cached);
 
 				if (!cached.IsNull) {
 					TargetType klass = mono.GetClass (memory, cached);
@@ -166,28 +159,16 @@ namespace Mono.Debugger.Languages.Mono
 							   TargetMemoryAccess memory,
 							   TargetAddress address)
 		{
-			TargetReader reader = new TargetReader (memory.ReadMemory (
-				address, 5 * memory.TargetInfo.TargetAddressSize));
+			int addr_size = memory.TargetInfo.TargetAddressSize;
+			TargetAddress container_addr = memory.ReadAddress (address);
 
-			TargetAddress container_addr = reader.ReadAddress ();
-			TargetAddress class_inst_addr = reader.ReadAddress ();
-			TargetAddress method_inst_addr = reader.ReadAddress ();
+			MonoGenericContext context = MonoGenericContext.ReadGenericContext (
+				mono, memory, address + addr_size);
 
-			reader.ReadAddress ();
-			TargetAddress cached = reader.ReadAddress ();
+			TargetAddress cached = memory.ReadAddress (address + 4 * addr_size);
 
-			// TargetType container_type = mono.GetClass (memory, container_addr);
-
-			MonoGenericInst class_inst = null;
-			if (!class_inst_addr.IsNull)
-				class_inst = new MonoGenericInst (mono, memory, class_inst_addr);
-
-			MonoGenericInst method_inst = null;
-			if (!method_inst_addr.IsNull)
-				method_inst = new MonoGenericInst (mono, memory, method_inst_addr);
-
-			Console.WriteLine ("READ GENERIC CLASS: {0} {1} {2} {3}",
-					   container_addr, class_inst, method_inst, cached);
+			Console.WriteLine ("READ GENERIC CLASS: {0} {1} {2}",
+					   container_addr, context, cached);
 
 			return null;
 

@@ -104,12 +104,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected TargetType GetType (StackFrame frame)
 		{
-			Console.WriteLine ("GET TYPE: {0}", type);
-			MonoGenericParameterType gen_param = type as MonoGenericParameterType;
-			if (gen_param != null)
-				return gen_param.GetType (frame);
-			else
+                        MonoMethodFrameInfo info = (MonoMethodFrameInfo) frame.MethodFrameInfo;
+			if (info == null)
 				return type;
+
+			return type.InflateType (info.Context);
 		}
 
 		public override string PrintLocation (StackFrame frame)

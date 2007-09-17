@@ -757,6 +757,11 @@ namespace Mono.Debugger.Languages.Mono
 #endif
 		}
 
+		internal MonoClassInfo GetClassInfo (TargetAddress klass_address)
+		{
+			return (MonoClassInfo) class_info_by_addr [klass_address];
+		}
+
 		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
 		{
 			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass_address];

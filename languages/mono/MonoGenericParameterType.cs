@@ -39,27 +39,13 @@ namespace Mono.Debugger.Languages.Mono
 			throw new NotImplementedException ();
 		}
 
-		internal override TargetObject GetObject (StackFrame frame, TargetLocation location)
+		internal override TargetType InflateType (Mono.MonoGenericContext context)
 		{
-			TargetType effective_type = GetType (frame);
-			Console.WriteLine ("GET OBJECT: {0} {1}", this, effective_type != null);
-			if (effective_type == null)
-				return null;
-
-			return effective_type.GetObject (location);
-		}
-
-		internal TargetType GetType (StackFrame frame)
-		{
-			MonoMethodFrameInfo info = (MonoMethodFrameInfo) frame.MethodFrameInfo;
-			if (info == null)
-				return null;
-
 			MonoGenericInst inst;
 			if (gen_param.Owner is Cecil.MethodDefinition)
-				inst = info.MethodInst;
+				inst = context.MethodInst;
 			else
-				inst = info.ClassInst;
+				inst = context.ClassInst;
 
 			return inst.Types [gen_param.Position];
 		}

@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoClassType : TargetClassType
 	{
-		MonoFieldInfo[] fields;
+		protected MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
 		MonoMethodInfo[] methods;
 		MonoMethodInfo[] static_methods;
@@ -102,7 +102,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		void get_fields ()
+		protected void get_fields ()
 		{
 			if (fields != null)
 				return;
@@ -388,6 +388,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal bool ResolveClass ()
 		{
+			Console.WriteLine ("RESOLVE CLASS: {0} {1}", this, type_info);
+
 			if (type_info != null)
 				return true;
 
@@ -396,12 +398,19 @@ namespace Mono.Debugger.Languages.Mono
 					return false;
 			}
 
-			type_info = file.MonoLanguage.GetClassInfo (type);
+			type_info = DoResolveClass ();
 			return type_info != null;
+		}
+
+		internal virtual MonoClassInfo DoResolveClass ()
+		{
+			return file.MonoLanguage.GetClassInfo (type);
 		}
 
 		internal MonoClassInfo ClassResolved (Thread target, TargetAddress klass)
 		{
+			Console.WriteLine ("CLASS RESOLVED: {0} {1}", this, klass);
+
 			type_info = File.MonoLanguage.GetClassInfo (target, klass);
 			return type_info;
 		}
@@ -511,12 +520,12 @@ namespace Mono.Debugger.Languages.Mono
 
 					Console.WriteLine ("READ MONO CLASS #3: {0}", class_inst_addr);
 
-					MonoGenericInst class_inst = new MonoGenericInst (
+					MonoGenericInst class_inst = MonoGenericInst.ReadGenericInst (
 						language, target, class_inst_addr);
 
 					Console.WriteLine ("READ MONO CLASS #4: {0}", class_inst);
 
-					return new MonoGenericInstanceType (klass, class_inst);
+					return new MonoGenericInstanceType (klass, class_inst, address);
 				}
 
 				return klass;
