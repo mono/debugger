@@ -12,12 +12,16 @@ namespace Mono.Debugger.Languages.Mono
 		string full_name;
 
 		TargetAddress klass_address;
+		bool is_open_type;
 
 		public MonoGenericInstanceType (MonoClassType underlying, MonoGenericInst inst)
 			: base (underlying.File, underlying.Type)
 		{
 			this.UnderlyingType = underlying;
 			this.GenericInst = inst;
+
+			for (int i = 0; i < inst.Types.Length; i++)
+				is_open_type |= inst.Types [i].ContainsGenericParameters;
 
 			StringBuilder sb = new StringBuilder (underlying.Name);
 			sb.Append ('<');
@@ -39,6 +43,16 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string Name {
 			get { return full_name; }
+		}
+
+		public override bool ContainsGenericParameters {
+			get { return is_open_type; }
+		}
+
+		protected override TargetType DoInflateType (MonoGenericContext context)
+		{
+			Console.WriteLine ("INFLATE GENERIC INSTANCE: {0} {1}", this, context);
+			return this;
 		}
 
 		internal override MonoClassInfo DoResolveClass ()

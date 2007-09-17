@@ -83,5 +83,17 @@ namespace Mono.Debugger.Languages.Mono
 
 			return new MonoGenericInst (types);
 		}
+
+		public override string ToString ()
+		{
+			StringBuilder sb = new StringBuilder ("MonoGenericInst (");
+			for (int i = 0; i < Types.Length; i++) {
+				if (i > 0)
+					sb.Append (",");
+				sb.Append (Types [i]);
+			}
+			sb.Append (")");
+			return sb.ToString ();
+		}
 	}
 }

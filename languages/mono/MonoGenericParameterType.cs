@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		protected override TargetType DoInflateType (Mono.MonoGenericContext context)
+		protected override TargetType DoInflateType (MonoGenericContext context)
 		{
 			MonoGenericInst inst = is_mvar ? context.MethodInst : context.ClassInst;
 			return inst.Types [pos];
