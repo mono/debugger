@@ -5,17 +5,29 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoGenericParameterType : TargetType
 	{
-		Cecil.GenericParameter gen_param;
+		int pos;
+		bool is_mvar;
+		string name;
+
+		public MonoGenericParameterType (MonoLanguageBackend mono, int pos, bool is_mvar)
+			: base (mono, TargetObjectKind.Alias)
+		{
+			this.pos = pos;
+			this.is_mvar = is_mvar;
+			this.name = String.Format ("{0}{1}", is_mvar ? "??" : "?", pos);
+		}
 
 		public MonoGenericParameterType (MonoLanguageBackend mono,
 						 Cecil.GenericParameter gen_param)
 			: base (mono, TargetObjectKind.Alias)
 		{
-			this.gen_param = gen_param;
+			this.pos = gen_param.Position;
+			this.is_mvar = gen_param.Owner is Cecil.MethodDefinition;
+			this.name = gen_param.Name;
 		}
 
 		public override string Name {
-			get { return gen_param.Name; }
+			get { return name; }
 		}
 
 		public override bool IsByRef {
@@ -31,7 +43,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public int Position {
-			get { return gen_param.Position; }
+			get { return pos; }
 		}
 
 		internal override TargetObject GetObject (TargetLocation location)
@@ -41,13 +53,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override TargetType InflateType (Mono.MonoGenericContext context)
 		{
-			MonoGenericInst inst;
-			if (gen_param.Owner is Cecil.MethodDefinition)
-				inst = context.MethodInst;
-			else
-				inst = context.ClassInst;
-
-			return inst.Types [gen_param.Position];
+			MonoGenericInst inst = is_mvar ? context.MethodInst : context.ClassInst;
+			return inst.Types [pos];
 		}
 	}
 }

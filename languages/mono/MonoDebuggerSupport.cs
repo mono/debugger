@@ -110,6 +110,11 @@ namespace Mono.Debugger.Languages.Mono
 				return GetTypeFromDefOrRef (file, dor);
 			}
 
+			case 0x13: /* VAR */ {
+				int pos = ReadCompressedInteger (reader);
+				return new MonoGenericParameterType (file.MonoLanguage, pos, false);
+			}
+
 			case 0x14: /* ARRAY */ {
 				TargetType element_type = GetTypeFromSignature (file, reader);
 				if (element_type == null)
@@ -154,6 +159,11 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 
 				return new MonoArrayType (element_type, 1);
+			}
+
+			case 0x1e: /* MVAR */ {
+				int pos = ReadCompressedInteger (reader);
+				return new MonoGenericParameterType (file.MonoLanguage, pos, true);
 			}
 
 			default:
