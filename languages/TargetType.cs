@@ -69,7 +69,19 @@ namespace Mono.Debugger.Languages
 
 		internal abstract TargetObject GetObject (TargetLocation location);
 
-		internal virtual TargetType InflateType (Mono.MonoGenericContext context)
+		public virtual bool ContainsGenericParameters {
+			get { return false; }
+		}
+
+		internal TargetType InflateType (Mono.MonoGenericContext context)
+		{
+			if (!ContainsGenericParameters)
+				return this;
+
+			return DoInflateType (context);
+		}
+
+		protected virtual TargetType DoInflateType (Mono.MonoGenericContext context)
 		{
 			return this;
 		}

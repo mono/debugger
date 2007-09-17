@@ -20,6 +20,15 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 4 * Language.TargetInfo.TargetAddressSize; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return ElementType.ContainsGenericParameters; }
+		}
+
+		protected override TargetType DoInflateType (MonoGenericContext context)
+		{
+			return new MonoArrayType (ElementType.InflateType (context), Rank);
+		}
+
 		internal override TargetObject GetObject (TargetLocation location)
 		{
 			return new MonoArrayObject (this, location);

@@ -7,7 +7,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericContext : DebuggerMarshalByRefObject
+	public class MonoGenericContext : DebuggerMarshalByRefObject
 	{
 		public readonly MonoGenericInst MethodInst;
 		public readonly MonoGenericInst ClassInst;
@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoGenericInst : DebuggerMarshalByRefObject
+	public class MonoGenericInst : DebuggerMarshalByRefObject
 	{
 		public readonly TargetType[] Types;
 

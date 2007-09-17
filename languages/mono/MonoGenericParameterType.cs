@@ -51,7 +51,11 @@ namespace Mono.Debugger.Languages.Mono
 			throw new NotImplementedException ();
 		}
 
-		internal override TargetType InflateType (Mono.MonoGenericContext context)
+		public override bool ContainsGenericParameters {
+			get { return true; }
+		}
+
+		protected override TargetType DoInflateType (Mono.MonoGenericContext context)
 		{
 			MonoGenericInst inst = is_mvar ? context.MethodInst : context.ClassInst;
 			return inst.Types [pos];
