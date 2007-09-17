@@ -69,6 +69,9 @@ namespace Mono.Debugger.Languages
 
 		internal TargetObject GetObject (TargetLocation location)
 		{
+			if (ContainsGenericParameters)
+				throw new InvalidOperationException ();
+
 			return DoGetObject (location);
 		}
 
