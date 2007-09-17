@@ -10,6 +10,8 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoGenericContext GenericContext;
 		string full_name;
 
+		MonoFieldInfo[] inflated_fields;
+
 		public MonoGenericInstanceType (MonoClassType underlying, MonoGenericContext context)
 			: base (underlying.File.MonoLanguage, TargetObjectKind.Class)
 		{
@@ -62,12 +64,35 @@ namespace Mono.Debugger.Languages.Mono
 			get { return null; }
 		}
 
+		void get_fields ()
+		{
+			if (inflated_fields != null)
+				return;
+
+			MonoFieldInfo[] fields = (MonoFieldInfo[]) UnderlyingType.Fields;
+			inflated_fields = new MonoFieldInfo [fields.Length];
+			for (int i = 0; i < inflated_fields.Length; i++) {
+				inflated_fields [i] = fields [i].InflateField (GenericContext);
+			}
+		}
+
 		public override TargetFieldInfo[] Fields {
-			get { return new TargetFieldInfo [0]; }
+			get {
+				get_fields ();
+				return inflated_fields;
+			}
 		}
 
 		public override TargetFieldInfo[] StaticFields {
 			get { return new TargetFieldInfo [0]; }
+		}
+
+		internal TargetObject GetField (Thread target, TargetLocation location,
+						MonoFieldInfo finfo)
+		{
+			Console.WriteLine ("GET FIELD: {0} {1}", this, finfo);
+
+			return null;
 		}
 
 		public override TargetObject GetStaticField (Thread target,

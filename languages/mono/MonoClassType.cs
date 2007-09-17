@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoClassType : TargetClassType
 	{
-		protected MonoFieldInfo[] fields;
+		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
 		MonoMethodInfo[] methods;
 		MonoMethodInfo[] static_methods;
@@ -118,7 +118,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		protected void get_fields ()
+		void get_fields ()
 		{
 			if (fields != null)
 				return;

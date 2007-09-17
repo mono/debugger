@@ -17,6 +17,20 @@ namespace Mono.Debugger.Languages.Mono
 			FieldInfo = finfo;
 		}
 
+		public MonoFieldInfo InflateField (MonoGenericContext context)
+		{
+			if (!Type.ContainsGenericParameters)
+				return this;
+
+			try {
+			TargetType inflated_type = Type.InflateType (context);
+			return new MonoFieldInfo (inflated_type, Index, Position, FieldInfo);
+			} catch (Exception ex) {
+				Console.WriteLine ("FUCK: {0}", ex);
+				throw;
+			}
+		}
+
 		public override object ConstValue {
 			get {
 				if (FieldInfo.HasConstant)
