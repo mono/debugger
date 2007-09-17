@@ -16,11 +16,11 @@ namespace Mono.Debugger.Languages
 			this.offset = offset;
 		}
 
-		public override bool HasAddress {
+		internal override bool HasAddress {
 			get { return relative_to.HasAddress; }
 		}
 
-		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			return relative_to.GetAddress (target) + offset;
 		}

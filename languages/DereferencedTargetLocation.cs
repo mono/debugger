@@ -11,11 +11,11 @@ namespace Mono.Debugger.Languages
 			this.reference = reference;
 		}
 
-		public override bool HasAddress {
+		internal override bool HasAddress {
 			get { return reference.HasAddress; }
 		}
 
-		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			TargetAddress address = reference.GetAddress (target);
 			if (address.IsNull)

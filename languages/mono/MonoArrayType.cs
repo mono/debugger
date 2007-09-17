@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 4 * Language.TargetInfo.TargetAddressSize; }
 		}
 
-		internal override TargetObject GetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			return new MonoArrayObject (this, location);
 		}

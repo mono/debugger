@@ -14,11 +14,11 @@ namespace Mono.Debugger.Languages
 			this.address = address;
 		}
 
-		public override bool HasAddress {
+		internal override bool HasAddress {
 			get { return true; }
 		}
 
-		public override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			return address;
 		}

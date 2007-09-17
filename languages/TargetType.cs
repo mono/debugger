@@ -67,7 +67,12 @@ namespace Mono.Debugger.Languages
 			location.WriteBuffer (target, contents);
 		}
 
-		internal abstract TargetObject GetObject (TargetLocation location);
+		internal TargetObject GetObject (TargetLocation location)
+		{
+			return DoGetObject (location);
+		}
+
+		protected abstract TargetObject DoGetObject (TargetLocation location);
 
 		public override string ToString ()
 		{
