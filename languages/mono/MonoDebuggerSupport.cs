@@ -141,8 +141,12 @@ namespace Mono.Debugger.Languages.Mono
 
 				MonoGenericInst ginst = new MonoGenericInst (type_args);
 
+#if FIXME
 				return new MonoGenericInstanceType (
 					(MonoClassType) underlying_type, ginst);
+#else
+				return underlying_type;
+#endif
 			}
 
 			case 0x18:

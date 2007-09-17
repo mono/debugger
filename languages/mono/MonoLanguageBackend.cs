@@ -267,7 +267,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			MonoGenericInst ginst = new MonoGenericInst (args);
+#if FIXME
 			return new MonoGenericInstanceType (underlying, ginst);
+#else
+			return underlying;
+#endif
 		}
 
 		public TargetType LookupMonoType (Cecil.TypeReference type)

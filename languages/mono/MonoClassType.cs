@@ -27,6 +27,8 @@ namespace Mono.Debugger.Languages.Mono
 		int first_method = 0, first_smethod = 0;
 		int num_fields = 0, num_sfields = 0, first_field = 0;
 
+		string full_name;
+
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
 		MonoClassType parent_type;
@@ -43,6 +45,20 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (type.BaseType != null)
 				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
+
+			if (type.GenericParameters.Count > 0) {
+				StringBuilder sb = new StringBuilder (type.FullName);
+				sb.Append ('<');
+				for (int i = 0; i < type.GenericParameters.Count; i++) {
+					if (i > 0)
+						sb.Append (',');
+					sb.Append (type.GenericParameters [i].Name);
+				}
+				sb.Append ('>');
+				full_name = sb.ToString ();
+			} else {
+				full_name = type.FullName;
+			}
 		}
 
 		public MonoClassType (TargetMemoryAccess target, MonoSymbolFile file,
@@ -57,7 +73,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override string Name {
-			get { return type.FullName; }
+			get { return full_name; }
 		}
 
 		public override bool IsByRef {
@@ -415,6 +431,18 @@ namespace Mono.Debugger.Languages.Mono
 			return type_info;
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return type.GenericParameters.Count > 0; }
+		}
+
+		protected override TargetType DoInflateType (MonoGenericContext context)
+		{
+			Console.WriteLine ("INFLATE CLASS: {0} {1} {2}",
+					   this, Type, context);
+
+			return new MonoGenericInstanceType (this, context);
+		}
+
 		protected override TargetObject DoGetObject (TargetLocation location)
 		{
 			return new MonoClassObject (this, location);
@@ -514,6 +542,7 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("READ MONO CLASS #2: {0} {1} {2}", klass,
 						   generic_class, generic_container);
 
+#if FIXME
 				if (!generic_class.IsNull) {
 					TargetAddress class_inst_addr = target.ReadAddress (
 						generic_class + target.TargetInfo.TargetAddressSize);
@@ -527,6 +556,7 @@ namespace Mono.Debugger.Languages.Mono
 
 					return new MonoGenericInstanceType (klass, class_inst, address);
 				}
+#endif
 
 				return klass;
 			} else if (type == 0x1d) { // MONO_TYPE_SZARRAY
