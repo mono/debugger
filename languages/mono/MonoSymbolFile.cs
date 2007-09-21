@@ -17,6 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly bool HasLivenessInfo;
 		public readonly int BeginLiveness;
 		public readonly int EndLiveness;
+		public readonly TargetAddress KlassAddress;
 
 		internal enum AddressMode : long
 		{
@@ -27,10 +28,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		const long AddressModeFlags = 0xf0000000;
 
-		public static int StructSize {
-			get { return 20; }
-		}
-
 		public VariableInfo (Architecture arch, TargetBinaryReader reader)
 		{
 			Index = reader.ReadLeb128 ();
@@ -38,6 +35,8 @@ namespace Mono.Debugger.Languages.Mono
 			Size = reader.ReadLeb128 ();
 			BeginLiveness = reader.ReadLeb128 ();
 			EndLiveness = reader.ReadLeb128 ();
+
+			KlassAddress = new TargetAddress (arch.AddressDomain, reader.ReadAddress ());
 
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
@@ -55,8 +54,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string ToString ()
 		{
-			return String.Format ("[VariableInfo {0}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}]",
-					      Mode, Index, Offset, Size, BeginLiveness, EndLiveness);
+			return String.Format ("[VariableInfo {0}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6}]",
+					      Mode, Index, Offset, Size, BeginLiveness, EndLiveness,
+					      KlassAddress);
 		}
 	}
 
