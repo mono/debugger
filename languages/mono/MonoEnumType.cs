@@ -12,6 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoSymbolFile file;
 		Cecil.TypeDefinition type;
+		MonoClassType class_type;
 		bool is_flags;
 
 		public MonoEnumType (MonoSymbolFile file, Cecil.TypeDefinition type)
@@ -19,6 +20,16 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.type = type;
 			this.file = file;
+
+			class_type = new MonoClassType (file, type);
+		}
+
+		public override bool HasClassType {
+			get { return true; }
+		}
+
+		public override TargetClassType ClassType {
+			get { return class_type; }
 		}
 
 		public MonoSymbolFile File {

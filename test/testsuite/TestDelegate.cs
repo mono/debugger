@@ -27,12 +27,12 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("next");
 			AssertStopped (thread, "X.Main()", 30);
 
-			AssertPrint (thread, "x.Foo (8)", "(System.Int64) 24");
+			AssertPrint (thread, "x.Foo (8)", "(long) 24");
 			AssertTargetOutput ("Hello World: 8");
 			AssertTargetOutput ("Boston: 8");
 			AssertNoTargetOutput ();
 
-			AssertPrint (thread, "x.Foo (9)", "(System.Int64) 27");
+			AssertPrint (thread, "x.Foo (9)", "(long) 27");
 			AssertTargetOutput ("Hello World: 9");
 			AssertTargetOutput ("Boston: 9");
 			AssertNoTargetOutput ();
@@ -55,12 +55,12 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 31);
 
-			AssertPrint (thread, "x.Foo (5)", "(System.Int64) 15");
+			AssertPrint (thread, "x.Foo (5)", "(long) 15");
 			AssertTargetOutput ("Hello World: 5");
 			AssertTargetOutput ("Boston: 5");
 			AssertNoTargetOutput ();
 
-			AssertPrint (thread, "x.Foo (3)", "(System.Int64) 9");
+			AssertPrint (thread, "x.Foo (3)", "(long) 9");
 			AssertTargetOutput ("Hello World: 3");
 			AssertTargetOutput ("Boston: 3");
 			AssertNoTargetOutput ();

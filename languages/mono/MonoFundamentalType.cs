@@ -5,19 +5,16 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoFundamentalType : TargetFundamentalType
 	{
 		MonoSymbolFile file;
-		MonoClassType class_type;
 
 		public MonoFundamentalType (MonoSymbolFile file, Cecil.TypeDefinition type,
-					    FundamentalKind kind, int size)
-			: base (file.Language, type.FullName, kind, size)
+					    string name, FundamentalKind kind, int size)
+			: base (file.Language, name, kind, new MonoClassType (file, type), size)
 		{
 			this.file = file;
-
-			class_type = new MonoClassType (file, type);
 		}
 
-		public MonoClassType ClassType {
-			get { return class_type; }
+		new public MonoClassType ClassType {
+			get { return (MonoClassType) base.ClassType; }
 		}
 	}
 }

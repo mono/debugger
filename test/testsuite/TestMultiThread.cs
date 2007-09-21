@@ -52,9 +52,9 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
-			AssertPrint (child, "Child.Counter", "(System.Int32) 0");
-			AssertPrint (child, "Counter", "(System.Int32) 0");
-			AssertPrint (child, "Parent.Counter", "(System.Int32) 0");
+			AssertPrint (child, "Child.Counter", "(int) 0");
+			AssertPrint (child, "Counter", "(int) 0");
+			AssertPrint (child, "Parent.Counter", "(int) 0");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Loop: child 1");
@@ -64,9 +64,9 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
-			AssertPrint (child, "Child.Counter", "(System.Int32) 1");
-			AssertPrint (child, "Counter", "(System.Int32) 1");
-			AssertPrint (child, "Parent.Counter", "(System.Int32) 0");
+			AssertPrint (child, "Child.Counter", "(int) 1");
+			AssertPrint (child, "Counter", "(int) 1");
+			AssertPrint (child, "Parent.Counter", "(int) 0");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Loop: main 0");
@@ -76,9 +76,9 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
-			AssertPrint (thread, "Child.Counter", "(System.Int32) 2");
-			AssertPrint (thread, "Counter", "(System.Int32) 0");
-			AssertPrint (thread, "Parent.Counter", "(System.Int32) 0");
+			AssertPrint (thread, "Child.Counter", "(int) 2");
+			AssertPrint (thread, "Counter", "(int) 0");
+			AssertPrint (thread, "Parent.Counter", "(int) 0");
 
 			AssertNoEvent ();
 			AssertExecute ("continue -wait -thread " + thread.ID);
@@ -114,8 +114,8 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
-			AssertPrint (thread, "Child.Counter", "(System.Int32) 2");
-			AssertPrint (thread, "Parent.Counter", "(System.Int32) 1");
+			AssertPrint (thread, "Child.Counter", "(int) 2");
+			AssertPrint (thread, "Parent.Counter", "(int) 1");
 
 			AssertFrame (thread, "X.LoopDone()", LineLoop);
 			AssertFrame (child, "X.LoopDone()", LineLoop);
@@ -153,8 +153,8 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
-			AssertPrint (thread, "Child.Counter", "(System.Int32) 3");
-			AssertPrint (thread, "Parent.Counter", "(System.Int32) 2");
+			AssertPrint (thread, "Child.Counter", "(int) 3");
+			AssertPrint (thread, "Parent.Counter", "(int) 2");
 
 			AssertFrame (thread, "X.LoopDone()", LineLoop);
 			AssertFrame (child, "X.LoopDone()", LineLoop);
@@ -167,8 +167,8 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
-			AssertPrint (child, "Child.Counter", "(System.Int32) 4");
-			AssertPrint (child, "Parent.Counter", "(System.Int32) 3");
+			AssertPrint (child, "Child.Counter", "(int) 4");
+			AssertPrint (child, "Parent.Counter", "(int) 3");
 
 			AssertFrame (child, "X.LoopDone()", LineLoop);
 
@@ -184,8 +184,8 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
-			AssertPrint (child, "Child.Counter", "(System.Int32) 5");
-			AssertPrint (child, "Parent.Counter", "(System.Int32) 3");
+			AssertPrint (child, "Child.Counter", "(int) 5");
+			AssertPrint (child, "Parent.Counter", "(int) 3");
 
 			AssertFrame (child, "X.LoopDone()", LineLoop);
 
@@ -197,8 +197,8 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
-			AssertPrint (thread, "Child.Counter", "(System.Int32) 6");
-			AssertPrint (thread, "Parent.Counter", "(System.Int32) 3");
+			AssertPrint (thread, "Child.Counter", "(int) 6");
+			AssertPrint (thread, "Parent.Counter", "(int) 3");
 
 			Assert.IsTrue (thread.IsStopped);
 			Assert.IsTrue (child.IsStopped);
@@ -233,8 +233,8 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Loop: main 4");
 			AssertNoTargetOutput ();
 
-			AssertPrint (thread, "Child.Counter", "(System.Int32) 6");
-			AssertPrint (thread, "Parent.Counter", "(System.Int32) 4");
+			AssertPrint (thread, "Child.Counter", "(int) 6");
+			AssertPrint (thread, "Parent.Counter", "(int) 4");
 
 			AssertFrame (thread, "X.LoopDone()", LineLoop);
 			AssertFrame (child, "X.LoopDone()", LineLoop);
@@ -242,7 +242,7 @@ namespace Mono.Debugger.Tests
 			/*
 			 * This doesn't work when broken threading is enabled:
 			 *
-			 *    AssertPrint (thread, "Parent.Test ()", "(System.Int32) 7");
+			 *    AssertPrint (thread, "Parent.Test ()", "(int) 7");
 			 *
 			 */
 

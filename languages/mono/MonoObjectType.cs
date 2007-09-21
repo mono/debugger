@@ -20,7 +20,15 @@ namespace Mono.Debugger.Languages.Mono
 			get { return file; }
 		}
 
+		public override bool HasClassType {
+			get { return true; }
+		}
+
 		public override TargetClassType ClassType {
+			get { return class_type; }
+		}
+
+		internal MonoClassType MonoClassType {
 			get { return class_type; }
 		}
 

@@ -18,6 +18,14 @@ namespace Mono.Debugger.Languages.Native
 			this.parameter_types = parameter_types;
 		}
 
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override string Name {
 			get { return name; }
 		}

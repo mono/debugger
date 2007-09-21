@@ -33,9 +33,9 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
-			AssertPrint (thread, "d.Test ()", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "a.Test ()", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "a.ToString ()", "(System.String) \"5\"");
+			AssertPrint (thread, "d.Test ()", "(string) \"Hello World\"");
+			AssertPrint (thread, "a.Test ()", "(string) \"Hello World\"");
+			AssertPrint (thread, "a.ToString ()", "(string) \"5\"");
 			AssertPrint (thread, "(A) a", "(A) { \"5\" }");
 			AssertPrintException (thread, "(B) a", "Cannot cast from A to B.");
 			AssertPrint (thread, "d", "(D) { <C> = { <B> = { a = 8, " +
@@ -50,29 +50,29 @@ namespace Mono.Debugger.Tests
 				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
 			AssertPrint (thread, "(((D) d))", "(D) { <C> = { <B> = { a = 8, " +
 				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
-			AssertPrint (thread, "((B) d).Test ()", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "((C) d).Test ()", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "(((D) d).Test ())", "(System.String) \"Hello World\"");
+			AssertPrint (thread, "((B) d).Test ()", "(string) \"Hello World\"");
+			AssertPrint (thread, "((C) d).Test ()", "(string) \"Hello World\"");
+			AssertPrint (thread, "(((D) d).Test ())", "(string) \"Hello World\"");
 			AssertPrintException (thread, "d.Hello ()",
 					      "Method `d.Hello ()' doesn't return a value.");
-			AssertPrint (thread, "d.Virtual ()", "(System.Int32) 2");
-			AssertPrint (thread, "((C) d).Virtual ()", "(System.Int32) 2");
-			AssertPrint (thread, "a.Hello", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "a.Property", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "A.StaticTest ()", "(System.String) \"Boston\"");
-			AssertPrint (thread, "A.StaticProperty", "(System.String) \"Boston\"");
-			AssertPrint (thread, "((B) d).Hello", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "((B) d).Property", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "B.StaticTest ()", "(System.String) \"Boston\"");
-			AssertPrint (thread, "B.StaticProperty", "(System.String) \"Boston\"");
-			AssertPrint (thread, "d.f", "(System.Single) 3.14");
-			AssertPrint (thread, "d.a", "(System.Int32) 8");
-			AssertPrint (thread, "c.Virtual ()", "(System.Int32) 2");
-			AssertPrint (thread, "hello.Test ()", "(System.String) \"Hello\"");
-			AssertPrint (thread, "world.Test ()", "(System.String) \"World\"");
+			AssertPrint (thread, "d.Virtual ()", "(int) 2");
+			AssertPrint (thread, "((C) d).Virtual ()", "(int) 2");
+			AssertPrint (thread, "a.Hello", "(string) \"Hello World\"");
+			AssertPrint (thread, "a.Property", "(string) \"Hello World\"");
+			AssertPrint (thread, "A.StaticTest ()", "(string) \"Boston\"");
+			AssertPrint (thread, "A.StaticProperty", "(string) \"Boston\"");
+			AssertPrint (thread, "((B) d).Hello", "(string) \"Hello World\"");
+			AssertPrint (thread, "((B) d).Property", "(string) \"Hello World\"");
+			AssertPrint (thread, "B.StaticTest ()", "(string) \"Boston\"");
+			AssertPrint (thread, "B.StaticProperty", "(string) \"Boston\"");
+			AssertPrint (thread, "d.f", "(float) 3.14");
+			AssertPrint (thread, "d.a", "(int) 8");
+			AssertPrint (thread, "c.Virtual ()", "(int) 2");
+			AssertPrint (thread, "hello.Test ()", "(string) \"Hello\"");
+			AssertPrint (thread, "world.Test ()", "(string) \"World\"");
 			AssertPrint (thread, "((D) c)", "(D) { <C> = { <B> = { a = 8, " +
 				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
-			AssertPrint (thread, "c.Test (c)", "(System.Int32) 64");
+			AssertPrint (thread, "c.Test (c)", "(int) 64");
 
 			int bpt_hello = AssertBreakpoint (line_hello);
 			AssertExecute ("continue");
@@ -85,10 +85,10 @@ namespace Mono.Debugger.Tests
 
 			AssertPrint (thread, "this", "(D) { <C> = { <B> = { a = 8, " +
 				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
-			AssertPrint (thread, "f", "(System.Single) 3.14");
-			AssertPrint (thread, "base.a", "(System.Int32) 8");
-			AssertPrint (thread, "base.Hello", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "Virtual ()", "(System.Int32) 2");
+			AssertPrint (thread, "f", "(float) 3.14");
+			AssertPrint (thread, "base.a", "(int) 8");
+			AssertPrint (thread, "base.Hello", "(string) \"Hello World\"");
+			AssertPrint (thread, "Virtual ()", "(int) 2");
 
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);

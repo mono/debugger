@@ -9,7 +9,14 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public MonoArrayType (TargetType element_type, int rank)
 			: base (element_type, rank)
-		{
+		{ }
+
+		public override bool HasClassType {
+			get { return true; }
+		}
+
+		public override TargetClassType ClassType {
+			get { return Language.ArrayType; }
 		}
 
 		public override bool HasFixedSize {

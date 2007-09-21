@@ -98,7 +98,7 @@ namespace Mono.Debugger.Tests
 			// We still have a breakpoint in Europe.Germany.Trier.PortaNigra's
 			// property getter while we're runtime-invoke'ing it.
 			AssertPrint (thread, "hello.Trier.PortaNigra.URL",
-				     "(System.String) \"" + porta_nigra_url + "\"");
+				     "(string) \"" + porta_nigra_url + "\"");
 
 			int bpt_y_hello = AssertBreakpoint ("Y.Hello");
 			AssertExecute ("disable " + bpt_y_hello);

@@ -36,13 +36,13 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "boxed", "(object) &(Hello) { Data = 305419896 }");
 			AssertPrint (thread, DisplayFormat.HexaDecimal, "boxed",
 				     "(object) &(Hello) { Data = 0x12345678 }");
-			AssertPrint (thread, "obj.ToString ()", "(System.String) \"Bar\"");
+			AssertPrint (thread, "obj.ToString ()", "(string) \"Bar\"");
 			AssertPrint (thread, "obj.GetType ()", "(System.MonoType) { \"Bar\" }");
 			AssertPrint (thread, "boxed.GetType()", "(System.MonoType) { \"Hello\" }");
-			AssertPrint (thread, "boxed.ToString ()", "(System.String) \"0x12345678\"");
+			AssertPrint (thread, "boxed.ToString ()", "(string) \"0x12345678\"");
 			AssertPrint (thread, "value", "(Hello) { \"0x12345678\" }");
 			AssertPrint (thread, "value.GetType ()", "(System.MonoType) { \"Hello\" }");
-			AssertPrint (thread, "value.ToString ()", "(System.String) \"0x12345678\"");
+			AssertPrint (thread, "value.ToString ()", "(string) \"0x12345678\"");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Bar");

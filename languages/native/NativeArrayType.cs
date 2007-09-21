@@ -21,6 +21,14 @@ namespace Mono.Debugger.Languages.Native
 		int lower_bound;
 		int upper_bound;
 
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override string Name {
 			get { return name; }
 		}

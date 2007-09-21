@@ -41,8 +41,11 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 			this.file = file;
 
-			if (type.BaseType != null)
-				parent_type = file.MonoLanguage.LookupMonoType (type.BaseType) as MonoClassType;
+			if (type.BaseType != null) {
+				TargetType parent = file.MonoLanguage.LookupMonoType (type.BaseType);
+				if (parent != null)
+					parent_type = (MonoClassType) parent.ClassType;
+			}
 		}
 
 		public MonoClassType (TargetMemoryAccess target, MonoSymbolFile file,
@@ -90,6 +93,14 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override Module Module {
 			get { return file.Module; }
+		}
+
+		public override bool HasClassType {
+			get { return true; }
+		}
+
+		public override TargetClassType ClassType {
+			get { return this; }
 		}
 
 		internal int Token {

@@ -8,10 +8,6 @@ namespace Mono.Debugger.Languages
 			: base (language, TargetObjectKind.Object, name, size)
 		{ }
 
-		public abstract TargetClassType ClassType {
-			get;
-		}
-
 		public override bool IsTypesafe {
 			get { return true; }
 		}

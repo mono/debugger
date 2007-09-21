@@ -35,7 +35,7 @@ namespace Mono.Debugger.Tests
 
 			// AssertExecute ("bt");
 
-			AssertPrint (thread, "foo.ToString()", "(System.String) \"Hello World!\"");
+			AssertPrint (thread, "foo.ToString()", "(string) \"Hello World!\"");
 			AssertExecute ("next");
 			AssertStopped (thread, "X.Main()", line_main_3);
 

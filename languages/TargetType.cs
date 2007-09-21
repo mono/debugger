@@ -29,6 +29,14 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract bool HasClassType {
+			get;
+		}
+
+		public abstract TargetClassType ClassType {
+			get;
+		}
+
 		public Language Language {
 			get { return language; }
 		}

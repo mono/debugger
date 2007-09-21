@@ -55,20 +55,20 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_simple, "X.Simple()", LineSimple);
 
-			AssertType (thread, "a", "System.Int32");
-			AssertPrint (thread, "a", "(System.Int32) 5");
-			AssertType (thread, "b", "System.Int64");
-			AssertPrint (thread, "b", "(System.Int64) 7");
-			AssertType (thread, "f", "System.Single");
-			AssertPrint (thread, "f", "(System.Single) 0.7142857");
-			AssertType (thread, "hello", "System.String");
-			AssertPrint (thread, "hello", "(System.String) \"Hello World\"");
+			AssertType (thread, "a", "int");
+			AssertPrint (thread, "a", "(int) 5");
+			AssertType (thread, "b", "long");
+			AssertPrint (thread, "b", "(long) 7");
+			AssertType (thread, "f", "float");
+			AssertPrint (thread, "f", "(float) 0.7142857");
+			AssertType (thread, "hello", "string");
+			AssertPrint (thread, "hello", "(string) \"Hello World\"");
 
 			AssertExecute ("set a = 9");
 			AssertExecute ("set hello = \"Monkey\"");
 
-			AssertPrint (thread, "a", "(System.Int32) 9");
-			AssertPrint (thread, "hello", "(System.String) \"Monkey\"");
+			AssertPrint (thread, "a", "(int) 9");
+			AssertPrint (thread, "hello", "(string) \"Monkey\"");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
@@ -80,9 +80,9 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_boxed_value, "X.BoxedValueType()",
 					     LineBoxedValueType);
 
-			AssertPrint (thread, "a", "(System.Int32) 5");
-			AssertPrint (thread, "boxed_a", "(object) &(System.Int32) 5");
-			AssertPrint (thread, "*boxed_a", "(System.Int32) 5");
+			AssertPrint (thread, "a", "(int) 5");
+			AssertPrint (thread, "boxed_a", "(object) &(int) 5");
+			AssertPrint (thread, "*boxed_a", "(int) 5");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("5");
@@ -92,9 +92,9 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_boxed_ref, "X.BoxedReferenceType()",
 					     LineBoxedReferenceType);
 
-			AssertPrint (thread, "hello", "(System.String) \"Hello World\"");
-			AssertPrint (thread, "boxed_hello", "(object) &(System.String) \"Hello World\"");
-			AssertPrint (thread, "*boxed_hello", "(System.String) \"Hello World\"");
+			AssertPrint (thread, "hello", "(string) \"Hello World\"");
+			AssertPrint (thread, "boxed_hello", "(object) &(string) \"Hello World\"");
+			AssertPrint (thread, "*boxed_hello", "(string) \"Hello World\"");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Hello World");
@@ -104,12 +104,12 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_simple_array, "X.SimpleArray()",
 					     LineSimpleArray);
 
-			AssertPrint (thread, "a", "(System.Int32[]) [ 3, 4, 5 ]");
-			AssertPrint (thread, "a[1]", "(System.Int32) 4");
+			AssertPrint (thread, "a", "(int[]) [ 3, 4, 5 ]");
+			AssertPrint (thread, "a[1]", "(int) 4");
 			AssertExecute ("set a[2] = 9");
-			AssertPrint (thread, "a[2]", "(System.Int32) 9");
-			AssertPrint (thread, "a.Length", "(System.Int32) 3");
-			AssertPrint (thread, "a.GetRank ()", "(System.Int32) 1");
+			AssertPrint (thread, "a[2]", "(int) 9");
+			AssertPrint (thread, "a.Length", "(int) 3");
+			AssertPrint (thread, "a.GetRank ()", "(int) 1");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
@@ -118,15 +118,15 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_multi_value_array,
 					     "X.MultiValueTypeArray()", LineMultiValueArray);
 
-			AssertPrint (thread, "a", "(System.Int32[,]) [ [ 6, 7, 8 ], [ 9, 10, 11 ] ]");
+			AssertPrint (thread, "a", "(int[,]) [ [ 6, 7, 8 ], [ 9, 10, 11 ] ]");
 			AssertPrintException (thread, "a[1]",
 					      "Index of array expression `a' out of bounds.");
-			AssertPrint (thread, "a[1,2]", "(System.Int32) 11");
+			AssertPrint (thread, "a[1,2]", "(int) 11");
 			AssertPrintException (thread, "a[2]",
 					      "Index of array expression `a' out of bounds.");
 			AssertExecute ("set a[1,2] = 50");
-			AssertPrint (thread, "a.Length", "(System.Int32) 6");
-			AssertPrint (thread, "a.GetRank ()", "(System.Int32) 2");
+			AssertPrint (thread, "a.Length", "(int) 6");
+			AssertPrint (thread, "a.GetRank ()", "(int) 2");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("50");
@@ -135,11 +135,11 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_string_array, "X.StringArray()",
 					     LineStringArray);
 
-			AssertPrint (thread, "a", "(System.String[]) [ \"Hello\", \"World\" ]");
-			AssertPrint (thread, "a[1]", "(System.String) \"World\"");
+			AssertPrint (thread, "a", "(string[]) [ \"Hello\", \"World\" ]");
+			AssertPrint (thread, "a[1]", "(string) \"World\"");
 			AssertExecute ("set a[1] = \"Trier\"");
-			AssertPrint (thread, "a", "(System.String[]) [ \"Hello\", \"Trier\" ]");
-			AssertPrint (thread, "a[1]", "(System.String) \"Trier\"");
+			AssertPrint (thread, "a", "(string[]) [ \"Hello\", \"Trier\" ]");
+			AssertPrint (thread, "a[1]", "(string) \"Trier\"");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("System.String[]");
@@ -149,25 +149,25 @@ namespace Mono.Debugger.Tests
 					     LineMultiStringArray);
 
 			AssertPrint (thread, "a",
-				     "(System.String[,]) [ [ \"Hello\", \"World\" ], " +
+				     "(string[,]) [ [ \"Hello\", \"World\" ], " +
 				     "[ \"New York\", \"Boston\" ], [ \"Ximian\", \"Monkeys\" ] ]");
-			AssertPrint (thread, "a[2,1]", "(System.String) \"Monkeys\"");
+			AssertPrint (thread, "a[2,1]", "(string) \"Monkeys\"");
 			AssertExecute ("set a[2,1] = \"Primates\"");
 			AssertPrint (thread, "a",
-				     "(System.String[,]) [ [ \"Hello\", \"World\" ], " +
+				     "(string[,]) [ [ \"Hello\", \"World\" ], " +
 				     "[ \"New York\", \"Boston\" ], [ \"Ximian\", \"Primates\" ] ]");
-			AssertPrint (thread, "a[2,1]", "(System.String) \"Primates\"");
+			AssertPrint (thread, "a[2,1]", "(string) \"Primates\"");
 			AssertExecute ("set a[0,1] = \"Lions\"");
 			AssertPrint (thread, "a",
-				     "(System.String[,]) [ [ \"Hello\", \"Lions\" ], " +
+				     "(string[,]) [ [ \"Hello\", \"Lions\" ], " +
 				     "[ \"New York\", \"Boston\" ], [ \"Ximian\", \"Primates\" ] ]");
-			AssertPrint (thread, "a[0,1]", "(System.String) \"Lions\"");
-			AssertPrint (thread, "a[2,1]", "(System.String) \"Primates\"");
+			AssertPrint (thread, "a[0,1]", "(string) \"Lions\"");
+			AssertPrint (thread, "a[2,1]", "(string) \"Primates\"");
 
 			AssertExecute ("set a[0,0] = \"Birds\"");
 			AssertExecute ("set a[2,0] = \"Dogs\"");
 			AssertPrint (thread, "a",
-				     "(System.String[,]) [ [ \"Birds\", \"Lions\" ], " +
+				     "(string[,]) [ [ \"Birds\", \"Lions\" ], " +
 				     "[ \"New York\", \"Boston\" ], [ \"Dogs\", \"Primates\" ] ]");
 
 			AssertExecute ("continue");
@@ -227,7 +227,7 @@ namespace Mono.Debugger.Tests
 				     "(C) { <B> = { a = 5, b = 256, c = \"New England Patriots\" }, " +
 				     "a = 8, f = 3.14 }");
 			AssertPrint (thread, "d.s",
-				     "(System.String[]) [ \"Eintracht Trier\" ]");
+				     "(string[]) [ \"Eintracht Trier\" ]");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Eintracht Trier");
@@ -237,8 +237,8 @@ namespace Mono.Debugger.Tests
 					     "X.FunctionStructType()", LineFunctionStructType);
 
 			AssertPrint (thread, "e", "(E) { a = 9 }");
-			AssertPrint (thread, "e.a", "(System.Int32) 9");
-			AssertPrint (thread, "e.Foo (5)", "(System.Int64) 5");
+			AssertPrint (thread, "e.a", "(int) 9");
+			AssertPrint (thread, "e.Foo (5)", "(long) 5");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");

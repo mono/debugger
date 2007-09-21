@@ -41,23 +41,23 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_test, "X.Test(int,string)", LineTest);
 
-			AssertPrint (thread, "a", "(System.Int32) 5");
-			AssertPrint (thread, "Hello (4)", "(System.Int32) 16");
+			AssertPrint (thread, "a", "(int) 5");
+			AssertPrint (thread, "Hello (4)", "(int) 16");
 			AssertTargetOutput ("Hello: 4");
-			AssertPrint (thread, "Hello (a)", "(System.Int32) 20");
+			AssertPrint (thread, "Hello (a)", "(int) 20");
 			AssertTargetOutput ("Hello: 5");
-			AssertPrint (thread, "Foo (4)", "(System.Int32) 8");
+			AssertPrint (thread, "Foo (4)", "(int) 8");
 			AssertTargetOutput ("Foo: 4");
 
 			AssertPrint (thread, "Foo (\"Hello World\")",
-				     "(System.String) \"Returned Hello World\"");
+				     "(string) \"Returned Hello World\"");
 			AssertTargetOutput ("Foo with a string: Hello World");
 			AssertPrint (thread, "Foo (b)",
-				     "(System.String) \"Returned Hello World\"");
+				     "(string) \"Returned Hello World\"");
 			AssertTargetOutput ("Foo with a string: Hello World");
-			AssertPrint (thread, "StaticHello (4)", "(System.Int32) 32");
+			AssertPrint (thread, "StaticHello (4)", "(int) 32");
 			AssertTargetOutput ("Static Hello: 4");
-			AssertPrint (thread, "StaticHello (Hello (4))", "(System.Int32) 128");
+			AssertPrint (thread, "StaticHello (Hello (4))", "(int) 128");
 			AssertTargetOutput ("Hello: 4");
 			AssertTargetOutput ("Static Hello: 16");
 
@@ -72,8 +72,8 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_test_static,
 					     "X.TestStatic(X,int,string)", LineTestStatic);
 
-			AssertPrint (thread, "a", "(System.Int32) 9");
-			AssertPrint (thread, "b", "(System.String) \"Boston\"");
+			AssertPrint (thread, "a", "(int) 9");
+			AssertPrint (thread, "b", "(string) \"Boston\"");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Foo: 9");

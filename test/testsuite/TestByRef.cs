@@ -36,7 +36,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Test(int&)", line_test + 1);
 
-			AssertPrint (thread, "foo", "(System.Int32&) &(System.Int32) 3");
+			AssertPrint (thread, "foo", "(int&) &(int) 3");
 			int bpt_unsafe = AssertBreakpoint (line_unsafe);
 
 			AssertExecute ("continue");
@@ -45,8 +45,8 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_unsafe, "X.UnsafeTest(int)", line_unsafe);
 
-			AssertPrint (thread, "ptr", "(System.Int32&) &(System.Int32) 3");
-			AssertPrint (thread, "*ptr", "(System.Int32) 3");
+			AssertPrint (thread, "ptr", "(int&) &(int) 3");
+			AssertPrint (thread, "*ptr", "(int) 3");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("3");

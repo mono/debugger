@@ -5,20 +5,31 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoOpaqueType : TargetType
 	{
-		Cecil.TypeReference typeref;
+		Cecil.TypeDefinition typedef;
+		MonoClassType class_type;
 
-		public MonoOpaqueType (MonoSymbolFile file, Cecil.TypeReference typeref)
+		public MonoOpaqueType (MonoSymbolFile file, Cecil.TypeDefinition typedef)
 			: base (file.MonoLanguage, TargetObjectKind.Unknown)
 		{
-			this.typeref = typeref;
+			this.typedef = typedef;
+
+			class_type = new MonoClassType (file, typedef);
+		}
+
+		public override bool HasClassType {
+			get { return true; }
+		}
+
+		public override TargetClassType ClassType {
+			get { return class_type; }
 		}
 
 		public Cecil.TypeReference Type {
-			get { return typeref; }
+			get { return typedef; }
 		}
 
 		public override string Name {
-			get { return typeref.FullName; }
+			get { return typedef.FullName; }
 		}
 
 		public override bool IsByRef {

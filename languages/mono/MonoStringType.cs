@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoStringType (MonoSymbolFile file, Cecil.TypeDefinition type,
 				       int object_size, int size)
-			: base (file, type, FundamentalKind.String, size)
+			: base (file, type, "string", FundamentalKind.String, size)
 		{
 			this.ObjectSize = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;

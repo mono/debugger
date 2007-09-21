@@ -65,6 +65,14 @@ namespace Mono.Debugger.Languages.Mono
 				return mdef.Name + "`" + gen_params.Count;
 		}
 
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override string Name {
 			get { return name; }
 		}

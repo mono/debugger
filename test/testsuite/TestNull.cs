@@ -33,8 +33,8 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
 
 			AssertPrint (thread, "x", "(X) null");
-			AssertPrint (thread, "hello", "(System.String) null");
-			AssertPrint (thread, "int_array", "(System.Int32[]) null");
+			AssertPrint (thread, "hello", "(string) null");
+			AssertPrint (thread, "int_array", "(int[]) null");
 			AssertPrint (thread, "x_array", "(X[]) null");
 			AssertPrint (thread, "y_array", "(X[]) [ null ]");
 			AssertPrint (thread, "z_array", "(X[]) [ { Foo = 5 } ]");

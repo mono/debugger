@@ -30,6 +30,14 @@ namespace Mono.Debugger.Languages.Native
 			value = new NativeFieldInfo (language.IntegerType, "__value", 0, 0);
 		}
 
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override string Name {
 			get { return name; }
 		}

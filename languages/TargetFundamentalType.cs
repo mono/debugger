@@ -27,6 +27,7 @@ namespace Mono.Debugger.Languages
 	{
 		protected readonly int size;
 		protected readonly FundamentalKind fundamental_kind;
+		protected readonly TargetClassType class_type;
 		protected readonly string name;
 
 		public TargetFundamentalType (Language language, string name,
@@ -36,6 +37,14 @@ namespace Mono.Debugger.Languages
 			this.name = name;
 			this.fundamental_kind = kind;
 			this.size = size;
+		}
+
+		protected TargetFundamentalType (Language language, string name,
+						 FundamentalKind kind, TargetClassType class_type,
+						 int size)
+			: this (language, name, kind, size)
+		{
+			this.class_type = class_type;
 		}
 
 		public override string Name {
@@ -55,6 +64,14 @@ namespace Mono.Debugger.Languages
 					return false;
 				}
 			}
+		}
+
+		public override bool HasClassType {
+			get { return class_type != null; }
+		}
+
+		public override TargetClassType ClassType {
+			get { return class_type; }
 		}
 
 		public FundamentalKind FundamentalKind {

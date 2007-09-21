@@ -86,7 +86,7 @@ namespace Mono.Debugger.Tests
 			}
 
 			AssertFrame (thread, "X.Main(string[])", line_main_3);
-			AssertPrint (thread, "process.ExitCode", "(System.Int32) 0");
+			AssertPrint (thread, "process.ExitCode", "(int) 0");
 			AssertTargetOutput ("Hello World!");
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);
@@ -164,7 +164,7 @@ namespace Mono.Debugger.Tests
 			}
 
 			AssertFrame (thread, "X.Main(string[])", line_main_3);
-			AssertPrint (thread, "process.ExitCode", "(System.Int32) 0");
+			AssertPrint (thread, "process.ExitCode", "(int) 0");
 			AssertTargetOutput ("Hello World");
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);

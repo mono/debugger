@@ -88,6 +88,14 @@ namespace Mono.Debugger.Languages.Native
 			this.fields = fields;
 		}
 
+		public override bool HasClassType {
+			get { return true; }
+		}
+
+		public override TargetClassType ClassType {
+			get { return this; }
+		}
+
 		public override bool HasParent {
 			get { return false; }
 		}

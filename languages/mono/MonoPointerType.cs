@@ -13,6 +13,14 @@ namespace Mono.Debugger.Languages.Mono
 			this.element_type = element_type;
 		}
 
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override bool IsTypesafe {
 			get { return true; }
 		}

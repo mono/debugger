@@ -410,7 +410,7 @@ namespace Mono.Debugger.Languages.Mono
 			return result;
 		}
 
-		public void AddType (TargetType type, Cecil.TypeDefinition typedef)
+		public void AddType (Cecil.TypeDefinition typedef, TargetType type)
 		{
 			if (!type_hash.Contains (typedef))
 				type_hash.Add (typedef, type);

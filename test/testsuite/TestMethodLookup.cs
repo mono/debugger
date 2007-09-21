@@ -129,11 +129,11 @@ namespace Mono.Debugger.Tests
 			AssertListAndBreak ("Foo.Bar.Test.StaticOverloaded(Root)");
 			AssertListAndBreak ("Foo.Bar.Test.StaticOverloaded(Foo.Bar.Test)");
 
-			AssertPrint (thread, "StaticHello()", "(System.Boolean) true");
-			AssertPrint (thread, "StaticOverloaded()", "(System.Boolean) true");
-			AssertPrint (thread, "StaticOverloaded(3)", "(System.Boolean) true");
-			AssertPrint (thread, "StaticOverloaded(root)", "(System.Boolean) true");
-			AssertPrint (thread, "StaticOverloaded(test)", "(System.Boolean) true");
+			AssertPrint (thread, "StaticHello()", "(bool) true");
+			AssertPrint (thread, "StaticOverloaded()", "(bool) true");
+			AssertPrint (thread, "StaticOverloaded(3)", "(bool) true");
+			AssertPrint (thread, "StaticOverloaded(root)", "(bool) true");
+			AssertPrint (thread, "StaticOverloaded(test)", "(bool) true");
 
 			AssertPrintException (thread, "Hello()",
 					      "Cannot invoke instance method `X.Hello()' with a " +
@@ -154,13 +154,13 @@ namespace Mono.Debugger.Tests
 					      "Cannot invoke instance method " +
 					      "`X.Overloaded(Foo.Bar.Test)' with a type reference.");
 
-			AssertPrint (thread, "root.Hello()", "(System.Boolean) true");
-			AssertPrint (thread, "root.Simple(test)", "(System.Boolean) true");
-			AssertPrint (thread, "root.Overloaded()", "(System.Boolean) true");
-			AssertPrint (thread, "root.Overloaded(3)", "(System.Boolean) true");
-			AssertPrint (thread, "root.Overloaded(root)", "(System.Boolean) true");
-			AssertPrint (thread, "root.Overloaded(test)", "(System.Boolean) true");
-			AssertPrint (thread, "Root.Overloaded(\"Hello\")", "(System.Boolean) true");
+			AssertPrint (thread, "root.Hello()", "(bool) true");
+			AssertPrint (thread, "root.Simple(test)", "(bool) true");
+			AssertPrint (thread, "root.Overloaded()", "(bool) true");
+			AssertPrint (thread, "root.Overloaded(3)", "(bool) true");
+			AssertPrint (thread, "root.Overloaded(root)", "(bool) true");
+			AssertPrint (thread, "root.Overloaded(test)", "(bool) true");
+			AssertPrint (thread, "Root.Overloaded(\"Hello\")", "(bool) true");
 
 			AssertPrintException (thread, "Root.Hello()",
 					      "Cannot invoke instance method `Root.Hello()' with a " +
@@ -181,31 +181,31 @@ namespace Mono.Debugger.Tests
 					      "Cannot invoke instance method " +
 					      "`Root.Overloaded(Foo.Bar.Test)' with a type reference.");
 
-			AssertPrint (thread, "Root.StaticHello()", "(System.Boolean) true");
-			AssertPrint (thread, "Root.StaticOverloaded()", "(System.Boolean) true");
-			AssertPrint (thread, "Root.StaticOverloaded(3)", "(System.Boolean) true");
-			AssertPrint (thread, "Root.StaticOverloaded(root)", "(System.Boolean) true");
-			AssertPrint (thread, "Root.StaticOverloaded(test)", "(System.Boolean) true");
+			AssertPrint (thread, "Root.StaticHello()", "(bool) true");
+			AssertPrint (thread, "Root.StaticOverloaded()", "(bool) true");
+			AssertPrint (thread, "Root.StaticOverloaded(3)", "(bool) true");
+			AssertPrint (thread, "Root.StaticOverloaded(root)", "(bool) true");
+			AssertPrint (thread, "Root.StaticOverloaded(test)", "(bool) true");
 
-			AssertPrint (thread, "test.Hello()", "(System.Boolean) true");
-			AssertPrint (thread, "test.Simple(test)", "(System.Boolean) true");
-			AssertPrint (thread, "test.Overloaded()", "(System.Boolean) true");
-			AssertPrint (thread, "test.Overloaded(3)", "(System.Boolean) true");
-			AssertPrint (thread, "test.Overloaded(root)", "(System.Boolean) true");
-			AssertPrint (thread, "test.Overloaded(test)", "(System.Boolean) true");
+			AssertPrint (thread, "test.Hello()", "(bool) true");
+			AssertPrint (thread, "test.Simple(test)", "(bool) true");
+			AssertPrint (thread, "test.Overloaded()", "(bool) true");
+			AssertPrint (thread, "test.Overloaded(3)", "(bool) true");
+			AssertPrint (thread, "test.Overloaded(root)", "(bool) true");
+			AssertPrint (thread, "test.Overloaded(test)", "(bool) true");
 			AssertPrint (thread, "Foo.Bar.Test.Overloaded(\"Hello\")",
-				     "(System.Boolean) true");
+				     "(bool) true");
 
 			AssertPrint (thread, "Foo.Bar.Test.StaticHello()",
-				     "(System.Boolean) true");
+				     "(bool) true");
 			AssertPrint (thread, "Foo.Bar.Test.StaticOverloaded()",
-				     "(System.Boolean) true");
+				     "(bool) true");
 			AssertPrint (thread, "Foo.Bar.Test.StaticOverloaded(3)",
-				     "(System.Boolean) true");
+				     "(bool) true");
 			AssertPrint (thread, "Foo.Bar.Test.StaticOverloaded(root)",
-				     "(System.Boolean) true");
+				     "(bool) true");
 			AssertPrint (thread, "Foo.Bar.Test.StaticOverloaded(test)",
-				     "(System.Boolean) true");
+				     "(bool) true");
 
 			AssertPrint (thread, "new Root ()", "(Root) { }");
 			AssertPrint (thread, "new Root (3)", "(Root) { }");

@@ -23,6 +23,14 @@ namespace Mono.Debugger.Languages.Native
 		string target_name;
 		TargetType target_type;
 
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
 		public override string Name {
 			get { return name; }
 		}

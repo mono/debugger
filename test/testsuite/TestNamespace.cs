@@ -38,12 +38,12 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_world, "Martin.Baulig.Hello.World()",
 					     line_world);
 
-			AssertPrint (thread, "Foo.Print ()", "(System.String) \"Boston\"");
+			AssertPrint (thread, "Foo.Print ()", "(string) \"Boston\"");
 			AssertPrintException (thread, "Foo.Print",
 					      "Expression `Martin.Baulig.Foo.Print' is a method, " +
 					      "not a field or property.");
-			AssertPrint (thread, "Foo.Boston", "(System.String) \"Boston\"");
-			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
+			AssertPrint (thread, "Foo.Boston", "(string) \"Boston\"");
+			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(string) \"Boston\"");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Boston");
@@ -51,11 +51,11 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_main_2, "Test.X.Main()", line_main_2);
 
-			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
+			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(string) \"Boston\"");
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, bpt_test, "Y.Test()", line_test);
-			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(System.String) \"Boston\"");
-			AssertPrint (thread, "Martin.Baulig.Foo.Print ()", "(System.String) \"Boston\"");
+			AssertPrint (thread, "Martin.Baulig.Foo.Boston", "(string) \"Boston\"");
+			AssertPrint (thread, "Martin.Baulig.Foo.Print ()", "(string) \"Boston\"");
 
 			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);
