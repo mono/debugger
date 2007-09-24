@@ -174,38 +174,19 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoDataTable
+	internal abstract class MonoDataTable
 	{
-		public readonly int Domain;
-		public readonly MonoLanguageBackend Mono;
 		public readonly TargetAddress TableAddress;
-
 		public readonly TargetAddress FirstChunk;
 		TargetAddress current_chunk;
 		int last_offset;
 
-		public MonoDataTable (MonoLanguageBackend mono, int domain,
-				      TargetAddress address, TargetAddress first_chunk)
+		protected MonoDataTable (TargetAddress address, TargetAddress first_chunk)
 		{
-			this.Mono = mono;
-			this.Domain = domain;
-			this.TableAddress = address;
+			this.TableAddress  =address;
 			this.FirstChunk = first_chunk;
 
 			current_chunk = first_chunk;
-		}
-
-		public static MonoDataTable CreateTypeTable (MonoLanguageBackend mono,
-							     TargetMemoryAccess memory,
-							     TargetAddress ptr)
-		{
-			int table_size = 8 + 2 * memory.TargetInfo.TargetAddressSize;
-
-			TargetReader reader = new TargetReader (memory.ReadMemory (ptr, table_size));
-			reader.Offset += 8;
-
-			TargetAddress first_chunk = reader.ReadAddress ();
-			return new MonoDataTable (mono, -1, ptr, first_chunk);
 		}
 
 		public void Read (TargetMemoryAccess memory)
@@ -253,63 +234,30 @@ namespace Mono.Debugger.Languages.Mono
 
 				long pos = reader.BinaryReader.Position;
 
-				switch (item_type) {
-				case DataItemType.Method:
-					read_range_entry (memory, reader);
-					break;
-
-				case DataItemType.Class:
-					read_class_entry (memory, reader);
-					break;
-
-				default:
-					throw new InternalError (
-						"Got unknown data item: {0}", item_type);
-				}
+				ReadDataItem (memory, item_type, reader);
 
 				reader.BinaryReader.Position = pos + item_size;
 			}
 		}
 
-		private enum DataItemType {
+		protected enum DataItemType {
 			Unknown		= 0,
 			Class,
 			Method
 		}
 
-		void read_range_entry (TargetMemoryAccess memory, TargetReader reader)
+		protected abstract void ReadDataItem (TargetMemoryAccess memory, DataItemType type,
+						      TargetReader reader);
+
+		protected virtual string MyToString ()
 		{
-			int size = reader.BinaryReader.PeekInt32 ();
-			byte[] contents = reader.BinaryReader.PeekBuffer (size);
-			reader.BinaryReader.ReadInt32 ();
-			int file_idx = reader.BinaryReader.ReadInt32 ();
-			Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1}",
-				      size, file_idx);
-			MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
-			if (file != null)
-				file.AddRangeEntry (memory, reader, contents);
-		}
-
-		void read_class_entry (TargetMemoryAccess memory, TargetReader reader)
-		{
-			reader.BinaryReader.ReadInt32 ();
-			int file_idx = reader.BinaryReader.ReadInt32 ();
-
-			MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
-			if (file == null)
-				return;
-
-			reader.BinaryReader.ReadLeb128 ();
-			reader.BinaryReader.ReadLeb128 ();
-			TargetAddress klass_address = reader.ReadAddress ();
-
-			Mono.GetClassInfo (memory, klass_address);
+			return "";
 		}
 
 		public override string ToString ()
 		{
-			return String.Format ("MonoDataTable ({0}:{1}:{2}:{3})",
-					      Domain, TableAddress, FirstChunk, current_chunk);
+			return String.Format ("{0} ({1}:{2}:{3}{4})", GetType (), TableAddress,
+					      FirstChunk, current_chunk, MyToString ());
 		}
 	}
 
@@ -686,10 +634,10 @@ namespace Mono.Debugger.Languages.Mono
 			int domain = reader.ReadInteger ();
 			reader.Offset += 4;
 
-			MonoDataTable table = (MonoDataTable) data_tables [domain];
+			DomainDataTable table = (DomainDataTable) data_tables [domain];
 			if (table == null) {
 				TargetAddress first_chunk = reader.ReadAddress ();
-				table = new MonoDataTable (this, domain, ptr, first_chunk);
+				table = new DomainDataTable (this, domain, ptr, first_chunk);
 				data_tables.Add (domain, table);
 			}
 		}
@@ -697,6 +645,43 @@ namespace Mono.Debugger.Languages.Mono
 		void destroy_data_table (int domain, TargetAddress table)
 		{
 			data_tables.Remove (domain);
+		}
+
+		protected class DomainDataTable : MonoDataTable
+		{
+			public readonly int Domain;
+			public readonly MonoLanguageBackend Mono;
+
+			public DomainDataTable (MonoLanguageBackend mono, int domain,
+						TargetAddress address, TargetAddress first_chunk)
+				: base (address, first_chunk)
+			{
+				this.Mono = mono;
+				this.Domain = domain;
+			}
+
+			protected override void ReadDataItem (TargetMemoryAccess memory,
+							      DataItemType type, TargetReader reader)
+			{
+				if (type != DataItemType.Method)
+					throw new InternalError (
+						"Got unknown data item: {0}", type);
+
+				int size = reader.BinaryReader.PeekInt32 ();
+				byte[] contents = reader.BinaryReader.PeekBuffer (size);
+				reader.BinaryReader.ReadInt32 ();
+				int file_idx = reader.BinaryReader.ReadInt32 ();
+				Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1}",
+					      size, file_idx);
+				MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
+				if (file != null)
+					file.AddRangeEntry (memory, reader, contents);
+			}
+
+			protected override string MyToString ()
+			{
+				return String.Format (":{0}", Domain);
+			}
 		}
 
 		static int manual_update_count;

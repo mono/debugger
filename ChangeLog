@@ -1,6 +1,12 @@
 2007-09-24  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoLanguageBackend.cs
+	(MonoDataTable): Made this abstract; create `DomainDataTable' and
+	`MonoTypeTable' implementations.
+
+2007-09-24  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoLanguageBackend.cs
 	(MonoDataTable): Formerly known as `MonoLanguageBackend.DataTable'.
 	(MonoLanguageBackend): Reflect latest runtime changes; we now have
 	one type table per symbol file.

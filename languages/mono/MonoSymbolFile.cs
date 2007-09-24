@@ -255,7 +255,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress type_table_ptr = memory.ReadAddress (address);
 			address += address_size;
 
-			TypeTable = MonoDataTable.CreateTypeTable (language, memory, type_table_ptr);
+			TypeTable = MonoTypeTable.CreateTypeTable (this, memory, type_table_ptr);
 
 			try {
 				Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
@@ -761,6 +761,52 @@ namespace Mono.Debugger.Languages.Mono
 			if (File != null)
 				File.Dispose ();
 			base.DoDispose ();
+		}
+
+		protected class MonoTypeTable : MonoDataTable
+		{
+			public readonly MonoSymbolFile SymbolFile;
+
+			protected MonoTypeTable (MonoSymbolFile file, TargetAddress ptr,
+						 TargetAddress first_chunk)
+				: base (ptr, first_chunk)
+			{
+				this.SymbolFile = file;
+			}
+
+			public static MonoTypeTable CreateTypeTable (MonoSymbolFile file,
+								     TargetMemoryAccess memory,
+								     TargetAddress ptr)
+			{
+				TargetAddress first_chunk = memory.ReadAddress (ptr + 8);
+				return new MonoTypeTable (file, ptr, first_chunk);
+			}
+
+			protected override void ReadDataItem (TargetMemoryAccess memory,
+							      DataItemType type, TargetReader reader)
+			{
+				if (type != DataItemType.Class)
+					throw new InternalError (
+						"Got unknown data item: {0}", type);
+
+				reader.BinaryReader.ReadInt32 ();
+				int file_idx = reader.BinaryReader.ReadInt32 ();
+
+				MonoSymbolFile file = SymbolFile.MonoLanguage.GetSymbolFile (file_idx);
+				if (file == null)
+					return;
+
+				reader.BinaryReader.ReadLeb128 ();
+				reader.BinaryReader.ReadLeb128 ();
+				TargetAddress klass_address = reader.ReadAddress ();
+
+				SymbolFile.MonoLanguage.GetClassInfo (memory, klass_address);
+			}
+
+			protected override string MyToString ()
+			{
+				return String.Format (":{0}", SymbolFile);
+			}
 		}
 
 		protected class MonoMethodSource : MethodSource
