@@ -460,13 +460,6 @@ namespace Mono.Debugger.Languages.Mono
 				reader.ReadInteger (); /* dummy */
 				TargetAddress next = reader.ReadAddress ();
 
-#if FIXME
-				Report.Debug (DebugFlags.JitSymtab,
-					"READ DATA TABLE CHUNK: {0} - {1} {2} - {3} {4} {5} {6} - {7}",
-					this, current_chunk, last_offset, size, allocated_size,
-					current_offset, next, reader.BinaryReader.HexDump ());
-#endif
-
 				read_data_items (memory, current_chunk + header_size,
 						 last_offset, current_offset);
 
@@ -713,20 +706,6 @@ namespace Mono.Debugger.Languages.Mono
 		public static void RangeEntryGetMethod (TimeSpan time)
 		{
 			range_entry_method_time += time;
-		}
-
-		public static void PrintStatistics ()
-		{
-#if FIXME
-			Console.WriteLine ("MONO LANGUAGE: {0} {1} {2} {3} - {4} {5} - {6} {7} {8} - {9}",
-					   manual_update_count, full_update_count,
-					   update_count, data_table_count, data_table_time, update_time,
-					   range_entry_count, range_entry_time,
-					   range_entry_method_time,
-
-					   data_table_time + update_time + range_entry_time +
-					   range_entry_method_time);
-#endif
 		}
 
 		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
