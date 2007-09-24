@@ -174,11 +174,150 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
+	internal class MonoDataTable
+	{
+		public readonly int Domain;
+		public readonly MonoLanguageBackend Mono;
+		public readonly TargetAddress TableAddress;
+
+		public readonly TargetAddress FirstChunk;
+		TargetAddress current_chunk;
+		int last_offset;
+
+		public MonoDataTable (MonoLanguageBackend mono, int domain,
+				      TargetAddress address, TargetAddress first_chunk)
+		{
+			this.Mono = mono;
+			this.Domain = domain;
+			this.TableAddress = address;
+			this.FirstChunk = first_chunk;
+
+			current_chunk = first_chunk;
+		}
+
+		public static MonoDataTable CreateTypeTable (MonoLanguageBackend mono,
+							     TargetMemoryAccess memory,
+							     TargetAddress ptr)
+		{
+			int table_size = 8 + 2 * memory.TargetInfo.TargetAddressSize;
+
+			TargetReader reader = new TargetReader (memory.ReadMemory (ptr, table_size));
+			reader.Offset += 8;
+
+			TargetAddress first_chunk = reader.ReadAddress ();
+			return new MonoDataTable (mono, -1, ptr, first_chunk);
+		}
+
+		public void Read (TargetMemoryAccess memory)
+		{
+			int header_size = 16 + memory.TargetInfo.TargetAddressSize;
+
+		again:
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (current_chunk, header_size));
+
+			int size = reader.ReadInteger ();
+			int allocated_size = reader.ReadInteger ();
+			int current_offset = reader.ReadInteger ();
+			reader.ReadInteger (); /* dummy */
+			TargetAddress next = reader.ReadAddress ();
+
+			read_data_items (memory, current_chunk + header_size,
+					 last_offset, current_offset);
+
+			last_offset = current_offset;
+
+			if (!next.IsNull && (current_offset == allocated_size)) {
+				current_chunk = next;
+				last_offset = 0;
+				goto again;
+			}
+		}
+
+		void read_data_items (TargetMemoryAccess memory, TargetAddress address,
+				      int start, int end)
+		{
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address + start, end - start));
+
+			Report.Debug (DebugFlags.JitSymtab,
+				      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address,
+				      start, end, reader.BinaryReader.Position, reader.Size);
+
+			while (reader.BinaryReader.Position + 4 < reader.Size) {
+				int item_size = reader.BinaryReader.ReadInt32 ();
+				if (item_size == 0)
+					break;
+				DataItemType item_type = (DataItemType)
+					reader.BinaryReader.ReadInt32 ();
+
+				long pos = reader.BinaryReader.Position;
+
+				switch (item_type) {
+				case DataItemType.Method:
+					read_range_entry (memory, reader);
+					break;
+
+				case DataItemType.Class:
+					read_class_entry (memory, reader);
+					break;
+
+				default:
+					throw new InternalError (
+						"Got unknown data item: {0}", item_type);
+				}
+
+				reader.BinaryReader.Position = pos + item_size;
+			}
+		}
+
+		private enum DataItemType {
+			Unknown		= 0,
+			Class,
+			Method
+		}
+
+		void read_range_entry (TargetMemoryAccess memory, TargetReader reader)
+		{
+			int size = reader.BinaryReader.PeekInt32 ();
+			byte[] contents = reader.BinaryReader.PeekBuffer (size);
+			reader.BinaryReader.ReadInt32 ();
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+			Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1}",
+				      size, file_idx);
+			MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
+			if (file != null)
+				file.AddRangeEntry (memory, reader, contents);
+		}
+
+		void read_class_entry (TargetMemoryAccess memory, TargetReader reader)
+		{
+			reader.BinaryReader.ReadInt32 ();
+			int file_idx = reader.BinaryReader.ReadInt32 ();
+
+			MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
+			if (file == null)
+				return;
+
+			reader.BinaryReader.ReadLeb128 ();
+			reader.BinaryReader.ReadLeb128 ();
+			TargetAddress klass_address = reader.ReadAddress ();
+
+			Mono.GetClassInfo (memory, klass_address);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("MonoDataTable ({0}:{1}:{2}:{3})",
+					      Domain, TableAddress, FirstChunk, current_chunk);
+		}
+	}
+
 	internal class MonoLanguageBackend : Language, ILanguageBackend
 	{
-		Hashtable symbol_files;
+		Hashtable symfile_by_index;
 		int last_num_symbol_files;
-		Hashtable image_hash;
+		Hashtable symfile_by_image_addr;
 		Hashtable symfile_hash;
 		Hashtable assembly_hash;
 		Hashtable assembly_by_name;
@@ -340,12 +479,12 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoSymbolFile GetImage (TargetAddress address)
 		{
-			return (MonoSymbolFile) image_hash [address];
+			return (MonoSymbolFile) symfile_by_image_addr [address];
 		}
 
-		protected MonoSymbolFile GetSymbolFile (int index)
+		internal MonoSymbolFile GetSymbolFile (int index)
 		{
-			return (MonoSymbolFile) symbol_files [index];
+			return (MonoSymbolFile) symfile_by_index [index];
 		}
 
 		void read_mono_debugger_info (TargetMemoryAccess memory)
@@ -360,8 +499,8 @@ namespace Mono.Debugger.Languages.Mono
 			address += 2 * memory.TargetInfo.TargetAddressSize;
 			trampolines [3] = memory.ReadAddress (address);
 
-			symbol_files = new Hashtable ();
-			image_hash = new Hashtable ();
+			symfile_by_index = new Hashtable ();
+			symfile_by_image_addr = new Hashtable ();
 			symfile_hash = new Hashtable ();
 			assembly_hash = new Hashtable ();
 			assembly_by_name = new Hashtable ();
@@ -393,8 +532,10 @@ namespace Mono.Debugger.Languages.Mono
 			Report.Debug (DebugFlags.JitSymtab, "Update requested");
 			DateTime start = DateTime.Now;
 			++data_table_count;
-			foreach (DataTable table in data_tables.Values)
+			foreach (MonoDataTable table in data_tables.Values)
 				table.Read (target);
+			foreach (MonoSymbolFile symfile in symfile_by_index.Values)
+				symfile.TypeTable.Read (target);
 			data_table_time += DateTime.Now - start;
 		}
 
@@ -425,132 +566,6 @@ namespace Mono.Debugger.Languages.Mono
 			builtin_types = new MonoBuiltinTypeInfo (corlib, memory, info.MonoMetadataInfo);
 		}
 
-		protected class DataTable
-		{
-			public readonly int Domain;
-			public readonly MonoLanguageBackend Mono;
-			public readonly TargetAddress TableAddress;
-
-			public readonly TargetAddress FirstChunk;
-			TargetAddress current_chunk;
-			int last_offset;
-
-			public DataTable (MonoLanguageBackend mono, int domain,
-					  TargetAddress address, TargetAddress first_chunk)
-			{
-				this.Mono = mono;
-				this.Domain = domain;
-				this.TableAddress = address;
-				this.FirstChunk = first_chunk;
-
-				current_chunk = first_chunk;
-			}
-
-			public void Read (TargetMemoryAccess memory)
-			{
-				int header_size = 16 + memory.TargetInfo.TargetAddressSize;
-
-			again:
-				TargetReader reader = new TargetReader (
-					memory.ReadMemory (current_chunk, header_size));
-
-				int size = reader.ReadInteger ();
-				int allocated_size = reader.ReadInteger ();
-				int current_offset = reader.ReadInteger ();
-				reader.ReadInteger (); /* dummy */
-				TargetAddress next = reader.ReadAddress ();
-
-				read_data_items (memory, current_chunk + header_size,
-						 last_offset, current_offset);
-
-				last_offset = current_offset;
-
-				if (!next.IsNull && (current_offset == allocated_size)) {
-					current_chunk = next;
-					last_offset = 0;
-					goto again;
-				}
-			}
-
-			void read_data_items (TargetMemoryAccess memory, TargetAddress address,
-					      int start, int end)
-			{
-				TargetReader reader = new TargetReader (
-					memory.ReadMemory (address + start, end - start));
-
-				Report.Debug (DebugFlags.JitSymtab,
-					      "READ DATA ITEMS: {0} {1} {2} - {3} {4}", address,
-					      start, end, reader.BinaryReader.Position, reader.Size);
-
-				while (reader.BinaryReader.Position + 4 < reader.Size) {
-					int item_size = reader.BinaryReader.ReadInt32 ();
-					if (item_size == 0)
-						break;
-					DataItemType item_type = (DataItemType)
-						reader.BinaryReader.ReadInt32 ();
-
-					long pos = reader.BinaryReader.Position;
-
-					switch (item_type) {
-					case DataItemType.Method:
-						read_range_entry (memory, reader);
-						break;
-
-					case DataItemType.Class:
-						read_class_entry (memory, reader);
-						break;
-
-					default:
-						throw new InternalError (
-							"Got unknown data item: {0}", item_type);
-					}
-
-					reader.BinaryReader.Position = pos + item_size;
-				}
-			}
-
-			private enum DataItemType {
-				Unknown		= 0,
-				Class,
-				Method
-			}
-
-			void read_range_entry (TargetMemoryAccess memory, TargetReader reader)
-			{
-				int size = reader.BinaryReader.PeekInt32 ();
-				byte[] contents = reader.BinaryReader.PeekBuffer (size);
-				reader.BinaryReader.ReadInt32 ();
-				int file_idx = reader.BinaryReader.ReadInt32 ();
-				Report.Debug (DebugFlags.JitSymtab, "READ RANGE ITEM: {0} {1}",
-					      size, file_idx);
-				MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
-				if (file != null)
-					file.AddRangeEntry (memory, reader, contents);
-			}
-
-			void read_class_entry (TargetMemoryAccess memory, TargetReader reader)
-			{
-				reader.BinaryReader.ReadInt32 ();
-				int file_idx = reader.BinaryReader.ReadInt32 ();
-
-				MonoSymbolFile file = Mono.GetSymbolFile (file_idx);
-				if (file == null)
-					return;
-
-				reader.BinaryReader.ReadLeb128 ();
-				reader.BinaryReader.ReadLeb128 ();
-				TargetAddress klass_address = reader.ReadAddress ();
-
-				Mono.GetClassInfo (memory, klass_address);
-			}
-
-			public override string ToString ()
-			{
-				return String.Format ("DataTable ({0}:{1}:{2}:{3})",
-						      Domain, TableAddress, FirstChunk, current_chunk);
-			}
-		}
-
 		MonoSymbolFile load_symfile (TargetMemoryAccess memory, TargetAddress address)
 		{
 			MonoSymbolFile symfile = null;
@@ -574,10 +589,10 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			if (!assembly_by_name.Contains (symfile.Assembly.Name.FullName)) {
-				image_hash.Add (symfile.MonoImage, symfile);
+				symfile_by_image_addr.Add (symfile.MonoImage, symfile);
 				assembly_hash.Add (symfile.Assembly, symfile);
 				assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
-				symbol_files.Add (symfile.Index, symfile);
+				symfile_by_index.Add (symfile.Index, symfile);
 			}
 
 			return symfile;
@@ -585,14 +600,14 @@ namespace Mono.Debugger.Languages.Mono
 
 		void close_symfile (int index)
 		{
-			MonoSymbolFile symfile = (MonoSymbolFile) symbol_files [index];
+			MonoSymbolFile symfile = (MonoSymbolFile) symfile_by_index [index];
 			if (symfile == null)
 				throw new InternalError ();
 
-			image_hash.Remove (symfile.MonoImage);
+			symfile_by_image_addr.Remove (symfile.MonoImage);
 			assembly_hash.Remove (symfile.Assembly);
 			assembly_by_name.Remove (symfile.Assembly.Name.FullName);
-			symbol_files.Remove (symfile.Index);
+			symfile_by_index.Remove (symfile.Index);
 		}
 
 		// This method reads the MonoDebuggerSymbolTable structure
@@ -632,9 +647,8 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress corlib_address = header.ReadAddress ();
 
 			TargetAddress data_table = header.ReadAddress ();
-			TargetAddress type_table = header.ReadAddress ();
 
-			TargetAddress symbol_files = header.ReadAddress ();
+			TargetAddress symfile_by_index = header.ReadAddress ();
 
 			if (corlib_address.IsNull)
 				throw new SymbolTableException ("Corlib address is null.");
@@ -642,7 +656,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (corlib == null)
 				throw new SymbolTableException ("Cannot read corlib!");
 
-			TargetAddress ptr = symbol_files;
+			TargetAddress ptr = symfile_by_index;
 			while (!ptr.IsNull) {
 				TargetAddress next_ptr = memory.ReadAddress (ptr);
 				TargetAddress address = memory.ReadAddress (
@@ -651,8 +665,6 @@ namespace Mono.Debugger.Languages.Mono
 				ptr = next_ptr;
 				load_symfile (memory, address);
 			}
-
-			add_data_table (memory, type_table);
 
 			ptr = data_table;
 			while (!ptr.IsNull) {
@@ -674,10 +686,10 @@ namespace Mono.Debugger.Languages.Mono
 			int domain = reader.ReadInteger ();
 			reader.Offset += 4;
 
-			DataTable table = (DataTable) data_tables [domain];
+			MonoDataTable table = (MonoDataTable) data_tables [domain];
 			if (table == null) {
 				TargetAddress first_chunk = reader.ReadAddress ();
-				table = new DataTable (this, domain, ptr, first_chunk);
+				table = new MonoDataTable (this, domain, ptr, first_chunk);
 				data_tables.Add (domain, table);
 			}
 		}
@@ -785,7 +797,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			reader.BinaryReader.ReadInt32 ();
 			int file_idx = reader.BinaryReader.ReadInt32 ();
-			MonoSymbolFile file = (MonoSymbolFile) symbol_files [file_idx];
+			MonoSymbolFile file = (MonoSymbolFile) symfile_by_index [file_idx];
 
 			return file.ReadRangeEntry (target, reader, contents);
 		}
@@ -847,7 +859,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (name.IndexOf ('[') >= 0)
 				return null;
 
-			foreach (MonoSymbolFile symfile in symbol_files.Values) {
+			foreach (MonoSymbolFile symfile in symfile_by_index.Values) {
 				try {
 					Cecil.TypeDefinitionCollection types = symfile.Assembly.MainModule.Types;
 					// FIXME: Work around an API problem in Cecil.
@@ -1028,7 +1040,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress klass = memory.ReadAddress (trampoline + 8);
 			TargetAddress image = memory.ReadAddress (klass);
 
-			foreach (MonoSymbolFile file in symbol_files.Values) {
+			foreach (MonoSymbolFile file in symfile_by_index.Values) {
 				if (file.MonoImage != image)
 					continue;
 
@@ -1147,11 +1159,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			if (disposing) {
-				if (symbol_files != null) {
-					foreach (MonoSymbolFile symfile in symbol_files.Values)
+				if (symfile_by_index != null) {
+					foreach (MonoSymbolFile symfile in symfile_by_index.Values)
 						symfile.Dispose();
 
-					symbol_files = null;
+					symfile_by_index = null;
 				}
 			}
 		}

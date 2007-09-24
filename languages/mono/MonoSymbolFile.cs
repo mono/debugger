@@ -206,6 +206,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly Cecil.AssemblyDefinition Assembly;
 		internal readonly Cecil.ModuleDefinition ModuleDefinition;
 		internal readonly TargetAddress MonoImage;
+		internal readonly MonoDataTable TypeTable;
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
 		internal readonly ThreadManager ThreadManager;
@@ -251,6 +252,10 @@ namespace Mono.Debugger.Languages.Mono
 			ImageFile = memory.ReadString (image_file_addr);
 			MonoImage = memory.ReadAddress (address);
 			address += address_size;
+			TargetAddress type_table_ptr = memory.ReadAddress (address);
+			address += address_size;
+
+			TypeTable = MonoDataTable.CreateTypeTable (language, memory, type_table_ptr);
 
 			try {
 				Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);

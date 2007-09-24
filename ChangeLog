@@ -1,3 +1,13 @@
+2007-09-24  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoDataTable): Formerly known as `MonoLanguageBackend.DataTable'.
+	(MonoLanguageBackend): Reflect latest runtime changes; we now have
+	one type table per symbol file.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.TypeTable): New public property.
+
 2007-09-21  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetType.cs
