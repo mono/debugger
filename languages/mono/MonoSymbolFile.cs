@@ -790,11 +790,6 @@ namespace Mono.Debugger.Languages.Mono
 						"Got unknown data item: {0}", type);
 
 				reader.BinaryReader.ReadInt32 ();
-				int file_idx = reader.BinaryReader.ReadInt32 ();
-
-				MonoSymbolFile file = SymbolFile.MonoLanguage.GetSymbolFile (file_idx);
-				if (file == null)
-					return;
 
 				reader.BinaryReader.ReadLeb128 ();
 				reader.BinaryReader.ReadLeb128 ();
