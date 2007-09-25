@@ -222,6 +222,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable range_hash;
 		ArrayList ranges;
 		Hashtable type_hash;
+		Hashtable class_entry_by_token;
 		ArrayList sources;
 		Hashtable source_hash;
 		Hashtable source_file_hash;
@@ -244,6 +245,7 @@ namespace Mono.Debugger.Languages.Mono
 			ranges = ArrayList.Synchronized (new ArrayList ());
 			range_hash = Hashtable.Synchronized (new Hashtable ());
 			type_hash = Hashtable.Synchronized (new Hashtable ());
+			class_entry_by_token = Hashtable.Synchronized (new Hashtable ());
 			function_hash = Hashtable.Synchronized (new Hashtable ());
 
 			Index = memory.ReadInteger (address);
@@ -785,16 +787,51 @@ namespace Mono.Debugger.Languages.Mono
 
 				reader.BinaryReader.ReadInt32 ();
 
-				reader.BinaryReader.ReadLeb128 ();
-				reader.BinaryReader.ReadLeb128 ();
+				int token = reader.BinaryReader.ReadLeb128 ();
+				int instance_size = reader.BinaryReader.ReadLeb128 ();
 				TargetAddress klass_address = reader.ReadAddress ();
 
-				SymbolFile.MonoLanguage.ReadClassInfo (memory, klass_address);
+				SymbolFile.AddClassEntry (token, klass_address);
 			}
 
 			protected override string MyToString ()
 			{
 				return String.Format (":{0}", SymbolFile);
+			}
+		}
+
+		protected void AddClassEntry (int token, TargetAddress klass)
+		{
+			class_entry_by_token.Add (token, new ClassEntry (klass));
+		}
+
+		internal MonoClassInfo LookupClassInfo (TargetMemoryAccess target, int token)
+		{
+			ClassEntry entry = (ClassEntry) class_entry_by_token [token];
+			if (entry == null)
+				return null;
+
+			return entry.ReadClassInfo (MonoLanguage, target);
+		}
+
+		protected class ClassEntry
+		{
+			public readonly TargetAddress KlassAddress;
+
+			MonoClassInfo info;
+
+			public ClassEntry (TargetAddress klass)
+			{
+				this.KlassAddress = klass;
+			}
+
+			internal MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
+							      TargetMemoryAccess target)
+			{
+				if (info == null)
+					info = mono.ReadClassInfo (target, KlassAddress);
+
+				return info;
 			}
 		}
 

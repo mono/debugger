@@ -718,11 +718,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			return info;
 		}
-
-		internal MonoClassInfo LookupClassInfo (Cecil.TypeDefinition type)
-		{
-			return (MonoClassInfo) class_info_by_type [type];
-		}
 #endregion
 
 #region Class Init Handlers

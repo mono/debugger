@@ -392,7 +392,7 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 			}
 
-			type_info = file.MonoLanguage.LookupClassInfo (type);
+			type_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
 			if (type_info != null)
 				return type_info;
 

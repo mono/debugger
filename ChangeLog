@@ -1,5 +1,13 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoTypeTable.ReadDataItem): Create a `token' -> `klass_address'
+	hash table; don't actually read the class.
+	(MonoSymbolFile.LookupClassInfo): New internal method; we now
+	create the `MonoClassInfo' on-the-fly when it's needed.
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassType.cs
 	(MonoClassType.ResolveClass): Added `TargetMemoryAccess target'
 	and `bool fail' arguments.
