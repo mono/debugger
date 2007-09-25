@@ -1,5 +1,14 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoType.cs: New file.
+	(MonoTypeEnum): New static enum.
+	(MonoType): New internal static class.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.GetClass): Renamed into ReadMonoClass().
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/TargetException.cs
 	(TargetError): Add `MethodNotLoaded'.
 

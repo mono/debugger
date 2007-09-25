@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly bool HasLivenessInfo;
 		public readonly int BeginLiveness;
 		public readonly int EndLiveness;
-		public readonly TargetAddress KlassAddress;
+		public readonly TargetAddress MonoType;
 
 		internal enum AddressMode : long
 		{
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			BeginLiveness = reader.ReadLeb128 ();
 			EndLiveness = reader.ReadLeb128 ();
 
-			KlassAddress = new TargetAddress (arch.AddressDomain, reader.ReadAddress ());
+			MonoType = new TargetAddress (arch.AddressDomain, reader.ReadAddress ());
 
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return String.Format ("[VariableInfo {0}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}:{6}]",
 					      Mode, Index, Offset, Size, BeginLiveness, EndLiveness,
-					      KlassAddress);
+					      MonoType);
 		}
 	}
 
@@ -984,9 +984,9 @@ namespace Mono.Debugger.Languages.Mono
 				has_types = true;
 			}
 
-			void get_variables ()
+			void read_variables (TargetMemoryAccess memory)
 			{
-				if (has_variables || !is_loaded)
+				if (has_variables)
 					return;
 
 				get_types ();
@@ -1031,18 +1031,18 @@ namespace Mono.Debugger.Languages.Mono
 			public override TargetVariable[] GetParameters (TargetMemoryAccess memory)
 			{
 				if (!is_loaded)
-					throw new InvalidOperationException ();
+					throw new TargetException (TargetError.MethodNotLoaded);
 
-				get_variables ();
+				read_variables (memory);
 				return parameters;
 			}
 
 			public override TargetVariable[] GetLocalVariables (TargetMemoryAccess memory)
 			{
 				if (!is_loaded)
-					throw new InvalidOperationException ();
+					throw new TargetException (TargetError.MethodNotLoaded);
 
-				get_variables ();
+				read_variables (memory);
 				return locals;
 			}
 
@@ -1063,9 +1063,9 @@ namespace Mono.Debugger.Languages.Mono
 			public override TargetVariable GetThis (TargetMemoryAccess memory)
 			{
 				if (!is_loaded)
-					throw new InvalidOperationException ();
+					throw new TargetException (TargetError.MethodNotLoaded);
 
-				get_variables ();
+				read_variables (memory);
 				return this_var;
 			}
 

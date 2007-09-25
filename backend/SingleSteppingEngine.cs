@@ -3180,7 +3180,7 @@ namespace Mono.Debugger.Backends
 					      "{0} rti got virtual method: {1}", sse, method);
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
-				TargetType class_type = language.GetClass (sse.Thread, klass);
+				TargetType class_type = language.ReadMonoClass (sse.Thread, klass);
 
 				if (class_type == null) {
 					Result.ExceptionMessage = String.Format (
