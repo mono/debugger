@@ -367,9 +367,6 @@ namespace Mono.Debugger.Languages.Mono
 				range_hash.Add (range.Hash, range);
 				ranges.Add (range);
 			}
-#if DEBUG_VERBOSE
-			Console.WriteLine ("READ RANGE ENTRY: {0}", range);
-#endif
 			return range.GetMethod ();
 		}
 
@@ -700,10 +697,6 @@ namespace Mono.Debugger.Languages.Mono
 				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
 				method.Load (reader, TargetInfo.AddressDomain);
 			}
-
-#if DEBUG_VERBOSE
-			Console.WriteLine ("GET MONO METHOD: {0} {1} {2}", hash, index, method);
-#endif
 
 			return method;
 		}
@@ -1353,12 +1346,6 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress code_start = reader.ReadAddress ();
 				TargetAddress wrapper_addr = reader.ReadAddress ();
 				int code_size = reader.BinaryReader.ReadInt32 ();
-
-#if DEBUG_VERBOSE
-				Console.WriteLine ("CREATE RANGE: {0} {1} - {2} {3} {4} - {5} {6} {7}",
-						   domain, index, wrapper_data, method, address_list,
-						   code_start, wrapper_addr, code_size);
-#endif
 
 				WrapperEntry wrapper = null;
 
