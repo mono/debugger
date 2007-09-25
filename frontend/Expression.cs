@@ -660,7 +660,7 @@ namespace Mono.Debugger.Frontend
 					"Keyword `this' not allowed: current method is " +
 					"either static or unmanaged.");
 
-			var = method.This;
+			var = method.GetThis (context.CurrentThread);
 			resolved = true;
 			return this;
 		}
@@ -862,6 +862,23 @@ namespace Mono.Debugger.Frontend
                         return String.Concat (nsn, ".", name);
                 }
 
+		TargetVariable GetVariableByName (StackFrame frame, string name)
+		{
+			TargetVariable[] locals = frame.Method.GetLocalVariables (frame.Thread);
+			foreach (TargetVariable var in locals) {
+				if ((var.Name == name) && var.IsInScope (frame.TargetAddress))
+					return var;
+			}
+
+			TargetVariable[] param_vars = frame.Method.GetParameters (frame.Thread);
+			foreach (TargetVariable var in param_vars) {
+				if ((var.Name == name) && var.IsInScope (frame.TargetAddress))
+					return var;
+			}
+
+			return null;
+		}
+
 		MemberExpression LookupMember (ScriptingContext context, StackFrame frame,
 					       string full_name)
 		{
@@ -881,8 +898,10 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			TargetClassObject instance = null;
-			if (method.HasThis)
-				instance = (TargetClassObject) method.This.GetObject (frame);
+			if (method.HasThis) {
+				TargetVariable this_var = method.GetThis (context.CurrentThread);
+				instance = (TargetClassObject) this_var.GetObject (frame);
+			}
 
 			member = StructAccessExpression.FindMember (
 				frame.Thread, method.DeclaringType, instance, full_name, true, true);
@@ -917,8 +936,7 @@ namespace Mono.Debugger.Frontend
 			if (context.HasFrame) {
 				StackFrame frame = context.CurrentFrame;
 				if ((frame.Method != null) && frame.Method.IsLoaded) {
-					TargetVariable var = frame.Method.GetVariableByName (
-						frame.TargetAddress, name);
+					TargetVariable var = GetVariableByName (frame, name);
 					if (var != null)
 						return new VariableAccessExpression (var);
 				}

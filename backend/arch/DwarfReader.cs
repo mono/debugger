@@ -2525,18 +2525,19 @@ namespace Mono.Debugger.Backends
 				get { return false; }
 			}
 
-			public override TargetVariable This {
-				get {
-					throw new InvalidOperationException ();
-				}
+			public override TargetVariable GetThis (TargetMemoryAccess memory)
+			{
+				throw new InvalidOperationException ();
 			}
 
-			public override TargetVariable[] Parameters {
-				get { return subprog.Parameters; }
+			public override TargetVariable[] GetParameters (TargetMemoryAccess memory)
+			{
+				return subprog.Parameters;
 			}
 
-			public override TargetVariable[] Locals {
-				get { return subprog.Locals; }
+			public override TargetVariable[] GetLocalVariables (TargetMemoryAccess memory)
+			{
+				return subprog.Locals;
 			}
 
 			public override bool HasSource {

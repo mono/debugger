@@ -2037,14 +2037,24 @@ namespace Mono.Debugger.Frontend
 
 		private class ShowParametersCommand : FrameCommand
 		{
-			protected override object DoExecute (ScriptingContext context)
+			TargetVariable[] param_vars;
+
+			protected override bool DoResolve (ScriptingContext context)
 			{
 				if (CurrentFrame.Method == null)
 					throw new ScriptingException (
 						"Selected stack frame has no method.");
 
-				TargetVariable[] param_vars = CurrentFrame.Method.Parameters;
+				param_vars = CurrentFrame.Method.GetParameters (context.CurrentThread);
+				return true;
+			}
+
+			protected override object DoExecute (ScriptingContext context)
+			{
 				foreach (TargetVariable var in param_vars) {
+					if (!var.IsInScope (CurrentFrame.TargetAddress))
+						continue;
+
 					string msg = context.Interpreter.Style.PrintVariable (
 						var, CurrentFrame);
 					context.Interpreter.Print (msg);
@@ -2056,14 +2066,24 @@ namespace Mono.Debugger.Frontend
 
 		private class ShowLocalsCommand : FrameCommand
 		{
-			protected override object DoExecute (ScriptingContext context)
+			TargetVariable[] locals;
+
+			protected override bool DoResolve (ScriptingContext context)
 			{
 				if (CurrentFrame.Method == null)
 					throw new ScriptingException (
 						"Selected stack frame has no method.");
 
-				TargetVariable[] local_vars = CurrentFrame.Locals;
-				foreach (TargetVariable var in local_vars) {
+				locals = CurrentFrame.Method.GetLocalVariables (context.CurrentThread);
+				return true;
+			}
+
+			protected override object DoExecute (ScriptingContext context)
+			{
+				foreach (TargetVariable var in locals) {
+					if (!var.IsInScope (CurrentFrame.TargetAddress))
+						continue;
+
 					string msg = context.Interpreter.Style.PrintVariable (
 						var, CurrentFrame);
 					context.Interpreter.Print (msg);

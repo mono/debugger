@@ -325,19 +325,6 @@ namespace Mono.Debugger
 			get { return name; }
 		}
 
-		public TargetVariable[] Locals {
-			get {
-				ArrayList list = new ArrayList ();
-				foreach (TargetVariable local in Method.Locals) {
-					if (local.IsInScope (TargetAddress))
-						list.Add (local);
-				}
-				TargetVariable[] retval = new TargetVariable [list.Count];
-				list.CopyTo (retval, 0);
-				return retval;
-			}
-		}
-
 		public Language Language {
 			get { return language; }
 		}

@@ -1028,24 +1028,22 @@ namespace Mono.Debugger.Languages.Mono
 				has_variables = true;
 			}
 
-			public override TargetVariable[] Parameters {
-				get {
-					if (!is_loaded)
-						throw new InvalidOperationException ();
+			public override TargetVariable[] GetParameters (TargetMemoryAccess memory)
+			{
+				if (!is_loaded)
+					throw new InvalidOperationException ();
 
-					get_variables ();
-					return parameters;
-				}
+				get_variables ();
+				return parameters;
 			}
 
-			public override TargetVariable[] Locals {
-				get {
-					if (!is_loaded)
-						throw new InvalidOperationException ();
+			public override TargetVariable[] GetLocalVariables (TargetMemoryAccess memory)
+			{
+				if (!is_loaded)
+					throw new InvalidOperationException ();
 
-					get_variables ();
-					return locals;
-				}
+				get_variables ();
+				return locals;
 			}
 
 			public override TargetClassType DeclaringType {
@@ -1062,14 +1060,13 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			public override TargetVariable This {
-				get {
-					if (!is_loaded)
-						throw new InvalidOperationException ();
+			public override TargetVariable GetThis (TargetMemoryAccess memory)
+			{
+				if (!is_loaded)
+					throw new InvalidOperationException ();
 
-					get_variables ();
-					return this_var;
-				}
+				get_variables ();
+				return this_var;
 			}
 
 			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
@@ -1570,16 +1567,19 @@ namespace Mono.Debugger.Languages.Mono
 				get { return false; }
 			}
 
-			public override TargetVariable This {
-				get { throw new InvalidOperationException (); }
+			public override TargetVariable GetThis (TargetMemoryAccess memory)
+			{
+				throw new InvalidOperationException ();
 			}
 
-			public override TargetVariable[] Parameters {
-				get { return null; }
+			public override TargetVariable[] GetParameters (TargetMemoryAccess memory)
+			{
+				return null;
 			}
 
-			public override TargetVariable[] Locals {
-				get { return null; }
+			public override TargetVariable[] GetLocalVariables (TargetMemoryAccess memory)
+			{
+				return null;
 			}
 
 			public override string[] GetNamespaces ()

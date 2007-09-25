@@ -270,37 +270,16 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract TargetVariable This {
-			get;
-		}
+		public abstract TargetVariable GetThis (TargetMemoryAccess memory);
 
-		public abstract TargetVariable[] Parameters {
-			get;
-		}
+		public abstract TargetVariable[] GetParameters (TargetMemoryAccess memory);
 
-		public abstract TargetVariable[] Locals {
-			get;
-		}
+		public abstract TargetVariable[] GetLocalVariables (TargetMemoryAccess memory);
 
 		public abstract string[] GetNamespaces ();
 
 		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
-
-		public TargetVariable GetVariableByName (TargetAddress address, string name)
-		{
-			foreach (TargetVariable var in Locals) {
-				if ((var.Name == name) && var.IsInScope (address))
-					return var;
-			}
-
-			foreach (TargetVariable var in Parameters) {
-				if (var.Name == name)
-					return var;
-			}
-
-			return null;
-		}
 
 		//
 		// ISourceLookup
