@@ -1,5 +1,10 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoDebuggerSupport.cs
+	(MonoDebuggerSupport.GetLocalTypeFromSignature): Removed.
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/Method.cs
 	(Method.DeclaringType): Repaced by GetDeclaringType().
 
