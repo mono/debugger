@@ -789,7 +789,7 @@ namespace Mono.Debugger.Languages.Mono
 				reader.BinaryReader.ReadLeb128 ();
 				TargetAddress klass_address = reader.ReadAddress ();
 
-				SymbolFile.MonoLanguage.GetClassInfo (memory, klass_address);
+				SymbolFile.MonoLanguage.ReadClassInfo (memory, klass_address);
 			}
 
 			protected override string MyToString ()

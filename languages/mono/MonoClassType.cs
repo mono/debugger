@@ -52,7 +52,7 @@ namespace Mono.Debugger.Languages.Mono
 				      Cecil.TypeDefinition type, TargetAddress klass)
 			: this (file, type)
 		{
-			type_info = file.MonoLanguage.GetClassInfo (target, klass);
+			type_info = file.MonoLanguage.ReadClassInfo (target, klass);
 		}
 
 		public Cecil.TypeDefinition Type {
@@ -386,7 +386,7 @@ namespace Mono.Debugger.Languages.Mono
 			get {
 				if (type_info != null)
 					return type_info;
-				type_info = file.MonoLanguage.GetClassInfo (type);
+				type_info = file.MonoLanguage.LookupClassInfo (type);
 
 				if (type_info != null)
 					return type_info;
@@ -407,13 +407,13 @@ namespace Mono.Debugger.Languages.Mono
 					return false;
 			}
 
-			type_info = file.MonoLanguage.GetClassInfo (type);
+			type_info = file.MonoLanguage.LookupClassInfo (type);
 			return type_info != null;
 		}
 
 		internal MonoClassInfo ClassResolved (Thread target, TargetAddress klass)
 		{
-			type_info = File.MonoLanguage.GetClassInfo (target, klass);
+			type_info = File.MonoLanguage.ReadClassInfo (target, klass);
 			return type_info;
 		}
 
@@ -643,7 +643,7 @@ namespace Mono.Debugger.Languages.Mono
 				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
 				file.MonoImage, 0, Name);
 
-			type_info = file.MonoLanguage.GetClassInfo (target, klass_address);
+			type_info = file.MonoLanguage.ReadClassInfo (target, klass_address);
 			return type_info != null;
 		}
 	}

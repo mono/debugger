@@ -705,13 +705,13 @@ namespace Mono.Debugger.Languages.Mono
 			range_entry_method_time += time;
 		}
 
-		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
+		internal MonoClassInfo ReadClassInfo (TargetMemoryAccess memory, TargetAddress klass)
 		{
-			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass_address];
+			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass];
 			if (info == null) {
-				info = new MonoClassInfo (this, memory, klass_address);
+				info = new MonoClassInfo (this, memory, klass);
 
-				class_info_by_addr.Add (klass_address, info);
+				class_info_by_addr.Add (klass, info);
 				if (!info.IsGenericClass)
 					class_info_by_type.Add (info.Type, info);
 			}
@@ -719,7 +719,7 @@ namespace Mono.Debugger.Languages.Mono
 			return info;
 		}
 
-		internal MonoClassInfo GetClassInfo (Cecil.TypeDefinition type)
+		internal MonoClassInfo LookupClassInfo (Cecil.TypeDefinition type)
 		{
 			return (MonoClassInfo) class_info_by_type [type];
 		}
