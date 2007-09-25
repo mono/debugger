@@ -1,5 +1,11 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoClassType.cs
+	(MonoClassType.ResolveClass): Added `TargetMemoryAccess target'
+	and `bool fail' arguments.
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoDebuggerSupport.cs
 	(MonoDebuggerSupport.GetLocalTypeFromSignature): Removed.
 

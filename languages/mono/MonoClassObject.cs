@@ -40,8 +40,10 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetField (target, Location, field, obj);
 		}
 
-		internal TargetAddress KlassAddress {
-			get { return type.MonoClassInfo.KlassAddress; }
+		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
+		{
+			MonoClassInfo info = type.ResolveClass (target, true);
+			return info.KlassAddress;
 		}
 
 		internal override long GetDynamicSize (Thread target, TargetBlob blob,

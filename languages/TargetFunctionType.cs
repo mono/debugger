@@ -66,10 +66,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract bool IsLoaded {
-			get;
-		}
-
 		public abstract bool IsManaged {
 			get;
 		}

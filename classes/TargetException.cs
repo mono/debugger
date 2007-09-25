@@ -27,6 +27,7 @@ namespace Mono.Debugger
 		NoStack			= 101,
 		NoMethod,
 		MethodNotLoaded,
+		ClassNotInitialized,
 		AlreadyHaveBreakpoint,
 		SymbolTable,
 		InvocationException,
@@ -92,6 +93,8 @@ namespace Mono.Debugger
 				return "Cannot get bounds of current method.";
 			case TargetError.MethodNotLoaded:
 				return "Method not loaded.";
+			case TargetError.ClassNotInitialized:
+				return "Class not initialized.";
 			case TargetError.AlreadyHaveBreakpoint:
 				return "Already have a breakpoint at this location.";
 			case TargetError.SymbolTable:

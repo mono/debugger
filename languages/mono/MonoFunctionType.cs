@@ -164,13 +164,10 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override bool IsLoaded {
-			get { return klass.ResolveClass (); }
-		}
-
 		public override TargetAddress GetMethodAddress (Thread target)
 		{
-			return klass.MonoClassInfo.GetMethodAddress (Token);
+			MonoClassInfo info = klass.HardResolveClass (target);
+			return info.GetMethodAddress (Token);
 		}
 
 		protected override TargetObject DoGetObject (TargetLocation location)
@@ -184,10 +181,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override bool InsertBreakpoint (Thread target, MethodLoadedHandler handler)
 		{
-			if (!klass.ResolveClass (target))
-				throw new InternalError ();
-
-			TargetAddress method = klass.MonoClassInfo.GetMethodAddress (Token);
+			TargetAddress method = GetMethodAddress (target);
 
 			load_handler = klass.File.MonoLanguage.RegisterMethodLoadHandler (
 				target, method, handler);

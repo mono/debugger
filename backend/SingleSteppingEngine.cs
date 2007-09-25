@@ -3012,6 +3012,7 @@ namespace Mono.Debugger.Backends
 		TargetAddress method = TargetAddress.Null;
 		TargetAddress invoke = TargetAddress.Null;
 		TargetClassObject instance;
+		MonoClassInfo class_info;
 		Stage stage;
 
 		protected enum Stage {
@@ -3052,7 +3053,8 @@ namespace Mono.Debugger.Backends
 		{
 			language = sse.process.MonoLanguage;
 
-			if (!Function.MonoClass.ResolveClass ()) {
+			class_info = Function.MonoClass.ResolveClass (inferior, false);
+			if (class_info == null) {
 				TargetAddress image = Function.MonoClass.File.MonoImage;
 				int token = Function.MonoClass.Token;
 
@@ -3120,7 +3122,7 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			if (!instance.Type.IsByRef && instance.Type.ParentType.IsByRef) {
-				TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
+				TargetAddress klass = ((MonoClassObject) instance).GetKlassAddress (inferior);
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
@@ -3154,7 +3156,7 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolved class: {1}", sse, klass);
 
-				Function.MonoClass.ClassResolved (sse.Thread, klass);
+				class_info = Function.MonoClass.ClassResolved (sse.Thread, klass);
 				stage = Stage.ResolvedClass;
 				do_execute ();
 				return EventResult.Running;
