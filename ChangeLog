@@ -1,5 +1,10 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/TargetException.cs
+	(TargetError): Add `MethodNotLoaded'.
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/Method.cs
 	(Method): Replace the `This', `Locals' and `Parameters' by methods
 	which take a `TargetMemoryAccess' argument.  This is neccessary

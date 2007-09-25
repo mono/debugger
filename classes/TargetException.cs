@@ -26,6 +26,7 @@ namespace Mono.Debugger
 
 		NoStack			= 101,
 		NoMethod,
+		MethodNotLoaded,
 		AlreadyHaveBreakpoint,
 		SymbolTable,
 		InvocationException,
@@ -89,6 +90,8 @@ namespace Mono.Debugger
 				return "No stack.";
 			case TargetError.NoMethod:
 				return "Cannot get bounds of current method.";
+			case TargetError.MethodNotLoaded:
+				return "Method not loaded.";
 			case TargetError.AlreadyHaveBreakpoint:
 				return "Already have a breakpoint at this location.";
 			case TargetError.SymbolTable:
