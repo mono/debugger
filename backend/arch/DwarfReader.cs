@@ -2517,8 +2517,9 @@ namespace Mono.Debugger.Backends
 				get { return -1; }
 			}
 
-			public override TargetClassType DeclaringType {
-				get { return null; }
+			public override TargetClassType GetDeclaringType (TargetMemoryAccess memory)
+			{
+				return null;
 			}
 
 			public override bool HasThis {

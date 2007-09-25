@@ -1,5 +1,10 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(Method.DeclaringType): Repaced by GetDeclaringType().
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoSymbolFile.cs
 	(MonoMethod): Use the new MonoType.Read() to construct the
 	variable's types from the `MonoType *'s provided by the runtime.

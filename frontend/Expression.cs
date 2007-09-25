@@ -894,7 +894,11 @@ namespace Mono.Debugger.Frontend
 			}
 
 			Method method = frame.Method;
-			if ((method == null) || (method.DeclaringType == null))
+			if (method == null)
+				return null;
+
+			TargetClassType decl_type = method.GetDeclaringType (context.CurrentThread);
+			if (decl_type == null)
 				return null;
 
 			TargetClassObject instance = null;
@@ -904,7 +908,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			member = StructAccessExpression.FindMember (
-				frame.Thread, method.DeclaringType, instance, full_name, true, true);
+				context.CurrentThread, decl_type, instance, full_name, true, true);
 			if (member == null)
 				return null;
 

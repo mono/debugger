@@ -105,6 +105,7 @@ namespace Mono.Debugger.Languages.Mono
 	// managed version of struct _MonoDebugMethodAddress
 	internal class MethodAddress
 	{
+		public readonly TargetAddress MonoMethod;
 		public readonly TargetAddress StartAddress;
 		public readonly TargetAddress EndAddress;
 		public readonly TargetAddress MethodStartAddress;
@@ -133,7 +134,7 @@ namespace Mono.Debugger.Languages.Mono
 			// as written out in mono_debug_add_method.
 			reader.Position = 16;
 			ReadAddress (reader, domain); // wrapper_data
-			ReadAddress (reader, domain); // method
+			MonoMethod = ReadAddress (reader, domain);
 			ReadAddress (reader, domain); // address_list
 			StartAddress = ReadAddress (reader, domain);
 			WrapperAddress = ReadAddress (reader, domain);
@@ -901,12 +902,11 @@ namespace Mono.Debugger.Languages.Mono
 			MethodSource source;
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
-			MonoClassType decl_type;
+			TargetClassType decl_type;
 			TargetVariable this_var;
 			TargetVariable[] parameters;
 			TargetVariable[] locals;
 			bool has_variables;
-			bool has_types;
 			bool is_loaded;
 			MethodAddress address;
 			int domain;
@@ -955,24 +955,17 @@ namespace Mono.Debugger.Languages.Mono
 					this, source, method, address.LineNumbers));
 			}
 
-			void get_types ()
-			{
-				if (has_types)
-					return;
-
-				decl_type = file.LookupMonoClass (mdef.DeclaringType);
-				
-				has_types = true;
-			}
-
 			void read_variables (TargetMemoryAccess memory)
 			{
+				if (!is_loaded)
+					throw new TargetException (TargetError.MethodNotLoaded);
 				if (has_variables)
 					return;
 
-				get_types ();
-
 				MonoLanguageBackend mono = file.MonoLanguage;
+
+				TargetAddress decl_klass = memory.ReadAddress (address.MonoMethod + 8);
+				decl_type = mono.ReadMonoClass (memory, decl_klass).ClassType;
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				parameters = new TargetVariable [param_info.Count];
@@ -1020,41 +1013,28 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override TargetVariable[] GetParameters (TargetMemoryAccess memory)
 			{
-				if (!is_loaded)
-					throw new TargetException (TargetError.MethodNotLoaded);
-
 				read_variables (memory);
 				return parameters;
 			}
 
 			public override TargetVariable[] GetLocalVariables (TargetMemoryAccess memory)
 			{
-				if (!is_loaded)
-					throw new TargetException (TargetError.MethodNotLoaded);
-
 				read_variables (memory);
 				return locals;
 			}
 
-			public override TargetClassType DeclaringType {
-				get {
-					get_types ();
-					return decl_type;
-				}
+			public override TargetClassType GetDeclaringType (TargetMemoryAccess memory)
+			{
+				read_variables (memory);
+				return decl_type;
 			}
 
 			public override bool HasThis {
-				get {
-					get_types ();
-					return !mdef.IsStatic;
-				}
+				get { return !mdef.IsStatic; }
 			}
 
 			public override TargetVariable GetThis (TargetMemoryAccess memory)
 			{
-				if (!is_loaded)
-					throw new TargetException (TargetError.MethodNotLoaded);
-
 				read_variables (memory);
 				return this_var;
 			}
@@ -1549,8 +1529,9 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source; }
 			}
 
-			public override TargetClassType DeclaringType {
-				get { return null; }
+			public override TargetClassType GetDeclaringType (TargetMemoryAccess memory)
+			{
+				return null;
 			}
 
 			public override bool HasThis {
