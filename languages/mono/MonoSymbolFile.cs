@@ -902,8 +902,6 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
 			MonoClassType decl_type;
-			TargetType[] param_types;
-			TargetType[] local_types;
 			TargetVariable this_var;
 			TargetVariable[] parameters;
 			TargetVariable[] locals;
@@ -962,23 +960,6 @@ namespace Mono.Debugger.Languages.Mono
 				if (has_types)
 					return;
 
-				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
-				param_types = new TargetType [param_info.Count];
-				for (int i = 0; i < param_info.Count; i++) {
-					Cecil.TypeReference type = param_info [i].ParameterType;
-
-					param_types [i] = file.MonoLanguage.LookupMonoType (type);
-					if (param_types [i] == null)
-						param_types [i] = file.MonoLanguage.VoidType;
-				}
-
-				local_types = new TargetType [method.NumLocals];
-				for (int i = 0; i < method.NumLocals; i++) {
-					C.LocalVariableEntry local = method.Locals [i];
-					local_types [i] = MonoDebuggerSupport.GetLocalTypeFromSignature (
-						file, local.Signature);
-				}
-
 				decl_type = file.LookupMonoClass (mdef.DeclaringType);
 				
 				has_types = true;
@@ -991,32 +972,41 @@ namespace Mono.Debugger.Languages.Mono
 
 				get_types ();
 
+				MonoLanguageBackend mono = file.MonoLanguage;
+
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
+					VariableInfo var = address.ParamVariableInfo [i];
+					TargetType type = MonoType.Read (mono, memory, var.MonoType);
+					if (type == null)
+						type = mono.VoidType;
+
 					parameters [i] = new MonoVariable (
-						file.process, param_info [i].Name, param_types [i],
-						false, param_types [i].IsByRef, this,
-						address.ParamVariableInfo [i], 0, 0);
+						file.process, param_info [i].Name, type,
+						false, type.IsByRef, this, var, 0, 0);
 				}
 
 				locals = new TargetVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
 
+					VariableInfo var = address.LocalVariableInfo [local.Index];
+					TargetType type = MonoType.Read (mono, memory, var.MonoType);
+					if (type == null)
+						type = mono.VoidType;
+
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
 						locals [i] = new MonoVariable (
-							file.process, local.Name, local_types [i],
-							true, local_types [i].IsByRef, this,
-							address.LocalVariableInfo [local.Index],
+							file.process, local.Name, type, true,
+							type.IsByRef, this, var,
 							block.StartAddress, block.EndAddress);
 					} else {
 						locals [i] = new MonoVariable (
-							file.process, local.Name, local_types [i],
-							true, local_types [i].IsByRef, this,
-							address.LocalVariableInfo [local.Index]);
+							file.process, local.Name, type, true,
+							type.IsByRef, this, var);
 					}
 				}
 

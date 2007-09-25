@@ -1,5 +1,11 @@
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoMethod): Use the new MonoType.Read() to construct the
+	variable's types from the `MonoType *'s provided by the runtime.
+
+2007-09-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoType.cs: New file.
 	(MonoTypeEnum): New static enum.
 	(MonoType): New internal static class.
