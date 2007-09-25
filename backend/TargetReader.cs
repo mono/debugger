@@ -83,9 +83,19 @@ namespace Mono.Debugger.Backends
 			return reader.ReadByte ();
 		}
 
+		public byte PeekByte (long offset)
+		{
+			return reader.PeekByte (offset);
+		}
+
 		public int ReadInteger ()
 		{
 			return reader.ReadInt32 ();
+		}
+
+		public int PeekInteger (long offset)
+		{
+			return reader.PeekInt32 (offset);
 		}
 
 		public long ReadLongInteger ()
@@ -94,6 +104,17 @@ namespace Mono.Debugger.Backends
 				return reader.ReadInt32 ();
 			else if (TargetLongIntegerSize == 8)
 				return reader.ReadInt64 ();
+			else
+				throw new TargetMemoryException (
+					"Unknown target long integer size " + TargetLongIntegerSize);
+		}
+
+		public long PeekLongInteger (long offset)
+		{
+			if (TargetLongIntegerSize == 4)
+				return reader.PeekInt32 (offset);
+			else if (TargetLongIntegerSize == 8)
+				return reader.PeekInt64 (offset);
 			else
 				throw new TargetMemoryException (
 					"Unknown target long integer size " + TargetLongIntegerSize);
@@ -113,6 +134,27 @@ namespace Mono.Debugger.Backends
 		public TargetAddress ReadAddress ()
 		{
 			long address = do_read_address ();
+
+			if (address == 0)
+				return TargetAddress.Null;
+			else
+				return new TargetAddress (info.AddressDomain, address);
+		}
+
+		long do_peek_address (long offset)
+		{
+			if (TargetAddressSize == 4)
+				return (uint) reader.PeekInt32 (offset);
+			else if (TargetAddressSize == 8)
+				return reader.PeekInt64 (offset);
+			else
+				throw new TargetMemoryException (
+					"Unknown target address size " + TargetAddressSize);
+		}
+
+		public TargetAddress PeekAddress (long offset)
+		{
+			long address = do_peek_address (offset);
 
 			if (address == 0)
 				return TargetAddress.Null;

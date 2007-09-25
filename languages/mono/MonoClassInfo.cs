@@ -8,48 +8,66 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly int Token;
 		public readonly TargetAddress KlassAddress;
+		public readonly TargetAddress ParentClass;
 		public readonly TargetAddress GenericContainer;
 		public readonly TargetAddress GenericClass;
 
+		public readonly Cecil.TypeDefinition Type;
+
 		protected readonly int[] field_offsets;
 		protected readonly Hashtable methods;
-		protected readonly MonoClassInfo parent;
 
-		internal MonoClassInfo (TargetMemoryAccess target, MonoLanguageBackend mono,
-					int token, TargetAddress klass_address)
+		internal MonoClassInfo (MonoLanguageBackend mono, TargetMemoryAccess target,
+					TargetAddress klass_address)
 		{
 			this.KlassAddress = klass_address;
-			this.Token = token;
 
-			TargetAddress parent_klass = target.ReadAddress (
-				KlassAddress + mono.MonoMetadataInfo.KlassParentOffset);
-			if (!parent_klass.IsNull)
-				parent = mono.GetClassInfo (target, parent_klass);
+			MonoMetadataInfo info = mono.MonoMetadataInfo;
 
-			GenericContainer = target.ReadAddress (
-				KlassAddress + mono.MonoMetadataInfo.KlassGenericContainerOffset);
-			GenericClass = target.ReadAddress (
-				KlassAddress + mono.MonoMetadataInfo.KlassGenericClassOffset);
+			TargetReader reader = new TargetReader (
+				target.ReadMemory (klass_address, info.KlassSize));
 
-			TargetAddress field_info = target.ReadAddress (
-				KlassAddress + mono.MonoMetadataInfo.KlassFieldOffset);
-			int field_count = target.ReadInteger (
-				KlassAddress + mono.MonoMetadataInfo.KlassFieldCountOffset);
+			TargetAddress image = reader.ReadAddress ();
+			MonoSymbolFile file = mono.GetImage (image);
+			if (file == null)
+				throw new InternalError ();
+
+			reader.ReadAddress ();
+			TargetAddress element_class = reader.ReadAddress ();
+
+			Token = reader.PeekInteger (info.KlassTokenOffset);
+			if ((Token & 0xff000000) != 0x02000000)
+				throw new InternalError ();
+
+			Type = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
+				Cecil.Metadata.TokenType.TypeDef, Token & 0x00ffffff);
+			if (Type == null)
+				throw new InternalError ();
+
+			reader.Offset = info.KlassByValArgOffset;
+			TargetAddress byval_data_addr = reader.ReadAddress ();
+			reader.Offset += 2;
+			int type = reader.ReadByte ();
+
+			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
+			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
+			ParentClass = reader.PeekAddress (info.KlassParentOffset);
+
+			TargetAddress field_info = reader.PeekAddress (info.KlassFieldOffset);
+			int field_count = reader.PeekInteger (info.KlassFieldCountOffset);
 
 			TargetBinaryReader field_blob = target.ReadMemory (
-				field_info, field_count * mono.MonoMetadataInfo.FieldInfoSize).GetReader ();
+				field_info, field_count * info.FieldInfoSize).GetReader ();
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				field_blob.Position = i * mono.MonoMetadataInfo.FieldInfoSize +
+				field_blob.Position = i * info.FieldInfoSize +
 					2 * target.TargetInfo.TargetAddressSize;
 				field_offsets [i] = field_blob.ReadInt32 ();
 			}
 
-			TargetAddress method_info = target.ReadAddress (
-				KlassAddress + mono.MonoMetadataInfo.KlassMethodsOffset);
-			int method_count = target.ReadInteger (
-				KlassAddress + mono.MonoMetadataInfo.KlassMethodCountOffset);
+			TargetAddress method_info = reader.PeekAddress (info.KlassMethodsOffset);
+			int method_count = reader.PeekInteger (info.KlassMethodCountOffset);
 
 			TargetBlob blob = target.ReadMemory (
 				method_info, method_count * target.TargetInfo.TargetAddressSize);

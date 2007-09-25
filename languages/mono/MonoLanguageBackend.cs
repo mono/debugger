@@ -708,30 +708,14 @@ namespace Mono.Debugger.Languages.Mono
 		internal MonoClassInfo GetClassInfo (TargetMemoryAccess memory, TargetAddress klass_address)
 		{
 			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass_address];
-			if (info != null)
-				return info;
+			if (info == null) {
+				info = new MonoClassInfo (this, memory, klass_address);
 
-			int token = memory.ReadInteger (
-				klass_address + MonoMetadataInfo.KlassTokenOffset);
+				class_info_by_addr.Add (klass_address, info);
+				if (!info.IsGenericClass)
+					class_info_by_type.Add (info.Type, info);
+			}
 
-			TargetAddress image = memory.ReadAddress (klass_address);
-			MonoSymbolFile file = GetImage (image);
-			if (file == null)
-				return null;
-
-			if ((token & 0xff000000) != 0x02000000)
-				throw new InternalError ();
-			token &= 0x00ffffff;
-
-			Cecil.TypeDefinition tdef = file.ModuleDefinition.LookupByToken (
-				Cecil.Metadata.TokenType.TypeDef, (int) token) as Cecil.TypeDefinition;
-			if (tdef == null)
-				throw new InternalError ();
-
-			info = new MonoClassInfo (memory, this, token, klass_address);
-			class_info_by_addr.Add (klass_address, info);
-			if (!info.IsGenericClass)
-				class_info_by_type.Add (tdef, info);
 			return info;
 		}
 
