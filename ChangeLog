@@ -1,3 +1,9 @@
+2007-09-26  Wade Berrier  <wberrier@novell.com>
+
+	* languages/native/Makefile.am:
+	* languages/mono/Makefile.am:
+	Glob .cs for EXTRA_DIST so these don't need updating anymore.
+
 2007-09-26  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoFundamentalType.cs
