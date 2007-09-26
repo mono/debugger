@@ -6,43 +6,65 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoClassInfo : DebuggerMarshalByRefObject
 	{
-		public readonly int Token;
 		public readonly TargetAddress KlassAddress;
 		public readonly TargetAddress ParentClass;
 		public readonly TargetAddress GenericContainer;
 		public readonly TargetAddress GenericClass;
 
-		public readonly Cecil.TypeDefinition Type;
+		public readonly Cecil.TypeDefinition CecilType;
 
 		protected readonly int[] field_offsets;
 		protected readonly Hashtable methods;
 
-		internal MonoClassInfo (MonoLanguageBackend mono, TargetMemoryAccess target,
-					TargetAddress klass_address)
+		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
+							   TargetMemoryAccess target,
+							   TargetAddress klass_address)
 		{
-			this.KlassAddress = klass_address;
-
-			MonoMetadataInfo info = mono.MonoMetadataInfo;
-
 			TargetReader reader = new TargetReader (
-				target.ReadMemory (klass_address, info.KlassSize));
+				target.ReadMemory (klass_address, mono.MonoMetadataInfo.KlassSize));
 
 			TargetAddress image = reader.ReadAddress ();
 			MonoSymbolFile file = mono.GetImage (image);
 			if (file == null)
 				throw new InternalError ();
 
-			reader.ReadAddress ();
-			TargetAddress element_class = reader.ReadAddress ();
-
-			Token = reader.PeekInteger (info.KlassTokenOffset);
-			if ((Token & 0xff000000) != 0x02000000)
+			int token = reader.PeekInteger (mono.MonoMetadataInfo.KlassTokenOffset);
+			if ((token & 0xff000000) != 0x02000000)
 				throw new InternalError ();
 
-			Type = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
-				Cecil.Metadata.TokenType.TypeDef, Token & 0x00ffffff);
-			if (Type == null)
+			Cecil.TypeDefinition type;
+			type = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
+				Cecil.Metadata.TokenType.TypeDef, token & 0x00ffffff);
+			if (type == null)
 				throw new InternalError ();
+
+			return new MonoClassInfo (file, type, target, reader, klass_address);
+		}
+
+		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
+							   Cecil.TypeDefinition type,
+							   TargetMemoryAccess target,
+							   TargetAddress klass_address)
+		{
+			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
+
+			TargetReader reader = new TargetReader (
+				target.ReadMemory (klass_address, info.KlassSize));
+
+			return new MonoClassInfo (file, type, target, reader, klass_address);
+		}
+
+		protected MonoClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
+					 TargetMemoryAccess target, TargetReader reader,
+					 TargetAddress klass)
+		{
+			this.KlassAddress = klass;
+			this.CecilType = typedef;
+
+			int address_size = target.TargetInfo.TargetAddressSize;
+			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
+
+			TargetAddress element_class = reader.PeekAddress (2 * address_size);
 
 			reader.Offset = info.KlassByValArgOffset;
 			TargetAddress byval_data_addr = reader.ReadAddress ();
@@ -61,16 +83,14 @@ namespace Mono.Debugger.Languages.Mono
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				field_blob.Position = i * info.FieldInfoSize +
-					2 * target.TargetInfo.TargetAddressSize;
+				field_blob.Position = i * info.FieldInfoSize + 2 * address_size;
 				field_offsets [i] = field_blob.ReadInt32 ();
 			}
 
 			TargetAddress method_info = reader.PeekAddress (info.KlassMethodsOffset);
 			int method_count = reader.PeekInteger (info.KlassMethodCountOffset);
 
-			TargetBlob blob = target.ReadMemory (
-				method_info, method_count * target.TargetInfo.TargetAddressSize);
+			TargetBlob blob = target.ReadMemory (method_info, method_count * address_size);
 
 			methods = new Hashtable ();
 			TargetReader method_reader = new TargetReader (blob.Contents, target.TargetInfo);

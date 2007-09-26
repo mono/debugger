@@ -709,11 +709,11 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass];
 			if (info == null) {
-				info = new MonoClassInfo (this, memory, klass);
+				info = MonoClassInfo.ReadClassInfo (this, memory, klass);
 
 				class_info_by_addr.Add (klass, info);
 				if (!info.IsGenericClass)
-					class_info_by_type.Add (info.Type, info);
+					class_info_by_type.Add (info.CecilType, info);
 			}
 
 			return info;
