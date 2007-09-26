@@ -6,6 +6,7 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoClassInfo : DebuggerMarshalByRefObject
 	{
+		public readonly MonoSymbolFile SymbolFile;
 		public readonly TargetAddress KlassAddress;
 		public readonly TargetAddress ParentClass;
 		public readonly TargetAddress GenericContainer;
@@ -13,8 +14,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		public readonly Cecil.TypeDefinition CecilType;
 
-		protected readonly int[] field_offsets;
-		protected readonly Hashtable methods;
+		int[] field_offsets;
+		Hashtable methods;
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
 							   TargetMemoryAccess target,
@@ -58,6 +59,7 @@ namespace Mono.Debugger.Languages.Mono
 					 TargetMemoryAccess target, TargetReader reader,
 					 TargetAddress klass)
 		{
+			this.SymbolFile = file;
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
@@ -74,21 +76,53 @@ namespace Mono.Debugger.Languages.Mono
 			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
 			ParentClass = reader.PeekAddress (info.KlassParentOffset);
+		}
 
-			TargetAddress field_info = reader.PeekAddress (info.KlassFieldOffset);
-			int field_count = reader.PeekInteger (info.KlassFieldCountOffset);
+		public bool IsGenericClass {
+			get { return !GenericClass.IsNull; }
+		}
+
+		void get_field_offsets (TargetMemoryAccess target)
+		{
+			if (field_offsets != null)
+				return;
+
+			int address_size = target.TargetInfo.TargetAddressSize;
+			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
+
+			TargetAddress field_info = target.ReadAddress (
+				KlassAddress + metadata.KlassFieldOffset);
+			int field_count = target.ReadInteger (
+				KlassAddress + metadata.KlassFieldCountOffset);
 
 			TargetBinaryReader field_blob = target.ReadMemory (
-				field_info, field_count * info.FieldInfoSize).GetReader ();
+				field_info, field_count * metadata.FieldInfoSize).GetReader ();
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				field_blob.Position = i * info.FieldInfoSize + 2 * address_size;
+				field_blob.Position = i * metadata.FieldInfoSize + 2 * address_size;
 				field_offsets [i] = field_blob.ReadInt32 ();
 			}
+		}
 
-			TargetAddress method_info = reader.PeekAddress (info.KlassMethodsOffset);
-			int method_count = reader.PeekInteger (info.KlassMethodCountOffset);
+		public int[] GetFieldOffsets (TargetMemoryAccess target)
+		{
+			get_field_offsets (target);
+			return field_offsets;
+		}
+
+		void get_methods (TargetMemoryAccess target)
+		{
+			if (methods != null)
+				return;
+
+			int address_size = target.TargetInfo.TargetAddressSize;
+			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
+
+			TargetAddress method_info = target.ReadAddress (
+				KlassAddress + metadata.KlassMethodsOffset);
+			int method_count = target.ReadInteger (
+				KlassAddress + metadata.KlassMethodCountOffset);
 
 			TargetBlob blob = target.ReadMemory (method_info, method_count * address_size);
 
@@ -105,16 +139,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public bool IsGenericClass {
-			get { return !GenericClass.IsNull; }
-		}
-
-		public int[] FieldOffsets {
-			get { return field_offsets; }
-		}
-
-		internal TargetAddress GetMethodAddress (int token)
+		public TargetAddress GetMethodAddress (TargetMemoryAccess target, int token)
 		{
+			get_methods (target);
 			if (!methods.Contains (token))
 				throw new InternalError ();
 			return (TargetAddress) methods [token];

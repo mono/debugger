@@ -2231,7 +2231,7 @@ namespace Mono.Debugger.Backends
 			if (!class_resolved) {
 				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
 				MonoClassInfo info = Function.MonoClass.ClassResolved (sse.Client, klass);
-				TargetAddress method = info.GetMethodAddress (Function.Token);
+				TargetAddress method = info.GetMethodAddress (inferior, Function.Token);
 
 				index = MonoLanguageBackend.GetUniqueID ();
 

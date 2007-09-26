@@ -516,20 +516,20 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		int GetFieldOffset (TargetFieldInfo field)
+		int GetFieldOffset (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-			if (field.Position < FirstField)
-				return parent_type.GetFieldOffset (field);
+			ResolveClass (target, true);
 
-			return type_info.FieldOffsets [field.Position - FirstField];
+			if (field.Position < FirstField)
+				return parent_type.GetFieldOffset (target, field);
+
+			return type_info.GetFieldOffsets (target) [field.Position - FirstField];
 		}
 
 		internal TargetObject GetField (Thread target, TargetLocation location,
 						TargetFieldInfo finfo)
 		{
-			ResolveClass (target, true);
-
-			int offset = GetFieldOffset (finfo);
+			int offset = GetFieldOffset (target, finfo);
 			if (!IsByRef)
 				offset -= 2 * target.TargetInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -546,9 +546,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal void SetField (Thread target, TargetLocation location,
 					TargetFieldInfo finfo, TargetObject obj)
 		{
-			ResolveClass (target, true);
-
-			int offset = GetFieldOffset (finfo);
+			int offset = GetFieldOffset (target, finfo);
 			if (!IsByRef)
 				offset -= 2 * target.TargetInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -561,13 +559,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetStaticField (Thread target, TargetFieldInfo finfo)
 		{
-			ResolveClass (target, true);
+			int offset = GetFieldOffset (target, finfo);
 
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
 				type_info.KlassAddress, 0);
-
-			int offset = GetFieldOffset (finfo);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -581,9 +577,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override void SetStaticField (Thread target, TargetFieldInfo finfo,
 						     TargetObject obj)
 		{
-			ResolveClass (target, true);
-
-			int offset = GetFieldOffset (finfo);
+			int offset = GetFieldOffset (target, finfo);
 
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,

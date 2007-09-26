@@ -167,7 +167,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override TargetAddress GetMethodAddress (Thread target)
 		{
 			MonoClassInfo info = klass.HardResolveClass (target);
-			return info.GetMethodAddress (Token);
+			return info.GetMethodAddress (target, Token);
 		}
 
 		protected override TargetObject DoGetObject (TargetLocation location)

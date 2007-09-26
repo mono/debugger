@@ -1,5 +1,14 @@
 2007-09-26  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo): Read field offsets and methods on-the-fly when
+	they're needed; this allows us to create a `MonoClassInfo' for
+	classes which aren't initialized yet.
+	(MonoClassInfo.FieldOffsets): Replaced by GetFieldOffsets().
+	(MonoClassInfo.GetMethodAddress): Added `TargetMemoryAccess' arg.
+
+2007-09-26  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetFundamentalType.cs
 	(TargetFundamentalType): Made this class abstract.
 	(TargetFundamentalType.HasClassType): Don't implement this here.
