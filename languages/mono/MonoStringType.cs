@@ -10,9 +10,9 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int ObjectSize;
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (MonoSymbolFile file, Cecil.TypeDefinition type,
-				       int object_size, int size)
-			: base (file, type, "string", FundamentalKind.String, size)
+		public MonoStringType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
+				       MonoClassInfo class_info, int object_size, int size)
+			: base (file, typedef, class_info, "string", FundamentalKind.String, size)
 		{
 			this.ObjectSize = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;

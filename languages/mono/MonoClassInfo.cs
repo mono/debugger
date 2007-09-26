@@ -13,6 +13,8 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress GenericClass;
 
 		public readonly Cecil.TypeDefinition CecilType;
+		public readonly MonoClassType ClassType;
+		public readonly TargetType Type;
 
 		int[] field_offsets;
 		Hashtable methods;
@@ -33,17 +35,17 @@ namespace Mono.Debugger.Languages.Mono
 			if ((token & 0xff000000) != 0x02000000)
 				throw new InternalError ();
 
-			Cecil.TypeDefinition type;
-			type = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
+			Cecil.TypeDefinition typedef;
+			typedef = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
 				Cecil.Metadata.TokenType.TypeDef, token & 0x00ffffff);
-			if (type == null)
+			if (typedef == null)
 				throw new InternalError ();
 
-			return new MonoClassInfo (file, type, target, reader, klass_address);
+			return new MonoClassInfo (file, typedef, target, reader, klass_address);
 		}
 
 		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
-							   Cecil.TypeDefinition type,
+							   Cecil.TypeDefinition typedef,
 							   TargetMemoryAccess target,
 							   TargetAddress klass_address)
 		{
@@ -52,7 +54,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader reader = new TargetReader (
 				target.ReadMemory (klass_address, info.KlassSize));
 
-			return new MonoClassInfo (file, type, target, reader, klass_address);
+			return new MonoClassInfo (file, typedef, target, reader, klass_address);
 		}
 
 		protected MonoClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
@@ -72,6 +74,8 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress byval_data_addr = reader.ReadAddress ();
 			reader.Offset += 2;
 			int type = reader.ReadByte ();
+
+			ClassType = new MonoClassType (file, typedef, this);
 
 			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);

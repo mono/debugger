@@ -1,5 +1,14 @@
 2007-09-26  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoFundamentalType.cs
+	(MonoFundamentalType): The .ctor now takes a `MonoClassInfo'.
+
+	* languages/mono/MonoClassType.cs
+	(MonoClassType): Add a .ctor taking a `MonoClassInfo'; remove the
+	one taking a `TargetAddress'.
+
+2007-09-26  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassInfo.cs
 	(MonoClassInfo): Read field offsets and methods on-the-fly when
 	they're needed; this allows us to create a `MonoClassInfo' for

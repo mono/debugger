@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.Mono
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
 		MonoClassType parent_type;
-		MonoClassInfo type_info;
+		MonoClassInfo class_info;
 
 		Hashtable load_handlers;
 		int load_handler_id;
@@ -48,11 +48,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoClassType (TargetMemoryAccess target, MonoSymbolFile file,
-				      Cecil.TypeDefinition type, TargetAddress klass)
-			: this (file, type)
+		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
+				      MonoClassInfo class_info)
+			: this (file, typedef)
 		{
-			type_info = file.MonoLanguage.ReadClassInfo (target, klass);
+			this.class_info = class_info;
 		}
 
 		public Cecil.TypeDefinition Type {
@@ -384,17 +384,17 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
-			if (type_info != null)
-				return type_info;
+			if (class_info != null)
+				return class_info;
 
 			if (parent_type != null) {
 				if (parent_type.ResolveClass (target, fail) == null)
 					return null;
 			}
 
-			type_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
-			if (type_info != null)
-				return type_info;
+			class_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
+			if (class_info != null)
+				return class_info;
 
 			if (fail)
 				throw new TargetException (TargetError.ClassNotInitialized,
@@ -405,8 +405,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoClassInfo ClassResolved (TargetMemoryAccess target, TargetAddress klass)
 		{
-			type_info = File.MonoLanguage.ReadClassInfo (target, klass);
-			return type_info;
+			class_info = File.MonoLanguage.ReadClassInfo (target, klass);
+			return class_info;
 		}
 
 		protected override TargetObject DoGetObject (TargetLocation location)
@@ -523,7 +523,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (field.Position < FirstField)
 				return parent_type.GetFieldOffset (target, field);
 
-			return type_info.GetFieldOffsets (target) [field.Position - FirstField];
+			return class_info.GetFieldOffsets (target) [field.Position - FirstField];
 		}
 
 		internal TargetObject GetField (Thread target, TargetLocation location,
@@ -563,7 +563,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				type_info.KlassAddress, 0);
+				class_info.KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -581,7 +581,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress data_address = target.CallMethod (
 				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				type_info.KlassAddress, 0);
+				class_info.KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -600,7 +600,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (!IsByRef && parent_type.IsByRef) {
 				TargetAddress boxed = target.CallMethod (
 					File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
-					type_info.KlassAddress, location.GetAddress (target).Address);
+					class_info.KlassAddress, location.GetAddress (target).Address);
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
 				return new MonoClassObject (parent_type, new_loc);
 			}
@@ -631,17 +631,17 @@ namespace Mono.Debugger.Languages.Mono
 		internal MonoClassInfo HardResolveClass (Thread target)
 		{
 			if (ResolveClass (target, false) != null)
-				return type_info;
+				return class_info;
 
 			TargetAddress klass_address = target.CallMethod (
 				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
 				file.MonoImage, 0, Name);
 
-			type_info = file.MonoLanguage.ReadClassInfo (target, klass_address);
-			if (type_info == null)
+			class_info = file.MonoLanguage.ReadClassInfo (target, klass_address);
+			if (class_info == null)
 				throw new InternalError ();
 
-			return type_info;
+			return class_info;
 		}
 	}
 }
