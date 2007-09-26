@@ -1,3 +1,16 @@
+2007-09-26  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetFundamentalType.cs
+	(TargetFundamentalType): Made this class abstract.
+	(TargetFundamentalType.HasClassType): Don't implement this here.
+	(TargetFundamentalType.ClassType): Likewise.
+
+	* languages/native/NativeFundamentalType.cs: New file.
+	(NativeFundamentalType): Derive from `TargetFundamentalType'.
+
+	* languages/mono/MonoFundamentalType.cs
+	(MonoFundamentalType): Implement `HasClassType' and `ClassType' here.
+
 2007-09-25  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

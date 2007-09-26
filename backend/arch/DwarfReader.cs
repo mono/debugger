@@ -3112,7 +3112,7 @@ namespace Mono.Debugger.Backends
 				if (kind == FundamentalKind.Unknown)
 					return new NativeOpaqueType (language, Name, byte_size);
 
-				return new TargetFundamentalType (language, Name, kind, byte_size);
+				return new NativeFundamentalType (language, Name, kind, byte_size);
 			}
 
 			protected FundamentalKind GetMonoType (DwarfBaseTypeEncoding encoding,
