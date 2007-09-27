@@ -48,8 +48,16 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal static class MonoType
 	{
-		public static TargetType Read (MonoLanguageBackend mono, TargetMemoryAccess memory,
-					       TargetAddress address)
+		public static TargetType ReadMonoClass (MonoLanguageBackend mono,
+							TargetMemoryAccess memory,
+							TargetAddress address)
+		{
+			int byval_offset = mono.MonoMetadataInfo.KlassByValArgOffset;
+			return ReadType (mono, memory, address + byval_offset);
+		}
+
+		public static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess memory,
+						   TargetAddress address)
 		{
 			TargetAddress data = memory.ReadAddress (address);
 			uint flags = (uint) memory.ReadInteger (address + memory.TargetInfo.TargetAddressSize);
@@ -109,7 +117,7 @@ namespace Mono.Debugger.Languages.Mono
 				return mono.BuiltinTypes.UIntType;
 
 			case MonoTypeEnum.MONO_TYPE_PTR: {
-				TargetType target_type = Read (mono, memory, data);
+				TargetType target_type = ReadType (mono, memory, data);
 				return new MonoPointerType (target_type);
 			}
 

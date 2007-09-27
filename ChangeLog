@@ -1,5 +1,14 @@
 2007-09-27  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoType.cs
+	(MonoType.Read): Renamed into ReadType().
+	(MonoType.ReadMonoClass): New public static method.
+
+	* languages/mono/MonoObjectObject.cs
+	(MonoObjectObject.GetCurrentType): Use MonoType.ReadMonoClass().
+
+2007-09-27  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoFundamentalType.cs
 	(MonoFundamentalType): Replace the public .ctor with a static
 	Create() method.	

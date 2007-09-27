@@ -1001,7 +1001,7 @@ namespace Mono.Debugger.Languages.Mono
 				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
 					VariableInfo var = address.ParamVariableInfo [i];
-					TargetType type = MonoType.Read (mono, memory, var.MonoType);
+					TargetType type = MonoType.ReadType (mono, memory, var.MonoType);
 					if (type == null)
 						type = mono.VoidType;
 
@@ -1015,7 +1015,7 @@ namespace Mono.Debugger.Languages.Mono
 					C.LocalVariableEntry local = method.Locals [i];
 
 					VariableInfo var = address.LocalVariableInfo [local.Index];
-					TargetType type = MonoType.Read (mono, memory, var.MonoType);
+					TargetType type = MonoType.ReadType (mono, memory, var.MonoType);
 					if (type == null)
 						type = mono.VoidType;
 
