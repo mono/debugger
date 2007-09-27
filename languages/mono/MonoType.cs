@@ -126,14 +126,14 @@ namespace Mono.Debugger.Languages.Mono
 				return mono.ReadMonoClass (memory, data);
 
 			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
-				TargetType etype = mono.ReadMonoClass (memory, data);
+				TargetType etype = ReadMonoClass (mono, memory, data);
 				return new MonoArrayType (etype, 1);
 			}
 
 			case MonoTypeEnum.MONO_TYPE_ARRAY: {
 				TargetReader reader = new TargetReader (memory.ReadMemory (
 					data, 4 * memory.TargetInfo.TargetAddressSize));
-				TargetType etype = mono.ReadMonoClass (memory, reader.ReadAddress ());
+				TargetAddress klass = reader.ReadAddress ();
 				int rank = reader.ReadByte ();
 				int numsizes = reader.ReadByte ();
 				int numlobounds = reader.ReadByte ();
@@ -141,6 +141,7 @@ namespace Mono.Debugger.Languages.Mono
 				if ((numsizes != 0) || (numlobounds != 0))
 					throw new InternalError ();
 
+				TargetType etype = ReadMonoClass (mono, memory, klass);
 				return new MonoArrayType (etype, rank);
 			}
 
