@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
@@ -10,12 +11,28 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly int ObjectSize;
 		protected readonly TargetAddress CreateString;
 
-		public MonoStringType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
-				       MonoClassInfo class_info, int object_size, int size)
-			: base (file, typedef, class_info, "string", FundamentalKind.String, size)
+		private MonoStringType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
+					int object_size, int size)
+			: base (file, typedef, "string", FundamentalKind.String, size)
 		{
 			this.ObjectSize = object_size;
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
+		}
+
+		public static MonoStringType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
+						     TargetReader mono_defaults)
+		{
+			int object_size = 2 * memory.TargetInfo.TargetAddressSize;
+
+			MonoStringType type = new MonoStringType (
+				corlib, corlib.ModuleDefinition.Types ["System.String"],
+				object_size, object_size + 4);
+
+			TargetAddress klass = mono_defaults.PeekAddress (
+				corlib.MonoLanguage.MonoMetadataInfo.MonoDefaultsStringOffset);
+			type.create_type (memory, klass);
+
+			return type;
 		}
 
 		public static int MaximumStringLength {

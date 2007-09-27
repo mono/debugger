@@ -1,3 +1,13 @@
+2007-09-27  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoFundamentalType.cs
+	(MonoFundamentalType): Replace the public .ctor with a static
+	Create() method.	
+
+	* languages/mono/MonoStringType.cs
+	(MonoStringType): Replace the public .ctor with a static
+	Create() method.
+
 2007-09-26  Wade Berrier  <wberrier@novell.com>
 
 	* languages/native/Makefile.am:
