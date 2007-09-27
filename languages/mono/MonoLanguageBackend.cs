@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoSymbolFile Corlib;
 		public readonly MonoObjectType ObjectType;
 		public readonly MonoFundamentalType ByteType;
-		public readonly MonoOpaqueType VoidType;
+		public readonly MonoVoidType VoidType;
 		public readonly MonoFundamentalType BooleanType;
 		public readonly MonoFundamentalType SByteType;
 		public readonly MonoFundamentalType Int16Type;
@@ -50,19 +50,10 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader mono_defaults = new TargetReader (
 				memory.ReadMemory (info.MonoDefaultsAddress, info.MonoDefaultsSize));
 
-			MonoLanguageBackend language = corlib.MonoLanguage;
-			mono_defaults.Offset = info.MonoDefaultsObjectOffset;
-			TargetAddress klass = mono_defaults.ReadAddress ();
-			int object_size = 2 * corlib.TargetInfo.TargetAddressSize;
-			Cecil.TypeDefinition object_type = corlib.ModuleDefinition.Types ["System.Object"];
-			ObjectType = new MonoObjectType (corlib, object_type, object_size);
-			language.AddCoreType (object_type, ObjectType, ObjectType.MonoClassType, klass);
+			MonoLanguageBackend mono = corlib.MonoLanguage;
 
-			mono_defaults.Offset = info.MonoDefaultsVoidOffset;
-			klass = mono_defaults.ReadAddress ();
-			Cecil.TypeDefinition void_type = corlib.ModuleDefinition.Types ["System.Void"];
-			VoidType = new MonoOpaqueType (corlib, void_type);
-			language.AddCoreType (void_type, VoidType, VoidType.ClassType, klass);
+			ObjectType = MonoObjectType.Create (corlib, memory, mono_defaults);
+			VoidType = MonoVoidType.Create (corlib, memory, mono_defaults);
 
 			StringType = MonoStringType.Create (corlib, memory, mono_defaults);
 
@@ -95,24 +86,24 @@ namespace Mono.Debugger.Languages.Mono
 				corlib, memory, mono_defaults, FundamentalKind.UIntPtr);
 
 			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
-			klass = mono_defaults.ReadAddress ();
+			TargetAddress klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
-			MonoClassInfo array_info = language.CreateClassInfo (corlib, array_type, memory, klass);
+			MonoClassInfo array_info = mono.CreateClassInfo (corlib, array_type, memory, klass);
 			ArrayType = array_info.ClassType;
-			language.AddCoreType (array_type, ArrayType, ArrayType, klass);
+			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsDelegateOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
-			language.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
+			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsExceptionOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
-			MonoClassInfo exception_info = language.CreateClassInfo (corlib, exception_type, memory, klass);
+			MonoClassInfo exception_info = mono.CreateClassInfo (corlib, exception_type, memory, klass);
 			ExceptionType = exception_info.ClassType;
-			language.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
+			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
 		}
 	}
 

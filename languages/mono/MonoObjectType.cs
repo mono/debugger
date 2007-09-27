@@ -1,4 +1,5 @@
 using System;
+using Mono.Debugger.Backends;
 using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
@@ -6,14 +7,38 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoObjectType : TargetObjectType
 	{
 		MonoSymbolFile file;
+		Cecil.TypeDefinition typedef;
+		MonoClassInfo class_info;
 		MonoClassType class_type;
 
-		public MonoObjectType (MonoSymbolFile file, Cecil.TypeDefinition typedef, int size)
+		protected MonoObjectType (MonoSymbolFile file, Cecil.TypeDefinition typedef, int size)
 			: base (file.MonoLanguage, "object", size)
 		{
 			this.file = file;
+			this.typedef = typedef;
+		}
 
-			class_type = new MonoClassType (file, typedef);
+		public static MonoObjectType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
+						     TargetReader mono_defaults)
+		{
+			int object_size = 2 * memory.TargetInfo.TargetAddressSize;
+
+			MonoObjectType type = new MonoObjectType (
+				corlib, corlib.ModuleDefinition.Types ["System.Object"],
+				object_size);
+
+			TargetAddress klass = mono_defaults.PeekAddress (
+				corlib.MonoLanguage.MonoMetadataInfo.MonoDefaultsObjectOffset);
+			type.create_type (memory, klass);
+
+			return type;
+		}
+
+		protected void create_type (TargetMemoryAccess memory, TargetAddress klass)
+		{
+			class_info = file.MonoLanguage.CreateClassInfo (file, typedef, memory, klass);
+			class_type = new MonoClassType (file, typedef, class_info);
+			file.MonoLanguage.AddCoreType (typedef, this, class_type, klass);
 		}
 
 		public MonoSymbolFile File {

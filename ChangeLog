@@ -1,5 +1,14 @@
 2007-09-27  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoObjectType.cs
+	(MonoObjectType): Replace the public .ctor with a static
+	Create() method.
+
+	* languages/mono/MonoOpaqueType.cs: Renamed into MonoVoidType.cs
+	(MonoOpaqueType): Renamed into `MonoVoidType'.
+
+2007-09-27  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoType.cs
 	(MonoType.Read): Renamed into ReadType().
 	(MonoType.ReadMonoClass): New public static method.
