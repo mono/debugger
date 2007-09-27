@@ -995,7 +995,7 @@ namespace Mono.Debugger.Languages.Mono
 				MonoLanguageBackend mono = file.MonoLanguage;
 
 				TargetAddress decl_klass = memory.ReadAddress (address.MonoMethod + 8);
-				decl_type = mono.ReadMonoClass (memory, decl_klass).ClassType;
+				decl_type = MonoType.ReadMonoClass (mono, memory, decl_klass).ClassType;
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				parameters = new TargetVariable [param_info.Count];
