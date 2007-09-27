@@ -8,7 +8,6 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		MonoSymbolFile file;
 		Cecil.TypeDefinition typedef;
-		MonoClassInfo class_info;
 		MonoClassType class_type;
 
 		protected MonoVoidType (MonoSymbolFile file, Cecil.TypeDefinition typedef)
@@ -33,8 +32,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected void create_type (TargetMemoryAccess memory, TargetAddress klass)
 		{
-			class_info = file.MonoLanguage.CreateClassInfo (file, typedef, memory, klass);
-			class_type = new MonoClassType (file, typedef, class_info);
+			class_type = file.MonoLanguage.CreateCoreType (file, typedef, memory, klass);
 			file.MonoLanguage.AddCoreType (typedef, this, class_type, klass);
 		}
 

@@ -1,5 +1,21 @@
 2007-09-27  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.ReadMonoClass): Use
+	MonoClassInfo.ReadMonoClass() to create the `MonoClassInfo', then
+	create a `MonoClassType'.
+	(MonoLanguageBackend.CreateClassInfo): Renamed into
+	CreateCoreType(); create the MonoClassType here and not inside
+	MonoClassInfo's .ctor.
+
+	* languages/mono/MonoClassType.cs
+	(MonoClassType.ReadClassType): Removed.
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.ClassType): Removed.
+
+2007-09-27  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoObjectType.cs
 	(MonoObjectType): Replace the public .ctor with a static
 	Create() method.

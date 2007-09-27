@@ -13,7 +13,6 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress GenericClass;
 
 		public readonly Cecil.TypeDefinition CecilType;
-		public readonly MonoClassType ClassType;
 		public readonly TargetType Type;
 
 		int[] field_offsets;
@@ -74,8 +73,6 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress byval_data_addr = reader.ReadAddress ();
 			reader.Offset += 2;
 			int type = reader.ReadByte ();
-
-			ClassType = new MonoClassType (file, typedef, this);
 
 			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);

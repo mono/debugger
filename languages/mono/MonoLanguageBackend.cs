@@ -88,8 +88,7 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
 			TargetAddress klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
-			MonoClassInfo array_info = mono.CreateClassInfo (corlib, array_type, memory, klass);
-			ArrayType = array_info.ClassType;
+			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
 			mono_defaults.Offset = info.MonoDefaultsDelegateOffset;
@@ -101,8 +100,7 @@ namespace Mono.Debugger.Languages.Mono
 			mono_defaults.Offset = info.MonoDefaultsExceptionOffset;
 			klass = mono_defaults.ReadAddress ();
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
-			MonoClassInfo exception_info = mono.CreateClassInfo (corlib, exception_type, memory, klass);
-			ExceptionType = exception_info.ClassType;
+			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
 		}
 	}
@@ -345,8 +343,14 @@ namespace Mono.Debugger.Languages.Mono
 			if (type != null)
 				return type;
 
+			MonoClassInfo info;
+
 			try {
-				type = MonoClassType.ReadMonoClass (this, target, klass_address);
+				info = MonoClassInfo.ReadClassInfo (this, target, klass_address);
+				if (info == null)
+					return null;
+
+				type = info.SymbolFile.LookupMonoClass (info.CecilType);
 			} catch {
 				return null;
 			}
@@ -652,13 +656,15 @@ namespace Mono.Debugger.Languages.Mono
 			return info;
 		}
 
-		internal MonoClassInfo CreateClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
-							TargetMemoryAccess memory, TargetAddress klass)
+		internal MonoClassType CreateCoreType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
+						       TargetMemoryAccess memory, TargetAddress klass)
 		{
 			MonoClassInfo info = MonoClassInfo.ReadClassInfo (file, typedef, memory, klass);
 			class_info_by_addr.Add (klass, info);
 			class_info_by_type.Add (typedef, info);
-			return info;
+
+			MonoClassType type = new MonoClassType (file, typedef, info);
+			return type;
 		}
 #endregion
 

@@ -6,7 +6,6 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoFundamentalType : TargetFundamentalType
 	{
 		MonoSymbolFile file;
-		MonoClassInfo class_info;
 		MonoClassType class_type;
 		Cecil.TypeDefinition typedef;
 
@@ -139,8 +138,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected void create_type (TargetMemoryAccess memory, TargetAddress klass)
 		{
-			class_info = file.MonoLanguage.CreateClassInfo (file, typedef, memory, klass);
-			class_type = new MonoClassType (file, typedef, class_info);
+			class_type = file.MonoLanguage.CreateCoreType (file, typedef, memory, klass);
 			file.MonoLanguage.AddCoreType (typedef, this, class_type, klass);
 		}
 
@@ -149,11 +147,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetClassType ClassType {
-			get { return class_info.ClassType; }
+			get { return class_type; }
 		}
 
 		internal MonoClassType MonoClassType {
-			get { return class_info.ClassType; }
+			get { return class_type; }
 		}
 	}
 }
