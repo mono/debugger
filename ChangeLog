@@ -1,5 +1,11 @@
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/arch/DwarfReader.cs
+	(DwarfReader): Kill the `source_hash'; each source file may be
+	used multiple times in different compilation units.
+
+2007-09-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Architecture_I386.cs
 	(Architecture_I386.GetLMF): Make this work again.
 

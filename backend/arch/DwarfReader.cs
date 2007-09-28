@@ -108,7 +108,6 @@ namespace Mono.Debugger.Backends
 		ObjectCache debug_pubtypes_reader;
 		ObjectCache debug_str_reader;
 
-		Hashtable source_hash;
 		Hashtable source_file_hash;
 		Hashtable method_source_hash;
 		Hashtable method_hash;
@@ -154,7 +153,6 @@ namespace Mono.Debugger.Backends
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
 			method_hash = Hashtable.Synchronized (new Hashtable ());
-			source_hash = Hashtable.Synchronized (new Hashtable ());
 			source_file_hash = Hashtable.Synchronized (new Hashtable ());
 
 			if (bfd.IsLoaded) {
@@ -219,8 +217,8 @@ namespace Mono.Debugger.Backends
 
 		public SourceFile[] Sources {
 			get {
-				SourceFile[] retval = new SourceFile [source_hash.Count];
-				source_hash.Keys.CopyTo (retval, 0);
+				SourceFile[] retval = new SourceFile [source_file_hash.Count];
+				source_file_hash.Values.CopyTo (retval, 0);
 				return retval;
 			}
 		}
@@ -235,18 +233,21 @@ namespace Mono.Debugger.Backends
 
 		public MethodSource[] GetMethods (SourceFile file)
 		{
-			DieCompileUnit die = (DieCompileUnit) source_hash [file];
-			if (die == null)
-				return null;
-
 			ArrayList list = new ArrayList ();
 
-			foreach (Die child in die.Subprograms) {
-				DieSubprogram subprog = child as DieSubprogram;
-				if ((subprog == null) || (subprog.MethodSource == null))
-					continue;
+			foreach (CompileUnitBlock block in compile_unit_hash.Values) {
+				foreach (CompilationUnit comp_unit in block.CompilationUnits) {
+					if (comp_unit.DieCompileUnit.SourceFile != file)
+						continue;
 
-				list.Add (subprog.MethodSource);
+					foreach (Die child in comp_unit.DieCompileUnit.Subprograms) {
+						DieSubprogram subprog = child as DieSubprogram;
+						if ((subprog == null) || (subprog.MethodSource == null))
+							continue;
+
+						list.Add (subprog.MethodSource);
+					}
+				}
 			}
 
 			MethodSource[] methods = new MethodSource [list.Count];
@@ -295,13 +296,6 @@ namespace Mono.Debugger.Backends
 			return file;
 		}
 
-		protected SourceFile AddSourceFile (DieCompileUnit die, string filename)
-		{
-			SourceFile file = GetSourceFile (filename);
-			source_hash.Add (file, die);
-			return file;
-		}
-
 		protected void AddType (DieType type)
 		{
 			bfd.BfdContainer.AddType (type);
@@ -334,6 +328,14 @@ namespace Mono.Debugger.Backends
 			{
 				build_symtabs ();
 				return symtabs.Lookup (address);
+			}
+
+			public CompilationUnit[] CompilationUnits {
+				get {
+					CompilationUnit[] list = new CompilationUnit [compile_units.Count];
+					compile_units.CopyTo (list, 0);
+					return list;
+				}
 			}
 
 			public ISymbolTable SymbolTable {
@@ -1903,7 +1905,7 @@ namespace Mono.Debugger.Backends
 						comp_dir, Path.DirectorySeparatorChar, name);
 				else
 					file_name = name;
-				file = dwarf.AddSourceFile (this, file_name);
+				file = dwarf.GetSourceFile (file_name);
 			}
 
 			long start_pc, end_pc;
