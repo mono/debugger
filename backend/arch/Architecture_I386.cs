@@ -725,9 +725,9 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
 
-			TargetBinaryReader reader = thread.ReadMemory (lmf, 32).GetReader ();
+			TargetBinaryReader reader = thread.ReadMemory (lmf, 36).GetReader ();
 
-			reader.Position = 12;
+			reader.Position = 16;
 
 			TargetAddress ebx = reader.ReadTargetAddress ();
 			TargetAddress edi = reader.ReadTargetAddress ();
