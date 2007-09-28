@@ -1,7 +1,10 @@
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
+	HEADS UP: The debugger doens't work with SVN HEAD at the moment !
+	          The last supported version is r86592.
+
 	* backend/MonoThreadManager.cs
-	(MonoDebuggerInfo.MinDynamicVersion): Require 61.
+	(MonoDebuggerInfo.MinDynamicVersion): Require 60.
 
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
