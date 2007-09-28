@@ -1,3 +1,9 @@
+2007-09-28  Martin Baulig  <martin@ximian.com>
+
+	* backend/ProcessServant.cs
+	(ProcessServant.read_thread_table): Truncate the `TID' to 32-bits
+	on 32-bit machines.
+
 2007-09-27  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoLanguageBackend.cs

@@ -116,18 +116,7 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress create_address (long address)
 		{
-			TargetInfo info = target.TargetInfo;
-			switch (info.TargetAddressSize) {
-			case 4:
-				return new TargetAddress (info.AddressDomain, (uint) address);
-
-			case 8:
-				return new TargetAddress (info.AddressDomain, address);
-
-			default:
-				throw new TargetMemoryException (
-					"Unknown target address size " + info.TargetAddressSize);
-			}
+			return new TargetAddress (target.TargetInfo.AddressDomain, address);
 		}
 
 		PsErr read_memory (long address, IntPtr ptr, int size)

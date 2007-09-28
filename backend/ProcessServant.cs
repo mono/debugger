@@ -359,6 +359,9 @@ namespace Mono.Debugger.Backends
 				TargetAddress lmf_addr = reader.ReadAddress ();
 				TargetAddress end_stack = reader.ReadAddress ();
 
+				if (inferior.TargetInfo.TargetAddressSize == 4)
+					tid &= 0x00000000ffffffffL;
+
 				ptr = reader.ReadAddress ();
 
 				bool found = false;
