@@ -549,7 +549,7 @@ namespace Mono.Debugger.Languages.Mono
 			address = target.ReadAddress (location.GetAddress (target));
 			address = target.ReadAddress (address);
 
-			TargetType current = MonoType.ReadMonoClass (File.MonoLanguage, target, address);
+			TargetType current = MonoRuntime.ReadMonoClass (File.MonoLanguage, target, address);
 			if (current == null)
 				return null;
 

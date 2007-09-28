@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.Mono
 			address = target.ReadAddress (Location.GetAddress (target));
 			address = target.ReadAddress (address);
 
-			return MonoType.ReadMonoClass (Type.File.MonoLanguage, target, address);
+			return MonoRuntime.ReadMonoClass (Type.File.MonoLanguage, target, address);
 		}
 
 		public override TargetObject GetDereferencedObject (Thread target)

@@ -1,5 +1,10 @@
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoType.cs: Renamed into MonoRuntime.cs
+	(MonoType): Renamed into `MonoRuntime'.
+
+2007-09-28  Martin Baulig  <martin@ximian.com>
+
 	HEADS UP: The debugger doens't work with SVN HEAD at the moment !
 	          The last supported version is r86592.
 
