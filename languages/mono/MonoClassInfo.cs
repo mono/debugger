@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader reader = new TargetReader (
 				target.ReadMemory (klass_address, mono.MonoMetadataInfo.KlassSize));
 
-			TargetAddress image = reader.ReadAddress ();
+			TargetAddress image = reader.PeekAddress (mono.MonoMetadataInfo.KlassImageOffset);
 			MonoSymbolFile file = mono.GetImage (image);
 			if (file == null)
 				throw new InternalError ();
@@ -66,8 +66,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			int address_size = target.TargetInfo.TargetAddressSize;
 			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
-
-			TargetAddress element_class = reader.PeekAddress (2 * address_size);
 
 			reader.Offset = info.KlassByValArgOffset;
 			TargetAddress byval_data_addr = reader.ReadAddress ();

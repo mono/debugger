@@ -150,5 +150,22 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 			}
 		}
+
+		public static MonoFunctionType ReadMonoMethod (MonoLanguageBackend mono,
+							       TargetMemoryAccess memory,
+							       TargetAddress address)
+		{
+			MonoMetadataInfo info = mono.MonoMetadataInfo;
+
+			int token = memory.ReadInteger (address + info.MonoMethodTokenOffset);
+			TargetAddress klass = memory.ReadAddress (address + info.MonoMethodKlassOffset);
+			TargetAddress image = memory.ReadAddress (klass + info.KlassImageOffset);
+
+			MonoSymbolFile file = mono.GetImage (image);
+			if (file == null)
+				return null;
+
+			return file.GetFunctionByToken (token);
+		}
 	}
 }

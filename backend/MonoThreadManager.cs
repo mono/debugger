@@ -258,8 +258,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 60;
-		public const int  MaxDynamicVersion = 60;
+		public const int  MinDynamicVersion = 61;
+		public const int  MaxDynamicVersion = 61;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
@@ -363,6 +363,7 @@ namespace Mono.Debugger.Backends
 		public readonly int ThreadStackPtrOffset;
 		public readonly int ThreadEndStackOffset;
 
+		public readonly int KlassImageOffset;
 		public readonly int KlassInstanceSizeOffset;
 		public readonly int KlassParentOffset;
 		public readonly int KlassTokenOffset;
@@ -399,6 +400,8 @@ namespace Mono.Debugger.Backends
 		public readonly int MonoDefaultsDelegateOffset;
 		public readonly int MonoDefaultsExceptionOffset;
 
+		public readonly int MonoMethodKlassOffset;
+		public readonly int MonoMethodTokenOffset;
 		public readonly int MonoMethodFlagsOffset;
 		public readonly int MonoMethodInflatedOffset;
 
@@ -421,6 +424,7 @@ namespace Mono.Debugger.Backends
 			ThreadStackPtrOffset = reader.ReadInt32 ();
 			ThreadEndStackOffset = reader.ReadInt32 ();
 
+			KlassImageOffset = reader.ReadInt32 ();
 			KlassInstanceSizeOffset = reader.ReadInt32 ();
 			KlassParentOffset = reader.ReadInt32 ();
 			KlassTokenOffset = reader.ReadInt32 ();
@@ -458,6 +462,8 @@ namespace Mono.Debugger.Backends
 			MonoDefaultsDelegateOffset = reader.ReadInt32 ();
 			MonoDefaultsExceptionOffset = reader.ReadInt32 ();
 
+			MonoMethodKlassOffset = reader.ReadInt32 ();
+			MonoMethodTokenOffset = reader.ReadInt32 ();
 			MonoMethodFlagsOffset = reader.ReadInt32 ();
 			MonoMethodInflatedOffset = reader.ReadInt32 ();
 		}

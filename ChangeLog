@@ -1,15 +1,15 @@
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
-	* languages/mono/MonoType.cs: Renamed into MonoRuntime.cs
-	(MonoType): Renamed into `MonoRuntime'.
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo.MinDynamicVersion): Require 61.
+
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime.ReadMonoMethod): New public static method.
 
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
-	HEADS UP: The debugger doens't work with SVN HEAD at the moment !
-	          The last supported version is r86592.
-
-	* backend/MonoThreadManager.cs
-	(MonoDebuggerInfo.MinDynamicVersion): Require 60.
+	* languages/mono/MonoType.cs: Renamed into MonoRuntime.cs
+	(MonoType): Renamed into `MonoRuntime'.
 
 2007-09-28  Martin Baulig  <martin@ximian.com>
 

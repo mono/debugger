@@ -396,15 +396,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
 		{
-			int token = target.ReadInteger (method + 4);
-			TargetAddress klass = target.ReadAddress (method + 8);
-			TargetAddress image = target.ReadAddress (klass);
-
-			MonoSymbolFile file = GetImage (image);
-			if (file == null)
-				return;
-
-			main_method = file.GetFunctionByToken (token);
+			main_method = MonoRuntime.ReadMonoMethod (this, target, method);
 		}
 
 		internal MonoFunctionType MainMethod {
