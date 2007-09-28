@@ -1,5 +1,10 @@
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo.MinDynamicVersion): Require 61.
+
+2007-09-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/DwarfReader.cs
 	(DwarfReader): Kill the `source_hash'; each source file may be
 	used multiple times in different compilation units.
