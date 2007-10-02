@@ -189,6 +189,12 @@ namespace Mono.Debugger.Backends
 					      "{0} received event {1} while running {2}",
 					      this, cevent, current_operation);
 
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
+			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
+				Report.Debug (DebugFlags.SSE, "{0} is now dead!", this);
+				dead = true;
+			}
+
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
 				stop_requested = false;
 				frame_changed (inferior.CurrentFrame, null);
@@ -688,7 +694,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override bool IsAlive {
-			get { return inferior != null; }
+			get { return !dead && !killed && (inferior != null); }
 		}
 
 		public override TargetAddress LMFAddress {
@@ -1878,7 +1884,7 @@ namespace Mono.Debugger.Backends
 		bool stop_requested;
 		bool has_thread_lock;
 		bool is_main, reached_main;
-		bool killed;
+		bool killed, dead;
 		long tid;
 		int pid;
 

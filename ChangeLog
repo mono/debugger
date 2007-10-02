@@ -1,6 +1,13 @@
 2007-10-02  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.ProcessEvent): Added new `dead' flag which
+	is set when we receive `CHILD_EXITED' or `CHILD_SIGNALED'.
+	(SingleSteppingEngine.IsAlive): Also check for `dead' and `killed'.
+
+2007-10-02  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
 	(SingleSteppingEngine.Return): Create our own, local backtrace
 	instead of using `current_backtrace'; limit the maximum number of
 	frames to 2 since that's all we need here.
