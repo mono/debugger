@@ -1578,13 +1578,24 @@ namespace Mono.Debugger.Backends
 		public override CommandResult Return (bool run_finally)
 		{
 			return (CommandResult) SendCommand (delegate {
-				GetBacktrace (Backtrace.Mode.Native, -1);
-				if (current_backtrace == null)
-					throw new TargetException (TargetError.NoStack);
-				if (current_backtrace.Count < 2)
+				if (!engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "{0} not stopped", this);
+					throw new TargetException (TargetError.NotStopped);
+				}
+
+				if (current_frame == null)
 					throw new TargetException (TargetError.NoStack);
 
-				StackFrame parent_frame = current_backtrace.Frames [1];
+				process.UpdateSymbolTable (inferior);
+
+				Backtrace bt = new Backtrace (current_frame);
+				bt.GetBacktrace (this, Backtrace.Mode.Native, TargetAddress.Null, 2);
+
+				if (bt.Count < 2)
+					throw new TargetException (TargetError.NoStack);
+
+				StackFrame parent_frame = bt.Frames [1];
 				if (parent_frame == null)
 					return null;
 

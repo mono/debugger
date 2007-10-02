@@ -1,3 +1,13 @@
+2007-10-02  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.Return): Create our own, local backtrace
+	instead of using `current_backtrace'; limit the maximum number of
+	frames to 2 since that's all we need here.
+
+	* classes/Backtrace.cs
+	(Backtrace.TryUnwind): Add sanity check to avoid 'loops'.
+
 2007-09-28  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadManager.cs

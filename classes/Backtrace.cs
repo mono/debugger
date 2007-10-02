@@ -151,6 +151,10 @@ namespace Mono.Debugger
 			if (new_frame == null)
 				return false;
 
+			// Sanity check; don't loop.
+			if (new_frame.StackPointer <= last_frame.StackPointer)
+				return false;
+
 			if (!until.IsNull && (new_frame.StackPointer >= until))
 				return false;
 
