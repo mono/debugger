@@ -1,14 +1,32 @@
 static ServerCommandError
+_server_ptrace_check_errno (InferiorHandle *inferior)
+{
+	gchar *filename;
+
+	if (!errno)
+		return COMMAND_ERROR_NONE;
+	else if (errno != ESRCH) {
+		g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	}
+
+	filename = g_strdup_printf ("/proc/%d/stat", inferior->pid);
+	if (g_file_test (filename, G_FILE_TEST_EXISTS)) {
+		g_free (filename);
+		return COMMAND_ERROR_NOT_STOPPED;
+	}
+
+	g_warning (G_STRLOC ": %d - %s - %d (%s)", inferior->pid, filename,
+		   errno, g_strerror (errno));
+	g_free (filename);
+	return COMMAND_ERROR_NO_TARGET;
+}
+
+static ServerCommandError
 _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
-	if (ptrace (PT_GETREGS, inferior->pid, NULL, regs) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN_ERROR;
-		}
-	}
+	if (ptrace (PT_GETREGS, inferior->pid, NULL, regs) != 0)
+		return _server_ptrace_check_errno (inferior);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -16,14 +34,8 @@ _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs
 static ServerCommandError
 _server_ptrace_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
-	if (ptrace (PT_SETREGS, inferior->pid, NULL, regs) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN_ERROR;
-		}
-	}
+	if (ptrace (PT_SETREGS, inferior->pid, NULL, regs) != 0)
+		return _server_ptrace_check_errno (inferior);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -31,14 +43,8 @@ _server_ptrace_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs
 static ServerCommandError
 _server_ptrace_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
 {
-	if (ptrace (PT_GETFPREGS, inferior->pid, NULL, regs) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN_ERROR;
-		}
-	}
+	if (ptrace (PT_GETFPREGS, inferior->pid, NULL, regs) != 0)
+		return _server_ptrace_check_errno (inferior);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -46,14 +52,8 @@ _server_ptrace_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE 
 static ServerCommandError
 _server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE *regs)
 {
-	if (ptrace (PT_SETFPREGS, inferior->pid, NULL, regs) != 0) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-		else if (errno) {
-			g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-			return COMMAND_ERROR_UNKNOWN_ERROR;
-		}
-	}
+	if (ptrace (PT_SETFPREGS, inferior->pid, NULL, regs) != 0)
+		return _server_ptrace_check_errno (inferior);
 
 	return COMMAND_ERROR_NONE;
 }

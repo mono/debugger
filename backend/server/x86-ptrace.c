@@ -77,10 +77,7 @@ server_ptrace_continue (ServerHandle *handle)
 
 	errno = 0;
 	if (ptrace (PT_CONTINUE, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-
-		return COMMAND_ERROR_UNKNOWN_ERROR;
+		return _server_ptrace_check_errno (inferior);
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -92,12 +89,8 @@ server_ptrace_step (ServerHandle *handle)
 	InferiorHandle *inferior = handle->inferior;
 
 	errno = 0;
-	if (ptrace (PT_STEP, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NOT_STOPPED;
-
-		return COMMAND_ERROR_UNKNOWN_ERROR;
-	}
+	if (ptrace (PT_STEP, inferior->pid, (caddr_t) 1, inferior->last_signal))
+		return _server_ptrace_check_errno (inferior);
 
 	return COMMAND_ERROR_NONE;
 }
@@ -144,14 +137,8 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 		long word = *ptr++;
 
 		errno = 0;
-		if (ptrace (PT_WRITE_D, inferior->pid, GSIZE_TO_POINTER (addr), word) != 0) {
-			if (errno == ESRCH)
-				return COMMAND_ERROR_NOT_STOPPED;
-			else if (errno) {
-				g_message (G_STRLOC ": %d - %s", inferior->pid, g_strerror (errno));
-				return COMMAND_ERROR_UNKNOWN_ERROR;
-			}
-		}
+		if (ptrace (PT_WRITE_D, inferior->pid, GSIZE_TO_POINTER (addr), word) != 0)
+			return _server_ptrace_check_errno (inferior);
 
 		addr += sizeof (long);
 		size -= sizeof (long);

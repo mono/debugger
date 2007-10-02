@@ -4,6 +4,9 @@
 #include "x86-arch.h"
 
 static ServerCommandError
+_server_ptrace_check_errno (InferiorHandle *);
+
+static ServerCommandError
 _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs);
 
 static ServerCommandError

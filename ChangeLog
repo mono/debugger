@@ -1,5 +1,12 @@
 2007-10-02  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_check_errno): New static method; when `errno' is
+	`ESRCH', check whether the target still exists to distinguish
+	between `COMMAND_ERROR_NOT_STOPPED' and `COMMAND_ERROR_NO_TARGET'.
+
+2007-10-02  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(SingleSteppingEngine.ProcessEvent): Added new `dead' flag which
 	is set when we receive `CHILD_EXITED' or `CHILD_SIGNALED'.
