@@ -232,7 +232,7 @@ ServerCommandError
 mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 					 guint64 method_argument, guint32 num_params,
 					 guint32 blob_size, guint64 *param_data,
-					 guint32 *offset_data, gconstpointer blob_data,
+					 gint32 *offset_data, gconstpointer blob_data,
 					 guint64 callback_argument, gboolean debug)
 {
 	if (!global_vtable->call_method_invoke)
@@ -389,7 +389,7 @@ mono_debugger_server_get_threads (ServerHandle *handle, guint32 *count, guint32 
 
 ServerCommandError
 mono_debugger_server_get_application (ServerHandle *handle, gchar **exe_file, gchar **cwd,
-				      guint32 *nargs, gchar **cmdline_args)
+				      guint32 *nargs, gchar ***cmdline_args)
 {
 	if (!global_vtable->get_application)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;

@@ -225,7 +225,7 @@ struct InferiorVTable {
 						       guint32           num_params,
 						       guint32           glob_size,
 						       guint64          *param_data,
-						       guint32          *offset_data,
+						       gint32           *offset_data,
 						       gconstpointer     blob_data,
 						       guint64           callback_argument,
 						       gboolean          debug);
@@ -327,7 +327,7 @@ struct InferiorVTable {
 						       gchar           **exe_file,
 						       gchar           **cwd,
 						       guint32          *nargs,
-						       gchar           **cmdline_args);
+						       gchar          ***cmdline_args);
 
 	ServerCommandError    (* init_after_fork)     (ServerHandle      *handle);
 
@@ -460,7 +460,7 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   guint32             num_params,
 					   guint32             blob_size,
 					   guint64            *param_data,
-					   guint32            *offset_data,
+					   gint32             *offset_data,
 					   gconstpointer       blob_data,
 					   guint64             callback_argument,
 					   gboolean            debug);
@@ -537,7 +537,7 @@ mono_debugger_server_get_application     (ServerHandle        *handle,
 					  gchar              **exe_file,
 					  gchar              **cwd,
 					  guint32             *nargs,
-					  gchar              **cmdline_args);
+					  gchar             ***cmdline_args);
 
 ServerCommandError
 mono_debugger_server_init_after_fork     (ServerHandle        *handle);

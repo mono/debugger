@@ -29,11 +29,6 @@
 
 #endif /* PTRACE_EVENT_FORK */
 
-ServerCommandError _server_ptrace_get_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
-ServerCommandError _server_ptrace_set_registers (InferiorHandle *, INFERIOR_REGS_TYPE *);
-ServerCommandError _server_ptrace_get_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
-ServerCommandError _server_ptrace_set_fp_registers (InferiorHandle *, INFERIOR_FPREGS_TYPE *);
-
 extern int pending_sigint;
 
 #endif

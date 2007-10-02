@@ -392,7 +392,7 @@ server_ptrace_get_threads (ServerHandle *handle, guint32 *count, guint32 **threa
 
 static ServerCommandError
 server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **cwd,
-			       guint32 *nargs, gchar **cmdline_args)
+			       guint32 *nargs, gchar ***cmdline_args)
 {
 	gchar *exe_filename = g_strdup_printf ("/proc/%d/exe", handle->inferior->pid);
 	gchar *cwd_filename = g_strdup_printf ("/proc/%d/cwd", handle->inferior->pid);
