@@ -1,5 +1,17 @@
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
+	* classes/StackFrame.cs
+	(Register.WriteRegister): `Thread' -> `TargetAccess'.
+
+	* languages/TargetLocation.cs
+	(TargetLocation.WriteBuffer): `Thread' -> `TargetAccess'.
+	(TargetLocation.WriteAddress): Likewise.
+
+	* backends/TargetAccess.cs
+	(TargetAccess): Move `Mono.Debugger.Backends' -> `Mono.Debugger'.
+
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetObject.cs
 	(TargetObject.GetAddress): `Thread' -> `TargetMemoryAccess'.
 

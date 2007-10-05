@@ -1,7 +1,9 @@
 using System;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger
 {
+	using Mono.Debugger.Backends;
+
 	public abstract class TargetAccess : TargetMemoryAccess
 	{
 		internal abstract ThreadManager ThreadManager {

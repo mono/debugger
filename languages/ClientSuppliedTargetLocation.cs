@@ -34,7 +34,7 @@ namespace Mono.Debugger.Languages
 			return new TargetBlob (data, blob.TargetInfo);
 		}
 
-		internal override void WriteBuffer (Thread target, byte[] data)
+		internal override void WriteBuffer (TargetAccess target, byte[] data)
 		{
 			if (data.Length > blob.Size)
 				throw new ArgumentException ();
@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages
 			data.CopyTo (blob.Contents, 0);
 		}
 
-		internal override void WriteAddress (Thread target, TargetAddress new_address)
+		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
 		{
 			throw new InvalidOperationException ();
 		}

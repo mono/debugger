@@ -32,12 +32,12 @@ namespace Mono.Debugger.Languages
 			return ReadMemory (target, size).Contents;
 		}
 
-		internal virtual void WriteBuffer (Thread target, byte[] data)
+		internal virtual void WriteBuffer (TargetAccess target, byte[] data)
 		{
 			target.WriteBuffer (GetAddress (target), data);
 		}
 
-		internal virtual void WriteAddress (Thread target, TargetAddress address)
+		internal virtual void WriteAddress (TargetAccess target, TargetAddress address)
 		{
 			target.WriteAddress (GetAddress (target), address);
 		}

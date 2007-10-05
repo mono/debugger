@@ -2824,7 +2824,7 @@ namespace Mono.Debugger.Backends
 
 				reg = subprog.dwarf.bfd.Architecture.DwarfFrameRegisterMap [reg];
 
-				MonoVariableLocation loc = new MonoVariableLocation (
+				MonoVariableLocation loc = MonoVariableLocation.Create (
 					frame.Thread, is_regoffset, frame.Registers [reg],
 					off, is_byref);
 

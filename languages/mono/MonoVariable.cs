@@ -86,10 +86,10 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
-				return new MonoVariableLocation (
+				return MonoVariableLocation.Create (
 					frame.Thread, false, register, info.Offset, is_byref);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
-				return new MonoVariableLocation (
+				return MonoVariableLocation.Create (
 					frame.Thread, true, register, info.Offset, is_byref);
 			else
 				return null;
