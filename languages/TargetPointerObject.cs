@@ -14,13 +14,13 @@ namespace Mono.Debugger.Languages
 		//   The current type of the object pointed to by this pointer.
 		//   May only be used if ITargetPointerType.HasStaticType is false.
 		// </summary>
-		public abstract TargetType GetCurrentType (Thread target);
+		public abstract TargetType GetCurrentType (TargetMemoryAccess target);
 
 		// <summary>
 		//   If HasDereferencedObject is true, return the dereferenced object.
 		// </summary>
-		public abstract TargetObject GetDereferencedObject (Thread target);
+		public abstract TargetObject GetDereferencedObject (TargetMemoryAccess target);
 
-		public abstract TargetObject GetArrayElement (Thread target, int index);
+		public abstract TargetObject GetArrayElement (TargetMemoryAccess target, int index);
 	}
 }

@@ -1,5 +1,15 @@
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetPointerObject.cs
+	(TargetPointerObject.GetCurrentType): `Thread' -> `TargetMemoryAccess'.
+	(TargetPointerObject.GetDereferencedObject): Likewise.
+	(TargetPointerObject.GetArrayElement): Likewise.
+
+	* languages/TargetObjectObject.cs
+	(TargetObjectObject.GetClassObject): `Thread' -> `TargetMemoryAccess'.
+
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetObject.cs
 	(TargetObject.GetDynamicSize): `Thread' -> `TargetMemoryAccess'.
 

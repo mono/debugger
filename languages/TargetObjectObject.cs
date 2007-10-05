@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages
 			this.Type = type;
 		}
 
-		public abstract TargetClassObject GetClassObject (Thread target);
+		public abstract TargetClassObject GetClassObject (TargetMemoryAccess target);
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (Thread target, int index)
+		public override TargetObject GetArrayElement (TargetMemoryAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}

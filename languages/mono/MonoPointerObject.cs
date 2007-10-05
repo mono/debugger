@@ -12,12 +12,12 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		public override TargetType GetCurrentType (Thread target)
+		public override TargetType GetCurrentType (TargetMemoryAccess target)
 		{
 			return Type.StaticType;
 		}
 
-		public override TargetObject GetDereferencedObject (Thread target)
+		public override TargetObject GetDereferencedObject (TargetMemoryAccess target)
 		{
 			return Type.StaticType.GetObject (target, Location);
 		}
@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (Thread target, int index)
+		public override TargetObject GetArrayElement (TargetMemoryAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
