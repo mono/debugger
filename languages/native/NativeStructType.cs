@@ -228,7 +228,7 @@ namespace Mono.Debugger.Languages.Native
 			return field.Type.GetObject (target, field_loc);
 		}
 
-		internal void SetField (Thread target, TargetLocation location,
+		internal void SetField (TargetAccess target, TargetLocation location,
 					NativeFieldInfo field, TargetObject obj)
 		{
 			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);

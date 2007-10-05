@@ -100,7 +100,7 @@ namespace Mono.Debugger.Languages
 
 		public abstract TargetObject GetElement (TargetMemoryAccess target, int[] indices);
 
-		public abstract void SetElement (Thread target, int[] indices,
+		public abstract void SetElement (TargetAccess target, int[] indices,
 						 TargetObject obj);
 
 		public abstract bool HasClassObject {

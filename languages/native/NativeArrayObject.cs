@@ -30,7 +30,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.ElementType.GetObject (target, new_location);
 		}
 
-		public override void SetElement (Thread target, int[] indices,
+		public override void SetElement (TargetAccess target, int[] indices,
 						 TargetObject obj)
 		{
 			throw new NotSupportedException ();

@@ -1,5 +1,19 @@
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetType.cs
+	(TargetType.SetObject): `Thread' -> `TargetAccess'.
+
+	* languages/TargetFundamentalObject.cs
+	(TargetFundamentalObject.SetObject): `Thread' -> `TargetAccess'.
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject.SetField): `Thread' -> `TargetAccess'.
+
+	* languages/TargetArrayObject.cs
+	(TargetArrayObject.SetElement): `Thread' -> `TargetAccess'.
+
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
 	* classes/StackFrame.cs
 	(Register.WriteRegister): `Thread' -> `TargetAccess'.
 

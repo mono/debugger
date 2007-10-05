@@ -27,7 +27,7 @@ namespace Mono.Debugger.Languages.Native
 			return type.GetField (target, Location, (NativeFieldInfo) field);
 		}
 
-		public override void SetField (Thread target, TargetFieldInfo field,
+		public override void SetField (TargetAccess target, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			type.SetField (target, Location, (NativeFieldInfo) field, obj);

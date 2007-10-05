@@ -45,7 +45,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal void SetObject (Thread target, TargetLocation location,
+		internal void SetObject (TargetAccess target, TargetLocation location,
 					 TargetObject obj)
 		{
 			if (obj == null) {

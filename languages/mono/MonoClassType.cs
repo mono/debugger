@@ -475,7 +475,7 @@ namespace Mono.Debugger.Languages.Mono
 			return finfo.Type.GetObject (target, field_loc);
 		}
 
-		internal void SetField (Thread target, TargetLocation location,
+		internal void SetField (TargetAccess target, TargetLocation location,
 					TargetFieldInfo finfo, TargetObject obj)
 		{
 			int offset = GetFieldOffset (target, finfo);

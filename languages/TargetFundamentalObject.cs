@@ -77,7 +77,7 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public void SetObject (Thread target, TargetObject obj)
+		public void SetObject (TargetAccess target, TargetObject obj)
 		{
 			Type.SetObject (target, Location, obj);
 		}
