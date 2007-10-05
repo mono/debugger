@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetParentObject (target, Location);
 		}
 
-		public override TargetClassObject GetCurrentObject (Thread target)
+		public override TargetClassObject GetCurrentObject (TargetMemoryAccess target)
 		{
 			if (!type.IsByRef)
 				return null;
@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetCurrentObject (target, Location);
 		}
 
-		public override TargetObject GetField (Thread target, TargetFieldInfo field)
+		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
 			return type.GetField (target, Location, field);
 		}

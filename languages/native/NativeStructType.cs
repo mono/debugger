@@ -213,7 +213,7 @@ namespace Mono.Debugger.Languages.Native
 			return new NativeStructObject (this, location);
 		}
 
-		internal TargetObject GetField (Thread target, TargetLocation location,
+		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
 						NativeFieldInfo field)
 		{
 			TargetLocation field_loc = location.GetLocationAtOffset (field.Offset);

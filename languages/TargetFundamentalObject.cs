@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public virtual object GetObject (Thread target)
+		public virtual object GetObject (TargetMemoryAccess target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 

@@ -1,5 +1,17 @@
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetObject.cs
+	(TargetObject.GetAddress): `Thread' -> `TargetMemoryAccess'.
+
+	* languages/TargetFundamentalObject.cs
+	(TargetFundamentalObject.GetObject): `Thread' -> `TargetMemoryAccess'.
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject.GetField): `Thread' -> `TargetMemoryAccess'.
+	(TargetClassObject.GetCurrentObject): Likewise.
+
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetPointerObject.cs
 	(TargetPointerObject.GetCurrentType): `Thread' -> `TargetMemoryAccess'.
 	(TargetPointerObject.GetDereferencedObject): Likewise.

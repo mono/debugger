@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages
 			get { return Location.HasAddress; }
 		}
 
-		public TargetAddress GetAddress (Thread target)
+		public TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			if (!Location.HasAddress)
 				throw new InvalidOperationException ();

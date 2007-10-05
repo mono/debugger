@@ -458,7 +458,7 @@ namespace Mono.Debugger.Languages.Mono
 			return class_info.GetFieldOffsets (target) [field.Position - FirstField];
 		}
 
-		internal TargetObject GetField (Thread target, TargetLocation location,
+		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
 						TargetFieldInfo finfo)
 		{
 			int offset = GetFieldOffset (target, finfo);
@@ -540,7 +540,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (parent_type, location);
 		}
 
-		internal MonoClassObject GetCurrentObject (Thread target, TargetLocation location)
+		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it

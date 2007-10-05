@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 			return reader.ReadInteger (4) * 2;
 		}
 
-		public override object GetObject (Thread target)
+		public override object GetObject (TargetMemoryAccess target)
 		{
 			TargetLocation dynamic_location;
 			TargetBlob object_blob = Location.ReadMemory (target, type.Size);
