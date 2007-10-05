@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Mono
 			return info.KlassAddress;
 		}
 
-		internal override long GetDynamicSize (Thread target, TargetBlob blob,
+		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{

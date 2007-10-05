@@ -63,7 +63,7 @@ namespace Mono.Debugger.Languages.Mono
 			return address;
 		}
 
-		internal override TargetBlob ReadMemory (Thread target, int size)
+		internal override TargetBlob ReadMemory (TargetMemoryAccess target, int size)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();

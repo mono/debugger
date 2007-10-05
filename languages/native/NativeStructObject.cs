@@ -33,7 +33,7 @@ namespace Mono.Debugger.Languages.Native
 			type.SetField (target, Location, (NativeFieldInfo) field, obj);
 		}
 
-		internal override long GetDynamicSize (Thread target, TargetBlob blob,
+		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{

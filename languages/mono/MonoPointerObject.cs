@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 			return Type.StaticType.GetObject (target, Location);
 		}
 
-		internal override long GetDynamicSize (Thread target, TargetBlob blob,
+		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{

@@ -1,5 +1,14 @@
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetObject.cs
+	(TargetObject.GetDynamicSize): `Thread' -> `TargetMemoryAccess'.
+
+	* languages/TargetLocation.cs
+	(TargetLocation.ReadMemory): `Thread' -> `TargetMemoryAccess'.
+	(TargetLocation.ReadBuffer): Likewise.
+
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetEnumType.cs
 	(TargetEnumType.Value): Replaced by a GetValue() method.
 

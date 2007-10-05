@@ -50,7 +50,7 @@ namespace Mono.Debugger.Languages
 			return Location.GetAddress (target);
 		}
 
-		internal abstract long GetDynamicSize (Thread target, TargetBlob blob,
+		internal abstract long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location);
 

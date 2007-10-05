@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		internal override TargetBlob ReadMemory (Thread target, int size)
+		internal override TargetBlob ReadMemory (TargetMemoryAccess target, int size)
 		{
 			if (size > blob.Size)
 				throw new ArgumentException ();
