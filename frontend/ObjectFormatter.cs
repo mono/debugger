@@ -238,10 +238,11 @@ namespace Mono.Debugger.Frontend
 
 		protected void FormatEnum (Thread target, TargetEnumObject eobj)
 		{
-			TargetFundamentalObject fobj = eobj.Value as TargetFundamentalObject;
+			TargetObject evalue = eobj.GetValue (target);
+			TargetFundamentalObject fobj = evalue as TargetFundamentalObject;
 
 			if ((DisplayFormat == DisplayFormat.HexaDecimal) || (fobj == null)) {
-				FormatObjectRecursed (target, eobj.Value, true);
+				FormatObjectRecursed (target, evalue, true);
 				return;
 			}
 

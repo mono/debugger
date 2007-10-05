@@ -63,7 +63,8 @@ namespace Mono.Debugger.Languages.Native
 			set { target_type = value; }
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
 			if (target_type == null)
 				target_type = language.LookupType (target_name);
@@ -71,7 +72,7 @@ namespace Mono.Debugger.Languages.Native
 			if (target_type == null)
 				return null;
 
-			TargetObject obj = target_type.GetObject (location);
+			TargetObject obj = target_type.GetObject (target, location);
 			if (obj == null)
 				return null;
 

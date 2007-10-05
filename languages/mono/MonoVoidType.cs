@@ -64,7 +64,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			throw new TargetException (TargetError.LocationInvalid,
 						   "Cannot access variables of type `{0}'", Name);

@@ -409,7 +409,7 @@ namespace Mono.Debugger.Languages.Mono
 			return class_info;
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new MonoClassObject (this, location);
 		}
@@ -472,7 +472,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
 				return null;
 
-			return finfo.Type.GetObject (field_loc);
+			return finfo.Type.GetObject (target, field_loc);
 		}
 
 		internal void SetField (Thread target, TargetLocation location,
@@ -503,7 +503,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (finfo.Type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation ();
 
-			return finfo.Type.GetObject (field_loc);
+			return finfo.Type.GetObject (target, field_loc);
 		}
 
 		public override void SetStaticField (Thread target, TargetFieldInfo finfo,
@@ -557,7 +557,7 @@ namespace Mono.Debugger.Languages.Mono
 				location = location.GetLocationAtOffset (
 					2 * target.TargetInfo.TargetAddressSize);
 
-			return (MonoClassObject) current.GetObject (location);
+			return (MonoClassObject) current.GetObject (target, location);
 		}
 
 		internal MonoClassInfo HardResolveClass (Thread target)

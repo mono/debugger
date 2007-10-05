@@ -2924,7 +2924,7 @@ namespace Mono.Debugger.Backends
 				if (loc == null)
 					return null;
 
-				return type.GetObject (loc);
+				return type.GetObject (frame.Thread, loc);
 			}
 
 			public override string PrintLocation (StackFrame frame)

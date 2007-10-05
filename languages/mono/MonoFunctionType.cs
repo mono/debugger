@@ -170,7 +170,7 @@ namespace Mono.Debugger.Languages.Mono
 			return info.GetMethodAddress (target, Token);
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -19,7 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetDereferencedObject (Thread target)
 		{
-			return Type.StaticType.GetObject (Location);
+			return Type.StaticType.GetObject (target, Location);
 		}
 
 		internal override long GetDynamicSize (Thread target, TargetBlob blob,

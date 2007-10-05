@@ -3186,7 +3186,8 @@ namespace Mono.Debugger.Backends
 					      "{0} rti boxed object: {1}", sse, boxed);
 
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-				instance = (MonoClassObject) instance.Type.ParentType.GetObject (new_loc);
+				instance = (MonoClassObject) instance.Type.ParentType.GetObject (
+					inferior, new_loc);
 				stage = Stage.HasMethodAddress;
 				do_execute ();
 				return EventResult.Running;
@@ -3213,7 +3214,8 @@ namespace Mono.Debugger.Backends
 				if (!class_type.IsByRef) {
 					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
 						2 * inferior.TargetInfo.TargetAddressSize);
-					instance = (TargetClassObject) class_type.GetObject (new_loc);
+					instance = (TargetClassObject) class_type.GetObject (
+						inferior, new_loc);
 				}
 
 				stage = Stage.HasVirtualMethod;

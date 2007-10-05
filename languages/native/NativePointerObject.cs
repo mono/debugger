@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Native
 				throw new InvalidOperationException ();
 
 			TargetLocation new_location = Location.GetLocationAtOffset (0);
-			return Type.StaticType.GetObject (new_location);
+			return Type.StaticType.GetObject (target, new_location);
 		}
 
 		internal override long GetDynamicSize (Thread target, TargetBlob blob,
@@ -43,7 +43,7 @@ namespace Mono.Debugger.Languages.Native
 			if (Type.StaticType.IsByRef)
 				new_loc = new_loc.GetDereferencedLocation ();
 
-			return Type.StaticType.GetObject (new_loc);
+			return Type.StaticType.GetObject (target, new_loc);
 		}
 
 		public override string Print (Thread target)
@@ -57,7 +57,8 @@ namespace Mono.Debugger.Languages.Native
 					ftype = Type.StaticType as TargetFundamentalType;
 
 				if ((ftype != null) && (ftype.Name == "char")) {
-					TargetObject sobj = Type.Language.StringType.GetObject (Location);
+					TargetObject sobj = Type.Language.StringType.GetObject (
+						target, Location);
 					if (sobj != null)
 						return sobj.Print (target);
 				}

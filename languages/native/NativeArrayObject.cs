@@ -27,7 +27,7 @@ namespace Mono.Debugger.Languages.Native
 			if (Type.ElementType.IsByRef)
 				new_location = new_location.GetDereferencedLocation ();
 
-			return Type.ElementType.GetObject (new_location);
+			return Type.ElementType.GetObject (target, new_location);
 		}
 
 		public override void SetElement (Thread target, int[] indices,

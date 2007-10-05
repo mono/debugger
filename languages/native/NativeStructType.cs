@@ -208,7 +208,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new NativeStructObject (this, location);
 		}
@@ -225,7 +225,7 @@ namespace Mono.Debugger.Languages.Native
 				field_loc = new BitfieldTargetLocation (
 					field_loc, field.BitOffset, field.BitSize);
 
-			return field.Type.GetObject (field_loc);
+			return field.Type.GetObject (target, field_loc);
 		}
 
 		internal void SetField (Thread target, TargetLocation location,

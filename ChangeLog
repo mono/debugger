@@ -1,3 +1,12 @@
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetEnumType.cs
+	(TargetEnumType.Value): Replaced by a GetValue() method.
+
+	* languages/TargetType.cs
+	(TargetType.GetObject): Added `TargetMemoryAccess' argument.
+	(TargetType.DoGetObject): Likewise.
+
 2007-10-02  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/x86-linux-ptrace.c

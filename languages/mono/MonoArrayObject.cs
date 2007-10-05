@@ -57,7 +57,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (new_loc.HasAddress && new_loc.GetAddress (target).IsNull)
 				return new MonoNullObject (Type.ElementType, new_loc);
 
-			return Type.ElementType.GetObject (new_loc);
+			return Type.ElementType.GetObject (target, new_loc);
 		}
 
 		public override void SetElement (Thread target, int[] indices,
@@ -112,7 +112,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetClassObject GetClassObject (Thread target)
 		{
-			return (TargetClassObject) Type.Language.ArrayType.GetObject (Location);
+			return (TargetClassObject) Type.Language.ArrayType.GetObject (target, Location);
 		}
 	}
 }

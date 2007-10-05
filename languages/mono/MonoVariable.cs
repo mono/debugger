@@ -125,7 +125,7 @@ namespace Mono.Debugger.Languages.Mono
 				return process.MonoLanguage.CreateNullObject (
 					frame.Thread, type);
 
-			return type.GetObject (location);
+			return type.GetObject (frame.Thread, location);
 		}
 
 		public override bool CanWrite {

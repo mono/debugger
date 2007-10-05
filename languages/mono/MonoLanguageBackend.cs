@@ -843,7 +843,8 @@ namespace Mono.Debugger.Languages.Mono
 		public override TargetObject CreateObject (Thread target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (address);
-			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (location);
+			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (
+				target, location);
 			if (obj == null)
 				return null;
 

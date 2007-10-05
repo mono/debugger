@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetClassObject GetClassObject (Thread target)
 		{
-			return (TargetClassObject) Type.ClassType.GetObject (Location);
+			return (TargetClassObject) Type.ClassType.GetObject (target, Location);
 		}
 
 		public override TargetType GetCurrentType (Thread target)
@@ -42,7 +42,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			int offset = current_type.IsByRef ? 0 : type.Size;
 			TargetLocation new_location = Location.GetLocationAtOffset (offset);
-			TargetObject obj = current_type.GetObject (new_location);
+			TargetObject obj = current_type.GetObject (target, new_location);
 			return obj;
 		}
 	}

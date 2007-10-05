@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return class_type; }
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new MonoObjectObject (this, location);
 		}

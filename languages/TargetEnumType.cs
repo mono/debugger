@@ -20,12 +20,13 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal TargetObject GetValue (TargetLocation location)
+		internal TargetObject GetValue (TargetMemoryAccess target,
+						TargetLocation location)
 		{
-			return Value.Type.GetObject (location);
+			return Value.Type.GetObject (target, location);
 		}
 
-		protected override TargetObject DoGetObject (TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new TargetEnumObject (this, location);
 		}
