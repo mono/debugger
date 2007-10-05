@@ -1,5 +1,11 @@
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.LookupClassInfo): Reload the symbol tables if we
+	can't find the requested type and try again.
+
+2007-10-05  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetType.cs
 	(TargetType.SetObject): `Thread' -> `TargetAccess'.
 

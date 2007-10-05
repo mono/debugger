@@ -808,8 +808,12 @@ namespace Mono.Debugger.Languages.Mono
 		internal MonoClassInfo LookupClassInfo (TargetMemoryAccess target, int token)
 		{
 			ClassEntry entry = (ClassEntry) class_entry_by_token [token];
-			if (entry == null)
-				return null;
+			if (entry == null) {
+				MonoLanguage.Update (target);
+				entry = (ClassEntry) class_entry_by_token [token];
+				if (entry == null)
+					return null;
+			}
 
 			return entry.ReadClassInfo (MonoLanguage, target);
 		}
