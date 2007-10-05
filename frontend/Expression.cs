@@ -2429,13 +2429,13 @@ namespace Mono.Debugger.Frontend
 				if (pexpr != null)
 					address = pexpr.EvaluateAddress (context);
 				else {
-					TargetPointerType ptype = expr.EvaluateType (context)
-						as TargetPointerType;
+					TargetType etype = expr.EvaluateType (context);
+					TargetPointerType ptype = etype as TargetPointerType;
 
 					if ((ptype == null) || ptype.IsTypesafe)
 						throw new ScriptingException (
 							"Cannot cast from {0} to {1}.",
-							ptype.Name, target.Name);
+							etype.Name, target.Name);
 
 					pexpr = new AddressOfExpression (expr);
 					pexpr.Resolve (context);
@@ -2449,6 +2449,7 @@ namespace Mono.Debugger.Frontend
 			TargetClassType type = Convert.ToClassType (target_type);
 			TargetClassObject source = Convert.ToClassObject (
 				context.CurrentThread, expr.EvaluateObject (context));
+
 			if (source == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
