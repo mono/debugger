@@ -249,7 +249,7 @@ namespace Mono.Debugger.Frontend
 			object value = fobj.GetObject (target);
 
 			SortedList members = new SortedList ();
-			foreach (TargetFieldInfo field in eobj.Type.Members)
+			foreach (TargetEnumInfo field in eobj.Type.Members)
 				members.Add (field.Name, field.ConstValue);
 
 			if (!eobj.Type.IsFlagsEnum) {

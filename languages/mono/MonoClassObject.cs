@@ -48,7 +48,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-			return type.GetField (target, Location, field);
+			return ((MonoFieldInfo) field).GetField (target, Location);
 		}
 
 		public override void SetField (TargetAccess target, TargetFieldInfo field,

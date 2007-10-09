@@ -7,8 +7,8 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoEnumType : TargetEnumType
 	{
-		MonoFieldInfo[] fields;
-		MonoFieldInfo[] static_fields;
+		MonoEnumInfo[] fields;
+		MonoEnumInfo[] static_fields;
 
 		MonoSymbolFile file;
 		Cecil.TypeDefinition type;
@@ -77,19 +77,20 @@ namespace Mono.Debugger.Languages.Mono
 					num_fields++;
 			}
 
-			fields = new MonoFieldInfo [num_fields];
-			static_fields = new MonoFieldInfo [num_sfields];
+			fields = new MonoEnumInfo [num_fields];
+			static_fields = new MonoEnumInfo [num_sfields];
 
 			int pos = 0, spos = 0, i = 0;
 			foreach (Cecil.FieldDefinition field in type.Fields) {
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (ftype, spos, i, field);
+					static_fields [spos] = new MonoEnumInfo (
+						this, ftype, spos, i, field);
 					spos++;
 				} else {
 					if (field.Name != "value__")
 						throw new InternalError ("Mono enum type has instance field with name other than 'value__'.");
-					fields [pos] = new MonoFieldInfo (ftype, pos, i, field);
+					fields [pos] = new MonoEnumInfo (this, ftype, pos, i, field);
 					pos++;
 				}
 
@@ -106,14 +107,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetFieldInfo Value {
+		public override TargetEnumInfo Value {
 			get {
 				get_fields ();
 				return fields[0];
 			}
 		}
 
-		public override TargetFieldInfo[] Members {
+		public override TargetEnumInfo[] Members {
 			get {
 				get_fields ();
 				return static_fields;

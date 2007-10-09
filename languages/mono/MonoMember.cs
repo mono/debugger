@@ -9,12 +9,44 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
+		MonoClassType type;
 
-		public MonoFieldInfo (TargetType type, int index, int pos,
+		public MonoFieldInfo (MonoClassType type, TargetType field_type, int index, int pos,
 				      Cecil.FieldDefinition finfo)
-			: base (type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
+			: base (field_type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
+			this.type = type;
+		}
+
+		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location)
+		{
+			return type.GetField (target, location, this);
+		}
+
+		public override object ConstValue {
+			get {
+				if (FieldInfo.HasConstant)
+					return FieldInfo.Constant;
+				else
+					throw new InvalidOperationException ();
+			}
+		}
+	}
+
+	[Serializable]
+	internal class MonoEnumInfo : TargetEnumInfo
+	{
+		[NonSerialized]
+		public readonly Cecil.FieldDefinition FieldInfo;
+		MonoEnumType type;
+
+		public MonoEnumInfo (MonoEnumType type, TargetType field_type, int index, int pos,
+				     Cecil.FieldDefinition finfo)
+			: base (field_type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
+		{
+			FieldInfo = finfo;
+			this.type = type;
 		}
 
 		public override object ConstValue {

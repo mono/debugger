@@ -347,7 +347,7 @@ namespace Mono.Debugger.Frontend
 
 				sb.Append ("\n" + prefix + "{\n");
 
-				foreach (TargetFieldInfo field in etype.Members) {
+				foreach (TargetEnumInfo field in etype.Members) {
 					sb.Append (FormatEnumMember (target, prefix, field, false, hash));
 					if (field != etype.Members[etype.Members.Length - 1])
 						sb.Append (",");

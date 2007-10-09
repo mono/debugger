@@ -1,5 +1,19 @@
 2007-10-09  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetMember.cs
+	(TargetEnumInfo): New public abstract class.
+
+	* languages/TargetEnumType.cs
+	(TargetEnumType): Changed the type of `Value' and `Members' from
+	`TargetFieldInfo' info `TargetEnumInfo'.
+
+	* languages/mono/MonoClassType.cs
+	(MonoClassType): No longer include the fields and methods from our
+	parent class.  We now create our parent class on-the-fly when it's
+	needed.	
+
+2007-10-09  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassInfo.cs
 	(MonoClassInfo.ClassType): New public property.
 	(MonoClassInfo.GetParent): New public method; compute the parent

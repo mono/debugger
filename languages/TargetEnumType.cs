@@ -12,18 +12,12 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetFieldInfo Value {
+		public abstract TargetEnumInfo Value {
 			get;
 		}
 
-		public abstract TargetFieldInfo[] Members {
+		public abstract TargetEnumInfo[] Members {
 			get;
-		}
-
-		internal TargetObject GetValue (TargetMemoryAccess target,
-						TargetLocation location)
-		{
-			return Value.Type.GetObject (target, location);
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)

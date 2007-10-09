@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages
 
 		public TargetObject GetValue (TargetMemoryAccess target)
 		{
-			return Type.GetValue (target, Location);
+			return Type.Value.Type.GetObject (target, Location);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

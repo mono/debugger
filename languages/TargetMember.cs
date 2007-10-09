@@ -28,6 +28,28 @@ namespace Mono.Debugger.Languages
 	}
 
 	[Serializable]
+	public abstract class TargetEnumInfo : TargetMemberInfo
+	{
+		public readonly bool HasConstValue;
+
+		protected TargetEnumInfo (TargetType type, string name, int index, bool is_static,
+					  int position, int offset, bool has_const_value)
+			: base (type, name, index, is_static)
+		{
+			this.HasConstValue = has_const_value;
+		}
+
+		public abstract object ConstValue {
+			get;
+		}
+
+		protected override string MyToString ()
+		{
+			return String.Format ("{0}:{1}", Type, HasConstValue);
+		}
+	}
+
+	[Serializable]
 	public abstract class TargetFieldInfo : TargetMemberInfo
 	{
 		public readonly int Offset;

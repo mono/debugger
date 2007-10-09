@@ -24,8 +24,7 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodInfo[] static_constructors;
 
 		int num_methods = 0, num_smethods = 0;
-		int first_method = 0, first_smethod = 0;
-		int num_fields = 0, num_sfields = 0, first_field = 0;
+		int num_fields = 0, num_sfields = 0;
 
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
@@ -107,12 +106,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return (int) (type.MetadataToken.TokenType + type.MetadataToken.RID); }
 		}
 
-		internal int FirstField {
-			get {
-				return first_field;
-			}
-		}
-
 		void get_fields ()
 		{
 			if (fields != null)
@@ -128,20 +121,16 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
-			if (parent_type != null) {
-				parent_type.get_fields ();
-				first_field = parent_type.first_field + 
-					parent_type.num_fields + parent_type.num_sfields;
-			}
-
-			int pos = 0, spos = 0, i = first_field;
+			int pos = 0, spos = 0, i = 0;
 			foreach (Cecil.FieldDefinition field in type.Fields) {
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (ftype, spos, i, field);
+					static_fields [spos] = new MonoFieldInfo (
+						this, ftype, spos, i, field);
 					spos++;
 				} else {
-					fields [pos] = new MonoFieldInfo (ftype, pos, i, field);
+					fields [pos] = new MonoFieldInfo (
+						this, ftype, pos, i, field);
 					pos++;
 				}
 
@@ -197,12 +186,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			methods = new MonoMethodInfo [num_methods];
 			static_methods = new MonoMethodInfo [num_smethods];
-
-			if (parent_type != null) {
-				parent_type.get_methods ();
-				first_method = parent_type.CountMethods;
-				first_smethod = parent_type.CountStaticMethods;
-			}
 
 			int pos = 0, spos = 0;
 			foreach (Cecil.MethodDefinition method in type.Methods) {
@@ -454,10 +437,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			ResolveClass (target, true);
 
-			if (field.Position < FirstField)
-				return parent_type.GetFieldOffset (target, field);
-
-			return class_info.GetFieldOffsets (target) [field.Position - FirstField];
+			return class_info.GetFieldOffsets (target) [field.Position];
 		}
 
 		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,

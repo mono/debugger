@@ -10,8 +10,8 @@ namespace Mono.Debugger.Languages.Native
 		string[] element_names;
 		int[] element_values;
 
-		NativeFieldInfo[] members;
-		NativeFieldInfo value;
+		NativeEnumInfo[] members;
+		NativeEnumInfo value;
 
 		public NativeEnumType (Language language, string name, int size,
 				       string[] element_names, int[] element_values)
@@ -22,12 +22,12 @@ namespace Mono.Debugger.Languages.Native
 			this.element_names = element_names;
 			this.element_values = element_values;
 
-			members = new NativeFieldInfo [element_names.Length];
+			members = new NativeEnumInfo [element_names.Length];
 			for (int i = 0; i < element_names.Length; i++)
-				members [i] = new NativeFieldInfo (
-					this, element_names [i], i, true, element_values [i]);
+				members [i] = new NativeEnumInfo (
+					this, element_names [i], i, element_values [i]);
 
-			value = new NativeFieldInfo (language.IntegerType, "__value", 0, 0);
+			value = new NativeEnumInfo (language.IntegerType, "__value", 0, 0);
 		}
 
 		public override bool HasClassType {
@@ -68,13 +68,13 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetFieldInfo Value {
+		public override TargetEnumInfo Value {
 			get {
 				return value;
 			}
 		}
 
-		public override TargetFieldInfo[] Members {
+		public override TargetEnumInfo[] Members {
 			get {
 				return members;
 			}
@@ -83,6 +83,31 @@ namespace Mono.Debugger.Languages.Native
 		public override bool IsByRef {
 			get {
 				return false;
+			}
+		}
+	}
+
+	[Serializable]
+	internal class NativeEnumInfo : TargetEnumInfo
+	{
+		int const_value;
+
+		public NativeEnumInfo (TargetType field_type, string name, int index, int value)
+			: base (field_type, name, index, false, 0, 0, true)
+		{
+			this.const_value = value;
+		}
+
+		public NativeEnumInfo (TargetType field_type, string name, int index)
+			: base (field_type, name, index, false, 0, 0, false)
+		{ }
+
+		public override object ConstValue {
+			get {
+				if (HasConstValue)
+					return const_value;
+				else
+					throw new InvalidOperationException ();
 			}
 		}
 	}
