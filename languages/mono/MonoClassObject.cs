@@ -6,11 +6,14 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoClassObject : TargetClassObject
 	{
 		new MonoClassType type;
+		MonoClassInfo info;
 
-		public MonoClassObject (MonoClassType type, TargetLocation location)
+		public MonoClassObject (MonoClassType type, MonoClassInfo info,
+					TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
+			this.info = info;
 		}
 
 		public override TargetClassObject GetParentObject (Thread target)
@@ -18,7 +21,21 @@ namespace Mono.Debugger.Languages.Mono
 			if (!type.HasParent || !type.IsByRef)
 				return null;
 
-			return type.GetParentObject (target, Location);
+			MonoClassInfo parent_info = info.GetParent (target);
+			if (parent_info == null)
+				return null;
+
+			MonoClassType parent_type = parent_info.ClassType;
+
+			if (!type.IsByRef && parent_type.IsByRef) {
+				TargetAddress boxed = target.CallMethod (
+					type.File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
+					info.KlassAddress, Location.GetAddress (target).Address);
+				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
+				return new MonoClassObject (parent_type, parent_info, new_loc);
+			}
+
+			return new MonoClassObject (parent_type, parent_info, Location);
 		}
 
 		public override TargetClassObject GetCurrentObject (TargetMemoryAccess target)

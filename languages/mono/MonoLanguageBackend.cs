@@ -651,11 +651,12 @@ namespace Mono.Debugger.Languages.Mono
 		internal MonoClassType CreateCoreType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
 						       TargetMemoryAccess memory, TargetAddress klass)
 		{
-			MonoClassInfo info = MonoClassInfo.ReadClassInfo (file, typedef, memory, klass);
+			MonoClassType type;
+			MonoClassInfo info = MonoClassInfo.ReadClassInfo (
+				file, typedef, memory, klass, out type);
 			class_info_by_addr.Add (klass, info);
 			class_info_by_type.Add (typedef, info);
 
-			MonoClassType type = new MonoClassType (file, typedef, info);
 			return type;
 		}
 #endregion

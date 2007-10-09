@@ -1,3 +1,14 @@
+2007-10-09  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.ClassType): New public property.
+	(MonoClassInfo.GetParent): New public method; compute the parent
+	on-the-fly when it's needed.
+
+	* languages/mono/MonoClassObject.cs
+	(MonoClassObject): The .ctor now takes a `MonoClassInfo' argument.
+	(MonoClassObject.GetParentObject): Implement this here.
+
 2007-10-05  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

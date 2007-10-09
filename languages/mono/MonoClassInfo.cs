@@ -8,13 +8,15 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly MonoSymbolFile SymbolFile;
 		public readonly TargetAddress KlassAddress;
-		public readonly TargetAddress ParentClass;
 		public readonly TargetAddress GenericContainer;
 		public readonly TargetAddress GenericClass;
 
 		public readonly Cecil.TypeDefinition CecilType;
-		public readonly TargetType Type;
 
+		MonoClassType type;
+
+		MonoClassInfo parent_info;
+		TargetAddress parent_klass = TargetAddress.Null;
 		int[] field_offsets;
 		Hashtable methods;
 
@@ -40,20 +42,28 @@ namespace Mono.Debugger.Languages.Mono
 			if (typedef == null)
 				throw new InternalError ();
 
-			return new MonoClassInfo (file, typedef, target, reader, klass_address);
+			MonoClassInfo info = new MonoClassInfo (
+				file, typedef, target, reader, klass_address);
+			info.type = file.LookupMonoClass (typedef);
+			return info;
 		}
 
 		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
 							   Cecil.TypeDefinition typedef,
 							   TargetMemoryAccess target,
-							   TargetAddress klass_address)
+							   TargetAddress klass_address,
+							   out MonoClassType type)
 		{
-			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
-
+			MonoMetadataInfo metadata = file.MonoLanguage.MonoMetadataInfo;
 			TargetReader reader = new TargetReader (
-				target.ReadMemory (klass_address, info.KlassSize));
+				target.ReadMemory (klass_address, metadata.KlassSize));
 
-			return new MonoClassInfo (file, typedef, target, reader, klass_address);
+			MonoClassInfo info = new MonoClassInfo (
+				file, typedef, target, reader, klass_address);
+
+			type = new MonoClassType (file, typedef, info);
+			info.type = type;
+			return info;
 		}
 
 		protected MonoClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
@@ -74,7 +84,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
-			ParentClass = reader.PeekAddress (info.KlassParentOffset);
+		}
+
+		public MonoClassType ClassType {
+			get { return type; }
 		}
 
 		public bool IsGenericClass {
@@ -144,6 +157,24 @@ namespace Mono.Debugger.Languages.Mono
 			if (!methods.Contains (token))
 				throw new InternalError ();
 			return (TargetAddress) methods [token];
+		}
+
+		void get_parent (TargetMemoryAccess target)
+		{
+			if (!parent_klass.IsNull)
+				return;
+
+			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
+			parent_klass = target.ReadAddress (
+				KlassAddress + metadata.KlassParentOffset);
+
+			parent_info = ReadClassInfo (SymbolFile.MonoLanguage, target, parent_klass);
+		}
+
+		public MonoClassInfo GetParent (TargetMemoryAccess target)
+		{
+			get_parent (target);
+			return parent_info;
 		}
 	}
 }

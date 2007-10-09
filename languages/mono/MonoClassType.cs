@@ -409,9 +409,11 @@ namespace Mono.Debugger.Languages.Mono
 			return class_info;
 		}
 
-		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
-			return new MonoClassObject (this, location);
+			ResolveClass (target, true);
+			return new MonoClassObject (this, class_info, location);
 		}
 
 		public override TargetMemberInfo FindMember (string name, bool search_static,
@@ -522,22 +524,6 @@ namespace Mono.Debugger.Languages.Mono
 				field_loc = field_loc.GetDereferencedLocation ();
 
 			finfo.Type.SetObject (target, field_loc, obj);
-		}
-
-		internal MonoClassObject GetParentObject (Thread target, TargetLocation location)
-		{
-			if (parent_type == null)
-				throw new InvalidOperationException ();
-
-			if (!IsByRef && parent_type.IsByRef) {
-				TargetAddress boxed = target.CallMethod (
-					File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
-					class_info.KlassAddress, location.GetAddress (target).Address);
-				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-				return new MonoClassObject (parent_type, new_loc);
-			}
-
-			return new MonoClassObject (parent_type, location);
 		}
 
 		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target, TargetLocation location)

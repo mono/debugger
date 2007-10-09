@@ -382,9 +382,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (class_type != null)
 				return class_type;
 
-			MonoFundamentalType fundamental = type as MonoFundamentalType;
-			if (fundamental != null)
-				return fundamental.MonoClassType;
+			if (type.HasClassType)
+				return (MonoClassType) type.ClassType;
 
 			throw new InternalError ("UNKNOWN TYPE: {0}", type);
 		}
