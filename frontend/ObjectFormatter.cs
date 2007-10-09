@@ -356,6 +356,15 @@ namespace Mono.Debugger.Frontend
 
 			bool first = true;
 
+			TargetObject parent = obj.GetParentObject (target);
+			Console.WriteLine ("PARENT: {0} {1}", obj, parent);
+			if ((parent != null) && (parent.Type != parent.Type.Language.ObjectType)) {
+				Append ("<{0}> = ", parent.Type.Name);
+				CheckLineWrap ();
+				FormatObjectRecursed (target, parent, false);
+				first = false;
+			}
+
 			TargetFieldInfo[] fields = obj.Type.ContainerType.Fields;
 			for (int i = 0; i < fields.Length; i++) {
 				if (!first) {

@@ -7,7 +7,7 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoGenericInstanceType : TargetGenericInstanceType
 	{
 		MonoClassType container;
-		TargetAddress cached_ptr;
+		TargetAddress cached_ptr = TargetAddress.Null;
 
 		MonoClassInfo class_info;
 
@@ -17,6 +17,14 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.container = container;
 			this.cached_ptr = cached_ptr;
+		}
+
+		public MonoGenericInstanceType (MonoClassType container, MonoGenericContext context,
+						MonoClassInfo class_info)
+			: base (container.Language)
+		{
+			this.container = container;
+			this.class_info = class_info;
 		}
 
 		public override TargetClassType ContainerType {

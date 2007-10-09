@@ -18,6 +18,23 @@ namespace Mono.Debugger.Languages.Mono
 			this.class_info = class_info;
 		}
 
+		public override TargetObject GetParentObject (Thread target)
+		{
+			MonoClassInfo parent_info = class_info.GetParent (target);
+			Console.WriteLine ("GET PARENT OBJECT: {0} {1} {2}",
+					   this, class_info, parent_info);
+			if (parent_info == null)
+				return null;
+
+			MonoClassType parent_type = parent_info.ClassType;
+			Console.WriteLine ("GET PARENT OBJECT #1: {0}", parent_type);
+
+			MonoGenericInstanceType ginst = new MonoGenericInstanceType (
+				parent_type, null, parent_info);
+
+			return new MonoGenericInstanceObject (ginst, parent_info, Location);
+		}
+
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
 			return class_info.GetField (target, Location, field);
