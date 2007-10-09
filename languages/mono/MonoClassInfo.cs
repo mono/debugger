@@ -117,10 +117,12 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < field_count; i++) {
 				int offset = i * metadata.FieldInfoSize;
 
-				TargetAddress type_addr = field_blob.PeekAddress (offset);
+				TargetAddress type_addr = field_blob.PeekAddress (
+					offset + metadata.FieldInfoTypeOffset);
 				field_types [i] = MonoRuntime.ReadType (
 					SymbolFile.MonoLanguage, target, type_addr);
-				field_offsets [i] = field_blob.PeekInteger (offset + 2 * address_size);
+				field_offsets [i] = field_blob.PeekInteger (
+					offset + metadata.FieldInfoOffsetOffset);
 			}
 		}
 
