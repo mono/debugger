@@ -17,6 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoClassInfo parent_info;
 		TargetAddress parent_klass = TargetAddress.Null;
+		TargetType[] field_types;
 		int[] field_offsets;
 		Hashtable methods;
 
@@ -111,17 +112,98 @@ namespace Mono.Debugger.Languages.Mono
 				field_info, field_count * metadata.FieldInfoSize));
 
 			field_offsets = new int [field_count];
+			field_types = new TargetType [field_count];
+
 			for (int i = 0; i < field_count; i++) {
 				int offset = i * metadata.FieldInfoSize;
+
+				TargetAddress type_addr = field_blob.PeekAddress (
+					offset + metadata.FieldInfoTypeOffset);
+				field_types [i] = MonoRuntime.ReadType (
+					SymbolFile.MonoLanguage, target, type_addr);
 				field_offsets [i] = field_blob.PeekInteger (
 					offset + metadata.FieldInfoOffsetOffset);
 			}
 		}
 
-		public int[] GetFieldOffsets (TargetMemoryAccess target)
+		public TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
+					      TargetFieldInfo field)
 		{
 			get_field_offsets (target);
-			return field_offsets;
+
+			int offset = field_offsets [field.Position];
+			TargetType type = field_types [field.Position];
+
+			if (!ClassType.IsByRef)
+				offset -= 2 * target.TargetInfo.TargetAddressSize;
+			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+			if (type.IsByRef)
+				field_loc = field_loc.GetDereferencedLocation ();
+
+			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
+				return null;
+
+			return type.GetObject (target, field_loc);
+		}
+
+		public void SetField (TargetAccess target, TargetLocation location,
+				      TargetFieldInfo field, TargetObject obj)
+		{
+			get_field_offsets (target);
+
+			int offset = field_offsets [field.Position];
+			TargetType type = field_types [field.Position];
+
+			if (!ClassType.IsByRef)
+				offset -= 2 * target.TargetInfo.TargetAddressSize;
+			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+			if (type.IsByRef)
+				field_loc = field_loc.GetDereferencedLocation ();
+
+			type.SetObject (target, field_loc, obj);
+		}
+
+		public TargetObject GetStaticField (Thread target, TargetFieldInfo field)
+		{
+			get_field_offsets (target);
+
+			int offset = field_offsets [field.Position];
+			TargetType type = field_types [field.Position];
+
+			TargetAddress data_address = target.CallMethod (
+				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
+				KlassAddress, 0);
+
+			TargetLocation location = new AbsoluteTargetLocation (data_address);
+			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+			if (type.IsByRef)
+				field_loc = field_loc.GetDereferencedLocation ();
+
+			return type.GetObject (target, field_loc);
+		}
+
+		public void SetStaticField (Thread target, TargetFieldInfo field,
+					    TargetObject obj)
+		{
+			get_field_offsets (target);
+
+			int offset = field_offsets [field.Position];
+			TargetType type = field_types [field.Position];
+
+			TargetAddress data_address = target.CallMethod (
+				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
+				KlassAddress, 0);
+
+			TargetLocation location = new AbsoluteTargetLocation (data_address);
+			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+
+			if (type.IsByRef)
+				field_loc = field_loc.GetDereferencedLocation ();
+
+			type.SetObject (target, field_loc, obj);
 		}
 
 		void get_methods (TargetMemoryAccess target)

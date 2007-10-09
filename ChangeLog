@@ -1,5 +1,16 @@
 2007-10-09  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo): Moved the implementations of GetField(),
+	SetField(), GetStaticField() and SetStaticField() here from
+	`MonoClassType'.
+
+	* languages/mono/MonoClassType.cs
+	(MonoClassType): Moved all the code dealing with fields into
+	`MonoClassInfo'.	
+
+2007-10-09  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetMember.cs
 	(TargetEnumInfo): New public abstract class.
 

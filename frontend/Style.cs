@@ -222,14 +222,13 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected string FormatEnumMember (Thread target, string prefix,
-						   TargetMemberInfo member, bool is_static,
+						   TargetEnumInfo info, bool is_static,
 						   Hashtable hash)
 		{
-			TargetFieldInfo fi = member as TargetFieldInfo;
 			string value = "";
-			if (fi.HasConstValue)
-				value = String.Format (" = {0}", fi.ConstValue);
-			return String.Format ("{0}   {1}{2}", prefix, member.Name, value);
+			if (info.HasConstValue)
+				value = String.Format (" = {0}", info.ConstValue);
+			return String.Format ("{0}   {1}{2}", prefix, info.Name, value);
 		}
 
 		protected string FormatMember (string prefix, TargetMemberInfo member,

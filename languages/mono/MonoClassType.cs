@@ -433,77 +433,31 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		int GetFieldOffset (TargetMemoryAccess target, TargetFieldInfo field)
+		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
+						TargetFieldInfo field)
 		{
 			ResolveClass (target, true);
-
-			return class_info.GetFieldOffsets (target) [field.Position];
-		}
-
-		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
-						TargetFieldInfo finfo)
-		{
-			int offset = GetFieldOffset (target, finfo);
-			if (!IsByRef)
-				offset -= 2 * target.TargetInfo.TargetAddressSize;
-			TargetLocation field_loc = location.GetLocationAtOffset (offset);
-
-			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation ();
-
-			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
-				return null;
-
-			return finfo.Type.GetObject (target, field_loc);
+			return class_info.GetField (target, location, field);
 		}
 
 		internal void SetField (TargetAccess target, TargetLocation location,
-					TargetFieldInfo finfo, TargetObject obj)
+					TargetFieldInfo field, TargetObject obj)
 		{
-			int offset = GetFieldOffset (target, finfo);
-			if (!IsByRef)
-				offset -= 2 * target.TargetInfo.TargetAddressSize;
-			TargetLocation field_loc = location.GetLocationAtOffset (offset);
-
-			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation ();
-
-			finfo.Type.SetObject (target, field_loc, obj);
+			ResolveClass (target, true);
+			class_info.SetField (target, location, field, obj);
 		}
 
-		public override TargetObject GetStaticField (Thread target, TargetFieldInfo finfo)
+		public override TargetObject GetStaticField (Thread target, TargetFieldInfo field)
 		{
-			int offset = GetFieldOffset (target, finfo);
-
-			TargetAddress data_address = target.CallMethod (
-				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				class_info.KlassAddress, 0);
-
-			TargetLocation location = new AbsoluteTargetLocation (data_address);
-			TargetLocation field_loc = location.GetLocationAtOffset (offset);
-
-			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation ();
-
-			return finfo.Type.GetObject (target, field_loc);
+			ResolveClass (target, true);
+			return class_info.GetStaticField (target, field);
 		}
 
-		public override void SetStaticField (Thread target, TargetFieldInfo finfo,
+		public override void SetStaticField (Thread target, TargetFieldInfo field,
 						     TargetObject obj)
 		{
-			int offset = GetFieldOffset (target, finfo);
-
-			TargetAddress data_address = target.CallMethod (
-				File.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				class_info.KlassAddress, 0);
-
-			TargetLocation location = new AbsoluteTargetLocation (data_address);
-			TargetLocation field_loc = location.GetLocationAtOffset (offset);
-
-			if (finfo.Type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation ();
-
-			finfo.Type.SetObject (target, field_loc, obj);
+			ResolveClass (target, true);
+			class_info.SetStaticField (target, field, obj);
 		}
 
 		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target, TargetLocation location)
