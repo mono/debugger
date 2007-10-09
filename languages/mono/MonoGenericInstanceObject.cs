@@ -4,7 +4,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericInstanceObject : TargetObject
+	internal class MonoGenericInstanceObject : TargetGenericInstanceObject
 	{
 		new public MonoGenericInstanceType Type;
 

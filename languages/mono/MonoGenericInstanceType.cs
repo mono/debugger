@@ -4,15 +4,19 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericInstanceType : TargetType
+	internal class MonoGenericInstanceType : TargetGenericInstanceType
 	{
 		MonoClassType container;
 
 		public MonoGenericInstanceType (MonoClassType container, MonoGenericContext context,
 						TargetAddress cached_ptr)
-			: base (container.Language, TargetObjectKind.Unknown)
+			: base (container.Language)
 		{
 			this.container = container;
+		}
+
+		public override TargetClassType ContainerType {
+			get { return container; }
 		}
 
 		public override string Name {

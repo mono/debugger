@@ -437,6 +437,12 @@ namespace Mono.Debugger.Frontend
 			}
 #endif
 
+			case TargetObjectKind.GenericInstance: {
+				TargetGenericInstanceType ginst = (TargetGenericInstanceType) type;
+				retval = FormatType (target, prefix, ginst.ContainerType, hash);
+				break;
+			}
+
 			default:
 				retval = type.Name;
 				break;

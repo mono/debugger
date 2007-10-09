@@ -192,6 +192,10 @@ namespace Mono.Debugger.Frontend
 				FormatEnum (target, (TargetEnumObject) obj);
 				break;
 
+			case TargetObjectKind.GenericInstance:
+				FormatGenericInstance (target, (TargetGenericInstanceObject) obj);
+				break;
+
 			default:
 				PrintObject (target, obj);
 				break;
@@ -343,6 +347,28 @@ namespace Mono.Debugger.Frontend
 			} catch {
 				Append ("<cannot display object>");
 			}
+		}
+
+		protected void FormatGenericInstance (Thread target, TargetGenericInstanceObject obj)
+		{
+			Append ("{ ");
+			indent_level += 3;
+
+			bool first = true;
+
+			TargetFieldInfo[] fields = obj.Type.ContainerType.Fields;
+			for (int i = 0; i < fields.Length; i++) {
+				if (!first) {
+					Append (", ");
+					CheckLineWrap ();
+				}
+				first = false;
+				Append (fields [i].Name + " = ");
+				Append ("<not-yet-implemented>");
+			}
+
+			Append (first ? "}" : " }");
+			indent_level -= 3;
 		}
 	}
 }
