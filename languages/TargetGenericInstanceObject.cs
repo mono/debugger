@@ -10,5 +10,7 @@ namespace Mono.Debugger.Languages
 		{
 			this.Type = type;
 		}
+
+		public abstract TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field);
 	}
 }

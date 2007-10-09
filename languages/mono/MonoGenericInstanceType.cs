@@ -7,12 +7,16 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoGenericInstanceType : TargetGenericInstanceType
 	{
 		MonoClassType container;
+		TargetAddress cached_ptr;
+
+		MonoClassInfo class_info;
 
 		public MonoGenericInstanceType (MonoClassType container, MonoGenericContext context,
 						TargetAddress cached_ptr)
 			: base (container.Language)
 		{
 			this.container = container;
+			this.cached_ptr = cached_ptr;
 		}
 
 		public override TargetClassType ContainerType {
@@ -43,10 +47,33 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
+		protected MonoClassInfo ResolveClass (TargetMemoryAccess target)
+		{
+			if (class_info != null)
+				return class_info;
+
+			class_info = DoResolveClass (target);
+			if (class_info != null)
+				return class_info;
+
+			throw new TargetException (TargetError.ClassNotInitialized,
+						   "Class `{0}' not initialized yet.", Name);
+		}
+
+		MonoClassInfo DoResolveClass (TargetMemoryAccess target)
+		{
+			TargetAddress klass = target.ReadAddress (cached_ptr);
+			if (klass.IsNull)
+				return null;
+
+			return container.File.MonoLanguage.ReadClassInfo (target, klass);
+		}
+
 		protected override TargetObject DoGetObject (TargetMemoryAccess target,
 							     TargetLocation location)
 		{
-			return new MonoGenericInstanceObject (this, location);
+			ResolveClass (target);
+			return new MonoGenericInstanceObject (this, class_info, location);
 		}
 	}
 }

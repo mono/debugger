@@ -17,6 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoClassInfo parent_info;
 		TargetAddress parent_klass = TargetAddress.Null;
+		TargetType[] field_types;
 		int[] field_offsets;
 		Hashtable methods;
 
@@ -107,13 +108,19 @@ namespace Mono.Debugger.Languages.Mono
 			int field_count = target.ReadInteger (
 				KlassAddress + metadata.KlassFieldCountOffset);
 
-			TargetBinaryReader field_blob = target.ReadMemory (
-				field_info, field_count * metadata.FieldInfoSize).GetReader ();
+			TargetReader field_blob = new TargetReader (target.ReadMemory (
+				field_info, field_count * metadata.FieldInfoSize));
 
 			field_offsets = new int [field_count];
+			field_types = new TargetType [field_count];
+
 			for (int i = 0; i < field_count; i++) {
-				field_blob.Position = i * metadata.FieldInfoSize + 2 * address_size;
-				field_offsets [i] = field_blob.ReadInt32 ();
+				int offset = i * metadata.FieldInfoSize;
+
+				TargetAddress type_addr = field_blob.PeekAddress (offset);
+				field_types [i] = MonoRuntime.ReadType (
+					SymbolFile.MonoLanguage, target, type_addr);
+				field_offsets [i] = field_blob.PeekInteger (offset + 2 * address_size);
 			}
 		}
 
@@ -121,6 +128,12 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			get_field_offsets (target);
 			return field_offsets;
+		}
+
+		public TargetType[] GetFieldTypes (TargetMemoryAccess target)
+		{
+			get_field_offsets (target);
+			return field_types;
 		}
 
 		void get_methods (TargetMemoryAccess target)

@@ -364,7 +364,16 @@ namespace Mono.Debugger.Frontend
 				}
 				first = false;
 				Append (fields [i].Name + " = ");
-				Append ("<not-yet-implemented>");
+				try {
+					TargetObject fobj = obj.GetField (target, fields [i]);
+					if (fobj == null)
+						Append ("null");
+					else
+						FormatObjectRecursed (target, fobj, true);
+				} catch (Exception ex) {
+					Console.WriteLine ("EX: {0}", ex);
+					Append ("<cannot display object>");
+				}
 			}
 
 			Append (first ? "}" : " }");

@@ -456,9 +456,8 @@ namespace Mono.Debugger.Languages.Mono
 		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
 						TargetFieldInfo finfo)
 		{
-			Console.WriteLine ("GET FIELD: {0} {1} {2}", this, finfo, finfo.Type);
-
 			int offset = GetFieldOffset (target, finfo);
+			Console.WriteLine ("GET FIELD: {0} {1} {2} {3}", this, finfo, finfo.Type, offset);
 			if (!IsByRef)
 				offset -= 2 * target.TargetInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
