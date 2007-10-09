@@ -20,23 +20,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-			Console.WriteLine ("GENERIC INST GET FIELD: {0} {1}", this, field);
-
-			int offset = class_info.GetFieldOffsets (target) [field.Position];
-			TargetType type = class_info.GetFieldTypes (target) [field.Position];
-
-			Console.WriteLine ("GET FIELD: {0} {1} {2} {3}", this, field, type, offset);
-			if (!Type.IsByRef)
-				offset -= 2 * target.TargetInfo.TargetAddressSize;
-			TargetLocation field_loc = Location.GetLocationAtOffset (offset);
-
-			if (type.IsByRef)
-				field_loc = field_loc.GetDereferencedLocation ();
-
-			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
-				return null;
-
-			return type.GetObject (target, field_loc);
+			return ((MonoFieldInfo) field).DeclaringType.GetField (target, Location, field);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
