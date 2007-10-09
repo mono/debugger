@@ -258,8 +258,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 61;
-		public const int  MaxDynamicVersion = 61;
+		public const int  MinDynamicVersion = 62;
+		public const int  MaxDynamicVersion = 62;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
@@ -376,6 +376,8 @@ namespace Mono.Debugger.Backends
 		public readonly int KlassGenericClassOffset;
 		public readonly int KlassGenericContainerOffset;
 		public readonly int FieldInfoSize;
+		public readonly int FieldInfoTypeOffset;
+		public readonly int FieldInfoOffsetOffset;
 
 		public readonly int MonoDefaultsCorlibOffset;
 		public readonly int MonoDefaultsObjectOffset;
@@ -436,6 +438,8 @@ namespace Mono.Debugger.Backends
 			KlassGenericClassOffset = reader.ReadInt32 ();
 			KlassGenericContainerOffset = reader.ReadInt32 ();
 			FieldInfoSize = reader.ReadInt32 ();
+			FieldInfoTypeOffset = reader.ReadInt32 ();
+			FieldInfoOffsetOffset = reader.ReadInt32 ();
 
 			KlassFieldCountOffset = KlassMethodCountOffset - 8;
 

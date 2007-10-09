@@ -107,13 +107,14 @@ namespace Mono.Debugger.Languages.Mono
 			int field_count = target.ReadInteger (
 				KlassAddress + metadata.KlassFieldCountOffset);
 
-			TargetBinaryReader field_blob = target.ReadMemory (
-				field_info, field_count * metadata.FieldInfoSize).GetReader ();
+			TargetReader field_blob = new TargetReader (target.ReadMemory (
+				field_info, field_count * metadata.FieldInfoSize));
 
 			field_offsets = new int [field_count];
 			for (int i = 0; i < field_count; i++) {
-				field_blob.Position = i * metadata.FieldInfoSize + 2 * address_size;
-				field_offsets [i] = field_blob.ReadInt32 ();
+				int offset = i * metadata.FieldInfoSize;
+				field_offsets [i] = field_blob.PeekInteger (
+					offset + metadata.FieldInfoOffsetOffset);
 			}
 		}
 
