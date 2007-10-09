@@ -354,7 +354,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (info == null)
 					return null;
 
-				type = info.SymbolFile.LookupMonoClass (info.CecilType);
+				type = info.SymbolFile.LookupMonoType (info.CecilType);
 			} catch {
 				return null;
 			}

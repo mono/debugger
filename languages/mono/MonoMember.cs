@@ -9,19 +9,14 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
-		MonoClassType type;
+		public readonly MonoClassType DeclaringType;
 
 		public MonoFieldInfo (MonoClassType type, TargetType field_type, int index, int pos,
 				      Cecil.FieldDefinition finfo)
 			: base (field_type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
-			this.type = type;
-		}
-
-		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location)
-		{
-			return type.GetField (target, location, this);
+			DeclaringType = type;
 		}
 
 		public override object ConstValue {
