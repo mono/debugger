@@ -145,6 +145,21 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoArrayType (etype, rank);
 			}
 
+			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
+				TargetAddress ptr = data;
+
+				TargetAddress container_addr = memory.ReadAddress (ptr);
+				ptr += memory.TargetInfo.TargetAddressSize;
+
+				MonoClassType container = (MonoClassType) mono.ReadMonoClass (memory, container_addr);
+
+				MonoGenericContext context = MonoGenericContext.ReadGenericContext (
+					mono, memory, ptr);
+
+				ptr += 3 * memory.TargetInfo.TargetAddressSize;
+				return new MonoGenericInstanceType (container, context, ptr);
+			}
+
 			default:
 				Report.Error ("UNKNOWN TYPE: {0}", type);
 				return null;

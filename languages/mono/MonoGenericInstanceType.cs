@@ -4,30 +4,45 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericInstanceType : MonoClassType
+	internal class MonoGenericInstanceType : TargetType
 	{
-		public readonly TargetType UnderlyingType;
-		string full_name;
+		MonoClassType container;
 
-		public MonoGenericInstanceType (MonoSymbolFile file,
-						MonoClassType underlying_type, TargetType[] type_args)
-			: base (file, underlying_type.Type)
+		public MonoGenericInstanceType (MonoClassType container, MonoGenericContext context,
+						TargetAddress cached_ptr)
+			: base (container.Language, TargetObjectKind.Unknown)
 		{
-			this.UnderlyingType = underlying_type;
-
-			StringBuilder sb = new StringBuilder (underlying_type.Name);
-			sb.Append ('<');
-			for (int i = 0; i < type_args.Length; i++) {
-				if (i > 0)
-					sb.Append (',');
-				sb.Append (type_args [i].Name);
-			}
-			sb.Append ('>');
-			full_name = sb.ToString ();
+			this.container = container;
 		}
 
 		public override string Name {
-			get { return full_name; }
+			get { return container.Name; }
+		}
+
+		public override bool IsByRef {
+			get { return container.IsByRef; }
+		}
+
+		public override bool HasFixedSize {
+			get { return true; }
+		}
+
+		public override bool HasClassType {
+			get { return false; }
+		}
+
+		public override TargetClassType ClassType {
+			get { throw new InvalidOperationException (); }
+		}
+
+		public override int Size {
+			get { return 0; }
+		}
+
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
+		{
+			return new MonoGenericInstanceObject (this, location);
 		}
 	}
 }

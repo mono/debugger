@@ -121,9 +121,17 @@ namespace Mono.Debugger.Languages.Mono
 			fields = new MonoFieldInfo [num_fields];
 			static_fields = new MonoFieldInfo [num_sfields];
 
+			Console.WriteLine ("GET FIELDS: {0}", this);
+
 			int pos = 0, spos = 0, i = 0;
 			foreach (Cecil.FieldDefinition field in type.Fields) {
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
+				Console.WriteLine ("GET FIELDS #1: {0} {1} {2} {3}",
+						   this, field, ftype, ftype != null);
+
+				if (ftype == null)
+					ftype = File.MonoLanguage.VoidType;
+
 				if (field.IsStatic) {
 					static_fields [spos] = new MonoFieldInfo (
 						this, ftype, spos, i, field);
@@ -375,7 +383,7 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 			}
 
-			class_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
+			class_info = DoResolveClass (target);
 			if (class_info != null)
 				return class_info;
 
@@ -384,6 +392,11 @@ namespace Mono.Debugger.Languages.Mono
 							   "Class `{0}' not initialized yet.", Name);
 
 			return null;
+		}
+
+		protected virtual MonoClassInfo DoResolveClass (TargetMemoryAccess target)
+		{
+			return file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
 		}
 
 		internal MonoClassInfo ClassResolved (TargetMemoryAccess target, TargetAddress klass)
@@ -443,6 +456,8 @@ namespace Mono.Debugger.Languages.Mono
 		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
 						TargetFieldInfo finfo)
 		{
+			Console.WriteLine ("GET FIELD: {0} {1} {2}", this, finfo, finfo.Type);
+
 			int offset = GetFieldOffset (target, finfo);
 			if (!IsByRef)
 				offset -= 2 * target.TargetInfo.TargetAddressSize;
