@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-			return ((MonoFieldInfo) field).DeclaringType.GetField (target, Location, field);
+			return class_info.GetField (target, Location, field);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
