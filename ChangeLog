@@ -1,3 +1,18 @@
+2007-10-10  Martin Baulig  <martin@ximian.com>
+
+	Fix the "field from parent class madness".
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject.GetParentObject): Take a `TargetMemoryAccess'
+	instead of a `Target' argument.
+
+	* languages/mono/MonoClassObject.cs
+	(MonoClassObject.GetParentObject): Disallow any implicit boxings.
+
+	* frontend/Expression.cs
+	(StructAccessExpression.FindMember): When searching in the parent
+	class, also use the parent instance.
+
 2007-10-09  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoClassInfo.cs

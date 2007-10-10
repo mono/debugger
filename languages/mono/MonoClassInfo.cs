@@ -45,6 +45,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoClassInfo info = new MonoClassInfo (
 				file, typedef, target, reader, klass_address);
+			Console.WriteLine ("READ CLASS INFO: {0} {1} {2} {3}",
+					   klass_address, typedef, info.GenericContainer,
+					   info.GenericClass);
 			info.type = file.LookupMonoClass (typedef);
 			return info;
 		}

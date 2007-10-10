@@ -446,20 +446,6 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
-						TargetFieldInfo field)
-		{
-			ResolveClass (target, true);
-			return class_info.GetField (target, location, field);
-		}
-
-		internal void SetField (TargetAccess target, TargetLocation location,
-					TargetFieldInfo field, TargetObject obj)
-		{
-			ResolveClass (target, true);
-			class_info.SetField (target, location, field, obj);
-		}
-
 		public override TargetObject GetStaticField (Thread target, TargetFieldInfo field)
 		{
 			ResolveClass (target, true);

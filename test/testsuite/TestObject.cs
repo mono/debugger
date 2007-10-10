@@ -41,7 +41,6 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "boxed.GetType()", "(System.MonoType) { \"Hello\" }");
 			AssertPrint (thread, "boxed.ToString ()", "(string) \"0x12345678\"");
 			AssertPrint (thread, "value", "(Hello) { \"0x12345678\" }");
-			AssertPrint (thread, "value.GetType ()", "(System.MonoType) { \"Hello\" }");
 			AssertPrint (thread, "value.ToString ()", "(string) \"0x12345678\"");
 
 			AssertExecute ("continue");

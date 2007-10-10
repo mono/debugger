@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages
 			this.Type = type;
 		}
 
-		public abstract TargetClassObject GetParentObject (Thread target);
+		public abstract TargetClassObject GetParentObject (TargetMemoryAccess target);
 
 		public abstract TargetClassObject GetCurrentObject (TargetMemoryAccess target);
 
