@@ -27,7 +27,7 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			MonoClassType parent_type = parent_info.ClassType;
-			Console.WriteLine ("GET PARENT OBJECT #1: {0} {1}", parent_type,
+			Console.WriteLine ("GET PARENT OBJECT #1: {0} {1} {2}", Type, parent_type,
 					   parent_info.GenericClass);
 
 			if (parent_info.GenericClass.IsNull)

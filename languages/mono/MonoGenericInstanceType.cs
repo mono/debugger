@@ -10,6 +10,7 @@ namespace Mono.Debugger.Languages.Mono
 		TargetAddress cached_ptr = TargetAddress.Null;
 
 		MonoClassInfo class_info;
+		string full_name;
 
 		public MonoGenericInstanceType (MonoClassType container, MonoGenericContext context,
 						TargetAddress cached_ptr)
@@ -17,6 +18,16 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.container = container;
 			this.cached_ptr = cached_ptr;
+
+			StringBuilder sb = new StringBuilder (container.Name);
+			sb.Append ("<");
+			for (int i = 0; i < context.ClassInst.Types.Length; i++) {
+				if (i > 0)
+					sb.Append (",");
+				sb.Append (context.ClassInst.Types [i].Name);
+			}
+			sb.Append (">");
+			full_name = sb.ToString ();
 		}
 
 		public MonoGenericInstanceType (MonoClassType container, MonoGenericContext context,
@@ -32,7 +43,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override string Name {
-			get { return container.Name; }
+			get { return full_name; }
 		}
 
 		public override bool IsByRef {
@@ -44,11 +55,11 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasClassType {
-			get { return false; }
+			get { return true; }
 		}
 
 		public override TargetClassType ClassType {
-			get { throw new InvalidOperationException (); }
+			get { return container; }
 		}
 
 		public override int Size {
