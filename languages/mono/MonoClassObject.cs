@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetClassObject GetParentObject (Thread target)
+		public override TargetClassObject GetParentObject (TargetMemoryAccess target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
@@ -26,14 +26,8 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			MonoClassType parent_type = parent_info.ClassType;
-
-			if (!type.IsByRef && parent_type.IsByRef) {
-				TargetAddress boxed = target.CallMethod (
-					type.File.MonoLanguage.MonoDebuggerInfo.GetBoxedObjectMethod,
-					info.KlassAddress, Location.GetAddress (target).Address);
-				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-				return new MonoClassObject (parent_type, parent_info, new_loc);
-			}
+			if (!type.IsByRef && parent_type.IsByRef)
+				return null;
 
 			return new MonoClassObject (parent_type, parent_info, Location);
 		}
@@ -48,18 +42,17 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-			return ((MonoFieldInfo) field).DeclaringType.GetField (target, Location, field);
+			return info.GetField (target, Location, field);
 		}
 
 		public override void SetField (TargetAccess target, TargetFieldInfo field,
 					       TargetObject obj)
 		{
-			((MonoFieldInfo) field).DeclaringType.SetField (target, Location, field, obj);
+			info.SetField (target, Location, field, obj);
 		}
 
 		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
 		{
-			MonoClassInfo info = type.ResolveClass (target, true);
 			return info.KlassAddress;
 		}
 
