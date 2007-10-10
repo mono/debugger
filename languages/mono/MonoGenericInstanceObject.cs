@@ -27,7 +27,11 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			MonoClassType parent_type = parent_info.ClassType;
-			Console.WriteLine ("GET PARENT OBJECT #1: {0}", parent_type);
+			Console.WriteLine ("GET PARENT OBJECT #1: {0} {1}", parent_type,
+					   parent_info.GenericClass);
+
+			if (parent_info.GenericClass.IsNull)
+				return new MonoClassObject (parent_type, parent_info, Location);
 
 			MonoGenericInstanceType ginst = new MonoGenericInstanceType (
 				parent_type, null, parent_info);

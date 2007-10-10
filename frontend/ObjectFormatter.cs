@@ -357,7 +357,7 @@ namespace Mono.Debugger.Frontend
 			bool first = true;
 
 			TargetObject parent = obj.GetParentObject (target);
-			Console.WriteLine ("PARENT: {0} {1}", obj, parent);
+			Console.WriteLine ("PARENT: {0} {1} {2}", obj, parent, parent.Type);
 			if ((parent != null) && (parent.Type != parent.Type.Language.ObjectType)) {
 				Append ("<{0}> = ", parent.Type.Name);
 				CheckLineWrap ();
