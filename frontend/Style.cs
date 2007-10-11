@@ -234,7 +234,7 @@ namespace Mono.Debugger.Frontend
 		protected string FormatMember (string prefix, TargetMemberInfo member,
 					       bool is_static, Hashtable hash)
 		{
-			string tname = member.Type.Name;
+			string tname = member.Type != null ? member.Type.Name : "<unknown type>";
 			TargetFieldInfo fi = member as TargetFieldInfo;
 			if ((fi != null) && fi.HasConstValue)
 				return String.Format (
@@ -291,7 +291,8 @@ namespace Mono.Debugger.Frontend
 			TargetFunctionType ftype = method.Type;
 			if (!is_ctor) {
 				if (ftype.HasReturnValue)
-					sb.Append (ftype.ReturnType.Name);
+					sb.Append (ftype.ReturnType != null ?
+						   ftype.ReturnType.Name : "<unknown type>");
 				else
 					sb.Append ("void");
 				sb.Append (" ");

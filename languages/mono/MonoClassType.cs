@@ -144,6 +144,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				i++;
 			}
+
+			Console.WriteLine ("GET FIELDS DONE: {0}", this);
 		}
 
 		public override TargetFieldInfo[] Fields {
