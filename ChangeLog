@@ -1,3 +1,11 @@
+2007-10-15  Martin Baulig  <martin@ximian.com>
+
+	HEADS UP: The debugger currently doesn't work with the latest mono
+	          from SVN HEAD.  You need to use r87189 for the moment.
+
+	Sorry about the breakage, there's nothing I can do about it at the
+	moment and it will most likely take a few days to get it fixed.
+
 2007-10-16  Martin Baulig  <martin@ximian.com>
 
 	* backend/ILanguageBackend.cs: Removed.
@@ -34,14 +42,6 @@
 	(Architecture.GetCallTarget): Merge GetJumpTarget() and
 	GetCallTarget() into a new GetCallTarget(); we now return a
 	`CallTargetType'.	
-
-2007-10-15  Martin Baulig  <martin@ximian.com>
-
-	HEADS UP: The debugger currently doesn't work with the latest mono
-	          from SVN HEAD.  You need to use r87189 for the moment.
-
-	Sorry about the breakage, there's nothing I can do about it at the
-	moment and it will most likely take a few days to get it fixed.
 
 2007-10-10  Martin Baulig  <martin@ximian.com>
 
