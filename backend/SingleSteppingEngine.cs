@@ -1134,14 +1134,15 @@ namespace Mono.Debugger.Backends
 
 			// Check whether this is a call instruction.
 			int insn_size;
-			TargetAddress call = inferior.Architecture.GetCallTarget (
-				inferior, address, out insn_size);
+			TargetAddress target;
+			CallTargetType type = inferior.Architecture.GetCallTarget (
+				inferior, address, out target, out insn_size);
 
-			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2}", this,
-				      address, call);
+			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2} {3}", this,
+				      address, type, target);
 
 			// Step one instruction unless this is a call
-			if (call.IsNull) {
+			if (type != CallTargetType.Call) {
 				do_step_native ();
 				return;
 			}
@@ -2399,14 +2400,15 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			int insn_size;
-			TargetAddress call = inferior.Architecture.GetCallTarget (
-				inferior, inferior.CurrentFrame, out insn_size);
-			if (call.IsNull)
+			TargetAddress target;
+			CallTargetType type = inferior.Architecture.GetCallTarget (
+				inferior, inferior.CurrentFrame, out target, out insn_size);
+			if (type != CallTargetType.Call)
 				return false;
 
 			bool is_start;
 			TargetAddress trampoline = sse.process.MonoLanguage.GetTrampolineAddress (
-				inferior, call, out is_start);
+				inferior, target, out is_start);
 
 			if (trampoline.IsNull)
 				return false;
@@ -2704,16 +2706,17 @@ namespace Mono.Debugger.Backends
 			 * the specified step frame.
 			 */
 			int insn_size;
-			TargetAddress call = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out insn_size);
-			if (call.IsNull) {
+			TargetAddress target;
+			CallTargetType type = inferior.Architecture.GetCallTarget (
+				inferior, current_frame, out target, out insn_size);
+			if (type != CallTargetType.Call) {
 				sse.do_step_native ();
 				return false;
 			}
 
 			if ((sse.current_method != null) && (sse.current_method.HasMethodBounds) &&
-			    (call >= sse.current_method.MethodStartAddress) &&
-			    (call < sse.current_method.MethodEndAddress)) {
+			    (target >= sse.current_method.MethodStartAddress) &&
+			    (target < sse.current_method.MethodEndAddress)) {
 				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
 				 * can't be a recursive call). */
 				sse.do_step_native ();
@@ -2732,7 +2735,7 @@ namespace Mono.Debugger.Backends
 			 * If we have a source language, check for trampolines.
 			 * This will trigger a JIT compilation if neccessary.
 			 */
-			if (CheckTrampoline (call))
+			if (CheckTrampoline (target))
 				return false;
 
 			/*
@@ -2749,7 +2752,7 @@ namespace Mono.Debugger.Backends
 			 * If it can't be found in the symbol tables, assume it's a system function
 			 * and step over it.
 			 */
-			Method method = sse.Lookup (call);
+			Method method = sse.Lookup (target);
 
 			/*
 			 * If this is a PInvoke/icall wrapper, check whether we want to step into
@@ -3521,10 +3524,11 @@ namespace Mono.Debugger.Backends
 			done = true;
 
 			int insn_size;
-			TargetAddress jump_target = sse.Architecture.GetJumpTarget (
-				inferior, frame.Address, out insn_size);
+			TargetAddress jump_target;
+			CallTargetType type = sse.Architecture.GetCallTarget (
+				inferior, frame.Address, out jump_target, out insn_size);
 
-			if (!jump_target.IsNull) {
+			if (type != CallTargetType.Jump) {
 				sse.do_step_native ();
 				return EventResult.Running;
 			}
@@ -3692,9 +3696,10 @@ namespace Mono.Debugger.Backends
 			 * the current method.
 			 */
 			int insn_size;
-			TargetAddress call = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out insn_size);
-			if (!call.IsNull && CheckTrampoline (call))
+			TargetAddress target;
+			CallTargetType type = inferior.Architecture.GetCallTarget (
+				inferior, current_frame, out target, out insn_size);
+			if ((type == CallTargetType.Call) && CheckTrampoline (target))
 				return false;
 
 			sse.do_step_native ();

@@ -1,5 +1,13 @@
 2007-10-15  Martin Baulig  <martin@ximian.com>
 
+	* backend/Architecture.cs
+	(Architecture.CallTargetType): New internal enum.
+	(Architecture.GetCallTarget): Merge GetJumpTarget() and
+	GetCallTarget() into a new GetCallTarget(); we now return a
+	`CallTargetType'.	
+
+2007-10-15  Martin Baulig  <martin@ximian.com>
+
 	HEADS UP: The debugger currently doesn't work with the latest mono
 	          from SVN HEAD.  You need to use r87189 for the moment.
 

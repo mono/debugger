@@ -972,8 +972,11 @@ namespace Mono.Debugger.Backends
 			}
 
 			int insn_size;
-			TargetAddress jmp_target = arch.GetJumpTarget (memory, address, out insn_size);
-			if (jmp_target.IsNull) {
+			CallTargetType type;
+			TargetAddress jmp_target;
+
+			type = arch.GetCallTarget (memory, address, out jmp_target, out insn_size);
+			if (type != CallTargetType.Jump) {
 				is_start = false;
 				return TargetAddress.Null;
 			}

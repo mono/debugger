@@ -1,8 +1,14 @@
 using System;
 using Mono.Debugger.Backends;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
+	internal enum CallTargetType {
+		None,
+		Call,
+		Jump
+	}
+
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
@@ -90,30 +96,6 @@ namespace Mono.Debugger
 							     TargetAddress address);
 
 		// <summary>
-		//   Check whether the instruction at target address @address is a `call'
-		//   instruction and returns the destination of the call or TargetAddress.Null.
-		//
-		//   The out parameter @insn_size is set to the size on bytes of the call
-		//   instructions.  This can be used to set a breakpoint immediately after
-		//   the function.
-		// </summary>
-		internal abstract TargetAddress GetCallTarget (TargetMemoryAccess target,
-							       TargetAddress address,
-							       out int insn_size);
-
-		// <summary>
-		//   Check whether the instruction at target address @address is a `jump'
-		//   instruction and returns the destination of the call or TargetAddress.Null.
-		//
-		//   The out parameter @insn_size is set to the size on bytes of the jump
-		//   instructions.  This can be used to set a breakpoint immediately after
-		//   the jump.
-		// </summary>
-		internal abstract TargetAddress GetJumpTarget (TargetMemoryAccess target,
-							       TargetAddress address,
-							       out int insn_size);
-
-		// <summary>
 		//   Check whether the instruction at target address @address is a trampoline method.
 		//   If it's a trampoline, return the address of the corresponding method's
 		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
@@ -121,6 +103,11 @@ namespace Mono.Debugger
 		internal abstract TargetAddress GetTrampoline (TargetMemoryAccess target,
 							       TargetAddress address,
 							       TargetAddress generic_trampoline_address);
+
+		internal abstract CallTargetType GetCallTarget (TargetMemoryAccess memory,
+								TargetAddress address,
+								out TargetAddress target,
+								out int insn_size);
 
 		internal abstract int MaxPrologueSize {
 			get;
