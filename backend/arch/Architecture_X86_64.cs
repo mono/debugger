@@ -63,10 +63,10 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override CallTargetType GetCallTarget (TargetMemoryAccess memory,
-								TargetAddress address,
-								out TargetAddress target,
-								out int insn_size)
+		protected override CallTargetType DoGetCallTarget (TargetMemoryAccess memory,
+								   TargetAddress address,
+								   out TargetAddress target,
+								   out int insn_size)
 		{
 			if (address.Address == 0xffffe002) {
 				insn_size = 0;
@@ -217,33 +217,38 @@ namespace Mono.Debugger.Backends
 			return type;
 		}
 
-		internal override TargetAddress GetTrampoline (TargetMemoryAccess target,
-							       TargetAddress location,
-							       TargetAddress trampoline_address)
+		protected override bool DoGetMonoTrampoline (TargetMemoryAccess memory,
+							     TargetAddress call_site,
+							     TargetAddress call_target,
+							     out TargetAddress trampoline)
 		{
-			if (trampoline_address.IsNull)
-				return TargetAddress.Null;
-
-			TargetBinaryReader reader = target.ReadMemory (location, 19).GetReader ();
-
+			TargetBinaryReader reader = memory.ReadMemory (call_target, 19).GetReader ();
 			reader.Position = 9;
 
 			byte opcode = reader.ReadByte ();
-			if (opcode != 0x68)
-				return TargetAddress.Null;
+			if (opcode != 0x68) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
 
 			int method_info = reader.ReadInt32 ();
 
 			opcode = reader.ReadByte ();
-			if (opcode != 0xe9)
-				return TargetAddress.Null;
+			if (opcode != 0xe9) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
 
 			int call_disp = reader.ReadInt32 ();
+			foreach (TargetAddress address in process.MonoLanguage.Trampolines) {
+				if (call_target + call_disp + 19 == address) {
+					trampoline = new TargetAddress (AddressDomain, method_info);
+					return true;
+				}
+			}
 
-			if (location + call_disp + 19 != trampoline_address)
-				return TargetAddress.Null;
-
-			return new TargetAddress (AddressDomain, method_info);
+			trampoline = TargetAddress.Null;
+			return false;
 		}
 
 		public override string[] RegisterNames {

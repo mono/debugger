@@ -1142,7 +1142,7 @@ namespace Mono.Debugger.Backends
 				      address, type, target);
 
 			// Step one instruction unless this is a call
-			if (type != CallTargetType.Call) {
+			if (!Architecture.IsCall (type)) {
 				do_step_native ();
 				return;
 			}
@@ -1194,42 +1194,33 @@ namespace Mono.Debugger.Backends
 			inferior.Step ();
 		}
 
-		void do_trampoline (ILanguageBackend language, TargetAddress call,
-				    TargetAddress trampoline, TrampolineHandler handler,
-				    bool is_start)
+		protected bool CheckTrampoline (CallTargetType type, TargetAddress call_site,
+						TargetAddress call_target, TrampolineHandler handler)
 		{
+			if (!Architecture.IsTrampoline (type))
+				return false;
+
 			Report.Debug (DebugFlags.SSE,
-				      "{0} found trampoline {1}/{2} while running {3}",
-				      this, trampoline, is_start, current_operation);
+				      "{0} found trampoline {1}:{2} at {3} while running {4}",
+				      this, type, call_target, call_site, current_operation);
 
-			if (!language.Language.IsManaged) {
-				if (is_start) {
-					PushOperation (new OperationNativeTrampoline (
-						this, trampoline, handler));
-					return;
-				}
-
-				Method method = Lookup (trampoline);
-				if (!MethodHasSource (method)) {
+			if (type == CallTargetType.NativeTrampolineStart) {
+				PushOperation (new OperationNativeTrampoline (
+						       this, call_target, handler));
+				return true;
+			} else if (type == CallTargetType.NativeTrampoline) {
+				Method method = Lookup (call_target);
+				if (!MethodHasSource (method))
 					do_next_native ();
-					return;
-				}
-
-				do_continue (trampoline);
-				return;
+				else
+					do_continue (call_target);
+				return true;
+			} else if (type == CallTargetType.MonoTrampoline) {
+				PushOperation (new OperationTrampoline (this, call_target, handler));
+				return true;
 			}
 
-			if (is_start) {
-				do_continue (trampoline);
-				return;
-			}
-
-			Report.Debug (DebugFlags.SSE,
-				      "{0} doing trampoline: {1} {2} {3}", this, current_operation,
-				      call, trampoline);
-
-			PushOperation (new OperationTrampoline (this, trampoline, handler));
-			return;
+			return false;
 		}
 
 		void trampoline_callback (TargetAddress address)
@@ -2403,18 +2394,12 @@ namespace Mono.Debugger.Backends
 			TargetAddress target;
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, inferior.CurrentFrame, out target, out insn_size);
-			if (type != CallTargetType.Call)
-				return false;
+			if (Architecture.IsTrampoline (type)) {
+				sse.PushOperation (new OperationTrampoline (sse, target, null));
+				return true;
+			}
 
-			bool is_start;
-			TargetAddress trampoline = sse.process.MonoLanguage.GetTrampolineAddress (
-				inferior, target, out is_start);
-
-			if (trampoline.IsNull)
-				return false;
-
-			sse.PushOperation (new OperationTrampoline (sse, trampoline, null));
-			return true;
+			return false;
 		}
 
 		protected override void DoExecute ()
@@ -2528,31 +2513,6 @@ namespace Mono.Debugger.Backends
 		}
 
 		protected abstract bool DoProcessEvent ();
-
-		protected bool CheckTrampoline (TargetAddress call)
-		{
-			foreach (ILanguageBackend language in sse.process.Languages) {
-				bool is_start;
-				TargetAddress trampoline = language.GetTrampolineAddress (
-					inferior, call, out is_start);
-
-				/*
-				 * If this is a trampoline, insert a breakpoint at the start of
-				 * the corresponding method and continue.
-				 *
-				 * We don't need to distinguish between StepMode.SingleInstruction
-				 * and StepMode.StepFrame here since we'd leave the step frame anyways
-				 * when entering the method.
-				 */
-				if (!trampoline.IsNull) {
-					sse.do_trampoline (
-						language, call, trampoline, TrampolineHandler, is_start);
-					return true;
-				}
-			}
-
-			return false;
-		}
 
 		protected abstract bool TrampolineHandler (Method method);
 	}
@@ -2709,7 +2669,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress target;
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, current_frame, out target, out insn_size);
-			if (type != CallTargetType.Call) {
+			if (!Architecture.IsCall (type)) {
 				sse.do_step_native ();
 				return false;
 			}
@@ -2731,11 +2691,7 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			/*
-			 * If we have a source language, check for trampolines.
-			 * This will trigger a JIT compilation if neccessary.
-			 */
-			if (CheckTrampoline (target))
+			if (sse.CheckTrampoline (type, current_frame, target, TrampolineHandler))
 				return false;
 
 			/*
@@ -3699,7 +3655,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress target;
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, current_frame, out target, out insn_size);
-			if ((type == CallTargetType.Call) && CheckTrampoline (target))
+			if (sse.CheckTrampoline (type, current_frame, target, TrampolineHandler))
 				return false;
 
 			sse.do_step_native ();

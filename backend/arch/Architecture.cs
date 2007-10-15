@@ -6,7 +6,10 @@ namespace Mono.Debugger.Backends
 	internal enum CallTargetType {
 		None,
 		Call,
-		Jump
+		Jump,
+		NativeTrampoline,
+		NativeTrampolineStart,
+		MonoTrampoline
 	}
 
 	// <summary>
@@ -95,19 +98,62 @@ namespace Mono.Debugger.Backends
 		internal abstract bool IsSyscallInstruction (TargetMemoryAccess memory,
 							     TargetAddress address);
 
-		// <summary>
-		//   Check whether the instruction at target address @address is a trampoline method.
-		//   If it's a trampoline, return the address of the corresponding method's
-		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
-		// </summary>
-		internal abstract TargetAddress GetTrampoline (TargetMemoryAccess target,
-							       TargetAddress address,
-							       TargetAddress generic_trampoline_address);
+		public static bool IsTrampoline (CallTargetType type)
+		{
+			return (type == CallTargetType.NativeTrampoline) ||
+				(type == CallTargetType.NativeTrampolineStart) ||
+				(type == CallTargetType.MonoTrampoline);
+		}
 
-		internal abstract CallTargetType GetCallTarget (TargetMemoryAccess memory,
-								TargetAddress address,
-								out TargetAddress target,
-								out int insn_size);
+		public static bool IsCall (CallTargetType type)
+		{
+			return (type == CallTargetType.Call) ||
+				(type == CallTargetType.NativeTrampoline) ||
+				(type == CallTargetType.NativeTrampolineStart) ||
+				(type == CallTargetType.MonoTrampoline);
+		}
+
+		internal CallTargetType GetCallTarget (TargetMemoryAccess memory,
+						       TargetAddress address,
+						       out TargetAddress target,
+						       out int insn_size)
+		{
+			CallTargetType type = DoGetCallTarget (memory, address, out target, out insn_size);
+			if (type == CallTargetType.None)
+				return CallTargetType.None;
+
+			if (type == CallTargetType.Jump) {
+				bool is_start;
+				TargetAddress trampoline;
+				if (process.BfdContainer.GetTrampoline (
+					    memory, address, target, out trampoline, out is_start)) {
+					target = trampoline;
+					return is_start ? 
+						CallTargetType.NativeTrampolineStart :
+						CallTargetType.NativeTrampoline;
+				}
+			}
+
+			if (process.IsManagedApplication) {
+				TargetAddress trampoline;
+				if (DoGetMonoTrampoline (memory, address, target, out trampoline)) {
+					target = trampoline;
+					return CallTargetType.MonoTrampoline;
+				}
+			}
+
+			return type;
+		}
+
+		protected abstract CallTargetType DoGetCallTarget (TargetMemoryAccess memory,
+								   TargetAddress address,
+								   out TargetAddress target,
+								   out int insn_size);
+
+		protected abstract bool DoGetMonoTrampoline (TargetMemoryAccess memory,
+							     TargetAddress call_site,
+							     TargetAddress call_target,
+							     out TargetAddress trampoline);
 
 		internal abstract int MaxPrologueSize {
 			get;

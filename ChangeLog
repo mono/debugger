@@ -1,6 +1,17 @@
+2007-10-16  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture.cs
+	(Architecture.CallTargetType): Add `NativeTrampoline',
+	`NativeTrampolineStart' and `MonoTrampoline'.
+	(Architecture.GetCallTarget): Also check for trampolines here.
+	(Architecture.GetTrampoline): Removed.
+
+	* backend/ILanguageBackend.cs
+	(ILanguageBackend.GetTrampolineAddress): Removed.
+
 2007-10-15  Martin Baulig  <martin@ximian.com>
 
-	* backend/Architecture.cs
+	* backend/arch/Architecture.cs
 	(Architecture.CallTargetType): New internal enum.
 	(Architecture.GetCallTarget): Merge GetJumpTarget() and
 	GetCallTarget() into a new GetCallTarget(); we now return a

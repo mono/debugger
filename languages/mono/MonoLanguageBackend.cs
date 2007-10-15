@@ -255,6 +255,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return corlib.TargetInfo; }
 		}
 
+		internal TargetAddress[] Trampolines {
+			get { return trampolines; }
+		}
+
 		internal bool TryFindImage (Thread thread, string filename)
 		{
 			Cecil.AssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
@@ -915,28 +919,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.RuntimeInvoke; }
 		}
 
-		public TargetAddress GetTrampolineAddress (TargetMemoryAccess memory,
-							   TargetAddress address,
-							   out bool is_start)
-		{
-			is_start = false;
-
-			if (trampolines == null)
-				return TargetAddress.Null;
-
-			foreach (TargetAddress trampoline in trampolines) {
-				TargetAddress result = memory.Architecture.GetTrampoline (
-					memory, address, trampoline);
-				if (!result.IsNull)
-					return result;
-			}
-
-			return TargetAddress.Null;
-		}
-
 		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
+#if FIXME
 			bool is_start;
 			TargetAddress trampoline = GetTrampolineAddress (memory, address, out is_start);
 			if (trampoline.IsNull)
@@ -952,6 +938,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				return file.GetMethodByToken (token);
 			}
+#endif
 
 			return null;
 		}

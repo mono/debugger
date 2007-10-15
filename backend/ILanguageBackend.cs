@@ -37,10 +37,6 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		TargetAddress GetTrampolineAddress (TargetMemoryAccess memory,
-						    TargetAddress address,
-						    out bool is_start);
-
 		MethodSource GetTrampoline (TargetMemoryAccess memory,
 					    TargetAddress address);
 	}

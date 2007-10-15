@@ -950,46 +950,34 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		TargetAddress ILanguageBackend.GetTrampolineAddress (TargetMemoryAccess memory,
-								     TargetAddress address,
-								     out bool is_start)
-		{
-			return GetTrampoline (memory, address, out is_start);
-		}
-
 		MethodSource ILanguageBackend.GetTrampoline (TargetMemoryAccess memory,
 							     TargetAddress address)
 		{
 			return null;
 		}
 
-		public TargetAddress GetTrampoline (TargetMemoryAccess memory,
-						    TargetAddress address, out bool is_start)
+		internal bool GetTrampoline (TargetMemoryAccess memory,
+					     TargetAddress call_site,
+					     TargetAddress call_target,
+					     out TargetAddress trampoline,
+					     out bool is_start)
 		{
-			if (!has_got || (address < plt_start) || (address > plt_end)) {
+			if (!has_got || (call_site < plt_start) || (call_site > plt_end)) {
 				is_start = false;
-				return TargetAddress.Null;
+				trampoline = TargetAddress.Null;
+				return false;
 			}
 
-			int insn_size;
-			CallTargetType type;
-			TargetAddress jmp_target;
-
-			type = arch.GetCallTarget (memory, address, out jmp_target, out insn_size);
-			if (type != CallTargetType.Jump) {
+			TargetAddress method = memory.ReadAddress (call_target);
+			if (method != call_site + 6) {
 				is_start = false;
-				return TargetAddress.Null;
-			}
-
-			TargetAddress method = memory.ReadAddress (jmp_target);
-
-			if (method != address + 6) {
-				is_start = false;
-				return method;
+				trampoline = method;
+				return true;
 			}
 
 			is_start = true;
-			return memory.ReadAddress (got_start + 3 * info.TargetAddressSize);
+			trampoline = memory.ReadAddress (got_start + 3 * info.TargetAddressSize);
+			return true;
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)
