@@ -1,3 +1,9 @@
+2007-10-15  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_X86_64.cs
+	(Architecture_X86_64.GetTrampoline): Add support for the new
+	common vtable trampolines.
+
 2007-10-10  Martin Baulig  <martin@ximian.com>
 
 	Fix the "field from parent class madness".
