@@ -23,7 +23,6 @@ namespace Mono.Debugger.Backends
 		DebuggerSession session;
 		protected MonoLanguageBackend mono_language;
 		protected ThreadServant main_thread;
-		ArrayList languages;
 		Hashtable thread_hash;
 
 		ThreadDB thread_db;
@@ -61,7 +60,6 @@ namespace Mono.Debugger.Backends
 
 			symtab_manager = new SymbolTableManager (session);
 
-			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
 
 			session.OnProcessCreated (client);
@@ -79,7 +77,6 @@ namespace Mono.Debugger.Backends
 
 			symtab_manager = parent.symtab_manager;
 
-			languages = parent.languages;
 			bfd_container = parent.bfd_container;
 		}
 
@@ -135,15 +132,6 @@ namespace Mono.Debugger.Backends
 
 		internal ProcessStart ProcessStart {
 			get { return start; }
-		}
-
-		internal void AddLanguage (ILanguageBackend language)
-		{
-			languages.Add (language);
-		}
-
-		internal ArrayList Languages {
-			get { return languages; }
 		}
 
 		internal MonoThreadManager MonoManager {
@@ -215,9 +203,8 @@ namespace Mono.Debugger.Backends
 				if (bfd_container != null)
 					bfd_container.Dispose ();
 
-				if (languages != null)
-					foreach (ILanguageBackend lang in languages)
-						lang.Dispose();
+				if (mono_language != null)
+					mono_language.Dispose();
 
 				if (symtab_manager != null)
 					symtab_manager.Dispose ();
@@ -233,7 +220,6 @@ namespace Mono.Debugger.Backends
 
 			symtab_manager = new SymbolTableManager (session);
 
-			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
@@ -456,8 +442,6 @@ namespace Mono.Debugger.Backends
 		internal MonoLanguageBackend CreateMonoLanguage (MonoDebuggerInfo info)
 		{
 			mono_language = new MonoLanguageBackend (this, info);
-			languages.Add (mono_language);
-
 			return mono_language;
 		}
 
@@ -618,10 +602,9 @@ namespace Mono.Debugger.Backends
 					bfd_container = null;
 				}
 
-				if (languages != null) {
-					foreach (ILanguageBackend lang in languages)
-						lang.Dispose();
-					languages = null;
+				if (mono_language != null) {
+					mono_language.Dispose();
+					mono_language = null;
 				}
 
 				if (symtab_manager != null) {

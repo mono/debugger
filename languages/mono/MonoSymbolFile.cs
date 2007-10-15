@@ -335,10 +335,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return MonoLanguage; }
 		}
 
-		internal override ILanguageBackend LanguageBackend {
-			get { return MonoLanguage; }
-		}
-
 		public override bool SymbolsLoaded {
 			get { return true; }
 		}

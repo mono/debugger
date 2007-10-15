@@ -67,11 +67,7 @@ namespace Mono.Debugger.Backends
 				return bfd;
 
 			bfd = new Bfd (this, memory, filename, main_bfd, base_address, is_loaded);
-
 			bfd_hash.Add (filename, bfd);
-
-			process.AddLanguage (bfd);
-
 			return bfd;
 		}
 

@@ -192,7 +192,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoLanguageBackend : Language, ILanguageBackend
+	internal class MonoLanguageBackend : Language
 	{
 		Hashtable symfile_by_index;
 		int last_num_symbol_files;
@@ -237,10 +237,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoMetadataInfo MonoMetadataInfo {
 			get { return info.MonoMetadataInfo; }
-		}
-
-		Language ILanguageBackend.Language {
-			get { return this; }
 		}
 
 		internal MonoBuiltinTypeInfo BuiltinTypes {
@@ -914,7 +910,6 @@ namespace Mono.Debugger.Languages.Mono
 		}
 #endregion
 
-#region ILanguageBackend implementation
 		public TargetAddress RuntimeInvokeFunc {
 			get { return info.RuntimeInvoke; }
 		}
@@ -1038,7 +1033,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			return true;
 		}
-#endregion
 
 		private bool disposed = false;
 

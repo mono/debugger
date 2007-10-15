@@ -11,7 +11,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : SymbolFile, ISymbolContainer, ILanguageBackend
+	internal class Bfd : SymbolFile, ISymbolContainer
 	{
 		IntPtr bfd;
 		protected Module module;
@@ -536,12 +536,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override ILanguageBackend LanguageBackend {
-			get {
-				return this;
-			}
-		}
-
 		internal DwarfReader DwarfReader {
 			get { return dwarf; }
 		}
@@ -937,16 +931,6 @@ namespace Mono.Debugger.Backends
 					throw new InvalidOperationException ();
 
 				return end_address;
-			}
-		}
-
-		//
-		// ILanguageBackend
-		//
-
-		string ILanguageBackend.Name {
-			get {
-				return "Native";
 			}
 		}
 

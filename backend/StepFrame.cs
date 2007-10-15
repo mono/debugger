@@ -2,6 +2,9 @@ using System;
 using System.IO;
 using System.Text;
 
+using Mono.Debugger;
+using Mono.Debugger.Languages;
+
 namespace Mono.Debugger.Backends
 {
 	internal enum StepMode
@@ -46,16 +49,16 @@ namespace Mono.Debugger.Backends
 	internal sealed class StepFrame
 	{
 		TargetAddress start, end;
-		ILanguageBackend language;
+		Language language;
 		StackFrame stack;
 		StepMode mode;
 
-		internal StepFrame (ILanguageBackend language, StepMode mode)
+		internal StepFrame (Language language, StepMode mode)
 			: this (TargetAddress.Null, TargetAddress.Null, null, language, mode)
 		{ }
 
 		internal StepFrame (TargetAddress start, TargetAddress end, StackFrame stack,
-				    ILanguageBackend language, StepMode mode)
+				    Language language, StepMode mode)
 		{
 			this.start = start;
 			this.end = end;
@@ -88,7 +91,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal ILanguageBackend Language {
+		public Language Language {
 			get {
 				return language;
 			}
