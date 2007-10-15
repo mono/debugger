@@ -23,6 +23,30 @@ namespace Mono.Debugger.Backends
 // we know we're running a managed app.
 // </summary>
 
+	internal enum NotificationType {
+		InitializeManagedCode	= 1,
+		InitializeCorlib,
+		JitBreakpoint,
+		InitializeThreadManager,
+		AcquireGlobalThreadLock,
+		ReleaseGlobalThreadLock,
+		WrapperMain,
+		MainExited,
+		UnhandledException,
+		ThrowException,
+		HandleException,
+		ThreadCreated,
+		ThreadCleanup,
+		GcThreadCreated,
+		GcThreadExited,
+		ReachedMain,
+		FinalizeManagedCode,
+		LoadModule,
+		UnloadModule,
+		DomainCreate,
+		DomainUnload
+	}
+
 	internal class MonoThreadManager
 	{
 		ThreadManager thread_manager;

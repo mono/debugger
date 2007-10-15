@@ -1,6 +1,14 @@
 2007-10-16  Martin Baulig  <martin@ximian.com>
 
 	* backend/ILanguageBackend.cs
+	(NotificationType): Moved into MonoThreadManager.cs.
+
+	* backend/MonoThreadManager.cs
+	(NotificationType): Moved here from ILanguageBackend.cs.
+	
+2007-10-16  Martin Baulig  <martin@ximian.com>
+
+	* backend/ILanguageBackend.cs
 	(ILanguageBackend.GetTrampoline): Removed.
 
 2007-10-16  Martin Baulig  <martin@ximian.com>
