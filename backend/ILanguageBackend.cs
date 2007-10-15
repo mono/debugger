@@ -36,8 +36,5 @@ namespace Mono.Debugger.Backends
 		Language Language {
 			get;
 		}
-
-		MethodSource GetTrampoline (TargetMemoryAccess memory,
-					    TargetAddress address);
 	}
 }

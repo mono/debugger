@@ -922,14 +922,15 @@ namespace Mono.Debugger.Languages.Mono
 		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
-#if FIXME
-			bool is_start;
-			TargetAddress trampoline = GetTrampolineAddress (memory, address, out is_start);
-			if (trampoline.IsNull)
+			int insn_size;
+			TargetAddress target;
+			CallTargetType type = memory.Architecture.GetCallTarget (
+				memory, address, out target, out insn_size);
+			if (type != CallTargetType.MonoTrampoline)
 				return null;
 
-			int token = memory.ReadInteger (trampoline + 4);
-			TargetAddress klass = memory.ReadAddress (trampoline + 8);
+			int token = memory.ReadInteger (target + 4);
+			TargetAddress klass = memory.ReadAddress (target + 8);
 			TargetAddress image = memory.ReadAddress (klass);
 
 			foreach (MonoSymbolFile file in symfile_by_index.Values) {
@@ -938,7 +939,6 @@ namespace Mono.Debugger.Languages.Mono
 
 				return file.GetMethodByToken (token);
 			}
-#endif
 
 			return null;
 		}

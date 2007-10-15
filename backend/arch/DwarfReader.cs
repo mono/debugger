@@ -2627,9 +2627,10 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			internal override MethodSource GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
+			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
+								      TargetAddress address)
 			{
-				return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
+				return null;
 			}
 		}
 

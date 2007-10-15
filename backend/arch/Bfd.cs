@@ -950,12 +950,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		MethodSource ILanguageBackend.GetTrampoline (TargetMemoryAccess memory,
-							     TargetAddress address)
-		{
-			return null;
-		}
-
 		internal bool GetTrampoline (TargetMemoryAccess memory,
 					     TargetAddress call_site,
 					     TargetAddress call_target,

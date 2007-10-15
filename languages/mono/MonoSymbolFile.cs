@@ -1075,7 +1075,7 @@ namespace Mono.Debugger.Languages.Mono
 			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
-				return file.LanguageBackend.GetTrampoline (memory, address);
+				return file.MonoLanguage.GetTrampoline (memory, address);
 			}
 
 			public override string[] GetNamespaces ()
@@ -1603,7 +1603,7 @@ namespace Mono.Debugger.Languages.Mono
 			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
-				return File.LanguageBackend.GetTrampoline (memory, address);
+				return File.MonoLanguage.GetTrampoline (memory, address);
 			}
 		}
 
