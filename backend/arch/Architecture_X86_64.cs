@@ -222,23 +222,26 @@ namespace Mono.Debugger.Backends
 			if (trampoline_address.IsNull)
 				return TargetAddress.Null;
 
-			TargetBinaryReader reader = target.ReadMemory (location, 14).GetReader ();
+			TargetBinaryReader reader = target.ReadMemory (location, 19).GetReader ();
+
+			reader.Position = 9;
 
 			byte opcode = reader.ReadByte ();
-			if (opcode != 0xe8)
+			if (opcode != 0x68)
 				return TargetAddress.Null;
 
-			TargetAddress call_target = location + reader.ReadInt32 () + 5;
-			if (call_target != trampoline_address)
+			int method_info = reader.ReadInt32 ();
+
+			opcode = reader.ReadByte ();
+			if (opcode != 0xe9)
 				return TargetAddress.Null;
 
-			long method;
-			if (reader.ReadByte () == 0x04)
-				method = reader.ReadInt32 ();
-			else
-				method = reader.ReadInt64 ();
+			int call_disp = reader.ReadInt32 ();
 
-			return new TargetAddress (target.TargetInfo.AddressDomain, method);
+			if (location + call_disp + 19 != trampoline_address)
+				return TargetAddress.Null;
+
+			return new TargetAddress (AddressDomain, method_info);
 		}
 
 		public override string[] RegisterNames {
