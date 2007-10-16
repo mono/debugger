@@ -1,0 +1,253 @@
+Index: backend/MonoThreadManager.cs
+===================================================================
+--- backend/MonoThreadManager.cs	(revision 87588)
++++ backend/MonoThreadManager.cs	(working copy)
+@@ -282,8 +282,8 @@
+ 	internal class MonoDebuggerInfo
+ 	{
+ 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
+-		public const int  MinDynamicVersion = 62;
+-		public const int  MaxDynamicVersion = 62;
++		public const int  MinDynamicVersion = 63;
++		public const int  MaxDynamicVersion = 63;
+ 		public const long DynamicMagic      = 0x7aff65af4253d427;
+ 
+ 		public readonly TargetAddress NotificationAddress;
+@@ -399,6 +399,7 @@
+ 		public readonly int KlassByValArgOffset;
+ 		public readonly int KlassGenericClassOffset;
+ 		public readonly int KlassGenericContainerOffset;
++		public readonly int KlassVTableOffset;
+ 		public readonly int FieldInfoSize;
+ 		public readonly int FieldInfoTypeOffset;
+ 		public readonly int FieldInfoOffsetOffset;
+@@ -431,6 +432,9 @@
+ 		public readonly int MonoMethodFlagsOffset;
+ 		public readonly int MonoMethodInflatedOffset;
+ 
++		public readonly int MonoVTableKlassOffset;
++		public readonly int MonoVTableVTableOffset;
++
+ 		public MonoMetadataInfo (TargetMemoryAccess memory, TargetAddress address)
+ 		{
+ 			int size = memory.ReadInteger (address);
+@@ -461,6 +465,8 @@
+ 			KlassByValArgOffset = reader.ReadInt32 ();
+ 			KlassGenericClassOffset = reader.ReadInt32 ();
+ 			KlassGenericContainerOffset = reader.ReadInt32 ();
++			KlassVTableOffset = reader.ReadInt32 ();
++
+ 			FieldInfoSize = reader.ReadInt32 ();
+ 			FieldInfoTypeOffset = reader.ReadInt32 ();
+ 			FieldInfoOffsetOffset = reader.ReadInt32 ();
+@@ -494,6 +500,9 @@
+ 			MonoMethodTokenOffset = reader.ReadInt32 ();
+ 			MonoMethodFlagsOffset = reader.ReadInt32 ();
+ 			MonoMethodInflatedOffset = reader.ReadInt32 ();
++
++			MonoVTableKlassOffset = reader.ReadInt32 ();
++			MonoVTableVTableOffset = reader.ReadInt32 ();
+ 		}
+ 	}
+ }
+Index: backend/arch/Architecture_X86_64.cs
+===================================================================
+--- backend/arch/Architecture_X86_64.cs	(revision 87588)
++++ backend/arch/Architecture_X86_64.cs	(working copy)
+@@ -1,6 +1,5 @@
+ using System;
+ using System.Collections;
+-using Mono.Debugger.Backends;
+ 
+ namespace Mono.Debugger.Backends
+ {
+@@ -42,6 +41,9 @@
+ 	// </summary>
+ 	internal class Architecture_X86_64 : Architecture
+ 	{
++		protected const int MONO_FAKE_IMT_METHOD = -1;
++		protected const int MONO_FAKE_VTABLE_METHOD = -2;
++
+ 		internal Architecture_X86_64 (ProcessServant process, TargetInfo info)
+ 			: base (process, info)
+ 		{ }
+@@ -207,48 +209,137 @@
+ 			Register addr = regs [(int) reg];
+ 
+ 			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr.Value);
+-			vtable_addr += disp;
+-
+ 			if (dereference_addr)
+-				target = memory.ReadAddress (vtable_addr);
++				target = memory.ReadAddress (vtable_addr + disp);
+ 			else
+-				target = vtable_addr;
++				target = vtable_addr + disp;
+ 
++			Console.WriteLine ("GET CALL TARGET: {0} {1} {2:x} {3} - {4} {5}",
++					   address, addr, disp, dereference_addr, vtable_addr, target);
++
++			/*
++			 * Check mono trampolines.
++			 *
++			 */
++
++			if (!dereference_addr)
++				return type;
++
++			if (process.IsManagedApplication) {
++				try {
++					TargetAddress trampoline;
++					if (CheckMonoTrampolines (memory, address, addr, disp,
++								  vtable_addr, target, out trampoline)) {
++						target = trampoline;
++						return CallTargetType.MonoTrampoline;
++					}
++				} catch (Exception ex) {
++					Console.WriteLine ("MONO TRAMPOLINE EX: {0}", ex);
++				}
++			}
++
+ 			return type;
+ 		}
+ 
++		bool CheckMonoTrampolines (TargetMemoryAccess memory, TargetAddress call_site,
++					   Register reg, int disp, TargetAddress vtable_addr,
++					   TargetAddress call_target, out TargetAddress trampoline)
++		{
++			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
++			Console.WriteLine ("CHECK MONO TRAMPOLINES: {0} {1} {2:x} {3} {4}\n{5}",
++					   call_site, reg, disp, vtable_addr, call_target,
++					   reader.HexDump ());
++			byte opcode = reader.ReadByte ();
++			if (opcode != 0xe8) {
++				trampoline = TargetAddress.Null;
++				return false;
++			}
++
++			TargetAddress call = call_target + reader.ReadInt32 () + 5;
++			if (!process.MonoLanguage.IsTrampolineAddress (call)) {
++				trampoline = TargetAddress.Null;
++				return false;
++			}
++
++			long method;
++			if (reader.ReadByte () == 0x04)
++				method = reader.ReadInt32 ();
++			else
++				method = reader.ReadInt64 ();
++
++			Console.WriteLine ("CHECK MONO TRAMPOLINES #1: {0} {1} {2} {3:x} {4} - {5}",
++					   call_site, call_target, reg, disp, vtable_addr,
++					   method);
++
++			MonoMetadataInfo metadata = process.MonoLanguage.MonoMetadataInfo;
++
++			if ((method == MONO_FAKE_VTABLE_METHOD) && (disp <= 0))
++				method = MONO_FAKE_IMT_METHOD;
++
++			if (method == MONO_FAKE_VTABLE_METHOD) {
++				disp -= metadata.MonoVTableVTableOffset;
++				if ((disp < 0) || ((disp % memory.TargetInfo.TargetAddressSize)) != 0)
++					throw new InternalError ();
++
++				Console.WriteLine ("FAKE VTABLE METHOD: {0} {1}",
++						   vtable_addr, disp);
++
++				TargetAddress klass = memory.ReadAddress (
++					vtable_addr + metadata.MonoVTableKlassOffset);
++				Console.WriteLine ("FAKE VTABLE METHOD #1: {0}", klass);
++
++				TargetAddress vtable = memory.ReadAddress (
++					klass + metadata.KlassVTableOffset);
++				if (vtable.IsNull)
++					throw new InternalError ();
++
++				trampoline = memory.ReadAddress (vtable + disp);
++
++				Console.WriteLine ("FAKE VTABLE METHOD #3: {0} {1} {2}",
++						   vtable, disp, trampoline);
++
++				return true;
++			}
++
++			if (method == MONO_FAKE_IMT_METHOD) {
++				TargetAddress vtable_slot = vtable_addr + disp;
++
++				Console.WriteLine ("FAKE IMT METHOD: {0} {1} {2} - {3}",
++						   vtable_addr, reg, disp, vtable_slot);
++
++
++			}
++
++			trampoline = TargetAddress.Null;
++			return false;
++		}
++
+ 		protected override bool DoGetMonoTrampoline (TargetMemoryAccess memory,
+ 							     TargetAddress call_site,
+ 							     TargetAddress call_target,
+ 							     out TargetAddress trampoline)
+ 		{
+-			TargetBinaryReader reader = memory.ReadMemory (call_target, 19).GetReader ();
+-			reader.Position = 9;
+-
++			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
+ 			byte opcode = reader.ReadByte ();
+-			if (opcode != 0x68) {
++			if (opcode != 0xe8) {
+ 				trampoline = TargetAddress.Null;
+ 				return false;
+ 			}
+ 
+-			int method_info = reader.ReadInt32 ();
+-
+-			opcode = reader.ReadByte ();
+-			if (opcode != 0xe9) {
++			TargetAddress call = call_target + reader.ReadInt32 () + 5;
++			if (!process.MonoLanguage.IsTrampolineAddress (call)) {
+ 				trampoline = TargetAddress.Null;
+ 				return false;
+ 			}
+ 
+-			int call_disp = reader.ReadInt32 ();
+-			foreach (TargetAddress address in process.MonoLanguage.Trampolines) {
+-				if (call_target + call_disp + 19 == address) {
+-					trampoline = new TargetAddress (AddressDomain, method_info);
+-					return true;
+-				}
+-			}
++			long method;
++			if (reader.ReadByte () == 0x04)
++				method = reader.ReadInt32 ();
++			else
++				method = reader.ReadInt64 ();
+ 
+-			trampoline = TargetAddress.Null;
+-			return false;
++			trampoline = new TargetAddress (memory.TargetInfo.AddressDomain, method);
++			return true;
+ 		}
+ 
+ 		public override string[] RegisterNames {
+Index: languages/mono/MonoLanguageBackend.cs
+===================================================================
+--- languages/mono/MonoLanguageBackend.cs	(revision 87588)
++++ languages/mono/MonoLanguageBackend.cs	(working copy)
+@@ -255,6 +255,16 @@
+ 			get { return trampolines; }
+ 		}
+ 
++		internal bool IsTrampolineAddress (TargetAddress address)
++		{
++			foreach (TargetAddress trampoline in trampolines) {
++				if (address == trampoline)
++					return true;
++			}
++
++			return false;
++		}
++
+ 		internal bool TryFindImage (Thread thread, string filename)
+ 		{
+ 			Cecil.AssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
