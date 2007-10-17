@@ -22,6 +22,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
+
 /*
  * NOTE:  The manpage is wrong about the POKE_* commands - the last argument
  *        is the data (a word) to be written, not a pointer to it.
