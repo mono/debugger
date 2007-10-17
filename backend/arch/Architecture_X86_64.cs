@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Backends
 {
@@ -42,6 +41,9 @@ namespace Mono.Debugger.Backends
 	// </summary>
 	internal class Architecture_X86_64 : Architecture
 	{
+		protected const int MONO_FAKE_IMT_METHOD = -1;
+		protected const int MONO_FAKE_VTABLE_METHOD = -2;
+
 		internal Architecture_X86_64 (ProcessServant process, TargetInfo info)
 			: base (process, info)
 		{ }
@@ -207,14 +209,109 @@ namespace Mono.Debugger.Backends
 			Register addr = regs [(int) reg];
 
 			TargetAddress vtable_addr = new TargetAddress (AddressDomain, addr.Value);
-			vtable_addr += disp;
-
 			if (dereference_addr)
-				target = memory.ReadAddress (vtable_addr);
+				target = memory.ReadAddress (vtable_addr + disp);
 			else
-				target = vtable_addr;
+				target = vtable_addr + disp;
+
+			Console.WriteLine ("GET CALL TARGET: {0} {1} {2:x} {3} - {4} {5}",
+					   address, addr, disp, dereference_addr, vtable_addr, target);
+
+			/*
+			 * Check mono trampolines.
+			 *
+			 */
+
+			if (!dereference_addr)
+				return type;
+
+			if (process.IsManagedApplication) {
+				try {
+					TargetAddress trampoline;
+					if (CheckMonoTrampolines (memory, address, addr, disp,
+								  vtable_addr, target, out trampoline)) {
+						target = trampoline;
+						return CallTargetType.MonoTrampoline;
+					}
+				} catch (Exception ex) {
+					Console.WriteLine ("MONO TRAMPOLINE EX: {0}", ex);
+				}
+			}
 
 			return type;
+		}
+
+		bool CheckMonoTrampolines (TargetMemoryAccess memory, TargetAddress call_site,
+					   Register reg, int disp, TargetAddress vtable_addr,
+					   TargetAddress call_target, out TargetAddress trampoline)
+		{
+			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
+			Console.WriteLine ("CHECK MONO TRAMPOLINES: {0} {1} {2:x} {3} {4}\n{5}",
+					   call_site, reg, disp, vtable_addr, call_target,
+					   reader.HexDump ());
+			byte opcode = reader.ReadByte ();
+			if (opcode != 0xe8) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			TargetAddress call = call_target + reader.ReadInt32 () + 5;
+			if (!process.MonoLanguage.IsTrampolineAddress (call)) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			long method;
+			if (reader.ReadByte () == 0x04)
+				method = reader.ReadInt32 ();
+			else
+				method = reader.ReadInt64 ();
+
+			Console.WriteLine ("CHECK MONO TRAMPOLINES #1: {0} {1} {2} {3:x} {4} - {5}",
+					   call_site, call_target, reg, disp, vtable_addr,
+					   method);
+
+			MonoMetadataInfo metadata = process.MonoLanguage.MonoMetadataInfo;
+
+			if ((method == MONO_FAKE_VTABLE_METHOD) && (disp <= 0))
+				method = MONO_FAKE_IMT_METHOD;
+
+			if (method == MONO_FAKE_VTABLE_METHOD) {
+				disp -= metadata.MonoVTableVTableOffset;
+				if ((disp < 0) || ((disp % memory.TargetInfo.TargetAddressSize)) != 0)
+					throw new InternalError ();
+
+				Console.WriteLine ("FAKE VTABLE METHOD: {0} {1}",
+						   vtable_addr, disp);
+
+				TargetAddress klass = memory.ReadAddress (
+					vtable_addr + metadata.MonoVTableKlassOffset);
+				Console.WriteLine ("FAKE VTABLE METHOD #1: {0}", klass);
+
+				TargetAddress vtable = memory.ReadAddress (
+					klass + metadata.KlassVTableOffset);
+				if (vtable.IsNull)
+					throw new InternalError ();
+
+				trampoline = memory.ReadAddress (vtable + disp);
+
+				Console.WriteLine ("FAKE VTABLE METHOD #3: {0} {1} {2}",
+						   vtable, disp, trampoline);
+
+				return true;
+			}
+
+			if (method == MONO_FAKE_IMT_METHOD) {
+				TargetAddress vtable_slot = vtable_addr + disp;
+
+				Console.WriteLine ("FAKE IMT METHOD: {0} {1} {2} - {3}",
+						   vtable_addr, reg, disp, vtable_slot);
+
+
+			}
+
+			trampoline = TargetAddress.Null;
+			return false;
 		}
 
 		protected override bool DoGetMonoTrampoline (TargetMemoryAccess memory,
@@ -222,33 +319,27 @@ namespace Mono.Debugger.Backends
 							     TargetAddress call_target,
 							     out TargetAddress trampoline)
 		{
-			TargetBinaryReader reader = memory.ReadMemory (call_target, 19).GetReader ();
-			reader.Position = 9;
-
+			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
 			byte opcode = reader.ReadByte ();
-			if (opcode != 0x68) {
+			if (opcode != 0xe8) {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			int method_info = reader.ReadInt32 ();
-
-			opcode = reader.ReadByte ();
-			if (opcode != 0xe9) {
+			TargetAddress call = call_target + reader.ReadInt32 () + 5;
+			if (!process.MonoLanguage.IsTrampolineAddress (call)) {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			int call_disp = reader.ReadInt32 ();
-			foreach (TargetAddress address in process.MonoLanguage.Trampolines) {
-				if (call_target + call_disp + 19 == address) {
-					trampoline = new TargetAddress (AddressDomain, method_info);
-					return true;
-				}
-			}
+			long method;
+			if (reader.ReadByte () == 0x04)
+				method = reader.ReadInt32 ();
+			else
+				method = reader.ReadInt64 ();
 
-			trampoline = TargetAddress.Null;
-			return false;
+			trampoline = new TargetAddress (memory.TargetInfo.AddressDomain, method);
+			return true;
 		}
 
 		public override string[] RegisterNames {

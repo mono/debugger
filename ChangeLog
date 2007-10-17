@@ -1,5 +1,14 @@
 2007-10-17  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.IsTrampolineAddress): New method.
+
+	* backend/arch/Architecture_X86_64.cs
+	(Architecture_X86_64): Commit yesterday's work; we can now
+	identify the new trampolines.
+
+2007-10-17  Martin Baulig  <martin@ximian.com>
+
 	New temporary work branch for the new trampoline code.
 
 	It is based on r87650.

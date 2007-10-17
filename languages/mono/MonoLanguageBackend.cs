@@ -255,6 +255,16 @@ namespace Mono.Debugger.Languages.Mono
 			get { return trampolines; }
 		}
 
+		internal bool IsTrampolineAddress (TargetAddress address)
+		{
+			foreach (TargetAddress trampoline in trampolines) {
+				if (address == trampoline)
+					return true;
+			}
+
+			return false;
+		}
+
 		internal bool TryFindImage (Thread thread, string filename)
 		{
 			Cecil.AssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
