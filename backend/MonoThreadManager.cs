@@ -282,8 +282,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 62;
-		public const int  MaxDynamicVersion = 62;
+		public const int  MinDynamicVersion = 63;
+		public const int  MaxDynamicVersion = 63;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
@@ -399,6 +399,7 @@ namespace Mono.Debugger.Backends
 		public readonly int KlassByValArgOffset;
 		public readonly int KlassGenericClassOffset;
 		public readonly int KlassGenericContainerOffset;
+		public readonly int KlassVTableOffset;
 		public readonly int FieldInfoSize;
 		public readonly int FieldInfoTypeOffset;
 		public readonly int FieldInfoOffsetOffset;
@@ -431,6 +432,9 @@ namespace Mono.Debugger.Backends
 		public readonly int MonoMethodFlagsOffset;
 		public readonly int MonoMethodInflatedOffset;
 
+		public readonly int MonoVTableKlassOffset;
+		public readonly int MonoVTableVTableOffset;
+
 		public MonoMetadataInfo (TargetMemoryAccess memory, TargetAddress address)
 		{
 			int size = memory.ReadInteger (address);
@@ -461,6 +465,8 @@ namespace Mono.Debugger.Backends
 			KlassByValArgOffset = reader.ReadInt32 ();
 			KlassGenericClassOffset = reader.ReadInt32 ();
 			KlassGenericContainerOffset = reader.ReadInt32 ();
+			KlassVTableOffset = reader.ReadInt32 ();
+
 			FieldInfoSize = reader.ReadInt32 ();
 			FieldInfoTypeOffset = reader.ReadInt32 ();
 			FieldInfoOffsetOffset = reader.ReadInt32 ();
@@ -494,6 +500,9 @@ namespace Mono.Debugger.Backends
 			MonoMethodTokenOffset = reader.ReadInt32 ();
 			MonoMethodFlagsOffset = reader.ReadInt32 ();
 			MonoMethodInflatedOffset = reader.ReadInt32 ();
+
+			MonoVTableKlassOffset = reader.ReadInt32 ();
+			MonoVTableVTableOffset = reader.ReadInt32 ();
 		}
 	}
 }
