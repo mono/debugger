@@ -3,8 +3,9 @@
 	HEADS UP: The debugger currently doesn't work with the latest mono
 	          from SVN HEAD.  You need to use r87189 for the moment.
 
-	Sorry about the breakage, there's nothing I can do about it at the
-	moment and it will most likely take a few days to get it fixed.
+	I started working on the problem in a temporary work branch - until
+	it's finished, SVN HEAD will remain stable, but require that specific
+	revision of Mono.
 
 2007-10-16  Martin Baulig  <martin@ximian.com>
 
