@@ -21,7 +21,6 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <mono/metadata/threads.h>
 
 /*
  * NOTE:  The manpage is wrong about the POKE_* commands - the last argument
