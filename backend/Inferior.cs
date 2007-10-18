@@ -154,7 +154,7 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_create_inferior (IntPtr breakpoint_manager);
 
 		[DllImport("monodebuggerserver")]
-		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
+		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2, out int opt_data_size, out IntPtr opt_data);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, out IntPtr data);
@@ -219,13 +219,21 @@ namespace Mono.Debugger.Backends
 			public readonly long Data1;
 			public readonly long Data2;
 
-			public ChildEvent (ChildEventType type, long arg,
-					   long data1, long data2)
+			public readonly byte[] CallbackData;
+
+			public ChildEvent (ChildEventType type, long arg, long data1, long data2)
 			{
 				this.Type = type;
 				this.Argument = arg;
 				this.Data1 = data1;
 				this.Data2 = data2;
+			}
+
+			public ChildEvent (ChildEventType type, long arg, long data1, long data2,
+					   byte[] callback_data)
+				: this (type, arg, data1, data2)
+			{
+				this.CallbackData = callback_data;
 			}
 
 			public override string ToString ()
@@ -619,8 +627,12 @@ namespace Mono.Debugger.Backends
 			long arg, data1, data2;
 			ChildEventType message;
 
+			int opt_data_size;
+			IntPtr opt_data;
+
 			message = mono_debugger_server_dispatch_event (
-				server_handle, status, out arg, out data1, out data2);
+				server_handle, status, out arg, out data1, out data2,
+				out opt_data_size, out opt_data);
 
 			switch (message) {
 			case ChildEventType.CHILD_EXITED:
@@ -639,6 +651,14 @@ namespace Mono.Debugger.Backends
 			case ChildEventType.CHILD_EXECD:
 				child_execd ();
 				break;
+			}
+
+			if (opt_data_size > 0) {
+				byte[] data = new byte [opt_data_size];
+				Marshal.Copy (opt_data, data, 0, opt_data_size);
+				g_free (opt_data);
+
+				return new ChildEvent (message, arg, data1, data2, data);
 			}
 
 			return new ChildEvent (message, arg, data1, data2);

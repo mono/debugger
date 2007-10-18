@@ -103,9 +103,11 @@ mono_debugger_server_global_wait (guint32 *status)
 
 ServerStatusMessageType
 mono_debugger_server_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
-				     guint64 *data1, guint64 *data2)
+				     guint64 *data1, guint64 *data2, guint32 *opt_data_size,
+				     gpointer *opt_data)
 {
-	return (*global_vtable->dispatch_event) (handle, status, arg, data1, data2);
+	return (*global_vtable->dispatch_event) (
+		handle, status, arg, data1, data2, opt_data_size, opt_data);
 }
 
 ServerCommandError

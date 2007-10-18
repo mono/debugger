@@ -160,7 +160,8 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 
 static ServerStatusMessageType
 server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
-			      guint64 *data1, guint64 *data2)
+			      guint64 *data1, guint64 *data2, guint32 *opt_data_size,
+			      gpointer *opt_data)
 {
 	if (status >> 16) {
 		switch (status >> 16) {
@@ -228,7 +229,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		}
 
 		action = x86_arch_child_stopped (
-			handle, stopsig, &callback_arg, &retval, &retval2);
+			handle, stopsig, &callback_arg, &retval, &retval2, opt_data_size, opt_data);
 
 		if (action != STOP_ACTION_STOPPED)
 			handle->inferior->last_signal = 0;

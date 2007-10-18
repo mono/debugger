@@ -36,6 +36,8 @@ typedef struct
 	guint64 exc_address;
 	int saved_signal;
 	guint64 pushed_registers;
+	guint64 data_pointer;
+	guint32 data_size;
 	gboolean debug;
 } CallbackData;
 
@@ -159,7 +161,8 @@ x86_arch_get_registers (ServerHandle *handle)
 
 ChildStoppedAction
 x86_arch_child_stopped (ServerHandle *handle, int stopsig,
-			guint64 *callback_arg, guint64 *retval, guint64 *retval2)
+			guint64 *callback_arg, guint64 *retval, guint64 *retval2,
+			guint32 *opt_data_size, gpointer *opt_data)
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
@@ -233,6 +236,20 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		*callback_arg = cdata->callback_argument;
 		*retval = INFERIOR_REG_RAX (arch->current_regs);
+
+		if (cdata->data_pointer) {
+			*opt_data_size = cdata->data_size;
+			*opt_data = g_malloc0 (cdata->data_size);
+
+			if (_server_ptrace_read_memory (
+				    handle, cdata->data_pointer, cdata->data_size, *opt_data))
+				g_error (G_STRLOC ": Can't read data buffer after returning from a call");
+
+			g_message (G_STRLOC ": %p - %d", *opt_data, cdata->data_size);
+		} else {
+			*opt_data_size = 0;
+			*opt_data = NULL;
+		}
 
 		if (cdata->exc_address &&
 		    (server_ptrace_peek_word (handle, cdata->exc_address, retval2) != COMMAND_ERROR_NONE))
@@ -856,9 +873,6 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint64 *) (code+104)) = INFERIOR_REG_R15 (arch->current_regs);
 	*((guint8 *) (code+data_size+116)) = 0xcc;
 
-	if (data_size > 0)
-		memcpy (code+112, data_buffer, data_size);
-
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
@@ -869,6 +883,12 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	cdata->saved_signal = handle->inferior->last_signal;
 	cdata->pushed_registers = new_rsp + 8;
 	handle->inferior->last_signal = 0;
+
+	if (data_size > 0) {
+		memcpy (code+112, data_buffer, data_size);
+		cdata->data_pointer = new_rsp + 112;
+		cdata->data_size = data_size;
+	}
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);

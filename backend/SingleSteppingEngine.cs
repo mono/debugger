@@ -2944,11 +2944,16 @@ namespace Mono.Debugger.Backends
 
 			try {
 				args = null;
-				return CallbackCompleted (cevent.Data1, cevent.Data2);
+				return CallbackCompleted (cevent);
 			} catch {
 				RestoreStack ();
 				return EventResult.CompletedCallback;
 			}
+		}
+
+		protected virtual EventResult CallbackCompleted (Inferior.ChildEvent cevent)
+		{
+			return CallbackCompleted (cevent.Data1, cevent.Data2);
 		}
 
 		protected abstract EventResult CallbackCompleted (long data1, long data2);
@@ -3329,7 +3334,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected delegate void MyTrampolineHandler (TargetAddress address);
+	protected delegate void MyTrampolineHandler (TargetAddress address, byte[] data);
 
 	protected class OperationTrampoline : Operation
 	{
@@ -3380,10 +3385,15 @@ namespace Mono.Debugger.Backends
 
 			Console.WriteLine ("NEW OPERATION TRAMPOLINE: {0} {1}", CallSite, CallTarget);
 
-			sse.PushOperation (new OperationDoTrampoline (sse, CallSite, CallTarget,
-				delegate (TargetAddress the_address) {
-						this.address = the_address;
-			}));
+			sse.PushOperation (new OperationDoTrampoline (
+				sse, CallSite, CallTarget, callback_completed));
+		}
+
+		void callback_completed (TargetAddress address, byte[] data)
+		{
+			this.address = address;
+
+			Console.WriteLine ("OPERATION TRAMPOLINE DONE: {0}", address);
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3537,12 +3547,12 @@ namespace Mono.Debugger.Backends
 			this.MyTrampolineHandler = handler;
 		}
 
+		byte[] code_buffer;
+		int code_buffer_size;
+		int code_buffer_offset;
+
 		protected override void DoExecute ()
 		{
-			byte[] code_buffer = null;
-			int code_buffer_size = 0;
-			int code_buffer_offset = 0;
-
 			if (sse.process.BreakpointManager.IsAnyBreakpointInMemoryArea (CallSite - 16, 32)) {
 				code_buffer = inferior.ReadBuffer (CallSite - 16, 32);
 				code_buffer_size = 32;
@@ -3550,7 +3560,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetBinaryWriter writer = new TargetBinaryWriter (
-				32 + code_buffer_size, inferior.TargetInfo);
+				24 + code_buffer_size, inferior.TargetInfo);
 			writer.WriteInt64 (CallSite.Address);
 			writer.WriteInt64 (CallTarget.Address);
 			writer.WriteInt32 (code_buffer_size);
@@ -3563,16 +3573,42 @@ namespace Mono.Debugger.Backends
 			inferior.CallMethod (sse.MonoDebuggerInfo.DoTrampoline, data, ID);
 		}
 
-		protected override EventResult CallbackCompleted (long data1, long data2)
+		protected override EventResult CallbackCompleted (Inferior.ChildEvent cevent)
 		{
-			Console.WriteLine ("TRAMPOLINE COMPLETED: {0:x} {1:x}", data1, data2);
-			TargetAddress address = new TargetAddress (inferior.AddressDomain, data1);
-			MyTrampolineHandler (address);
+			Console.WriteLine ("TRAMPOLINE COMPLETED: {0:x} {1:x}\n{2}", cevent.Data1,
+					   cevent.Data2, TargetBinaryReader.HexDump (cevent.CallbackData));
+
+			TargetBinaryReader reader = new TargetBinaryReader (
+				cevent.CallbackData, inferior.TargetInfo);
+			byte[] new_code = reader.PeekBuffer (24, code_buffer_size);
+
+			Console.WriteLine ("OLD:\n{0}\n\nNEW:\n{1}",
+					   TargetBinaryReader.HexDump (code_buffer),
+					   TargetBinaryReader.HexDump (new_code));
+
+			bool modified = false;
+			for (int i = 0; i < code_buffer_size; i++) {
+				if (code_buffer [i] != new_code [i]) {
+					modified = true;
+					break;
+				}
+			}
+
+			Console.WriteLine ("TRAMPOLINE COMPLETED #1: {0:x} {1}", cevent.Data1, modified);
+
+			TargetAddress address = new TargetAddress (inferior.AddressDomain, cevent.Data1);
+			MyTrampolineHandler (address, cevent.CallbackData);
 			RestoreStack ();
 			return EventResult.ResumeOperation;
 		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2)
+		{
+			throw new InternalError ();
+		}
 	}
 
+#if FIXME
 	protected class OperationCompileMethod : OperationCallback
 	{
 		public readonly TargetAddress Method;
@@ -3599,6 +3635,7 @@ namespace Mono.Debugger.Backends
 			return EventResult.ResumeOperation;
 		}
 	}
+#endif
 
 	protected class OperationRuntimeClassInit : OperationCallback
 	{
