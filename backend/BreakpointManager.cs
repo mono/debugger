@@ -32,6 +32,9 @@ namespace Mono.Debugger.Backends
 		static extern void mono_debugger_breakpoint_manager_unlock ();
 
 		[DllImport("monodebuggerserver")]
+		static extern bool mono_debugger_breakpoint_manager_is_any_bpt_in_memory_area (IntPtr manager, long start, int size);
+
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_breakpoint_info_get_id (IntPtr info);
 
 		[DllImport("monodebuggerserver")]
@@ -229,6 +232,17 @@ namespace Mono.Debugger.Backends
 							      indices [i], ex);
 					}
 				}
+			} finally {
+				Unlock ();
+			}
+		}
+
+		public bool IsAnyBreakpointInMemoryArea (TargetAddress address, int size)
+		{
+			Lock ();
+			try {
+				return mono_debugger_breakpoint_manager_is_any_bpt_in_memory_area (
+					_manager, address.Address, size);
 			} finally {
 				Unlock ();
 			}

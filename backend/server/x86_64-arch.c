@@ -35,6 +35,7 @@ typedef struct
 	guint64 rti_frame;
 	guint64 exc_address;
 	int saved_signal;
+	guint64 pushed_registers;
 	gboolean debug;
 } CallbackData;
 
@@ -196,6 +197,34 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cdata = get_callback_data (arch);
 	if (cdata && (cdata->call_address == INFERIOR_REG_RIP (arch->current_regs))) {
+		if (cdata->pushed_registers) {
+			guint64 pushed_regs [13];
+
+			g_message (G_STRLOC ": %Lx - %Lx - %Lx", cdata->pushed_registers,
+				   INFERIOR_REG_RIP (arch->current_regs),
+				   INFERIOR_REG_RSP (arch->current_regs));
+
+			if (_server_ptrace_read_memory (handle, cdata->pushed_registers, 104, &pushed_regs))
+				g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+			g_message (G_STRLOC ": %Lx - %Lx",
+				   INFERIOR_REG_RAX (cdata->saved_regs), pushed_regs [0]);
+
+			INFERIOR_REG_RAX (cdata->saved_regs) = pushed_regs [0];
+			INFERIOR_REG_RBX (cdata->saved_regs) = pushed_regs [1];
+			INFERIOR_REG_RCX (cdata->saved_regs) = pushed_regs [2];
+			INFERIOR_REG_RDX (cdata->saved_regs) = pushed_regs [3];
+			INFERIOR_REG_RBP (cdata->saved_regs) = pushed_regs [4];
+			INFERIOR_REG_RSP (cdata->saved_regs) = pushed_regs [5];
+			INFERIOR_REG_RSI (cdata->saved_regs) = pushed_regs [6];
+			INFERIOR_REG_RDI (cdata->saved_regs) = pushed_regs [7];
+			INFERIOR_REG_RIP (cdata->saved_regs) = pushed_regs [8];
+			INFERIOR_REG_R12 (cdata->saved_regs) = pushed_regs [9];
+			INFERIOR_REG_R13 (cdata->saved_regs) = pushed_regs [10];
+			INFERIOR_REG_R14 (cdata->saved_regs) = pushed_regs [11];
+			INFERIOR_REG_R15 (cdata->saved_regs) = pushed_regs [12];
+		}
+
 		if (_server_ptrace_set_registers (inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
@@ -838,6 +867,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	cdata->exc_address = 0;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
+	cdata->pushed_registers = new_rsp + 8;
 	handle->inferior->last_signal = 0;
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);

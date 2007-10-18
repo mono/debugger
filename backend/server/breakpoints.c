@@ -105,6 +105,27 @@ mono_debugger_breakpoint_manager_get_next_id (void)
 	return ++last_breakpoint_id;
 }
 
+gboolean
+mono_debugger_breakpoint_manager_is_any_bpt_in_memory_area (BreakpointManager *bpm,
+							    guint64 start, guint32 size)
+{
+	int i;
+
+	for (i = 0; i < bpm->breakpoints->len; i++) {
+		BreakpointInfo *info = g_ptr_array_index (bpm->breakpoints, i);
+		guint64 offset;
+
+		if (info->is_hardware_bpt || !info->enabled)
+			continue;
+		if ((info->address < start) || (info->address >= start+size))
+			continue;
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 int
 mono_debugger_breakpoint_info_get_id (BreakpointInfo *info)
 {

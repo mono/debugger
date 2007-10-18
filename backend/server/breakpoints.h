@@ -59,6 +59,10 @@ mono_debugger_breakpoint_manager_lookup_by_id        (BreakpointManager *bpm, gu
 GPtrArray *
 mono_debugger_breakpoint_manager_get_breakpoints     (BreakpointManager *bpm);
 
+gboolean
+mono_debugger_breakpoint_manager_is_any_bpt_in_memory_area (BreakpointManager *bpm,
+							    guint64 start, guint32 size);
+
 void
 mono_debugger_breakpoint_manager_remove              (BreakpointManager *bpm, BreakpointInfo *breakpoint);
 

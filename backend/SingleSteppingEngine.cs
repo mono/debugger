@@ -3539,9 +3539,24 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			TargetBinaryWriter writer = new TargetBinaryWriter (16, inferior.TargetInfo);
+			byte[] code_buffer = null;
+			int code_buffer_size = 0;
+			int code_buffer_offset = 0;
+
+			if (sse.process.BreakpointManager.IsAnyBreakpointInMemoryArea (CallSite - 16, 32)) {
+				code_buffer = inferior.ReadBuffer (CallSite - 16, 32);
+				code_buffer_size = 32;
+				code_buffer_offset = 16;
+			}
+
+			TargetBinaryWriter writer = new TargetBinaryWriter (
+				32 + code_buffer_size, inferior.TargetInfo);
 			writer.WriteInt64 (CallSite.Address);
 			writer.WriteInt64 (CallTarget.Address);
+			writer.WriteInt32 (code_buffer_size);
+			writer.WriteInt32 (code_buffer_offset);
+			if (code_buffer != null)
+				writer.WriteBuffer (code_buffer);
 
 			byte[] data = writer.Contents;
 
