@@ -1195,7 +1195,8 @@ namespace Mono.Debugger.Backends
 		}
 
 		protected bool CheckTrampoline (CallTargetType type, TargetAddress call_site,
-						TargetAddress call_target, TrampolineHandler handler)
+						TargetAddress call_target, int insn_size,
+						TrampolineHandler handler)
 		{
 			if (!Architecture.IsTrampoline (type))
 				return false;
@@ -1216,7 +1217,8 @@ namespace Mono.Debugger.Backends
 					do_continue (call_target);
 				return true;
 			} else if (type == CallTargetType.MonoTrampoline) {
-				PushOperation (new OperationTrampoline (this, call_target, handler));
+				PushOperation (new OperationTrampoline (
+					this, call_site + insn_size, call_target, handler));
 				return true;
 			}
 
@@ -1566,12 +1568,6 @@ namespace Mono.Debugger.Backends
 		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2)
 		{
 			return StartOperation (new OperationCallMethod (this, method, arg1, arg2));
-		}
-
-		public override CommandResult CallMethod (TargetAddress method, TargetAddress argument)
-		{
-			return StartOperation (new OperationCallMethod (
-				this, method, argument.Address));
 		}
 
 		public override CommandResult Return (bool run_finally)
@@ -2396,7 +2392,8 @@ namespace Mono.Debugger.Backends
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, inferior.CurrentFrame, out target, out insn_size);
 			if (Architecture.IsTrampoline (type)) {
-				sse.PushOperation (new OperationTrampoline (sse, target, null));
+				sse.PushOperation (new OperationTrampoline (
+					sse, inferior.CurrentFrame + insn_size, target, null));
 				return true;
 			}
 
@@ -2676,6 +2673,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			if ((sse.current_method != null) && (sse.current_method.HasMethodBounds) &&
+			    !target.IsNull &&
 			    (target >= sse.current_method.MethodStartAddress) &&
 			    (target < sse.current_method.MethodEndAddress)) {
 				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
@@ -2692,7 +2690,7 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			if (sse.CheckTrampoline (type, current_frame, target, TrampolineHandler))
+			if (sse.CheckTrampoline (type, current_frame, target, insn_size, TrampolineHandler))
 				return false;
 
 			/*
@@ -3299,22 +3297,9 @@ namespace Mono.Debugger.Backends
 			this.Argument2 = arg2;
 		}
 
-		public OperationCallMethod (SingleSteppingEngine sse,
-					    TargetAddress method, long argument)
-			: base (sse)
-		{
-			this.Type = CallMethodType.Long;
-			this.Method = method;
-			this.Argument1 = argument;
-		}
-
 		protected override void DoExecute ()
 		{
 			switch (Type) {
-			case CallMethodType.Long:
-				inferior.CallMethod (Method, Argument1, ID);
-				break;
-
 			case CallMethodType.LongLong:
 				inferior.CallMethod (Method, Argument1, Argument2, ID);
 				break;
@@ -3348,6 +3333,9 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationTrampoline : Operation
 	{
+		public readonly TargetAddress CallSite;
+		public readonly TargetAddress CallTarget;
+
 		public readonly TargetAddress Method;
 		public readonly TrampolineHandler TrampolineHandler;
 
@@ -3363,13 +3351,39 @@ namespace Mono.Debugger.Backends
 			this.TrampolineHandler = handler;
 		}
 
+		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
+					    TargetAddress call_target, TrampolineHandler handler)
+			: base (sse, null)
+		{
+			this.CallSite = call_site;
+			this.CallTarget = call_target;
+			this.Method = call_target;
+
+			this.TrampolineHandler = handler;
+		}
+
 		public override bool IsSourceOperation {
 			get { return true; }
 		}
 
 		protected override void DoExecute ()
 		{
-			sse.PushOperation (new OperationRuntimeClassInit (sse, Method));
+			Console.WriteLine ("OPERATION TRAMPOLINE: {0} {1} {2}",
+					   CallSite, CallTarget, Method);
+
+#if FIXME
+			if (!Method.IsNull) {
+				sse.PushOperation (new OperationRuntimeClassInit (sse, Method));
+				return;
+			}
+#endif
+
+			Console.WriteLine ("NEW OPERATION TRAMPOLINE: {0} {1}", CallSite, CallTarget);
+
+			sse.PushOperation (new OperationDoTrampoline (sse, CallSite, CallTarget,
+				delegate (TargetAddress the_address) {
+						this.address = the_address;
+			}));
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3385,15 +3399,6 @@ namespace Mono.Debugger.Backends
 
 			if (completed)
 				return EventResult.ResumeOperation;
-
-			if (!compiled) {
-				compiled = true;
-				sse.PushOperation (new OperationCompileMethod (sse, Method,
-					delegate (TargetAddress the_address) {
-						this.address = the_address;
-				}));
-				return EventResult.Running;
-			}
 
 			completed = true;
 
@@ -3514,6 +3519,42 @@ namespace Mono.Debugger.Backends
 			sse.do_continue (address, true);
 			return EventResult.Running;
 #endif
+		}
+	}
+
+	protected class OperationDoTrampoline : OperationCallback
+	{
+		public readonly TargetAddress CallSite;
+		public readonly TargetAddress CallTarget;
+		public readonly MyTrampolineHandler MyTrampolineHandler;
+
+		public OperationDoTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
+					      TargetAddress call_target, MyTrampolineHandler handler)
+			: base (sse)
+		{
+			this.CallSite = call_site;
+			this.CallTarget = call_target;
+			this.MyTrampolineHandler = handler;
+		}
+
+		protected override void DoExecute ()
+		{
+			TargetBinaryWriter writer = new TargetBinaryWriter (16, inferior.TargetInfo);
+			writer.WriteInt64 (CallSite.Address);
+			writer.WriteInt64 (CallTarget.Address);
+
+			byte[] data = writer.Contents;
+
+			inferior.CallMethod (sse.MonoDebuggerInfo.DoTrampoline, data, ID);
+		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2)
+		{
+			Console.WriteLine ("TRAMPOLINE COMPLETED: {0:x} {1:x}", data1, data2);
+			TargetAddress address = new TargetAddress (inferior.AddressDomain, data1);
+			MyTrampolineHandler (address);
+			RestoreStack ();
+			return EventResult.ResumeOperation;
 		}
 	}
 
@@ -3656,7 +3697,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress target;
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, current_frame, out target, out insn_size);
-			if (sse.CheckTrampoline (type, current_frame, target, TrampolineHandler))
+			if (sse.CheckTrampoline (type, current_frame, target, insn_size, TrampolineHandler))
 				return false;
 
 			sse.do_step_native ();
@@ -3690,7 +3731,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3715,7 +3756,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3728,7 +3769,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			inferior.SetRegisters (parent_frame.Registers);
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 			return EventResult.Running;
 		}
 	}
@@ -3772,7 +3813,6 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal enum CallMethodType
 	{
-		Long,
 		LongLong,
 		LongString
 	}

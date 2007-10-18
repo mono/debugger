@@ -219,13 +219,14 @@ mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address
 
 ServerCommandError
 mono_debugger_server_call_method_2 (ServerHandle *handle, guint64 method_address,
-				    guint64 method_argument, guint64 callback_argument)
+				    guint32 data_size, gconstpointer data_buffer,
+				    guint64 callback_argument)
 {
 	if (!global_vtable->call_method_2)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->call_method_2) (
-		handle, method_address, method_argument, callback_argument);
+		handle, method_address, data_size, data_buffer, callback_argument);
 }
 
 ServerCommandError

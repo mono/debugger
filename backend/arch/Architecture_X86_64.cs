@@ -271,12 +271,18 @@ namespace Mono.Debugger.Backends
 					   call_site, call_target, reg, disp, vtable_addr,
 					   method);
 
+			trampoline = TargetAddress.Null;
+			return false;
+
 			MonoMetadataInfo metadata = process.MonoLanguage.MonoMetadataInfo;
 
 			if ((method == MONO_FAKE_VTABLE_METHOD) && (disp <= 0))
 				method = MONO_FAKE_IMT_METHOD;
 
 			if (method == MONO_FAKE_VTABLE_METHOD) {
+				trampoline = new TargetAddress (memory.TargetInfo.AddressDomain, method);
+				return true;
+
 				disp -= metadata.MonoVTableVTableOffset;
 				if ((disp < 0) || ((disp % memory.TargetInfo.TargetAddressSize)) != 0)
 					throw new InternalError ();
@@ -298,6 +304,7 @@ namespace Mono.Debugger.Backends
 				Console.WriteLine ("FAKE VTABLE METHOD #3: {0} {1} {2}",
 						   vtable, disp, trampoline);
 
+				trampoline = TargetAddress.Null;
 				return true;
 			}
 
@@ -319,6 +326,14 @@ namespace Mono.Debugger.Backends
 							     TargetAddress call_target,
 							     out TargetAddress trampoline)
 		{
+			Console.WriteLine ("DO GET MONO TRAMPOLINE: {0} {1}", call_site,
+					   call_target);
+
+			if (call_target.IsNull) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
 			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
 			byte opcode = reader.ReadByte ();
 			if (opcode != 0xe8) {
@@ -327,6 +342,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetAddress call = call_target + reader.ReadInt32 () + 5;
+			Console.WriteLine ("DO GET MONO TRAMPoliNE #1: {0}", call);
 			if (!process.MonoLanguage.IsTrampolineAddress (call)) {
 				trampoline = TargetAddress.Null;
 				return false;
@@ -337,6 +353,8 @@ namespace Mono.Debugger.Backends
 				method = reader.ReadInt32 ();
 			else
 				method = reader.ReadInt64 ();
+
+			Console.WriteLine ("DO GET MONO TRAMPOLINE #2: {0:x}", method);
 
 			trampoline = new TargetAddress (memory.TargetInfo.AddressDomain, method);
 			return true;

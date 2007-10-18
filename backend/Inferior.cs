@@ -106,7 +106,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, long data_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, long method_argument, long callback_argument);
+		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, int data_size, IntPtr data, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_mark_rti_frame (IntPtr handle);
@@ -341,17 +341,30 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void CallMethod (TargetAddress method, long arg1, long callback_arg)
+		public void CallMethod (TargetAddress method, byte[] data, long callback_arg)
 		{
 			check_disposed ();
 
 			TargetState old_state = change_target_state (TargetState.Running);
+
+			IntPtr data_ptr = IntPtr.Zero;
+			int data_size = data != null ? data.Length : 0;
+
 			try {
+				if (data != null) {
+					data_ptr = Marshal.AllocHGlobal (data_size);
+					Marshal.Copy (data, 0, data_ptr, data_size);
+				}
+
 				check_error (mono_debugger_server_call_method_2 (
-					server_handle, method.Address, arg1, callback_arg));
+					server_handle, method.Address,
+					data_size, data_ptr, callback_arg));
 			} catch {
 				change_target_state (old_state);
 				throw;
+			} finally {
+				if (data_ptr != IntPtr.Zero)
+					Marshal.FreeHGlobal (data_ptr);
 			}
 		}
 

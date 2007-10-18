@@ -594,12 +594,6 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			public override CommandResult CallMethod (TargetAddress method,
-								  TargetAddress arg)
-			{
-				throw new InvalidOperationException ();
-			}
-
 			public override CommandResult Return (bool run_finally)
 			{
 				throw new InvalidOperationException ();

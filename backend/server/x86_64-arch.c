@@ -797,14 +797,15 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
-			     guint64 method_argument, guint64 callback_argument)
+			     guint32 data_size, gconstpointer data_buffer,
+			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	CallbackData *cdata;
 	long new_rsp;
 
-	int size = 116;
+	int size = 120 + data_size;
 	guint8 *code = g_malloc0 (size);
 
 	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
@@ -824,7 +825,10 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint64 *) (code+88)) = INFERIOR_REG_R13 (arch->current_regs);
 	*((guint64 *) (code+96)) = INFERIOR_REG_R14 (arch->current_regs);
 	*((guint64 *) (code+104)) = INFERIOR_REG_R15 (arch->current_regs);
-	*((guint8 *) (code+112)) = 0xcc;
+	*((guint8 *) (code+data_size+116)) = 0xcc;
+
+	if (data_size > 0)
+		memcpy (code+112, data_buffer, data_size);
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
@@ -843,7 +847,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = new_rsp + 8;
-	INFERIOR_REG_RSI (arch->current_regs) = method_argument;
+	INFERIOR_REG_RSI (arch->current_regs) = new_rsp + 112;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
 
 	g_ptr_array_add (arch->callback_stack, cdata);

@@ -307,6 +307,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress GetLMFAddress;
 		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress ThreadTable;
+		public readonly TargetAddress DoTrampoline;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -367,6 +368,8 @@ namespace Mono.Debugger.Backends
 
 			DebuggerVersion           = reader.ReadAddress ();
 			ThreadTable               = reader.ReadAddress ();
+
+			DoTrampoline              = reader.ReadAddress ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
