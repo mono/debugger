@@ -127,6 +127,9 @@ namespace Mono.Debugger.Backends
 			public X86_Prefix Prefix;
 			public X86_REX_Prefix RexPrefix;
 
+			public ModRM ModRM;
+			public SIB SIB;
+
 			public InstructionType Type = InstructionType.Unknown;
 
 			public bool IsIpRelative;
@@ -292,6 +295,8 @@ namespace Mono.Debugger.Backends
 					return (int) X86_64_Register.RBX;
 				case 4: /* rsp */
 					return (int) X86_64_Register.RSP;
+				case 5: /* rbp */
+					return (int) X86_64_Register.RBP;
 				case 6: /* rsi */
 					return (int) X86_64_Register.RSI;
 				case 7: /* rdi */
@@ -328,6 +333,8 @@ namespace Mono.Debugger.Backends
 					return (int) I386Register.EBX;
 				case 4: /* esp */
 					return (int) I386Register.ESP;
+				case 5: /* ebp */
+					return (int) I386Register.EBP;
 				case 6: /* esi */
 					return (int) I386Register.ESI;
 				case 7: /* edi */
@@ -339,25 +346,22 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected ModRM DecodeModRM (X86_Instruction insn, TargetReader reader)
+		protected void DecodeModRM (X86_Instruction insn, TargetReader reader)
 		{
-			ModRM ModRM = new ModRM (insn, reader.ReadByte ());
+			insn.ModRM = new ModRM (insn, reader.ReadByte ());
 
-			if (Is64BitMode && (ModRM.Mod == 0) && ((ModRM.R_M & 0x07) == 0x06)) {
+			if (Is64BitMode && (insn.ModRM.Mod == 0) && ((insn.ModRM.R_M & 0x07) == 0x06)) {
 				Console.WriteLine ("IP RELATIVE!");
 				insn.IsIpRelative = true;
 			}
-
-			return ModRM;
 		}
 
 		protected void OneByteOpcode (X86_Instruction insn, TargetReader reader, byte opcode)
 		{
 			Console.WriteLine ("ONE BYTE OPCODE: {0:x}", opcode);
 
-			ModRM mod_rm = null;
 			if (OneByte_Has_ModRM [opcode] != 0)
-				mod_rm = DecodeModRM (insn, reader);
+				DecodeModRM (insn, reader);
 
 			if ((opcode >= 0x70) && (opcode <= 0x7f)) {
 				insn.CallTarget = insn.Address + reader.ReadByte () + 2;
@@ -399,9 +403,8 @@ namespace Mono.Debugger.Backends
 
 			Console.WriteLine ("TWO BYTE OPCODE: {0:x}", opcode);
 
-			ModRM mod_rm = null;
 			if (TwoByte_Has_ModRM [opcode] != 0)
-				mod_rm = DecodeModRM (insn, reader);
+				DecodeModRM (insn, reader);
 
 			if ((opcode >= 0x80) && (opcode <= 0x8f)) {
 				if ((insn.RexPrefix & X86_REX_Prefix.REX_W) != 0) {
@@ -438,6 +441,9 @@ namespace Mono.Debugger.Backends
 
 			int register;
 
+			if (mod_rm.Mod == 0) {
+			}
+
 			if ((mod_rm.Reg == 5) || (mod_rm.Reg == 13)) {
 				if (mod_rm.Mod == 0) {
 					if (Is64BitMode) {
@@ -455,13 +461,24 @@ namespace Mono.Debugger.Backends
 					register = (int) X86_64_Register.R13;
 				}
 			} else if ((mod_rm.Reg == 4) || (mod_rm.Reg == 12)) {
-				SIB sib = new SIB (insn, reader.ReadByte ());
-				Console.WriteLine (sib);
+				insn.SIB = new SIB (insn, reader.ReadByte ());
+				Console.WriteLine (insn.SIB);
 
-				register = DecodeRegister (sib.Base);
+				if ((mod_rm.Mod == 0) && ((insn.SIB.Base == 5) || (insn.SIB.Base == 13))) {
+					displacement = reader.BinaryReader.ReadInt32 ();
+					insn.CallTarget = new TargetAddress (
+						reader.AddressDomain, displacement);
+					return;
+				}
+
+				if (insn.SIB.Index != 4) {
+					int index = DecodeRegister (insn.SIB.Index);
+				}
+
+				register = DecodeRegister (insn.SIB.Base);
 				return;
 			} else {
-				register = DecodeRegister (register);
+				register = DecodeRegister (mod_rm.Reg);
 			}
 
 			if (mod_rm.Mod == 0) {

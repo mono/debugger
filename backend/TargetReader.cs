@@ -78,6 +78,12 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
+		public AddressDomain AddressDomain {
+			get {
+				return info.AddressDomain;
+			}
+		}
+
 		public byte ReadByte ()
 		{
 			return reader.ReadByte ();
