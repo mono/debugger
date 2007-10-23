@@ -83,7 +83,7 @@ namespace Mono.Debugger.Backends
 
 			public override string ToString ()
 			{
-				return String.Format ("ModRM (mod={0}, reg={1}, r/m={2}",
+				return String.Format ("ModRM (mod={0}, reg={1}, r/m={2})",
 						      format_2_bits (Mod), format_4_bits (Reg),
 						      format_4_bits (R_M));
 			}
@@ -109,7 +109,7 @@ namespace Mono.Debugger.Backends
 
 			public override string ToString ()
 			{
-				return String.Format ("SIB (scale={0}, index={1}, base={2}",
+				return String.Format ("SIB (scale={0}, index={1}, base={2})",
 						      format_2_bits (Scale), format_4_bits (Index),
 						      format_4_bits (Base));
 			}
@@ -390,7 +390,7 @@ namespace Mono.Debugger.Backends
 				insn.CallTarget = insn.Address + reader.ReadByte () + 2;
 				insn.Type = InstructionType.Jump;
 			} else if (opcode == 0xff) {
-				DecodeGroup5 (insn, reader, mod_rm);
+				DecodeGroup5 (insn, reader);
 			}
 
 			Console.WriteLine ("ONE BYTE OPCODE DONE: {0:x} {1} {2}", opcode,
@@ -425,27 +425,26 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected void DecodeGroup5 (X86_Instruction insn, TargetReader reader, ModRM mod_rm)
+		protected void DecodeGroup5 (X86_Instruction insn, TargetReader reader)
 		{
-			if ((mod_rm.Reg == 2) || (mod_rm.Reg == 3))
+			if ((insn.ModRM.Reg == 2) || (insn.ModRM.Reg == 3))
 				insn.Type = InstructionType.IndirectCall;
-			else if ((mod_rm.Reg == 4) || (mod_rm.Reg == 5))
+			else if ((insn.ModRM.Reg == 4) || (insn.ModRM.Reg == 5))
 				insn.Type = InstructionType.IndirectJump;
 			else
 				return;
 
-			Console.WriteLine ("GROUP 5: {0}", mod_rm);
+			Console.WriteLine ("GROUP 5: {0}", insn.ModRM);
 
 			int displacement = 0;
 			bool dereference_addr;
 
 			int register;
+			int index_register = -1;
 
-			if (mod_rm.Mod == 0) {
-			}
-
-			if ((mod_rm.Reg == 5) || (mod_rm.Reg == 13)) {
-				if (mod_rm.Mod == 0) {
+			if ((insn.ModRM.Reg == 5) || (insn.ModRM.Reg == 13)) {
+				/* Special meaning in mod == 00 */
+				if (insn.ModRM.Mod == 0) {
 					if (Is64BitMode) {
 						displacement = reader.BinaryReader.ReadInt32 ();
 						register = (int) X86_64_Register.RIP;
@@ -454,42 +453,44 @@ namespace Mono.Debugger.Backends
 						insn.CallTarget = reader.ReadAddress ();
 						return;
 					}
-				} else if (mod_rm.Reg == 5) {
-					register = Is64BitMode ?
-						(int) X86_64_Register.RBP : (int) I386Register.EBP;
 				} else {
-					register = (int) X86_64_Register.R13;
+					register = DecodeRegister (insn.ModRM.Reg);
 				}
-			} else if ((mod_rm.Reg == 4) || (mod_rm.Reg == 12)) {
-				insn.SIB = new SIB (insn, reader.ReadByte ());
-				Console.WriteLine (insn.SIB);
+			} else if ((insn.ModRM.Reg == 4) || (insn.ModRM.Reg == 12)) {
+				/* Activate SIB byte if mod != 11 */
+				if (insn.ModRM.Mod != 3) {
+					insn.SIB = new SIB (insn, reader.ReadByte ());
+					Console.WriteLine (insn.SIB);
 
-				if ((mod_rm.Mod == 0) && ((insn.SIB.Base == 5) || (insn.SIB.Base == 13))) {
-					displacement = reader.BinaryReader.ReadInt32 ();
-					insn.CallTarget = new TargetAddress (
-						reader.AddressDomain, displacement);
-					return;
+					if ((insn.ModRM.Mod == 0) &&
+					    ((insn.SIB.Base == 5) || (insn.SIB.Base == 13))) {
+						displacement = reader.BinaryReader.ReadInt32 ();
+						insn.CallTarget = new TargetAddress (
+							reader.AddressDomain, displacement);
+						return;
+					}
+
+					if (insn.SIB.Index != 4) {
+						index_register = DecodeRegister (insn.SIB.Index);
+					}
+
+					register = DecodeRegister (insn.SIB.Base);
+				} else {
+					register = DecodeRegister (insn.ModRM.Reg);
 				}
-
-				if (insn.SIB.Index != 4) {
-					int index = DecodeRegister (insn.SIB.Index);
-				}
-
-				register = DecodeRegister (insn.SIB.Base);
-				return;
 			} else {
-				register = DecodeRegister (mod_rm.Reg);
+				register = DecodeRegister (insn.ModRM.Reg);
 			}
 
-			if (mod_rm.Mod == 0) {
+			if (insn.ModRM.Mod == 0) {
 				dereference_addr = true;
-			} else if (mod_rm.Mod == 1) {
+			} else if (insn.ModRM.Mod == 1) {
 				displacement = reader.ReadByte ();
 				dereference_addr = true;
-			} else if (mod_rm.Mod == 2) {
+			} else if (insn.ModRM.Mod == 2) {
 				displacement = reader.BinaryReader.ReadInt32 ();
 				dereference_addr = true;
-			} else if (mod_rm.Mod == 3) {
+			} else if (insn.ModRM.Mod == 3) {
 				displacement = 0;
 				dereference_addr = false;
 			} else {
@@ -497,8 +498,8 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			Console.WriteLine ("GROUP 5 #1: {0} {1} {2}",
-					   register, displacement, dereference_addr);
+			Console.WriteLine ("GROUP 5 #1: {0} {1} {2} {3}",
+					   register, index_register, displacement, dereference_addr);
 		}
 
 		protected void DecodeInstruction (TargetReader reader, TargetAddress address)
