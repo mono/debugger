@@ -130,6 +130,12 @@ namespace Mono.Debugger.Backends
 			public ModRM ModRM;
 			public SIB SIB;
 
+			/* For IndirectCall and IndirectJump */
+			public int Register;
+			public int IndexRegister;
+			public int Displacement;
+			public bool DereferenceAddress;
+
 			public InstructionType Type = InstructionType.Unknown;
 
 			public bool IsIpRelative;
@@ -498,7 +504,12 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			Console.WriteLine ("GROUP 5 #1: {0} {1} {2} {3}",
+			insn.Register = register;
+			insn.IndexRegister = index_register;
+			insn.Displacement = displacement;
+			insn.DereferenceAddress = dereference_addr;
+
+			Console.WriteLine ("GROUP 5 DONE: {0} {1} {2} {3}",
 					   register, index_register, displacement, dereference_addr);
 		}
 
