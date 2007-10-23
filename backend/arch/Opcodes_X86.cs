@@ -2,28 +2,6 @@ using System;
 
 namespace Mono.Debugger.Backends
 {
-	internal enum X86_Register
-	{
-		AX,
-		BX,
-		CX,
-		DX,
-		SI,
-		DI,
-		BP,
-		SP,
-		IP,
-
-		R8,
-		R9,
-		R10,
-		R11,
-		R12,
-		R13,
-		R14,
-		R15
-	}
-
 	internal class Opcodes_X86 : Opcodes
 	{
 		public const int MaxInstructionLength = 15;
@@ -300,6 +278,67 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
+		protected int DecodeRegister (int register)
+		{
+			if (Is64BitMode) {
+				switch (register) {
+				case 0: /* rax */
+					return (int) X86_64_Register.RAX;
+				case 1: /* rcx */
+					return (int) X86_64_Register.RCX;
+				case 2: /* rdx */
+					return (int) X86_64_Register.RDX;
+				case 3: /* rbx */
+					return (int) X86_64_Register.RBX;
+				case 4: /* rsp */
+					return (int) X86_64_Register.RSP;
+				case 6: /* rsi */
+					return (int) X86_64_Register.RSI;
+				case 7: /* rdi */
+					return (int) X86_64_Register.RDI;
+				case 8: /* r8 */
+					return (int) X86_64_Register.R8;
+				case 9: /* r9 */
+					return (int) X86_64_Register.R9;
+				case 10: /* r10 */
+					return (int) X86_64_Register.R10;
+				case 11: /* r11 */
+					return (int) X86_64_Register.R11;
+				case 12: /* r12 */
+					return (int) X86_64_Register.R12;
+				case 13: /* r13 */
+					return (int) X86_64_Register.R13;
+				case 14: /* r14 */
+					return (int) X86_64_Register.R14;
+				case 15: /* r15 */
+					return (int) X86_64_Register.R15;
+				default:
+					/* can never happen */
+					throw new InvalidOperationException ();
+				}
+			} else {
+				switch (register) {
+				case 0: /* eax */
+					return (int) I386Register.EAX;
+				case 1: /* ecx */
+					return (int) I386Register.ECX;
+				case 2: /* edx */
+					return (int) I386Register.EDX;
+				case 3: /* ebx */
+					return (int) I386Register.EBX;
+				case 4: /* esp */
+					return (int) I386Register.ESP;
+				case 6: /* esi */
+					return (int) I386Register.ESI;
+				case 7: /* edi */
+					return (int) I386Register.EDI;
+				default:
+					/* can never happen */
+					throw new InvalidOperationException ();
+				}
+			}
+		}
+
 		protected ModRM DecodeModRM (X86_Instruction insn, TargetReader reader)
 		{
 			ModRM ModRM = new ModRM (insn, reader.ReadByte ());
@@ -394,11 +433,38 @@ namespace Mono.Debugger.Backends
 
 			Console.WriteLine ("GROUP 5: {0}", mod_rm);
 
-			int displacement;
+			int displacement = 0;
 			bool dereference_addr;
 
+			int register;
+
+			if ((mod_rm.Reg == 5) || (mod_rm.Reg == 13)) {
+				if (mod_rm.Mod == 0) {
+					if (Is64BitMode) {
+						displacement = reader.BinaryReader.ReadInt32 ();
+						register = (int) X86_64_Register.RIP;
+						insn.IsIpRelative = true;
+					} else {
+						insn.CallTarget = reader.ReadAddress ();
+						return;
+					}
+				} else if (mod_rm.Reg == 5) {
+					register = Is64BitMode ?
+						(int) X86_64_Register.RBP : (int) I386Register.EBP;
+				} else {
+					register = (int) X86_64_Register.R13;
+				}
+			} else if ((mod_rm.Reg == 4) || (mod_rm.Reg == 12)) {
+				SIB sib = new SIB (insn, reader.ReadByte ());
+				Console.WriteLine (sib);
+
+				register = DecodeRegister (sib.Base);
+				return;
+			} else {
+				register = DecodeRegister (register);
+			}
+
 			if (mod_rm.Mod == 0) {
-				displacement = 0;
 				dereference_addr = true;
 			} else if (mod_rm.Mod == 1) {
 				displacement = reader.ReadByte ();
@@ -412,87 +478,6 @@ namespace Mono.Debugger.Backends
 			} else {
 				// Can never happen
 				throw new InvalidOperationException ();
-			}
-
-			X86_Register register;
-
-			switch (mod_rm.Reg) {
-			case 0: /* ax */
-				register = X86_Register.AX;
-				break;
-			case 1: /* cx */
-				register = X86_Register.CX;
-				break;
-			case 2: /* dx */
-				register = X86_Register.DX;
-				break;
-			case 3: /* bx */
-				register = X86_Register.BX;
-				break;
-
-			case 4:
-			case 12: {
-				SIB sib = new SIB (insn, reader.ReadByte ());
-				Console.WriteLine (sib);
-				return;
-			}
-
-			case 5: {
-				if (mod_rm.Mod == 0) {
-					if (Is64BitMode) {
-						displacement = reader.BinaryReader.ReadInt32 ();
-						register = X86_Register.IP;
-						insn.IsIpRelative = true;
-					} else {
-						insn.CallTarget = reader.ReadAddress ();
-						return;
-					}
-				} else
-					register = X86_Register.BP;
-				break;
-			}
-
-			case 6: /* si */
-				register = X86_Register.SI;
-				break;
-			case 7: /* di */
-				register = X86_Register.DI;
-				break;
-
-			case 8: /* r8 */
-				register = X86_Register.R8;
-				break;
-			case 9: /* r9 */
-				register = X86_Register.R9;
-				break;
-			case 10: /* r10 */
-				register = X86_Register.R10;
-				break;
-			case 11: /* r11 */
-				register = X86_Register.R11;
-				break;
-
-			case 13: {
-				if (mod_rm.Mod == 0) {
-					displacement = reader.BinaryReader.ReadInt32 ();
-					register = X86_Register.IP;
-					insn.IsIpRelative = true;
-				} else
-					register = X86_Register.R13;
-				break;
-			}
-
-			case 14: /* r14 */
-				register = X86_Register.R14;
-				break;
-			case 15: /* r15 */
-				register = X86_Register.R15;
-				break;
-
-			default:
-				/* can never happen */
-				throw new InvalidOperationException ();
-
 			}
 
 			Console.WriteLine ("GROUP 5 #1: {0} {1} {2}",
