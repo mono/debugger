@@ -203,15 +203,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		if (cdata->pushed_registers) {
 			guint64 pushed_regs [13];
 
-			g_message (G_STRLOC ": %Lx - %Lx - %Lx", cdata->pushed_registers,
-				   INFERIOR_REG_RIP (arch->current_regs),
-				   INFERIOR_REG_RSP (arch->current_regs));
-
 			if (_server_ptrace_read_memory (handle, cdata->pushed_registers, 104, &pushed_regs))
 				g_error (G_STRLOC ": Can't restore registers after returning from a call");
-
-			g_message (G_STRLOC ": %Lx - %Lx",
-				   INFERIOR_REG_RAX (cdata->saved_regs), pushed_regs [0]);
 
 			INFERIOR_REG_RAX (cdata->saved_regs) = pushed_regs [0];
 			INFERIOR_REG_RBX (cdata->saved_regs) = pushed_regs [1];
@@ -244,8 +237,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			if (_server_ptrace_read_memory (
 				    handle, cdata->data_pointer, cdata->data_size, *opt_data))
 				g_error (G_STRLOC ": Can't read data buffer after returning from a call");
-
-			g_message (G_STRLOC ": %p - %d", *opt_data, cdata->data_size);
 		} else {
 			*opt_data_size = 0;
 			*opt_data = NULL;
