@@ -225,6 +225,7 @@ namespace Mono.Debugger.Backends
 			if (!dereference_addr)
 				return type;
 
+#if FIXME
 			if (process.IsManagedApplication) {
 				try {
 					TargetAddress trampoline;
@@ -237,6 +238,7 @@ namespace Mono.Debugger.Backends
 					Console.WriteLine ("MONO TRAMPOLINE EX: {0}", ex);
 				}
 			}
+#endif
 
 			return type;
 		}
