@@ -3334,7 +3334,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected delegate void MyTrampolineHandler (TargetAddress address, byte[] data);
+	protected delegate void MyTrampolineHandler (TargetAddress address, TargetAddress method);
 
 	protected class OperationTrampoline : Operation
 	{
@@ -3373,27 +3373,13 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			Console.WriteLine ("OPERATION TRAMPOLINE: {0} {1} {2}",
-					   CallSite, CallTarget, Method);
-
-#if FIXME
-			if (!Method.IsNull) {
-				sse.PushOperation (new OperationRuntimeClassInit (sse, Method));
-				return;
-			}
-#endif
-
-			Console.WriteLine ("NEW OPERATION TRAMPOLINE: {0} {1}", CallSite, CallTarget);
-
-			sse.PushOperation (new OperationDoTrampoline (
+			sse.PushOperation (new OperationResolveTrampoline (
 				sse, CallSite, CallTarget, callback_completed));
 		}
 
-		void callback_completed (TargetAddress address, byte[] data)
+		void callback_completed (TargetAddress address, TargetAddress method)
 		{
 			this.address = address;
-
-			Console.WriteLine ("OPERATION TRAMPOLINE DONE: {0}", address);
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3532,14 +3518,14 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected class OperationDoTrampoline : OperationCallback
+	protected class OperationResolveTrampoline : OperationCallback
 	{
 		public readonly TargetAddress CallSite;
 		public readonly TargetAddress CallTarget;
 		public readonly MyTrampolineHandler MyTrampolineHandler;
 
-		public OperationDoTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
-					      TargetAddress call_target, MyTrampolineHandler handler)
+		public OperationResolveTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
+						   TargetAddress call_target, MyTrampolineHandler handler)
 			: base (sse)
 		{
 			this.CallSite = call_site;
@@ -3560,9 +3546,10 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetBinaryWriter writer = new TargetBinaryWriter (
-				24 + code_buffer_size, inferior.TargetInfo);
+				32 + code_buffer_size, inferior.TargetInfo);
 			writer.WriteInt64 (CallSite.Address);
 			writer.WriteInt64 (CallTarget.Address);
+			writer.WriteInt64 (0);
 			writer.WriteInt32 (code_buffer_size);
 			writer.WriteInt32 (code_buffer_offset);
 			if (code_buffer != null)
@@ -3575,16 +3562,11 @@ namespace Mono.Debugger.Backends
 
 		protected override EventResult CallbackCompleted (Inferior.ChildEvent cevent)
 		{
-			Console.WriteLine ("TRAMPOLINE COMPLETED: {0:x} {1:x}\n{2}", cevent.Data1,
-					   cevent.Data2, TargetBinaryReader.HexDump (cevent.CallbackData));
-
 			TargetBinaryReader reader = new TargetBinaryReader (
 				cevent.CallbackData, inferior.TargetInfo);
-			byte[] new_code = reader.PeekBuffer (24, code_buffer_size);
-
-			Console.WriteLine ("OLD:\n{0}\n\nNEW:\n{1}",
-					   TargetBinaryReader.HexDump (code_buffer),
-					   TargetBinaryReader.HexDump (new_code));
+			TargetAddress method = new TargetAddress (
+				inferior.AddressDomain, reader.PeekAddress (16));
+			byte[] new_code = reader.PeekBuffer (32, code_buffer_size);
 
 			bool modified = false;
 			for (int i = 0; i < code_buffer_size; i++) {
@@ -3594,10 +3576,14 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			Console.WriteLine ("TRAMPOLINE COMPLETED #1: {0:x} {1}", cevent.Data1, modified);
+			if (modified) {
+				sse.process.AcquireGlobalThreadLock (sse);
+				inferior.WriteBuffer (CallSite - code_buffer_offset, new_code);
+				sse.process.ReleaseGlobalThreadLock (sse);
+			}
 
 			TargetAddress address = new TargetAddress (inferior.AddressDomain, cevent.Data1);
-			MyTrampolineHandler (address, cevent.CallbackData);
+			MyTrampolineHandler (address, method);
 			RestoreStack ();
 			return EventResult.ResumeOperation;
 		}
@@ -3607,35 +3593,6 @@ namespace Mono.Debugger.Backends
 			throw new InternalError ();
 		}
 	}
-
-#if FIXME
-	protected class OperationCompileMethod : OperationCallback
-	{
-		public readonly TargetAddress Method;
-		public readonly MyTrampolineHandler MyTrampolineHandler;
-
-		public OperationCompileMethod (SingleSteppingEngine sse, TargetAddress method,
-					       MyTrampolineHandler handler)
-			: base (sse)
-		{
-			this.Method = method;
-			this.MyTrampolineHandler = handler;
-		}
-
-		protected override void DoExecute ()
-		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.CompileMethod, Method.Address, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			TargetAddress address = new TargetAddress (inferior.AddressDomain, data1);
-			MyTrampolineHandler (address);
-			RestoreStack ();
-			return EventResult.ResumeOperation;
-		}
-	}
-#endif
 
 	protected class OperationRuntimeClassInit : OperationCallback
 	{
