@@ -17,6 +17,8 @@ namespace Mono.Debugger.Backends
 		TargetMemoryAccess memory;
 		SymbolTableManager symtab_manager;
 
+		Opcodes_X86 opcodes;
+
 		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
 
@@ -37,6 +39,8 @@ namespace Mono.Debugger.Backends
 			this.info = info;
 			this.memory = memory;
 			this.symtab_manager = symtab_manager;
+
+			opcodes = new Opcodes_X86 (true);
 
 			read_handler = new ReadMemoryHandler (read_memory_func);
 			output_handler = new OutputHandler (output_func);
@@ -149,6 +153,11 @@ namespace Mono.Debugger.Backends
 
 				address = new TargetAddress (
 					memory.TargetInfo.AddressDomain, address.Address);
+
+				try {
+					opcodes.ReadInstruction (memory, address);
+				} catch {
+				}
 
 				string insn;
 				int insn_size;

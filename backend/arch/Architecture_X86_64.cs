@@ -44,9 +44,13 @@ namespace Mono.Debugger.Backends
 		protected const int MONO_FAKE_IMT_METHOD = -1;
 		protected const int MONO_FAKE_VTABLE_METHOD = -2;
 
+		Opcodes_X86 opcodes;
+
 		internal Architecture_X86_64 (ProcessServant process, TargetInfo info)
 			: base (process, info)
-		{ }
+		{
+			opcodes = new Opcodes_X86 (true);
+		}
 
 		internal override bool IsRetInstruction (TargetMemoryAccess memory,
 							 TargetAddress address)
@@ -328,9 +332,6 @@ namespace Mono.Debugger.Backends
 							     TargetAddress call_target,
 							     out TargetAddress trampoline)
 		{
-			Console.WriteLine ("DO GET MONO TRAMPOLINE: {0} {1}", call_site,
-					   call_target);
-
 			if (call_target.IsNull) {
 				trampoline = TargetAddress.Null;
 				return false;
