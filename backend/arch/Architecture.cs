@@ -261,6 +261,10 @@ namespace Mono.Debugger.Backends
 				thread.NativeLanguage, name);
 		}
 
+		internal abstract void InterpretCallInstruction (Inferior inferior,
+								 TargetAddress ret_addr,
+								 TargetAddress call_target);
+
 		//
 		// This is a horrible hack - don't use !
 		//

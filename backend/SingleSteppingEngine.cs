@@ -901,7 +901,7 @@ namespace Mono.Debugger.Backends
 			return bpt.CheckBreakpointHit (thread, address);
 		}
 
-		bool step_over_breakpoint (TargetAddress until, bool trampoline)
+		bool step_over_breakpoint (TargetAddress until)
 		{
 			int index;
 			bool is_enabled;
@@ -912,10 +912,13 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} at {2} until {3}/{4}",
-				      this, index, inferior.CurrentFrame, until, trampoline);
+				      "{0} stepping over breakpoint {1} at {2} until {3}",
+				      this, index, inferior.CurrentFrame, until);
 
-			PushOperation (new OperationStepOverBreakpoint (this, index, trampoline, until));
+			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
+					   inferior.CurrentFrame, index, until);
+
+			PushOperation (new OperationStepOverBreakpoint (this, index, until));
 			return true;
 		}
 
@@ -1157,20 +1160,15 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		void do_continue ()
 		{
-			do_continue (TargetAddress.Null, false);
+			do_continue (TargetAddress.Null);
 		}
 
 		void do_continue (TargetAddress until)
 		{
-			do_continue (until, false);
-		}
-
-		void do_continue (TargetAddress until, bool trampoline)
-		{
 			check_inferior ();
 			frames_invalid ();
 
-			if (step_over_breakpoint (until, trampoline))
+			if (step_over_breakpoint (until))
 				return;
 
 			if (!until.IsNull)
@@ -1188,7 +1186,7 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			if (step_over_breakpoint (TargetAddress.Null, false))
+			if (step_over_breakpoint (TargetAddress.Null))
 				return;
 
 			inferior.Step ();
@@ -2366,15 +2364,13 @@ namespace Mono.Debugger.Backends
 	{
 		TargetAddress until;
 		public readonly int Index;
-		bool is_trampoline;
 		bool has_thread_lock;
 
 		public OperationStepOverBreakpoint (SingleSteppingEngine sse, int index,
-						    bool is_trampoline, TargetAddress until)
+						    TargetAddress until)
 			: base (sse, null)
 		{
 			this.Index = index;
-			this.is_trampoline = is_trampoline;
 			this.until = until;
 		}
 
@@ -2384,7 +2380,7 @@ namespace Mono.Debugger.Backends
 
 		bool check_trampolines ()
 		{
-			if (is_trampoline || !sse.process.IsManaged)
+			if (!sse.process.IsManaged)
 				return false;
 
 			int insn_size;
@@ -2403,8 +2399,7 @@ namespace Mono.Debugger.Backends
 		protected override void DoExecute ()
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint: {1} {2}", sse,
-				      is_trampoline, until);
+				      "{0} stepping over breakpoint: {1}", sse, until);
 
 			if (check_trampolines ())
 				return;
@@ -2415,15 +2410,8 @@ namespace Mono.Debugger.Backends
 			has_thread_lock = true;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} at {5} until {2}/{3} ({4})",
-				      sse, Index, until, is_trampoline, sse.current_method,
-				      inferior.CurrentFrame);
-
-			if (is_trampoline) {
-				sse.do_continue (until);
-				until = TargetAddress.Null;
-				return;
-			}
+				      "{0} stepping over breakpoint {1} at {2} until {3} ({4})",
+				      sse, Index, inferior.CurrentFrame, until, sse.current_method);
 
 			inferior.Step ();
 		}
@@ -3390,13 +3378,17 @@ namespace Mono.Debugger.Backends
 
 			args = null;
 
-			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}: {2} {3} {4} {5}",
-				      sse, this, address, inferior.CurrentFrame, compiled, completed);
+			Console.WriteLine ("TRAMPOLINE EVENT: {0} {1} {2} - {3}",
+					   inferior.CurrentFrame, cevent, TrampolineHandler,
+					   address);
 
 			if (completed)
 				return EventResult.ResumeOperation;
 
 			completed = true;
+
+			inferior.Architecture.InterpretCallInstruction (inferior, CallSite, address);
+			sse.frames_invalid ();
 
 			if (TrampolineHandler != null) {
 				Method method = sse.Lookup (address);
@@ -3406,16 +3398,15 @@ namespace Mono.Debugger.Backends
 					      method != null ? method.Module : null,
 					      sse.MethodHasSource (method), TrampolineHandler);
 
-				if (!TrampolineHandler (method)) {
-					sse.do_next_native ();
-					return EventResult.Running;
-				}
+				if (TrampolineHandler (method))
+					return EventResult.Completed;
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
-				      sse, address, inferior.CurrentFrame);
+			Console.WriteLine ("STEP OVER TRAMPOLINE: {0} {1} {2}",
+					   inferior.CurrentFrame, CallSite, CallTarget);
 
-			sse.do_continue (address, true);
+			sse.insert_temporary_breakpoint (CallSite);
+			inferior.Continue ();
 			return EventResult.Running;
 		}
 	}
@@ -3492,29 +3483,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			return EventResult.Completed;
-
-#if FIXME
-
-			if (TrampolineHandler != null) {
-				Method method = sse.Lookup (address);
-				Report.Debug (DebugFlags.SSE,
-					      "{0} compiled method: {1} {2} {3} {4} {5}",
-					      sse, address, method,
-					      method != null ? method.Module : null,
-					      sse.MethodHasSource (method), TrampolineHandler);
-
-				if (!TrampolineHandler (method)) {
-					sse.do_next_native ();
-					return EventResult.Running;
-				}
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
-				      sse, address, inferior.CurrentFrame);
-
-			sse.do_continue (address, true);
-			return EventResult.Running;
-#endif
 		}
 	}
 

@@ -640,5 +640,12 @@ namespace Mono.Debugger.Architectures
 
 			return CreateFrame (thread, new_eip, new_esp, new_ebp, regs, true);
 		}
+
+		internal override void InterpretCallInstruction (Inferior inferior,
+								 TargetAddress ret_addr,
+								 TargetAddress call_target)
+		{
+
+		}
 	}
 }

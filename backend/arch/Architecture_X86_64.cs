@@ -784,5 +784,23 @@ namespace Mono.Debugger.Architectures
 
 			return CreateFrame (thread, rip, rsp, new_rbp, regs, true);
 		}
+
+		internal override void InterpretCallInstruction (Inferior inferior,
+								 TargetAddress ret_addr,
+								 TargetAddress call_target)
+		{
+			Registers regs = inferior.GetRegisters ();
+
+			TargetAddress rsp = new TargetAddress (
+				inferior.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+
+			rsp -= 8;
+			inferior.WriteAddress (rsp, ret_addr);
+
+			regs [(int) X86_64_Register.RSP].SetValue (rsp);
+			regs [(int) X86_64_Register.RIP].SetValue (call_target);
+
+			inferior.SetRegisters (regs);
+		}
 	}
 }
