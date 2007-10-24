@@ -1,5 +1,6 @@
 using System;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backends
 {
@@ -119,6 +120,8 @@ namespace Mono.Debugger.Backends
 						       out int insn_size)
 		{
 			CallTargetType type = DoGetCallTarget (memory, address, out target, out insn_size);
+			Console.WriteLine ("GET CALL TARGET: {0} {1} {2} {3}",
+					   address, type, target, insn_size);
 			if (type == CallTargetType.None)
 				return CallTargetType.None;
 
@@ -145,10 +148,55 @@ namespace Mono.Debugger.Backends
 			return type;
 		}
 
-		protected abstract CallTargetType DoGetCallTarget (TargetMemoryAccess memory,
-								   TargetAddress address,
-								   out TargetAddress target,
-								   out int insn_size);
+		protected CallTargetType DoGetCallTarget (TargetMemoryAccess memory,
+							  TargetAddress address,
+							  out TargetAddress target,
+							  out int insn_size)
+		{
+			if (address.Address == 0xffffe002) {
+				insn_size = 0;
+				target = TargetAddress.Null;
+				return CallTargetType.None;
+			}
+
+			Instruction insn = X86_Instruction.DecodeInstruction (memory, address);
+			if ((insn == null) || (insn.InstructionType == Instruction.Type.Unknown)) {
+				insn_size = 0;
+				target = TargetAddress.Null;
+				return CallTargetType.None;
+			}
+
+			switch (insn.InstructionType) {
+			case Instruction.Type.Unknown:
+				insn_size = -1;
+				target = TargetAddress.Null;
+				return CallTargetType.None;
+
+			case Instruction.Type.Jump:
+			case Instruction.Type.ConditionalJump:
+				insn_size = insn.InstructionSize;
+				target = insn.GetEffectiveAddress (memory);
+				return CallTargetType.Jump;
+
+			case Instruction.Type.Call:
+				insn_size = insn.InstructionSize;
+				target = insn.GetEffectiveAddress (memory);
+				return CallTargetType.Call;
+
+			case Instruction.Type.IndirectCall:
+				insn_size = insn.InstructionSize;
+				target = insn.GetEffectiveAddress (memory);
+				return CallTargetType.Call;
+
+			case Instruction.Type.IndirectJump:
+				insn_size = insn.InstructionSize;
+				target = insn.GetEffectiveAddress (memory);
+				return CallTargetType.Jump;
+
+			default:
+				throw new InvalidOperationException ();
+			}
+		}
 
 		protected abstract bool DoGetMonoTrampoline (TargetMemoryAccess memory,
 							     TargetAddress call_site,

@@ -1,6 +1,7 @@
 using System;
+using Mono.Debugger.Backends;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Architectures
 {
 	internal abstract class Opcodes : DebuggerMarshalByRefObject
 	{

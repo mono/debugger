@@ -23,6 +23,19 @@
 	Sorry about the breakage, there's nothing I can do about it at the
 	moment and it will most likely take a few days to get it fixed.
 
+2007-10-24  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Instruction.cs: New file.
+	(Instruction): New internal abstract class.
+
+	* backend/arch/X86_Instruction.cs: New file.
+	(X86_Instruction): New internal class; implement `Instruction'
+	here, we use this for both i386 and x86_64.
+
+	* backend/arch/Architecture.cs
+	(Architecture.DoGetCallTarget): Don't make this abstract;
+	implement it here using the new `Instruction' class.
+
 2007-10-16  Martin Baulig  <martin@ximian.com>
 
 	* backend/ILanguageBackend.cs: Removed.

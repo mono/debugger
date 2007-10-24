@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backends
 {
