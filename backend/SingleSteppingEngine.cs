@@ -918,6 +918,16 @@ namespace Mono.Debugger.Backends
 			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
 					   inferior.CurrentFrame, index, until);
 
+			int insn_size;
+			TargetAddress target;
+			CallTargetType type = inferior.Architecture.GetCallTarget (
+				inferior, inferior.CurrentFrame, out target, out insn_size);
+			if (Architecture.IsTrampoline (type)) {
+				PushOperation (new OperationTrampoline (
+					this, inferior.CurrentFrame + insn_size, target, null));
+				return true;
+			}
+
 			PushOperation (new OperationStepOverBreakpoint (this, index, until));
 			return true;
 		}
@@ -2469,6 +2479,7 @@ namespace Mono.Debugger.Backends
 				return EventResult.Completed;
 			}
 
+#if FIXME
 			if (!until.IsNull) {
 				sse.do_continue (until);
 
@@ -2476,6 +2487,7 @@ namespace Mono.Debugger.Backends
 				until = TargetAddress.Null;
 				return EventResult.Running;
 			}
+#endif
 
 			args = null;
 			return EventResult.ResumeOperation;
@@ -3537,16 +3549,28 @@ namespace Mono.Debugger.Backends
 			byte[] new_code = reader.PeekBuffer (32, code_buffer_size);
 
 			bool modified = false;
+			int first_modified_offset = 0, last_modified_offset = 0;
 			for (int i = 0; i < code_buffer_size; i++) {
-				if (code_buffer [i] != new_code [i]) {
+				if (code_buffer [i] == new_code [i])
+					continue;
+
+				if (!modified) {
+					first_modified_offset = i;
 					modified = true;
-					break;
 				}
+
+				last_modified_offset = i;
 			}
 
 			if (modified) {
 				sse.process.AcquireGlobalThreadLock (sse);
-				inferior.WriteBuffer (CallSite - code_buffer_offset, new_code);
+
+				int modified_size = last_modified_offset - first_modified_offset;
+				byte[] thebuffer = new byte [modified_size];
+				Array.Copy (new_code, first_modified_offset, thebuffer, 0, modified_size);
+				inferior.WriteBuffer (
+					CallSite - code_buffer_offset + first_modified_offset, thebuffer);
+
 				sse.process.ReleaseGlobalThreadLock (sse);
 			}
 
