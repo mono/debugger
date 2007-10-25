@@ -2,6 +2,7 @@
 #define __MONO_DEBUGGER_SERVER_H__
 
 #include <breakpoints.h>
+#include <mono-runtime-info.h>
 #include <signal.h>
 #include <glib.h>
 
@@ -93,6 +94,7 @@ typedef struct {
 struct ServerHandle {
 	ArchInfo *arch;
 	InferiorHandle *inferior;
+	MonoRuntimeInfo *mono_runtime;
 	BreakpointManager *bpm;
 };
 
@@ -106,10 +108,8 @@ struct InferiorVTable {
 	ServerCommandError    (* initialize_thread)   (ServerHandle       *handle,
 						       guint32             pid);
 
-	void                  (* initialize_mono)     (ServerHandle     *handle,
-						       guint64           notification,
-						       guint64           executable_code_buffer,
-						       guint32           code_buffer_size);
+	void                  (* set_runtime_info)    (ServerHandle       *handle,
+						       MonoRuntimeInfo    *mono_runtime_info);
 
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
 						       const gchar        *working_directory,
@@ -532,10 +532,8 @@ mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo         **sinfo);
 
 void
-mono_debugger_server_initialize_mono     (ServerHandle        *handle,
-					  guint64              notification,
-					  guint64              executable_code_buffer,
-					  guint32              code_buffer_size);
+mono_debugger_server_set_runtime_info    (ServerHandle        *handle,
+					  MonoRuntimeInfo     *mono_runtime);
 
 ServerCommandError
 mono_debugger_server_get_threads         (ServerHandle        *handle,

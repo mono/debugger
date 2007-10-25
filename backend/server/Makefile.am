@@ -25,6 +25,8 @@ libmonodebuggerserver_la_SOURCES = \
 	$(platform_sources)	\
 	breakpoints.c		\
 	breakpoints.h		\
+	mono-runtime-info.c	\
+	mono-runtime-info.h	\
 	mutex.c			\
 	mutex.h			\
 	thread-db.c		\

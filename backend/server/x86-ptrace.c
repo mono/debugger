@@ -55,9 +55,6 @@ struct InferiorHandle
 	int last_signal;
 	int output_fd [2], error_fd [2];
 	int is_thread, is_initialized;
-	guint64 notification_address;
-	guint64 executable_code_buffer;
-	guint32 executable_code_buffer_size;
 };
 
 typedef struct
@@ -478,12 +475,9 @@ server_ptrace_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
 }
 
 static void
-server_ptrace_initialize_mono (ServerHandle *handle, guint64 notification,
-			       guint64 code_buffer, guint32 code_buffer_size)
+server_ptrace_set_runtime_info (ServerHandle *handle, MonoRuntimeInfo *mono_runtime)
 {
-	handle->inferior->notification_address = notification;
-	handle->inferior->executable_code_buffer = code_buffer;
-	handle->inferior->executable_code_buffer_size = code_buffer_size;
+	handle->mono_runtime = mono_runtime;
 }
 
 extern void GC_start_blocking (void);
@@ -510,7 +504,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_create_inferior,
 	server_ptrace_initialize_process,
 	server_ptrace_initialize_thread,
-	server_ptrace_initialize_mono,
+	server_ptrace_set_runtime_info,
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,

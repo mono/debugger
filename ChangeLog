@@ -1,3 +1,16 @@
+2007-10-25  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/mono-runtime-info.[ch]: New files.
+
+	* backend/server/server.h
+	(ServerHandle): Added `MonoRuntimeInfo *mono_runtime'.
+	(InferiorVTable): Replaced `set_notification' by
+	`set_runtime_info'.
+
+	* x86-ptrace.c
+	(InferiorHandle): Removed `notification_address'; this is now in
+	the new `MonoRuntimeInfo' struct.
+
 2007-10-17  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoLanguageBackend.cs

@@ -411,7 +411,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
-	if ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == inferior->notification_address) {
+	if (handle->mono_runtime &&
+	    ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
 		guint64 data [3];
 

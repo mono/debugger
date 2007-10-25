@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "mono-runtime-info.h"
 #include "x86-linux-ptrace.h"
 #include "x86-arch.h"
 
@@ -175,7 +176,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
-	if (INFERIOR_REG_RIP (arch->current_regs) - 1 == inferior->notification_address) {
+	if (handle->mono_runtime &&
+	    (INFERIOR_REG_RIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
 		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
 		*retval = INFERIOR_REG_RSI (arch->current_regs);
 		*retval2 = INFERIOR_REG_RDX (arch->current_regs);

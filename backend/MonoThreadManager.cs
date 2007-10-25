@@ -51,8 +51,6 @@ namespace Mono.Debugger.Backends
 	{
 		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
-		TargetAddress notification_address = TargetAddress.Null;
-		TargetAddress executable_code_buffer = TargetAddress.Null;
 		Inferior inferior;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
@@ -82,15 +80,28 @@ namespace Mono.Debugger.Backends
 		}
 
 		AddressBreakpoint notification_bpt;
+		IntPtr mono_runtime_info;
+
+		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_server_initialize_mono_runtime (
+			long notification_address, long executable_code_buffer,
+			int executable_code_buffer_size, long breakpoint_table,
+			int breakpoint_table_size);
 
 		protected void initialize_notifications (Inferior inferior)
 		{
-			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
-			executable_code_buffer = inferior.ReadAddress (debugger_info.ExecutableCodeBuffer);
+			TargetAddress notification_address = inferior.ReadAddress (
+				debugger_info.NotificationAddress);
+			TargetAddress executable_code_buffer = inferior.ReadAddress (
+				debugger_info.ExecutableCodeBuffer);
+			TargetAddress breakpoint_table = inferior.ReadAddress (
+				debugger_info.BreakpointTable);
 
-			inferior.InitializeMonoRuntime (
-				notification_address, executable_code_buffer,
-				debugger_info.ExecutableCodeBufferSize);
+			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
+				notification_address.Address, executable_code_buffer.Address,
+				debugger_info.ExecutableCodeBufferSize, breakpoint_table.Address,
+				debugger_info.BreakpointTableSize);
+			inferior.SetRuntimeInfo (mono_runtime_info);
 
 			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
 
@@ -139,9 +150,7 @@ namespace Mono.Debugger.Backends
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
-			sse.Inferior.InitializeMonoRuntime (
-				notification_address, executable_code_buffer,
-				debugger_info.ExecutableCodeBufferSize);
+			sse.Inferior.SetRuntimeInfo (mono_runtime_info);
 
 			if (++index < 3)
 				sse.SetDaemon ();
