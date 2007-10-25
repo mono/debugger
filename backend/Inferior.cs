@@ -447,7 +447,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void ExecuteInstruction (Thread target, byte[] instruction)
+		public void ExecuteInstruction (byte[] instruction)
 		{
 			check_disposed ();
 

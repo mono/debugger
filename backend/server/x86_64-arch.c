@@ -1081,6 +1081,7 @@ static ServerCommandError
 server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, guint32 size)
 {
 	g_message (G_STRLOC);
+
 	return COMMAND_ERROR_NOT_IMPLEMENTED;
 }
 

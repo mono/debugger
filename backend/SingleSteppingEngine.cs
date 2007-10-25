@@ -922,6 +922,12 @@ namespace Mono.Debugger.Backends
 			TargetAddress target;
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, inferior.CurrentFrame, out target, out insn_size);
+
+			byte[] instruction = { 0xcc, 0x90, 0x90 };
+			inferior.ExecuteInstruction (instruction);
+
+			throw new InternalError ("NOT IMPLEMENTED BEYOND THIS POINT!");
+
 			if (Architecture.IsTrampoline (type)) {
 				PushOperation (new OperationTrampoline (
 					this, inferior.CurrentFrame + insn_size, target, null));
