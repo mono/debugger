@@ -326,6 +326,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress ThreadTable;
 		public readonly TargetAddress ExecutableCodeBuffer;
 		public readonly int ExecutableCodeBufferSize;
+		public readonly TargetAddress BreakpointInfoArea;
 		public readonly TargetAddress BreakpointTable;
 		public readonly int BreakpointTableSize;
 
@@ -392,6 +393,7 @@ namespace Mono.Debugger.Backends
 			DoTrampoline              = reader.ReadAddress ();
 
 			ExecutableCodeBuffer      = reader.ReadAddress ();
+			BreakpointInfoArea        = reader.ReadAddress ();
 			BreakpointTable           = reader.ReadAddress ();
 
 			ExecutableCodeBufferSize  = reader.ReadInteger ();
