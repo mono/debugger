@@ -106,6 +106,11 @@ struct InferiorVTable {
 	ServerCommandError    (* initialize_thread)   (ServerHandle       *handle,
 						       guint32             pid);
 
+	void                  (* initialize_mono)     (ServerHandle     *handle,
+						       guint64           notification,
+						       guint64           executable_code_buffer,
+						       guint32           code_buffer_size);
+
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
 						       const gchar        *working_directory,
 						       const gchar       **argv,
@@ -319,9 +324,6 @@ struct InferiorVTable {
 	ServerCommandError    (* get_signal_info)     (ServerHandle     *handle,
 						       SignalInfo      **sinfo);
 
-	void                  (* set_notification)    (ServerHandle     *handle,
-						       guint64           notification);
-
 	ServerCommandError    (* get_threads)         (ServerHandle     *handle,
 						       guint32          *count,
 						       guint32         **threads);
@@ -530,8 +532,10 @@ mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo         **sinfo);
 
 void
-mono_debugger_server_set_notification    (ServerHandle        *handle,
-					  guint64              notification);
+mono_debugger_server_initialize_mono     (ServerHandle        *handle,
+					  guint64              notification,
+					  guint64              executable_code_buffer,
+					  guint32              code_buffer_size);
 
 ServerCommandError
 mono_debugger_server_get_threads         (ServerHandle        *handle,

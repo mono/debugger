@@ -52,6 +52,7 @@ namespace Mono.Debugger.Backends
 		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
 		TargetAddress notification_address = TargetAddress.Null;
+		TargetAddress executable_code_buffer = TargetAddress.Null;
 		Inferior inferior;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
@@ -85,7 +86,11 @@ namespace Mono.Debugger.Backends
 		protected void initialize_notifications (Inferior inferior)
 		{
 			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
-			inferior.SetNotificationAddress (notification_address);
+			executable_code_buffer = inferior.ReadAddress (debugger_info.ExecutableCodeBuffer);
+
+			inferior.InitializeMonoRuntime (
+				notification_address, executable_code_buffer,
+				debugger_info.ExecutableCodeBufferSize);
 
 			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
 
@@ -134,7 +139,10 @@ namespace Mono.Debugger.Backends
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
-			sse.Inferior.SetNotificationAddress (notification_address);
+			sse.Inferior.InitializeMonoRuntime (
+				notification_address, executable_code_buffer,
+				debugger_info.ExecutableCodeBufferSize);
+
 			if (++index < 3)
 				sse.SetDaemon ();
 		}
@@ -305,9 +313,13 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
+		public readonly TargetAddress DoTrampoline;
 		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress ThreadTable;
-		public readonly TargetAddress DoTrampoline;
+		public readonly TargetAddress ExecutableCodeBuffer;
+		public readonly int ExecutableCodeBufferSize;
+		public readonly TargetAddress BreakpointTable;
+		public readonly int BreakpointTableSize;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -370,6 +382,12 @@ namespace Mono.Debugger.Backends
 			ThreadTable               = reader.ReadAddress ();
 
 			DoTrampoline              = reader.ReadAddress ();
+
+			ExecutableCodeBuffer      = reader.ReadAddress ();
+			BreakpointTable           = reader.ReadAddress ();
+
+			ExecutableCodeBufferSize  = reader.ReadInteger ();
+			BreakpointTableSize       = reader.ReadInteger ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 

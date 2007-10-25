@@ -178,7 +178,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr registers);
 
 		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_set_notification (IntPtr handle, long address);
+		static extern void mono_debugger_server_initialize_mono (IntPtr handle, long notification, long code_buffer, int code_buffer_size);
 
 		internal enum ChildEventType {
 			NONE = 0,
@@ -1312,9 +1312,13 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void SetNotificationAddress (TargetAddress notification)
+		internal void InitializeMonoRuntime (TargetAddress notification,
+						     TargetAddress executable_code_buffer,
+						     int code_buffer_size)
 		{
-			mono_debugger_server_set_notification (server_handle, notification.Address);
+			mono_debugger_server_initialize_mono (
+				server_handle, notification.Address,
+				executable_code_buffer.Address, code_buffer_size);
 		}
 
 		internal struct ServerStackFrame
