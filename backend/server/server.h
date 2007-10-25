@@ -564,8 +564,10 @@ mono_debugger_server_get_callback_frame  (ServerHandle        *handle,
 					  guint64             *registers);
 
 ServerCommandError
-mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 address,
-					      guint8 saved_insn);
+mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint);
+
+ServerCommandError
+mono_debugger_runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint);
 
 /* POSIX semaphores */
 

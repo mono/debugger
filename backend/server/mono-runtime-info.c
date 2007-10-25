@@ -56,8 +56,7 @@ find_breakpoint_slot (MonoRuntimeInfo *runtime)
 }
 
 ServerCommandError
-mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 address,
-					      guint8 saved_insn)
+mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
 	MonoRuntimeInfo *runtime;
 	ServerCommandError result;
@@ -72,8 +71,10 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 addr
 	if (slot < 0)
 		return COMMAND_ERROR_INTERNAL_ERROR;
 
-	g_message (G_STRLOC ": allocated slot %d for breakpoint %Lx / %x", slot, address,
-		   saved_insn);
+	breakpoint->runtime_table_slot = slot;
+
+	g_message (G_STRLOC ": allocated slot %d for breakpoint %Lx / %x", slot,
+		   breakpoint->address, (guint8) breakpoint->saved_insn);
 
 	table_address = runtime->breakpoint_info_area + 16 * slot;
 	index_address = runtime->breakpoint_table + runtime->address_size * slot;
@@ -83,8 +84,8 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 addr
 
 	memset (&info, 0, sizeof (MonoDebuggerBreakpointInfo));
 	info.enabled = 1;
-	info.opcode = saved_insn;
-	info.address = address;
+	info.opcode = breakpoint->saved_insn;
+	info.address = breakpoint->address;
 
 	result = server_ptrace_write_memory (handle, table_address, 16, &info);
 	if (result != COMMAND_ERROR_NONE)
@@ -93,6 +94,33 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 addr
 	result = server_ptrace_poke_word (handle, index_address, (gsize) table_address);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+ServerCommandError
+mono_debugger_runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	g_message (G_STRLOC ": freeing breakpoint slot %d", breakpoint->runtime_table_slot);
+
+	slot = breakpoint->runtime_table_slot;
+	index_address = runtime->breakpoint_table + runtime->address_size * slot;
+
+	g_message (G_STRLOC ": index address is %Lx", index_address);
+
+	result = server_ptrace_poke_word (handle, index_address, 0);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	runtime->_priv->breakpoint_table_bitfield [slot] = 0;
 
 	return COMMAND_ERROR_NONE;
 }
