@@ -499,6 +499,8 @@ extern void GC_end_blocking (void);
 #error "Unknown architecture"
 #endif
 
+#include "mono-runtime-info.c"
+
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_init,
 	server_ptrace_create_inferior,

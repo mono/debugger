@@ -11,7 +11,9 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 	x86-linux-ptrace.c		\
 	x86-linux-ptrace.h		\
 	x86-ptrace.c			\
-	x86-ptrace.h
+	x86-ptrace.h			\
+	mono-runtime-info.c		\
+	mono-runtime-info.h
 
 if PLATFORM_POWERPC
 platform_sources =
@@ -25,8 +27,6 @@ libmonodebuggerserver_la_SOURCES = \
 	$(platform_sources)	\
 	breakpoints.c		\
 	breakpoints.h		\
-	mono-runtime-info.c	\
-	mono-runtime-info.h	\
 	mutex.c			\
 	mutex.h			\
 	thread-db.c		\

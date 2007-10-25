@@ -451,6 +451,13 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		if (result != COMMAND_ERROR_NONE)
 			return result;
 
+		if (handle->mono_runtime) {
+			result = mono_debugger_runtime_info_enable_breakpoint (
+				handle, address, breakpoint->saved_insn);		
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
+
 		result = server_ptrace_write_memory (handle, address, 1, &bopcode);
 		if (result != COMMAND_ERROR_NONE)
 			return result;

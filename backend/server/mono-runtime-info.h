@@ -5,6 +5,8 @@
 
 G_BEGIN_DECLS
 
+typedef struct _MonoRuntimeInfoPriv MonoRuntimeInfoPriv;
+
 typedef struct
 {
 	guint64 notification_address;
@@ -12,6 +14,7 @@ typedef struct
 	guint32 executable_code_buffer_size;
 	guint64 breakpoint_table;
 	guint32 breakpoint_table_size;
+	MonoRuntimeInfoPriv *_priv;
 } MonoRuntimeInfo;
 
 MonoRuntimeInfo *

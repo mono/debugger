@@ -94,12 +94,11 @@ namespace Mono.Debugger.Backends
 				debugger_info.NotificationAddress);
 			TargetAddress executable_code_buffer = inferior.ReadAddress (
 				debugger_info.ExecutableCodeBuffer);
-			TargetAddress breakpoint_table = inferior.ReadAddress (
-				debugger_info.BreakpointTable);
 
 			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
 				notification_address.Address, executable_code_buffer.Address,
-				debugger_info.ExecutableCodeBufferSize, breakpoint_table.Address,
+				debugger_info.ExecutableCodeBufferSize,
+				debugger_info.BreakpointTable.Address,
 				debugger_info.BreakpointTableSize);
 			inferior.SetRuntimeInfo (mono_runtime_info);
 
