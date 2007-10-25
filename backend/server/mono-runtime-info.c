@@ -5,17 +5,21 @@ struct _MonoRuntimeInfoPriv {
 };
 
 MonoRuntimeInfo *
-mono_debugger_server_initialize_mono_runtime (guint64 notification_address,
+mono_debugger_server_initialize_mono_runtime (guint32 address_size,
+					      guint64 notification_address,
 					      guint64 executable_code_buffer,
 					      guint32 executable_code_buffer_size,
+					      guint64 breakpoint_info_area,
 					      guint64 breakpoint_table,
 					      guint32 breakpoint_table_size)
 {
 	MonoRuntimeInfo *runtime = g_new0 (MonoRuntimeInfo, 1);
 
+	runtime->address_size = address_size;
 	runtime->notification_address = notification_address;
 	runtime->executable_code_buffer = executable_code_buffer;
 	runtime->executable_code_buffer_size = executable_code_buffer_size;
+	runtime->breakpoint_info_area = breakpoint_info_area;
 	runtime->breakpoint_table = breakpoint_table;
 	runtime->breakpoint_table_size = breakpoint_table_size;
 
@@ -46,20 +50,26 @@ ServerCommandError
 mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 address,
 					      guint8 saved_insn)
 {
+	MonoRuntimeInfo *runtime;
 	ServerCommandError result;
-	guint64 table_address;
-	guint64 header;
+	guint64 table_address, index_address, header;
 	int slot;
 
-	slot = find_breakpoint_slot (handle->mono_runtime);
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_breakpoint_slot (runtime);
 	if (slot < 0)
 		return COMMAND_ERROR_INTERNAL_ERROR;
 
 	g_message (G_STRLOC ": allocated slot %d for breakpoint %Lx / %x", slot, address,
 		   saved_insn);
 
-	table_address = handle->mono_runtime->breakpoint_table + 16 * slot;
-	g_message (G_STRLOC ": table address is %Lx", table_address);
+	table_address = runtime->breakpoint_info_area + 16 * slot;
+	index_address = runtime->breakpoint_table + runtime->address_size * slot;
+
+	g_message (G_STRLOC ": table address is %Lx / index address is %Lx",
+		   table_address, index_address);
 
 	header = 1 + (saved_insn << 1);
 	result = server_ptrace_write_memory (handle, table_address + 8, 8, &address);
@@ -69,6 +79,10 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 addr
 	g_message (G_STRLOC);
 
 	result = server_ptrace_write_memory (handle, table_address, 8, &header);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_write_memory (handle, index_address, 8, &table_address);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 

@@ -84,8 +84,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize_mono_runtime (
-			long notification_address, long executable_code_buffer,
-			int executable_code_buffer_size, long breakpoint_table,
+			int address_size, long notification_address,
+			long executable_code_buffer, int executable_code_buffer_size,
+			long breakpoint_info_area, long breakpoint_table,
 			int breakpoint_table_size);
 
 		protected void initialize_notifications (Inferior inferior)
@@ -96,8 +97,10 @@ namespace Mono.Debugger.Backends
 				debugger_info.ExecutableCodeBuffer);
 
 			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
-				notification_address.Address, executable_code_buffer.Address,
+				inferior.TargetAddressSize, notification_address.Address,
+				executable_code_buffer.Address,
 				debugger_info.ExecutableCodeBufferSize,
+				debugger_info.BreakpointInfoArea.Address,
 				debugger_info.BreakpointTable.Address,
 				debugger_info.BreakpointTableSize);
 			inferior.SetRuntimeInfo (mono_runtime_info);
