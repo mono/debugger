@@ -3537,7 +3537,7 @@ namespace Mono.Debugger.Backends
 
 			byte[] data = writer.Contents;
 
-			inferior.CallMethod (sse.MonoDebuggerInfo.DoTrampoline, data, ID);
+			// inferior.CallMethod (sse.MonoDebuggerInfo.DoTrampoline, data, ID);
 		}
 
 		protected override EventResult CallbackCompleted (Inferior.ChildEvent cevent)

@@ -324,7 +324,6 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
-		public readonly TargetAddress DoTrampoline;
 		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress ThreadTable;
 		public readonly TargetAddress ExecutableCodeBuffer;
@@ -392,8 +391,6 @@ namespace Mono.Debugger.Backends
 
 			DebuggerVersion           = reader.ReadAddress ();
 			ThreadTable               = reader.ReadAddress ();
-
-			DoTrampoline              = reader.ReadAddress ();
 
 			ExecutableCodeBuffer      = reader.ReadAddress ();
 			BreakpointInfoArea        = reader.ReadAddress ();

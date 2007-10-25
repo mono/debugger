@@ -63,6 +63,30 @@ typedef struct
 	ChildOutputFunc stdout_handler, stderr_handler;
 } IOThreadData;
 
+MonoRuntimeInfo *
+mono_debugger_server_initialize_mono_runtime (guint32 address_size,
+					      guint64 notification_address,
+					      guint64 executable_code_buffer,
+					      guint32 executable_code_buffer_size,
+					      guint64 breakpoint_info_area,
+					      guint64 breakpoint_table,
+					      guint32 breakpoint_table_size)
+{
+	MonoRuntimeInfo *runtime = g_new0 (MonoRuntimeInfo, 1);
+
+	runtime->address_size = address_size;
+	runtime->notification_address = notification_address;
+	runtime->executable_code_buffer = executable_code_buffer;
+	runtime->executable_code_buffer_size = executable_code_buffer_size;
+	runtime->breakpoint_info_area = breakpoint_info_area;
+	runtime->breakpoint_table = breakpoint_table;
+	runtime->breakpoint_table_size = breakpoint_table_size;
+
+	runtime->breakpoint_table_bitfield = g_malloc0 (breakpoint_table_size);
+
+	return runtime;
+}
+
 static void
 server_ptrace_finalize (ServerHandle *handle)
 {
@@ -508,8 +532,6 @@ extern void GC_end_blocking (void);
 #else
 #error "Unknown architecture"
 #endif
-
-#include "mono-runtime-info.c"
 
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_init,

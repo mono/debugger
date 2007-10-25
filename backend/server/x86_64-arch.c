@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "mono-runtime-info.h"
 #include "x86-linux-ptrace.h"
 #include "x86-arch.h"
 
@@ -410,6 +409,91 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static int
+find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->breakpoint_table_size; i++) {
+		if (runtime->breakpoint_table_bitfield [i])
+			continue;
+
+		runtime->breakpoint_table_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
+static ServerCommandError
+runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 table_address, index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_breakpoint_table_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	breakpoint->runtime_table_slot = slot;
+
+	g_message (G_STRLOC ": allocated slot %d for breakpoint %d: %Lx / %x", slot,
+		   breakpoint->id, breakpoint->address, (guint8) breakpoint->saved_insn);
+
+	table_address = runtime->breakpoint_info_area + 16 * slot;
+	index_address = runtime->breakpoint_table + 8 * slot;
+
+	g_message (G_STRLOC ": table address is %Lx / index address is %Lx",
+		   table_address, index_address);
+
+	result = server_ptrace_poke_word (handle, table_address, breakpoint->address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, table_address, (gsize) breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, index_address, (gsize) table_address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	g_message (G_STRLOC ": freeing breakpoint slot %d", breakpoint->runtime_table_slot);
+
+	slot = breakpoint->runtime_table_slot;
+	index_address = runtime->breakpoint_table + runtime->address_size * slot;
+
+	g_message (G_STRLOC ": index address is %Lx", index_address);
+
+	result = server_ptrace_poke_word (handle, index_address, 0);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	runtime->breakpoint_table_bitfield [slot] = 0;
+
+	return COMMAND_ERROR_NONE;
+}
+
+
 static ServerCommandError
 do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
@@ -452,7 +536,7 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 			return result;
 
 		if (handle->mono_runtime) {
-			result = mono_debugger_runtime_info_enable_breakpoint (handle, breakpoint);
+			result = runtime_info_enable_breakpoint (handle, breakpoint);
 			if (result != COMMAND_ERROR_NONE)
 				return result;
 		}
@@ -500,7 +584,7 @@ do_disable (ServerHandle *handle, BreakpointInfo *breakpoint)
 			return result;
 
 		if (handle->mono_runtime) {
-			result = mono_debugger_runtime_info_disable_breakpoint (handle, breakpoint);
+			result = runtime_info_disable_breakpoint (handle, breakpoint);
 			if (result != COMMAND_ERROR_NONE)
 				return result;
 		}
