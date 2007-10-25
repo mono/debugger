@@ -247,6 +247,16 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 }
 
 ServerCommandError
+mono_debugger_execute_instruction (ServerHandle *handle, const guint8 *instruction,
+				   guint32 insn_size)
+{
+	if (!global_vtable->execute_instruction)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->execute_instruction) (handle, instruction, insn_size);
+}
+
+ServerCommandError
 mono_debugger_server_mark_rti_frame (ServerHandle *handle)
 {
 	if (!global_vtable->mark_rti_frame)

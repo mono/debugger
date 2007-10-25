@@ -1078,6 +1078,13 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 }
 
 static ServerCommandError
+server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, guint32 size)
+{
+	g_message (G_STRLOC);
+	return COMMAND_ERROR_NOT_IMPLEMENTED;
+}
+
+static ServerCommandError
 server_ptrace_mark_rti_frame (ServerHandle *handle)
 {
 	CallbackData *cdata;

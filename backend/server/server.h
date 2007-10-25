@@ -251,6 +251,10 @@ struct InferiorVTable {
 						       guint64           callback_argument,
 						       gboolean          debug);
 
+	ServerCommandError    (* execute_instruction) (ServerHandle     *handle,
+						       const guint8     *instruction,
+						       guint32           size);
+
 	ServerCommandError    (* mark_rti_frame)      (ServerHandle     *handle);
 
 	ServerCommandError    (* abort_invoke)        (ServerHandle     *handle,
@@ -485,6 +489,11 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   gconstpointer       blob_data,
 					   guint64             callback_argument,
 					   gboolean            debug);
+
+ServerCommandError
+mono_debugger_execute_instruction         (ServerHandle        *handle,
+					   const guint8        *instruction,
+					   guint32              instruction_size);
 
 ServerCommandError
 mono_debugger_mark_rti_framenvoke        (ServerHandle        *handle);
