@@ -73,8 +73,8 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointIn
 
 	breakpoint->runtime_table_slot = slot;
 
-	g_message (G_STRLOC ": allocated slot %d for breakpoint %Lx / %x", slot,
-		   breakpoint->address, (guint8) breakpoint->saved_insn);
+	g_message (G_STRLOC ": allocated slot %d for breakpoint %d: %Lx / %x", slot,
+		   breakpoint->id, breakpoint->address, (guint8) breakpoint->saved_insn);
 
 	table_address = runtime->breakpoint_info_area + 16 * slot;
 	index_address = runtime->breakpoint_table + runtime->address_size * slot;
