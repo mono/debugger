@@ -4,6 +4,15 @@ struct _MonoRuntimeInfoPriv {
 	guint8 *breakpoint_table_bitfield;
 };
 
+typedef struct {
+	/* This is intentionally a bitfield to allow the debugger to write
+	 * both `enabled' and `opcode' in one single atomic operation. */
+	guint64 enabled	  : 1;
+	guint64 opcode    : 8;
+	guint64 unused    : 55;
+	guint64 address;
+} MonoDebuggerBreakpointInfo;
+
 MonoRuntimeInfo *
 mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 					      guint64 notification_address,
@@ -53,6 +62,7 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 addr
 	MonoRuntimeInfo *runtime;
 	ServerCommandError result;
 	guint64 table_address, index_address, header;
+	MonoDebuggerBreakpointInfo info;
 	int slot;
 
 	runtime = handle->mono_runtime;
@@ -71,18 +81,16 @@ mono_debugger_runtime_info_enable_breakpoint (ServerHandle *handle, guint64 addr
 	g_message (G_STRLOC ": table address is %Lx / index address is %Lx",
 		   table_address, index_address);
 
-	header = 1 + (saved_insn << 1);
-	result = server_ptrace_write_memory (handle, table_address + 8, 8, &address);
+	memset (&info, 0, sizeof (MonoDebuggerBreakpointInfo));
+	info.enabled = 1;
+	info.opcode = saved_insn;
+	info.address = address;
+
+	result = server_ptrace_write_memory (handle, table_address, 16, &info);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	g_message (G_STRLOC);
-
-	result = server_ptrace_write_memory (handle, table_address, 8, &header);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	result = server_ptrace_write_memory (handle, index_address, 8, &table_address);
+	result = server_ptrace_poke_word (handle, index_address, (gsize) table_address);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 

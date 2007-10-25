@@ -155,7 +155,17 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	memcpy (&temp, ptr, size);
 
 	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
-}	
+}
+
+static ServerCommandError
+server_ptrace_poke_word (ServerHandle *handle, guint64 addr, gsize value)
+{
+	errno = 0;
+	if (ptrace (PT_WRITE_D, handle->inferior->pid, GSIZE_TO_POINTER (addr), value) != 0)
+		return _server_ptrace_check_errno (handle->inferior);
+
+	return COMMAND_ERROR_NONE;
+}
 
 static ServerStatusMessageType
 server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
