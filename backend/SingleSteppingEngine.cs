@@ -937,11 +937,9 @@ namespace Mono.Debugger.Backends
 			}
 
 			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1}", instruction,
-					   instruction.Code);
+					   TargetBinaryReader.HexDump (instruction.Code));
 
-			byte[] buffer = { 0x90 };
 			inferior.ExecuteInstruction (instruction.Code);
-
 			return true;
 
 			throw new InternalError ("NOT IMPLEMENTED BEYOND THIS POINT!");
