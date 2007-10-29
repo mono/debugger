@@ -15,8 +15,6 @@ namespace Mono.Debugger.Backends
 		IntPtr handle;
 		ProcessServant process;
 
-		Opcodes_X86 opcodes;
-
 		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_disassemble_insn (IntPtr handle, long address);
 
@@ -33,8 +31,6 @@ namespace Mono.Debugger.Backends
 		internal BfdDisassembler (ProcessServant process, bool is_x86_64)
 		{
 			this.process = process;
-
-			opcodes = new Opcodes_X86 (true);
 
 			read_handler = new ReadMemoryHandler (read_memory_func);
 			output_handler = new OutputHandler (output_func);
@@ -153,11 +149,6 @@ namespace Mono.Debugger.Backends
 				sb = new StringBuilder ();
 
 				address = new TargetAddress (memory.AddressDomain, address.Address);
-
-				try {
-					opcodes.ReadInstruction (memory, address);
-				} catch {
-				}
 
 				string insn;
 				int insn_size;
