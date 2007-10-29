@@ -18,12 +18,9 @@ namespace Mono.Debugger.Architectures
 			disassembler = new BfdDisassembler (null, is_64bit);
 		}
 
-#if FIXME
-		internal int GetInstructionSize (TargetAddress address)
-		{
-			int count = bfd_glue_disassemble_insn (dis, info, address.Address);
+		internal Disassembler Disassembler {
+			get { return disassembler; }
 		}
-#endif
 
 		protected override void DoDispose ()
 		{
@@ -33,15 +30,10 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
-		internal override void ReadInstruction (TargetMemoryAccess memory,
-							TargetAddress address)
+		internal override Instruction ReadInstruction (TargetMemoryAccess memory,
+							       TargetAddress address)
 		{
-			try {
-				X86_Instruction.DecodeInstruction (memory, address);
-			} catch {
-			}
+			return X86_Instruction.DecodeInstruction (this, memory, address);
 		}
-
-
 	}
 }

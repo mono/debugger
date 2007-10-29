@@ -72,12 +72,6 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
-		internal void SetInstructionSize (int size)
-		{
-			this.insn_size = size;
-			this.has_insn_size = true;
-		}
-
 		bool is_ip_relative;
 		bool has_insn_size;
 		int insn_size;
@@ -518,24 +512,26 @@ namespace Mono.Debugger.Architectures
 			return effective_address;
 		}
 
-		public static X86_Instruction DecodeInstruction (TargetMemoryAccess memory,
+		public static X86_Instruction DecodeInstruction (Opcodes_X86 opcodes,
+								 TargetMemoryAccess memory,
 								 TargetAddress address)
 		{
 			try {
-				TargetReader reader = new TargetReader (
-					memory.ReadMemory (address, MaxInstructionLength));
-
 				bool is_64bit_mode = memory.TargetMemoryInfo.TargetAddressSize == 8;
 				X86_Instruction insn = new X86_Instruction (address, is_64bit_mode);
-				insn.DecodeInstruction (reader);
+				insn.DoDecodeInstruction (opcodes, memory, address);
 				return insn;
 			} catch {
 				return null;
 			}
 		}
 
-		protected void DecodeInstruction (TargetReader reader)
+		protected void DoDecodeInstruction (Opcodes_X86 opcodes, TargetMemoryAccess memory,
+						    TargetAddress address)
 		{
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address, MaxInstructionLength));
+
 			while (CheckPrefix (reader))
 				reader.Offset++;
 
@@ -546,12 +542,13 @@ namespace Mono.Debugger.Architectures
 			else
 				OneByteOpcode (reader, opcode);
 
-			if (InstructionType != Type.Unknown)
-				SetInstructionSize ((int) reader.Offset);
-			else {
-				// public override int GetInstructionSize (TargetAddress location)
+			if (InstructionType != Type.Unknown) {
+				insn_size = (int) reader.Offset;
+				has_insn_size = true;
+			} else {
+				insn_size = opcodes.Disassembler.GetInstructionSize (memory, address);
+				has_insn_size = true;
 			}
-
 
 			if (has_insn_size) {
 				code = new byte [insn_size];

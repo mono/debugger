@@ -5,8 +5,8 @@ namespace Mono.Debugger.Architectures
 {
 	internal abstract class Opcodes : DebuggerMarshalByRefObject, IDisposable
 	{
-		internal abstract void ReadInstruction (TargetMemoryAccess memory,
-							TargetAddress address);
+		internal abstract Instruction ReadInstruction (TargetMemoryAccess memory,
+							       TargetAddress address);
 
 		//
 		// IDisposable

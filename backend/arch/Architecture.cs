@@ -22,6 +22,7 @@ namespace Mono.Debugger.Backends
 		protected readonly TargetInfo TargetInfo;
 
 		BfdDisassembler disassembler;
+		Opcodes_X86 opcodes;
 
 		protected Architecture (ProcessServant process, TargetInfo info)
 		{
@@ -29,6 +30,7 @@ namespace Mono.Debugger.Backends
 			this.TargetInfo = info;
 
 			disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
+			opcodes = new Opcodes_X86 (info.TargetAddressSize == 8);
 		}
 
 		internal Disassembler Disassembler {
@@ -120,7 +122,7 @@ namespace Mono.Debugger.Backends
 
 		internal Instruction ReadInstruction (TargetMemoryAccess memory, TargetAddress address)
 		{
-			return X86_Instruction.DecodeInstruction (memory, address);
+			return opcodes.ReadInstruction (memory, address);
 		}
 
 		internal CallTargetType GetCallTarget (TargetMemoryAccess memory,
@@ -168,7 +170,7 @@ namespace Mono.Debugger.Backends
 				return CallTargetType.None;
 			}
 
-			Instruction insn = X86_Instruction.DecodeInstruction (memory, address);
+			Instruction insn = opcodes.ReadInstruction (memory, address);
 			if ((insn == null) || (insn.InstructionType == Instruction.Type.Unknown)) {
 				insn_size = 0;
 				target = TargetAddress.Null;
