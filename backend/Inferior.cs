@@ -20,7 +20,6 @@ namespace Mono.Debugger.Backends
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
-		protected BfdDisassembler bfd_disassembler;
 		protected ThreadManager thread_manager;
 
 		protected readonly ProcessStart start;
@@ -293,7 +292,6 @@ namespace Mono.Debugger.Backends
 			inferior.bfd = bfd;
 
 			inferior.arch = inferior.bfd.Architecture;
-			inferior.bfd_disassembler = inferior.bfd.GetDisassembler (inferior);
 
 			return inferior;
 		}
@@ -701,8 +699,6 @@ namespace Mono.Debugger.Backends
 			bfd_container.SetupInferior (target_info, bfd);
 
 			arch = bfd.Architecture;
-
-			bfd_disassembler = bfd.GetDisassembler (this);
 		}
 
 		public void InitializeModules ()
@@ -1145,13 +1141,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Disassembler Disassembler {
-			get {
-				check_disposed ();
-				return bfd_disassembler;
-			}
-		}
-
 		internal override Architecture Architecture {
 			get {
 				check_disposed ();
@@ -1489,13 +1478,6 @@ namespace Mono.Debugger.Backends
 			if (!this.disposed) {
 				// If this is a call to Dispose,
 				// dispose all managed resources.
-				if (disposing) {
-					if (bfd_disassembler != null) {
-						bfd_disassembler.Dispose ();
-						bfd_disassembler = null;
-					}
-				}
-				
 				this.disposed = true;
 
 				// Release unmanaged resources

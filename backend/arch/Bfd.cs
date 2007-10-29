@@ -657,16 +657,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal BfdDisassembler GetDisassembler (TargetMemoryAccess memory)
-		{
-			IntPtr dis = disassembler (bfd);
-
-			IntPtr info = bfd_glue_init_disassembler (bfd);
-
-			return new BfdDisassembler (
-				container.Process.SymbolTableManager, memory, dis, info);
-		}
-
 		public TargetAddress this [string name] {
 			get {
 				if (symbols == null)

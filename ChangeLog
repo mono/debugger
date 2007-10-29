@@ -1,6 +1,17 @@
 2007-10-30  Martin Baulig  <martin@ximian.com>
 
-	* backends/ProcessServant.cs
+	* backend/arch/Architecture.cs
+	(Architecture.Disassembler): New public property; only create one
+	single disassembler per process.
+
+	* backend/arch/Disassembler.cs
+	(Disassembler.GetInstructionSize): Added `TargetMemoryAccess' argument.
+	(Disassembler.DisassembleInstruction): Likewise.
+	(Disassembler.DisassembleMethod): Likewise.
+
+2007-10-30  Martin Baulig  <martin@ximian.com>
+
+	* backend/ProcessServant.cs
 	(ProcessServant.Architecture): New public property; only create
 	one single `Architecture' instance per process.	
 

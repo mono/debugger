@@ -204,7 +204,6 @@ namespace Mono.Debugger.Backends
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
 			public readonly Registers Registers;
-			public readonly BfdDisassembler Disassembler;
 			Backtrace current_backtrace;
 			StackFrame current_frame;
 			Method current_method;
@@ -220,7 +219,6 @@ namespace Mono.Debugger.Backends
 				this.CoreFile = core;
 				this.Thread = new Thread (this, ID);
 
-				this.Disassembler = core.CoreBfd.GetDisassembler (this);
 				this.Registers = read_registers ();
 			}
 
@@ -248,6 +246,10 @@ namespace Mono.Debugger.Backends
 			{
 				this.tid = tid;
 				this.lmf_address = lmf;
+			}
+
+			internal Disassembler Disassembler {
+				get { return CoreFile.Architecture.Disassembler; }
 			}
 
 			internal override ThreadManager ThreadManager {
@@ -342,18 +344,18 @@ namespace Mono.Debugger.Backends
 
 			public override int GetInstructionSize (TargetAddress address)
 			{
-				return Disassembler.GetInstructionSize (address);
+				return Disassembler.GetInstructionSize (this, address);
 			}
 
 			public override AssemblerLine DisassembleInstruction (Method method,
 									      TargetAddress address)
 			{
-				return Disassembler.DisassembleInstruction (method, address);
+				return Disassembler.DisassembleInstruction (this, method, address);
 			}
 
 			public override AssemblerMethod DisassembleMethod (Method method)
 			{
-				return Disassembler.DisassembleMethod (method);
+				return Disassembler.DisassembleMethod (this, method);
 			}
 
 			public override TargetMemoryArea[] GetMemoryMaps ()

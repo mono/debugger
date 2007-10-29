@@ -16,15 +16,23 @@ namespace Mono.Debugger.Backends
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
-	internal abstract class Architecture : DebuggerMarshalByRefObject
+	internal abstract class Architecture : DebuggerMarshalByRefObject, IDisposable
 	{
 		protected readonly ProcessServant process;
 		protected readonly TargetInfo TargetInfo;
+
+		BfdDisassembler disassembler;
 
 		protected Architecture (ProcessServant process, TargetInfo info)
 		{
 			this.process = process;
 			this.TargetInfo = info;
+
+			disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
+		}
+
+		internal Disassembler Disassembler {
+			get { return disassembler; }
 		}
 
 		public int TargetAddressSize {
@@ -262,5 +270,53 @@ namespace Mono.Debugger.Backends
 		//
 		//
 		internal abstract void Hack_ReturnNull (Inferior inferior);
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("Architecture");
+		}
+
+		protected virtual void DoDispose ()
+		{
+			if (disassembler != null) {
+				disassembler.Dispose ();
+				disassembler = null;
+			}
+		}
+
+		private void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing)
+				DoDispose ();
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~Architecture ()
+		{
+			Dispose (false);
+		}
+
 	}
 }

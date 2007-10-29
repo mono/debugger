@@ -608,7 +608,10 @@ namespace Mono.Debugger.Backends
 		protected virtual void DoDispose ()
 		{
 			if (!is_forked) {
-				architecture = null;
+				if (architecture != null) {
+					architecture.Dispose ();
+					architecture = null;
+				}
 
 				if (bfd_container != null) {
 					bfd_container.Dispose ();

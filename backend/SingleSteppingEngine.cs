@@ -1707,21 +1707,22 @@ namespace Mono.Debugger.Backends
 		public override int GetInstructionSize (TargetAddress address)
 		{
 			return (int) SendCommand (delegate {
-				return inferior.Disassembler.GetInstructionSize (address);
+				return Architecture.Disassembler.GetInstructionSize (inferior, address);
 			});
 		}
 
 		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			return (AssemblerLine) SendCommand (delegate {
-				return inferior.Disassembler.DisassembleInstruction (method, address);
+				return Architecture.Disassembler.DisassembleInstruction (
+					inferior, method, address);
 			});
 		}
 
 		public override AssemblerMethod DisassembleMethod (Method method)
 		{
 			return (AssemblerMethod) SendCommand (delegate {
-				return inferior.Disassembler.DisassembleMethod (method);
+				return Architecture.Disassembler.DisassembleMethod (inferior, method);
 			});
 		}
 
