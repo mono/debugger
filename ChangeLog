@@ -1,3 +1,12 @@
+2007-10-15  Martin Baulig  <martin@ximian.com>
+
+	HEADS UP: The debugger currently doesn't work with the latest mono
+	          from SVN HEAD.  You need to use r87189 for the moment.
+
+	I started working on the problem in a temporary work branch - until
+	it's finished, SVN HEAD will remain stable, but require that specific
+	revision of Mono.
+
 2007-10-30  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Architecture.cs
@@ -21,15 +30,6 @@
 	(TargetInfo): Moved here from TargetBinaryAccess.cs.
 	(TargetMemoryInfo): New public class, derives from `TargetInfo'.
 	(TargetInfo.AddressDomain): Moved this into `TargetMemoryInfo'.
-
-2007-10-15  Martin Baulig  <martin@ximian.com>
-
-	HEADS UP: The debugger currently doesn't work with the latest mono
-	          from SVN HEAD.  You need to use r87189 for the moment.
-
-	I started working on the problem in a temporary work branch - until
-	it's finished, SVN HEAD will remain stable, but require that specific
-	revision of Mono.
 
 2007-10-24  Martin Baulig  <martin@ximian.com>
 
