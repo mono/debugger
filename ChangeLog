@@ -1,3 +1,10 @@
+2007-10-29  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetInfo.cs: New file.
+	(TargetInfo): Moved here from TargetBinaryAccess.cs.
+	(TargetMemoryInfo): New public class, derives from `TargetInfo'.
+	(TargetInfo.AddressDomain): Moved this into `TargetMemoryInfo'.
+
 2007-10-15  Martin Baulig  <martin@ximian.com>
 
 	HEADS UP: The debugger currently doesn't work with the latest mono

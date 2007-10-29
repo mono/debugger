@@ -9,7 +9,7 @@ namespace Mono.Debugger.Backends
 {
 	internal class CoreFile : ProcessServant
 	{
-		TargetInfo info;
+		TargetMemoryInfo info;
 		Bfd bfd, core_bfd;
 		string core_file;
 		string application;
@@ -86,7 +86,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress ptr = main_thread.ReadAddress (debugger_info.ThreadTable);
 			Console.WriteLine ("READ THREAD TABLE: {0}", ptr);
 			while (!ptr.IsNull) {
-				int size = 56 + main_thread.TargetInfo.TargetAddressSize;
+				int size = 56 + main_thread.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (main_thread.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
@@ -199,7 +199,7 @@ namespace Mono.Debugger.Backends
 			get { return bfd.Architecture; }
 		}
 
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get { return info; }
 		}
 
@@ -266,8 +266,8 @@ namespace Mono.Debugger.Backends
 				get { throw new InvalidOperationException (); }
 			}
 
-			public override TargetInfo TargetInfo {
-				get { return CoreFile.TargetInfo; }
+			public override TargetMemoryInfo TargetMemoryInfo {
+				get { return CoreFile.TargetMemoryInfo; }
 			}
 
 			public override int PID {
@@ -400,7 +400,7 @@ namespace Mono.Debugger.Backends
 			//
 
 			public override AddressDomain AddressDomain {
-				get { return CoreFile.TargetInfo.AddressDomain; }
+				get { return CoreFile.TargetMemoryInfo.AddressDomain; }
 			}
 
 			internal override Architecture Architecture {
@@ -434,7 +434,7 @@ namespace Mono.Debugger.Backends
 
 			public override TargetBlob ReadMemory (TargetAddress address, int size)
 			{
-				return new TargetBlob (ReadBuffer (address, size), TargetInfo);
+				return new TargetBlob (ReadBuffer (address, size), TargetMemoryInfo);
 			}
 
 			public override byte[] ReadBuffer (TargetAddress address, int size)

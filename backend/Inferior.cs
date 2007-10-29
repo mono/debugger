@@ -41,7 +41,7 @@ namespace Mono.Debugger.Backends
 		bool has_target;
 		bool pushed_regs;
 
-		TargetInfo target_info;
+		TargetMemoryInfo target_info;
 		Architecture arch;
 
 		bool has_signals;
@@ -631,14 +631,14 @@ namespace Mono.Debugger.Backends
 			return new ChildEvent (message, arg, data1, data2);
 		}
 
-		public static TargetInfo GetTargetInfo (AddressDomain domain)
+		public static TargetMemoryInfo GetTargetInfo (AddressDomain domain)
 		{
 			int target_int_size, target_long_size, target_addr_size, is_bigendian;
 			check_error (mono_debugger_server_get_target_info
 				(out target_int_size, out target_long_size,
 				 out target_addr_size, out is_bigendian));
 
-			return new TargetInfo (target_int_size, target_long_size,
+			return new TargetMemoryInfo (target_int_size, target_long_size,
 					       target_addr_size, is_bigendian != 0, domain);
 		}
 
@@ -767,13 +767,13 @@ namespace Mono.Debugger.Backends
 		// TargetMemoryAccess
 		//
 
-		public AddressDomain AddressDomain {
+		public override AddressDomain AddressDomain {
 			get {
 				return address_domain;
 			}
 		}
 
-		public override TargetInfo TargetInfo {
+		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target_info;
 			}
@@ -1295,7 +1295,7 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress address, stack, frame;
 
-			internal StackFrame (TargetInfo info, ServerStackFrame frame)
+			internal StackFrame (TargetMemoryInfo info, ServerStackFrame frame)
 			{
 				this.address = new TargetAddress (info.AddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);

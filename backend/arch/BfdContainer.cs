@@ -58,7 +58,7 @@ namespace Mono.Debugger.Backends
 			language = new NativeLanguage (this, info);
 		}
 
-		public Bfd AddFile (TargetInfo memory, string filename,
+		public Bfd AddFile (TargetMemoryInfo memory, string filename,
 				    TargetAddress base_address, bool step_info, bool is_loaded)
 		{
 			check_disposed ();

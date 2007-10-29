@@ -338,14 +338,14 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);
 			while (!ptr.IsNull) {
-				int size = 24 + inferior.TargetInfo.TargetAddressSize;
+				int size = 24 + inferior.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
 				TargetAddress lmf_addr = reader.ReadAddress ();
 				TargetAddress end_stack = reader.ReadAddress ();
 
-				if (inferior.TargetInfo.TargetAddressSize == 4)
+				if (inferior.TargetMemoryInfo.TargetAddressSize == 4)
 					tid &= 0x00000000ffffffffL;
 
 				ptr = reader.ReadAddress ();
@@ -460,7 +460,7 @@ namespace Mono.Debugger.Backends
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				bfd_container.AddFile (thread.TargetInfo, filename,
+				bfd_container.AddFile (thread.TargetMemoryInfo, filename,
 						       TargetAddress.Null, true, false);
 		}
 

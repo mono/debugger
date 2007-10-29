@@ -17,7 +17,7 @@ namespace Mono.Debugger.Backends
 		IntPtr bfd;
 		protected Module module;
 		protected BfdContainer container;
-		protected TargetInfo info;
+		protected TargetMemoryInfo info;
 		protected Bfd main_bfd;
 		protected Architecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
@@ -170,7 +170,7 @@ namespace Mono.Debugger.Backends
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, TargetInfo info, string filename,
+		public Bfd (BfdContainer container, TargetMemoryInfo info, string filename,
 			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
 		{
 			this.container = container;
@@ -480,7 +480,7 @@ namespace Mono.Debugger.Backends
 					info.AddressDomain, BaseAddress.Address + address);
 		}
 
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return info;
 			}

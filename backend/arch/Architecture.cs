@@ -27,10 +27,6 @@ namespace Mono.Debugger.Backends
 			this.TargetInfo = info;
 		}
 
-		public AddressDomain AddressDomain {
-			get { return TargetInfo.AddressDomain; }
-		}
-
 		public int TargetAddressSize {
 			get { return TargetInfo.TargetAddressSize; }
 		}

@@ -8,7 +8,7 @@ namespace Mono.Debugger
 	[Serializable]
 	public class TargetBinaryReader : TargetBinaryAccess
 	{
-		public TargetBinaryReader (byte[] contents, TargetInfo target_info)
+		public TargetBinaryReader (byte[] contents, TargetMemoryInfo target_info)
 			: base (new TargetBlob (contents, target_info))
 		{ }
 
@@ -166,7 +166,7 @@ namespace Mono.Debugger
 
 		public TargetAddress ReadTargetAddress ()
 		{
-			return new TargetAddress (TargetInfo.AddressDomain, ReadAddress ());
+			return new TargetAddress (TargetMemoryInfo.AddressDomain, ReadAddress ());
 		}
 
 		public string PeekString (long pos)

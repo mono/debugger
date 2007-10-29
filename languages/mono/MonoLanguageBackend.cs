@@ -122,7 +122,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void Read (TargetMemoryAccess memory)
 		{
-			int header_size = 16 + memory.TargetInfo.TargetAddressSize;
+			int header_size = 16 + memory.TargetMemoryInfo.TargetAddressSize;
 
 		again:
 			TargetReader reader = new TargetReader (
@@ -248,7 +248,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetInfo TargetInfo {
-			get { return corlib.TargetInfo; }
+			get { return corlib.TargetMemoryInfo; }
 		}
 
 		internal TargetAddress[] Trampolines {
@@ -377,11 +377,11 @@ namespace Mono.Debugger.Languages.Mono
 			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
 			trampolines [0] = memory.ReadAddress (address);
-			address += memory.TargetInfo.TargetAddressSize;
+			address += memory.TargetMemoryInfo.TargetAddressSize;
 			trampolines [1] = memory.ReadAddress (address);
-			address += memory.TargetInfo.TargetAddressSize;
+			address += memory.TargetMemoryInfo.TargetAddressSize;
 			trampolines [2] = memory.ReadAddress (address);
-			address += 2 * memory.TargetInfo.TargetAddressSize;
+			address += 2 * memory.TargetMemoryInfo.TargetAddressSize;
 			trampolines [3] = memory.ReadAddress (address);
 
 			symfile_by_index = new Hashtable ();
@@ -537,7 +537,7 @@ namespace Mono.Debugger.Languages.Mono
 			while (!ptr.IsNull) {
 				TargetAddress next_ptr = memory.ReadAddress (ptr);
 				TargetAddress address = memory.ReadAddress (
-					ptr + memory.TargetInfo.TargetAddressSize);
+					ptr + memory.TargetMemoryInfo.TargetAddressSize);
 
 				ptr = next_ptr;
 				load_symfile (memory, address);
@@ -547,7 +547,7 @@ namespace Mono.Debugger.Languages.Mono
 			while (!ptr.IsNull) {
 				TargetAddress next_ptr = memory.ReadAddress (ptr);
 				TargetAddress address = memory.ReadAddress (
-					ptr + memory.TargetInfo.TargetAddressSize);
+					ptr + memory.TargetMemoryInfo.TargetAddressSize);
 
 				ptr = next_ptr;
 				add_data_table (memory, address);
@@ -556,7 +556,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void add_data_table (TargetMemoryAccess memory, TargetAddress ptr)
 		{
-			int table_size = 8 + 2 * memory.TargetInfo.TargetAddressSize;
+			int table_size = 8 + 2 * memory.TargetMemoryInfo.TargetAddressSize;
 
 			TargetReader reader = new TargetReader (memory.ReadMemory (ptr, table_size));
 

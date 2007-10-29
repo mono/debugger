@@ -755,10 +755,10 @@ namespace Mono.Debugger.Backends
 			get { return end_stack_address; }
 		}
 
-		public override TargetInfo TargetInfo {
+		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				check_inferior ();
-				return inferior.TargetInfo;
+				return inferior.TargetMemoryInfo;
 			}
 		}
 
@@ -1734,7 +1734,7 @@ namespace Mono.Debugger.Backends
 
 		public override TargetBlob ReadMemory (TargetAddress address, int size)
 		{
-			return new TargetBlob (ReadBuffer (address, size), TargetInfo);
+			return new TargetBlob (ReadBuffer (address, size), TargetMemoryInfo);
 		}
 
 		public override byte ReadByte (TargetAddress address)
@@ -3173,7 +3173,7 @@ namespace Mono.Debugger.Backends
 
 				if (!class_type.IsByRef) {
 					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
-						2 * inferior.TargetInfo.TargetAddressSize);
+						2 * inferior.TargetMemoryInfo.TargetAddressSize);
 					instance = (TargetClassObject) class_type.GetObject (
 						inferior, new_loc);
 				}

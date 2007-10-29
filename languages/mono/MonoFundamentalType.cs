@@ -25,7 +25,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoFundamentalType fundamental;
 
 			int offset;
-			int address_size = memory.TargetInfo.TargetAddressSize;
+			int address_size = memory.TargetMemoryInfo.TargetAddressSize;
 			MonoMetadataInfo metadata = corlib.MonoLanguage.MonoMetadataInfo;
 
 			switch (kind) {
@@ -117,14 +117,14 @@ namespace Mono.Debugger.Languages.Mono
 				offset = metadata.MonoDefaultsIntOffset;
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.IntPtr"],
-					"System.IntPtr", kind, memory.TargetInfo.TargetAddressSize);
+					"System.IntPtr", kind, memory.TargetMemoryInfo.TargetAddressSize);
 				break;
 
 			case FundamentalKind.UIntPtr:
 				offset = metadata.MonoDefaultsUIntOffset;
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.UIntPtr"],
-					"System.UIntPtr", kind, memory.TargetInfo.TargetAddressSize);
+					"System.UIntPtr", kind, memory.TargetMemoryInfo.TargetAddressSize);
 				break;
 
 			default:

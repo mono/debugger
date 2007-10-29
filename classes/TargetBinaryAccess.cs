@@ -4,72 +4,21 @@ using System.Text;
 namespace Mono.Debugger
 {
 	[Serializable]
-	public sealed class TargetInfo
-	{
-		int target_int_size;
-		int target_long_size;
-		int target_address_size;
-		bool is_bigendian;
-		AddressDomain address_domain;
-
-		internal TargetInfo (int target_int_size, int target_long_size,
-				     int target_address_size, bool is_bigendian,
-				     AddressDomain domain)
-		{
-			this.target_int_size = target_int_size;
-			this.target_long_size = target_long_size;
-			this.target_address_size = target_address_size;
-			this.is_bigendian = is_bigendian;
-			this.address_domain = domain;
-		}
-
-		public int TargetIntegerSize {
-			get {
-				return target_int_size;
-			}
-		}
-
-		public int TargetLongIntegerSize {
-			get {
-				return target_long_size;
-			}
-		}
-
-		public int TargetAddressSize {
-			get {
-				return target_address_size;
-			}
-		}
-
-		public bool IsBigEndian {
-			get {
-				return is_bigendian;
-			}
-		}
-
-		public AddressDomain AddressDomain {
-			get {
-				return address_domain;
-			}
-		}
-	}
-
-	[Serializable]
 	public sealed class TargetBlob
 	{
 		public readonly byte[] Contents;
-		public readonly TargetInfo TargetInfo;
+		public readonly TargetMemoryInfo TargetMemoryInfo;
 
-		public TargetBlob (byte[] contents, TargetInfo target_info)
+		public TargetBlob (byte[] contents, TargetMemoryInfo target_info)
 		{
 			this.Contents = contents;
-			this.TargetInfo = target_info;
+			this.TargetMemoryInfo = target_info;
 		}
 
-		public TargetBlob (int size, TargetInfo target_info)
+		public TargetBlob (int size, TargetMemoryInfo target_info)
 		{
 			this.Contents = new byte [size];
-			this.TargetInfo = target_info;
+			this.TargetMemoryInfo = target_info;
 		}
 
 		public int Size {
@@ -92,12 +41,12 @@ namespace Mono.Debugger
 		public TargetBinaryAccess (TargetBlob blob)
 		{
 			this.blob = blob;
-			this.swap = blob.TargetInfo.IsBigEndian;
+			this.swap = blob.TargetMemoryInfo.IsBigEndian;
 		}
 
 		public int AddressSize {
 			get {
-				int address_size = blob.TargetInfo.TargetAddressSize;
+				int address_size = blob.TargetMemoryInfo.TargetAddressSize;
 				if ((address_size != 4) && (address_size != 8))
 					throw new TargetMemoryException (
 						"Unknown target address size " + address_size);
@@ -106,9 +55,9 @@ namespace Mono.Debugger
 			}
 		}
 
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get {
-				return blob.TargetInfo;
+				return blob.TargetMemoryInfo;
 			}
 		}
 

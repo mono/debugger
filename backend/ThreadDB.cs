@@ -116,7 +116,7 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress create_address (long address)
 		{
-			return new TargetAddress (target.TargetInfo.AddressDomain, address);
+			return new TargetAddress (target.AddressDomain, address);
 		}
 
 		PsErr read_memory (long address, IntPtr ptr, int size)

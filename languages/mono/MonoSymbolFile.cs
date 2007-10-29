@@ -36,7 +36,8 @@ namespace Mono.Debugger.Languages.Mono
 			BeginLiveness = reader.ReadLeb128 ();
 			EndLiveness = reader.ReadLeb128 ();
 
-			MonoType = new TargetAddress (arch.AddressDomain, reader.ReadAddress ());
+			MonoType = new TargetAddress (
+				reader.TargetMemoryInfo.AddressDomain, reader.ReadAddress ());
 
 			Mode = (AddressMode) (Index & AddressModeFlags);
 			Index = (int) ((long) Index & ~AddressModeFlags);
@@ -211,7 +212,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal readonly string ImageFile;
 		internal readonly C.MonoSymbolFile File;
 		internal readonly ThreadManager ThreadManager;
-		internal readonly TargetInfo TargetInfo;
+		internal readonly TargetMemoryInfo TargetMemoryInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
 		internal readonly Architecture Architecture;
 		protected readonly ProcessServant process;
@@ -233,14 +234,14 @@ namespace Mono.Debugger.Languages.Mono
 					 TargetMemoryAccess memory, TargetAddress address)
 		{
 			this.MonoLanguage = language;
-			this.TargetInfo = memory.TargetInfo;
+			this.TargetMemoryInfo = memory.TargetMemoryInfo;
 			this.Architecture = memory.Architecture;
 			this.process = process;
 
 			ThreadManager = process.ThreadManager;
 
-			int address_size = TargetInfo.TargetAddressSize;
-			int int_size = TargetInfo.TargetIntegerSize;
+			int address_size = TargetMemoryInfo.TargetAddressSize;
+			int int_size = TargetMemoryInfo.TargetIntegerSize;
 
 			ranges = ArrayList.Synchronized (new ArrayList ());
 			range_hash = Hashtable.Synchronized (new Hashtable ());
@@ -691,8 +692,8 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			if (!method.IsLoaded) {
-				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
-				method.Load (reader, TargetInfo.AddressDomain);
+				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetMemoryInfo);
+				method.Load (reader, TargetMemoryInfo.AddressDomain);
 			}
 
 			return method;
@@ -708,8 +709,8 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			if (!method.IsLoaded) {
-				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetInfo);
-				method.Load (reader, TargetInfo.AddressDomain);
+				TargetBinaryReader reader = new TargetBinaryReader (contents, TargetMemoryInfo);
+				method.Load (reader, TargetMemoryInfo.AddressDomain);
 			}
 
 			return method;
@@ -1386,7 +1387,7 @@ namespace Mono.Debugger.Languages.Mono
 				WrapperEntry wrapper = null;
 
 				if (!wrapper_data.IsNull) {
-					int wrapper_size = 4 + 3 * memory.TargetInfo.TargetAddressSize;
+					int wrapper_size = 4 + 3 * memory.TargetMemoryInfo.TargetAddressSize;
 
 					TargetReader wrapper_reader = new TargetReader (
 						memory.ReadMemory (wrapper_data, wrapper_size));

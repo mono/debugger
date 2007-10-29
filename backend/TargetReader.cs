@@ -11,9 +11,9 @@ namespace Mono.Debugger.Backends
 	{
 		byte[] data;
 		TargetBinaryReader reader;
-		TargetInfo info;
+		TargetMemoryInfo info;
 
-		internal TargetReader (byte[] data, TargetInfo info)
+		internal TargetReader (byte[] data, TargetMemoryInfo info)
 		{
 			if ((info == null) || (data == null))
 				throw new ArgumentNullException ();
@@ -23,7 +23,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal TargetReader (TargetBlob data)
-			: this (data.Contents, data.TargetInfo)
+			: this (data.Contents, data.TargetMemoryInfo)
 		{ }
 
 		public long Offset {

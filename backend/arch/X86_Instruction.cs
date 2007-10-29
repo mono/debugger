@@ -486,7 +486,7 @@ namespace Mono.Debugger.Architectures
 			}
 
 			TargetAddress effective_address = new TargetAddress (
-				memory.TargetInfo.AddressDomain, regs [Register].GetValue ());
+				memory.AddressDomain, regs [Register].GetValue ());
 			effective_address += effective_displacement;
 
 			if (DereferenceAddress)
@@ -502,7 +502,7 @@ namespace Mono.Debugger.Architectures
 				TargetReader reader = new TargetReader (
 					memory.ReadMemory (address, MaxInstructionLength));
 
-				bool is_64bit_mode = memory.TargetInfo.TargetAddressSize == 8;
+				bool is_64bit_mode = memory.TargetMemoryInfo.TargetAddressSize == 8;
 				X86_Instruction insn = new X86_Instruction (address, is_64bit_mode);
 				insn.DecodeInstruction (reader);
 				return insn;
