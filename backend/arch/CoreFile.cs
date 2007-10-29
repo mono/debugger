@@ -25,7 +25,7 @@ namespace Mono.Debugger.Backends
 		protected CoreFile (ThreadManager manager, ProcessStart start)
 			: base (manager, start)
 		{
-			info = Inferior.GetTargetInfo (manager.AddressDomain);
+			info = Inferior.GetTargetMemoryInfo (manager.AddressDomain);
 
 			bfd = BfdContainer.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,
@@ -193,10 +193,6 @@ namespace Mono.Debugger.Backends
 
 		public Bfd CoreBfd {
 			get { return core_bfd; }
-		}
-
-		public Architecture Architecture {
-			get { return bfd.Architecture; }
 		}
 
 		public TargetMemoryInfo TargetMemoryInfo {

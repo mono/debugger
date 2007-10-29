@@ -1,3 +1,9 @@
+2007-10-30  Martin Baulig  <martin@ximian.com>
+
+	* backends/ProcessServant.cs
+	(ProcessServant.Architecture): New public property; only create
+	one single `Architecture' instance per process.	
+
 2007-10-29  Martin Baulig  <martin@ximian.com>
 
 	* classes/TargetInfo.cs: New file.

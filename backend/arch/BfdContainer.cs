@@ -32,6 +32,10 @@ namespace Mono.Debugger.Backends
 			get { return process; }
 		}
 
+		public Architecture Architecture {
+			get { return process.Architecture; }
+		}
+
 		public Bfd this [string filename] {
 			get {
 				check_disposed ();
