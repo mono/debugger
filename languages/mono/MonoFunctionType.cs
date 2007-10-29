@@ -130,7 +130,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override int Size {
-			get { return klass.File.TargetInfo.TargetAddressSize; }
+			get { return klass.File.TargetMemoryInfo.TargetAddressSize; }
 		}
 
 		public override bool HasSourceCode {

@@ -80,7 +80,7 @@ namespace Mono.Debugger.Languages
 				index = index * bounds [i].Length + indices [i];
 
 			if (Type.ElementType.IsByRef)
-				return index * target.TargetInfo.TargetAddressSize;
+				return index * target.TargetMemoryInfo.TargetAddressSize;
 			else if (Type.ElementType.HasFixedSize)
 				return index * Type.ElementType.Size;
 			else

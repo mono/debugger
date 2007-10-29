@@ -28,6 +28,30 @@
 
 	Btw. `Plophos' is a planet from `Perry Rhodan'.
 
+2007-10-30  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture.cs
+	(Architecture.Disassembler): New public property; only create one
+	single disassembler per process.
+
+	* backend/arch/Disassembler.cs
+	(Disassembler.GetInstructionSize): Added `TargetMemoryAccess' argument.
+	(Disassembler.DisassembleInstruction): Likewise.
+	(Disassembler.DisassembleMethod): Likewise.
+
+2007-10-30  Martin Baulig  <martin@ximian.com>
+
+	* backend/ProcessServant.cs
+	(ProcessServant.Architecture): New public property; only create
+	one single `Architecture' instance per process.	
+
+2007-10-29  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetInfo.cs: New file.
+	(TargetInfo): Moved here from TargetBinaryAccess.cs.
+	(TargetMemoryInfo): New public class, derives from `TargetInfo'.
+	(TargetInfo.AddressDomain): Moved this into `TargetMemoryInfo'.
+
 2007-10-15  Martin Baulig  <martin@ximian.com>
 
 	HEADS UP: The debugger currently doesn't work with the latest mono

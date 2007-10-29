@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 		public static MonoStringType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
 						     TargetReader mono_defaults)
 		{
-			int object_size = 2 * memory.TargetInfo.TargetAddressSize;
+			int object_size = 2 * memory.TargetMemoryInfo.TargetAddressSize;
 
 			MonoStringType type = new MonoStringType (
 				corlib, corlib.ModuleDefinition.Types ["System.String"],

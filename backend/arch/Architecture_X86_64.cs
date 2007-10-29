@@ -426,7 +426,7 @@ namespace Mono.Debugger.Architectures
 				return null;
 
 			TargetAddress rbp = new TargetAddress (
-				AddressDomain, old_regs [(int) X86_64_Register.RBP].Value);
+				memory.AddressDomain, old_regs [(int) X86_64_Register.RBP].Value);
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
@@ -666,11 +666,11 @@ namespace Mono.Debugger.Architectures
 			}
 
 			TargetAddress rip = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress rsp = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress rbp = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
@@ -692,7 +692,7 @@ namespace Mono.Debugger.Architectures
 		{
 			Registers regs = inferior.GetRegisters ();
 			TargetAddress rsp = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				inferior.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress rip = inferior.ReadAddress (rsp);
 			rsp += TargetAddressSize;
 
@@ -732,11 +732,11 @@ namespace Mono.Debugger.Architectures
 							  bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				thread.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				thread.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				thread.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
 					    adjust_retaddr);

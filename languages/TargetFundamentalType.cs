@@ -116,7 +116,7 @@ namespace Mono.Debugger.Languages
 
 		internal virtual TargetFundamentalObject CreateInstance (Thread target, object obj)
 		{
-			TargetBlob blob = new TargetBlob (CreateObject (obj), target.TargetInfo);
+			TargetBlob blob = new TargetBlob (CreateObject (obj), target.TargetMemoryInfo);
 			TargetLocation location = new ClientSuppliedTargetLocation (blob);
 			return new TargetFundamentalObject (this, location);
 		}

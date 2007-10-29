@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages.Mono
 		public static MonoObjectType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
 						     TargetReader mono_defaults)
 		{
-			int object_size = 2 * memory.TargetInfo.TargetAddressSize;
+			int object_size = 2 * memory.TargetMemoryInfo.TargetAddressSize;
 
 			MonoObjectType type = new MonoObjectType (
 				corlib, corlib.ModuleDefinition.Types ["System.Object"],

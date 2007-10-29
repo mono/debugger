@@ -62,7 +62,7 @@ namespace Mono.Debugger.Backends
 
 				if (is_ehframe)
 					cie_pointer = reader.Position - cie_pointer -
-						target.TargetInfo.TargetAddressSize;
+						target.TargetMemoryInfo.TargetAddressSize;
 
 				CIE cie = find_cie (cie_pointer);
 
@@ -70,7 +70,7 @@ namespace Mono.Debugger.Backends
 				long range = reader.ReadAddress ();
 
 				TargetAddress start = new TargetAddress (
-					target.TargetInfo.AddressDomain, initial);
+					target.AddressDomain, initial);
 
 				if ((address < start) || (address > start + range)) {
 					reader.Position = end_pos;
@@ -326,7 +326,7 @@ namespace Mono.Debugger.Backends
 			{
 				long cfa_addr = GetRegisterValue (regs, 1, columns [0]);
 				TargetAddress cfa = new TargetAddress (
-					arch.AddressDomain, cfa_addr);
+					target.AddressDomain, cfa_addr);
 
 				for (int i = 1; i < columns.Length; i++) {
 					GetValue (target, regs, cfa, i+2, columns [i]);
@@ -350,14 +350,14 @@ namespace Mono.Debugger.Backends
 					return null;
 
 				TargetAddress address = new TargetAddress (
-					arch.AddressDomain, eip.Value);
+					target.AddressDomain, eip.Value);
 				TargetAddress stack = new TargetAddress (
-					arch.AddressDomain, esp.Value);
+					target.AddressDomain, esp.Value);
 
 				TargetAddress frame_addr = TargetAddress.Null;
 				if (ebp.Valid)
 					frame_addr = new TargetAddress (
-						arch.AddressDomain, ebp.Value);
+						target.AddressDomain, ebp.Value);
 
 				return arch.CreateFrame (
 					frame.Thread, address, stack, frame_addr, regs, true);

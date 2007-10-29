@@ -94,7 +94,7 @@ namespace Mono.Debugger.Languages.Mono
 			else
 				throw new ArgumentException ();
 
-			return new TargetBlob (buffer, target.TargetInfo);
+			return new TargetBlob (buffer, target.TargetMemoryInfo);
 		}
 
 		internal override void WriteBuffer (TargetAccess target, byte[] data)
@@ -109,10 +109,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			long contents;
 
-			if (data.Length > target.TargetInfo.TargetIntegerSize)
+			if (data.Length > target.TargetMemoryInfo.TargetIntegerSize)
 				throw new InternalError ();
 
-			if (data.Length < target.TargetInfo.TargetIntegerSize) {
+			if (data.Length < target.TargetMemoryInfo.TargetIntegerSize) {
 				switch (data.Length) {
 				case 1: contents = data[0]; break;
 				case 2: contents = BitConverter.ToInt16 (data, 0); break;
@@ -121,9 +121,9 @@ namespace Mono.Debugger.Languages.Mono
 				  throw new InternalError ();
 				}
 			}
-			else if (target.TargetInfo.TargetIntegerSize == 4)
+			else if (target.TargetMemoryInfo.TargetIntegerSize == 4)
 				contents = BitConverter.ToInt32 (data, 0);
-			else if (target.TargetInfo.TargetIntegerSize == 8)
+			else if (target.TargetMemoryInfo.TargetIntegerSize == 8)
 				contents = BitConverter.ToInt64 (data, 0);
 			else
 				throw new InternalError ();

@@ -17,9 +17,8 @@ namespace Mono.Debugger.Backends
 		IntPtr bfd;
 		protected Module module;
 		protected BfdContainer container;
-		protected TargetInfo info;
+		protected TargetMemoryInfo info;
 		protected Bfd main_bfd;
-		protected Architecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
@@ -170,7 +169,7 @@ namespace Mono.Debugger.Backends
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, TargetInfo info, string filename,
+		public Bfd (BfdContainer container, TargetMemoryInfo info, string filename,
 			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
 		{
 			this.container = container;
@@ -193,11 +192,6 @@ namespace Mono.Debugger.Backends
 
 			target = bfd_glue_get_target_name (bfd);
 			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
-				if (target == "elf32-i386")
-					arch = new Architecture_I386 (container.Process, info);
-				else
-					arch = new Architecture_X86_64 (container.Process, info);
-
 				if (!is_coredump) {
 					Section text = GetSectionByName (".text", true);
 					Section bss = GetSectionByName (".bss", true);
@@ -460,7 +454,7 @@ namespace Mono.Debugger.Backends
 
 		public Architecture Architecture {
 			get {
-				return arch;
+				return container.Architecture;
 			}
 		}
 
@@ -480,7 +474,7 @@ namespace Mono.Debugger.Backends
 					info.AddressDomain, BaseAddress.Address + address);
 		}
 
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return info;
 			}
@@ -661,16 +655,6 @@ namespace Mono.Debugger.Backends
 			} else {
 				unload_dwarf ();
 			}
-		}
-
-		internal BfdDisassembler GetDisassembler (TargetMemoryAccess memory)
-		{
-			IntPtr dis = disassembler (bfd);
-
-			IntPtr info = bfd_glue_init_disassembler (bfd);
-
-			return new BfdDisassembler (
-				container.Process.SymbolTableManager, memory, dis, info);
 		}
 
 		public TargetAddress this [string name] {
@@ -966,7 +950,7 @@ namespace Mono.Debugger.Backends
 
 			StackFrame new_frame;
 			try {
-				new_frame = arch.TrySpecialUnwind (frame, memory);
+				new_frame = container.Architecture.TrySpecialUnwind (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
@@ -974,13 +958,15 @@ namespace Mono.Debugger.Backends
 
 			try {
 				if (frame_reader != null) {
-					new_frame = frame_reader.UnwindStack (frame, memory, arch);
+					new_frame = frame_reader.UnwindStack (
+						frame, memory, container.Architecture);
 					if (new_frame != null)
 						return new_frame;
 				}
 
 				if (eh_frame_reader != null) {
-					new_frame = eh_frame_reader.UnwindStack (frame, memory, arch);
+					new_frame = eh_frame_reader.UnwindStack (
+						frame, memory, container.Architecture);
 					if (new_frame != null)
 						return new_frame;
 				}
@@ -1105,7 +1091,7 @@ namespace Mono.Debugger.Backends
 			internal override bool BreakpointHandler (Inferior inferior,
 								  out bool remain_stopped)
 			{
-				bfd.arch.Hack_ReturnNull (inferior);
+				bfd.Architecture.Hack_ReturnNull (inferior);
 				remain_stopped = false;
 				return true;
 			}

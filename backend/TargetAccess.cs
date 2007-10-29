@@ -60,14 +60,6 @@ namespace Mono.Debugger
 		}
 
 		//
-		// ITargetMemoryInfo
-		//
-
-		public abstract AddressDomain AddressDomain {
-			get;
-		}
-
-		//
 		// TargetMemoryAccess
 		//
 

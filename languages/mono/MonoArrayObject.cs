@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetBinaryReader reader = Location.ReadMemory (target, type.Size).GetReader ();
 
-			reader.Position = 3 * reader.TargetInfo.TargetAddressSize;
+			reader.Position = 3 * reader.TargetMemoryInfo.TargetAddressSize;
 			int length = reader.ReadInt32 ();
 
 			if (Rank == 1) {
@@ -21,9 +21,9 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 			}
 
-			reader.Position = 2 * reader.TargetInfo.TargetAddressSize;
+			reader.Position = 2 * reader.TargetMemoryInfo.TargetAddressSize;
 			TargetAddress bounds_address = new TargetAddress (
-				target.TargetInfo.AddressDomain, reader.ReadAddress ());
+				target.AddressDomain, reader.ReadAddress ());
 			TargetBinaryReader breader = target.ReadMemory (
 				bounds_address, 8 * Rank).GetReader ();
 
@@ -93,7 +93,7 @@ namespace Mono.Debugger.Languages.Mono
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
-			int element_size = GetElementSize (blob.TargetInfo);
+			int element_size = GetElementSize (blob.TargetMemoryInfo);
 			dynamic_location = location.GetLocationAtOffset (Type.Size);
 			return element_size * GetLength (target);
 		}

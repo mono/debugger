@@ -474,7 +474,7 @@ namespace Mono.Debugger.Backends
 
 			MonoDefaultsSize = reader.ReadInt32 ();
 			MonoDefaultsAddress = new TargetAddress (
-				memory.TargetInfo.AddressDomain, reader.ReadAddress ());
+				memory.AddressDomain, reader.ReadAddress ());
 
 			TypeSize = reader.ReadInt32 ();
 			ArrayTypeSize = reader.ReadInt32 ();

@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger.Backends;
+using Mono.Debugger.Architectures;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
@@ -14,7 +15,9 @@ namespace Mono.Debugger.Backends
 	internal class ProcessServant : DebuggerMarshalByRefObject
 	{
 		Process client;
+		TargetInfo target_info;
 		ThreadManager manager;
+		Architecture architecture;
 		BfdContainer bfd_container;
 		SymbolTableManager symtab_manager;
 		MonoThreadManager mono_manager;
@@ -47,6 +50,12 @@ namespace Mono.Debugger.Backends
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
+
+			target_info = Inferior.GetTargetInfo ();
+			if (target_info.TargetAddressSize == 8)
+				architecture = new Architecture_X86_64 (this, target_info);
+			else
+				architecture = new Architecture_I386 (this, target_info);
 		}
 
 		internal ProcessServant (ThreadManager manager, ProcessStart start)
@@ -100,10 +109,12 @@ namespace Mono.Debugger.Backends
 			get { return manager; }
 		}
 
+		internal Architecture Architecture {
+			get { return architecture; }
+		}
+
 		internal BfdContainer BfdContainer {
-			get {
-				return bfd_container;
-			}
+			get { return bfd_container; }
 		}
 
 		internal BreakpointManager BreakpointManager {
@@ -338,14 +349,14 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);
 			while (!ptr.IsNull) {
-				int size = 24 + inferior.TargetInfo.TargetAddressSize;
+				int size = 24 + inferior.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
 				TargetAddress lmf_addr = reader.ReadAddress ();
 				TargetAddress end_stack = reader.ReadAddress ();
 
-				if (inferior.TargetInfo.TargetAddressSize == 4)
+				if (inferior.TargetMemoryInfo.TargetAddressSize == 4)
 					tid &= 0x00000000ffffffffL;
 
 				ptr = reader.ReadAddress ();
@@ -460,7 +471,7 @@ namespace Mono.Debugger.Backends
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				bfd_container.AddFile (thread.TargetInfo, filename,
+				bfd_container.AddFile (thread.TargetMemoryInfo, filename,
 						       TargetAddress.Null, true, false);
 		}
 
@@ -597,6 +608,11 @@ namespace Mono.Debugger.Backends
 		protected virtual void DoDispose ()
 		{
 			if (!is_forked) {
+				if (architecture != null) {
+					architecture.Dispose ();
+					architecture = null;
+				}
+
 				if (bfd_container != null) {
 					bfd_container.Dispose ();
 					bfd_container = null;

@@ -81,7 +81,7 @@ namespace Mono.Debugger.Architectures
 
 			foreach (TargetAddress address in process.MonoLanguage.Trampolines) {
 				if (call_target + call_disp + 10 == address) {
-					trampoline = new TargetAddress (AddressDomain, method_info);
+					trampoline = new TargetAddress (memory.AddressDomain, method_info);
 					return true;
 				}
 			}
@@ -272,7 +272,7 @@ namespace Mono.Debugger.Architectures
 			Registers regs = new Registers (old_regs);
 
 			TargetAddress ebp = new TargetAddress (
-				AddressDomain, old_regs [(int) I386Register.EBP].GetValue ());
+				memory.AddressDomain, old_regs [(int) I386Register.EBP].GetValue ());
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
@@ -558,7 +558,7 @@ namespace Mono.Debugger.Architectures
 		{
 			Registers regs = inferior.GetRegisters ();
 			TargetAddress esp = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+				inferior.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
 			TargetAddress eip = inferior.ReadAddress (esp);
 			esp += TargetAddressSize;
 
@@ -598,11 +598,11 @@ namespace Mono.Debugger.Architectures
 							  bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.EIP].GetValue ());
+				thread.AddressDomain, regs [(int) I386Register.EIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+				thread.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				AddressDomain, regs [(int) I386Register.EBP].GetValue ());
+				thread.AddressDomain, regs [(int) I386Register.EBP].GetValue ());
 
 			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
 					    adjust_retaddr);

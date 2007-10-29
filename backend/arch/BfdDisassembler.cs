@@ -12,34 +12,27 @@ namespace Mono.Debugger.Backends
 {
 	internal class BfdDisassembler : Disassembler, IDisposable
 	{
-		IntPtr dis;
-		IntPtr info;
-
-		TargetMemoryAccess memory;
-		SymbolTableManager symtab_manager;
+		IntPtr handle;
+		ProcessServant process;
 
 		Opcodes_X86 opcodes;
 
 		[DllImport("monodebuggerserver")]
-		extern static int bfd_glue_disassemble_insn (IntPtr dis, IntPtr info, long address);
+		extern static int bfd_glue_disassemble_insn (IntPtr handle, long address);
 
 		[DllImport("monodebuggerserver")]
-		extern static void bfd_glue_setup_disassembler (IntPtr info, ReadMemoryHandler read_memory_cb, OutputHandler output_cb, PrintAddressHandler print_address_cb);
+		extern static IntPtr bfd_glue_create_disassembler (bool is_x86_64, ReadMemoryHandler read_memory_cb, OutputHandler output_cb, PrintAddressHandler print_address_cb);
 
 		[DllImport("monodebuggerserver")]
-		extern static void bfd_glue_free_disassembler (IntPtr info);
+		extern static void bfd_glue_free_disassembler (IntPtr handle);
 
 		ReadMemoryHandler read_handler;
 		OutputHandler output_handler;
 		PrintAddressHandler print_handler;
 
-		internal BfdDisassembler (SymbolTableManager symtab_manager,
-					  TargetMemoryAccess memory, IntPtr dis, IntPtr info)
+		internal BfdDisassembler (ProcessServant process, bool is_x86_64)
 		{
-			this.dis = dis;
-			this.info = info;
-			this.memory = memory;
-			this.symtab_manager = symtab_manager;
+			this.process = process;
 
 			opcodes = new Opcodes_X86 (true);
 
@@ -47,9 +40,8 @@ namespace Mono.Debugger.Backends
 			output_handler = new OutputHandler (output_func);
 			print_handler = new PrintAddressHandler (print_address_func);
 
-
-			bfd_glue_setup_disassembler (info, read_handler, output_handler,
-						     print_handler);
+			handle = bfd_glue_create_disassembler (
+				is_x86_64, read_handler, output_handler, print_handler);
 		}
 
 		private delegate int ReadMemoryHandler (long address, IntPtr data, int size);
@@ -60,7 +52,7 @@ namespace Mono.Debugger.Backends
 		{
 			try {
 				TargetAddress location = new TargetAddress (
-					memory.TargetInfo.AddressDomain, address);
+					memory.AddressDomain, address);
 				byte[] buffer = memory.ReadBuffer (location, size);
 				Marshal.Copy (buffer, 0, data, size);
 			} catch (Exception e) {
@@ -73,6 +65,8 @@ namespace Mono.Debugger.Backends
 		StringBuilder sb;
 		Exception memory_exception;
 		Method current_method;
+		TargetMemoryAccess memory;
+
 		void output_func (string output)
 		{
 			if (sb != null)
@@ -87,7 +81,7 @@ namespace Mono.Debugger.Backends
 		void print_address_func (long address)
 		{
 			TargetAddress maddress = new TargetAddress (
-				memory.TargetInfo.AddressDomain, address);
+				memory.AddressDomain, address);
 
 			if (current_method != null) {
 				try {
@@ -102,7 +96,9 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			Symbol name = symtab_manager.SimpleLookup (maddress, false);
+			Symbol name = null;
+			if (process != null)
+				name = process.SymbolTableManager.SimpleLookup (maddress, false);
 
 			if (name == null)
 				output_func (address);
@@ -110,27 +106,30 @@ namespace Mono.Debugger.Backends
 				output_func (String.Format ("0x{0:x}:{1}", address, name.ToString ()));
 		}
 
-		public override int GetInstructionSize (TargetAddress location)
+		public override int GetInstructionSize (TargetMemoryAccess memory, TargetAddress address)
 		{
 			memory_exception = null;
 
 			try {
-				int count = bfd_glue_disassemble_insn (dis, info, location.Address);
+				this.memory = memory;
+				int count = bfd_glue_disassemble_insn (handle, address.Address);
 				if (memory_exception != null)
 					throw memory_exception;
 				return count;
 			} finally {
+				this.memory = null;
 				memory_exception = null;
 			}
 		}
 
-		public override AssemblerMethod DisassembleMethod (Method method)
+		public override AssemblerMethod DisassembleMethod (TargetMemoryAccess memory, Method method)
 		{
 			lock (this) {
 				ArrayList list = new ArrayList ();
 				TargetAddress current = method.StartAddress;
 				while (current < method.EndAddress) {
-					AssemblerLine line = DisassembleInstruction (method, current);
+					AssemblerLine line = DisassembleInstruction (
+						memory, method, current);
 					if (line == null)
 						break;
 
@@ -145,15 +144,15 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public override AssemblerLine DisassembleInstruction (Method method,
+		public override AssemblerLine DisassembleInstruction (TargetMemoryAccess memory,
+								      Method method,
 								      TargetAddress address)
 		{
 			lock (this) {
 				memory_exception = null;
 				sb = new StringBuilder ();
 
-				address = new TargetAddress (
-					memory.TargetInfo.AddressDomain, address.Address);
+				address = new TargetAddress (memory.AddressDomain, address.Address);
 
 				try {
 					opcodes.ReadInstruction (memory, address);
@@ -163,19 +162,22 @@ namespace Mono.Debugger.Backends
 				string insn;
 				int insn_size;
 				try {
+					this.memory = memory;
 					current_method = method;
-					insn_size = bfd_glue_disassemble_insn (dis, info, address.Address);
+					insn_size = bfd_glue_disassemble_insn (handle, address.Address);
 					if (memory_exception != null)
 						return null;
 					insn = sb.ToString ();
 				} finally {
 					sb = null;
+					this.memory = null;
 					memory_exception = null;
 					current_method = null;
 				}
 
 				Symbol label = null;
-				label = symtab_manager.SimpleLookup (address, true);
+				if (process != null)
+					label = process.SymbolTableManager.SimpleLookup (address, true);
 
 				string label_name = null;
 				if (label != null)
@@ -200,8 +202,8 @@ namespace Mono.Debugger.Backends
 
 				// Release unmanaged resources
 				lock (this) {
-					bfd_glue_free_disassembler (info);
-					info = IntPtr.Zero;
+					bfd_glue_free_disassembler (handle);
+					handle = IntPtr.Zero;
 				}
 			}
 		}

@@ -20,7 +20,6 @@ namespace Mono.Debugger.Backends
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
-		protected BfdDisassembler bfd_disassembler;
 		protected ThreadManager thread_manager;
 
 		protected readonly ProcessStart start;
@@ -41,7 +40,7 @@ namespace Mono.Debugger.Backends
 		bool has_target;
 		bool pushed_regs;
 
-		TargetInfo target_info;
+		TargetMemoryInfo target_info;
 		Architecture arch;
 
 		bool has_signals;
@@ -304,7 +303,6 @@ namespace Mono.Debugger.Backends
 			inferior.bfd = bfd;
 
 			inferior.arch = inferior.bfd.Architecture;
-			inferior.bfd_disassembler = inferior.bfd.GetDisassembler (inferior);
 
 			return inferior;
 		}
@@ -683,7 +681,7 @@ namespace Mono.Debugger.Backends
 			return new ChildEvent (message, arg, data1, data2);
 		}
 
-		public static TargetInfo GetTargetInfo (AddressDomain domain)
+		public static TargetInfo GetTargetInfo ()
 		{
 			int target_int_size, target_long_size, target_addr_size, is_bigendian;
 			check_error (mono_debugger_server_get_target_info
@@ -691,7 +689,18 @@ namespace Mono.Debugger.Backends
 				 out target_addr_size, out is_bigendian));
 
 			return new TargetInfo (target_int_size, target_long_size,
-					       target_addr_size, is_bigendian != 0, domain);
+					       target_addr_size, is_bigendian != 0);
+		}
+
+		public static TargetMemoryInfo GetTargetMemoryInfo (AddressDomain domain)
+		{
+			int target_int_size, target_long_size, target_addr_size, is_bigendian;
+			check_error (mono_debugger_server_get_target_info
+				(out target_int_size, out target_long_size,
+				 out target_addr_size, out is_bigendian));
+
+			return new TargetMemoryInfo (target_int_size, target_long_size,
+						     target_addr_size, is_bigendian != 0, domain);
 		}
 
 		public static string GetFileContents (string filename)
@@ -723,7 +732,7 @@ namespace Mono.Debugger.Backends
 				g_free (data);
 			}
 
-			target_info = GetTargetInfo (address_domain);
+			target_info = GetTargetMemoryInfo (address_domain);
 
 			try {
 				bfd = bfd_container.AddFile (
@@ -742,8 +751,6 @@ namespace Mono.Debugger.Backends
 			bfd_container.SetupInferior (target_info, bfd);
 
 			arch = bfd.Architecture;
-
-			bfd_disassembler = bfd.GetDisassembler (this);
 		}
 
 		public void InitializeModules ()
@@ -819,13 +826,13 @@ namespace Mono.Debugger.Backends
 		// TargetMemoryAccess
 		//
 
-		public AddressDomain AddressDomain {
+		public override AddressDomain AddressDomain {
 			get {
 				return address_domain;
 			}
 		}
 
-		public override TargetInfo TargetInfo {
+		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target_info;
 			}
@@ -1186,13 +1193,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Disassembler Disassembler {
-			get {
-				check_disposed ();
-				return bfd_disassembler;
-			}
-		}
-
 		internal override Architecture Architecture {
 			get {
 				check_disposed ();
@@ -1347,7 +1347,7 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress address, stack, frame;
 
-			internal StackFrame (TargetInfo info, ServerStackFrame frame)
+			internal StackFrame (TargetMemoryInfo info, ServerStackFrame frame)
 			{
 				this.address = new TargetAddress (info.AddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);
@@ -1530,13 +1530,6 @@ namespace Mono.Debugger.Backends
 			if (!this.disposed) {
 				// If this is a call to Dispose,
 				// dispose all managed resources.
-				if (disposing) {
-					if (bfd_disassembler != null) {
-						bfd_disassembler.Dispose ();
-						bfd_disassembler = null;
-					}
-				}
-				
 				this.disposed = true;
 
 				// Release unmanaged resources

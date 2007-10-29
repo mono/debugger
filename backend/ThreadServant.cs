@@ -240,23 +240,23 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override int TargetAddressSize {
-			get { return TargetInfo.TargetAddressSize; }
+			get { return TargetMemoryInfo.TargetAddressSize; }
 		}
 
 		public override int TargetIntegerSize {
-			get { return TargetInfo.TargetIntegerSize; }
+			get { return TargetMemoryInfo.TargetIntegerSize; }
 		}
 
 		public override int TargetLongIntegerSize {
-			get { return TargetInfo.TargetLongIntegerSize; }
+			get { return TargetMemoryInfo.TargetLongIntegerSize; }
 		}
 
 		public override bool IsBigEndian {
-			get { return TargetInfo.IsBigEndian; }
+			get { return TargetMemoryInfo.IsBigEndian; }
 		}
 
 		public override AddressDomain AddressDomain {
-			get { return TargetInfo.AddressDomain; }
+			get { return TargetMemoryInfo.AddressDomain; }
 		}
 
 #region IDisposable implementation
