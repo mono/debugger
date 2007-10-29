@@ -118,6 +118,11 @@ namespace Mono.Debugger.Backends
 				(type == CallTargetType.MonoTrampoline);
 		}
 
+		internal Instruction ReadInstruction (TargetMemoryAccess memory, TargetAddress address)
+		{
+			return X86_Instruction.DecodeInstruction (memory, address);
+		}
+
 		internal CallTargetType GetCallTarget (TargetMemoryAccess memory,
 						       TargetAddress address,
 						       out TargetAddress target,

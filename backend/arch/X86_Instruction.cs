@@ -34,7 +34,21 @@ namespace Mono.Debugger.Architectures
 			get { return type; }
 		}
 
-		public bool IsIpRelative;
+		public override bool IsIpRelative {
+			get {
+				switch (type) {
+				case Type.ConditionalJump:
+				case Type.IndirectCall:
+				case Type.Call:
+				case Type.IndirectJump:
+				case Type.Jump:
+					return true;
+
+				default:
+					return is_ip_relative;
+				}
+			}
+		}
 
 		public override bool HasInstructionSize {
 			get { return has_insn_size; }
@@ -49,16 +63,25 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
+		public override byte[] Code {
+			get {
+				if (!has_insn_size)
+					throw new InvalidOperationException ();
+
+				return code;
+			}
+		}
+
 		internal void SetInstructionSize (int size)
 		{
 			this.insn_size = size;
 			this.has_insn_size = true;
 		}
 
+		bool is_ip_relative;
 		bool has_insn_size;
 		int insn_size;
-
-		public bool InsnSize;
+		byte[] code;
 
 		public TargetAddress CallTarget = TargetAddress.Null;
 
@@ -330,7 +353,7 @@ namespace Mono.Debugger.Architectures
 			ModRM = new X86_ModRM (this, reader.ReadByte ());
 
 			if (Is64BitMode && (ModRM.Mod == 0) && ((ModRM.R_M & 0x07) == 0x06)) {
-				IsIpRelative = true;
+				is_ip_relative = true;
 			}
 		}
 
@@ -416,7 +439,7 @@ namespace Mono.Debugger.Architectures
 					if (Is64BitMode) {
 						displacement = reader.BinaryReader.ReadInt32 ();
 						register = (int) X86_64_Register.RIP;
-						IsIpRelative = true;
+						is_ip_relative = true;
 					} else {
 						CallTarget = reader.ReadAddress ();
 						return;
@@ -525,6 +548,15 @@ namespace Mono.Debugger.Architectures
 
 			if (InstructionType != Type.Unknown)
 				SetInstructionSize ((int) reader.Offset);
+			else {
+				// public override int GetInstructionSize (TargetAddress location)
+			}
+
+
+			if (has_insn_size) {
+				code = new byte [insn_size];
+				Array.Copy (reader.Contents, 0, code, 0, insn_size);
+			}
 		}
 	}
 }

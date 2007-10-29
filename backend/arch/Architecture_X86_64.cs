@@ -109,11 +109,11 @@ namespace Mono.Debugger.Architectures
 				method = MONO_FAKE_IMT_METHOD;
 
 			if (method == MONO_FAKE_VTABLE_METHOD) {
-				trampoline = new TargetAddress (memory.TargetInfo.AddressDomain, method);
+				trampoline = new TargetAddress (memory.AddressDomain, method);
 				return true;
 
 				disp -= metadata.MonoVTableVTableOffset;
-				if ((disp < 0) || ((disp % memory.TargetInfo.TargetAddressSize)) != 0)
+				if ((disp < 0) || ((disp % memory.TargetMemoryInfo.TargetAddressSize)) != 0)
 					throw new InternalError ();
 
 				Console.WriteLine ("FAKE VTABLE METHOD: {0} {1}",
@@ -182,7 +182,7 @@ namespace Mono.Debugger.Architectures
 
 			Console.WriteLine ("DO GET MONO TRAMPOLINE #2: {0:x}", method);
 
-			trampoline = new TargetAddress (memory.TargetInfo.AddressDomain, method);
+			trampoline = new TargetAddress (memory.AddressDomain, method);
 			return true;
 		}
 

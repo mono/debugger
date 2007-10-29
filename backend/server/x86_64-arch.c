@@ -15,11 +15,19 @@
 
 #define AMD64_RED_ZONE_SIZE 128
 
+typedef struct
+{
+	int slot, insn_size;
+	guint64 code_address;
+	guint64 original_rip;
+} CodeBufferData;
+
 struct ArchInfo
 {
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	GPtrArray *callback_stack;
+	CodeBufferData *code_buffer;
 	guint64 dr_control, dr_status;
 	guint64 pushed_regs_rsp;
 	int dr_regs [DR_NADDR];
@@ -166,6 +174,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
+	CodeBufferData *cbuffer = NULL;
 	CallbackData *cdata;
 	guint64 code;
 	int i;
@@ -260,6 +269,28 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cdata);
 		return STOP_ACTION_CALLBACK;
+	}
+
+	cbuffer = arch->code_buffer;
+	if (cbuffer) {
+		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
+			g_warning (G_STRLOC);
+			return STOP_ACTION_STOPPED;
+		}
+
+		g_message (G_STRLOC ": %p - %Lx - %d - %Lx,%Lx", cbuffer,
+			   cbuffer->original_rip, cbuffer->insn_size,
+			   cbuffer->code_address, INFERIOR_REG_RIP (arch->current_regs));
+
+		INFERIOR_REG_RIP (arch->current_regs) = cbuffer->original_rip + cbuffer->insn_size;
+		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
+			g_error (G_STRLOC ": Can't restore registers");
+		}
+
+		g_free (cbuffer);
+		arch->code_buffer = NULL;
+		g_message (G_STRLOC ": %Lx", INFERIOR_REG_RIP (arch->current_regs));
+		return STOP_ACTION_STOPPED;
 	}
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -451,8 +482,9 @@ runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint
 	index_address = runtime->breakpoint_table + 8 * slot;
 
 #if 0
-	g_message (G_STRLOC ": table address is %Lx / index address is %Lx",
-		   table_address, index_address);
+	g_message (G_STRLOC ": table address is %Lx,%Lx / index address is %Lx,%Lx",
+		   runtime->breakpoint_info_area, table_address, runtime->breakpoint_table,
+		   index_address);
 #endif
 
 	result = server_ptrace_poke_word (handle, table_address, breakpoint->address);
@@ -480,6 +512,8 @@ runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoin
 
 	runtime = handle->mono_runtime;
 	g_assert (runtime);
+
+	return COMMAND_ERROR_NONE;
 
 #if 0
 	g_message (G_STRLOC ": freeing breakpoint slot %d", breakpoint->runtime_table_slot);
@@ -1077,12 +1111,66 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	return server_ptrace_continue (handle);
 }
 
+static int
+find_code_buffer_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->executable_code_total_chunks; i++) {
+		if (runtime->executable_code_bitfield [i])
+			continue;
+
+		runtime->executable_code_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
 static ServerCommandError
 server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, guint32 size)
 {
-	g_message (G_STRLOC);
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	CodeBufferData *data;
+	guint64 code_address;
+	int slot;
 
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_code_buffer_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	if (size >= runtime->executable_code_chunk_size)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+	if (handle->arch->code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	code_address = runtime->executable_code_buffer + slot * runtime->executable_code_chunk_size;
+
+	g_message (G_STRLOC ": %d - %Lx - %d - %p", slot, code_address, size, instruction);
+
+	data = g_new0 (CodeBufferData, 1);
+	data->slot = slot;
+	data->insn_size = size;
+	data->original_rip = INFERIOR_REG_RIP (handle->arch->current_regs);
+	data->code_address = code_address;
+
+	handle->arch->code_buffer = data;
+
+	result = server_ptrace_write_memory (handle, code_address, size, instruction);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_RIP (handle->arch->current_regs) = code_address;
+
+	result = _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_step (handle);
 }
 
 static ServerCommandError

@@ -61,18 +61,23 @@ typedef struct {
 	guint64 frame_address;
 } StackFrame;
 
+#define EXECUTABLE_CODE_CHUNK_SIZE		16
+
 typedef struct
 {
 	guint32 address_size;
 	guint64 notification_address;
 	guint64 executable_code_buffer;
 	guint32 executable_code_buffer_size;
+	guint32 executable_code_chunk_size;
+	guint32 executable_code_total_chunks;
 	guint64 breakpoint_info_area;
 	guint64 breakpoint_table;
 	guint32 breakpoint_table_size;
 
 	/* Private */
 	guint8 *breakpoint_table_bitfield;
+	guint8 *executable_code_bitfield;
 } MonoRuntimeInfo;
 
 /* This is an opaque data structure which the backend may use to store stuff. */

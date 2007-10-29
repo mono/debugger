@@ -78,11 +78,15 @@ mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 	runtime->notification_address = notification_address;
 	runtime->executable_code_buffer = executable_code_buffer;
 	runtime->executable_code_buffer_size = executable_code_buffer_size;
+	runtime->executable_code_chunk_size = EXECUTABLE_CODE_CHUNK_SIZE;
+	runtime->executable_code_total_chunks = executable_code_buffer_size / EXECUTABLE_CODE_CHUNK_SIZE;
+
 	runtime->breakpoint_info_area = breakpoint_info_area;
 	runtime->breakpoint_table = breakpoint_table;
 	runtime->breakpoint_table_size = breakpoint_table_size;
 
 	runtime->breakpoint_table_bitfield = g_malloc0 (breakpoint_table_size);
+	runtime->executable_code_bitfield = g_malloc0 (runtime->executable_code_total_chunks);
 
 	return runtime;
 }

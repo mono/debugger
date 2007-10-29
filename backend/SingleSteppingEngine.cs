@@ -14,6 +14,7 @@ using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
+using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backends
 {
@@ -923,8 +924,25 @@ namespace Mono.Debugger.Backends
 			CallTargetType type = inferior.Architecture.GetCallTarget (
 				inferior, inferior.CurrentFrame, out target, out insn_size);
 
-			byte[] instruction = { 0xcc, 0x90, 0x90 };
-			inferior.ExecuteInstruction (instruction);
+			Console.WriteLine ("EXECUTE INSTRUCTION!");
+
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, inferior.CurrentFrame);
+			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0}", instruction);
+
+			if ((instruction == null) || !instruction.HasInstructionSize ||
+			    instruction.IsIpRelative) {
+				PushOperation (new OperationStepOverBreakpoint (this, index, until));
+				return true;
+			}
+
+			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1}", instruction,
+					   instruction.Code);
+
+			byte[] buffer = { 0x90 };
+			inferior.ExecuteInstruction (instruction.Code);
+
+			return true;
 
 			throw new InternalError ("NOT IMPLEMENTED BEYOND THIS POINT!");
 
@@ -3533,7 +3551,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			TargetBinaryWriter writer = new TargetBinaryWriter (
-				32 + code_buffer_size, inferior.TargetInfo);
+				32 + code_buffer_size, inferior.TargetMemoryInfo);
 			writer.WriteInt64 (CallSite.Address);
 			writer.WriteInt64 (CallTarget.Address);
 			writer.WriteInt64 (0);
@@ -3550,7 +3568,7 @@ namespace Mono.Debugger.Backends
 		protected override EventResult CallbackCompleted (Inferior.ChildEvent cevent)
 		{
 			TargetBinaryReader reader = new TargetBinaryReader (
-				cevent.CallbackData, inferior.TargetInfo);
+				cevent.CallbackData, inferior.TargetMemoryInfo);
 			TargetAddress method = new TargetAddress (
 				inferior.AddressDomain, reader.PeekAddress (16));
 			byte[] new_code = reader.PeekBuffer (32, code_buffer_size);

@@ -59,6 +59,7 @@ namespace Mono.Debugger.Backends
 		internal void SetupInferior (TargetInfo info, Bfd main_bfd)
 		{
 			this.main_bfd = main_bfd;
+			Console.WriteLine ("BFD CONTAINER SETUP INFERIOR: {0}", main_bfd);
 			language = new NativeLanguage (this, info);
 		}
 

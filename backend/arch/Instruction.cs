@@ -18,11 +18,19 @@ namespace Mono.Debugger.Architectures
 			get;
 		}
 
+		public abstract bool IsIpRelative {
+			get;
+		}
+
 		public abstract bool HasInstructionSize {
 			get;
 		}
 
 		public abstract int InstructionSize {
+			get;
+		}
+
+		public abstract byte[] Code {
 			get;
 		}
 
