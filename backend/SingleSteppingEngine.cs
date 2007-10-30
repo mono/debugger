@@ -3396,8 +3396,7 @@ namespace Mono.Debugger.Backends
 			sse.do_continue ();
 		}
 
-		protected EventResult TrampolineCompiled (TargetAddress mono_method, TargetAddress code,
-							  out TargetEventArgs args)
+		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
 		{
 			Console.WriteLine ("TRAMPOLINE COMPILED: {0} {1} {2}",
 					   mono_method, code, TrampolineHandler);
@@ -3408,15 +3407,12 @@ namespace Mono.Debugger.Backends
 				Method method = sse.Lookup (code);
 				Console.WriteLine ("TRAMPOLINE COMPILED #1: {0}", method);
 				if (!TrampolineHandler (method)) {
-					sse.do_continue ();
-					args = null;
-					return EventResult.Running;
+					sse.do_continue (CallSite.Address + CallSite.InstructionSize);
+					return;
 				}
 			}
 
 			sse.do_continue (code);
-			args = null;
-			return EventResult.Running;
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3431,17 +3427,17 @@ namespace Mono.Debugger.Backends
 				TargetAddress code = new TargetAddress (
 					inferior.AddressDomain, cevent.Data2);
 
-				compiled = true;
-				return TrampolineCompiled (method, code, out args);
-			}
-
-			if (!compiled) {
 				args = null;
-				return EventResult.Completed;
+				compiled = true;
+				TrampolineCompiled (method, code);
+				return EventResult.Running;
 			}
 
 			args = null;
-			return EventResult.ResumeOperation;
+			if (!compiled)
+				return EventResult.Completed;
+			else
+				return EventResult.ResumeOperation;
 		}
 	}
 

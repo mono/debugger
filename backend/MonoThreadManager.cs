@@ -191,8 +191,6 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data2);
 
-					Console.WriteLine ("THREAD CREATED: {0} {1}", engine, data);
-
 					TargetAddress lmf = inferior.ReadAddress (data + 8);
 					engine.SetManagedThreadData (lmf, data + 24);
 
@@ -216,9 +214,6 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 					long tid = cevent.Data2;
-
-					Console.WriteLine ("GC THREAD CREATED: {0} {1:x} {2}",
-							   engine, tid, data);
 
 					Report.Debug (DebugFlags.Threads,
 						      "{0} created gc thread: {1:x} {2}",
