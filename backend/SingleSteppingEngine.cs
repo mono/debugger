@@ -3527,6 +3527,10 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
+			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1}", CallSite, CallTarget);
+
+			throw new InternalError ("NOT YET IMPLEMENTED BEYOND THIS POINT!");
+
 			if (sse.process.BreakpointManager.IsAnyBreakpointInMemoryArea (CallSite - 16, 32)) {
 				code_buffer = inferior.ReadBuffer (CallSite - 16, 32);
 				code_buffer_size = 32;
