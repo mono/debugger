@@ -3434,9 +3434,10 @@ namespace Mono.Debugger.Backends
 			}
 
 			args = null;
-			if (!compiled)
+			if (!compiled) {
+				sse.disable_extended_notification (NotificationType.Trampoline);
 				return EventResult.Completed;
-			else
+			} else
 				return EventResult.ResumeOperation;
 		}
 	}
