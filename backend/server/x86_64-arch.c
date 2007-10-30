@@ -500,7 +500,7 @@ runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_poke_word (handle, table_address, (gsize) breakpoint->saved_insn);
+	result = server_ptrace_poke_word (handle, table_address + 8, (gsize) breakpoint->saved_insn);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 

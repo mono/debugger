@@ -80,6 +80,9 @@ namespace Mono.Debugger.Architectures
 				TargetAddress rsp = new TargetAddress (
 					inferior.AddressDomain, regs [(int) X86_64_Register.RSP].Value);
 
+				Console.WriteLine ("INTERPRET CALL #1: {0} {1} {2} {3}",
+						   rip, rsp, CallTarget, InstructionSize);
+
 				inferior.WriteAddress (rsp - 8, rip + InstructionSize);
 
 				regs [(int) X86_64_Register.RSP].SetValue (rsp - 8);
