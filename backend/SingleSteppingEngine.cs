@@ -1283,12 +1283,6 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
-		void trampoline_callback (TargetAddress address)
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} trampoline callback: {1}", this, address);
-		}
-
 		protected bool MethodHasSource (Method method)
 		{
 			if ((method == null) || !method.HasLineNumbers || !method.HasMethodBounds)
@@ -3362,8 +3356,6 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected delegate void MyTrampolineHandler (TargetAddress address, TargetAddress method);
-
 	protected class OperationTrampoline : Operation
 	{
 		public readonly TargetAddress CallSite;
@@ -3374,7 +3366,6 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress address = TargetAddress.Null;
 		bool compiled;
-		bool completed;
 
 		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
 					    TargetAddress call_target, TrampolineHandler handler)
@@ -3393,53 +3384,59 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			sse.PushOperation (new OperationResolveTrampoline (
-				sse, CallSite, CallTarget, callback_completed));
+			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, CallTarget,
+					   sse.extended_notifications_addr);
+
+			sse.enable_extended_notification (NotificationType.Trampoline);
+			sse.do_continue ();
 		}
 
-		void callback_completed (TargetAddress address, TargetAddress method)
+		protected EventResult TrampolineCompiled (TargetAddress mono_method, TargetAddress code,
+							  out TargetEventArgs args)
 		{
-			this.address = address;
+			Console.WriteLine ("TRAMPOLINE COMPILED: {0} {1} {2}",
+					   mono_method, code, TrampolineHandler);
+
+			sse.disable_extended_notification (NotificationType.Trampoline);
+
+			if (TrampolineHandler != null) {
+				Method method = sse.Lookup (code);
+				Console.WriteLine ("TRAMPOLINE COMPILED #1: {0}", method);
+				if (!TrampolineHandler (method)) {
+					sse.do_continue ();
+					args = null;
+					return EventResult.Running;
+				}
+			}
+
+			sse.do_continue (code);
+			args = null;
+			return EventResult.Running;
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} trampoline event: {1}", sse, cevent);
+			Console.WriteLine ("RESOLVE TRAMPOLINE EVENT: {0} {1}", cevent, compiled);
 
-			args = null;
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
+			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
+				TargetAddress method = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
+				TargetAddress code = new TargetAddress (
+					inferior.AddressDomain, cevent.Data2);
 
-			Console.WriteLine ("TRAMPOLINE EVENT: {0} {1} {2} - {3}",
-					   inferior.CurrentFrame, cevent, TrampolineHandler,
-					   address);
-
-			if (completed)
-				return EventResult.ResumeOperation;
-
-			completed = true;
-
-			inferior.Architecture.InterpretCallInstruction (inferior, CallSite, address);
-			sse.frames_invalid ();
-
-			if (TrampolineHandler != null) {
-				Method method = sse.Lookup (address);
-				Report.Debug (DebugFlags.SSE,
-					      "{0} compiled method: {1} {2} {3} {4} {5}",
-					      sse, address, method,
-					      method != null ? method.Module : null,
-					      sse.MethodHasSource (method), TrampolineHandler);
-
-				if (TrampolineHandler (method))
-					return EventResult.Completed;
+				compiled = true;
+				return TrampolineCompiled (method, code, out args);
 			}
 
-			Console.WriteLine ("STEP OVER TRAMPOLINE: {0} {1} {2}",
-					   inferior.CurrentFrame, CallSite, CallTarget);
+			if (!compiled) {
+				args = null;
+				return EventResult.Completed;
+			}
 
-			sse.insert_temporary_breakpoint (CallSite);
-			inferior.Continue ();
-			return EventResult.Running;
+			args = null;
+			return EventResult.ResumeOperation;
 		}
 	}
 
@@ -3514,74 +3511,6 @@ namespace Mono.Debugger.Backends
 				return EventResult.Running;
 			}
 
-			return EventResult.Completed;
-		}
-	}
-
-	protected class OperationResolveTrampoline : Operation
-	{
-		public readonly TargetAddress CallSite;
-		public readonly TargetAddress CallTarget;
-		public readonly MyTrampolineHandler MyTrampolineHandler;
-
-		public OperationResolveTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
-						   TargetAddress call_target, MyTrampolineHandler handler)
-			: base (sse, null)
-		{
-			this.CallSite = call_site;
-			this.CallTarget = call_target;
-			this.MyTrampolineHandler = handler;
-		}
-
-		byte[] code_buffer;
-		int code_buffer_size;
-		int code_buffer_offset;
-
-		public override bool IsSourceOperation {
-			get { return true; }
-		}
-
-		protected override void DoExecute ()
-		{
-			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, CallTarget,
-					   sse.extended_notifications_addr);
-
-			sse.enable_extended_notification (NotificationType.Trampoline);
-			sse.do_continue ();
-		}
-
-		protected EventResult TrampolineCompiled (TargetAddress mono_method, TargetAddress code,
-							  out TargetEventArgs args)
-		{
-			Console.WriteLine ("TRAMPOLINE COMPILED: {0} {1} {2}",
-					   mono_method, code, MyTrampolineHandler);
-
-			if (MyTrampolineHandler != null) {
-				Method method = sse.Lookup (code);
-				Console.WriteLine ("TRAMPOLINE COMPILED #1: {0}", method);
-			}
-
-			sse.disable_extended_notification (NotificationType.Trampoline);
-			sse.do_continue (code);
-			args = null;
-			return EventResult.Running;
-		}
-
-		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
-							       out TargetEventArgs args)
-		{
-			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
-			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
-				TargetAddress method = new TargetAddress (
-					inferior.AddressDomain, cevent.Data1);
-				TargetAddress code = new TargetAddress (
-					inferior.AddressDomain, cevent.Data2);
-
-				return TrampolineCompiled (method, code, out args);
-			}
-
-			Console.WriteLine ("RESOLVE TRAMPOLINE EVENT: {0}", cevent);
-			args = null;
 			return EventResult.Completed;
 		}
 	}
