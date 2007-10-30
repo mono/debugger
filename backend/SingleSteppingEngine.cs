@@ -2419,31 +2419,10 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		bool check_trampolines ()
-		{
-			if (!sse.process.IsManaged)
-				return false;
-
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, inferior.CurrentFrame, out target, out insn_size);
-			if (Architecture.IsTrampoline (type)) {
-				sse.PushOperation (new OperationTrampoline (
-					sse, inferior.CurrentFrame + insn_size, target, null));
-				return true;
-			}
-
-			return false;
-		}
-
 		protected override void DoExecute ()
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} stepping over breakpoint: {1}", sse, until);
-
-			if (check_trampolines ())
-				return;
 
 			sse.process.AcquireGlobalThreadLock (sse);
 			inferior.DisableBreakpoint (Index);
@@ -2510,7 +2489,6 @@ namespace Mono.Debugger.Backends
 				return EventResult.Completed;
 			}
 
-#if FIXME
 			if (!until.IsNull) {
 				sse.do_continue (until);
 
@@ -2518,7 +2496,6 @@ namespace Mono.Debugger.Backends
 				until = TargetAddress.Null;
 				return EventResult.Running;
 			}
-#endif
 
 			args = null;
 			return EventResult.ResumeOperation;
