@@ -16,12 +16,31 @@ namespace Mono.Debugger.Architectures
 			Jump
 		}
 
+		public enum TrampolineType
+		{
+			None,
+			NativeTrampolineStart,
+			NativeTrampoline,
+			MonoTrampoline
+		}
+
+		public abstract TargetAddress Address {
+			get;
+		}
+
 		public abstract Type InstructionType {
 			get;
 		}
 
 		public abstract bool IsIpRelative {
 			get;
+		}
+
+		public bool IsCall {
+			get {
+				return (InstructionType == Type.Call) ||
+					(InstructionType == Type.IndirectCall);
+			}
 		}
 
 		public abstract bool HasInstructionSize {
@@ -37,6 +56,9 @@ namespace Mono.Debugger.Architectures
 		}
 
 		public abstract TargetAddress GetEffectiveAddress (TargetMemoryAccess memory);
+
+		public abstract TrampolineType CheckTrampoline (TargetMemoryAccess memory,
+								out TargetAddress trampoline);
 
 		public abstract bool InterpretInstruction (Inferior inferior);
 	}

@@ -1072,7 +1072,11 @@ namespace Mono.Debugger.Languages.Mono
 			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
 								      TargetAddress address)
 			{
+#if FIXME
 				return file.MonoLanguage.GetTrampoline (memory, address);
+#else
+				return null;
+#endif
 			}
 
 			public override string[] GetNamespaces ()

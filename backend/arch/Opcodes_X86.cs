@@ -9,10 +9,12 @@ namespace Mono.Debugger.Architectures
 	{
 		public readonly bool Is64BitMode;
 
+		ProcessServant process;
 		BfdDisassembler disassembler;
 
-		internal Opcodes_X86 (bool is_64bit)
+		internal Opcodes_X86 (ProcessServant process, bool is_64bit)
 		{
+			this.process = process;
 			this.Is64BitMode = is_64bit;
 
 			disassembler = new BfdDisassembler (null, is_64bit);
@@ -20,6 +22,10 @@ namespace Mono.Debugger.Architectures
 
 		internal Disassembler Disassembler {
 			get { return disassembler; }
+		}
+
+		internal ProcessServant Process {
+			get { return process; }
 		}
 
 		protected override void DoDispose ()

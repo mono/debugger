@@ -126,15 +126,11 @@ namespace Mono.Debugger.Backends
 			return null;
 		}
 
-		public bool GetTrampoline (TargetMemoryAccess memory,
-					   TargetAddress call_site,
-					   TargetAddress call_target,
-					   out TargetAddress trampoline,
-					   out bool is_start)
+		public bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
+					   out TargetAddress trampoline, out bool is_start)
 		{
 			foreach (Bfd bfd in bfd_hash.Values) {
-				if (bfd.GetTrampoline (memory, call_site, call_target,
-						       out trampoline, out is_start))
+				if (bfd.GetTrampoline (memory, address, out trampoline, out is_start))
 					return true;
 			}
 

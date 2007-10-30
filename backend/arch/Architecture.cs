@@ -30,7 +30,7 @@ namespace Mono.Debugger.Backends
 			this.TargetInfo = info;
 
 			disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
-			opcodes = new Opcodes_X86 (info.TargetAddressSize == 8);
+			opcodes = new Opcodes_X86 (process, info.TargetAddressSize == 8);
 		}
 
 		internal Disassembler Disassembler {
@@ -130,6 +130,8 @@ namespace Mono.Debugger.Backends
 						       out TargetAddress target,
 						       out int insn_size)
 		{
+			throw new InternalError ("FUCK");
+
 			CallTargetType type = DoGetCallTarget (memory, address, out target, out insn_size);
 			Console.WriteLine ("GET CALL TARGET: {0} {1} {2} {3}",
 					   address, type, target, insn_size);
@@ -140,7 +142,7 @@ namespace Mono.Debugger.Backends
 				bool is_start;
 				TargetAddress trampoline;
 				if (process.BfdContainer.GetTrampoline (
-					    memory, address, target, out trampoline, out is_start)) {
+					    memory, target, out trampoline, out is_start)) {
 					target = trampoline;
 					return is_start ? 
 						CallTargetType.NativeTrampolineStart :

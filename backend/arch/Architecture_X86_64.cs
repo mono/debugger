@@ -45,13 +45,9 @@ namespace Mono.Debugger.Architectures
 		protected const int MONO_FAKE_IMT_METHOD = -1;
 		protected const int MONO_FAKE_VTABLE_METHOD = -2;
 
-		Opcodes_X86 opcodes;
-
 		internal Architecture_X86_64 (ProcessServant process, TargetInfo info)
 			: base (process, info)
-		{
-			opcodes = new Opcodes_X86 (true);
-		}
+		{ }
 
 		internal override bool IsRetInstruction (TargetMemoryAccess memory,
 							 TargetAddress address)

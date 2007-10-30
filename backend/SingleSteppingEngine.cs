@@ -925,7 +925,8 @@ namespace Mono.Debugger.Backends
 				inferior, inferior.CurrentFrame);
 			Console.WriteLine ("EXECUTE INSTRUCTION: {0}", instruction);
 
-			if ((instruction == null) || !instruction.HasInstructionSize) {
+			if ((instruction == null) || !instruction.HasInstructionSize ||
+			    !process.IsManagedApplication) {
 				PushOperation (new OperationStepOverBreakpoint (this, index, until));
 				return true;
 			}
@@ -1196,22 +1197,24 @@ namespace Mono.Debugger.Backends
 			TargetAddress address = inferior.CurrentFrame;
 
 			// Check whether this is a call instruction.
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, address, out target, out insn_size);
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, address);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				do_step_native ();
+				return;
+			}
 
-			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2} {3}", this,
-				      address, type, target);
+			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2}", this,
+				      address, instruction.InstructionType);
 
 			// Step one instruction unless this is a call
-			if (!Architecture.IsCall (type)) {
+			if (!instruction.IsCall) {
 				do_step_native ();
 				return;
 			}
 
 			// Insert a temporary breakpoint immediately behind it and continue.
-			address += insn_size;
+			address += instruction.InstructionSize;
 			do_continue (address);
 		}
 
@@ -1252,31 +1255,31 @@ namespace Mono.Debugger.Backends
 			inferior.Step ();
 		}
 
-		protected bool CheckTrampoline (CallTargetType type, TargetAddress call_site,
-						TargetAddress call_target, int insn_size,
-						TrampolineHandler handler)
+		protected bool CheckTrampoline (Instruction instruction, TrampolineHandler handler)
 		{
-			if (!Architecture.IsTrampoline (type))
+			TargetAddress trampoline;
+			Instruction.TrampolineType type = instruction.CheckTrampoline (
+				inferior, out trampoline);
+			if (type == Instruction.TrampolineType.None)
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} found trampoline {1}:{2} at {3} while running {4}",
-				      this, type, call_target, call_site, current_operation);
+				      this, type, trampoline, instruction.Address, current_operation);
 
-			if (type == CallTargetType.NativeTrampolineStart) {
-				PushOperation (new OperationNativeTrampoline (
-						       this, call_target, handler));
+			if (type == Instruction.TrampolineType.NativeTrampolineStart) {
+				PushOperation (new OperationNativeTrampoline (this, trampoline, handler));
 				return true;
-			} else if (type == CallTargetType.NativeTrampoline) {
-				Method method = Lookup (call_target);
+			} else if (type == Instruction.TrampolineType.NativeTrampoline) {
+				Method method = Lookup (trampoline);
 				if (!MethodHasSource (method))
 					do_next_native ();
 				else
-					do_continue (call_target);
+					do_continue (trampoline);
 				return true;
-			} else if (type == CallTargetType.MonoTrampoline) {
-				PushOperation (new OperationTrampoline (
-					this, call_site + insn_size, call_target, handler));
+			} else if (type == Instruction.TrampolineType.MonoTrampoline) {
+				PushOperation (new OperationMonoTrampoline (
+					this, instruction, trampoline, handler));
 				return true;
 			}
 
@@ -2685,21 +2688,27 @@ namespace Mono.Debugger.Backends
 			 * If this is not a call instruction, continue stepping until we leave
 			 * the specified step frame.
 			 */
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out target, out insn_size);
-			if (!Architecture.IsCall (type)) {
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, current_frame);
+			if ((instruction == null) || !instruction.IsCall) {
 				sse.do_step_native ();
 				return false;
 			}
 
+			if (!instruction.HasInstructionSize) {
+				/* Ooops, we don't know anything about this instruction */
+				sse.do_step_native ();
+				return false;
+			}
+
+			TargetAddress call_target = instruction.GetEffectiveAddress (inferior);
+
 			if ((sse.current_method != null) && (sse.current_method.HasMethodBounds) &&
-			    !target.IsNull &&
-			    (target >= sse.current_method.MethodStartAddress) &&
-			    (target < sse.current_method.MethodEndAddress)) {
-				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
-				 * can't be a recursive call). */
+			    !call_target.IsNull &&
+			    (call_target >= sse.current_method.MethodStartAddress) &&
+			    (call_target < sse.current_method.MethodEndAddress)) {
+				/* Intra-method call (we stay outside the prologue/epilogue code,
+				 * so this also can't be a recursive call). */
 				sse.do_step_native ();
 				return false;
 			}
@@ -2712,7 +2721,7 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			if (sse.CheckTrampoline (type, current_frame, target, insn_size, TrampolineHandler))
+			if (sse.CheckTrampoline (instruction, TrampolineHandler))
 				return false;
 
 			/*
@@ -2729,7 +2738,7 @@ namespace Mono.Debugger.Backends
 			 * If it can't be found in the symbol tables, assume it's a system function
 			 * and step over it.
 			 */
-			Method method = sse.Lookup (target);
+			Method method = sse.Lookup (call_target);
 
 			/*
 			 * If this is a PInvoke/icall wrapper, check whether we want to step into
@@ -3356,25 +3365,21 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected class OperationTrampoline : Operation
+	protected class OperationMonoTrampoline : Operation
 	{
-		public readonly TargetAddress CallSite;
-		public readonly TargetAddress CallTarget;
-
-		public readonly TargetAddress Method;
+		public readonly Instruction CallSite;
+		public readonly TargetAddress Trampoline;
 		public readonly TrampolineHandler TrampolineHandler;
 
 		TargetAddress address = TargetAddress.Null;
 		bool compiled;
 
-		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
-					    TargetAddress call_target, TrampolineHandler handler)
+		public OperationMonoTrampoline (SingleSteppingEngine sse, Instruction call_site,
+						TargetAddress trampoline, TrampolineHandler handler)
 			: base (sse, null)
 		{
 			this.CallSite = call_site;
-			this.CallTarget = call_target;
-			this.Method = call_target;
-
+			this.Trampoline = trampoline;
 			this.TrampolineHandler = handler;
 		}
 
@@ -3384,7 +3389,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, CallTarget,
+			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, Trampoline,
 					   sse.extended_notifications_addr);
 
 			sse.enable_extended_notification (NotificationType.Trampoline);
@@ -3501,12 +3506,14 @@ namespace Mono.Debugger.Backends
 
 			done = true;
 
-			int insn_size;
-			TargetAddress jump_target;
-			CallTargetType type = sse.Architecture.GetCallTarget (
-				inferior, frame.Address, out jump_target, out insn_size);
+			Instruction instruction = sse.Architecture.ReadInstruction (
+				inferior, frame.Address);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				sse.do_step_native ();
+				return EventResult.Running;
+			}
 
-			if (type != CallTargetType.Jump) {
+			if (instruction.InstructionType != Instruction.Type.Jump) {
 				sse.do_step_native ();
 				return EventResult.Running;
 			}
@@ -3623,11 +3630,14 @@ namespace Mono.Debugger.Backends
 			 * If this is not a call instruction, continue stepping until we leave
 			 * the current method.
 			 */
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out target, out insn_size);
-			if (sse.CheckTrampoline (type, current_frame, target, insn_size, TrampolineHandler))
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, current_frame);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			if (sse.CheckTrampoline (instruction, TrampolineHandler))
 				return false;
 
 			sse.do_step_native ();

@@ -11,12 +11,13 @@ namespace Mono.Debugger.Architectures
 			get;
 		}
 
-		public readonly TargetAddress Address;
-
-		protected X86_Instruction (TargetAddress address)
+		protected X86_Instruction (Opcodes_X86 opcodes, TargetAddress address)
 		{
-			this.Address = address;
+			this.Opcodes = opcodes;
+			this.address = address;
 		}
+
+		protected readonly Opcodes_X86 Opcodes;
 
 		public X86_Prefix Prefix;
 		public X86_REX_Prefix RexPrefix;
@@ -30,7 +31,12 @@ namespace Mono.Debugger.Architectures
 		public int Displacement;
 		public bool DereferenceAddress;
 
+		readonly TargetAddress address;
 		Type type = Type.Unknown;
+
+		public override TargetAddress Address {
+			get { return address; }
+		}
 
 		public override Type InstructionType {
 			get { return type; }
@@ -370,8 +376,8 @@ namespace Mono.Debugger.Architectures
 				/* Special meaning in mod == 00 */
 				if (ModRM.Mod == 0) {
 					if (Is64BitMode) {
-						displacement = reader.BinaryReader.ReadInt32 () + 6;
-						register = (int) X86_64_Register.RIP;
+						displacement = reader.BinaryReader.ReadInt32 ();
+						register = -1;
 						is_ip_relative = true;
 					} else {
 						CallTarget = reader.ReadAddress ();
@@ -429,8 +435,8 @@ namespace Mono.Debugger.Architectures
 
 		public override TargetAddress GetEffectiveAddress (TargetMemoryAccess memory)
 		{
-			Console.WriteLine ("GET EFFECTIVE ADDRESS: {0} {1} {2:x}",
-					   this, CallTarget, Displacement);
+			Console.WriteLine ("GET EFFECTIVE ADDRESS: {0} {1} {2:x} ({3})",
+					   this, CallTarget, Displacement, Displacement);
 
 			if (!CallTarget.IsNull)
 				return CallTarget;
@@ -444,14 +450,26 @@ namespace Mono.Debugger.Architectures
 				effective_displacement += index;
 			}
 
-			TargetAddress effective_address = new TargetAddress (
-				memory.AddressDomain, regs [Register].GetValue ());
+			TargetAddress effective_address;
+			if (is_ip_relative)
+				effective_address = Address + InstructionSize;
+			else
+				effective_address = new TargetAddress (
+					memory.AddressDomain, regs [Register].GetValue ());
+
+			Console.WriteLine ("GET EFFECTIVE ADDRESS #1: {0} {1} {2} {3} {4}",
+					   Register, effective_address, effective_displacement,
+					   effective_address + effective_displacement,
+					   DereferenceAddress);
+
 			effective_address += effective_displacement;
 
-			Console.WriteLine ("GET EFFECTIVE ADDRESS #1: {0}", effective_address);
+			Console.WriteLine ("GET EFFECTIVE ADDRESS #2: {0}", effective_address);
 
 			if (DereferenceAddress)
 				effective_address = memory.ReadAddress (effective_address);
+
+			Console.WriteLine ("GET EFFECTIVE ADDRESS #3: {0}", effective_address);
 
 			return effective_address;
 		}
@@ -463,17 +481,17 @@ namespace Mono.Debugger.Architectures
 			try {
 				X86_Instruction insn;
 				if (memory.TargetMemoryInfo.TargetAddressSize == 8)
-					insn = new Instruction_X86_64 (address);
+					insn = new Instruction_X86_64 (opcodes, address);
 				else
-					insn = new Instruction_I386 (address);
-				insn.DoDecodeInstruction (opcodes, memory, address);
+					insn = new Instruction_I386 (opcodes, address);
+				insn.DoDecodeInstruction (memory, address);
 				return insn;
 			} catch {
 				return null;
 			}
 		}
 
-		protected void DoDecodeInstruction (Opcodes_X86 opcodes, TargetMemoryAccess memory,
+		protected void DoDecodeInstruction (TargetMemoryAccess memory,
 						    TargetAddress address)
 		{
 			TargetReader reader = new TargetReader (
@@ -493,7 +511,7 @@ namespace Mono.Debugger.Architectures
 				insn_size = (int) reader.Offset;
 				has_insn_size = true;
 			} else {
-				insn_size = opcodes.Disassembler.GetInstructionSize (memory, address);
+				insn_size = Opcodes.Disassembler.GetInstructionSize (memory, address);
 				has_insn_size = true;
 			}
 
@@ -501,6 +519,12 @@ namespace Mono.Debugger.Architectures
 				code = new byte [insn_size];
 				Array.Copy (reader.Contents, 0, code, 0, insn_size);
 			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Instruction ({0}:{1}:{2})", Address, InstructionType,
+					      insn_size);
 		}
 	}
 }

@@ -919,22 +919,42 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal bool GetTrampoline (TargetMemoryAccess memory,
-					     TargetAddress call_site,
-					     TargetAddress call_target,
-					     out TargetAddress trampoline,
-					     out bool is_start)
+		internal bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
+					     out TargetAddress trampoline, out bool is_start)
 		{
-			if (!has_got || (call_site < plt_start) || (call_site > plt_end)) {
+			Console.WriteLine ("BFD GET TRAMPOLINE: {0} {1} - {2} {3} - {4}",
+					   filename, address, plt_start, plt_end, got_start);
+
+			if (!has_got || (address < plt_start) || (address > plt_end)) {
 				is_start = false;
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			TargetAddress method = memory.ReadAddress (call_target);
-			if (method != call_site + 6) {
+			Instruction target_insn = container.Architecture.ReadInstruction (
+				memory, address);
+			if ((target_insn == null) || !target_insn.HasInstructionSize ||
+			    ((target_insn.InstructionType != Instruction.Type.Jump) &&
+			     (target_insn.InstructionType != Instruction.Type.IndirectJump))) {
 				is_start = false;
-				trampoline = method;
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			Console.WriteLine ("BFD GET TRAMPOLINE: {0}", target_insn);
+
+			TargetAddress call_target = target_insn.GetEffectiveAddress (memory);
+			if (call_target.IsNull) {
+				is_start = false;
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			Console.WriteLine ("BFD GET TRAMPOLINE #1: {0} {1}", address, call_target);
+
+			if (call_target != address + target_insn.InstructionSize) {
+				is_start = false;
+				trampoline = call_target;
 				return true;
 			}
 

@@ -5,8 +5,8 @@ namespace Mono.Debugger.Architectures
 {
 	internal class Instruction_I386 : X86_Instruction
 	{
-		internal Instruction_I386 (TargetAddress address)
-			: base (address)
+		internal Instruction_I386 (Opcodes_X86 opcodes, TargetAddress address)
+			: base (opcodes, address)
 		{ }
 
 		public override bool Is64BitMode {
@@ -41,6 +41,13 @@ namespace Mono.Debugger.Architectures
 		public override bool InterpretInstruction (Inferior inferior)
 		{
 			return false;
+		}
+
+		public override TrampolineType CheckTrampoline (TargetMemoryAccess memory,
+								out TargetAddress trampoline)
+		{
+			trampoline = TargetAddress.Null;
+			return TrampolineType.None;
 		}
 	}
 }

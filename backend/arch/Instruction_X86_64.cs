@@ -5,8 +5,8 @@ namespace Mono.Debugger.Architectures
 {
 	internal class Instruction_X86_64 : X86_Instruction
 	{
-		internal Instruction_X86_64 (TargetAddress address)
-			: base (address)
+		internal Instruction_X86_64 (Opcodes_X86 opcodes, TargetAddress address)
+			: base (opcodes, address)
 		{ }
 
 		public override bool Is64BitMode {
@@ -96,6 +96,70 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
+		protected bool GetMonoTrampoline (TargetMemoryAccess memory,
+						  out TargetAddress trampoline)
+		{
+			if ((InstructionType != Type.Call) && (InstructionType != Type.IndirectCall)) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
 
+			TargetAddress call_target = GetEffectiveAddress (memory);
+
+			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
+			byte opcode = reader.ReadByte ();
+			if (opcode != 0xe8) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			TargetAddress call = call_target + reader.ReadInt32 () + 5;
+			Console.WriteLine ("GET MONO TRAMPOLINE: {0}", call);
+			if (!Opcodes.Process.MonoLanguage.IsTrampolineAddress (call)) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			long method;
+			if (reader.ReadByte () == 0x04)
+				method = reader.ReadInt32 ();
+			else
+				method = reader.ReadInt64 ();
+
+			Console.WriteLine ("GET MONO TRAMPOLINE #1: {0:x}", method);
+			trampoline = call_target;
+			return true;
+		}
+
+		public override TrampolineType CheckTrampoline (TargetMemoryAccess memory,
+								out TargetAddress trampoline)
+		{
+			Console.WriteLine ("CHECK TRAMPOLINE: {0} {1}", Address, InstructionType);
+
+			if (InstructionType == Type.Call) {
+				TargetAddress target = GetEffectiveAddress (memory);
+				if (target.IsNull) {
+					trampoline = TargetAddress.Null;
+					return TrampolineType.None;
+				}
+
+				bool is_start;
+				if (Opcodes.Process.BfdContainer.GetTrampoline (
+					    memory, target, out trampoline, out is_start)) {
+					target = trampoline;
+					return is_start ? 
+						TrampolineType.NativeTrampolineStart :
+						TrampolineType.NativeTrampoline;
+				}
+			}
+
+			if (Opcodes.Process.IsManagedApplication) {
+				if (GetMonoTrampoline (memory, out trampoline))
+					return TrampolineType.MonoTrampoline;
+			}
+
+			trampoline = TargetAddress.Null;
+			return TrampolineType.None;
+		}
 	}
 }
