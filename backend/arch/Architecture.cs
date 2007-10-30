@@ -4,15 +4,6 @@ using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backends
 {
-	internal enum CallTargetType {
-		None,
-		Call,
-		Jump,
-		NativeTrampoline,
-		NativeTrampolineStart,
-		MonoTrampoline
-	}
-
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
@@ -105,116 +96,10 @@ namespace Mono.Debugger.Backends
 		internal abstract bool IsSyscallInstruction (TargetMemoryAccess memory,
 							     TargetAddress address);
 
-		public static bool IsTrampoline (CallTargetType type)
-		{
-			return (type == CallTargetType.NativeTrampoline) ||
-				(type == CallTargetType.NativeTrampolineStart) ||
-				(type == CallTargetType.MonoTrampoline);
-		}
-
-		public static bool IsCall (CallTargetType type)
-		{
-			return (type == CallTargetType.Call) ||
-				(type == CallTargetType.NativeTrampoline) ||
-				(type == CallTargetType.NativeTrampolineStart) ||
-				(type == CallTargetType.MonoTrampoline);
-		}
-
 		internal Instruction ReadInstruction (TargetMemoryAccess memory, TargetAddress address)
 		{
 			return opcodes.ReadInstruction (memory, address);
 		}
-
-		internal CallTargetType GetCallTarget (TargetMemoryAccess memory,
-						       TargetAddress address,
-						       out TargetAddress target,
-						       out int insn_size)
-		{
-			throw new InternalError ("FUCK");
-
-			CallTargetType type = DoGetCallTarget (memory, address, out target, out insn_size);
-			Console.WriteLine ("GET CALL TARGET: {0} {1} {2} {3}",
-					   address, type, target, insn_size);
-			if (type == CallTargetType.None)
-				return CallTargetType.None;
-
-			if (type == CallTargetType.Jump) {
-				bool is_start;
-				TargetAddress trampoline;
-				if (process.BfdContainer.GetTrampoline (
-					    memory, target, out trampoline, out is_start)) {
-					target = trampoline;
-					return is_start ? 
-						CallTargetType.NativeTrampolineStart :
-						CallTargetType.NativeTrampoline;
-				}
-			}
-
-			if (process.IsManagedApplication) {
-				TargetAddress trampoline;
-				if (DoGetMonoTrampoline (memory, address, target, out trampoline)) {
-					target = trampoline;
-					return CallTargetType.MonoTrampoline;
-				}
-			}
-
-			return type;
-		}
-
-		protected CallTargetType DoGetCallTarget (TargetMemoryAccess memory,
-							  TargetAddress address,
-							  out TargetAddress target,
-							  out int insn_size)
-		{
-			if (address.Address == 0xffffe002) {
-				insn_size = 0;
-				target = TargetAddress.Null;
-				return CallTargetType.None;
-			}
-
-			Instruction insn = opcodes.ReadInstruction (memory, address);
-			if ((insn == null) || (insn.InstructionType == Instruction.Type.Unknown)) {
-				insn_size = 0;
-				target = TargetAddress.Null;
-				return CallTargetType.None;
-			}
-
-			switch (insn.InstructionType) {
-			case Instruction.Type.Unknown:
-				insn_size = -1;
-				target = TargetAddress.Null;
-				return CallTargetType.None;
-
-			case Instruction.Type.Jump:
-			case Instruction.Type.ConditionalJump:
-				insn_size = insn.InstructionSize;
-				target = insn.GetEffectiveAddress (memory);
-				return CallTargetType.Jump;
-
-			case Instruction.Type.Call:
-				insn_size = insn.InstructionSize;
-				target = insn.GetEffectiveAddress (memory);
-				return CallTargetType.Call;
-
-			case Instruction.Type.IndirectCall:
-				insn_size = insn.InstructionSize;
-				target = insn.GetEffectiveAddress (memory);
-				return CallTargetType.Call;
-
-			case Instruction.Type.IndirectJump:
-				insn_size = insn.InstructionSize;
-				target = insn.GetEffectiveAddress (memory);
-				return CallTargetType.Jump;
-
-			default:
-				throw new InvalidOperationException ();
-			}
-		}
-
-		protected abstract bool DoGetMonoTrampoline (TargetMemoryAccess memory,
-							     TargetAddress call_site,
-							     TargetAddress call_target,
-							     out TargetAddress trampoline);
 
 		internal abstract int MaxPrologueSize {
 			get;

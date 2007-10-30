@@ -146,42 +146,6 @@ namespace Mono.Debugger.Architectures
 			return false;
 		}
 
-		protected override bool DoGetMonoTrampoline (TargetMemoryAccess memory,
-							     TargetAddress call_site,
-							     TargetAddress call_target,
-							     out TargetAddress trampoline)
-		{
-			if (call_target.IsNull) {
-				trampoline = TargetAddress.Null;
-				return false;
-			}
-
-			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
-			byte opcode = reader.ReadByte ();
-			if (opcode != 0xe8) {
-				trampoline = TargetAddress.Null;
-				return false;
-			}
-
-			TargetAddress call = call_target + reader.ReadInt32 () + 5;
-			Console.WriteLine ("DO GET MONO TRAMPoliNE #1: {0}", call);
-			if (!process.MonoLanguage.IsTrampolineAddress (call)) {
-				trampoline = TargetAddress.Null;
-				return false;
-			}
-
-			long method;
-			if (reader.ReadByte () == 0x04)
-				method = reader.ReadInt32 ();
-			else
-				method = reader.ReadInt64 ();
-
-			Console.WriteLine ("DO GET MONO TRAMPOLINE #2: {0:x}", method);
-
-			trampoline = new TargetAddress (memory.AddressDomain, method);
-			return true;
-		}
-
 		public override string[] RegisterNames {
 			get {
 				return registers;

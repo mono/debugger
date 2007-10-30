@@ -927,6 +927,7 @@ namespace Mono.Debugger.Languages.Mono
 		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
+#if FIXME
 			int insn_size;
 			TargetAddress target;
 			CallTargetType type = memory.Architecture.GetCallTarget (
@@ -944,6 +945,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				return file.GetMethodByToken (token);
 			}
+#endif
 
 			return null;
 		}
