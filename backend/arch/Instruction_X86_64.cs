@@ -91,6 +91,23 @@ namespace Mono.Debugger.Architectures
 				return true;
 			}
 
+			case Type.Ret: {
+				Console.WriteLine ("INTERPRET RET: {0}", Displacement);
+
+				Registers regs = inferior.GetRegisters ();
+
+				TargetAddress rsp = new TargetAddress (
+					inferior.AddressDomain, regs [(int) X86_64_Register.RSP].Value);
+
+				TargetAddress rip = inferior.ReadAddress (rsp);
+				rsp += 8 + Displacement;
+
+				regs [(int) X86_64_Register.RSP].SetValue (rsp);
+				regs [(int) X86_64_Register.RIP].SetValue (rip);
+				inferior.SetRegisters (regs);
+				return true;
+			}
+
 			default:
 				return false;
 			}

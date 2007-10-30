@@ -326,6 +326,11 @@ namespace Mono.Debugger.Architectures
 			} else if (opcode == 0xeb) {
 				CallTarget = Address + reader.ReadByte () + 2;
 				type = Type.Jump;
+			} else if (opcode == 0xc3) {
+				type = Type.Ret;
+			} else if (opcode == 0xc2) {
+				Displacement = reader.BinaryReader.ReadInt16 ();
+				type = Type.Ret;
 			} else if (opcode == 0xff) {
 				DecodeGroup5 (reader);
 			}

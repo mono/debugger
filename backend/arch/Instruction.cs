@@ -13,7 +13,8 @@ namespace Mono.Debugger.Architectures
 			IndirectCall,
 			Call,
 			IndirectJump,
-			Jump
+			Jump,
+			Ret
 		}
 
 		public enum TrampolineType

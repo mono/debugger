@@ -287,7 +287,10 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		}
 
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
-			g_warning (G_STRLOC);
+			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
+				   cbuffer->code_address, cbuffer->insn_size,
+				   cbuffer->code_address + cbuffer->insn_size,
+				   INFERIOR_REG_RIP (arch->current_regs));
 			return STOP_ACTION_STOPPED;
 		}
 
