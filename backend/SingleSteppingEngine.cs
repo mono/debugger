@@ -940,6 +940,12 @@ namespace Mono.Debugger.Backends
 
 				Console.WriteLine ("EXECUTE CALL: {0} {1}", inferior.CurrentFrame, target);
 
+
+				//
+				//
+				// FIXME FIXME FIXME BROKEN !!!!
+				//
+
 				/// FIXME: We need to execute something
 				TargetBinaryWriter writer = new TargetBinaryWriter (
 					14, inferior.TargetMemoryInfo);
@@ -3516,32 +3522,6 @@ namespace Mono.Debugger.Backends
 			}
 
 			return EventResult.Completed;
-		}
-	}
-
-	protected class OperationRuntimeClassInit : OperationCallback
-	{
-		public readonly TargetAddress Method;
-
-		public OperationRuntimeClassInit (SingleSteppingEngine sse, TargetAddress method)
-			: base (sse)
-		{
-			this.Method = method;
-		}
-
-		protected override void DoExecute ()
-		{
-			TargetAddress klass = inferior.ReadAddress (Method + 8);
-			Report.Debug (DebugFlags.SSE, "{0} runtime class init: {1} {2}",
-				      sse, Method, klass);
-			inferior.CallMethod (sse.MonoDebuggerInfo.RuntimeClassInit, klass.Address, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE, "{0} runtime class init done", sse);
-			RestoreStack ();
-			return EventResult.ResumeOperation;
 		}
 	}
 
