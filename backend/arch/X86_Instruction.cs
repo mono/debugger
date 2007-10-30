@@ -431,7 +431,7 @@ namespace Mono.Debugger.Architectures
 				/* Special meaning in mod == 00 */
 				if (ModRM.Mod == 0) {
 					if (Is64BitMode) {
-						displacement = reader.BinaryReader.ReadInt32 ();
+						displacement = reader.BinaryReader.ReadInt32 () + 6;
 						register = (int) X86_64_Register.RIP;
 						is_ip_relative = true;
 					} else {
@@ -490,6 +490,9 @@ namespace Mono.Debugger.Architectures
 
 		public override TargetAddress GetEffectiveAddress (TargetMemoryAccess memory)
 		{
+			Console.WriteLine ("GET EFFECTIVE ADDRESS: {0} {1} {2:x}",
+					   this, CallTarget, Displacement);
+
 			if (!CallTarget.IsNull)
 				return CallTarget;
 
@@ -505,6 +508,8 @@ namespace Mono.Debugger.Architectures
 			TargetAddress effective_address = new TargetAddress (
 				memory.AddressDomain, regs [Register].GetValue ());
 			effective_address += effective_displacement;
+
+			Console.WriteLine ("GET EFFECTIVE ADDRESS #1: {0}", effective_address);
 
 			if (DereferenceAddress)
 				effective_address = memory.ReadAddress (effective_address);

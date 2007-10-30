@@ -17,7 +17,10 @@
 
 typedef struct
 {
-	int slot, insn_size;
+	int slot;
+	int insn_size;
+	int orig_insn_size;
+	gboolean pushed_retaddr;
 	guint64 code_address;
 	guint64 original_rip;
 } CodeBufferData;
@@ -273,16 +276,22 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cbuffer = arch->code_buffer;
 	if (cbuffer) {
+		if (cbuffer->pushed_retaddr) {
+			g_free (cbuffer);
+			arch->code_buffer = NULL;
+			return STOP_ACTION_STOPPED;
+		}
+
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
 			g_warning (G_STRLOC);
 			return STOP_ACTION_STOPPED;
 		}
 
-		g_message (G_STRLOC ": %p - %Lx - %d - %Lx,%Lx", cbuffer,
-			   cbuffer->original_rip, cbuffer->insn_size,
+		g_message (G_STRLOC ": %p - %Lx - %d,%d - %Lx,%Lx", cbuffer,
+			   cbuffer->original_rip, cbuffer->orig_insn_size, cbuffer->insn_size,
 			   cbuffer->code_address, INFERIOR_REG_RIP (arch->current_regs));
 
-		INFERIOR_REG_RIP (arch->current_regs) = cbuffer->original_rip + cbuffer->insn_size;
+		INFERIOR_REG_RIP (arch->current_regs) = cbuffer->original_rip + cbuffer->orig_insn_size;
 		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
 			g_error (G_STRLOC ": Can't restore registers");
 		}
@@ -1128,7 +1137,8 @@ find_code_buffer_slot (MonoRuntimeInfo *runtime)
 }
 
 static ServerCommandError
-server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, guint32 size)
+server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instruction,
+				   guint32 orig_size, guint32 size, gboolean push_retaddr)
 {
 	MonoRuntimeInfo *runtime;
 	ServerCommandError result;
@@ -1143,7 +1153,7 @@ server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, gu
 	if (slot < 0)
 		return COMMAND_ERROR_INTERNAL_ERROR;
 
-	if (size >= runtime->executable_code_chunk_size)
+	if (size > runtime->executable_code_chunk_size)
 		return COMMAND_ERROR_INTERNAL_ERROR;
 	if (handle->arch->code_buffer)
 		return COMMAND_ERROR_INTERNAL_ERROR;
@@ -1155,6 +1165,8 @@ server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, gu
 	data = g_new0 (CodeBufferData, 1);
 	data->slot = slot;
 	data->insn_size = size;
+	data->orig_insn_size = orig_size;
+	data->pushed_retaddr = push_retaddr;
 	data->original_rip = INFERIOR_REG_RIP (handle->arch->current_regs);
 	data->code_address = code_address;
 
@@ -1163,6 +1175,17 @@ server_ptrace_execute_instruction (ServerHandle *handle, guint8 *instruction, gu
 	result = server_ptrace_write_memory (handle, code_address, size, instruction);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
+
+	if (push_retaddr) {
+		long old_rsp = INFERIOR_REG_RSP (handle->arch->current_regs);
+		long retaddr = INFERIOR_REG_RIP (handle->arch->current_regs) + orig_size;
+
+		result = server_ptrace_write_memory (handle, old_rsp - 8, 8, &retaddr);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		INFERIOR_REG_RSP (handle->arch->current_regs) -= 8;
+	}
 
 	INFERIOR_REG_RIP (handle->arch->current_regs) = code_address;
 

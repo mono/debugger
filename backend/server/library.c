@@ -248,12 +248,14 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 
 ServerCommandError
 mono_debugger_server_execute_instruction (ServerHandle *handle, const guint8 *instruction,
-					  guint32 insn_size)
+					  guint32 orig_insn_size, guint32 insn_size,
+					  gboolean push_retaddr)
 {
 	if (!global_vtable->execute_instruction)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->execute_instruction) (handle, instruction, insn_size);
+	return (* global_vtable->execute_instruction) (
+		handle, instruction, orig_insn_size, insn_size, push_retaddr);
 }
 
 ServerCommandError

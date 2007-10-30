@@ -919,19 +919,35 @@ namespace Mono.Debugger.Backends
 			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
 					   inferior.CurrentFrame, index, until);
 
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, inferior.CurrentFrame, out target, out insn_size);
-
-			Console.WriteLine ("EXECUTE INSTRUCTION!");
-
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, inferior.CurrentFrame);
-			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0}", instruction);
+			Console.WriteLine ("EXECUTE INSTRUCTION: {0}", instruction);
 
-			if ((instruction == null) || !instruction.HasInstructionSize ||
-			    instruction.IsIpRelative) {
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				PushOperation (new OperationStepOverBreakpoint (this, index, until));
+				return true;
+			}
+
+			if ((instruction.InstructionType == Instruction.Type.Call) ||
+			    (instruction.InstructionType == Instruction.Type.IndirectCall)) {
+				TargetAddress target = instruction.GetEffectiveAddress (inferior);
+
+				Console.WriteLine ("EXECUTE CALL: {0} {1}", inferior.CurrentFrame, target);
+
+				/// FIXME: We need to execute something
+				TargetBinaryWriter writer = new TargetBinaryWriter (
+					14, inferior.TargetMemoryInfo);
+				writer.WriteByte (0xff);
+				writer.WriteByte (0x25);
+				writer.WriteInt32 (0);
+				writer.WriteAddress (target);
+
+				inferior.ExecuteInstruction (
+					writer.Contents, instruction.InstructionSize, true);
+				return true;
+			}
+
+			if (instruction.IsIpRelative) {
 				PushOperation (new OperationStepOverBreakpoint (this, index, until));
 				return true;
 			}
@@ -939,18 +955,7 @@ namespace Mono.Debugger.Backends
 			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1}", instruction,
 					   TargetBinaryReader.HexDump (instruction.Code));
 
-			inferior.ExecuteInstruction (instruction.Code);
-			return true;
-
-			throw new InternalError ("NOT IMPLEMENTED BEYOND THIS POINT!");
-
-			if (Architecture.IsTrampoline (type)) {
-				PushOperation (new OperationTrampoline (
-					this, inferior.CurrentFrame + insn_size, target, null));
-				return true;
-			}
-
-			PushOperation (new OperationStepOverBreakpoint (this, index, until));
+			inferior.ExecuteInstruction (instruction.Code, instruction.InstructionSize, false);
 			return true;
 		}
 
