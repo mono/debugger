@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Architectures
 {
 	internal abstract class Instruction : DebuggerMarshalByRefObject
@@ -35,5 +37,7 @@ namespace Mono.Debugger.Architectures
 		}
 
 		public abstract TargetAddress GetEffectiveAddress (TargetMemoryAccess memory);
+
+		public abstract bool InterpretInstruction (Inferior inferior);
 	}
 }

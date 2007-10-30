@@ -902,7 +902,7 @@ namespace Mono.Debugger.Backends
 			return bpt.CheckBreakpointHit (thread, address);
 		}
 
-		bool step_over_breakpoint (TargetAddress until)
+		bool step_over_breakpoint (bool singlestep, TargetAddress until)
 		{
 			int index;
 			bool is_enabled;
@@ -927,6 +927,9 @@ namespace Mono.Debugger.Backends
 				PushOperation (new OperationStepOverBreakpoint (this, index, until));
 				return true;
 			}
+
+			if (!singlestep && instruction.InterpretInstruction (inferior))
+				return false;
 
 			if ((instruction.InstructionType == Instruction.Type.Call) ||
 			    (instruction.InstructionType == Instruction.Type.IndirectCall)) {
@@ -1205,7 +1208,7 @@ namespace Mono.Debugger.Backends
 			check_inferior ();
 			frames_invalid ();
 
-			if (step_over_breakpoint (until))
+			if (step_over_breakpoint (false, until))
 				return;
 
 			if (!until.IsNull)
@@ -1223,7 +1226,7 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			if (step_over_breakpoint (TargetAddress.Null))
+			if (step_over_breakpoint (true, TargetAddress.Null))
 				return;
 
 			inferior.Step ();

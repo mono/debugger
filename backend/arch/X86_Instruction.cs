@@ -3,17 +3,19 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architectures
 {
-	internal class X86_Instruction : Instruction
+	internal abstract class X86_Instruction : Instruction
 	{
 		public const int MaxInstructionLength = 15;
 
-		public readonly bool Is64BitMode;
+		public abstract bool Is64BitMode {
+			get;
+		}
+
 		public readonly TargetAddress Address;
 
-		protected X86_Instruction (TargetAddress address, bool is_64bit_mode)
+		protected X86_Instruction (TargetAddress address)
 		{
 			this.Address = address;
-			this.Is64BitMode = is_64bit_mode;
 		}
 
 		public X86_Prefix Prefix;
@@ -277,70 +279,7 @@ namespace Mono.Debugger.Architectures
 			return false;
 		}
 
-		protected int DecodeRegister (int register)
-		{
-			if (Is64BitMode) {
-				switch (register) {
-				case 0: /* rax */
-					return (int) X86_64_Register.RAX;
-				case 1: /* rcx */
-					return (int) X86_64_Register.RCX;
-				case 2: /* rdx */
-					return (int) X86_64_Register.RDX;
-				case 3: /* rbx */
-					return (int) X86_64_Register.RBX;
-				case 4: /* rsp */
-					return (int) X86_64_Register.RSP;
-				case 5: /* rbp */
-					return (int) X86_64_Register.RBP;
-				case 6: /* rsi */
-					return (int) X86_64_Register.RSI;
-				case 7: /* rdi */
-					return (int) X86_64_Register.RDI;
-				case 8: /* r8 */
-					return (int) X86_64_Register.R8;
-				case 9: /* r9 */
-					return (int) X86_64_Register.R9;
-				case 10: /* r10 */
-					return (int) X86_64_Register.R10;
-				case 11: /* r11 */
-					return (int) X86_64_Register.R11;
-				case 12: /* r12 */
-					return (int) X86_64_Register.R12;
-				case 13: /* r13 */
-					return (int) X86_64_Register.R13;
-				case 14: /* r14 */
-					return (int) X86_64_Register.R14;
-				case 15: /* r15 */
-					return (int) X86_64_Register.R15;
-				default:
-					/* can never happen */
-					throw new InvalidOperationException ();
-				}
-			} else {
-				switch (register) {
-				case 0: /* eax */
-					return (int) I386Register.EAX;
-				case 1: /* ecx */
-					return (int) I386Register.ECX;
-				case 2: /* edx */
-					return (int) I386Register.EDX;
-				case 3: /* ebx */
-					return (int) I386Register.EBX;
-				case 4: /* esp */
-					return (int) I386Register.ESP;
-				case 5: /* ebp */
-					return (int) I386Register.EBP;
-				case 6: /* esi */
-					return (int) I386Register.ESI;
-				case 7: /* edi */
-					return (int) I386Register.EDI;
-				default:
-					/* can never happen */
-					throw new InvalidOperationException ();
-				}
-			}
-		}
+		protected abstract int DecodeRegister (int register);
 
 		protected void DecodeModRM (TargetReader reader)
 		{
@@ -522,8 +461,11 @@ namespace Mono.Debugger.Architectures
 								 TargetAddress address)
 		{
 			try {
-				bool is_64bit_mode = memory.TargetMemoryInfo.TargetAddressSize == 8;
-				X86_Instruction insn = new X86_Instruction (address, is_64bit_mode);
+				X86_Instruction insn;
+				if (memory.TargetMemoryInfo.TargetAddressSize == 8)
+					insn = new Instruction_X86_64 (address);
+				else
+					insn = new Instruction_I386 (address);
 				insn.DoDecodeInstruction (opcodes, memory, address);
 				return insn;
 			} catch {
