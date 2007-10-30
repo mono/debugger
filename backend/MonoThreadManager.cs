@@ -44,7 +44,9 @@ namespace Mono.Debugger.Backends
 		LoadModule,
 		UnloadModule,
 		DomainCreate,
-		DomainUnload
+		DomainUnload,
+
+		Trampoline	= 256
 	}
 
 	internal class MonoThreadManager
@@ -189,8 +191,10 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data2);
 
+					Console.WriteLine ("THREAD CREATED: {0} {1}", engine, data);
+
 					TargetAddress lmf = inferior.ReadAddress (data + 8);
-					engine.SetLMFAddress (lmf);
+					engine.SetManagedThreadData (lmf, data + 24);
 
 					Report.Debug (DebugFlags.Threads,
 						      "{0} managed thread created: {1:x} {2} {3} - {4}",
@@ -212,6 +216,9 @@ namespace Mono.Debugger.Backends
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
 					long tid = cevent.Data2;
+
+					Console.WriteLine ("GC THREAD CREATED: {0} {1:x} {2}",
+							   engine, tid, data);
 
 					Report.Debug (DebugFlags.Threads,
 						      "{0} created gc thread: {1:x} {2}",
@@ -272,6 +279,10 @@ namespace Mono.Debugger.Backends
 				case NotificationType.FinalizeManagedCode:
 					csharp_language = null;
 					break;
+
+				case NotificationType.Trampoline:
+					resume_target = false;
+					return false;
 
 				default: {
 					TargetAddress data = new TargetAddress (

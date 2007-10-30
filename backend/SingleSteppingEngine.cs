@@ -516,9 +516,11 @@ namespace Mono.Debugger.Backends
 			this.tid = tid;
 		}
 
-		internal void SetLMFAddress (TargetAddress lmf_address)
+		internal void SetManagedThreadData (TargetAddress lmf_address,
+						    TargetAddress extended_notifications_addr)
 		{
 			this.lmf_address = lmf_address;
+			this.extended_notifications_addr = extended_notifications_addr;
 		}
 
 		internal void OnManagedThreadExited ()
@@ -960,6 +962,24 @@ namespace Mono.Debugger.Backends
 
 			inferior.ExecuteInstruction (instruction.Code, instruction.InstructionSize, false);
 			return true;
+		}
+
+		void enable_extended_notification (NotificationType type)
+		{
+			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
+			Console.WriteLine ("ENABLE EXTENDED NOTIFICATION: {0} {1:x} {2} {3:x}",
+					   extended_notifications_addr, notifications, type, (int) type);
+			notifications |= (long) type;
+			inferior.WriteLongInteger (extended_notifications_addr, notifications);
+		}
+
+		void disable_extended_notification (NotificationType type)
+		{
+			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
+			Console.WriteLine ("DISABLE EXTENDED NOTIFICATION: {0} {1:x} {2} {3:x}",
+					   extended_notifications_addr, notifications, type, (int) type);
+			notifications &= ~(long) type;
+			inferior.WriteLongInteger (extended_notifications_addr, notifications);
 		}
 
 		bool throw_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
@@ -1921,8 +1941,8 @@ namespace Mono.Debugger.Backends
 		TargetEventArgs last_target_event;
 
 		TargetAddress lmf_address = TargetAddress.Null;
-
 		TargetAddress end_stack_address = TargetAddress.Null;
+		TargetAddress extended_notifications_addr = TargetAddress.Null;
 
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject
@@ -3356,14 +3376,6 @@ namespace Mono.Debugger.Backends
 		bool compiled;
 		bool completed;
 
-		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress method,
-					    TrampolineHandler handler)
-			: base (sse, null)
-		{
-			this.Method = method;
-			this.TrampolineHandler = handler;
-		}
-
 		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
 					    TargetAddress call_target, TrampolineHandler handler)
 			: base (sse, null)
@@ -3506,7 +3518,7 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected class OperationResolveTrampoline : OperationCallback
+	protected class OperationResolveTrampoline : Operation
 	{
 		public readonly TargetAddress CallSite;
 		public readonly TargetAddress CallTarget;
@@ -3514,7 +3526,7 @@ namespace Mono.Debugger.Backends
 
 		public OperationResolveTrampoline (SingleSteppingEngine sse, TargetAddress call_site,
 						   TargetAddress call_target, MyTrampolineHandler handler)
-			: base (sse)
+			: base (sse, null)
 		{
 			this.CallSite = call_site;
 			this.CallTarget = call_target;
@@ -3525,76 +3537,52 @@ namespace Mono.Debugger.Backends
 		int code_buffer_size;
 		int code_buffer_offset;
 
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
 		protected override void DoExecute ()
 		{
-			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1}", CallSite, CallTarget);
+			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, CallTarget,
+					   sse.extended_notifications_addr);
 
-			throw new InternalError ("NOT YET IMPLEMENTED BEYOND THIS POINT!");
-
-			if (sse.process.BreakpointManager.IsAnyBreakpointInMemoryArea (CallSite - 16, 32)) {
-				code_buffer = inferior.ReadBuffer (CallSite - 16, 32);
-				code_buffer_size = 32;
-				code_buffer_offset = 16;
-			}
-
-			TargetBinaryWriter writer = new TargetBinaryWriter (
-				32 + code_buffer_size, inferior.TargetMemoryInfo);
-			writer.WriteInt64 (CallSite.Address);
-			writer.WriteInt64 (CallTarget.Address);
-			writer.WriteInt64 (0);
-			writer.WriteInt32 (code_buffer_size);
-			writer.WriteInt32 (code_buffer_offset);
-			if (code_buffer != null)
-				writer.WriteBuffer (code_buffer);
-
-			byte[] data = writer.Contents;
-
-			// inferior.CallMethod (sse.MonoDebuggerInfo.DoTrampoline, data, ID);
+			sse.enable_extended_notification (NotificationType.Trampoline);
+			sse.do_continue ();
 		}
 
-		protected override EventResult CallbackCompleted (Inferior.ChildEvent cevent)
+		protected EventResult TrampolineCompiled (TargetAddress mono_method, TargetAddress code,
+							  out TargetEventArgs args)
 		{
-			TargetBinaryReader reader = new TargetBinaryReader (
-				cevent.CallbackData, inferior.TargetMemoryInfo);
-			TargetAddress method = new TargetAddress (
-				inferior.AddressDomain, reader.PeekAddress (16));
-			byte[] new_code = reader.PeekBuffer (32, code_buffer_size);
+			Console.WriteLine ("TRAMPOLINE COMPILED: {0} {1} {2}",
+					   mono_method, code, MyTrampolineHandler);
 
-			bool modified = false;
-			int first_modified_offset = 0, last_modified_offset = 0;
-			for (int i = 0; i < code_buffer_size; i++) {
-				if (code_buffer [i] == new_code [i])
-					continue;
-
-				if (!modified) {
-					first_modified_offset = i;
-					modified = true;
-				}
-
-				last_modified_offset = i;
+			if (MyTrampolineHandler != null) {
+				Method method = sse.Lookup (code);
+				Console.WriteLine ("TRAMPOLINE COMPILED #1: {0}", method);
 			}
 
-			if (modified) {
-				sse.process.AcquireGlobalThreadLock (sse);
-
-				int modified_size = last_modified_offset - first_modified_offset;
-				byte[] thebuffer = new byte [modified_size];
-				Array.Copy (new_code, first_modified_offset, thebuffer, 0, modified_size);
-				inferior.WriteBuffer (
-					CallSite - code_buffer_offset + first_modified_offset, thebuffer);
-
-				sse.process.ReleaseGlobalThreadLock (sse);
-			}
-
-			TargetAddress address = new TargetAddress (inferior.AddressDomain, cevent.Data1);
-			MyTrampolineHandler (address, method);
-			RestoreStack ();
-			return EventResult.ResumeOperation;
+			sse.disable_extended_notification (NotificationType.Trampoline);
+			sse.do_continue (code);
+			args = null;
+			return EventResult.Running;
 		}
 
-		protected override EventResult CallbackCompleted (long data1, long data2)
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
 		{
-			throw new InternalError ();
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
+			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
+				TargetAddress method = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
+				TargetAddress code = new TargetAddress (
+					inferior.AddressDomain, cevent.Data2);
+
+				return TrampolineCompiled (method, code, out args);
+			}
+
+			Console.WriteLine ("RESOLVE TRAMPOLINE EVENT: {0}", cevent);
+			args = null;
+			return EventResult.Completed;
 		}
 	}
 

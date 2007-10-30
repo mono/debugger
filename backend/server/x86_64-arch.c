@@ -276,6 +276,10 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cbuffer = arch->code_buffer;
 	if (cbuffer) {
+		g_message (G_STRLOC ": %p,%d - %Lx - %d,%d - %Lx,%Lx", cbuffer, cbuffer->pushed_retaddr,
+			   cbuffer->original_rip, cbuffer->orig_insn_size, cbuffer->insn_size,
+			   cbuffer->code_address, INFERIOR_REG_RIP (arch->current_regs));
+
 		if (cbuffer->pushed_retaddr) {
 			g_free (cbuffer);
 			arch->code_buffer = NULL;
@@ -286,10 +290,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 			g_warning (G_STRLOC);
 			return STOP_ACTION_STOPPED;
 		}
-
-		g_message (G_STRLOC ": %p - %Lx - %d,%d - %Lx,%Lx", cbuffer,
-			   cbuffer->original_rip, cbuffer->orig_insn_size, cbuffer->insn_size,
-			   cbuffer->code_address, INFERIOR_REG_RIP (arch->current_regs));
 
 		INFERIOR_REG_RIP (arch->current_regs) = cbuffer->original_rip + cbuffer->orig_insn_size;
 		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
