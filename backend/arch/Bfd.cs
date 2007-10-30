@@ -922,9 +922,6 @@ namespace Mono.Debugger.Backends
 		internal bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
 					     out TargetAddress trampoline, out bool is_start)
 		{
-			Console.WriteLine ("BFD GET TRAMPOLINE: {0} {1} - {2} {3} - {4}",
-					   filename, address, plt_start, plt_end, got_start);
-
 			if (!has_got || (address < plt_start) || (address > plt_end)) {
 				is_start = false;
 				trampoline = TargetAddress.Null;
@@ -941,16 +938,12 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			Console.WriteLine ("BFD GET TRAMPOLINE: {0}", target_insn);
-
 			TargetAddress call_target = target_insn.GetEffectiveAddress (memory);
 			if (call_target.IsNull) {
 				is_start = false;
 				trampoline = TargetAddress.Null;
 				return false;
 			}
-
-			Console.WriteLine ("BFD GET TRAMPOLINE #1: {0} {1}", address, call_target);
 
 			if (call_target != address + target_insn.InstructionSize) {
 				is_start = false;

@@ -435,9 +435,6 @@ namespace Mono.Debugger.Architectures
 
 		public override TargetAddress GetEffectiveAddress (TargetMemoryAccess memory)
 		{
-			Console.WriteLine ("GET EFFECTIVE ADDRESS: {0} {1} {2:x} ({3})",
-					   this, CallTarget, Displacement, Displacement);
-
 			if (!CallTarget.IsNull)
 				return CallTarget;
 
@@ -457,19 +454,10 @@ namespace Mono.Debugger.Architectures
 				effective_address = new TargetAddress (
 					memory.AddressDomain, regs [Register].GetValue ());
 
-			Console.WriteLine ("GET EFFECTIVE ADDRESS #1: {0} {1} {2} {3} {4}",
-					   Register, effective_address, effective_displacement,
-					   effective_address + effective_displacement,
-					   DereferenceAddress);
-
 			effective_address += effective_displacement;
-
-			Console.WriteLine ("GET EFFECTIVE ADDRESS #2: {0}", effective_address);
 
 			if (DereferenceAddress)
 				effective_address = memory.ReadAddress (effective_address);
-
-			Console.WriteLine ("GET EFFECTIVE ADDRESS #3: {0}", effective_address);
 
 			return effective_address;
 		}
