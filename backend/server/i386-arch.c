@@ -13,11 +13,21 @@
 #include "x86-linux-ptrace.h"
 #include "x86-arch.h"
 
+typedef struct
+{
+	int slot;
+	int insn_size;
+	gboolean update_ip;
+	guint32 code_address;
+	guint32 original_rip;
+} CodeBufferData;
+
 struct ArchInfo
 {
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	GPtrArray *callback_stack;
+	CodeBufferData *code_buffer;
 	guint64 dr_control, dr_status;
 	int dr_regs [DR_NADDR];
 };
@@ -473,6 +483,29 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cdata);
 		return STOP_ACTION_CALLBACK;
+	}
+
+	cbuffer = arch->code_buffer;
+	if (cbuffer) {
+		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_EIP (arch->current_regs)) {
+			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
+				   cbuffer->code_address, cbuffer->insn_size,
+				   cbuffer->code_address + cbuffer->insn_size,
+				   INFERIOR_REG_EIP (arch->current_regs));
+			return STOP_ACTION_STOPPED;
+		}
+
+		INFERIOR_REG_EIP (arch->current_regs) = cbuffer->original_rip;
+		if (cbuffer->update_ip)
+			INFERIOR_REG_EIP (arch->current_regs) += cbuffer->insn_size;
+		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
+			g_error (G_STRLOC ": Can't restore registers");
+		}
+
+		g_free (cbuffer);
+		arch->code_buffer = NULL;
+		g_message (G_STRLOC ": %Lx", INFERIOR_REG_EIP (arch->current_regs));
+		return STOP_ACTION_STOPPED;
 	}
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -983,6 +1016,54 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 	mono_debugger_breakpoint_manager_unlock ();
 
 	return COMMAND_ERROR_NONE;	
+}
+
+static ServerCommandError
+server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instruction,
+				   guint32 size, gboolean update_ip)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	CodeBufferData *data;
+	guint32 code_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_code_buffer_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	if (size > runtime->executable_code_chunk_size)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+	if (handle->arch->code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	code_address = runtime->executable_code_buffer + slot * runtime->executable_code_chunk_size;
+
+	g_message (G_STRLOC ": %d - %Lx - %d - %p", slot, code_address, size, instruction);
+
+	data = g_new0 (CodeBufferData, 1);
+	data->slot = slot;
+	data->insn_size = size;
+	data->update_ip = update_ip;
+	data->original_rip = INFERIOR_REG_EIP (handle->arch->current_regs);
+	data->code_address = code_address;
+
+	handle->arch->code_buffer = data;
+
+	result = server_ptrace_write_memory (handle, code_address, size, instruction);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_EIP (handle->arch->current_regs) = code_address;
+
+	result = _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_step (handle);
 }
 
 static ServerCommandError
