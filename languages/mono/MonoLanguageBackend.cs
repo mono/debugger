@@ -255,6 +255,16 @@ namespace Mono.Debugger.Languages.Mono
 			get { return trampolines; }
 		}
 
+		internal bool IsTrampolineAddress (TargetAddress address)
+		{
+			foreach (TargetAddress trampoline in trampolines) {
+				if (address == trampoline)
+					return true;
+			}
+
+			return false;
+		}
+
 		internal bool TryFindImage (Thread thread, string filename)
 		{
 			Cecil.AssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
@@ -917,6 +927,7 @@ namespace Mono.Debugger.Languages.Mono
 		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
+#if FIXME
 			int insn_size;
 			TargetAddress target;
 			CallTargetType type = memory.Architecture.GetCallTarget (
@@ -934,6 +945,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				return file.GetMethodByToken (token);
 			}
+#endif
 
 			return null;
 		}

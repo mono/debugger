@@ -1,3 +1,37 @@
+2007-10-31  Martin Baulig  <martin@ximian.com>
+
+	Merged the Plophos branch.
+
+	* backend/arch/Architecture.cs
+	(CallTargetType): Removed.
+	(Architecture.ReadInstruction): New method.
+	(Architecture.IsTrampoline): Removed.
+	(Architecture.IsCall): Removed.
+	(Architecture.GetCallTarget): Removed.
+	(Architecture.DoGetMonoTrampoline): Removed.
+
+	* backend/arch/Opcodes.cs: New file.
+	(Opcodes): New abstract internal class.
+
+	* backend/arch/X86_Opcodes.cs: New file.
+	(X86_Opcodes): Implementation for i386 and x86_64.
+
+	* backend/arch/Instruction.cs: New file.
+	(Instruction): New abstract internal class.
+
+	* backend/arch/X86_Instruction.cs: New file.
+	(X86_Instruction): Abstract implementation for i386 and x86_64.
+
+	* backend/arch/Instruction_I386.cs: New file.
+	(Instruction_I386): i386-specific part.
+
+	* backend/arch/Instruction_X86_64.cs: New file.
+	(Instruction_X86_64): x86_64-specific part.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.IsTrampolineAddress): New public method.
+	(MonoLanguageBackend.GetTrampoline): FIXME:  temporarily broken.
+
 2007-10-15  Martin Baulig  <martin@ximian.com>
 
 	HEADS UP: The debugger currently doesn't work with the latest mono

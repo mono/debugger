@@ -3,18 +3,21 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architectures
 {
-	internal class X86_Instruction : Instruction
+	internal abstract class X86_Instruction : Instruction
 	{
 		public const int MaxInstructionLength = 15;
 
-		public readonly bool Is64BitMode;
-		public readonly TargetAddress Address;
-
-		protected X86_Instruction (TargetAddress address, bool is_64bit_mode)
-		{
-			this.Address = address;
-			this.Is64BitMode = is_64bit_mode;
+		public abstract bool Is64BitMode {
+			get;
 		}
+
+		protected X86_Instruction (Opcodes_X86 opcodes, TargetAddress address)
+		{
+			this.Opcodes = opcodes;
+			this.address = address;
+		}
+
+		protected readonly Opcodes_X86 Opcodes;
 
 		public X86_Prefix Prefix;
 		public X86_REX_Prefix RexPrefix;
@@ -28,13 +31,32 @@ namespace Mono.Debugger.Architectures
 		public int Displacement;
 		public bool DereferenceAddress;
 
+		readonly TargetAddress address;
 		Type type = Type.Unknown;
+
+		public override TargetAddress Address {
+			get { return address; }
+		}
 
 		public override Type InstructionType {
 			get { return type; }
 		}
 
-		public bool IsIpRelative;
+		public override bool IsIpRelative {
+			get {
+				switch (type) {
+				case Type.ConditionalJump:
+				case Type.IndirectCall:
+				case Type.Call:
+				case Type.IndirectJump:
+				case Type.Jump:
+					return true;
+
+				default:
+					return is_ip_relative;
+				}
+			}
+		}
 
 		public override bool HasInstructionSize {
 			get { return has_insn_size; }
@@ -49,16 +71,19 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
-		internal void SetInstructionSize (int size)
-		{
-			this.insn_size = size;
-			this.has_insn_size = true;
+		public override byte[] Code {
+			get {
+				if (!has_insn_size)
+					throw new InvalidOperationException ();
+
+				return code;
+			}
 		}
 
+		bool is_ip_relative;
 		bool has_insn_size;
 		int insn_size;
-
-		public bool InsnSize;
+		byte[] code;
 
 		public TargetAddress CallTarget = TargetAddress.Null;
 
@@ -260,77 +285,14 @@ namespace Mono.Debugger.Architectures
 			return false;
 		}
 
-		protected int DecodeRegister (int register)
-		{
-			if (Is64BitMode) {
-				switch (register) {
-				case 0: /* rax */
-					return (int) X86_64_Register.RAX;
-				case 1: /* rcx */
-					return (int) X86_64_Register.RCX;
-				case 2: /* rdx */
-					return (int) X86_64_Register.RDX;
-				case 3: /* rbx */
-					return (int) X86_64_Register.RBX;
-				case 4: /* rsp */
-					return (int) X86_64_Register.RSP;
-				case 5: /* rbp */
-					return (int) X86_64_Register.RBP;
-				case 6: /* rsi */
-					return (int) X86_64_Register.RSI;
-				case 7: /* rdi */
-					return (int) X86_64_Register.RDI;
-				case 8: /* r8 */
-					return (int) X86_64_Register.R8;
-				case 9: /* r9 */
-					return (int) X86_64_Register.R9;
-				case 10: /* r10 */
-					return (int) X86_64_Register.R10;
-				case 11: /* r11 */
-					return (int) X86_64_Register.R11;
-				case 12: /* r12 */
-					return (int) X86_64_Register.R12;
-				case 13: /* r13 */
-					return (int) X86_64_Register.R13;
-				case 14: /* r14 */
-					return (int) X86_64_Register.R14;
-				case 15: /* r15 */
-					return (int) X86_64_Register.R15;
-				default:
-					/* can never happen */
-					throw new InvalidOperationException ();
-				}
-			} else {
-				switch (register) {
-				case 0: /* eax */
-					return (int) I386Register.EAX;
-				case 1: /* ecx */
-					return (int) I386Register.ECX;
-				case 2: /* edx */
-					return (int) I386Register.EDX;
-				case 3: /* ebx */
-					return (int) I386Register.EBX;
-				case 4: /* esp */
-					return (int) I386Register.ESP;
-				case 5: /* ebp */
-					return (int) I386Register.EBP;
-				case 6: /* esi */
-					return (int) I386Register.ESI;
-				case 7: /* edi */
-					return (int) I386Register.EDI;
-				default:
-					/* can never happen */
-					throw new InvalidOperationException ();
-				}
-			}
-		}
+		protected abstract int DecodeRegister (int register);
 
 		protected void DecodeModRM (TargetReader reader)
 		{
 			ModRM = new X86_ModRM (this, reader.ReadByte ());
 
 			if (Is64BitMode && (ModRM.Mod == 0) && ((ModRM.R_M & 0x07) == 0x06)) {
-				IsIpRelative = true;
+				is_ip_relative = true;
 			}
 		}
 
@@ -364,6 +326,11 @@ namespace Mono.Debugger.Architectures
 			} else if (opcode == 0xeb) {
 				CallTarget = Address + reader.ReadByte () + 2;
 				type = Type.Jump;
+			} else if (opcode == 0xc3) {
+				type = Type.Ret;
+			} else if (opcode == 0xc2) {
+				Displacement = reader.BinaryReader.ReadInt16 ();
+				type = Type.Ret;
 			} else if (opcode == 0xff) {
 				DecodeGroup5 (reader);
 			}
@@ -415,8 +382,8 @@ namespace Mono.Debugger.Architectures
 				if (ModRM.Mod == 0) {
 					if (Is64BitMode) {
 						displacement = reader.BinaryReader.ReadInt32 ();
-						register = (int) X86_64_Register.RIP;
-						IsIpRelative = true;
+						register = -1;
+						is_ip_relative = true;
 					} else {
 						CallTarget = reader.ReadAddress ();
 						return;
@@ -485,8 +452,13 @@ namespace Mono.Debugger.Architectures
 				effective_displacement += index;
 			}
 
-			TargetAddress effective_address = new TargetAddress (
-				memory.AddressDomain, regs [Register].GetValue ());
+			TargetAddress effective_address;
+			if (is_ip_relative)
+				effective_address = Address + InstructionSize;
+			else
+				effective_address = new TargetAddress (
+					memory.AddressDomain, regs [Register].GetValue ());
+
 			effective_address += effective_displacement;
 
 			if (DereferenceAddress)
@@ -495,24 +467,29 @@ namespace Mono.Debugger.Architectures
 			return effective_address;
 		}
 
-		public static X86_Instruction DecodeInstruction (TargetMemoryAccess memory,
+		public static X86_Instruction DecodeInstruction (Opcodes_X86 opcodes,
+								 TargetMemoryAccess memory,
 								 TargetAddress address)
 		{
 			try {
-				TargetReader reader = new TargetReader (
-					memory.ReadMemory (address, MaxInstructionLength));
-
-				bool is_64bit_mode = memory.TargetMemoryInfo.TargetAddressSize == 8;
-				X86_Instruction insn = new X86_Instruction (address, is_64bit_mode);
-				insn.DecodeInstruction (reader);
+				X86_Instruction insn;
+				if (memory.TargetMemoryInfo.TargetAddressSize == 8)
+					insn = new Instruction_X86_64 (opcodes, address);
+				else
+					insn = new Instruction_I386 (opcodes, address);
+				insn.DoDecodeInstruction (memory, address);
 				return insn;
 			} catch {
 				return null;
 			}
 		}
 
-		protected void DecodeInstruction (TargetReader reader)
+		protected void DoDecodeInstruction (TargetMemoryAccess memory,
+						    TargetAddress address)
 		{
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address, MaxInstructionLength));
+
 			while (CheckPrefix (reader))
 				reader.Offset++;
 
@@ -523,8 +500,24 @@ namespace Mono.Debugger.Architectures
 			else
 				OneByteOpcode (reader, opcode);
 
-			if (InstructionType != Type.Unknown)
-				SetInstructionSize ((int) reader.Offset);
+			if (InstructionType != Type.Unknown) {
+				insn_size = (int) reader.Offset;
+				has_insn_size = true;
+			} else {
+				insn_size = Opcodes.Disassembler.GetInstructionSize (memory, address);
+				has_insn_size = true;
+			}
+
+			if (has_insn_size) {
+				code = new byte [insn_size];
+				Array.Copy (reader.Contents, 0, code, 0, insn_size);
+			}
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Instruction ({0}:{1}:{2})", Address, InstructionType,
+					      insn_size);
 		}
 	}
 }
