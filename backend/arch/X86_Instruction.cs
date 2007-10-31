@@ -11,13 +11,13 @@ namespace Mono.Debugger.Architectures
 			get;
 		}
 
-		protected X86_Instruction (Opcodes_X86 opcodes, TargetAddress address)
+		protected X86_Instruction (X86_Opcodes opcodes, TargetAddress address)
 		{
 			this.Opcodes = opcodes;
 			this.address = address;
 		}
 
-		protected readonly Opcodes_X86 Opcodes;
+		protected readonly X86_Opcodes Opcodes;
 
 		public X86_Prefix Prefix;
 		public X86_REX_Prefix RexPrefix;
@@ -467,7 +467,7 @@ namespace Mono.Debugger.Architectures
 			return effective_address;
 		}
 
-		public static X86_Instruction DecodeInstruction (Opcodes_X86 opcodes,
+		public static X86_Instruction DecodeInstruction (X86_Opcodes opcodes,
 								 TargetMemoryAccess memory,
 								 TargetAddress address)
 		{

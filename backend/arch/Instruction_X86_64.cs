@@ -5,7 +5,7 @@ namespace Mono.Debugger.Architectures
 {
 	internal class Instruction_X86_64 : X86_Instruction
 	{
-		internal Instruction_X86_64 (Opcodes_X86 opcodes, TargetAddress address)
+		internal Instruction_X86_64 (X86_Opcodes opcodes, TargetAddress address)
 			: base (opcodes, address)
 		{ }
 
