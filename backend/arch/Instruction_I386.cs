@@ -40,12 +40,125 @@ namespace Mono.Debugger.Architectures
 
 		public override bool InterpretInstruction (Inferior inferior)
 		{
-			return false;
+			Console.WriteLine ("INTERPRET INSTRUCTION: {0}", InstructionType);
+
+			switch (InstructionType) {
+			case Type.IndirectJump:
+			case Type.Jump: {
+				TargetAddress target = GetEffectiveAddress (inferior);
+				Console.WriteLine ("INTERPRET JUMP: {0}", target);
+				Registers regs = inferior.GetRegisters ();
+				regs [(int) I386Register.EIP].SetValue (target);
+				inferior.SetRegisters (regs);
+				return true;
+			}
+
+			case Type.IndirectCall:
+			case Type.Call: {
+				TargetAddress target = GetEffectiveAddress (inferior);
+				Console.WriteLine ("INTERPRET CALL: {0}", target);
+				Registers regs = inferior.GetRegisters ();
+
+				TargetAddress eip = new TargetAddress (
+					inferior.AddressDomain, regs [(int) I386Register.EIP].Value);
+				TargetAddress esp = new TargetAddress (
+					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
+
+				Console.WriteLine ("INTERPRET CALL #1: {0} {1} {2} {3}",
+						   eip, esp, CallTarget, InstructionSize);
+
+				inferior.WriteAddress (esp - 4, eip + InstructionSize);
+
+				regs [(int) I386Register.ESP].SetValue (esp - 4);
+				regs [(int) I386Register.EIP].SetValue (target);
+				inferior.SetRegisters (regs);
+				return true;
+			}
+
+			case Type.Ret: {
+				Console.WriteLine ("INTERPRET RET: {0}", Displacement);
+
+				Registers regs = inferior.GetRegisters ();
+
+				TargetAddress esp = new TargetAddress (
+					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
+
+				TargetAddress eip = inferior.ReadAddress (esp);
+				esp += 4 + Displacement;
+
+				regs [(int) I386Register.ESP].SetValue (esp);
+				regs [(int) I386Register.EIP].SetValue (eip);
+				inferior.SetRegisters (regs);
+				return true;
+			}
+
+			default:
+				return false;
+			}
+		}
+
+		protected bool GetMonoTrampoline (TargetMemoryAccess memory,
+						  out TargetAddress trampoline)
+		{
+			if ((InstructionType != Type.Call) && (InstructionType != Type.IndirectCall)) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			TargetAddress call_target = GetEffectiveAddress (memory);
+
+			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
+			byte opcode = reader.ReadByte ();
+			if (opcode != 0xe8) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			TargetAddress call = call_target + reader.ReadInt32 () + 5;
+			Console.WriteLine ("GET MONO TRAMPOLINE: {0}", call);
+			if (!Opcodes.Process.MonoLanguage.IsTrampolineAddress (call)) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			long method;
+			if (reader.ReadByte () == 0x04)
+				method = reader.ReadInt32 ();
+			else
+				method = reader.ReadInt64 ();
+
+			Console.WriteLine ("GET MONO TRAMPOLINE #1: {0:x}", method);
+			trampoline = call_target;
+			return true;
 		}
 
 		public override TrampolineType CheckTrampoline (TargetMemoryAccess memory,
 								out TargetAddress trampoline)
 		{
+			Console.WriteLine ("CHECK TRAMPOLINE: {0} {1}", Address, InstructionType);
+
+			if (InstructionType == Type.Call) {
+				TargetAddress target = GetEffectiveAddress (memory);
+				if (target.IsNull) {
+					trampoline = TargetAddress.Null;
+					return TrampolineType.None;
+				}
+
+				bool is_start;
+				if (Opcodes.Process.BfdContainer.GetTrampoline (
+					    memory, target, out trampoline, out is_start)) {
+					target = trampoline;
+					return is_start ? 
+						TrampolineType.NativeTrampolineStart :
+						TrampolineType.NativeTrampoline;
+				}
+			}
+
+			if (Opcodes.Process.IsManagedApplication) {
+				if (GetMonoTrampoline (memory, out trampoline))
+					return TrampolineType.MonoTrampoline;
+			}
+
 			trampoline = TargetAddress.Null;
 			return TrampolineType.None;
 		}
