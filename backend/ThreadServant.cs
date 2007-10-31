@@ -214,8 +214,6 @@ namespace Mono.Debugger.Backends
 		public abstract CommandResult CallMethod (TargetAddress method, long arg1,
 							  long arg2, string string_arg);
 
-		public abstract CommandResult CallMethod (TargetAddress method, TargetAddress arg);
-
 		public abstract CommandResult Return (bool run_finally);
 
 		public abstract CommandResult AbortInvocation ();
