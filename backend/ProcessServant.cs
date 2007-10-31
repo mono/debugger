@@ -349,16 +349,19 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);
 			while (!ptr.IsNull) {
-				int size = 24 + inferior.TargetMemoryInfo.TargetAddressSize;
+				int size = 32 + inferior.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
 				TargetAddress lmf_addr = reader.ReadAddress ();
 				TargetAddress end_stack = reader.ReadAddress ();
 
+				TargetAddress extended_notifications_addr = ptr + 24;
+
 				if (inferior.TargetMemoryInfo.TargetAddressSize == 4)
 					tid &= 0x00000000ffffffffL;
 
+				reader.Offset += 8;
 				ptr = reader.ReadAddress ();
 
 				bool found = false;
@@ -366,7 +369,7 @@ namespace Mono.Debugger.Backends
 					if (engine.TID != tid)
 						continue;
 
-					engine.SetLMFAddress (lmf_addr);
+					engine.SetManagedThreadData (lmf_addr, extended_notifications_addr);
 					engine.OnManagedThreadCreated (end_stack);
 					found = true;
 					break;
