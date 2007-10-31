@@ -2,6 +2,30 @@
 
 	Merged the Plophos branch.
 
+	* backend/server/breakpoints.h
+	(BreakpointInfo): Added `runtime_table_slot'.
+
+	* server.h
+	(MonoRuntimeInfo): New typedef.
+	(ServerHandle): Added `MonoRuntimeInfo *mono_runtime'
+	(InferiorVTable): Added `set_runtime_info' and
+	`execute_instruction'; removed `set_notification'; `call_method_2'
+	now takes additional `data_size' and 'data_buffer' arguments.
+	(mono_debugger_server_set_runtime_info): New function.
+	(mono_debugger_server_execute_instruction): New function.
+	(mono_debugger_server_set_notification): Removed.
+	(mono_debugger_server_initialize_mono_runtime): New function.
+
+	* x86-ptrace.c
+	(InferiorHandle): Removed `notification_address', this is now in
+	the new `MonoRuntimeInfo'.
+
+	* x86_64-arch.c
+	(runtime_info_enable/disable_breakpoint): New static methods.
+
+	* i386-arch.c
+	(runtime_info_enable/disable_breakpoint): New static methods.
+
 	* backend/arch/Architecture.cs
 	(CallTargetType): Removed.
 	(Architecture.ReadInstruction): New method.

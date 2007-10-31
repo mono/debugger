@@ -26,6 +26,7 @@ typedef struct {
 	int is_hardware_bpt;
 	int dr_index;
 	char saved_insn;
+	int runtime_table_slot;
 	guint64 address;
 } BreakpointInfo;
 

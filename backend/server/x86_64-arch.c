@@ -15,11 +15,22 @@
 
 #define AMD64_RED_ZONE_SIZE 128
 
+typedef struct
+{
+	int slot;
+	int insn_size;
+	int orig_insn_size;
+	gboolean pushed_retaddr;
+	guint64 code_address;
+	guint64 original_rip;
+} CodeBufferData;
+
 struct ArchInfo
 {
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	GPtrArray *callback_stack;
+	CodeBufferData *code_buffer;
 	guint64 dr_control, dr_status;
 	guint64 pushed_regs_rsp;
 	int dr_regs [DR_NADDR];
@@ -35,6 +46,9 @@ typedef struct
 	guint64 rti_frame;
 	guint64 exc_address;
 	int saved_signal;
+	guint64 pushed_registers;
+	guint64 data_pointer;
+	guint32 data_size;
 	gboolean debug;
 } CallbackData;
 
@@ -158,10 +172,12 @@ x86_arch_get_registers (ServerHandle *handle)
 
 ChildStoppedAction
 x86_arch_child_stopped (ServerHandle *handle, int stopsig,
-			guint64 *callback_arg, guint64 *retval, guint64 *retval2)
+			guint64 *callback_arg, guint64 *retval, guint64 *retval2,
+			guint32 *opt_data_size, gpointer *opt_data)
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
+	CodeBufferData *cbuffer = NULL;
 	CallbackData *cdata;
 	guint64 code;
 	int i;
@@ -171,7 +187,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
-	if (INFERIOR_REG_RIP (arch->current_regs) - 1 == inferior->notification_address) {
+	if (handle->mono_runtime &&
+	    (INFERIOR_REG_RIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
 		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
 		*retval = INFERIOR_REG_RSI (arch->current_regs);
 		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
@@ -196,6 +213,27 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cdata = get_callback_data (arch);
 	if (cdata && (cdata->call_address == INFERIOR_REG_RIP (arch->current_regs))) {
+		if (cdata->pushed_registers) {
+			guint64 pushed_regs [13];
+
+			if (_server_ptrace_read_memory (handle, cdata->pushed_registers, 104, &pushed_regs))
+				g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+			INFERIOR_REG_RAX (cdata->saved_regs) = pushed_regs [0];
+			INFERIOR_REG_RBX (cdata->saved_regs) = pushed_regs [1];
+			INFERIOR_REG_RCX (cdata->saved_regs) = pushed_regs [2];
+			INFERIOR_REG_RDX (cdata->saved_regs) = pushed_regs [3];
+			INFERIOR_REG_RBP (cdata->saved_regs) = pushed_regs [4];
+			INFERIOR_REG_RSP (cdata->saved_regs) = pushed_regs [5];
+			INFERIOR_REG_RSI (cdata->saved_regs) = pushed_regs [6];
+			INFERIOR_REG_RDI (cdata->saved_regs) = pushed_regs [7];
+			INFERIOR_REG_RIP (cdata->saved_regs) = pushed_regs [8];
+			INFERIOR_REG_R12 (cdata->saved_regs) = pushed_regs [9];
+			INFERIOR_REG_R13 (cdata->saved_regs) = pushed_regs [10];
+			INFERIOR_REG_R14 (cdata->saved_regs) = pushed_regs [11];
+			INFERIOR_REG_R15 (cdata->saved_regs) = pushed_regs [12];
+		}
+
 		if (_server_ptrace_set_registers (inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
@@ -204,6 +242,18 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		*callback_arg = cdata->callback_argument;
 		*retval = INFERIOR_REG_RAX (arch->current_regs);
+
+		if (cdata->data_pointer) {
+			*opt_data_size = cdata->data_size;
+			*opt_data = g_malloc0 (cdata->data_size);
+
+			if (_server_ptrace_read_memory (
+				    handle, cdata->data_pointer, cdata->data_size, *opt_data))
+				g_error (G_STRLOC ": Can't read data buffer after returning from a call");
+		} else {
+			*opt_data_size = 0;
+			*opt_data = NULL;
+		}
 
 		if (cdata->exc_address &&
 		    (server_ptrace_peek_word (handle, cdata->exc_address, retval2) != COMMAND_ERROR_NONE))
@@ -222,6 +272,37 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cdata);
 		return STOP_ACTION_CALLBACK;
+	}
+
+	cbuffer = arch->code_buffer;
+	if (cbuffer) {
+		g_message (G_STRLOC ": %p,%d - %Lx - %d,%d - %Lx,%Lx", cbuffer, cbuffer->pushed_retaddr,
+			   cbuffer->original_rip, cbuffer->orig_insn_size, cbuffer->insn_size,
+			   cbuffer->code_address, INFERIOR_REG_RIP (arch->current_regs));
+
+		if (cbuffer->pushed_retaddr) {
+			g_free (cbuffer);
+			arch->code_buffer = NULL;
+			return STOP_ACTION_STOPPED;
+		}
+
+		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
+			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
+				   cbuffer->code_address, cbuffer->insn_size,
+				   cbuffer->code_address + cbuffer->insn_size,
+				   INFERIOR_REG_RIP (arch->current_regs));
+			return STOP_ACTION_STOPPED;
+		}
+
+		INFERIOR_REG_RIP (arch->current_regs) = cbuffer->original_rip + cbuffer->orig_insn_size;
+		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
+			g_error (G_STRLOC ": Can't restore registers");
+		}
+
+		g_free (cbuffer);
+		arch->code_buffer = NULL;
+		g_message (G_STRLOC ": %Lx", INFERIOR_REG_RIP (arch->current_regs));
+		return STOP_ACTION_STOPPED;
 	}
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -371,6 +452,82 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static int
+find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->breakpoint_table_size; i++) {
+		if (runtime->breakpoint_table_bitfield [i])
+			continue;
+
+		runtime->breakpoint_table_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
+static ServerCommandError
+runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 table_address, index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_breakpoint_table_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	breakpoint->runtime_table_slot = slot;
+
+	table_address = runtime->breakpoint_info_area + 16 * slot;
+	index_address = runtime->breakpoint_table + 8 * slot;
+
+	result = server_ptrace_poke_word (handle, table_address, breakpoint->address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, table_address + 8, (gsize) breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, index_address, (gsize) table_address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	return COMMAND_ERROR_NONE;
+
+	slot = breakpoint->runtime_table_slot;
+	index_address = runtime->breakpoint_table + runtime->address_size * slot;
+
+	result = server_ptrace_poke_word (handle, index_address, 0);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	runtime->breakpoint_table_bitfield [slot] = 0;
+
+	return COMMAND_ERROR_NONE;
+}
+
 static ServerCommandError
 do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
@@ -411,6 +568,12 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
+
+		if (handle->mono_runtime) {
+			result = runtime_info_enable_breakpoint (handle, breakpoint);
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
 
 		result = server_ptrace_write_memory (handle, address, 1, &bopcode);
 		if (result != COMMAND_ERROR_NONE)
@@ -453,6 +616,12 @@ do_disable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		result = server_ptrace_write_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
+
+		if (handle->mono_runtime) {
+			result = runtime_info_disable_breakpoint (handle, breakpoint);
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -797,14 +966,15 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
-			     guint64 method_argument, guint64 callback_argument)
+			     guint32 data_size, gconstpointer data_buffer,
+			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	CallbackData *cdata;
 	long new_rsp;
 
-	int size = 116;
+	int size = 120 + data_size;
 	guint8 *code = g_malloc0 (size);
 
 	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
@@ -824,7 +994,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint64 *) (code+88)) = INFERIOR_REG_R13 (arch->current_regs);
 	*((guint64 *) (code+96)) = INFERIOR_REG_R14 (arch->current_regs);
 	*((guint64 *) (code+104)) = INFERIOR_REG_R15 (arch->current_regs);
-	*((guint8 *) (code+112)) = 0xcc;
+	*((guint8 *) (code+data_size+116)) = 0xcc;
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
@@ -834,7 +1004,14 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	cdata->exc_address = 0;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
+	cdata->pushed_registers = new_rsp + 8;
 	handle->inferior->last_signal = 0;
+
+	if (data_size > 0) {
+		memcpy (code+112, data_buffer, data_size);
+		cdata->data_pointer = new_rsp + 112;
+		cdata->data_size = data_size;
+	}
 
 	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);
@@ -843,7 +1020,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = new_rsp + 8;
-	INFERIOR_REG_RSI (arch->current_regs) = method_argument;
+	INFERIOR_REG_RSI (arch->current_regs) = new_rsp + 112;
 	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
 
 	g_ptr_array_add (arch->callback_stack, cdata);
@@ -925,6 +1102,82 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 		return result;
 
 	return server_ptrace_continue (handle);
+}
+
+static int
+find_code_buffer_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->executable_code_total_chunks; i++) {
+		if (runtime->executable_code_bitfield [i])
+			continue;
+
+		runtime->executable_code_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
+static ServerCommandError
+server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instruction,
+				   guint32 orig_size, guint32 size, gboolean push_retaddr)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	CodeBufferData *data;
+	guint64 code_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_code_buffer_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	if (size > runtime->executable_code_chunk_size)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+	if (handle->arch->code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	code_address = runtime->executable_code_buffer + slot * runtime->executable_code_chunk_size;
+
+	g_message (G_STRLOC ": %d - %Lx - %d - %p", slot, code_address, size, instruction);
+
+	data = g_new0 (CodeBufferData, 1);
+	data->slot = slot;
+	data->insn_size = size;
+	data->orig_insn_size = orig_size;
+	data->pushed_retaddr = push_retaddr;
+	data->original_rip = INFERIOR_REG_RIP (handle->arch->current_regs);
+	data->code_address = code_address;
+
+	handle->arch->code_buffer = data;
+
+	result = server_ptrace_write_memory (handle, code_address, size, instruction);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	if (push_retaddr) {
+		long old_rsp = INFERIOR_REG_RSP (handle->arch->current_regs);
+		long retaddr = INFERIOR_REG_RIP (handle->arch->current_regs) + orig_size;
+
+		result = server_ptrace_write_memory (handle, old_rsp - 8, 8, &retaddr);
+		if (result != COMMAND_ERROR_NONE)
+			return result;
+
+		INFERIOR_REG_RSP (handle->arch->current_regs) -= 8;
+	}
+
+	INFERIOR_REG_RIP (handle->arch->current_regs) = code_address;
+
+	result = _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_step (handle);
 }
 
 static ServerCommandError

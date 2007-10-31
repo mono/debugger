@@ -103,9 +103,11 @@ mono_debugger_server_global_wait (guint32 *status)
 
 ServerStatusMessageType
 mono_debugger_server_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
-				     guint64 *data1, guint64 *data2)
+				     guint64 *data1, guint64 *data2, guint32 *opt_data_size,
+				     gpointer *opt_data)
 {
-	return (*global_vtable->dispatch_event) (handle, status, arg, data1, data2);
+	return (*global_vtable->dispatch_event) (
+		handle, status, arg, data1, data2, opt_data_size, opt_data);
 }
 
 ServerCommandError
@@ -219,13 +221,14 @@ mono_debugger_server_call_method_1 (ServerHandle *handle, guint64 method_address
 
 ServerCommandError
 mono_debugger_server_call_method_2 (ServerHandle *handle, guint64 method_address,
-				    guint64 method_argument, guint64 callback_argument)
+				    guint32 data_size, gconstpointer data_buffer,
+				    guint64 callback_argument)
 {
 	if (!global_vtable->call_method_2)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->call_method_2) (
-		handle, method_address, method_argument, callback_argument);
+		handle, method_address, data_size, data_buffer, callback_argument);
 }
 
 ServerCommandError
@@ -241,6 +244,18 @@ mono_debugger_server_call_method_invoke (ServerHandle *handle, guint64 invoke_me
 	return (* global_vtable->call_method_invoke) (
 		handle, invoke_method, method_argument, num_params, blob_size,
 		param_data, offset_data, blob_data, callback_argument, debug);
+}
+
+ServerCommandError
+mono_debugger_server_execute_instruction (ServerHandle *handle, const guint8 *instruction,
+					  guint32 orig_insn_size, guint32 insn_size,
+					  gboolean push_retaddr)
+{
+	if (!global_vtable->execute_instruction)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->execute_instruction) (
+		handle, instruction, orig_insn_size, insn_size, push_retaddr);
 }
 
 ServerCommandError
@@ -372,10 +387,10 @@ mono_debugger_server_get_signal_info (ServerHandle *handle, SignalInfo **sinfo)
 }
 
 void
-mono_debugger_server_set_notification (ServerHandle *handle, guint64 notification)
+mono_debugger_server_set_runtime_info (ServerHandle *handle, MonoRuntimeInfo *mono_runtime)
 {
-	if (global_vtable->set_notification)
-		return (* global_vtable->set_notification) (handle,notification);
+	if (global_vtable->set_runtime_info)
+		return (* global_vtable->set_runtime_info) (handle, mono_runtime);
 }
 
 ServerCommandError

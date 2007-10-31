@@ -411,7 +411,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
-	if ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == inferior->notification_address) {
+	if (handle->mono_runtime &&
+	    ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
 		guint64 data [3];
 
@@ -587,6 +588,80 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static int
+find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->breakpoint_table_size; i++) {
+		if (runtime->breakpoint_table_bitfield [i])
+			continue;
+
+		runtime->breakpoint_table_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
+static ServerCommandError
+runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 table_address, index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_breakpoint_table_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	breakpoint->runtime_table_slot = slot;
+
+	table_address = runtime->breakpoint_info_area + 8 * slot;
+	index_address = runtime->breakpoint_table + 4 * slot;
+
+	result = server_ptrace_poke_word (handle, table_address, breakpoint->address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, table_address + 4, (gsize) breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, index_address, (gsize) table_address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = breakpoint->runtime_table_slot;
+	index_address = runtime->breakpoint_table + runtime->address_size * slot;
+
+	result = server_ptrace_poke_word (handle, index_address, 0);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	runtime->breakpoint_table_bitfield [slot] = 0;
+
+	return COMMAND_ERROR_NONE;
+}
+
 static ServerCommandError
 do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
@@ -622,6 +697,12 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
+
+		if (handle->mono_runtime) {
+			result = runtime_info_enable_breakpoint (handle, breakpoint);
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
 
 		result = server_ptrace_write_memory (handle, address, 1, &bopcode);
 		if (result != COMMAND_ERROR_NONE)
@@ -664,6 +745,12 @@ do_disable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		result = server_ptrace_write_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
+
+		if (handle->mono_runtime) {
+			result = runtime_info_disable_breakpoint (handle, breakpoint);
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
 	}
 
 	return COMMAND_ERROR_NONE;
