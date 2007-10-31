@@ -2,6 +2,8 @@
 
 	Merged the Plophos branch.
 
+	* backend/MonoThreadManager.cs: Reflect latest runtime changes.
+
 	* backend/Inferior.cs
 	(Inferior.ChildEvent): Added public readonly `CallbackData' field.
 	(Inferior.CallMethod(long,long)): Take a `byte[]' and a `long'
