@@ -2,7 +2,10 @@
 
 	HEADS UP: The debugger only works on x86_64 at the moment.
 
-	This is only temporary and will be fixed soon.
+	You need to use the runtime from the plophos branch for the moment.
+
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo.MinDynamicVersion): Put back to 63 to require Plophos.
 
 2007-10-31  Martin Baulig  <martin@ximian.com>
 
@@ -15,7 +18,7 @@
 
 	* backend/server/server.h
 	(mono_debugger_server_execute_instruction): Removed the
-	`original_size' argument; replaced `push_retaddr' by `update_ip'.
+	`original_size' argument; replaced `push_retaddr' by `up
 
 2007-10-31  Martin Baulig  <martin@ximian.com>
 
