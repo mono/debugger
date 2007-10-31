@@ -5,19 +5,20 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Architectures
 {
-	internal class X86_Opcodes : Opcodes
+	internal abstract class X86_Opcodes : Opcodes
 	{
-		public readonly bool Is64BitMode;
-
 		ProcessServant process;
 		BfdDisassembler disassembler;
 
-		internal X86_Opcodes (ProcessServant process, bool is_64bit)
+		protected X86_Opcodes (ProcessServant process)
 		{
 			this.process = process;
-			this.Is64BitMode = is_64bit;
 
-			disassembler = new BfdDisassembler (null, is_64bit);
+			disassembler = new BfdDisassembler (null, Is64BitMode);
+		}
+
+		public abstract bool Is64BitMode {
+			get;
 		}
 
 		internal Disassembler Disassembler {

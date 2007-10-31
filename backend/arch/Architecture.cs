@@ -21,7 +21,10 @@ namespace Mono.Debugger.Backends
 			this.TargetInfo = info;
 
 			disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
-			opcodes = new X86_Opcodes (process, info.TargetAddressSize == 8);
+			if (info.TargetAddressSize == 8)
+				opcodes = new Opcodes_X86_64 (process);
+			else
+				opcodes = new Opcodes_I386 (process);
 		}
 
 		internal Disassembler Disassembler {

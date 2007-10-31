@@ -1,8 +1,22 @@
-2007-10-15  Martin Baulig  <martin@ximian.com>
+2007-10-31  Martin Baulig  <martin@ximian.com>
 
 	HEADS UP: The debugger only works on x86_64 at the moment.
 
 	This is only temporary and will be fixed soon.
+
+2007-10-31  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Opcodes.cs
+	(Opcodes.GenerateJumpInstruction): New abstract method.
+
+	* backend/arch/X86_Opcodes.cs
+	(X86_Opcodes): Make this abstract.
+
+	* backend/arch/Opcodes_I386.cs: New file.
+	(Opcodes_I386): i386-specific implementation.
+
+	* backend/arch/Opcodes_X86_64.cs: New file.
+	(Opcodes_X86_64): x86_64-specific implementation.
 
 2007-10-31  Martin Baulig  <martin@ximian.com>
 
