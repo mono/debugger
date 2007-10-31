@@ -14,6 +14,7 @@ using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
+using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backends
 {
@@ -515,9 +516,11 @@ namespace Mono.Debugger.Backends
 			this.tid = tid;
 		}
 
-		internal void SetLMFAddress (TargetAddress lmf_address)
+		internal void SetManagedThreadData (TargetAddress lmf_address,
+						    TargetAddress extended_notifications_addr)
 		{
 			this.lmf_address = lmf_address;
+			this.extended_notifications_addr = extended_notifications_addr;
 		}
 
 		internal void OnManagedThreadExited ()
@@ -901,7 +904,7 @@ namespace Mono.Debugger.Backends
 			return bpt.CheckBreakpointHit (thread, address);
 		}
 
-		bool step_over_breakpoint (TargetAddress until, bool trampoline)
+		bool step_over_breakpoint (bool singlestep, TargetAddress until)
 		{
 			int index;
 			bool is_enabled;
@@ -912,11 +915,78 @@ namespace Mono.Debugger.Backends
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} at {2} until {3}/{4}",
-				      this, index, inferior.CurrentFrame, until, trampoline);
+				      "{0} stepping over breakpoint {1} at {2} until {3}",
+				      this, index, inferior.CurrentFrame, until);
 
-			PushOperation (new OperationStepOverBreakpoint (this, index, trampoline, until));
+			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
+					   inferior.CurrentFrame, index, until);
+
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, inferior.CurrentFrame);
+			Console.WriteLine ("EXECUTE INSTRUCTION: {0}", instruction);
+
+			if ((instruction == null) || !instruction.HasInstructionSize ||
+			    !process.IsManagedApplication) {
+				PushOperation (new OperationStepOverBreakpoint (this, index, until));
+				return true;
+			}
+
+			if (!singlestep && instruction.InterpretInstruction (inferior))
+				return false;
+
+			if ((instruction.InstructionType == Instruction.Type.Call) ||
+			    (instruction.InstructionType == Instruction.Type.IndirectCall)) {
+				TargetAddress target = instruction.GetEffectiveAddress (inferior);
+
+				Console.WriteLine ("EXECUTE CALL: {0} {1}", inferior.CurrentFrame, target);
+
+
+				//
+				//
+				// FIXME FIXME FIXME BROKEN !!!!
+				//
+
+				/// FIXME: We need to execute something
+				TargetBinaryWriter writer = new TargetBinaryWriter (
+					14, inferior.TargetMemoryInfo);
+				writer.WriteByte (0xff);
+				writer.WriteByte (0x25);
+				writer.WriteInt32 (0);
+				writer.WriteAddress (target);
+
+				inferior.ExecuteInstruction (
+					writer.Contents, instruction.InstructionSize, true);
+				return true;
+			}
+
+			if (instruction.IsIpRelative) {
+				PushOperation (new OperationStepOverBreakpoint (this, index, until));
+				return true;
+			}
+
+			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1}", instruction,
+					   TargetBinaryReader.HexDump (instruction.Code));
+
+			inferior.ExecuteInstruction (instruction.Code, instruction.InstructionSize, false);
 			return true;
+		}
+
+		void enable_extended_notification (NotificationType type)
+		{
+			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
+			Console.WriteLine ("ENABLE EXTENDED NOTIFICATION: {0} {1:x} {2} {3:x}",
+					   extended_notifications_addr, notifications, type, (int) type);
+			notifications |= (long) type;
+			inferior.WriteLongInteger (extended_notifications_addr, notifications);
+		}
+
+		void disable_extended_notification (NotificationType type)
+		{
+			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
+			Console.WriteLine ("DISABLE EXTENDED NOTIFICATION: {0} {1:x} {2} {3:x}",
+					   extended_notifications_addr, notifications, type, (int) type);
+			notifications &= ~(long) type;
+			inferior.WriteLongInteger (extended_notifications_addr, notifications);
 		}
 
 		bool throw_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
@@ -1133,22 +1203,24 @@ namespace Mono.Debugger.Backends
 			TargetAddress address = inferior.CurrentFrame;
 
 			// Check whether this is a call instruction.
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, address, out target, out insn_size);
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, address);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				do_step_native ();
+				return;
+			}
 
-			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2} {3}", this,
-				      address, type, target);
+			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2}", this,
+				      address, instruction.InstructionType);
 
 			// Step one instruction unless this is a call
-			if (!Architecture.IsCall (type)) {
+			if (!instruction.IsCall) {
 				do_step_native ();
 				return;
 			}
 
 			// Insert a temporary breakpoint immediately behind it and continue.
-			address += insn_size;
+			address += instruction.InstructionSize;
 			do_continue (address);
 		}
 
@@ -1157,20 +1229,15 @@ namespace Mono.Debugger.Backends
 		// </summary>
 		void do_continue ()
 		{
-			do_continue (TargetAddress.Null, false);
+			do_continue (TargetAddress.Null);
 		}
 
 		void do_continue (TargetAddress until)
 		{
-			do_continue (until, false);
-		}
-
-		void do_continue (TargetAddress until, bool trampoline)
-		{
 			check_inferior ();
 			frames_invalid ();
 
-			if (step_over_breakpoint (until, trampoline))
+			if (step_over_breakpoint (false, until))
 				return;
 
 			if (!until.IsNull)
@@ -1188,45 +1255,41 @@ namespace Mono.Debugger.Backends
 
 		void do_step_native ()
 		{
-			if (step_over_breakpoint (TargetAddress.Null, false))
+			if (step_over_breakpoint (true, TargetAddress.Null))
 				return;
 
 			inferior.Step ();
 		}
 
-		protected bool CheckTrampoline (CallTargetType type, TargetAddress call_site,
-						TargetAddress call_target, TrampolineHandler handler)
+		protected bool CheckTrampoline (Instruction instruction, TrampolineHandler handler)
 		{
-			if (!Architecture.IsTrampoline (type))
+			TargetAddress trampoline;
+			Instruction.TrampolineType type = instruction.CheckTrampoline (
+				inferior, out trampoline);
+			if (type == Instruction.TrampolineType.None)
 				return false;
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} found trampoline {1}:{2} at {3} while running {4}",
-				      this, type, call_target, call_site, current_operation);
+				      this, type, trampoline, instruction.Address, current_operation);
 
-			if (type == CallTargetType.NativeTrampolineStart) {
-				PushOperation (new OperationNativeTrampoline (
-						       this, call_target, handler));
+			if (type == Instruction.TrampolineType.NativeTrampolineStart) {
+				PushOperation (new OperationNativeTrampoline (this, trampoline, handler));
 				return true;
-			} else if (type == CallTargetType.NativeTrampoline) {
-				Method method = Lookup (call_target);
+			} else if (type == Instruction.TrampolineType.NativeTrampoline) {
+				Method method = Lookup (trampoline);
 				if (!MethodHasSource (method))
 					do_next_native ();
 				else
-					do_continue (call_target);
+					do_continue (trampoline);
 				return true;
-			} else if (type == CallTargetType.MonoTrampoline) {
-				PushOperation (new OperationTrampoline (this, call_target, handler));
+			} else if (type == Instruction.TrampolineType.MonoTrampoline) {
+				PushOperation (new OperationMonoTrampoline (
+					this, instruction, trampoline, handler));
 				return true;
 			}
 
 			return false;
-		}
-
-		void trampoline_callback (TargetAddress address)
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} trampoline callback: {1}", this, address);
 		}
 
 		protected bool MethodHasSource (Method method)
@@ -1568,12 +1631,6 @@ namespace Mono.Debugger.Backends
 			return StartOperation (new OperationCallMethod (this, method, arg1, arg2));
 		}
 
-		public override CommandResult CallMethod (TargetAddress method, TargetAddress argument)
-		{
-			return StartOperation (new OperationCallMethod (
-				this, method, argument.Address));
-		}
-
 		public override CommandResult Return (bool run_finally)
 		{
 			return (CommandResult) SendCommand (delegate {
@@ -1887,8 +1944,8 @@ namespace Mono.Debugger.Backends
 		TargetEventArgs last_target_event;
 
 		TargetAddress lmf_address = TargetAddress.Null;
-
 		TargetAddress end_stack_address = TargetAddress.Null;
+		TargetAddress extended_notifications_addr = TargetAddress.Null;
 
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject
@@ -2371,15 +2428,13 @@ namespace Mono.Debugger.Backends
 	{
 		TargetAddress until;
 		public readonly int Index;
-		bool is_trampoline;
 		bool has_thread_lock;
 
 		public OperationStepOverBreakpoint (SingleSteppingEngine sse, int index,
-						    bool is_trampoline, TargetAddress until)
+						    TargetAddress until)
 			: base (sse, null)
 		{
 			this.Index = index;
-			this.is_trampoline = is_trampoline;
 			this.until = until;
 		}
 
@@ -2387,31 +2442,10 @@ namespace Mono.Debugger.Backends
 			get { return false; }
 		}
 
-		bool check_trampolines ()
-		{
-			if (is_trampoline || !sse.process.IsManaged)
-				return false;
-
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, inferior.CurrentFrame, out target, out insn_size);
-			if (Architecture.IsTrampoline (type)) {
-				sse.PushOperation (new OperationTrampoline (sse, target, null));
-				return true;
-			}
-
-			return false;
-		}
-
 		protected override void DoExecute ()
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint: {1} {2}", sse,
-				      is_trampoline, until);
-
-			if (check_trampolines ())
-				return;
+				      "{0} stepping over breakpoint: {1}", sse, until);
 
 			sse.process.AcquireGlobalThreadLock (sse);
 			inferior.DisableBreakpoint (Index);
@@ -2419,15 +2453,8 @@ namespace Mono.Debugger.Backends
 			has_thread_lock = true;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} stepping over breakpoint {1} at {5} until {2}/{3} ({4})",
-				      sse, Index, until, is_trampoline, sse.current_method,
-				      inferior.CurrentFrame);
-
-			if (is_trampoline) {
-				sse.do_continue (until);
-				until = TargetAddress.Null;
-				return;
-			}
+				      "{0} stepping over breakpoint {1} at {2} until {3} ({4})",
+				      sse, Index, inferior.CurrentFrame, until, sse.current_method);
 
 			inferior.Step ();
 		}
@@ -2667,20 +2694,27 @@ namespace Mono.Debugger.Backends
 			 * If this is not a call instruction, continue stepping until we leave
 			 * the specified step frame.
 			 */
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out target, out insn_size);
-			if (!Architecture.IsCall (type)) {
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, current_frame);
+			if ((instruction == null) || !instruction.IsCall) {
 				sse.do_step_native ();
 				return false;
 			}
 
+			if (!instruction.HasInstructionSize) {
+				/* Ooops, we don't know anything about this instruction */
+				sse.do_step_native ();
+				return false;
+			}
+
+			TargetAddress call_target = instruction.GetEffectiveAddress (inferior);
+
 			if ((sse.current_method != null) && (sse.current_method.HasMethodBounds) &&
-			    (target >= sse.current_method.MethodStartAddress) &&
-			    (target < sse.current_method.MethodEndAddress)) {
-				/* Intra-method call (we stay outside the prologue/epilogue code, so this also
-				 * can't be a recursive call). */
+			    !call_target.IsNull &&
+			    (call_target >= sse.current_method.MethodStartAddress) &&
+			    (call_target < sse.current_method.MethodEndAddress)) {
+				/* Intra-method call (we stay outside the prologue/epilogue code,
+				 * so this also can't be a recursive call). */
 				sse.do_step_native ();
 				return false;
 			}
@@ -2693,7 +2727,7 @@ namespace Mono.Debugger.Backends
 				return false;
 			}
 
-			if (sse.CheckTrampoline (type, current_frame, target, TrampolineHandler))
+			if (sse.CheckTrampoline (instruction, TrampolineHandler))
 				return false;
 
 			/*
@@ -2710,7 +2744,7 @@ namespace Mono.Debugger.Backends
 			 * If it can't be found in the symbol tables, assume it's a system function
 			 * and step over it.
 			 */
-			Method method = sse.Lookup (target);
+			Method method = sse.Lookup (call_target);
 
 			/*
 			 * If this is a PInvoke/icall wrapper, check whether we want to step into
@@ -2947,11 +2981,16 @@ namespace Mono.Debugger.Backends
 
 			try {
 				args = null;
-				return CallbackCompleted (cevent.Data1, cevent.Data2);
+				return CallbackCompleted (cevent);
 			} catch {
 				RestoreStack ();
 				return EventResult.CompletedCallback;
 			}
+		}
+
+		protected virtual EventResult CallbackCompleted (Inferior.ChildEvent cevent)
+		{
+			return CallbackCompleted (cevent.Data1, cevent.Data2);
 		}
 
 		protected abstract EventResult CallbackCompleted (long data1, long data2);
@@ -3300,22 +3339,9 @@ namespace Mono.Debugger.Backends
 			this.Argument2 = arg2;
 		}
 
-		public OperationCallMethod (SingleSteppingEngine sse,
-					    TargetAddress method, long argument)
-			: base (sse)
-		{
-			this.Type = CallMethodType.Long;
-			this.Method = method;
-			this.Argument1 = argument;
-		}
-
 		protected override void DoExecute ()
 		{
 			switch (Type) {
-			case CallMethodType.Long:
-				inferior.CallMethod (Method, Argument1, ID);
-				break;
-
 			case CallMethodType.LongLong:
 				inferior.CallMethod (Method, Argument1, Argument2, ID);
 				break;
@@ -3345,22 +3371,21 @@ namespace Mono.Debugger.Backends
 		}
 	}
 
-	protected delegate void MyTrampolineHandler (TargetAddress address);
-
-	protected class OperationTrampoline : Operation
+	protected class OperationMonoTrampoline : Operation
 	{
-		public readonly TargetAddress Method;
+		public readonly Instruction CallSite;
+		public readonly TargetAddress Trampoline;
 		public readonly TrampolineHandler TrampolineHandler;
 
 		TargetAddress address = TargetAddress.Null;
 		bool compiled;
-		bool completed;
 
-		public OperationTrampoline (SingleSteppingEngine sse, TargetAddress method,
-					    TrampolineHandler handler)
+		public OperationMonoTrampoline (SingleSteppingEngine sse, Instruction call_site,
+						TargetAddress trampoline, TrampolineHandler handler)
 			: base (sse, null)
 		{
-			this.Method = method;
+			this.CallSite = call_site;
+			this.Trampoline = trampoline;
 			this.TrampolineHandler = handler;
 		}
 
@@ -3370,53 +3395,56 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			sse.PushOperation (new OperationRuntimeClassInit (sse, Method));
+			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, Trampoline,
+					   sse.extended_notifications_addr);
+
+			sse.enable_extended_notification (NotificationType.Trampoline);
+			sse.do_continue ();
+		}
+
+		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
+		{
+			Console.WriteLine ("TRAMPOLINE COMPILED: {0} {1} {2}",
+					   mono_method, code, TrampolineHandler);
+
+			sse.disable_extended_notification (NotificationType.Trampoline);
+
+			if (TrampolineHandler != null) {
+				Method method = sse.Lookup (code);
+				Console.WriteLine ("TRAMPOLINE COMPILED #1: {0}", method);
+				if (!TrampolineHandler (method)) {
+					sse.do_continue (CallSite.Address + CallSite.InstructionSize);
+					return;
+				}
+			}
+
+			sse.do_continue (code);
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} trampoline event: {1}", sse, cevent);
+			Console.WriteLine ("RESOLVE TRAMPOLINE EVENT: {0} {1}", cevent, compiled);
 
-			args = null;
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
+			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
+				TargetAddress method = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
+				TargetAddress code = new TargetAddress (
+					inferior.AddressDomain, cevent.Data2);
 
-			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}: {2} {3} {4} {5}",
-				      sse, this, address, inferior.CurrentFrame, compiled, completed);
-
-			if (completed)
-				return EventResult.ResumeOperation;
-
-			if (!compiled) {
+				args = null;
 				compiled = true;
-				sse.PushOperation (new OperationCompileMethod (sse, Method,
-					delegate (TargetAddress the_address) {
-						this.address = the_address;
-				}));
+				TrampolineCompiled (method, code);
 				return EventResult.Running;
 			}
 
-			completed = true;
-
-			if (TrampolineHandler != null) {
-				Method method = sse.Lookup (address);
-				Report.Debug (DebugFlags.SSE,
-					      "{0} compiled method: {1} {2} {3} {4} {5}",
-					      sse, address, method,
-					      method != null ? method.Module : null,
-					      sse.MethodHasSource (method), TrampolineHandler);
-
-				if (!TrampolineHandler (method)) {
-					sse.do_next_native ();
-					return EventResult.Running;
-				}
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
-				      sse, address, inferior.CurrentFrame);
-
-			sse.do_continue (address, true);
-			return EventResult.Running;
+			args = null;
+			if (!compiled) {
+				sse.disable_extended_notification (NotificationType.Trampoline);
+				return EventResult.Completed;
+			} else
+				return EventResult.ResumeOperation;
 		}
 	}
 
@@ -3481,93 +3509,19 @@ namespace Mono.Debugger.Backends
 
 			done = true;
 
-			int insn_size;
-			TargetAddress jump_target;
-			CallTargetType type = sse.Architecture.GetCallTarget (
-				inferior, frame.Address, out jump_target, out insn_size);
+			Instruction instruction = sse.Architecture.ReadInstruction (
+				inferior, frame.Address);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				sse.do_step_native ();
+				return EventResult.Running;
+			}
 
-			if (type != CallTargetType.Jump) {
+			if (instruction.InstructionType != Instruction.Type.Jump) {
 				sse.do_step_native ();
 				return EventResult.Running;
 			}
 
 			return EventResult.Completed;
-
-#if FIXME
-
-			if (TrampolineHandler != null) {
-				Method method = sse.Lookup (address);
-				Report.Debug (DebugFlags.SSE,
-					      "{0} compiled method: {1} {2} {3} {4} {5}",
-					      sse, address, method,
-					      method != null ? method.Module : null,
-					      sse.MethodHasSource (method), TrampolineHandler);
-
-				if (!TrampolineHandler (method)) {
-					sse.do_next_native ();
-					return EventResult.Running;
-				}
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} entering trampoline {1} at {2}",
-				      sse, address, inferior.CurrentFrame);
-
-			sse.do_continue (address, true);
-			return EventResult.Running;
-#endif
-		}
-	}
-
-	protected class OperationCompileMethod : OperationCallback
-	{
-		public readonly TargetAddress Method;
-		public readonly MyTrampolineHandler MyTrampolineHandler;
-
-		public OperationCompileMethod (SingleSteppingEngine sse, TargetAddress method,
-					       MyTrampolineHandler handler)
-			: base (sse)
-		{
-			this.Method = method;
-			this.MyTrampolineHandler = handler;
-		}
-
-		protected override void DoExecute ()
-		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.CompileMethod, Method.Address, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			TargetAddress address = new TargetAddress (inferior.AddressDomain, data1);
-			MyTrampolineHandler (address);
-			RestoreStack ();
-			return EventResult.ResumeOperation;
-		}
-	}
-
-	protected class OperationRuntimeClassInit : OperationCallback
-	{
-		public readonly TargetAddress Method;
-
-		public OperationRuntimeClassInit (SingleSteppingEngine sse, TargetAddress method)
-			: base (sse)
-		{
-			this.Method = method;
-		}
-
-		protected override void DoExecute ()
-		{
-			TargetAddress klass = inferior.ReadAddress (Method + 8);
-			Report.Debug (DebugFlags.SSE, "{0} runtime class init: {1} {2}",
-				      sse, Method, klass);
-			inferior.CallMethod (sse.MonoDebuggerInfo.RuntimeClassInit, klass.Address, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE, "{0} runtime class init done", sse);
-			RestoreStack ();
-			return EventResult.ResumeOperation;
 		}
 	}
 
@@ -3653,11 +3607,14 @@ namespace Mono.Debugger.Backends
 			 * If this is not a call instruction, continue stepping until we leave
 			 * the current method.
 			 */
-			int insn_size;
-			TargetAddress target;
-			CallTargetType type = inferior.Architecture.GetCallTarget (
-				inferior, current_frame, out target, out insn_size);
-			if (sse.CheckTrampoline (type, current_frame, target, TrampolineHandler))
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, current_frame);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			if (sse.CheckTrampoline (instruction, TrampolineHandler))
 				return false;
 
 			sse.do_step_native ();
@@ -3691,7 +3648,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3716,7 +3673,7 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -3729,7 +3686,7 @@ namespace Mono.Debugger.Backends
 			}
 
 			inferior.SetRegisters (parent_frame.Registers);
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, 0, ID);
+			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 			return EventResult.Running;
 		}
 	}
@@ -3773,7 +3730,6 @@ namespace Mono.Debugger.Backends
 	[Serializable]
 	internal enum CallMethodType
 	{
-		Long,
 		LongLong,
 		LongString
 	}

@@ -2,6 +2,20 @@
 
 	Merged the Plophos branch.
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.step_over_breakpoint): Take a `bool singlestep' and a
+	`TargetAddress until' argument; use the new ExecuteInstruction()
+	whenever possible.
+	(SSE): The old GetCallTarget() API is gone; we now use
+	Architecture.ReadInstruction() which returns an `Instruction'.
+	(OperationStepOverBreakpoint): We don't need to deal with
+	trampolines here anymore.
+	(OperationMonoTrampoline): This is used when stepping into a
+	trampoline: we enable the `NotificationType.Trampoline'
+	notification and resume execution.
+	(OperationCompileMethod): Removed.
+	(OperationRuntimeClassInit): Removed.
+
 	* backend/ProcessServant.cs: Reflect latest runtime changes.
 	* backend/MonoThreadManager.cs: Reflect latest runtime changes.
 
