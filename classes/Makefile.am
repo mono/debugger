@@ -34,6 +34,7 @@ EXTRA_DIST = \
 	SymbolTableCollection.cs \
 	SymbolTable.cs \
 	SymbolTableException.cs \
+	TargetInfo.cs \
 	TargetBinaryAccess.cs \
 	TargetBinaryReader.cs \
 	TargetBinaryWriter.cs \
