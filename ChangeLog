@@ -2,6 +2,14 @@
 
 	Merged the Plophos branch.
 
+	* backend/Inferior.cs
+	(Inferior.ChildEvent): Added public readonly `CallbackData' field.
+	(Inferior.CallMethod(long,long)): Take a `byte[]' and a `long'
+	argument instead of two `long' arguments.
+	(Inferior.ExecuteInstruction): New public method.
+	(Inferior.ProcessEvent): mono_debugger_server_dispatch_event() may
+	now pass us an additional byte[] argument.
+
 	* backend/server/breakpoints.h
 	(BreakpointInfo): Added `runtime_table_slot'.
 
