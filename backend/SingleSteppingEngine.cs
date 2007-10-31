@@ -923,7 +923,8 @@ namespace Mono.Debugger.Backends
 
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, inferior.CurrentFrame);
-			Console.WriteLine ("EXECUTE INSTRUCTION: {0}", instruction);
+			Console.WriteLine ("EXECUTE INSTRUCTION: {0} {1}",
+					   singlestep, instruction);
 
 			if ((instruction == null) || !instruction.HasInstructionSize ||
 			    !process.IsManagedApplication) {
@@ -931,20 +932,30 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			if (!singlestep && instruction.InterpretInstruction (inferior))
-				return false;
+			if (instruction.InterpretInstruction (inferior)) {
+				if (!singlestep)
+					return false;
 
+				Console.WriteLine ("ACHTUNG ACHTUNG!");
+				byte[] nop_insn = Architecture.Opcodes.GenerateNopInstruction ();
+				inferior.ExecuteInstruction (nop_insn, false);
+				return true;
+			}
+
+#if FIXME
 			if ((instruction.InstructionType == Instruction.Type.Call) ||
 			    (instruction.InstructionType == Instruction.Type.IndirectCall)) {
 				TargetAddress target = instruction.GetEffectiveAddress (inferior);
 
 				Console.WriteLine ("EXECUTE CALL: {0} {1}", inferior.CurrentFrame, target);
+				Console.WriteLine ("ACHTUNG ACHTUNG!");
 
 				byte[] jump_insn = Architecture.Opcodes.GenerateJumpInstruction (target);
 
 				inferior.ExecuteInstruction (jump_insn, instruction.InstructionSize, true);
 				return true;
 			}
+#endif
 
 			if (instruction.IsIpRelative) {
 				PushOperation (new OperationStepOverBreakpoint (this, index, until));
@@ -954,7 +965,7 @@ namespace Mono.Debugger.Backends
 			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1}", instruction,
 					   TargetBinaryReader.HexDump (instruction.Code));
 
-			inferior.ExecuteInstruction (instruction.Code, instruction.InstructionSize, false);
+			inferior.ExecuteInstruction (instruction.Code, true);
 			return true;
 		}
 

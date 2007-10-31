@@ -13,16 +13,9 @@ namespace Mono.Debugger.Architectures
 			get { return true; }
 		}
 
-		internal override byte[] GenerateJumpInstruction (TargetAddress target)
+		internal override byte[] GenerateNopInstruction ()
 		{
-			TargetBinaryWriter writer = new TargetBinaryWriter (14, TargetMemoryInfo);
-
-			writer.WriteByte (0xff);
-			writer.WriteByte (0x25);
-			writer.WriteInt32 (0);
-			writer.WriteAddress (target);
-
-			return writer.Contents;
+			return new byte[] { 0x90 };
 		}
 	}
 }

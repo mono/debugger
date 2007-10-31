@@ -7,11 +7,15 @@
 2007-10-31  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Architecture.cs
-	(Architecture.Opcodes): New public property.
+	(Architecture.Opcodes.GenerateNopInstruction): New public property.
 
 	* backend/SingleSteppingEngine.cs
-	(SSE.step_over_breakpoint): Use Opcodes.GenerateJumpInstruction()
+	(SSE.step_over_breakpoint): Use Opcodes.GenerateNopInstruction()
 	instead of encoding it here.
+
+	* backend/server/server.h
+	(mono_debugger_server_execute_instruction): Removed the
+	`original_size' argument; replaced `push_retaddr' by `update_ip'.
 
 2007-10-31  Martin Baulig  <martin@ximian.com>
 

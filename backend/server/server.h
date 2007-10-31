@@ -258,9 +258,8 @@ struct InferiorVTable {
 
 	ServerCommandError    (* execute_instruction) (ServerHandle     *handle,
 						       const guint8     *instruction,
-						       guint32           orig_size,
 						       guint32           size,
-						       gboolean          push_retaddr);
+						       gboolean          update_ip);
 
 	ServerCommandError    (* mark_rti_frame)      (ServerHandle     *handle);
 
@@ -500,9 +499,8 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_execute_instruction         (ServerHandle        *handle,
 					   const guint8        *instruction,
-					   guint32              original_instruction_size,
 					   guint32              instruction_size,
-					   gboolean             push_retaddr);
+					   gboolean             update_ip);
 
 ServerCommandError
 mono_debugger_mark_rti_framenvoke        (ServerHandle        *handle);

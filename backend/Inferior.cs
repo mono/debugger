@@ -117,7 +117,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_execute_instruction (IntPtr handle, IntPtr instruction, int orig_insn_size, int insn_size, bool push_retaddr);
+		static extern TargetError mono_debugger_server_execute_instruction (IntPtr handle, IntPtr instruction, int insn_size, bool update_ip);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
@@ -445,8 +445,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void ExecuteInstruction (byte[] instruction, int orig_insn_size,
-						bool push_retaddr)
+		public void ExecuteInstruction (byte[] instruction, bool update_ip)
 		{
 			check_disposed ();
 
@@ -456,8 +455,7 @@ namespace Mono.Debugger.Backends
 				Marshal.Copy (instruction, 0, data, instruction.Length);
 
 				check_error (mono_debugger_server_execute_instruction (
-					server_handle, data, orig_insn_size, instruction.Length,
-					push_retaddr));
+					server_handle, data, instruction.Length, update_ip));
 			} finally {
 				Marshal.FreeHGlobal (data);
 			}

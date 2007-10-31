@@ -13,9 +13,9 @@ namespace Mono.Debugger.Architectures
 			get { return false; }
 		}
 
-		internal override byte[] GenerateJumpInstruction (TargetAddress address)
+		internal override byte[] GenerateNopInstruction ()
 		{
-			return new byte[0];
+			return new byte[] { 0x90 };
 		}
 	}
 }

@@ -8,7 +8,7 @@ namespace Mono.Debugger.Architectures
 		internal abstract Instruction ReadInstruction (TargetMemoryAccess memory,
 							       TargetAddress address);
 
-		internal abstract byte[] GenerateJumpInstruction (TargetAddress address);
+		internal abstract byte[] GenerateNopInstruction ();
 
 		//
 		// IDisposable
