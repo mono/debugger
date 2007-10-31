@@ -485,19 +485,8 @@ runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint
 
 	breakpoint->runtime_table_slot = slot;
 
-#if 0
-	g_message (G_STRLOC ": allocated slot %d for breakpoint %d: %Lx / %x", slot,
-		   breakpoint->id, breakpoint->address, (guint8) breakpoint->saved_insn);
-#endif
-
 	table_address = runtime->breakpoint_info_area + 16 * slot;
 	index_address = runtime->breakpoint_table + 8 * slot;
-
-#if 0
-	g_message (G_STRLOC ": table address is %Lx,%Lx / index address is %Lx,%Lx",
-		   runtime->breakpoint_info_area, table_address, runtime->breakpoint_table,
-		   index_address);
-#endif
 
 	result = server_ptrace_poke_word (handle, table_address, breakpoint->address);
 	if (result != COMMAND_ERROR_NONE)
@@ -527,16 +516,8 @@ runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoin
 
 	return COMMAND_ERROR_NONE;
 
-#if 0
-	g_message (G_STRLOC ": freeing breakpoint slot %d", breakpoint->runtime_table_slot);
-#endif
-
 	slot = breakpoint->runtime_table_slot;
 	index_address = runtime->breakpoint_table + runtime->address_size * slot;
-
-#if 0
-	g_message (G_STRLOC ": index address is %Lx", index_address);
-#endif
 
 	result = server_ptrace_poke_word (handle, index_address, 0);
 	if (result != COMMAND_ERROR_NONE)
