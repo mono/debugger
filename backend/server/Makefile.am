@@ -11,9 +11,7 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 	x86-linux-ptrace.c		\
 	x86-linux-ptrace.h		\
 	x86-ptrace.c			\
-	x86-ptrace.h			\
-	mono-runtime-info.c		\
-	mono-runtime-info.h
+	x86-ptrace.h
 
 if PLATFORM_POWERPC
 platform_sources =
