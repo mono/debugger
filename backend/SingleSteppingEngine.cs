@@ -940,22 +940,9 @@ namespace Mono.Debugger.Backends
 
 				Console.WriteLine ("EXECUTE CALL: {0} {1}", inferior.CurrentFrame, target);
 
+				byte[] jump_insn = Architecture.Opcodes.GenerateJumpInstruction (target);
 
-				//
-				//
-				// FIXME FIXME FIXME BROKEN !!!!
-				//
-
-				/// FIXME: We need to execute something
-				TargetBinaryWriter writer = new TargetBinaryWriter (
-					14, inferior.TargetMemoryInfo);
-				writer.WriteByte (0xff);
-				writer.WriteByte (0x25);
-				writer.WriteInt32 (0);
-				writer.WriteAddress (target);
-
-				inferior.ExecuteInstruction (
-					writer.Contents, instruction.InstructionSize, true);
+				inferior.ExecuteInstruction (jump_insn, instruction.InstructionSize, true);
 				return true;
 			}
 

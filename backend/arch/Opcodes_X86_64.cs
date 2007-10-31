@@ -13,11 +13,9 @@ namespace Mono.Debugger.Architectures
 			get { return true; }
 		}
 
-		internal override byte[] GenerateJumpInstruction (TargetAddress address)
+		internal override byte[] GenerateJumpInstruction (TargetAddress target)
 		{
-#if FIXME
-			TargetBinaryWriter writer = new TargetBinaryWriter (
-				14, inferior.TargetMemoryInfo);
+			TargetBinaryWriter writer = new TargetBinaryWriter (14, TargetMemoryInfo);
 
 			writer.WriteByte (0xff);
 			writer.WriteByte (0x25);
@@ -25,9 +23,6 @@ namespace Mono.Debugger.Architectures
 			writer.WriteAddress (target);
 
 			return writer.Contents;
-#else
-			return new byte [0];
-#endif
 		}
 	}
 }

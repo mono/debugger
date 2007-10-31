@@ -6,6 +6,15 @@
 
 2007-10-31  Martin Baulig  <martin@ximian.com>
 
+	* backend/arch/Architecture.cs
+	(Architecture.Opcodes): New public property.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.step_over_breakpoint): Use Opcodes.GenerateJumpInstruction()
+	instead of encoding it here.
+
+2007-10-31  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Opcodes.cs
 	(Opcodes.GenerateJumpInstruction): New abstract method.
 

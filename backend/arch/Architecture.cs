@@ -31,6 +31,10 @@ namespace Mono.Debugger.Backends
 			get { return disassembler; }
 		}
 
+		public Opcodes Opcodes {
+			get { return opcodes; }
+		}
+
 		public int TargetAddressSize {
 			get { return TargetInfo.TargetAddressSize; }
 		}
