@@ -91,6 +91,9 @@ namespace Mono.Debugger.Backends
 			long breakpoint_info, long breakpoint_info_index,
 			int breakpoint_table_size);
 
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_finalize_mono_runtime (IntPtr handle);
+
 		protected void initialize_notifications (Inferior inferior)
 		{
 			TargetAddress notification_address = inferior.ReadAddress (
@@ -143,6 +146,10 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		MonoLanguageBackend csharp_language;
+
+		internal bool CanExecuteCode {
+			get { return mono_runtime_info != IntPtr.Zero; }
+		}
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
 			get { return debugger_info; }
@@ -269,6 +276,8 @@ namespace Mono.Debugger.Backends
 					return false;
 
 				case NotificationType.FinalizeManagedCode:
+					mono_debugger_server_finalize_mono_runtime (mono_runtime_info);
+					mono_runtime_info = IntPtr.Zero;
 					csharp_language = null;
 					break;
 

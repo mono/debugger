@@ -91,6 +91,12 @@ mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 	return runtime;
 }
 
+void
+mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime)
+{
+	runtime->executable_code_buffer = 0;
+}
+
 static void
 server_ptrace_finalize (ServerHandle *handle)
 {

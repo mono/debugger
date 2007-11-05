@@ -1125,6 +1125,9 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 	runtime = handle->mono_runtime;
 	g_assert (runtime);
 
+	if (!runtime->executable_code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
 	slot = find_code_buffer_slot (runtime);
 	if (slot < 0)
 		return COMMAND_ERROR_INTERNAL_ERROR;

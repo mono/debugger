@@ -918,16 +918,16 @@ namespace Mono.Debugger.Backends
 				      "{0} stepping over breakpoint {1} at {2} until {3}",
 				      this, index, inferior.CurrentFrame, until);
 
-			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2}",
-					   inferior.CurrentFrame, index, until);
+			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2} {3}",
+					   this, inferior.CurrentFrame, index, until);
 
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, inferior.CurrentFrame);
-			Console.WriteLine ("EXECUTE INSTRUCTION: {0} {1}",
-					   singlestep, instruction);
+			Console.WriteLine ("EXECUTE INSTRUCTION: {0} {1} {2}",
+					   this, singlestep, instruction);
 
 			if ((instruction == null) || !instruction.HasInstructionSize ||
-			    !process.IsManagedApplication) {
+			    !process.CanExecuteCode) {
 				PushOperation (new OperationStepOverBreakpoint (this, index, until));
 				return true;
 			}
@@ -962,7 +962,8 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1}", instruction,
+			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1} {2} {3}",
+					   this, inferior.CurrentFrame, instruction,
 					   TargetBinaryReader.HexDump (instruction.Code));
 
 			inferior.ExecuteInstruction (instruction.Code, true);

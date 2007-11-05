@@ -601,6 +601,9 @@ mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 					      guint64 breakpoint_table,
 					      guint32 breakpoint_table_size);
 
+void
+mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime);
+
 /* POSIX semaphores */
 
 void mono_debugger_server_sem_init (void);

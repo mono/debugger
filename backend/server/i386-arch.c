@@ -19,7 +19,7 @@ typedef struct
 	int insn_size;
 	gboolean update_ip;
 	guint32 code_address;
-	guint32 original_rip;
+	guint32 original_eip;
 } CodeBufferData;
 
 struct ArchInfo
@@ -533,14 +533,14 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		handle->mono_runtime->executable_code_bitfield [cbuffer->slot] = 0;
 
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_EIP (arch->current_regs)) {
-			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
+			g_warning (G_STRLOC ": %x - %x,%d - %x - %x", cbuffer->original_eip,
 				   cbuffer->code_address, cbuffer->insn_size,
 				   cbuffer->code_address + cbuffer->insn_size,
 				   INFERIOR_REG_EIP (arch->current_regs));
 			return STOP_ACTION_STOPPED;
 		}
 
-		INFERIOR_REG_EIP (arch->current_regs) = cbuffer->original_rip;
+		INFERIOR_REG_EIP (arch->current_regs) = cbuffer->original_eip;
 		if (cbuffer->update_ip)
 			INFERIOR_REG_EIP (arch->current_regs) += cbuffer->insn_size;
 		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
@@ -1091,6 +1091,9 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 	runtime = handle->mono_runtime;
 	g_assert (runtime);
 
+	if (!runtime->executable_code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
 	slot = find_code_buffer_slot (runtime);
 	if (slot < 0)
 		return COMMAND_ERROR_INTERNAL_ERROR;
@@ -1106,7 +1109,7 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 	data->slot = slot;
 	data->insn_size = size;
 	data->update_ip = update_ip;
-	data->original_rip = INFERIOR_REG_EIP (handle->arch->current_regs);
+	data->original_eip = INFERIOR_REG_EIP (handle->arch->current_regs);
 	data->code_address = code_address;
 
 	handle->arch->code_buffer = data;

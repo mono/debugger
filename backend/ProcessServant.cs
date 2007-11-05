@@ -153,6 +153,10 @@ namespace Mono.Debugger.Backends
 			get { return mono_manager != null; }
 		}
 
+		internal bool CanExecuteCode {
+			get { return (mono_manager != null) && mono_manager.CanExecuteCode; }
+		}
+
 		public string TargetApplication {
 			get { return start.TargetApplication; }
 		}

@@ -1,5 +1,13 @@
 2007-11-05  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-ptrace.c
+	(mono_debugger_server_finalize_mono_runtime): New public method.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.CanExecuteCode): New internal property.
+
+2007-11-05  Martin Baulig  <martin@ximian.com>
+
 	* backend/MonoThreadManager.cs
 	(MonoDebuggerInfo.MinDynamicVersion): Bump to 64 to require SVN HEAD.
 
