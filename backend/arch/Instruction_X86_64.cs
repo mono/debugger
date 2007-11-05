@@ -56,13 +56,10 @@ namespace Mono.Debugger.Architectures
 
 		public override bool InterpretInstruction (Inferior inferior)
 		{
-			Console.WriteLine ("INTERPRET INSTRUCTION: {0}", InstructionType);
-
 			switch (InstructionType) {
 			case Type.IndirectJump:
 			case Type.Jump: {
 				TargetAddress target = GetEffectiveAddress (inferior);
-				Console.WriteLine ("INTERPRET JUMP: {0}", target);
 				Registers regs = inferior.GetRegisters ();
 				regs [(int) X86_64_Register.RIP].SetValue (target);
 				inferior.SetRegisters (regs);
@@ -72,16 +69,12 @@ namespace Mono.Debugger.Architectures
 			case Type.IndirectCall:
 			case Type.Call: {
 				TargetAddress target = GetEffectiveAddress (inferior);
-				Console.WriteLine ("INTERPRET CALL: {0}", target);
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress rip = new TargetAddress (
 					inferior.AddressDomain, regs [(int) X86_64_Register.RIP].Value);
 				TargetAddress rsp = new TargetAddress (
 					inferior.AddressDomain, regs [(int) X86_64_Register.RSP].Value);
-
-				Console.WriteLine ("INTERPRET CALL #1: {0} {1} {2} {3}",
-						   rip, rsp, CallTarget, InstructionSize);
 
 				inferior.WriteAddress (rsp - 8, rip + InstructionSize);
 
@@ -92,8 +85,6 @@ namespace Mono.Debugger.Architectures
 			}
 
 			case Type.Ret: {
-				Console.WriteLine ("INTERPRET RET: {0}", Displacement);
-
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress rsp = new TargetAddress (
@@ -131,19 +122,11 @@ namespace Mono.Debugger.Architectures
 			}
 
 			TargetAddress call = call_target + reader.ReadInt32 () + 5;
-			Console.WriteLine ("GET MONO TRAMPOLINE: {0}", call);
 			if (!Opcodes.Process.MonoLanguage.IsTrampolineAddress (call)) {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			long method;
-			if (reader.ReadByte () == 0x04)
-				method = reader.ReadInt32 ();
-			else
-				method = reader.ReadInt64 ();
-
-			Console.WriteLine ("GET MONO TRAMPOLINE #1: {0:x}", method);
 			trampoline = call_target;
 			return true;
 		}
@@ -151,8 +134,6 @@ namespace Mono.Debugger.Architectures
 		public override TrampolineType CheckTrampoline (TargetMemoryAccess memory,
 								out TargetAddress trampoline)
 		{
-			Console.WriteLine ("CHECK TRAMPOLINE: {0} {1}", Address, InstructionType);
-
 			if (InstructionType == Type.Call) {
 				TargetAddress target = GetEffectiveAddress (memory);
 				if (target.IsNull) {
