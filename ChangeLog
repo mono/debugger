@@ -1,11 +1,10 @@
-2007-10-31  Martin Baulig  <martin@ximian.com>
-
-	HEADS UP: The debugger only works on x86_64 at the moment.
-
-	You need to use the runtime from the plophos branch for the moment.
+2007-11-05  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadManager.cs
-	(MonoDebuggerInfo.MinDynamicVersion): Put back to 63 to require Plophos.
+	(MonoDebuggerInfo.MinDynamicVersion): Bump to 64 to require SVN HEAD.
+
+	* backend/server/x86_64-arch.c: Reflect latest JIT changes.
+	* backend/server/i386-arch.c: Likewise.
 
 2007-10-31  Martin Baulig  <martin@ximian.com>
 

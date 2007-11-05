@@ -626,7 +626,7 @@ find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
 {
 	int i;
 
-	for (i = 0; i < runtime->breakpoint_table_size; i++) {
+	for (i = 1; i < runtime->breakpoint_table_size; i++) {
 		if (runtime->breakpoint_table_bitfield [i])
 			continue;
 
@@ -665,7 +665,7 @@ runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_poke_word (handle, index_address, (gsize) table_address);
+	result = server_ptrace_poke_word (handle, index_address, (gsize) slot);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
