@@ -630,9 +630,9 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
-			if (args.Type == TargetEventType.TargetInterrupted)
+			if (args.Type == TargetEventType.TargetInterrupted) {
 				;
-			else if ((args.Type != TargetEventType.TargetStopped) || ((int) args.Data != 0))
+			} else if ((args.Type != TargetEventType.TargetStopped) || ((int) args.Data != 0))
 				Style.TargetEvent (thread, args);
 			else if ((thread.ThreadFlags & Thread.Flags.Background) != 0)
 				Style.TargetEvent (thread, args);

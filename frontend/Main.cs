@@ -111,9 +111,9 @@ namespace Mono.Debugger.Frontend
 				result = Console.ReadLine ();
 				if (result == null)
 					return null;
-				if (result != "")
+				if (result != "") {
 					;
-				else if (is_complete) {
+				} else if (is_complete) {
 					engine.Repeat ();
 					goto again;
 				}
