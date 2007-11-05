@@ -964,7 +964,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	CallbackData *cdata;
 	long new_rsp;
 
-	int size = 120 + data_size;
+	int size = 113 + data_size;
 	guint8 *code = g_malloc0 (size);
 
 	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
@@ -984,7 +984,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint64 *) (code+88)) = INFERIOR_REG_R13 (arch->current_regs);
 	*((guint64 *) (code+96)) = INFERIOR_REG_R14 (arch->current_regs);
 	*((guint64 *) (code+104)) = INFERIOR_REG_R15 (arch->current_regs);
-	*((guint8 *) (code+data_size+116)) = 0xcc;
+	*((guint8 *) (code+data_size+112)) = 0xcc;
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
