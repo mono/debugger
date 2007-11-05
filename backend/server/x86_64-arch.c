@@ -275,18 +275,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cbuffer = arch->code_buffer;
 	if (cbuffer) {
-		g_message (G_STRLOC ": %p,%d - %Lx - %d - %Lx,%Lx", cbuffer, cbuffer->update_ip,
-			   cbuffer->original_rip, cbuffer->insn_size, cbuffer->code_address,
-			   INFERIOR_REG_RIP (arch->current_regs));
-
-#if 0
-		if (cbuffer->pushed_retaddr) {
-			g_free (cbuffer);
-			arch->code_buffer = NULL;
-			return STOP_ACTION_STOPPED;
-		}
-#endif
-
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
 			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
 				   cbuffer->code_address, cbuffer->insn_size,
@@ -304,7 +292,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cbuffer);
 		arch->code_buffer = NULL;
-		g_message (G_STRLOC ": %Lx", INFERIOR_REG_RIP (arch->current_regs));
 		return STOP_ACTION_STOPPED;
 	}
 
@@ -1146,8 +1133,6 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 		return COMMAND_ERROR_INTERNAL_ERROR;
 
 	code_address = runtime->executable_code_buffer + slot * runtime->executable_code_chunk_size;
-
-	g_message (G_STRLOC ": %d - %Lx - %d - %p", slot, code_address, size, instruction);
 
 	data = g_new0 (CodeBufferData, 1);
 	data->slot = slot;
