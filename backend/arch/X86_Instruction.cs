@@ -328,6 +328,8 @@ namespace Mono.Debugger.Architectures
 				type = Type.Jump;
 			} else if (opcode == 0xc3) {
 				type = Type.Ret;
+			} else if (opcode == 0x55) { /* push %rbp */
+				type = Type.Interpretable;
 			} else if (opcode == 0xc2) {
 				Displacement = reader.BinaryReader.ReadInt16 ();
 				type = Type.Ret;

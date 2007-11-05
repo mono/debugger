@@ -1,6 +1,17 @@
 2007-11-05  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Instruction.cs
+	(Instruction.Type): Added `Interpretable'.
+
+	* backend/arch/Instruction_I386.cs
+	(Instruction_I386.InterpretInstruction): Interpret `push %ebp'.
+
+	* backend/arch/Instruction_X86_64.cs
+	(Instruction_I386.InterpretInstruction): Interpret `push %rbp'.
+
+2007-11-05  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Instruction.cs
 	(Instruction.CanInterpretInstruction): New public property.
 
 	* backend/arch/Bfd.cs

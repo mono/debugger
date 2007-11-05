@@ -46,6 +46,7 @@ namespace Mono.Debugger.Architectures
 				case Type.IndirectCall:
 				case Type.Call:
 				case Type.Ret:
+				case Type.Interpretable:
 					return true;
 
 				default:
@@ -106,6 +107,32 @@ namespace Mono.Debugger.Architectures
 				regs [(int) I386Register.EIP].SetValue (eip);
 				inferior.SetRegisters (regs);
 				return true;
+			}
+
+			case Type.Interpretable: {
+				Console.WriteLine ("INTERPRET INSN: {0}",
+						   TargetBinaryReader.HexDump (Code));
+
+				Registers regs = inferior.GetRegisters ();
+
+				TargetAddress esp = new TargetAddress (
+					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
+				TargetAddress ebp = new TargetAddress (
+					inferior.AddressDomain, regs [(int) I386Register.EBP].Value);
+				TargetAddress eip = new TargetAddress (
+					inferior.AddressDomain, regs [(int) I386Register.EIP].Value);
+
+				Console.WriteLine ("INTERPRET INSN #1: {0} {1}", esp, ebp);
+
+				if (Code [0] == 0x55) /* push %ebp */ {
+					inferior.WriteAddress (esp - 4, ebp);
+					regs [(int) I386Register.ESP].SetValue (esp - 4);
+					regs [(int) I386Register.EIP].SetValue (eip + 1);
+					inferior.SetRegisters (regs);
+					return true;
+				}
+
+				return false;
 			}
 
 			default:

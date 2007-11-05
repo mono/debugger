@@ -9,6 +9,7 @@ namespace Mono.Debugger.Architectures
 		public enum Type
 		{
 			Unknown,
+			Interpretable,
 			ConditionalJump,
 			IndirectCall,
 			Call,
