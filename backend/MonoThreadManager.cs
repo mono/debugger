@@ -88,7 +88,7 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_initialize_mono_runtime (
 			int address_size, long notification_address,
 			long executable_code_buffer, int executable_code_buffer_size,
-			long breakpoint_info_area, long breakpoint_table,
+			long breakpoint_info, long breakpoint_info_index,
 			int breakpoint_table_size);
 
 		protected void initialize_notifications (Inferior inferior)
@@ -98,17 +98,14 @@ namespace Mono.Debugger.Backends
 			TargetAddress executable_code_buffer = inferior.ReadAddress (
 				debugger_info.ExecutableCodeBuffer);
 
-			TargetAddress breakpoint_info_area = inferior.ReadAddress (
-				debugger_info.BreakpointInfoArea);
-			TargetAddress breakpoint_table = inferior.ReadAddress (
-				debugger_info.BreakpointTable);
-
 			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
-				inferior.TargetAddressSize, notification_address.Address,
+				inferior.TargetAddressSize,
+				notification_address.Address,
 				executable_code_buffer.Address,
 				debugger_info.ExecutableCodeBufferSize,
-				breakpoint_info_area.Address, breakpoint_table.Address,
-				debugger_info.BreakpointTableSize);
+				debugger_info.BreakpointInfo.Address,
+				debugger_info.BreakpointInfoIndex.Address,
+				debugger_info.BreakpointArraySize);
 			inferior.SetRuntimeInfo (mono_runtime_info);
 
 			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
@@ -336,10 +333,10 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress ThreadTable;
 		public readonly TargetAddress ExecutableCodeBuffer;
+		public readonly TargetAddress BreakpointInfo;
+		public readonly TargetAddress BreakpointInfoIndex;
 		public readonly int ExecutableCodeBufferSize;
-		public readonly TargetAddress BreakpointInfoArea;
-		public readonly TargetAddress BreakpointTable;
-		public readonly int BreakpointTableSize;
+		public readonly int BreakpointArraySize;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -401,11 +398,11 @@ namespace Mono.Debugger.Backends
 			ThreadTable               = reader.ReadAddress ();
 
 			ExecutableCodeBuffer      = reader.ReadAddress ();
-			BreakpointInfoArea        = reader.ReadAddress ();
-			BreakpointTable           = reader.ReadAddress ();
+			BreakpointInfo            = reader.ReadAddress ();
+			BreakpointInfoIndex       = reader.ReadAddress ();
 
 			ExecutableCodeBufferSize  = reader.ReadInteger ();
-			BreakpointTableSize       = reader.ReadInteger ();
+			BreakpointArraySize       = reader.ReadInteger ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
