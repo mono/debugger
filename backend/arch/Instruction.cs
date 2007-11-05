@@ -61,6 +61,10 @@ namespace Mono.Debugger.Architectures
 		public abstract TrampolineType CheckTrampoline (TargetMemoryAccess memory,
 								out TargetAddress trampoline);
 
+		public abstract bool CanInterpretInstruction {
+			get;
+		}
+
 		public abstract bool InterpretInstruction (Inferior inferior);
 	}
 }

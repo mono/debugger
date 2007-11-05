@@ -54,6 +54,22 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
+		public override bool CanInterpretInstruction {
+			get {
+				switch (InstructionType) {
+				case Type.IndirectJump:
+				case Type.Jump:
+				case Type.IndirectCall:
+				case Type.Call:
+				case Type.Ret:
+					return true;
+
+				default:
+					return false;
+				}
+			}
+		}
+
 		public override bool InterpretInstruction (Inferior inferior)
 		{
 			switch (InstructionType) {

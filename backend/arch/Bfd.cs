@@ -324,6 +324,20 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
+		void insert_dynlink_breakpoint (Inferior inferior)
+		{
+			Instruction insn = Architecture.ReadInstruction (
+				inferior, dynlink_breakpoint);
+			if ((insn == null) || !insn.CanInterpretInstruction) {
+				Console.WriteLine ("UNKNOWN DYNLINK BREAKPOINT: {0}",
+						   dynlink_breakpoint);
+				return;
+			}
+
+			AddressBreakpoint dynlink_bpt = new DynlinkBreakpoint (this, insn);
+			dynlink_bpt.Insert (inferior);
+		}
+
 		bool read_dynamic_info (Inferior inferior, TargetMemoryAccess target)
 		{
 			if (initialized)
@@ -370,11 +384,8 @@ namespace Mono.Debugger.Backends
 			if (reader.ReadLongInteger () != 0)
 				return false;
 
-			if (inferior != null) {
-				AddressBreakpoint dynlink_bpt = new DynlinkBreakpoint (
-					this, dynlink_breakpoint);
-				dynlink_bpt.Insert (inferior);
-			}
+			if (inferior != null)
+				insert_dynlink_breakpoint (inferior);
 
 			has_shlib_info = true;
 			return true;
@@ -1113,11 +1124,13 @@ namespace Mono.Debugger.Backends
 		protected class DynlinkBreakpoint : AddressBreakpoint
 		{
 			protected readonly Bfd bfd;
+			public readonly Instruction instruction;
 
-			public DynlinkBreakpoint (Bfd bfd, TargetAddress address)
-				: base ("dynlink", ThreadGroup.System, address)
+			public DynlinkBreakpoint (Bfd bfd, Instruction instruction)
+				: base ("dynlink", ThreadGroup.System, instruction.Address)
 			{
 				this.bfd = bfd;
+				this.instruction = instruction;
 			}
 
 			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
@@ -1129,6 +1142,8 @@ namespace Mono.Debugger.Backends
 								  out bool remain_stopped)
 			{
 				bfd.dynlink_handler (inferior);
+				if (!instruction.InterpretInstruction (inferior))
+					throw new InternalError ();
 				remain_stopped = false;
 				return true;
 			}

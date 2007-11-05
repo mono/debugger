@@ -1,5 +1,14 @@
 2007-11-05  Martin Baulig  <martin@ximian.com>
 
+	* backend/arch/Instruction.cs
+	(Instruction.CanInterpretInstruction): New public property.
+
+	* backend/arch/Bfd.cs
+	(Bfd.DynlinkBreakpoint): Interpret the instruction rather than
+	stepping over the breakpoint.
+
+2007-11-05  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.c
 	(mono_debugger_server_finalize_mono_runtime): New public method.
 
