@@ -75,13 +75,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
-			int address_size = target.TargetMemoryInfo.TargetAddressSize;
 			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
-
-			reader.Offset = info.KlassByValArgOffset;
-			TargetAddress byval_data_addr = reader.ReadAddress ();
-			reader.Offset += 2;
-			int type = reader.ReadByte ();
 
 			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
@@ -100,7 +94,6 @@ namespace Mono.Debugger.Languages.Mono
 			if (field_offsets != null)
 				return;
 
-			int address_size = target.TargetMemoryInfo.TargetAddressSize;
 			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
 
 			TargetAddress field_info = target.ReadAddress (

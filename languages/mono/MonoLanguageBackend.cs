@@ -128,7 +128,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader reader = new TargetReader (
 				memory.ReadMemory (current_chunk, header_size));
 
-			int size = reader.ReadInteger ();
+			reader.ReadInteger (); /* size */
 			int allocated_size = reader.ReadInteger ();
 			int current_offset = reader.ReadInteger ();
 			reader.ReadInteger (); /* dummy */

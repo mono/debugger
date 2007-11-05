@@ -25,7 +25,6 @@ namespace Mono.Debugger.Languages.Mono
 			MonoFundamentalType fundamental;
 
 			int offset;
-			int address_size = memory.TargetMemoryInfo.TargetAddressSize;
 			MonoMetadataInfo metadata = corlib.MonoLanguage.MonoMetadataInfo;
 
 			switch (kind) {

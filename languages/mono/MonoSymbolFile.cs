@@ -784,7 +784,7 @@ namespace Mono.Debugger.Languages.Mono
 				reader.BinaryReader.ReadInt32 ();
 
 				int token = reader.BinaryReader.ReadLeb128 ();
-				int instance_size = reader.BinaryReader.ReadLeb128 ();
+				reader.BinaryReader.ReadLeb128 (); /* instance_size */
 				TargetAddress klass_address = reader.ReadAddress ();
 
 				SymbolFile.AddClassEntry (token, klass_address);
