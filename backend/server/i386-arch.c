@@ -549,7 +549,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cbuffer);
 		arch->code_buffer = NULL;
-		g_message (G_STRLOC ": %Lx", INFERIOR_REG_EIP (arch->current_regs));
 		return STOP_ACTION_STOPPED;
 	}
 
@@ -1102,8 +1101,6 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 		return COMMAND_ERROR_INTERNAL_ERROR;
 
 	code_address = runtime->executable_code_buffer + slot * runtime->executable_code_chunk_size;
-
-	g_message (G_STRLOC ": %d - %x - %d - %p", slot, code_address, size, instruction);
 
 	data = g_new0 (CodeBufferData, 1);
 	data->slot = slot;
