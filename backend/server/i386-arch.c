@@ -41,6 +41,9 @@ typedef struct
 	guint32 stack_pointer;
 	guint32 rti_frame;
 	guint32 exc_address;
+	guint32 pushed_registers;
+	guint32 data_pointer;
+	guint32 data_size;
 	int saved_signal;
 	gboolean debug;
 } CallbackData;
@@ -236,21 +239,22 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
-			     guint64 method_argument, guint64 callback_argument)
+			     guint32 data_size, gconstpointer data_buffer,
+			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	CallbackData *cdata;
 	guint32 new_esp;
 
-	int size = 57;
+	int size = 57 + data_size;
 	guint8 *code = g_malloc0 (size);
 
 	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
 
 	*((guint32 *) code) = new_esp + size - 1;
 	*((guint64 *) (code+4)) = new_esp + 20;
-	*((guint64 *) (code+12)) = method_argument;
+	*((guint64 *) (code+12)) = new_esp + 56;
 	*((guint32 *) (code+20)) = INFERIOR_REG_EAX (arch->current_regs);
 	*((guint32 *) (code+24)) = INFERIOR_REG_EBX (arch->current_regs);
 	*((guint32 *) (code+28)) = INFERIOR_REG_ECX (arch->current_regs);
@@ -260,7 +264,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+44)) = INFERIOR_REG_ESI (arch->current_regs);
 	*((guint32 *) (code+48)) = INFERIOR_REG_EDI (arch->current_regs);
 	*((guint32 *) (code+52)) = INFERIOR_REG_EIP (arch->current_regs);
-	*((guint8 *) (code+56)) = 0xcc;
+	*((guint8 *) (code+data_size+56)) = 0xcc;
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
@@ -270,7 +274,14 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	cdata->exc_address = 0;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
+	cdata->pushed_registers = new_esp + 4;
 	handle->inferior->last_signal = 0;
+
+	if (data_size > 0) {
+		memcpy (code+56, data_buffer, data_size);
+		cdata->data_pointer = new_esp + 56;
+		cdata->data_size = data_size;
+	}
 
 	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	g_free (code);
@@ -408,10 +419,12 @@ x86_arch_get_registers (ServerHandle *handle)
 
 ChildStoppedAction
 x86_arch_child_stopped (ServerHandle *handle, int stopsig,
-			guint64 *callback_arg, guint64 *retval, guint64 *retval2)
+			guint64 *callback_arg, guint64 *retval, guint64 *retval2,
+			guint32 *opt_data_size, gpointer *opt_data)
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
+	CodeBufferData *cbuffer = NULL;
 	CallbackData *cdata;
 	guint64 code;
 	int i;
@@ -455,6 +468,23 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (cdata && (cdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
 		guint64 exc_object;
 
+		if (cdata->pushed_registers) {
+			guint32 pushed_regs [9];
+
+			if (_server_ptrace_read_memory (handle, cdata->pushed_registers, 36, &pushed_regs))
+				g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+			INFERIOR_REG_EAX (cdata->saved_regs) = pushed_regs [0];
+			INFERIOR_REG_EBX (cdata->saved_regs) = pushed_regs [1];
+			INFERIOR_REG_ECX (cdata->saved_regs) = pushed_regs [2];
+			INFERIOR_REG_EDX (cdata->saved_regs) = pushed_regs [3];
+			INFERIOR_REG_EBP (cdata->saved_regs) = pushed_regs [4];
+			INFERIOR_REG_ESP (cdata->saved_regs) = pushed_regs [5];
+			INFERIOR_REG_ESI (cdata->saved_regs) = pushed_regs [6];
+			INFERIOR_REG_EDI (cdata->saved_regs) = pushed_regs [7];
+			INFERIOR_REG_EIP (cdata->saved_regs) = pushed_regs [8];
+		}
+
 		if (_server_ptrace_set_registers (inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
@@ -463,6 +493,19 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		*callback_arg = cdata->callback_argument;
 		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
+
+		if (cdata->data_pointer) {
+			*opt_data_size = cdata->data_size;
+			*opt_data = g_malloc0 (cdata->data_size);
+
+			if (_server_ptrace_read_memory (
+				    handle, cdata->data_pointer, cdata->data_size, *opt_data))
+				g_error (G_STRLOC ": Can't read data buffer after returning from a call");
+		} else {
+			*opt_data_size = 0;
+			*opt_data = NULL;
+		}
+
 
 		if (cdata->exc_address &&
 		    (server_ptrace_peek_word (handle, cdata->exc_address, &exc_object) != COMMAND_ERROR_NONE))
