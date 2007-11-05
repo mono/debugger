@@ -530,6 +530,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cbuffer = arch->code_buffer;
 	if (cbuffer) {
+		handle->mono_runtime->executable_code_bitfield [cbuffer->slot] = 0;
+
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_EIP (arch->current_regs)) {
 			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
 				   cbuffer->code_address, cbuffer->insn_size,
@@ -1059,6 +1061,22 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 	mono_debugger_breakpoint_manager_unlock ();
 
 	return COMMAND_ERROR_NONE;	
+}
+
+static int
+find_code_buffer_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->executable_code_total_chunks; i++) {
+		if (runtime->executable_code_bitfield [i])
+			continue;
+
+		runtime->executable_code_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
 }
 
 static ServerCommandError
