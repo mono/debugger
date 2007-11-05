@@ -107,27 +107,32 @@ namespace Mono.Debugger.Architectures
 
 			TargetAddress call_target = GetEffectiveAddress (memory);
 
-			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
+			TargetBinaryReader reader = memory.ReadMemory (call_target, 10).GetReader ();
+			Console.WriteLine ("GET MONO TRAMPOLINE: {0} {1}", call_target,
+					   reader.HexDump ());
+
 			byte opcode = reader.ReadByte ();
-			if (opcode != 0xe8) {
+			if (opcode != 0x68) {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			TargetAddress call = call_target + reader.ReadInt32 () + 5;
-			Console.WriteLine ("GET MONO TRAMPOLINE: {0}", call);
+			reader.Position += 4;
+
+			opcode = reader.ReadByte ();
+			if (opcode != 0xe9) {
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			TargetAddress call = call_target + reader.ReadInt32 () + 10;
+			Console.WriteLine ("GET MONO TRAMPOLINE #1: {0}", call);
 			if (!Opcodes.Process.MonoLanguage.IsTrampolineAddress (call)) {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			long method;
-			if (reader.ReadByte () == 0x04)
-				method = reader.ReadInt32 ();
-			else
-				method = reader.ReadInt64 ();
-
-			Console.WriteLine ("GET MONO TRAMPOLINE #1: {0:x}", method);
+			Console.WriteLine ("GET MONO TRAMPOLINE #2: {0:x}", call_target);
 			trampoline = call_target;
 			return true;
 		}
