@@ -275,6 +275,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	cbuffer = arch->code_buffer;
 	if (cbuffer) {
+		handle->mono_runtime->executable_code_bitfield [cbuffer->slot] = 0;
+
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
 			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
 				   cbuffer->code_address, cbuffer->insn_size,
