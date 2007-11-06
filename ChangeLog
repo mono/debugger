@@ -1,3 +1,8 @@
+2007-11-06  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_I386.cs
+	(Architecture_I386.GetLMF): Make this work again.
+
 2007-11-05  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Instruction.cs
