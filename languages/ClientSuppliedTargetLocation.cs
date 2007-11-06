@@ -31,7 +31,7 @@ namespace Mono.Debugger.Languages
 			byte[] data = new byte [size];
 			Array.Copy (blob.Contents, 0, data, 0, size);
 
-			return new TargetBlob (data, blob.TargetInfo);
+			return new TargetBlob (data, blob.TargetMemoryInfo);
 		}
 
 		internal override void WriteBuffer (TargetAccess target, byte[] data)

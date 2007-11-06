@@ -60,7 +60,8 @@ namespace Mono.Debugger.Languages.Mono
 						   TargetAddress address)
 		{
 			TargetAddress data = memory.ReadAddress (address);
-			uint flags = (uint) memory.ReadInteger (address + memory.TargetInfo.TargetAddressSize);
+			uint flags = (uint) memory.ReadInteger (
+				address + memory.TargetMemoryInfo.TargetAddressSize);
 
 			MonoTypeEnum type = (MonoTypeEnum) ((flags & 0x00ff0000) >> 16);
 			bool byref = (int) ((flags & 0x40000000) >> 30) != 0;
@@ -132,7 +133,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			case MonoTypeEnum.MONO_TYPE_ARRAY: {
 				TargetReader reader = new TargetReader (memory.ReadMemory (
-					data, 4 * memory.TargetInfo.TargetAddressSize));
+					data, 4 * memory.TargetMemoryInfo.TargetAddressSize));
 				TargetAddress klass = reader.ReadAddress ();
 				int rank = reader.ReadByte ();
 				int numsizes = reader.ReadByte ();

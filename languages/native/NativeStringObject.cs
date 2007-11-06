@@ -42,7 +42,6 @@ namespace Mono.Debugger.Languages.Native
 			bool done = false;
 
 			int offset = 0;
-			bool quoted_chars = false;
 
 			while (!done && (offset < MaximumDynamicSize)) {
 				TargetLocation location = start.GetLocationAtOffset (offset);
@@ -64,15 +63,12 @@ namespace Mono.Debugger.Languages.Native
 					else if (ch == '\\') {
 						char_buffer [pos++] = '\\';
 						char_buffer [pos++] = '\\';
-						quoted_chars = true;
 					} else if ((ch == '\'') || (ch == '`')) {
 						char_buffer [pos++] = ch;
-						quoted_chars = true;
 					} else {
 						char_buffer [pos++] = '\\';
 						char_buffer [pos++] = hex_chars [(ch & 0xf0) >> 4];
 						char_buffer [pos++] = hex_chars [ch & 0x0f];
-						quoted_chars = true;
 					}
 				}
 

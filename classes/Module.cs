@@ -41,10 +41,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract ILanguageBackend LanguageBackend {
-			get;
-		}
-
 		public abstract bool SymbolsLoaded {
 			get;
 		}
@@ -281,10 +277,6 @@ namespace Mono.Debugger
 
 		public Language Language {
 			get { return SymbolFile.Language; }
-		}
-
-		internal ILanguageBackend LanguageBackend {
-			get { return SymbolFile.LanguageBackend; }
 		}
 
 		internal SymbolFile SymbolFile {

@@ -32,6 +32,10 @@ namespace Mono.Debugger.Backends
 			get { return process; }
 		}
 
+		public Architecture Architecture {
+			get { return process.Architecture; }
+		}
+
 		public Bfd this [string filename] {
 			get {
 				check_disposed ();
@@ -58,7 +62,7 @@ namespace Mono.Debugger.Backends
 			language = new NativeLanguage (this, info);
 		}
 
-		public Bfd AddFile (TargetInfo memory, string filename,
+		public Bfd AddFile (TargetMemoryInfo memory, string filename,
 				    TargetAddress base_address, bool step_info, bool is_loaded)
 		{
 			check_disposed ();
@@ -67,11 +71,7 @@ namespace Mono.Debugger.Backends
 				return bfd;
 
 			bfd = new Bfd (this, memory, filename, main_bfd, base_address, is_loaded);
-
 			bfd_hash.Add (filename, bfd);
-
-			process.AddLanguage (bfd);
-
 			return bfd;
 		}
 
@@ -124,6 +124,19 @@ namespace Mono.Debugger.Backends
 			}
 
 			return null;
+		}
+
+		public bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
+					   out TargetAddress trampoline, out bool is_start)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd.GetTrampoline (memory, address, out trampoline, out is_start))
+					return true;
+			}
+
+			is_start = false;
+			trampoline = TargetAddress.Null;
+			return false;
 		}
 
 		//

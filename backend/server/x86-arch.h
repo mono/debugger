@@ -29,7 +29,8 @@ x86_arch_remove_breakpoints_from_target_memory (ServerHandle *handle, guint64 st
 
 static ChildStoppedAction
 x86_arch_child_stopped (ServerHandle *handle, int stopsig,
-			guint64 *callback_arg, guint64 *retval, guint64 *retval2);
+			guint64 *callback_arg, guint64 *retval, guint64 *retval2,
+			guint32 *opt_data_size, gpointer *opt_data);
 
 static ServerCommandError
 x86_arch_get_registers (ServerHandle *handle);

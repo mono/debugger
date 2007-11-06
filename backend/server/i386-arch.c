@@ -13,11 +13,21 @@
 #include "x86-linux-ptrace.h"
 #include "x86-arch.h"
 
+typedef struct
+{
+	int slot;
+	int insn_size;
+	gboolean update_ip;
+	guint32 code_address;
+	guint32 original_eip;
+} CodeBufferData;
+
 struct ArchInfo
 {
 	INFERIOR_REGS_TYPE current_regs;
 	INFERIOR_FPREGS_TYPE current_fpregs;
 	GPtrArray *callback_stack;
+	CodeBufferData *code_buffer;
 	guint64 dr_control, dr_status;
 	int dr_regs [DR_NADDR];
 };
@@ -31,6 +41,9 @@ typedef struct
 	guint32 stack_pointer;
 	guint32 rti_frame;
 	guint32 exc_address;
+	guint32 pushed_registers;
+	guint32 data_pointer;
+	guint32 data_size;
 	int saved_signal;
 	gboolean debug;
 } CallbackData;
@@ -226,21 +239,22 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 static ServerCommandError
 server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
-			     guint64 method_argument, guint64 callback_argument)
+			     guint32 data_size, gconstpointer data_buffer,
+			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
 	CallbackData *cdata;
 	guint32 new_esp;
 
-	int size = 57;
+	int size = 57 + data_size;
 	guint8 *code = g_malloc0 (size);
 
 	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
 
 	*((guint32 *) code) = new_esp + size - 1;
 	*((guint64 *) (code+4)) = new_esp + 20;
-	*((guint64 *) (code+12)) = method_argument;
+	*((guint64 *) (code+12)) = new_esp + 56;
 	*((guint32 *) (code+20)) = INFERIOR_REG_EAX (arch->current_regs);
 	*((guint32 *) (code+24)) = INFERIOR_REG_EBX (arch->current_regs);
 	*((guint32 *) (code+28)) = INFERIOR_REG_ECX (arch->current_regs);
@@ -250,7 +264,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+44)) = INFERIOR_REG_ESI (arch->current_regs);
 	*((guint32 *) (code+48)) = INFERIOR_REG_EDI (arch->current_regs);
 	*((guint32 *) (code+52)) = INFERIOR_REG_EIP (arch->current_regs);
-	*((guint8 *) (code+56)) = 0xcc;
+	*((guint8 *) (code+data_size+56)) = 0xcc;
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
@@ -260,7 +274,14 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	cdata->exc_address = 0;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
+	cdata->pushed_registers = new_esp + 4;
 	handle->inferior->last_signal = 0;
+
+	if (data_size > 0) {
+		memcpy (code+56, data_buffer, data_size);
+		cdata->data_pointer = new_esp + 56;
+		cdata->data_size = data_size;
+	}
 
 	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	g_free (code);
@@ -398,10 +419,12 @@ x86_arch_get_registers (ServerHandle *handle)
 
 ChildStoppedAction
 x86_arch_child_stopped (ServerHandle *handle, int stopsig,
-			guint64 *callback_arg, guint64 *retval, guint64 *retval2)
+			guint64 *callback_arg, guint64 *retval, guint64 *retval2,
+			guint32 *opt_data_size, gpointer *opt_data)
 {
 	ArchInfo *arch = handle->arch;
 	InferiorHandle *inferior = handle->inferior;
+	CodeBufferData *cbuffer = NULL;
 	CallbackData *cdata;
 	guint64 code;
 	int i;
@@ -411,7 +434,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
-	if ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == inferior->notification_address) {
+	if (handle->mono_runtime &&
+	    ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
 		guint64 data [3];
 
@@ -444,6 +468,23 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (cdata && (cdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
 		guint64 exc_object;
 
+		if (cdata->pushed_registers) {
+			guint32 pushed_regs [9];
+
+			if (_server_ptrace_read_memory (handle, cdata->pushed_registers, 36, &pushed_regs))
+				g_error (G_STRLOC ": Can't restore registers after returning from a call");
+
+			INFERIOR_REG_EAX (cdata->saved_regs) = pushed_regs [0];
+			INFERIOR_REG_EBX (cdata->saved_regs) = pushed_regs [1];
+			INFERIOR_REG_ECX (cdata->saved_regs) = pushed_regs [2];
+			INFERIOR_REG_EDX (cdata->saved_regs) = pushed_regs [3];
+			INFERIOR_REG_EBP (cdata->saved_regs) = pushed_regs [4];
+			INFERIOR_REG_ESP (cdata->saved_regs) = pushed_regs [5];
+			INFERIOR_REG_ESI (cdata->saved_regs) = pushed_regs [6];
+			INFERIOR_REG_EDI (cdata->saved_regs) = pushed_regs [7];
+			INFERIOR_REG_EIP (cdata->saved_regs) = pushed_regs [8];
+		}
+
 		if (_server_ptrace_set_registers (inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)
 			g_error (G_STRLOC ": Can't restore registers after returning from a call");
 
@@ -452,6 +493,19 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		*callback_arg = cdata->callback_argument;
 		*retval = (guint32) INFERIOR_REG_EAX (arch->current_regs);
+
+		if (cdata->data_pointer) {
+			*opt_data_size = cdata->data_size;
+			*opt_data = g_malloc0 (cdata->data_size);
+
+			if (_server_ptrace_read_memory (
+				    handle, cdata->data_pointer, cdata->data_size, *opt_data))
+				g_error (G_STRLOC ": Can't read data buffer after returning from a call");
+		} else {
+			*opt_data_size = 0;
+			*opt_data = NULL;
+		}
+
 
 		if (cdata->exc_address &&
 		    (server_ptrace_peek_word (handle, cdata->exc_address, &exc_object) != COMMAND_ERROR_NONE))
@@ -472,6 +526,30 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cdata);
 		return STOP_ACTION_CALLBACK;
+	}
+
+	cbuffer = arch->code_buffer;
+	if (cbuffer) {
+		handle->mono_runtime->executable_code_bitfield [cbuffer->slot] = 0;
+
+		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_EIP (arch->current_regs)) {
+			g_warning (G_STRLOC ": %x - %x,%d - %x - %x", cbuffer->original_eip,
+				   cbuffer->code_address, cbuffer->insn_size,
+				   cbuffer->code_address + cbuffer->insn_size,
+				   INFERIOR_REG_EIP (arch->current_regs));
+			return STOP_ACTION_STOPPED;
+		}
+
+		INFERIOR_REG_EIP (arch->current_regs) = cbuffer->original_eip;
+		if (cbuffer->update_ip)
+			INFERIOR_REG_EIP (arch->current_regs) += cbuffer->insn_size;
+		if (_server_ptrace_set_registers (inferior, &arch->current_regs) != COMMAND_ERROR_NONE) {
+			g_error (G_STRLOC ": Can't restore registers");
+		}
+
+		g_free (cbuffer);
+		arch->code_buffer = NULL;
+		return STOP_ACTION_STOPPED;
 	}
 
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -587,6 +665,80 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static int
+find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 1; i < runtime->breakpoint_table_size; i++) {
+		if (runtime->breakpoint_table_bitfield [i])
+			continue;
+
+		runtime->breakpoint_table_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
+static ServerCommandError
+runtime_info_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 table_address, index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = find_breakpoint_table_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	breakpoint->runtime_table_slot = slot;
+
+	table_address = runtime->breakpoint_info_area + 8 * slot;
+	index_address = runtime->breakpoint_table + 4 * slot;
+
+	result = server_ptrace_poke_word (handle, table_address, breakpoint->address);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, table_address + 4, (gsize) breakpoint->saved_insn);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_poke_word (handle, index_address, (gsize) slot);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	guint64 index_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	slot = breakpoint->runtime_table_slot;
+	index_address = runtime->breakpoint_table + runtime->address_size * slot;
+
+	result = server_ptrace_poke_word (handle, index_address, 0);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	runtime->breakpoint_table_bitfield [slot] = 0;
+
+	return COMMAND_ERROR_NONE;
+}
+
 static ServerCommandError
 do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
@@ -622,6 +774,12 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		result = server_ptrace_read_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
+
+		if (handle->mono_runtime) {
+			result = runtime_info_enable_breakpoint (handle, breakpoint);
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
 
 		result = server_ptrace_write_memory (handle, address, 1, &bopcode);
 		if (result != COMMAND_ERROR_NONE)
@@ -664,6 +822,12 @@ do_disable (ServerHandle *handle, BreakpointInfo *breakpoint)
 		result = server_ptrace_write_memory (handle, address, 1, &breakpoint->saved_insn);
 		if (result != COMMAND_ERROR_NONE)
 			return result;
+
+		if (handle->mono_runtime) {
+			result = runtime_info_disable_breakpoint (handle, breakpoint);
+			if (result != COMMAND_ERROR_NONE)
+				return result;
+		}
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -896,6 +1060,71 @@ server_ptrace_get_breakpoints (ServerHandle *handle, guint32 *count, guint32 **r
 	mono_debugger_breakpoint_manager_unlock ();
 
 	return COMMAND_ERROR_NONE;	
+}
+
+static int
+find_code_buffer_slot (MonoRuntimeInfo *runtime)
+{
+	int i;
+
+	for (i = 0; i < runtime->executable_code_total_chunks; i++) {
+		if (runtime->executable_code_bitfield [i])
+			continue;
+
+		runtime->executable_code_bitfield [i] = 1;
+		return i;
+	}
+
+	return -1;
+}
+
+static ServerCommandError
+server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instruction,
+				   guint32 size, gboolean update_ip)
+{
+	MonoRuntimeInfo *runtime;
+	ServerCommandError result;
+	CodeBufferData *data;
+	guint32 code_address;
+	int slot;
+
+	runtime = handle->mono_runtime;
+	g_assert (runtime);
+
+	if (!runtime->executable_code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	slot = find_code_buffer_slot (runtime);
+	if (slot < 0)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	if (size > runtime->executable_code_chunk_size)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+	if (handle->arch->code_buffer)
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	code_address = runtime->executable_code_buffer + slot * runtime->executable_code_chunk_size;
+
+	data = g_new0 (CodeBufferData, 1);
+	data->slot = slot;
+	data->insn_size = size;
+	data->update_ip = update_ip;
+	data->original_eip = INFERIOR_REG_EIP (handle->arch->current_regs);
+	data->code_address = code_address;
+
+	handle->arch->code_buffer = data;
+
+	result = server_ptrace_write_memory (handle, code_address, size, instruction);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_EIP (handle->arch->current_regs) = code_address;
+
+	result = _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_step (handle);
 }
 
 static ServerCommandError

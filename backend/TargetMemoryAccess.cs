@@ -6,7 +6,11 @@ namespace Mono.Debugger
 {
 	public abstract class TargetMemoryAccess : DebuggerMarshalByRefObject
 	{
-		public abstract TargetInfo TargetInfo {
+		public abstract TargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
+		public abstract AddressDomain AddressDomain {
 			get;
 		}
 

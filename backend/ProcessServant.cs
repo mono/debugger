@@ -6,6 +6,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger.Backends;
+using Mono.Debugger.Architectures;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
@@ -14,7 +15,9 @@ namespace Mono.Debugger.Backends
 	internal class ProcessServant : DebuggerMarshalByRefObject
 	{
 		Process client;
+		TargetInfo target_info;
 		ThreadManager manager;
+		Architecture architecture;
 		BfdContainer bfd_container;
 		SymbolTableManager symtab_manager;
 		MonoThreadManager mono_manager;
@@ -23,7 +26,6 @@ namespace Mono.Debugger.Backends
 		DebuggerSession session;
 		protected MonoLanguageBackend mono_language;
 		protected ThreadServant main_thread;
-		ArrayList languages;
 		Hashtable thread_hash;
 
 		ThreadDB thread_db;
@@ -48,6 +50,12 @@ namespace Mono.Debugger.Backends
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			initialized_event = new ST.ManualResetEvent (false);
+
+			target_info = Inferior.GetTargetInfo ();
+			if (target_info.TargetAddressSize == 8)
+				architecture = new Architecture_X86_64 (this, target_info);
+			else
+				architecture = new Architecture_I386 (this, target_info);
 		}
 
 		internal ProcessServant (ThreadManager manager, ProcessStart start)
@@ -61,7 +69,6 @@ namespace Mono.Debugger.Backends
 
 			symtab_manager = new SymbolTableManager (session);
 
-			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
 
 			session.OnProcessCreated (client);
@@ -79,7 +86,6 @@ namespace Mono.Debugger.Backends
 
 			symtab_manager = parent.symtab_manager;
 
-			languages = parent.languages;
 			bfd_container = parent.bfd_container;
 		}
 
@@ -103,10 +109,12 @@ namespace Mono.Debugger.Backends
 			get { return manager; }
 		}
 
+		internal Architecture Architecture {
+			get { return architecture; }
+		}
+
 		internal BfdContainer BfdContainer {
-			get {
-				return bfd_container;
-			}
+			get { return bfd_container; }
 		}
 
 		internal BreakpointManager BreakpointManager {
@@ -137,21 +145,16 @@ namespace Mono.Debugger.Backends
 			get { return start; }
 		}
 
-		internal void AddLanguage (ILanguageBackend language)
-		{
-			languages.Add (language);
-		}
-
-		internal ArrayList Languages {
-			get { return languages; }
-		}
-
 		internal MonoThreadManager MonoManager {
 			get { return mono_manager; }
 		}
 
 		public bool IsManaged {
 			get { return mono_manager != null; }
+		}
+
+		internal bool CanExecuteCode {
+			get { return (mono_manager != null) && mono_manager.CanExecuteCode; }
 		}
 
 		public string TargetApplication {
@@ -215,9 +218,8 @@ namespace Mono.Debugger.Backends
 				if (bfd_container != null)
 					bfd_container.Dispose ();
 
-				if (languages != null)
-					foreach (ILanguageBackend lang in languages)
-						lang.Dispose();
+				if (mono_language != null)
+					mono_language.Dispose();
 
 				if (symtab_manager != null)
 					symtab_manager.Dispose ();
@@ -233,7 +235,6 @@ namespace Mono.Debugger.Backends
 
 			symtab_manager = new SymbolTableManager (session);
 
-			languages = new ArrayList ();
 			bfd_container = new BfdContainer (this);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
@@ -352,16 +353,19 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);
 			while (!ptr.IsNull) {
-				int size = 24 + inferior.TargetInfo.TargetAddressSize;
+				int size = 32 + inferior.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
 				TargetAddress lmf_addr = reader.ReadAddress ();
 				TargetAddress end_stack = reader.ReadAddress ();
 
-				if (inferior.TargetInfo.TargetAddressSize == 4)
+				TargetAddress extended_notifications_addr = ptr + 24;
+
+				if (inferior.TargetMemoryInfo.TargetAddressSize == 4)
 					tid &= 0x00000000ffffffffL;
 
+				reader.Offset += 8;
 				ptr = reader.ReadAddress ();
 
 				bool found = false;
@@ -369,7 +373,7 @@ namespace Mono.Debugger.Backends
 					if (engine.TID != tid)
 						continue;
 
-					engine.SetLMFAddress (lmf_addr);
+					engine.SetManagedThreadData (lmf_addr, extended_notifications_addr);
 					engine.OnManagedThreadCreated (end_stack);
 					found = true;
 					break;
@@ -456,8 +460,6 @@ namespace Mono.Debugger.Backends
 		internal MonoLanguageBackend CreateMonoLanguage (MonoDebuggerInfo info)
 		{
 			mono_language = new MonoLanguageBackend (this, info);
-			languages.Add (mono_language);
-
 			return mono_language;
 		}
 
@@ -476,7 +478,7 @@ namespace Mono.Debugger.Backends
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				bfd_container.AddFile (thread.TargetInfo, filename,
+				bfd_container.AddFile (thread.TargetMemoryInfo, filename,
 						       TargetAddress.Null, true, false);
 		}
 
@@ -613,15 +615,19 @@ namespace Mono.Debugger.Backends
 		protected virtual void DoDispose ()
 		{
 			if (!is_forked) {
+				if (architecture != null) {
+					architecture.Dispose ();
+					architecture = null;
+				}
+
 				if (bfd_container != null) {
 					bfd_container.Dispose ();
 					bfd_container = null;
 				}
 
-				if (languages != null) {
-					foreach (ILanguageBackend lang in languages)
-						lang.Dispose();
-					languages = null;
+				if (mono_language != null) {
+					mono_language.Dispose();
+					mono_language = null;
 				}
 
 				if (symtab_manager != null) {

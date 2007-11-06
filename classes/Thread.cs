@@ -642,28 +642,28 @@ namespace Mono.Debugger
 			get { return (servant != null) && servant.IsStopped; }
 		}
 
-		public override TargetInfo TargetInfo {
+		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				check_servant ();
-				return servant.TargetInfo;
+				return servant.TargetMemoryInfo;
 			}
 		}
 
 #region ITargetInfo implementation
 		public override int TargetAddressSize {
-			get { return TargetInfo.TargetAddressSize; }
+			get { return TargetMemoryInfo.TargetAddressSize; }
 		}
 
 		public override int TargetIntegerSize {
-			get { return TargetInfo.TargetIntegerSize; }
+			get { return TargetMemoryInfo.TargetIntegerSize; }
 		}
 
 		public override int TargetLongIntegerSize {
-			get { return TargetInfo.TargetLongIntegerSize; }
+			get { return TargetMemoryInfo.TargetLongIntegerSize; }
 		}
 
 		public override bool IsBigEndian {
-			get { return TargetInfo.IsBigEndian; }
+			get { return TargetMemoryInfo.IsBigEndian; }
 		}
 #endregion
 
@@ -676,7 +676,7 @@ namespace Mono.Debugger
 
 		public override AddressDomain AddressDomain {
 			get {
-				return TargetInfo.AddressDomain;
+				return TargetMemoryInfo.AddressDomain;
 			}
 		}
 
@@ -714,7 +714,7 @@ namespace Mono.Debugger
 		{
 			check_alive ();
 			byte[] buffer = servant.ReadBuffer (address, size);
-			return new TargetBlob (buffer, TargetInfo);
+			return new TargetBlob (buffer, TargetMemoryInfo);
 		}
 
 		public override byte[] ReadBuffer (TargetAddress address, int size)
@@ -754,7 +754,7 @@ namespace Mono.Debugger
 		{
 			check_alive ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (
-				TargetInfo.TargetAddressSize, TargetInfo);
+				TargetMemoryInfo.TargetAddressSize, TargetMemoryInfo);
 			writer.WriteAddress (value);
 			write_memory (address, writer.Contents);
 		}

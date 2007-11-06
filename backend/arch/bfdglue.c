@@ -107,27 +107,6 @@ bfd_glue_get_dynamic_symbols (bfd *abfd, asymbol ***symbol_table)
 	return bfd_canonicalize_dynamic_symtab (abfd, *symbol_table);
 }
 
-struct disassemble_info *
-bfd_glue_init_disassembler (bfd *abfd)
-{
-	struct disassemble_info *info = g_new0 (struct disassemble_info, 1);
-
-	INIT_DISASSEMBLE_INFO (*info, stderr, fprintf);
-	info->flavour = bfd_get_flavour (abfd);
-	info->arch = bfd_get_arch (abfd);
-	info->mach = bfd_get_mach (abfd);
-	info->octets_per_byte = bfd_octets_per_byte (abfd);
-
-	if (bfd_big_endian (abfd))
-		info->display_endian = info->endian = BFD_ENDIAN_BIG;
-	else if (bfd_little_endian (abfd))
-		info->display_endian = info->endian = BFD_ENDIAN_LITTLE;
-	else
-		g_assert_not_reached ();
-
-	return info;
-}
-
 static int
 read_memory_func (bfd_vma memaddr, bfd_byte *myaddr, unsigned int length, struct disassemble_info *info)
 {
@@ -163,34 +142,50 @@ print_address_func (bfd_vma address, struct disassemble_info *info)
 	(* data->print_address_cb) (address);
 }
 
-void
-bfd_glue_setup_disassembler (struct disassemble_info *info, BfdGlueReadMemoryHandler read_memory_cb,
-			     BfdGlueOutputHandler output_cb, BfdGluePrintAddressHandler print_address_cb)
+BfdGlueDisassemblerInfo *
+bfd_glue_create_disassembler (gboolean is_x86_64,
+			      BfdGlueReadMemoryHandler read_memory_cb,
+			      BfdGlueOutputHandler output_cb,
+			      BfdGluePrintAddressHandler print_address_cb)
 {
-	BfdGlueDisassemblerInfo *data = g_new0 (BfdGlueDisassemblerInfo, 1);
+	BfdGlueDisassemblerInfo *handle;
+	struct disassemble_info *info;
 
-	data->read_memory_cb = read_memory_cb;
-	data->output_cb = output_cb;
-	data->print_address_cb = print_address_cb;
+	info = g_new0 (struct disassemble_info, 1);
+	INIT_DISASSEMBLE_INFO (*info, stderr, fprintf);
+	info->flavour = bfd_target_elf_flavour;
+	info->arch = bfd_arch_i386;
+	info->mach = is_x86_64 ? bfd_mach_x86_64 : bfd_mach_i386_i386;
+	info->octets_per_byte = 1;
+	info->display_endian = info->endian = BFD_ENDIAN_LITTLE;
 
-	info->application_data = data;
+	handle = g_new0 (BfdGlueDisassemblerInfo, 1);
+	handle->read_memory_cb = read_memory_cb;
+	handle->output_cb = output_cb;
+	handle->print_address_cb = print_address_cb;
+	handle->disassembler = print_insn_i386;
+	handle->info = info;
+
+	info->application_data = handle;
 	info->read_memory_func = read_memory_func;
 	info->fprintf_func = fprintf_func;
 	info->print_address_func = print_address_func;
-	info->stream = data;
+	info->stream = handle;
+
+	return handle;
 }
 
 void
-bfd_glue_free_disassembler (struct disassemble_info *info)
+bfd_glue_free_disassembler (BfdGlueDisassemblerInfo *handle)
 {
-	g_free (info->application_data);
-	g_free (info);
+	g_free (handle->info);
+	g_free (handle);
 }
 
 int
-bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info, guint64 address)
+bfd_glue_disassemble_insn (BfdGlueDisassemblerInfo *handle, guint64 address)
 {
-	return dis (address, info);
+	return handle->disassembler (address, handle->info);
 }
 
 gboolean

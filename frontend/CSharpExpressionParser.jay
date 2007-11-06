@@ -324,7 +324,7 @@ public Expression Parse (string text)
 			return (Expression) yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
 			return (Expression) yyparse (lexer);
-	} catch (Exception e){
+	} catch {
 		// Please do not remove this, it is used during debugging
 		// of the grammar
 		//

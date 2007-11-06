@@ -21,7 +21,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <mono/metadata/threads.h>
+
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/object.h>
 
 /*
  * NOTE:  The manpage is wrong about the POKE_* commands - the last argument
@@ -53,7 +55,6 @@ struct InferiorHandle
 	int last_signal;
 	int output_fd [2], error_fd [2];
 	int is_thread, is_initialized;
-	guint64 notification_address;
 };
 
 typedef struct
@@ -61,6 +62,40 @@ typedef struct
 	int output_fd, error_fd;
 	ChildOutputFunc stdout_handler, stderr_handler;
 } IOThreadData;
+
+MonoRuntimeInfo *
+mono_debugger_server_initialize_mono_runtime (guint32 address_size,
+					      guint64 notification_address,
+					      guint64 executable_code_buffer,
+					      guint32 executable_code_buffer_size,
+					      guint64 breakpoint_info_area,
+					      guint64 breakpoint_table,
+					      guint32 breakpoint_table_size)
+{
+	MonoRuntimeInfo *runtime = g_new0 (MonoRuntimeInfo, 1);
+
+	runtime->address_size = address_size;
+	runtime->notification_address = notification_address;
+	runtime->executable_code_buffer = executable_code_buffer;
+	runtime->executable_code_buffer_size = executable_code_buffer_size;
+	runtime->executable_code_chunk_size = EXECUTABLE_CODE_CHUNK_SIZE;
+	runtime->executable_code_total_chunks = executable_code_buffer_size / EXECUTABLE_CODE_CHUNK_SIZE;
+
+	runtime->breakpoint_info_area = breakpoint_info_area;
+	runtime->breakpoint_table = breakpoint_table;
+	runtime->breakpoint_table_size = breakpoint_table_size;
+
+	runtime->breakpoint_table_bitfield = g_malloc0 (breakpoint_table_size);
+	runtime->executable_code_bitfield = g_malloc0 (runtime->executable_code_total_chunks);
+
+	return runtime;
+}
+
+void
+mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime)
+{
+	runtime->executable_code_buffer = 0;
+}
 
 static void
 server_ptrace_finalize (ServerHandle *handle)
@@ -154,11 +189,22 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	memcpy (&temp, ptr, size);
 
 	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
-}	
+}
+
+static ServerCommandError
+server_ptrace_poke_word (ServerHandle *handle, guint64 addr, gsize value)
+{
+	errno = 0;
+	if (ptrace (PT_WRITE_D, handle->inferior->pid, GSIZE_TO_POINTER (addr), value) != 0)
+		return _server_ptrace_check_errno (handle->inferior);
+
+	return COMMAND_ERROR_NONE;
+}
 
 static ServerStatusMessageType
 server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
-			      guint64 *data1, guint64 *data2)
+			      guint64 *data1, guint64 *data2, guint32 *opt_data_size,
+			      gpointer *opt_data)
 {
 	if (status >> 16) {
 		switch (status >> 16) {
@@ -226,7 +272,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		}
 
 		action = x86_arch_child_stopped (
-			handle, stopsig, &callback_arg, &retval, &retval2);
+			handle, stopsig, &callback_arg, &retval, &retval2, opt_data_size, opt_data);
 
 		if (action != STOP_ACTION_STOPPED)
 			handle->inferior->last_signal = 0;
@@ -473,9 +519,9 @@ server_ptrace_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
 }
 
 static void
-server_ptrace_set_notification (ServerHandle *handle, guint64 addr)
+server_ptrace_set_runtime_info (ServerHandle *handle, MonoRuntimeInfo *mono_runtime)
 {
-	handle->inferior->notification_address = addr;
+	handle->mono_runtime = mono_runtime;
 }
 
 extern void GC_start_blocking (void);
@@ -502,6 +548,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_create_inferior,
 	server_ptrace_initialize_process,
 	server_ptrace_initialize_thread,
+	server_ptrace_set_runtime_info,
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,
@@ -521,6 +568,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_call_method_1,
 	server_ptrace_call_method_2,
 	server_ptrace_call_method_invoke,
+	server_ptrace_execute_instruction,
 	server_ptrace_mark_rti_frame,
 	server_ptrace_abort_invoke,
 	server_ptrace_insert_breakpoint,
@@ -535,7 +583,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_set_signal,
 	server_ptrace_kill,
 	server_ptrace_get_signal_info,
-	server_ptrace_set_notification,
 	server_ptrace_get_threads,
 	server_ptrace_get_application,
 	server_ptrace_init_after_fork,

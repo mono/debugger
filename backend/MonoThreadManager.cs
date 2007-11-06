@@ -23,11 +23,36 @@ namespace Mono.Debugger.Backends
 // we know we're running a managed app.
 // </summary>
 
+	internal enum NotificationType {
+		InitializeManagedCode	= 1,
+		InitializeCorlib,
+		JitBreakpoint,
+		InitializeThreadManager,
+		AcquireGlobalThreadLock,
+		ReleaseGlobalThreadLock,
+		WrapperMain,
+		MainExited,
+		UnhandledException,
+		ThrowException,
+		HandleException,
+		ThreadCreated,
+		ThreadCleanup,
+		GcThreadCreated,
+		GcThreadExited,
+		ReachedMain,
+		FinalizeManagedCode,
+		LoadModule,
+		UnloadModule,
+		DomainCreate,
+		DomainUnload,
+
+		Trampoline	= 256
+	}
+
 	internal class MonoThreadManager
 	{
 		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
-		TargetAddress notification_address = TargetAddress.Null;
 		Inferior inferior;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
@@ -57,11 +82,34 @@ namespace Mono.Debugger.Backends
 		}
 
 		AddressBreakpoint notification_bpt;
+		IntPtr mono_runtime_info;
+
+		[DllImport("monodebuggerserver")]
+		static extern IntPtr mono_debugger_server_initialize_mono_runtime (
+			int address_size, long notification_address,
+			long executable_code_buffer, int executable_code_buffer_size,
+			long breakpoint_info, long breakpoint_info_index,
+			int breakpoint_table_size);
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_finalize_mono_runtime (IntPtr handle);
 
 		protected void initialize_notifications (Inferior inferior)
 		{
-			notification_address = inferior.ReadAddress (debugger_info.NotificationAddress);
-			inferior.SetNotificationAddress (notification_address);
+			TargetAddress notification_address = inferior.ReadAddress (
+				debugger_info.NotificationAddress);
+			TargetAddress executable_code_buffer = inferior.ReadAddress (
+				debugger_info.ExecutableCodeBuffer);
+
+			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
+				inferior.TargetAddressSize,
+				notification_address.Address,
+				executable_code_buffer.Address,
+				debugger_info.ExecutableCodeBufferSize,
+				debugger_info.BreakpointInfo.Address,
+				debugger_info.BreakpointInfoIndex.Address,
+				debugger_info.BreakpointArraySize);
+			inferior.SetRuntimeInfo (mono_runtime_info);
 
 			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
 
@@ -99,6 +147,10 @@ namespace Mono.Debugger.Backends
 		TargetAddress main_thread;
 		MonoLanguageBackend csharp_language;
 
+		internal bool CanExecuteCode {
+			get { return mono_runtime_info != IntPtr.Zero; }
+		}
+
 		internal MonoDebuggerInfo MonoDebuggerInfo {
 			get { return debugger_info; }
 		}
@@ -110,7 +162,8 @@ namespace Mono.Debugger.Backends
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
-			sse.Inferior.SetNotificationAddress (notification_address);
+			sse.Inferior.SetRuntimeInfo (mono_runtime_info);
+
 			if (++index < 3)
 				sse.SetDaemon ();
 		}
@@ -143,7 +196,7 @@ namespace Mono.Debugger.Backends
 						inferior.AddressDomain, cevent.Data2);
 
 					TargetAddress lmf = inferior.ReadAddress (data + 8);
-					engine.SetLMFAddress (lmf);
+					engine.SetManagedThreadData (lmf, data + 24);
 
 					Report.Debug (DebugFlags.Threads,
 						      "{0} managed thread created: {1:x} {2} {3} - {4}",
@@ -223,8 +276,14 @@ namespace Mono.Debugger.Backends
 					return false;
 
 				case NotificationType.FinalizeManagedCode:
+					mono_debugger_server_finalize_mono_runtime (mono_runtime_info);
+					mono_runtime_info = IntPtr.Zero;
 					csharp_language = null;
 					break;
+
+				case NotificationType.Trampoline:
+					resume_target = false;
+					return false;
 
 				default: {
 					TargetAddress data = new TargetAddress (
@@ -258,8 +317,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 62;
-		public const int  MaxDynamicVersion = 62;
+		public const int  MinDynamicVersion = 64;
+		public const int  MaxDynamicVersion = 64;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly TargetAddress NotificationAddress;
@@ -276,13 +335,17 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress RunFinally;
 		public readonly TargetAddress InsertBreakpoint;
 		public readonly TargetAddress RemoveBreakpoint;
-		public readonly TargetAddress RuntimeClassInit;
 		public readonly TargetAddress Attach;
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
 		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress ThreadTable;
+		public readonly TargetAddress ExecutableCodeBuffer;
+		public readonly TargetAddress BreakpointInfo;
+		public readonly TargetAddress BreakpointInfoIndex;
+		public readonly int ExecutableCodeBufferSize;
+		public readonly int BreakpointArraySize;
 
 		public readonly MonoMetadataInfo MonoMetadataInfo;
 
@@ -339,10 +402,16 @@ namespace Mono.Debugger.Backends
 			LookupClass               = reader.ReadAddress ();
 			InsertBreakpoint          = reader.ReadAddress ();
 			RemoveBreakpoint          = reader.ReadAddress ();
-			RuntimeClassInit          = reader.ReadAddress ();
 
 			DebuggerVersion           = reader.ReadAddress ();
 			ThreadTable               = reader.ReadAddress ();
+
+			ExecutableCodeBuffer      = reader.ReadAddress ();
+			BreakpointInfo            = reader.ReadAddress ();
+			BreakpointInfoIndex       = reader.ReadAddress ();
+
+			ExecutableCodeBufferSize  = reader.ReadInteger ();
+			BreakpointArraySize       = reader.ReadInteger ();
 
 			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
@@ -375,6 +444,7 @@ namespace Mono.Debugger.Backends
 		public readonly int KlassByValArgOffset;
 		public readonly int KlassGenericClassOffset;
 		public readonly int KlassGenericContainerOffset;
+		public readonly int KlassVTableOffset;
 		public readonly int FieldInfoSize;
 		public readonly int FieldInfoTypeOffset;
 		public readonly int FieldInfoOffsetOffset;
@@ -407,6 +477,9 @@ namespace Mono.Debugger.Backends
 		public readonly int MonoMethodFlagsOffset;
 		public readonly int MonoMethodInflatedOffset;
 
+		public readonly int MonoVTableKlassOffset;
+		public readonly int MonoVTableVTableOffset;
+
 		public MonoMetadataInfo (TargetMemoryAccess memory, TargetAddress address)
 		{
 			int size = memory.ReadInteger (address);
@@ -415,7 +488,7 @@ namespace Mono.Debugger.Backends
 
 			MonoDefaultsSize = reader.ReadInt32 ();
 			MonoDefaultsAddress = new TargetAddress (
-				memory.TargetInfo.AddressDomain, reader.ReadAddress ());
+				memory.AddressDomain, reader.ReadAddress ());
 
 			TypeSize = reader.ReadInt32 ();
 			ArrayTypeSize = reader.ReadInt32 ();
@@ -437,6 +510,8 @@ namespace Mono.Debugger.Backends
 			KlassByValArgOffset = reader.ReadInt32 ();
 			KlassGenericClassOffset = reader.ReadInt32 ();
 			KlassGenericContainerOffset = reader.ReadInt32 ();
+			KlassVTableOffset = reader.ReadInt32 ();
+
 			FieldInfoSize = reader.ReadInt32 ();
 			FieldInfoTypeOffset = reader.ReadInt32 ();
 			FieldInfoOffsetOffset = reader.ReadInt32 ();
@@ -470,6 +545,9 @@ namespace Mono.Debugger.Backends
 			MonoMethodTokenOffset = reader.ReadInt32 ();
 			MonoMethodFlagsOffset = reader.ReadInt32 ();
 			MonoMethodInflatedOffset = reader.ReadInt32 ();
+
+			MonoVTableKlassOffset = reader.ReadInt32 ();
+			MonoVTableVTableOffset = reader.ReadInt32 ();
 		}
 	}
 }

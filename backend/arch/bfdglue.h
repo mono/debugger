@@ -25,18 +25,29 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 extern int
 bfd_glue_get_dynamic_symbols (bfd *abfd, asymbol ***symbol_table);
 
-extern struct disassemble_info *
-bfd_glue_init_disassembler (bfd *abfd);
-
 typedef int (*BfdGlueReadMemoryHandler) (guint64 address, bfd_byte *buffer, int size);
 typedef void (*BfdGlueOutputHandler) (const char *output);
 typedef void (*BfdGluePrintAddressHandler) (guint64 address);
 
 typedef struct {
+	struct disassemble_info *info;
 	BfdGlueReadMemoryHandler read_memory_cb;
 	BfdGlueOutputHandler output_cb;
 	BfdGluePrintAddressHandler print_address_cb;
+	disassembler_ftype disassembler;
 } BfdGlueDisassemblerInfo;
+
+extern BfdGlueDisassemblerInfo *
+bfd_glue_create_disassembler (gboolean is_x86_64,
+			      BfdGlueReadMemoryHandler read_memory_cb,
+			      BfdGlueOutputHandler output_cb,
+			      BfdGluePrintAddressHandler print_address_cb);
+
+extern void
+bfd_glue_free_disassembler (BfdGlueDisassemblerInfo *handle);
+
+extern int
+bfd_glue_disassemble_insn (BfdGlueDisassemblerInfo *handle, guint64 address);
 
 typedef enum {
 	SECTION_FLAGS_LOAD	= 1,
@@ -49,16 +60,6 @@ bfd_glue_openr (const char *filename, const char *target);
 
 extern gchar *
 bfd_glue_get_errormsg (void);
-
-extern void
-bfd_glue_setup_disassembler (struct disassemble_info *info, BfdGlueReadMemoryHandler read_memory_cb,
-			     BfdGlueOutputHandler output_cb, BfdGluePrintAddressHandler print_address_cb);
-
-extern void
-bfd_glue_free_disassembler (struct disassemble_info *info);
-
-extern int
-bfd_glue_disassemble_insn (disassembler_ftype dis, struct disassemble_info *info, guint64 address);
 
 extern gboolean
 bfd_glue_get_section_contents (bfd *abfd, asection *section, gpointer data, guint32 size);

@@ -1,24 +1,38 @@
 using System;
 using Mono.Debugger.Backends;
+using Mono.Debugger.Architectures;
 
-namespace Mono.Debugger
+namespace Mono.Debugger.Backends
 {
 	// <summary>
 	//   Architecture-dependent interface.
 	// </summary>
-	internal abstract class Architecture : DebuggerMarshalByRefObject
+	internal abstract class Architecture : DebuggerMarshalByRefObject, IDisposable
 	{
 		protected readonly ProcessServant process;
 		protected readonly TargetInfo TargetInfo;
+
+		BfdDisassembler disassembler;
+		X86_Opcodes opcodes;
 
 		protected Architecture (ProcessServant process, TargetInfo info)
 		{
 			this.process = process;
 			this.TargetInfo = info;
+
+			disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
+			if (info.TargetAddressSize == 8)
+				opcodes = new Opcodes_X86_64 (process);
+			else
+				opcodes = new Opcodes_I386 (process);
 		}
 
-		public AddressDomain AddressDomain {
-			get { return TargetInfo.AddressDomain; }
+		internal Disassembler Disassembler {
+			get { return disassembler; }
+		}
+
+		public Opcodes Opcodes {
+			get { return opcodes; }
 		}
 
 		public int TargetAddressSize {
@@ -89,38 +103,10 @@ namespace Mono.Debugger
 		internal abstract bool IsSyscallInstruction (TargetMemoryAccess memory,
 							     TargetAddress address);
 
-		// <summary>
-		//   Check whether the instruction at target address @address is a `call'
-		//   instruction and returns the destination of the call or TargetAddress.Null.
-		//
-		//   The out parameter @insn_size is set to the size on bytes of the call
-		//   instructions.  This can be used to set a breakpoint immediately after
-		//   the function.
-		// </summary>
-		internal abstract TargetAddress GetCallTarget (TargetMemoryAccess target,
-							       TargetAddress address,
-							       out int insn_size);
-
-		// <summary>
-		//   Check whether the instruction at target address @address is a `jump'
-		//   instruction and returns the destination of the call or TargetAddress.Null.
-		//
-		//   The out parameter @insn_size is set to the size on bytes of the jump
-		//   instructions.  This can be used to set a breakpoint immediately after
-		//   the jump.
-		// </summary>
-		internal abstract TargetAddress GetJumpTarget (TargetMemoryAccess target,
-							       TargetAddress address,
-							       out int insn_size);
-
-		// <summary>
-		//   Check whether the instruction at target address @address is a trampoline method.
-		//   If it's a trampoline, return the address of the corresponding method's
-		//   code.  For JIT trampolines, this should do a JIT compilation of the method.
-		// </summary>
-		internal abstract TargetAddress GetTrampoline (TargetMemoryAccess target,
-							       TargetAddress address,
-							       TargetAddress generic_trampoline_address);
+		internal Instruction ReadInstruction (TargetMemoryAccess memory, TargetAddress address)
+		{
+			return opcodes.ReadInstruction (memory, address);
+		}
 
 		internal abstract int MaxPrologueSize {
 			get;
@@ -185,5 +171,53 @@ namespace Mono.Debugger
 		//
 		//
 		internal abstract void Hack_ReturnNull (Inferior inferior);
+
+		//
+		// IDisposable
+		//
+
+		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("Architecture");
+		}
+
+		protected virtual void DoDispose ()
+		{
+			if (disassembler != null) {
+				disassembler.Dispose ();
+				disassembler = null;
+			}
+		}
+
+		private void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			lock (this) {
+				if (disposed)
+					return;
+
+				disposed = true;
+			}
+
+			// If this is a call to Dispose, dispose all managed resources.
+			if (disposing)
+				DoDispose ();
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		~Architecture ()
+		{
+			Dispose (false);
+		}
+
 	}
 }

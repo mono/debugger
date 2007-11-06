@@ -64,8 +64,6 @@ namespace Mono.Debugger.Backends
 
 		public static ThreadDB Create (ProcessServant process, TargetMemoryAccess target)
 		{
-			DateTime start = DateTime.Now;
-
 			ThreadDB db = new ThreadDB (process, target);
 			if (!db.Initialize ())
 				return null;
@@ -116,7 +114,7 @@ namespace Mono.Debugger.Backends
 
 		TargetAddress create_address (long address)
 		{
-			return new TargetAddress (target.TargetInfo.AddressDomain, address);
+			return new TargetAddress (target.AddressDomain, address);
 		}
 
 		PsErr read_memory (long address, IntPtr ptr, int size)

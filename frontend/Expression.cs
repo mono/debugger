@@ -116,8 +116,6 @@ namespace Mono.Debugger.Frontend
 			} catch (ScriptingException ex) {
 				throw new TargetException (TargetError.LocationInvalid, ex.Message);
 			}
-
-			return null;
 		}
 
 		public string EvaluateExpression (ScriptingContext context, string text,

@@ -61,6 +61,25 @@ typedef struct {
 	guint64 frame_address;
 } StackFrame;
 
+#define EXECUTABLE_CODE_CHUNK_SIZE		16
+
+typedef struct
+{
+	guint32 address_size;
+	guint64 notification_address;
+	guint64 executable_code_buffer;
+	guint32 executable_code_buffer_size;
+	guint32 executable_code_chunk_size;
+	guint32 executable_code_total_chunks;
+	guint64 breakpoint_info_area;
+	guint64 breakpoint_table;
+	guint32 breakpoint_table_size;
+
+	/* Private */
+	guint8 *breakpoint_table_bitfield;
+	guint8 *executable_code_bitfield;
+} MonoRuntimeInfo;
+
 /* This is an opaque data structure which the backend may use to store stuff. */
 typedef struct InferiorVTable InferiorVTable;
 typedef struct InferiorHandle InferiorHandle;
@@ -93,6 +112,7 @@ typedef struct {
 struct ServerHandle {
 	ArchInfo *arch;
 	InferiorHandle *inferior;
+	MonoRuntimeInfo *mono_runtime;
 	BreakpointManager *bpm;
 };
 
@@ -105,6 +125,9 @@ struct InferiorVTable {
 
 	ServerCommandError    (* initialize_thread)   (ServerHandle       *handle,
 						       guint32             pid);
+
+	void                  (* set_runtime_info)    (ServerHandle       *handle,
+						       MonoRuntimeInfo    *mono_runtime_info);
 
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
 						       const gchar        *working_directory,
@@ -131,7 +154,9 @@ struct InferiorVTable {
 						       guint32              status,
 						       guint64             *arg,
 						       guint64             *data1,
-						       guint64             *data2);
+						       guint64             *data2,
+						       guint32             *opt_data_size,
+						       gpointer            *opt_data);
 
 	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
 	ServerCommandError    (* get_target_info)     (guint32            *target_int_size,
@@ -216,7 +241,8 @@ struct InferiorVTable {
 
 	ServerCommandError    (* call_method_2)       (ServerHandle     *handle,
 						       guint64           method,
-						       guint64           method_argument,
+						       guint32           data_size,
+						       gconstpointer     data_buffer,
 						       guint64           callback_argument);
 
 	ServerCommandError    (* call_method_invoke)  (ServerHandle     *handle,
@@ -229,6 +255,11 @@ struct InferiorVTable {
 						       gconstpointer     blob_data,
 						       guint64           callback_argument,
 						       gboolean          debug);
+
+	ServerCommandError    (* execute_instruction) (ServerHandle     *handle,
+						       const guint8     *instruction,
+						       guint32           size,
+						       gboolean          update_ip);
 
 	ServerCommandError    (* mark_rti_frame)      (ServerHandle     *handle);
 
@@ -316,9 +347,6 @@ struct InferiorVTable {
 	ServerCommandError    (* get_signal_info)     (ServerHandle     *handle,
 						       SignalInfo      **sinfo);
 
-	void                  (* set_notification)    (ServerHandle     *handle,
-						       guint64           notification);
-
 	ServerCommandError    (* get_threads)         (ServerHandle     *handle,
 						       guint32          *count,
 						       guint32         **threads);
@@ -390,7 +418,9 @@ mono_debugger_server_dispatch_event       (ServerHandle            *handle,
 					   guint32                  status,
 					   guint64                 *arg,
 					   guint64                 *data1,
-					   guint64                 *data2);
+					   guint64                 *data2,
+					   guint32                 *opt_data_size,
+					   gpointer                *opt_data);
 
 ServerCommandError
 mono_debugger_server_get_target_info      (guint32            *target_int_size,
@@ -450,7 +480,8 @@ mono_debugger_server_call_method_1        (ServerHandle       *handle,
 ServerCommandError
 mono_debugger_server_call_method_2        (ServerHandle       *handle,
 					   guint64             method_address,
-					   guint64             method_argument,
+					   guint32             data_size,
+					   gconstpointer       data_buffer,
 					   guint64             callback_argument);
 
 ServerCommandError
@@ -464,6 +495,12 @@ mono_debugger_server_call_method_invoke   (ServerHandle       *handle,
 					   gconstpointer       blob_data,
 					   guint64             callback_argument,
 					   gboolean            debug);
+
+ServerCommandError
+mono_debugger_execute_instruction         (ServerHandle        *handle,
+					   const guint8        *instruction,
+					   guint32              instruction_size,
+					   gboolean             update_ip);
 
 ServerCommandError
 mono_debugger_mark_rti_framenvoke        (ServerHandle        *handle);
@@ -524,8 +561,8 @@ mono_debugger_server_get_signal_info     (ServerHandle        *handle,
 					  SignalInfo         **sinfo);
 
 void
-mono_debugger_server_set_notification    (ServerHandle        *handle,
-					  guint64              notification);
+mono_debugger_server_set_runtime_info    (ServerHandle        *handle,
+					  MonoRuntimeInfo     *mono_runtime);
 
 ServerCommandError
 mono_debugger_server_get_threads         (ServerHandle        *handle,
@@ -554,6 +591,18 @@ mono_debugger_server_get_callback_frame  (ServerHandle        *handle,
 					  guint64              stack_pointer,
 					  gboolean             exact_match,
 					  guint64             *registers);
+
+MonoRuntimeInfo *
+mono_debugger_server_initialize_mono_runtime (guint32 address_size,
+					      guint64 notification_address,
+					      guint64 executable_code_buffer,
+					      guint32 executable_code_buffer_size,
+					      guint64 breakpoint_info_area,
+					      guint64 breakpoint_table,
+					      guint32 breakpoint_table_size);
+
+void
+mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime);
 
 /* POSIX semaphores */
 

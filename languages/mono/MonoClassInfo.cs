@@ -78,13 +78,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
-			int address_size = target.TargetInfo.TargetAddressSize;
 			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
-
-			reader.Offset = info.KlassByValArgOffset;
-			TargetAddress byval_data_addr = reader.ReadAddress ();
-			reader.Offset += 2;
-			int type = reader.ReadByte ();
 
 			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
@@ -103,7 +97,6 @@ namespace Mono.Debugger.Languages.Mono
 			if (field_offsets != null)
 				return;
 
-			int address_size = target.TargetInfo.TargetAddressSize;
 			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
 
 			TargetAddress field_info = target.ReadAddress (
@@ -138,7 +131,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetType type = field_types [field.Position];
 
 			if (!ClassType.IsByRef)
-				offset -= 2 * target.TargetInfo.TargetAddressSize;
+				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (type.IsByRef)
@@ -159,7 +152,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetType type = field_types [field.Position];
 
 			if (!ClassType.IsByRef)
-				offset -= 2 * target.TargetInfo.TargetAddressSize;
+				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
 
 			if (type.IsByRef)
@@ -214,7 +207,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (methods != null)
 				return;
 
-			int address_size = target.TargetInfo.TargetAddressSize;
+			int address_size = target.TargetMemoryInfo.TargetAddressSize;
 			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
 
 			TargetAddress method_info = target.ReadAddress (
@@ -225,7 +218,8 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBlob blob = target.ReadMemory (method_info, method_count * address_size);
 
 			methods = new Hashtable ();
-			TargetReader method_reader = new TargetReader (blob.Contents, target.TargetInfo);
+			TargetReader method_reader = new TargetReader (
+				blob.Contents, target.TargetMemoryInfo);
 			for (int i = 0; i < method_count; i++) {
 				TargetAddress address = method_reader.ReadAddress ();
 

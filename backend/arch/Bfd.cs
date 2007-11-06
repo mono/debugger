@@ -6,19 +6,19 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backends
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : SymbolFile, ISymbolContainer, ILanguageBackend
+	internal class Bfd : SymbolFile, ISymbolContainer
 	{
 		IntPtr bfd;
 		protected Module module;
 		protected BfdContainer container;
-		protected TargetInfo info;
+		protected TargetMemoryInfo info;
 		protected Bfd main_bfd;
-		protected Architecture arch;
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
@@ -169,7 +169,7 @@ namespace Mono.Debugger.Backends
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, TargetInfo info, string filename,
+		public Bfd (BfdContainer container, TargetMemoryInfo info, string filename,
 			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
 		{
 			this.container = container;
@@ -192,11 +192,6 @@ namespace Mono.Debugger.Backends
 
 			target = bfd_glue_get_target_name (bfd);
 			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
-				if (target == "elf32-i386")
-					arch = new Architecture_I386 (container.Process, info);
-				else
-					arch = new Architecture_X86_64 (container.Process, info);
-
 				if (!is_coredump) {
 					Section text = GetSectionByName (".text", true);
 					Section bss = GetSectionByName (".bss", true);
@@ -329,6 +324,20 @@ namespace Mono.Debugger.Backends
 			return false;
 		}
 
+		void insert_dynlink_breakpoint (Inferior inferior)
+		{
+			Instruction insn = Architecture.ReadInstruction (
+				inferior, dynlink_breakpoint);
+			if ((insn == null) || !insn.CanInterpretInstruction) {
+				Console.WriteLine ("UNKNOWN DYNLINK BREAKPOINT: {0}",
+						   dynlink_breakpoint);
+				return;
+			}
+
+			AddressBreakpoint dynlink_bpt = new DynlinkBreakpoint (this, insn);
+			dynlink_bpt.Insert (inferior);
+		}
+
 		bool read_dynamic_info (Inferior inferior, TargetMemoryAccess target)
 		{
 			if (initialized)
@@ -375,11 +384,8 @@ namespace Mono.Debugger.Backends
 			if (reader.ReadLongInteger () != 0)
 				return false;
 
-			if (inferior != null) {
-				AddressBreakpoint dynlink_bpt = new DynlinkBreakpoint (
-					this, dynlink_breakpoint);
-				dynlink_bpt.Insert (inferior);
-			}
+			if (inferior != null)
+				insert_dynlink_breakpoint (inferior);
 
 			has_shlib_info = true;
 			return true;
@@ -459,7 +465,7 @@ namespace Mono.Debugger.Backends
 
 		public Architecture Architecture {
 			get {
-				return arch;
+				return container.Architecture;
 			}
 		}
 
@@ -479,7 +485,7 @@ namespace Mono.Debugger.Backends
 					info.AddressDomain, BaseAddress.Address + address);
 		}
 
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return info;
 			}
@@ -533,12 +539,6 @@ namespace Mono.Debugger.Backends
 		public override Language Language {
 			get {
 				return container.NativeLanguage;
-			}
-		}
-
-		internal override ILanguageBackend LanguageBackend {
-			get {
-				return this;
 			}
 		}
 
@@ -666,16 +666,6 @@ namespace Mono.Debugger.Backends
 			} else {
 				unload_dwarf ();
 			}
-		}
-
-		internal BfdDisassembler GetDisassembler (TargetMemoryAccess memory)
-		{
-			IntPtr dis = disassembler (bfd);
-
-			IntPtr info = bfd_glue_init_disassembler (bfd);
-
-			return new BfdDisassembler (
-				container.Process.SymbolTableManager, memory, dis, info);
 		}
 
 		public TargetAddress this [string name] {
@@ -940,53 +930,41 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		//
-		// ILanguageBackend
-		//
-
-		string ILanguageBackend.Name {
-			get {
-				return "Native";
-			}
-		}
-
-		TargetAddress ILanguageBackend.GetTrampolineAddress (TargetMemoryAccess memory,
-								     TargetAddress address,
-								     out bool is_start)
-		{
-			return GetTrampoline (memory, address, out is_start);
-		}
-
-		MethodSource ILanguageBackend.GetTrampoline (TargetMemoryAccess memory,
-							     TargetAddress address)
-		{
-			return null;
-		}
-
-		public TargetAddress GetTrampoline (TargetMemoryAccess memory,
-						    TargetAddress address, out bool is_start)
+		internal bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
+					     out TargetAddress trampoline, out bool is_start)
 		{
 			if (!has_got || (address < plt_start) || (address > plt_end)) {
 				is_start = false;
-				return TargetAddress.Null;
+				trampoline = TargetAddress.Null;
+				return false;
 			}
 
-			int insn_size;
-			TargetAddress jmp_target = arch.GetJumpTarget (memory, address, out insn_size);
-			if (jmp_target.IsNull) {
+			Instruction target_insn = container.Architecture.ReadInstruction (
+				memory, address);
+			if ((target_insn == null) || !target_insn.HasInstructionSize ||
+			    ((target_insn.InstructionType != Instruction.Type.Jump) &&
+			     (target_insn.InstructionType != Instruction.Type.IndirectJump))) {
 				is_start = false;
-				return TargetAddress.Null;
+				trampoline = TargetAddress.Null;
+				return false;
 			}
 
-			TargetAddress method = memory.ReadAddress (jmp_target);
-
-			if (method != address + 6) {
+			TargetAddress call_target = target_insn.GetEffectiveAddress (memory);
+			if (call_target.IsNull) {
 				is_start = false;
-				return method;
+				trampoline = TargetAddress.Null;
+				return false;
+			}
+
+			if (call_target != address + target_insn.InstructionSize) {
+				is_start = false;
+				trampoline = call_target;
+				return true;
 			}
 
 			is_start = true;
-			return memory.ReadAddress (got_start + 3 * info.TargetAddressSize);
+			trampoline = memory.ReadAddress (got_start + 3 * info.TargetAddressSize);
+			return true;
 		}
 
 		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)
@@ -996,7 +974,7 @@ namespace Mono.Debugger.Backends
 
 			StackFrame new_frame;
 			try {
-				new_frame = arch.TrySpecialUnwind (frame, memory);
+				new_frame = container.Architecture.TrySpecialUnwind (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
@@ -1004,13 +982,15 @@ namespace Mono.Debugger.Backends
 
 			try {
 				if (frame_reader != null) {
-					new_frame = frame_reader.UnwindStack (frame, memory, arch);
+					new_frame = frame_reader.UnwindStack (
+						frame, memory, container.Architecture);
 					if (new_frame != null)
 						return new_frame;
 				}
 
 				if (eh_frame_reader != null) {
-					new_frame = eh_frame_reader.UnwindStack (frame, memory, arch);
+					new_frame = eh_frame_reader.UnwindStack (
+						frame, memory, container.Architecture);
 					if (new_frame != null)
 						return new_frame;
 				}
@@ -1135,7 +1115,7 @@ namespace Mono.Debugger.Backends
 			internal override bool BreakpointHandler (Inferior inferior,
 								  out bool remain_stopped)
 			{
-				bfd.arch.Hack_ReturnNull (inferior);
+				bfd.Architecture.Hack_ReturnNull (inferior);
 				remain_stopped = false;
 				return true;
 			}
@@ -1144,11 +1124,13 @@ namespace Mono.Debugger.Backends
 		protected class DynlinkBreakpoint : AddressBreakpoint
 		{
 			protected readonly Bfd bfd;
+			public readonly Instruction instruction;
 
-			public DynlinkBreakpoint (Bfd bfd, TargetAddress address)
-				: base ("dynlink", ThreadGroup.System, address)
+			public DynlinkBreakpoint (Bfd bfd, Instruction instruction)
+				: base ("dynlink", ThreadGroup.System, instruction.Address)
 			{
 				this.bfd = bfd;
+				this.instruction = instruction;
 			}
 
 			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
@@ -1160,6 +1142,8 @@ namespace Mono.Debugger.Backends
 								  out bool remain_stopped)
 			{
 				bfd.dynlink_handler (inferior);
+				if (!instruction.InterpretInstruction (inferior))
+					throw new InternalError ();
 				remain_stopped = false;
 				return true;
 			}

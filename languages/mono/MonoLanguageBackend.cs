@@ -122,13 +122,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		public void Read (TargetMemoryAccess memory)
 		{
-			int header_size = 16 + memory.TargetInfo.TargetAddressSize;
+			int header_size = 16 + memory.TargetMemoryInfo.TargetAddressSize;
 
 		again:
 			TargetReader reader = new TargetReader (
 				memory.ReadMemory (current_chunk, header_size));
 
-			int size = reader.ReadInteger ();
+			reader.ReadInteger (); /* size */
 			int allocated_size = reader.ReadInteger ();
 			int current_offset = reader.ReadInteger ();
 			reader.ReadInteger (); /* dummy */
@@ -192,7 +192,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	internal class MonoLanguageBackend : Language, ILanguageBackend
+	internal class MonoLanguageBackend : Language
 	{
 		Hashtable symfile_by_index;
 		int last_num_symbol_files;
@@ -239,10 +239,6 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info.MonoMetadataInfo; }
 		}
 
-		Language ILanguageBackend.Language {
-			get { return this; }
-		}
-
 		internal MonoBuiltinTypeInfo BuiltinTypes {
 			get { return builtin_types; }
 		}
@@ -252,7 +248,21 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetInfo TargetInfo {
-			get { return corlib.TargetInfo; }
+			get { return corlib.TargetMemoryInfo; }
+		}
+
+		internal TargetAddress[] Trampolines {
+			get { return trampolines; }
+		}
+
+		internal bool IsTrampolineAddress (TargetAddress address)
+		{
+			foreach (TargetAddress trampoline in trampolines) {
+				if (address == trampoline)
+					return true;
+			}
+
+			return false;
 		}
 
 		internal bool TryFindImage (Thread thread, string filename)
@@ -381,11 +391,11 @@ namespace Mono.Debugger.Languages.Mono
 			trampolines = new TargetAddress [4];
 			TargetAddress address = info.MonoTrampolineCode;
 			trampolines [0] = memory.ReadAddress (address);
-			address += memory.TargetInfo.TargetAddressSize;
+			address += memory.TargetMemoryInfo.TargetAddressSize;
 			trampolines [1] = memory.ReadAddress (address);
-			address += memory.TargetInfo.TargetAddressSize;
+			address += memory.TargetMemoryInfo.TargetAddressSize;
 			trampolines [2] = memory.ReadAddress (address);
-			address += 2 * memory.TargetInfo.TargetAddressSize;
+			address += 2 * memory.TargetMemoryInfo.TargetAddressSize;
 			trampolines [3] = memory.ReadAddress (address);
 
 			symfile_by_index = new Hashtable ();
@@ -541,7 +551,7 @@ namespace Mono.Debugger.Languages.Mono
 			while (!ptr.IsNull) {
 				TargetAddress next_ptr = memory.ReadAddress (ptr);
 				TargetAddress address = memory.ReadAddress (
-					ptr + memory.TargetInfo.TargetAddressSize);
+					ptr + memory.TargetMemoryInfo.TargetAddressSize);
 
 				ptr = next_ptr;
 				load_symfile (memory, address);
@@ -551,7 +561,7 @@ namespace Mono.Debugger.Languages.Mono
 			while (!ptr.IsNull) {
 				TargetAddress next_ptr = memory.ReadAddress (ptr);
 				TargetAddress address = memory.ReadAddress (
-					ptr + memory.TargetInfo.TargetAddressSize);
+					ptr + memory.TargetMemoryInfo.TargetAddressSize);
 
 				ptr = next_ptr;
 				add_data_table (memory, address);
@@ -560,7 +570,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void add_data_table (TargetMemoryAccess memory, TargetAddress ptr)
 		{
-			int table_size = 8 + 2 * memory.TargetInfo.TargetAddressSize;
+			int table_size = 8 + 2 * memory.TargetMemoryInfo.TargetAddressSize;
 
 			TargetReader reader = new TargetReader (memory.ReadMemory (ptr, table_size));
 
@@ -914,40 +924,23 @@ namespace Mono.Debugger.Languages.Mono
 		}
 #endregion
 
-#region ILanguageBackend implementation
 		public TargetAddress RuntimeInvokeFunc {
 			get { return info.RuntimeInvoke; }
-		}
-
-		public TargetAddress GetTrampolineAddress (TargetMemoryAccess memory,
-							   TargetAddress address,
-							   out bool is_start)
-		{
-			is_start = false;
-
-			if (trampolines == null)
-				return TargetAddress.Null;
-
-			foreach (TargetAddress trampoline in trampolines) {
-				TargetAddress result = memory.Architecture.GetTrampoline (
-					memory, address, trampoline);
-				if (!result.IsNull)
-					return result;
-			}
-
-			return TargetAddress.Null;
 		}
 
 		public MethodSource GetTrampoline (TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
-			bool is_start;
-			TargetAddress trampoline = GetTrampolineAddress (memory, address, out is_start);
-			if (trampoline.IsNull)
+#if FIXME
+			int insn_size;
+			TargetAddress target;
+			CallTargetType type = memory.Architecture.GetCallTarget (
+				memory, address, out target, out insn_size);
+			if (type != CallTargetType.MonoTrampoline)
 				return null;
 
-			int token = memory.ReadInteger (trampoline + 4);
-			TargetAddress klass = memory.ReadAddress (trampoline + 8);
+			int token = memory.ReadInteger (target + 4);
+			TargetAddress klass = memory.ReadAddress (target + 8);
 			TargetAddress image = memory.ReadAddress (klass);
 
 			foreach (MonoSymbolFile file in symfile_by_index.Values) {
@@ -956,6 +949,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				return file.GetMethodByToken (token);
 			}
+#endif
 
 			return null;
 		}
@@ -1055,7 +1049,6 @@ namespace Mono.Debugger.Languages.Mono
 
 			return true;
 		}
-#endregion
 
 		private bool disposed = false;
 

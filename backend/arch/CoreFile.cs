@@ -9,7 +9,7 @@ namespace Mono.Debugger.Backends
 {
 	internal class CoreFile : ProcessServant
 	{
-		TargetInfo info;
+		TargetMemoryInfo info;
 		Bfd bfd, core_bfd;
 		string core_file;
 		string application;
@@ -25,7 +25,7 @@ namespace Mono.Debugger.Backends
 		protected CoreFile (ThreadManager manager, ProcessStart start)
 			: base (manager, start)
 		{
-			info = Inferior.GetTargetInfo (manager.AddressDomain);
+			info = Inferior.GetTargetMemoryInfo (manager.AddressDomain);
 
 			bfd = BfdContainer.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,
@@ -86,7 +86,7 @@ namespace Mono.Debugger.Backends
 			TargetAddress ptr = main_thread.ReadAddress (debugger_info.ThreadTable);
 			Console.WriteLine ("READ THREAD TABLE: {0}", ptr);
 			while (!ptr.IsNull) {
-				int size = 56 + main_thread.TargetInfo.TargetAddressSize;
+				int size = 56 + main_thread.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (main_thread.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
@@ -195,11 +195,7 @@ namespace Mono.Debugger.Backends
 			get { return core_bfd; }
 		}
 
-		public Architecture Architecture {
-			get { return bfd.Architecture; }
-		}
-
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get { return info; }
 		}
 
@@ -208,7 +204,6 @@ namespace Mono.Debugger.Backends
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
 			public readonly Registers Registers;
-			public readonly BfdDisassembler Disassembler;
 			Backtrace current_backtrace;
 			StackFrame current_frame;
 			Method current_method;
@@ -224,7 +219,6 @@ namespace Mono.Debugger.Backends
 				this.CoreFile = core;
 				this.Thread = new Thread (this, ID);
 
-				this.Disassembler = core.CoreBfd.GetDisassembler (this);
 				this.Registers = read_registers ();
 			}
 
@@ -254,6 +248,10 @@ namespace Mono.Debugger.Backends
 				this.lmf_address = lmf;
 			}
 
+			internal Disassembler Disassembler {
+				get { return CoreFile.Architecture.Disassembler; }
+			}
+
 			internal override ThreadManager ThreadManager {
 				get { return CoreFile.ThreadManager; }
 			}
@@ -266,8 +264,8 @@ namespace Mono.Debugger.Backends
 				get { throw new InvalidOperationException (); }
 			}
 
-			public override TargetInfo TargetInfo {
-				get { return CoreFile.TargetInfo; }
+			public override TargetMemoryInfo TargetMemoryInfo {
+				get { return CoreFile.TargetMemoryInfo; }
 			}
 
 			public override int PID {
@@ -346,18 +344,18 @@ namespace Mono.Debugger.Backends
 
 			public override int GetInstructionSize (TargetAddress address)
 			{
-				return Disassembler.GetInstructionSize (address);
+				return Disassembler.GetInstructionSize (this, address);
 			}
 
 			public override AssemblerLine DisassembleInstruction (Method method,
 									      TargetAddress address)
 			{
-				return Disassembler.DisassembleInstruction (method, address);
+				return Disassembler.DisassembleInstruction (this, method, address);
 			}
 
 			public override AssemblerMethod DisassembleMethod (Method method)
 			{
-				return Disassembler.DisassembleMethod (method);
+				return Disassembler.DisassembleMethod (this, method);
 			}
 
 			public override TargetMemoryArea[] GetMemoryMaps ()
@@ -400,7 +398,7 @@ namespace Mono.Debugger.Backends
 			//
 
 			public override AddressDomain AddressDomain {
-				get { return CoreFile.TargetInfo.AddressDomain; }
+				get { return CoreFile.TargetMemoryInfo.AddressDomain; }
 			}
 
 			internal override Architecture Architecture {
@@ -434,7 +432,7 @@ namespace Mono.Debugger.Backends
 
 			public override TargetBlob ReadMemory (TargetAddress address, int size)
 			{
-				return new TargetBlob (ReadBuffer (address, size), TargetInfo);
+				return new TargetBlob (ReadBuffer (address, size), TargetMemoryInfo);
 			}
 
 			public override byte[] ReadBuffer (TargetAddress address, int size)
@@ -590,12 +588,6 @@ namespace Mono.Debugger.Backends
 			public override CommandResult CallMethod (TargetAddress method,
 								  long arg1, long arg2,
 								  string string_arg)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override CommandResult CallMethod (TargetAddress method,
-								  TargetAddress arg)
 			{
 				throw new InvalidOperationException ();
 			}

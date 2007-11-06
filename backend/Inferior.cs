@@ -20,7 +20,6 @@ namespace Mono.Debugger.Backends
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
-		protected BfdDisassembler bfd_disassembler;
 		protected ThreadManager thread_manager;
 
 		protected readonly ProcessStart start;
@@ -41,7 +40,7 @@ namespace Mono.Debugger.Backends
 		bool has_target;
 		bool pushed_regs;
 
-		TargetInfo target_info;
+		TargetMemoryInfo target_info;
 		Architecture arch;
 
 		bool has_signals;
@@ -106,7 +105,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_call_method_1 (IntPtr handle, long method_address, long method_argument, long data_argument, string string_argument, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, long method_argument, long callback_argument);
+		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, int data_size, IntPtr data, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_mark_rti_frame (IntPtr handle);
@@ -116,6 +115,9 @@ namespace Mono.Debugger.Backends
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_execute_instruction (IntPtr handle, IntPtr instruction, int insn_size, bool update_ip);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_insert_breakpoint (IntPtr handle, long address, out int breakpoint);
@@ -154,7 +156,7 @@ namespace Mono.Debugger.Backends
 		static extern IntPtr mono_debugger_server_create_inferior (IntPtr breakpoint_manager);
 
 		[DllImport("monodebuggerserver")]
-		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2);
+		static extern ChildEventType mono_debugger_server_dispatch_event (IntPtr handle, int status, out long arg, out long data1, out long data2, out int opt_data_size, out IntPtr opt_data);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_signal_info (IntPtr handle, out IntPtr data);
@@ -178,7 +180,7 @@ namespace Mono.Debugger.Backends
 		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr registers);
 
 		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_server_set_notification (IntPtr handle, long address);
+		static extern void mono_debugger_server_set_runtime_info (IntPtr handle, IntPtr mono_runtime_info);
 
 		internal enum ChildEventType {
 			NONE = 0,
@@ -219,13 +221,21 @@ namespace Mono.Debugger.Backends
 			public readonly long Data1;
 			public readonly long Data2;
 
-			public ChildEvent (ChildEventType type, long arg,
-					   long data1, long data2)
+			public readonly byte[] CallbackData;
+
+			public ChildEvent (ChildEventType type, long arg, long data1, long data2)
 			{
 				this.Type = type;
 				this.Argument = arg;
 				this.Data1 = data1;
 				this.Data2 = data2;
+			}
+
+			public ChildEvent (ChildEventType type, long arg, long data1, long data2,
+					   byte[] callback_data)
+				: this (type, arg, data1, data2)
+			{
+				this.CallbackData = callback_data;
 			}
 
 			public override string ToString ()
@@ -293,7 +303,6 @@ namespace Mono.Debugger.Backends
 			inferior.bfd = bfd;
 
 			inferior.arch = inferior.bfd.Architecture;
-			inferior.bfd_disassembler = inferior.bfd.GetDisassembler (inferior);
 
 			return inferior;
 		}
@@ -341,17 +350,30 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void CallMethod (TargetAddress method, long arg1, long callback_arg)
+		public void CallMethod (TargetAddress method, byte[] data, long callback_arg)
 		{
 			check_disposed ();
 
 			TargetState old_state = change_target_state (TargetState.Running);
+
+			IntPtr data_ptr = IntPtr.Zero;
+			int data_size = data != null ? data.Length : 0;
+
 			try {
+				if (data != null) {
+					data_ptr = Marshal.AllocHGlobal (data_size);
+					Marshal.Copy (data, 0, data_ptr, data_size);
+				}
+
 				check_error (mono_debugger_server_call_method_2 (
-					server_handle, method.Address, arg1, callback_arg));
+					server_handle, method.Address,
+					data_size, data_ptr, callback_arg));
 			} catch {
 				change_target_state (old_state);
 				throw;
+			} finally {
+				if (data_ptr != IntPtr.Zero)
+					Marshal.FreeHGlobal (data_ptr);
 			}
 		}
 
@@ -420,6 +442,22 @@ namespace Mono.Debugger.Backends
 					Marshal.FreeHGlobal (blob_data);
 				Marshal.FreeHGlobal (param_data);
 				Marshal.FreeHGlobal (offset_data);
+			}
+		}
+
+		public void ExecuteInstruction (byte[] instruction, bool update_ip)
+		{
+			check_disposed ();
+
+			IntPtr data = IntPtr.Zero;
+			try {
+				data = Marshal.AllocHGlobal (instruction.Length);
+				Marshal.Copy (instruction, 0, data, instruction.Length);
+
+				check_error (mono_debugger_server_execute_instruction (
+					server_handle, data, instruction.Length, update_ip));
+			} finally {
+				Marshal.FreeHGlobal (data);
 			}
 		}
 
@@ -606,8 +644,12 @@ namespace Mono.Debugger.Backends
 			long arg, data1, data2;
 			ChildEventType message;
 
+			int opt_data_size;
+			IntPtr opt_data;
+
 			message = mono_debugger_server_dispatch_event (
-				server_handle, status, out arg, out data1, out data2);
+				server_handle, status, out arg, out data1, out data2,
+				out opt_data_size, out opt_data);
 
 			switch (message) {
 			case ChildEventType.CHILD_EXITED:
@@ -628,10 +670,18 @@ namespace Mono.Debugger.Backends
 				break;
 			}
 
+			if (opt_data_size > 0) {
+				byte[] data = new byte [opt_data_size];
+				Marshal.Copy (opt_data, data, 0, opt_data_size);
+				g_free (opt_data);
+
+				return new ChildEvent (message, arg, data1, data2, data);
+			}
+
 			return new ChildEvent (message, arg, data1, data2);
 		}
 
-		public static TargetInfo GetTargetInfo (AddressDomain domain)
+		public static TargetInfo GetTargetInfo ()
 		{
 			int target_int_size, target_long_size, target_addr_size, is_bigendian;
 			check_error (mono_debugger_server_get_target_info
@@ -639,7 +689,18 @@ namespace Mono.Debugger.Backends
 				 out target_addr_size, out is_bigendian));
 
 			return new TargetInfo (target_int_size, target_long_size,
-					       target_addr_size, is_bigendian != 0, domain);
+					       target_addr_size, is_bigendian != 0);
+		}
+
+		public static TargetMemoryInfo GetTargetMemoryInfo (AddressDomain domain)
+		{
+			int target_int_size, target_long_size, target_addr_size, is_bigendian;
+			check_error (mono_debugger_server_get_target_info
+				(out target_int_size, out target_long_size,
+				 out target_addr_size, out is_bigendian));
+
+			return new TargetMemoryInfo (target_int_size, target_long_size,
+						     target_addr_size, is_bigendian != 0, domain);
 		}
 
 		public static string GetFileContents (string filename)
@@ -671,7 +732,7 @@ namespace Mono.Debugger.Backends
 				g_free (data);
 			}
 
-			target_info = GetTargetInfo (address_domain);
+			target_info = GetTargetMemoryInfo (address_domain);
 
 			try {
 				bfd = bfd_container.AddFile (
@@ -690,8 +751,6 @@ namespace Mono.Debugger.Backends
 			bfd_container.SetupInferior (target_info, bfd);
 
 			arch = bfd.Architecture;
-
-			bfd_disassembler = bfd.GetDisassembler (this);
 		}
 
 		public void InitializeModules ()
@@ -767,13 +826,13 @@ namespace Mono.Debugger.Backends
 		// TargetMemoryAccess
 		//
 
-		public AddressDomain AddressDomain {
+		public override AddressDomain AddressDomain {
 			get {
 				return address_domain;
 			}
 		}
 
-		public override TargetInfo TargetInfo {
+		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target_info;
 			}
@@ -1134,13 +1193,6 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public Disassembler Disassembler {
-			get {
-				check_disposed ();
-				return bfd_disassembler;
-			}
-		}
-
 		internal override Architecture Architecture {
 			get {
 				check_disposed ();
@@ -1279,9 +1331,9 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal void SetNotificationAddress (TargetAddress notification)
+		internal void SetRuntimeInfo (IntPtr mono_runtime_info)
 		{
-			mono_debugger_server_set_notification (server_handle, notification.Address);
+			mono_debugger_server_set_runtime_info (server_handle, mono_runtime_info);
 		}
 
 		internal struct ServerStackFrame
@@ -1295,7 +1347,7 @@ namespace Mono.Debugger.Backends
 		{
 			TargetAddress address, stack, frame;
 
-			internal StackFrame (TargetInfo info, ServerStackFrame frame)
+			internal StackFrame (TargetMemoryInfo info, ServerStackFrame frame)
 			{
 				this.address = new TargetAddress (info.AddressDomain, frame.Address);
 				this.stack = new TargetAddress (info.AddressDomain, frame.StackPointer);
@@ -1478,13 +1530,6 @@ namespace Mono.Debugger.Backends
 			if (!this.disposed) {
 				// If this is a call to Dispose,
 				// dispose all managed resources.
-				if (disposing) {
-					if (bfd_disassembler != null) {
-						bfd_disassembler.Dispose ();
-						bfd_disassembler = null;
-					}
-				}
-				
 				this.disposed = true;
 
 				// Release unmanaged resources

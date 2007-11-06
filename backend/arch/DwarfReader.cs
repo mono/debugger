@@ -116,14 +116,14 @@ namespace Mono.Debugger.Backends
 		ArrayList aranges;
 		Hashtable pubnames;
 		Hashtable pubtypes;
-		TargetInfo target_info;
+		TargetMemoryInfo target_info;
 
 		public DwarfReader (Bfd bfd, Module module)
 		{
 			this.bfd = bfd;
 			this.module = module;
 			this.filename = bfd.FileName;
-			this.target_info = bfd.TargetInfo;
+			this.target_info = bfd.TargetMemoryInfo;
 
 			debug_info_reader = create_reader (".debug_info");
 
@@ -190,7 +190,7 @@ namespace Mono.Debugger.Backends
 				return false;
 		}
 
-		public TargetInfo TargetInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target_info;
 			}
@@ -701,7 +701,7 @@ namespace Mono.Debugger.Backends
 		{
 			try {
 				byte[] contents = bfd.GetSectionContents ((string) user_data);
-				return new TargetBlob (contents, bfd.TargetInfo);
+				return new TargetBlob (contents, bfd.TargetMemoryInfo);
 			} catch {
 				Report.Debug (DebugFlags.DwarfReader,
 					      "{1} Can't find DWARF 2 debugging info in section `{0}'",
@@ -2627,9 +2627,10 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			internal override MethodSource GetTrampoline (TargetMemoryAccess memory, TargetAddress address)
+			internal override MethodSource GetTrampoline (TargetMemoryAccess memory,
+								      TargetAddress address)
 			{
-				return ((ILanguageBackend) subprog.dwarf.bfd).GetTrampoline (memory, address);
+				return null;
 			}
 		}
 
@@ -2781,7 +2782,7 @@ namespace Mono.Debugger.Backends
 			TargetLocation GetLocation (StackFrame frame, byte[] data)
 			{
 				TargetBinaryReader locreader = new TargetBinaryReader (
-					data, subprog.dwarf.TargetInfo);
+					data, subprog.dwarf.TargetMemoryInfo);
 
 				byte opcode = locreader.ReadByte ();
 				bool is_regoffset;
@@ -3803,7 +3804,7 @@ namespace Mono.Debugger.Backends
 						  bool is_local)
 				: base (reader, comp_unit, abbrev)
 			{
-				this.target_info = reader.TargetInfo;
+				this.target_info = reader.TargetMemoryInfo;
 				this.subprog = subprog;
 
 				if (subprog != null) {
@@ -3829,7 +3830,7 @@ namespace Mono.Debugger.Backends
 
 			Attribute location_attr;
 			TargetVariable variable;
-			TargetInfo target_info;
+			TargetMemoryInfo target_info;
 			DieSubprogram subprog;
 			bool resolved;
 
@@ -3886,7 +3887,7 @@ namespace Mono.Debugger.Backends
 					  AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
 			{
-				this.target_info = reader.TargetInfo;
+				this.target_info = reader.TargetMemoryInfo;
 			}
 
 			protected override void ProcessAttribute (Attribute attribute)
@@ -3914,7 +3915,7 @@ namespace Mono.Debugger.Backends
 			bool resolved, ok;
 			DieType type_die;
 			TargetType type;
-			TargetInfo target_info;
+			TargetMemoryInfo target_info;
 			int bit_offset, bit_size;
 			int offset;
 
