@@ -42,11 +42,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-#if FIXME
-			return class_info.GetField (target, Location, field);
-#else
-			throw new NotImplementedException ();
-#endif
+			return class_info.GetField (target, this, field);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

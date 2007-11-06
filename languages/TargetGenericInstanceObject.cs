@@ -1,6 +1,6 @@
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetGenericInstanceObject : TargetObject
+	public abstract class TargetGenericInstanceObject : TargetStructObject
 	{
 		public readonly new TargetGenericInstanceType Type;
 

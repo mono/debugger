@@ -183,7 +183,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetObject GetField (TargetMemoryAccess target,
-						       TargetClassObject instance,
+						       TargetStructObject instance,
 						       TargetFieldInfo field)
 		{
 			get_field_offsets (target);
@@ -204,7 +204,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public override void SetField (TargetAccess target, TargetClassObject instance,
+		public override void SetField (TargetAccess target, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value)
 		{
 			get_field_offsets (target);
