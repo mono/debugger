@@ -1,5 +1,13 @@
 2007-11-06  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClass.cs: New file.
+	(TargetClass): New public abstract class.
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo): Derive from `TargetClass'.
+
+2007-11-06  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Architecture_I386.cs
 	(Architecture_I386.GetLMF): Make this work again.
 

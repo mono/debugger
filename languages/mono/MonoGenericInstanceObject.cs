@@ -20,17 +20,18 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetParentObject (Thread target)
 		{
-			MonoClassInfo parent_info = class_info.GetParent (target);
+			MonoClassInfo parent_info = (MonoClassInfo) class_info.GetParent (target);
 			Console.WriteLine ("GET PARENT OBJECT: {0} {1} {2}",
 					   this, class_info, parent_info);
 			if (parent_info == null)
 				return null;
 
-			MonoClassType parent_type = parent_info.ClassType;
+			MonoClassType parent_type = parent_info.MonoClassType;
 			Console.WriteLine ("GET PARENT OBJECT #1: {0} {1} {2}", Type, parent_type,
 					   parent_info.GenericClass);
 
-			if (parent_info.GenericClass.IsNull)
+			TargetAddress generic_class = parent_info.GenericClass;
+			if (!generic_class.IsNull)
 				return new MonoClassObject (parent_type, parent_info, Location);
 
 			MonoGenericInstanceType ginst = new MonoGenericInstanceType (
@@ -41,7 +42,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
+#if FIXME
 			return class_info.GetField (target, Location, field);
+#else
+			throw new NotImplementedException ();
+#endif
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

@@ -4,7 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoClassInfo : DebuggerMarshalByRefObject
+	internal class MonoClassInfo : TargetClass
 	{
 		public readonly MonoSymbolFile SymbolFile;
 		public readonly TargetAddress KlassAddress;
@@ -84,7 +84,11 @@ namespace Mono.Debugger.Languages.Mono
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
 		}
 
-		public MonoClassType ClassType {
+		public override TargetClassType Type {
+			get { return type; }
+		}
+
+		internal MonoClassType MonoClassType {
 			get { return type; }
 		}
 
@@ -122,17 +126,18 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
-					      TargetFieldInfo field)
+		public override TargetObject GetField (TargetMemoryAccess target,
+						       TargetClassObject instance,
+						       TargetFieldInfo field)
 		{
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
 
-			if (!ClassType.IsByRef)
+			if (!Type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
-			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 
 			if (type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation ();
@@ -143,25 +148,25 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public void SetField (TargetAccess target, TargetLocation location,
-				      TargetFieldInfo field, TargetObject obj)
+		public override void SetField (TargetAccess target, TargetClassObject instance,
+					       TargetFieldInfo field, TargetObject value)
 		{
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
 
-			if (!ClassType.IsByRef)
+			if (!Type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
-			TargetLocation field_loc = location.GetLocationAtOffset (offset);
+			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 
 			if (type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation ();
 
-			type.SetObject (target, field_loc, obj);
+			type.SetObject (target, field_loc, value);
 		}
 
-		public TargetObject GetStaticField (Thread target, TargetFieldInfo field)
+		public override TargetObject GetStaticField (Thread target, TargetFieldInfo field)
 		{
 			get_field_offsets (target);
 
@@ -181,8 +186,8 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public void SetStaticField (Thread target, TargetFieldInfo field,
-					    TargetObject obj)
+		public override void SetStaticField (Thread target, TargetFieldInfo field,
+						     TargetObject obj)
 		{
 			get_field_offsets (target);
 
@@ -251,7 +256,11 @@ namespace Mono.Debugger.Languages.Mono
 			parent_info = ReadClassInfo (SymbolFile.MonoLanguage, target, parent_klass);
 		}
 
-		public MonoClassInfo GetParent (TargetMemoryAccess target)
+		public override bool HasParent {
+			get { return type.HasParent; }
+		}
+
+		public override TargetClass GetParent (TargetMemoryAccess target)
 		{
 			get_parent (target);
 			return parent_info;

@@ -21,11 +21,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (!type.HasParent || !type.IsByRef)
 				return null;
 
-			MonoClassInfo parent_info = info.GetParent (target);
+			MonoClassInfo parent_info = (MonoClassInfo) info.GetParent (target);
 			if (parent_info == null)
 				return null;
 
-			MonoClassType parent_type = parent_info.ClassType;
+			MonoClassType parent_type = parent_info.MonoClassType;
 			if (!type.IsByRef && parent_type.IsByRef)
 				return null;
 
@@ -42,13 +42,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
 		{
-			return info.GetField (target, Location, field);
+			return info.GetField (target, this, field);
 		}
 
 		public override void SetField (TargetAccess target, TargetFieldInfo field,
 					       TargetObject obj)
 		{
-			info.SetField (target, Location, field, obj);
+			info.SetField (target, this, field, obj);
 		}
 
 		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
