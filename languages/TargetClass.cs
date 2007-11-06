@@ -33,7 +33,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-#if FIXME
 		public abstract TargetPropertyInfo[] Properties {
 			get;
 		}
@@ -50,6 +49,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+#if FIXME
 		public abstract TargetMethodInfo[] Methods {
 			get;
 		}

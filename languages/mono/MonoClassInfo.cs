@@ -20,7 +20,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoFieldInfo[] fields;
 		MonoFieldInfo[] static_fields;
-		int num_fields = 0, num_sfields = 0;
+		MonoPropertyInfo[] properties;
+		MonoPropertyInfo[] static_properties;
+		MonoEventInfo[] events;
+		MonoEventInfo[] static_events;
 
 		TargetType[] field_types;
 		int[] field_offsets;
@@ -107,6 +110,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (fields != null)
 				return;
 
+			int num_fields = 0, num_sfields = 0;
+
 			foreach (Cecil.FieldDefinition field in CecilType.Fields) {
 				if (field.IsStatic)
 					num_sfields++;
@@ -149,6 +154,105 @@ namespace Mono.Debugger.Languages.Mono
 			get {
 				get_fields ();
 				return static_fields;
+			}
+		}
+
+		void get_properties ()
+		{
+			if (properties != null)
+				return;
+
+			int num_sproperties = 0, num_properties = 0;
+
+			foreach (Cecil.PropertyDefinition prop in CecilType.Properties) {
+				Cecil.MethodDefinition m = prop.GetMethod;
+				if (m == null) m = prop.SetMethod;
+
+				if (m.IsStatic)
+					num_sproperties++;
+				else
+					num_properties++;
+			}
+
+			properties = new MonoPropertyInfo [num_properties];
+			static_properties = new MonoPropertyInfo [num_sproperties];
+
+			int pos = 0, spos = 0;
+			foreach (Cecil.PropertyDefinition prop in CecilType.Properties) {
+				Cecil.MethodDefinition m = prop.GetMethod;
+				if (m == null) m = prop.SetMethod;
+
+				if (m.IsStatic) {
+					static_properties [spos] = MonoPropertyInfo.Create (
+						type, spos, prop, true);
+					spos++;
+				}
+				else {
+					properties [pos] = MonoPropertyInfo.Create (
+						type, pos, prop, false);
+					pos++;
+				}
+			}
+		}
+
+		public override TargetPropertyInfo[] Properties {
+			get {
+				get_properties ();
+				return properties;
+			}
+		}
+
+		public override TargetPropertyInfo[] StaticProperties {
+			get {
+				get_properties ();
+				return static_properties;
+			}
+		}
+
+		void get_events ()
+		{
+			if (events != null)
+				return;
+
+			int num_sevents = 0, num_events = 0;
+			foreach (Cecil.EventDefinition ev in CecilType.Events) {
+				Cecil.MethodDefinition m = ev.AddMethod;
+
+				if (m.IsStatic)
+					num_sevents++;
+				else
+					num_events++;
+			}
+
+			events = new MonoEventInfo [num_events];
+			static_events = new MonoEventInfo [num_sevents];
+
+			int pos = 0, spos = 0;
+			foreach (Cecil.EventDefinition ev in CecilType.Events) {
+				Cecil.MethodDefinition m = ev.AddMethod;
+
+				if (m.IsStatic) {
+					static_events [spos] = MonoEventInfo.Create (type, spos, ev, true);
+					spos++;
+				}
+				else {
+					events [pos] = MonoEventInfo.Create (type, pos, ev, false);
+					pos++;
+				}
+			}
+		}
+
+		public override TargetEventInfo[] Events {
+			get {
+				get_events ();
+				return events;
+			}
+		}
+
+		public override TargetEventInfo[] StaticEvents {
+			get {
+				get_events ();
+				return static_events;
 			}
 		}
 
