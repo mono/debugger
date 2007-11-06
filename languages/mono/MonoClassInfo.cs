@@ -17,8 +17,14 @@ namespace Mono.Debugger.Languages.Mono
 
 		MonoClassInfo parent_info;
 		TargetAddress parent_klass = TargetAddress.Null;
+
+		MonoFieldInfo[] fields;
+		MonoFieldInfo[] static_fields;
+		int num_fields = 0, num_sfields = 0;
+
 		TargetType[] field_types;
 		int[] field_offsets;
+
 		Hashtable methods;
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
@@ -94,6 +100,56 @@ namespace Mono.Debugger.Languages.Mono
 
 		public bool IsGenericClass {
 			get { return !GenericClass.IsNull; }
+		}
+
+		void get_fields ()
+		{
+			if (fields != null)
+				return;
+
+			foreach (Cecil.FieldDefinition field in CecilType.Fields) {
+				if (field.IsStatic)
+					num_sfields++;
+				else
+					num_fields++;
+			}
+
+			fields = new MonoFieldInfo [num_fields];
+			static_fields = new MonoFieldInfo [num_sfields];
+
+			int pos = 0, spos = 0, i = 0;
+			foreach (Cecil.FieldDefinition field in CecilType.Fields) {
+				TargetType ftype = SymbolFile.MonoLanguage.LookupMonoType (field.FieldType);
+
+				if (ftype == null)
+					ftype = SymbolFile.MonoLanguage.VoidType;
+
+				if (field.IsStatic) {
+					static_fields [spos] = new MonoFieldInfo (
+						type, ftype, spos, i, field);
+					spos++;
+				} else {
+					fields [pos] = new MonoFieldInfo (
+						type, ftype, pos, i, field);
+					pos++;
+				}
+
+				i++;
+			}
+		}
+
+		public override TargetFieldInfo[] Fields {
+			get {
+				get_fields ();
+				return fields;
+			}
+		}
+
+		public override TargetFieldInfo[] StaticFields {
+			get {
+				get_fields ();
+				return static_fields;
+			}
 		}
 
 		void get_field_offsets (TargetMemoryAccess target)

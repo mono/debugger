@@ -25,7 +25,6 @@ namespace Mono.Debugger.Languages
 		public abstract void SetStaticField (Thread target, TargetFieldInfo field,
 						     TargetObject obj);
 
-#if FIXME
 		public abstract TargetFieldInfo[] Fields {
 			get;
 		}
@@ -34,6 +33,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+#if FIXME
 		public abstract TargetPropertyInfo[] Properties {
 			get;
 		}
