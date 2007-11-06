@@ -5,5 +5,7 @@ namespace Mono.Debugger.Languages
 		protected TargetStructType (Language language, TargetObjectKind kind)
 			: base (language, kind)
 		{ }
+
+		public abstract TargetClass GetClass (TargetMemoryAccess target);
 	}
 }

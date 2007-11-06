@@ -66,6 +66,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
+		public override TargetClass GetClass (TargetMemoryAccess target)
+		{
+			return ResolveClass (target);
+		}
+
 		protected MonoClassInfo ResolveClass (TargetMemoryAccess target)
 		{
 			if (class_info != null)

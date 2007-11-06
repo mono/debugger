@@ -10,7 +10,7 @@ namespace Mono.Debugger.Languages.Native
 		internal NativeClass (NativeStructType type, NativeFieldInfo[] fields)
 		{
 			this.type = type;
-			this.fields = fields;
+			this.fields = fields != null ? fields : new NativeFieldInfo [0];
 		}
 
 		public override TargetStructType Type {

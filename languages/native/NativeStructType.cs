@@ -73,6 +73,7 @@ namespace Mono.Debugger.Languages.Native
 		string name;
 		int size;
 		NativeFieldInfo[] fields;
+		NativeClass class_info;
 
 		internal NativeStructType (Language language, string name, int size)
 			: base (language, TargetObjectKind.Struct)
@@ -94,6 +95,14 @@ namespace Mono.Debugger.Languages.Native
 
 		public override TargetClassType ClassType {
 			get { return this; }
+		}
+
+		public override TargetClass GetClass (TargetMemoryAccess target)
+		{
+			if (class_info == null)
+				class_info = new NativeClass (this, fields);
+
+			return class_info;
 		}
 
 		public override bool HasParent {
