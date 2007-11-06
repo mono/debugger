@@ -586,15 +586,14 @@ namespace Mono.Debugger.Architectures
 			TargetAddress edi = reader.ReadTargetAddress ();
 			TargetAddress esi = reader.ReadTargetAddress ();
 			TargetAddress ebp = reader.ReadTargetAddress ();
+			TargetAddress eip = reader.ReadTargetAddress ();
 
 			Registers regs = new Registers (this);
-			regs [(int) I386Register.EBX].SetValue (lmf + 12, ebx);
-			regs [(int) I386Register.EDI].SetValue (lmf + 16, edi);
-			regs [(int) I386Register.ESI].SetValue (lmf + 20, esi);
-			regs [(int) I386Register.EBP].SetValue (lmf + 24, ebp);
-
-			TargetAddress new_eip = thread.ReadAddress (ebp + 4);
-			regs [(int) I386Register.EIP].SetValue (ebp + 4, new_eip);
+			regs [(int) I386Register.EBX].SetValue (lmf + 16, ebx);
+			regs [(int) I386Register.EDI].SetValue (lmf + 20, edi);
+			regs [(int) I386Register.ESI].SetValue (lmf + 24, esi);
+			regs [(int) I386Register.EBP].SetValue (lmf + 28, ebp);
+			regs [(int) I386Register.EIP].SetValue (lmf + 32, eip);
 
 			TargetAddress new_ebp = thread.ReadAddress (ebp);
 			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
@@ -602,9 +601,7 @@ namespace Mono.Debugger.Architectures
 			TargetAddress new_esp = ebp + 8;
 			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
 
-			ebp -= 4;
-
-			return CreateFrame (thread, new_eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (thread, eip, new_esp, new_ebp, regs, true);
 		}
 	}
 }
