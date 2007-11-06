@@ -150,14 +150,14 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress ptr = data;
 
 				TargetAddress container_addr = memory.ReadAddress (ptr);
-				ptr += memory.TargetInfo.TargetAddressSize;
+				ptr += memory.TargetMemoryInfo.TargetAddressSize;
 
 				MonoClassType container = (MonoClassType) mono.ReadMonoClass (memory, container_addr);
 
 				MonoGenericContext context = MonoGenericContext.ReadGenericContext (
 					mono, memory, ptr);
 
-				ptr += 3 * memory.TargetInfo.TargetAddressSize;
+				ptr += 3 * memory.TargetMemoryInfo.TargetAddressSize;
 				return new MonoGenericInstanceType (container, context, ptr);
 			}
 

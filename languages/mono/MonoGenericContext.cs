@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoGenericInst method_inst = null;
 			TargetAddress method_inst_addr = memory.ReadAddress (
-				address + memory.TargetInfo.TargetAddressSize);
+				address + memory.TargetMemoryInfo.TargetAddressSize);
 			if (!method_inst_addr.IsNull)
 				method_inst = MonoGenericInst.ReadGenericInst (
 					mono, memory, method_inst_addr);
@@ -58,7 +58,7 @@ namespace Mono.Debugger.Languages.Mono
 								 TargetMemoryAccess memory,
 								 TargetAddress address)
 		{
-			int addr_size = memory.TargetInfo.TargetAddressSize;
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
 
 			TargetReader blob = new TargetReader (memory.ReadMemory (address, 16));
 			int header = memory.ReadInteger (address + 4);
