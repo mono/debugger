@@ -24,11 +24,15 @@ namespace Mono.Debugger.Languages.Mono
 		MonoPropertyInfo[] static_properties;
 		MonoEventInfo[] events;
 		MonoEventInfo[] static_events;
+		MonoMethodInfo[] methods;
+		MonoMethodInfo[] static_methods;
+		MonoMethodInfo[] constructors;
+		MonoMethodInfo[] static_constructors;
 
 		TargetType[] field_types;
 		int[] field_offsets;
 
-		Hashtable methods;
+		Hashtable method_hash;
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
 							   TargetMemoryAccess target,
@@ -111,7 +115,6 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			int num_fields = 0, num_sfields = 0;
-
 			foreach (Cecil.FieldDefinition field in CecilType.Fields) {
 				if (field.IsStatic)
 					num_sfields++;
@@ -163,7 +166,6 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			int num_sproperties = 0, num_properties = 0;
-
 			foreach (Cecil.PropertyDefinition prop in CecilType.Properties) {
 				Cecil.MethodDefinition m = prop.GetMethod;
 				if (m == null) m = prop.SetMethod;
@@ -253,6 +255,96 @@ namespace Mono.Debugger.Languages.Mono
 			get {
 				get_events ();
 				return static_events;
+			}
+		}
+
+		void get_methods ()
+		{
+			if (methods != null)
+				return;
+
+			int num_methods = 0, num_smethods = 0;
+			foreach (Cecil.MethodDefinition method in CecilType.Methods) {
+				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
+					continue;
+				if (method.IsStatic)
+					num_smethods++;
+				else
+					num_methods++;
+			}
+
+			methods = new MonoMethodInfo [num_methods];
+			static_methods = new MonoMethodInfo [num_smethods];
+
+			int pos = 0, spos = 0;
+			foreach (Cecil.MethodDefinition method in CecilType.Methods) {
+				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
+					continue;
+				if (method.IsStatic) {
+					static_methods [spos] = MonoMethodInfo.Create (type, spos, method);
+					spos++;
+				} else {
+					methods [pos] = MonoMethodInfo.Create (type, pos, method);
+					pos++;
+				}
+			}
+		}
+
+		public override TargetMethodInfo[] Methods {
+			get {
+				get_methods ();
+				return methods;
+			}
+		}
+
+		public override TargetMethodInfo[] StaticMethods {
+			get {
+				get_methods ();
+				return static_methods;
+			}
+		}
+
+		void get_constructors ()
+		{
+			if (constructors != null)
+				return;
+
+			int num_ctors = 0, num_sctors = 0;
+			foreach (Cecil.MethodDefinition method in CecilType.Constructors) {
+				if (method.IsStatic)
+					num_sctors++;
+				else
+					num_ctors++;
+			}
+
+			constructors = new MonoMethodInfo [num_ctors];
+			static_constructors = new MonoMethodInfo [num_sctors];
+
+			int pos = 0, spos = 0;
+			foreach (Cecil.MethodDefinition method in CecilType.Constructors) {
+				if (method.IsStatic) {
+					static_constructors [spos] = MonoMethodInfo.Create (
+						type, spos, method);
+					spos++;
+				} else {
+					constructors [pos] = MonoMethodInfo.Create (
+						type, pos, method);
+					pos++;
+				}
+			}
+		}
+
+		public override TargetMethodInfo[] Constructors {
+			get {
+				get_constructors ();
+				return constructors;
+			}
+		}
+
+		public override TargetMethodInfo[] StaticConstructors {
+			get {
+				get_constructors ();
+				return static_constructors;
 			}
 		}
 
@@ -382,7 +474,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetBlob blob = target.ReadMemory (method_info, method_count * address_size);
 
-			methods = new Hashtable ();
+			method_hash = new Hashtable ();
 			TargetReader method_reader = new TargetReader (
 				blob.Contents, target.TargetMemoryInfo);
 			for (int i = 0; i < method_count; i++) {
@@ -392,16 +484,16 @@ namespace Mono.Debugger.Languages.Mono
 				if (mtoken == 0)
 					continue;
 
-				methods.Add (mtoken, address);
+				method_hash.Add (mtoken, address);
 			}
 		}
 
 		public TargetAddress GetMethodAddress (TargetMemoryAccess target, int token)
 		{
 			get_methods (target);
-			if (!methods.Contains (token))
+			if (!method_hash.Contains (token))
 				throw new InternalError ();
-			return (TargetAddress) methods [token];
+			return (TargetAddress) method_hash [token];
 		}
 
 		void get_parent (TargetMemoryAccess target)
