@@ -57,13 +57,10 @@ namespace Mono.Debugger.Architectures
 
 		public override bool InterpretInstruction (Inferior inferior)
 		{
-			Console.WriteLine ("INTERPRET INSTRUCTION: {0}", InstructionType);
-
 			switch (InstructionType) {
 			case Type.IndirectJump:
 			case Type.Jump: {
 				TargetAddress target = GetEffectiveAddress (inferior);
-				Console.WriteLine ("INTERPRET JUMP: {0}", target);
 				Registers regs = inferior.GetRegisters ();
 				regs [(int) I386Register.EIP].SetValue (target);
 				inferior.SetRegisters (regs);
@@ -73,16 +70,12 @@ namespace Mono.Debugger.Architectures
 			case Type.IndirectCall:
 			case Type.Call: {
 				TargetAddress target = GetEffectiveAddress (inferior);
-				Console.WriteLine ("INTERPRET CALL: {0}", target);
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress eip = new TargetAddress (
 					inferior.AddressDomain, regs [(int) I386Register.EIP].Value);
 				TargetAddress esp = new TargetAddress (
 					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
-
-				Console.WriteLine ("INTERPRET CALL #1: {0} {1} {2} {3}",
-						   eip, esp, CallTarget, InstructionSize);
 
 				inferior.WriteAddress (esp - 4, eip + InstructionSize);
 
@@ -93,8 +86,6 @@ namespace Mono.Debugger.Architectures
 			}
 
 			case Type.Ret: {
-				Console.WriteLine ("INTERPRET RET: {0}", Displacement);
-
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress esp = new TargetAddress (
@@ -110,9 +101,6 @@ namespace Mono.Debugger.Architectures
 			}
 
 			case Type.Interpretable: {
-				Console.WriteLine ("INTERPRET INSN: {0}",
-						   TargetBinaryReader.HexDump (Code));
-
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress esp = new TargetAddress (
@@ -121,8 +109,6 @@ namespace Mono.Debugger.Architectures
 					inferior.AddressDomain, regs [(int) I386Register.EBP].Value);
 				TargetAddress eip = new TargetAddress (
 					inferior.AddressDomain, regs [(int) I386Register.EIP].Value);
-
-				Console.WriteLine ("INTERPRET INSN #1: {0} {1}", esp, ebp);
 
 				if (Code [0] == 0x55) /* push %ebp */ {
 					inferior.WriteAddress (esp - 4, ebp);
@@ -151,9 +137,6 @@ namespace Mono.Debugger.Architectures
 			TargetAddress call_target = GetEffectiveAddress (memory);
 
 			TargetBinaryReader reader = memory.ReadMemory (call_target, 10).GetReader ();
-			Console.WriteLine ("GET MONO TRAMPOLINE: {0} {1}", call_target,
-					   reader.HexDump ());
-
 			byte opcode = reader.ReadByte ();
 			if (opcode != 0x68) {
 				trampoline = TargetAddress.Null;
@@ -169,13 +152,11 @@ namespace Mono.Debugger.Architectures
 			}
 
 			TargetAddress call = call_target + reader.ReadInt32 () + 10;
-			Console.WriteLine ("GET MONO TRAMPOLINE #1: {0}", call);
 			if (!Opcodes.Process.MonoLanguage.IsTrampolineAddress (call)) {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
 
-			Console.WriteLine ("GET MONO TRAMPOLINE #2: {0:x}", call_target);
 			trampoline = call_target;
 			return true;
 		}
@@ -183,8 +164,6 @@ namespace Mono.Debugger.Architectures
 		public override TrampolineType CheckTrampoline (TargetMemoryAccess memory,
 								out TargetAddress trampoline)
 		{
-			Console.WriteLine ("CHECK TRAMPOLINE: {0} {1}", Address, InstructionType);
-
 			if (InstructionType == Type.Call) {
 				TargetAddress target = GetEffectiveAddress (memory);
 				if (target.IsNull) {
