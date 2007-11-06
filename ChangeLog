@@ -1,5 +1,13 @@
 2007-11-06  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetStructType.cs: New file.
+	(TargetStructType): New public abstract class.
+
+	* languages/TargetClassType.cs
+	(TargetClassType): Derive from `TargetStructType'.
+
+2007-11-06  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClass.cs: New file.
 	(TargetClass): New public abstract class.
 
