@@ -348,6 +348,40 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		public override TargetMemberInfo FindMember (string name, bool search_static,
+							     bool search_instance)
+		{
+			if (search_static) {
+				foreach (TargetFieldInfo field in StaticFields)
+					if (field.Name == name)
+						return field;
+
+				foreach (TargetPropertyInfo property in StaticProperties)
+					if (property.Name == name)
+						return property;
+
+				foreach (TargetEventInfo ev in StaticEvents)
+					if (ev.Name == name)
+						return ev;
+			}
+
+			if (search_instance) {
+				foreach (TargetFieldInfo field in Fields)
+					if (field.Name == name)
+						return field;
+
+				foreach (TargetPropertyInfo property in Properties)
+					if (property.Name == name)
+						return property;
+
+				foreach (TargetEventInfo ev in Events)
+					if (ev.Name == name)
+						return ev;
+			}
+
+			return null;
+		}
+
 		void get_field_offsets (TargetMemoryAccess target)
 		{
 			if (field_offsets != null)

@@ -65,9 +65,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-#if FIXME
 		public abstract TargetMemberInfo FindMember (string name, bool search_static,
 							     bool search_instance);
-#endif
 	}
 }
