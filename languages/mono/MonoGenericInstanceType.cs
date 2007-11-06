@@ -46,6 +46,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return full_name; }
 		}
 
+		public override Module Module {
+			get { return container.Module; }
+		}
+
 		public override bool IsByRef {
 			get { return container.IsByRef; }
 		}

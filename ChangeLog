@@ -1,5 +1,10 @@
 2007-11-06  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(Method.GetDeclaringType): Return a `TargetClass'.
+
+2007-11-06  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetStructType.cs
 	(TargetStructType.GetClass): New public abstract method.
 

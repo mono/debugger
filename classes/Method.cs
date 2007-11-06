@@ -262,7 +262,7 @@ namespace Mono.Debugger
                         return true;
                 }
 
-		public abstract TargetClassType GetDeclaringType (TargetMemoryAccess memory);
+		public abstract TargetClass GetDeclaringType (TargetMemoryAccess memory);
 
 		public abstract bool HasThis {
 			get;

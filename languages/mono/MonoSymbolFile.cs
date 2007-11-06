@@ -932,7 +932,7 @@ namespace Mono.Debugger.Languages.Mono
 			MethodSource source;
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
-			TargetType decl_type;
+			TargetClass decl_type;
 			TargetVariable this_var;
 			TargetVariable[] parameters;
 			TargetVariable[] locals;
@@ -995,7 +995,7 @@ namespace Mono.Debugger.Languages.Mono
 				MonoLanguageBackend mono = file.MonoLanguage;
 
 				TargetAddress decl_klass = memory.ReadAddress (address.MonoMethod + 8);
-				decl_type = MonoRuntime.ReadMonoClass (mono, memory, decl_klass);
+				decl_type = MonoClassInfo.ReadClassInfo (mono, memory, decl_klass);
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				parameters = new TargetVariable [param_info.Count];
@@ -1035,7 +1035,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
-						file.process, "this", decl_type, true,
+						file.process, "this", decl_type.Type, true,
 						true, this, address.ThisVariableInfo);
 
 				has_variables = true;
@@ -1053,10 +1053,10 @@ namespace Mono.Debugger.Languages.Mono
 				return locals;
 			}
 
-			public override TargetClassType GetDeclaringType (TargetMemoryAccess memory)
+			public override TargetClass GetDeclaringType (TargetMemoryAccess memory)
 			{
 				read_variables (memory);
-				return decl_type.ClassType;
+				return decl_type;
 			}
 
 			public override bool HasThis {
@@ -1557,7 +1557,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source; }
 			}
 
-			public override TargetClassType GetDeclaringType (TargetMemoryAccess memory)
+			public override TargetClass GetDeclaringType (TargetMemoryAccess memory)
 			{
 				return null;
 			}

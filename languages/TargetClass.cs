@@ -2,7 +2,7 @@ namespace Mono.Debugger.Languages
 {
 	public abstract class TargetClass : DebuggerMarshalByRefObject
 	{
-		public abstract TargetStructType Type {
+		public abstract TargetClassType Type {
 			get;
 		}
 
