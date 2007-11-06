@@ -97,7 +97,7 @@ namespace Mono.Debugger.Languages.Mono
 			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
 		}
 
-		public override TargetClassType Type {
+		public override TargetStructType Type {
 			get { return type; }
 		}
 

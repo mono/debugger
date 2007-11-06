@@ -1,5 +1,10 @@
 2007-11-06  Martin Baulig  <martin@ximian.com>
 
+	* languages/native/NativeClass.cs
+	(NativeClass): `TargetClass' implementation for native structs.
+
+2007-11-06  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetStructObject.cs: New file.
 	(TargetStructObject): New public abstract class.
 
