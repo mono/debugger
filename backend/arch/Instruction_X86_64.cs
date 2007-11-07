@@ -117,9 +117,6 @@ namespace Mono.Debugger.Architectures
 			}
 
 			case Type.Interpretable: {
-				Console.WriteLine ("INTERPRET INSN: {0}",
-						   TargetBinaryReader.HexDump (Code));
-
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress rsp = new TargetAddress (
@@ -128,8 +125,6 @@ namespace Mono.Debugger.Architectures
 					inferior.AddressDomain, regs [(int) X86_64_Register.RBP].Value);
 				TargetAddress rip = new TargetAddress (
 					inferior.AddressDomain, regs [(int) X86_64_Register.RIP].Value);
-
-				Console.WriteLine ("INTERPRET INSN #1: {0} {1}", rsp, rbp);
 
 				if (Code [0] == 0x55) /* push %rbp */ {
 					inferior.WriteAddress (rsp - 8, rbp);
