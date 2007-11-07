@@ -669,9 +669,9 @@ namespace Mono.Debugger.Frontend
 		}
 		int LengthOfAddressItem () {
 			if (IntPtr.Size == 4) {
-				return LengthOfWordItem ();
+				return 4;
 			} else if (IntPtr.Size == 8) {
-				return LengthOfGiantItem ();
+				return 8;
 			} else {
 				throw new ScriptingException ("Unsupported IntPtr.Size: " + IntPtr.Size);
 			}
@@ -725,7 +725,7 @@ namespace Mono.Debugger.Frontend
 					return new BinaryReader(new MemoryStream (data, startIndex, 8, false, false)).ReadInt64 ();
 				case 'a':
 					if (IntPtr.Size == 4) {
-						return new BinaryReader(new MemoryStream (data, startIndex, 4, false, false)).ReadInt32 ();
+						return new BinaryReader(new MemoryStream (data, startIndex, 4, false, false)).ReadUInt32 ();
 					} else if (IntPtr.Size == 8) {
 						return new BinaryReader(new MemoryStream (data, startIndex, 8, false, false)).ReadInt64 ();
 					} else {
