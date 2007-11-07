@@ -1015,7 +1015,13 @@ namespace Mono.Debugger.Languages.Mono
 					C.LocalVariableEntry local = method.Locals [i];
 
 					VariableInfo var = address.LocalVariableInfo [local.Index];
-					TargetType type = MonoRuntime.ReadType (mono, memory, var.MonoType);
+					TargetType type = null;
+					try {
+						type = MonoRuntime.ReadType (mono, memory, var.MonoType);
+					} catch (Exception ex) {
+						Console.WriteLine ("CANNOT READ TYPE: {0} {1}",
+								   var.MonoType, ex);
+					}
 					if (type == null)
 						type = mono.VoidType;
 

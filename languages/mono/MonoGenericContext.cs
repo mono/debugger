@@ -62,7 +62,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetReader blob = new TargetReader (memory.ReadMemory (address, 16));
 			int header = memory.ReadInteger (address + 4);
-			TargetAddress type_argv_ptr = memory.ReadAddress (address + addr_size);
+			TargetAddress type_argv_ptr = memory.ReadAddress (address + 8);
 
 			int type_argc = header & 0x3fffff;
 

@@ -152,7 +152,8 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress container_addr = memory.ReadAddress (ptr);
 				ptr += memory.TargetMemoryInfo.TargetAddressSize;
 
-				MonoClassType container = (MonoClassType) mono.ReadMonoClass (memory, container_addr);
+				MonoClassType container = (MonoClassType) mono.ReadMonoClass (
+					memory, container_addr);
 
 				MonoGenericContext context = MonoGenericContext.ReadGenericContext (
 					mono, memory, ptr);
