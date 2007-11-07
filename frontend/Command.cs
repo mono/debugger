@@ -669,9 +669,9 @@ namespace Mono.Debugger.Frontend
 		}
 		int LengthOfAddressItem () {
 			if (IntPtr.Size == 4) {
-				return 8;
+				return LengthOfWordItem ();
 			} else if (IntPtr.Size == 8) {
-				return 16;
+				return LengthOfGiantItem ();
 			} else {
 				throw new ScriptingException ("Unsupported IntPtr.Size: " + IntPtr.Size);
 			}
