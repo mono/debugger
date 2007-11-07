@@ -133,7 +133,7 @@ namespace Mono.Debugger.Architectures
 
 				if (Code [0] == 0x55) /* push %rbp */ {
 					inferior.WriteAddress (rsp - 8, rbp);
-					regs [(int) X86_64_Register.RSP].SetValue (rsp - 4);
+					regs [(int) X86_64_Register.RSP].SetValue (rsp - 8);
 					regs [(int) X86_64_Register.RIP].SetValue (rip + 1);
 					inferior.SetRegisters (regs);
 					return true;
