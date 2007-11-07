@@ -918,13 +918,8 @@ namespace Mono.Debugger.Backends
 				      "{0} stepping over breakpoint {1} at {2} until {3}",
 				      this, index, inferior.CurrentFrame, until);
 
-			Console.WriteLine ("STEP OVER BREAKPOINT: {0} {1} {2} {3}",
-					   this, inferior.CurrentFrame, index, until);
-
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, inferior.CurrentFrame);
-			Console.WriteLine ("EXECUTE INSTRUCTION: {0} {1} {2}",
-					   this, singlestep, instruction);
 
 			if ((instruction == null) || !instruction.HasInstructionSize ||
 			    !process.CanExecuteCode) {
@@ -936,35 +931,15 @@ namespace Mono.Debugger.Backends
 				if (!singlestep)
 					return false;
 
-				Console.WriteLine ("ACHTUNG ACHTUNG!");
 				byte[] nop_insn = Architecture.Opcodes.GenerateNopInstruction ();
 				inferior.ExecuteInstruction (nop_insn, false);
 				return true;
 			}
 
-#if FIXME
-			if ((instruction.InstructionType == Instruction.Type.Call) ||
-			    (instruction.InstructionType == Instruction.Type.IndirectCall)) {
-				TargetAddress target = instruction.GetEffectiveAddress (inferior);
-
-				Console.WriteLine ("EXECUTE CALL: {0} {1}", inferior.CurrentFrame, target);
-				Console.WriteLine ("ACHTUNG ACHTUNG!");
-
-				byte[] jump_insn = Architecture.Opcodes.GenerateJumpInstruction (target);
-
-				inferior.ExecuteInstruction (jump_insn, instruction.InstructionSize, true);
-				return true;
-			}
-#endif
-
 			if (instruction.IsIpRelative) {
 				PushOperation (new OperationStepOverBreakpoint (this, index, until));
 				return true;
 			}
-
-			Console.WriteLine ("EXECUTE INSTRUCTION #1: {0} {1} {2} {3}",
-					   this, inferior.CurrentFrame, instruction,
-					   TargetBinaryReader.HexDump (instruction.Code));
 
 			inferior.ExecuteInstruction (instruction.Code, true);
 			return true;
@@ -973,8 +948,6 @@ namespace Mono.Debugger.Backends
 		void enable_extended_notification (NotificationType type)
 		{
 			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
-			Console.WriteLine ("ENABLE EXTENDED NOTIFICATION: {0} {1:x} {2} {3:x}",
-					   extended_notifications_addr, notifications, type, (int) type);
 			notifications |= (long) type;
 			inferior.WriteLongInteger (extended_notifications_addr, notifications);
 		}
@@ -982,8 +955,6 @@ namespace Mono.Debugger.Backends
 		void disable_extended_notification (NotificationType type)
 		{
 			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
-			Console.WriteLine ("DISABLE EXTENDED NOTIFICATION: {0} {1:x} {2} {3:x}",
-					   extended_notifications_addr, notifications, type, (int) type);
 			notifications &= ~(long) type;
 			inferior.WriteLongInteger (extended_notifications_addr, notifications);
 		}
@@ -3394,23 +3365,16 @@ namespace Mono.Debugger.Backends
 
 		protected override void DoExecute ()
 		{
-			Console.WriteLine ("RESOLVE TRAMPOLINE: {0} {1} {2}", CallSite, Trampoline,
-					   sse.extended_notifications_addr);
-
 			sse.enable_extended_notification (NotificationType.Trampoline);
 			sse.do_continue ();
 		}
 
 		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
 		{
-			Console.WriteLine ("TRAMPOLINE COMPILED: {0} {1} {2}",
-					   mono_method, code, TrampolineHandler);
-
 			sse.disable_extended_notification (NotificationType.Trampoline);
 
 			if (TrampolineHandler != null) {
 				Method method = sse.Lookup (code);
-				Console.WriteLine ("TRAMPOLINE COMPILED #1: {0}", method);
 				if (!TrampolineHandler (method)) {
 					sse.do_continue (CallSite.Address + CallSite.InstructionSize);
 					return;
@@ -3423,8 +3387,6 @@ namespace Mono.Debugger.Backends
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
-			Console.WriteLine ("RESOLVE TRAMPOLINE EVENT: {0} {1}", cevent, compiled);
-
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
 			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
 				TargetAddress method = new TargetAddress (
