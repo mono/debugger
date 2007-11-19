@@ -1,3 +1,13 @@
+2007-11-19  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Main.cs
+	(Main.RunInferiorMainLoop): New public method.  This can be used
+	to run a main loop inside the nunit test suite.
+
+	* test/testsuite/NUnit.cs
+	(TestSuite.MainLoop): New public method; run an inferior main loop
+	from within the testsuite.
+
 2007-11-06  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Architecture_I386.cs

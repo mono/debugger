@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Configuration;
 using ST = System.Threading;
 using System.Runtime.InteropServices;
@@ -16,6 +17,7 @@ namespace Mono.Debugger.Frontend
 		const string prompt = "(mdb) ";
 		int line = 0;
 
+		bool is_inferior_main;
 		ST.Thread command_thread;
 		ST.Thread main_thread;
 
@@ -49,6 +51,19 @@ namespace Mono.Debugger.Frontend
 			command_thread.IsBackground = true;
 		}
 
+		public CommandLineInterpreter (Interpreter interpreter)
+		{
+			this.interpreter = interpreter;
+			this.engine = interpreter.DebuggerEngine;
+			parser = new LineParser (engine);
+
+			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
+			main_thread.IsBackground = true;
+
+			command_thread = new ST.Thread (new ST.ThreadStart (command_thread_main));
+			command_thread.IsBackground = true;
+		}
+
 		public void MainLoop ()
 		{
 			string s;
@@ -73,14 +88,18 @@ namespace Mono.Debugger.Frontend
 				try {
 					interpreter.ClearInterrupt ();
 					MainLoop ();
+					if (is_inferior_main)
+						break;
 				} catch (ST.ThreadAbortException) {
 					ST.Thread.ResetAbort ();
 				}
 			}
 		}
 
-		public void RunMainLoop ()
+		internal void RunMainLoop ()
 		{
+			is_inferior_main = false;
+
 			command_thread.Start ();
 
 			try {
@@ -100,13 +119,65 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public void RunInferiorMainLoop ()
+		{
+			is_inferior_main = true;
+
+			command_thread.Start ();
+
+			TextReader old_stdin = Console.In;
+			TextWriter old_stdout = Console.Out;
+			TextWriter old_stderr = Console.Error;
+
+			StreamReader stdin_reader = new StreamReader (Console.OpenStandardInput ());
+
+			StreamWriter stdout_writer = new StreamWriter (Console.OpenStandardOutput ());
+			stdout_writer.AutoFlush = true;
+
+			StreamWriter stderr_writer = new StreamWriter (Console.OpenStandardError ());
+			stderr_writer.AutoFlush = true;
+
+			Console.SetIn (stdin_reader);
+			Console.SetOut (stdout_writer);
+			Console.SetError (stderr_writer);
+
+			bool old_is_script = interpreter.IsScript;
+			bool old_is_interactive = interpreter.IsInteractive;
+
+			interpreter.IsScript = false;
+			interpreter.IsInteractive = true;
+
+			Console.WriteLine ();
+
+			try {
+				main_thread.Start ();
+				main_thread.Join ();
+			} catch (ScriptingException ex) {
+				interpreter.Error (ex);
+			} catch (TargetException ex) {
+				interpreter.Error (ex);
+			} catch (Exception ex) {
+				interpreter.Error ("ERROR: {0}", ex);
+			} finally {
+				Console.WriteLine ();
+
+				Console.SetIn (old_stdin);
+				Console.SetOut (old_stdout);
+				Console.SetError (old_stderr);
+				interpreter.IsScript = old_is_script;
+				interpreter.IsInteractive = old_is_interactive;
+			}
+
+			command_thread.Abort ();
+		}
+
 		public string ReadInput (bool is_complete)
 		{
 			++line;
 		again:
 			string result;
 			string the_prompt = is_complete ? prompt : "... ";
-			if (interpreter.Options.IsScript) {
+			if (interpreter.IsScript) {
 				Console.Write (the_prompt);
 				result = Console.ReadLine ();
 				if (result == null)

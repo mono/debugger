@@ -177,6 +177,8 @@ namespace Mono.Debugger.Tests
 
 		public override void Print (string message)
 		{
+			if (!IsScript)
+				base.Print (message);
 		}
 	}
 
@@ -774,6 +776,12 @@ namespace Mono.Debugger.Tests
 					     "target to exit.");
 
 			AssertNoTargetOutput ();
+		}
+
+		public void MainLoop ()
+		{
+			CommandLineInterpreter cmdline = new CommandLineInterpreter (interpreter);
+			cmdline.RunInferiorMainLoop ();
 		}
 	}
 
