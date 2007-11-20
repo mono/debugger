@@ -1,3 +1,17 @@
+2007-11-20  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/TestDelegate.cs: Temporarily disable this.
+
+	* backend/SingleSteppingEngine.cs
+	(OperationExecuteInstruction): Make this a separate operation
+	since we need to resume the target after executing the instruction
+	if we're not single-stepping.
+	(OperationActivateBreakpoints): Use the new breakpoint code.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.InsertBreakpoint): Take a
+	`FunctionBreakpointHandle' argument, not `MethodLoadedHandler'.
+
 2007-11-19  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Main.cs

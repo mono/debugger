@@ -15,7 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
-		[Category("ManagedTypes")]
+		[Category("NotWorking")]
 		public void Main ()
 		{
 			Process process = Start ();

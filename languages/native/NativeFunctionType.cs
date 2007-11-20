@@ -1,5 +1,5 @@
 using System;
-using System.Runtime.Serialization;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages.Native
 {
@@ -116,7 +116,8 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		internal override bool InsertBreakpoint (Thread target, MethodLoadedHandler handler)
+		internal override bool InsertBreakpoint (Thread target,
+							 FunctionBreakpointHandle handle)
 		{
 			throw new InvalidOperationException ();
 		}

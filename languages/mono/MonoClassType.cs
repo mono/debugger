@@ -473,7 +473,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress klass_address = target.CallMethod (
 				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
-				file.MonoImage, 0, Name);
+				file.MonoImage, 0, 0, Name);
 
 			class_info = file.MonoLanguage.ReadClassInfo (target, klass_address);
 			if (class_info == null)

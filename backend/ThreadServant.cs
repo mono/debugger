@@ -212,7 +212,7 @@ namespace Mono.Debugger.Backends
 							  long arg2);
 
 		public abstract CommandResult CallMethod (TargetAddress method, long arg1,
-							  long arg2, string string_arg);
+							  long arg2, long arg3, string string_arg);
 
 		public abstract CommandResult Return (bool run_finally);
 

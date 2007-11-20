@@ -384,15 +384,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_mono_debugger_info (TargetMemoryAccess memory)
 		{
-			trampolines = new TargetAddress [4];
+			trampolines = new TargetAddress [info.MonoTrampolineNum];
+
 			TargetAddress address = info.MonoTrampolineCode;
-			trampolines [0] = memory.ReadAddress (address);
-			address += memory.TargetMemoryInfo.TargetAddressSize;
-			trampolines [1] = memory.ReadAddress (address);
-			address += memory.TargetMemoryInfo.TargetAddressSize;
-			trampolines [2] = memory.ReadAddress (address);
-			address += 2 * memory.TargetMemoryInfo.TargetAddressSize;
-			trampolines [3] = memory.ReadAddress (address);
+			for (int i = 0; i < trampolines.Length; i++) {
+				trampolines [i] = memory.ReadAddress (address);
+				address += memory.TargetMemoryInfo.TargetAddressSize;
+			}
 
 			symfile_by_index = new Hashtable ();
 			symfile_by_image_addr = new Hashtable ();
@@ -723,7 +721,7 @@ namespace Mono.Debugger.Languages.Mono
 			int index = GetUniqueID ();
 
 			TargetAddress retval = target.CallMethod (
-				info.InsertBreakpoint, method_address, index);
+				info.InsertMethodBreakpoint, method_address, index);
 
 			if (!retval.IsNull)
 				method_from_jit_info (target, retval, handler);
@@ -739,8 +737,26 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal void RemoveMethodLoadHandler (Thread target, int index)
 		{
-			target.CallMethod (info.RemoveBreakpoint, TargetAddress.Null, 0);
+			target.CallMethod (info.RemoveBreakpoint, index, 0);
 			method_load_handlers.Remove (index);
+		}
+
+		internal int RegisterMethodLoadHandler (Thread target, MonoFunctionType func,
+							FunctionBreakpointHandle handle)
+		{
+			int index = GetUniqueID ();
+
+			TargetAddress retval = target.CallMethod (
+				info.InsertSourceBreakpoint, func.MonoClass.File.MonoImage,
+				func.Token, index, func.MonoClass.Name);
+
+			MethodLoadedHandler handler = handle.MethodLoaded;
+
+			if (!retval.IsNull)
+				method_from_jit_info (target, retval, handler);
+
+			method_load_handlers.Add (index, handler);
+			return index;
 		}
 #endregion
 
