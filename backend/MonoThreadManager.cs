@@ -112,7 +112,7 @@ namespace Mono.Debugger.Backends
 				debugger_info.BreakpointArraySize);
 			inferior.SetRuntimeInfo (mono_runtime_info);
 
-			inferior.WriteInteger (debugger_info.DebuggerVersion, 2);
+			inferior.WriteInteger (debugger_info.DebuggerVersion, 3);
 
 			if (notification_bpt != null) {
 				notification_bpt.Remove (inferior);
@@ -321,8 +321,8 @@ namespace Mono.Debugger.Backends
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 65;
-		public const int  MaxDynamicVersion = 65;
+		public const int  MinDynamicVersion = 66;
+		public const int  MaxDynamicVersion = 66;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly int MonoTrampolineNum;
@@ -330,6 +330,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress NotificationAddress;
 		public readonly TargetAddress SymbolTable;
 		public readonly int SymbolTableSize;
+		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress CompileMethod;
 		public readonly TargetAddress GetVirtualMethod;
 		public readonly TargetAddress GetBoxedObjectMethod;
@@ -347,7 +348,6 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
 		public readonly TargetAddress GetLMFAddress;
-		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress ThreadTable;
 		public readonly TargetAddress ExecutableCodeBuffer;
 		public readonly TargetAddress BreakpointInfo;
@@ -394,6 +394,8 @@ namespace Mono.Debugger.Backends
 			NotificationAddress       = reader.ReadAddress ();
 			SymbolTable               = reader.ReadAddress ();
 			TargetAddress metadata_info = reader.ReadAddress ();
+			DebuggerVersion           = reader.ReadAddress ();
+
 			CompileMethod             = reader.ReadAddress ();
 			GetVirtualMethod          = reader.ReadAddress ();
 			GetBoxedObjectMethod      = reader.ReadAddress ();
@@ -415,7 +417,6 @@ namespace Mono.Debugger.Backends
 			RegisterClassInitCallback = reader.ReadAddress ();
 			RemoveClassInitCallback   = reader.ReadAddress ();
 
-			DebuggerVersion           = reader.ReadAddress ();
 			ThreadTable               = reader.ReadAddress ();
 
 			ExecutableCodeBuffer      = reader.ReadAddress ();
