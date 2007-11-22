@@ -108,21 +108,26 @@ namespace Mono.Debugger.Languages.Mono
 	internal abstract class MonoDataTable
 	{
 		public readonly TargetAddress TableAddress;
-		public readonly TargetAddress FirstChunk;
+		TargetAddress first_chunk;
 		TargetAddress current_chunk;
 		int last_offset;
 
 		protected MonoDataTable (TargetAddress address, TargetAddress first_chunk)
 		{
-			this.TableAddress  =address;
-			this.FirstChunk = first_chunk;
-
-			current_chunk = first_chunk;
+			this.TableAddress = address;
+			this.first_chunk = first_chunk;
+			this.current_chunk = first_chunk;
 		}
 
 		public void Read (TargetMemoryAccess memory)
 		{
-			int header_size = 16 + memory.TargetMemoryInfo.TargetAddressSize;
+			int address_size = memory.TargetMemoryInfo.TargetAddressSize;
+			int header_size = 16 + address_size;
+
+			if (first_chunk.IsNull) {
+				first_chunk = memory.ReadAddress (TableAddress + address_size);
+				current_chunk = first_chunk;
+			}
 
 		again:
 			TargetReader reader = new TargetReader (
@@ -174,7 +179,8 @@ namespace Mono.Debugger.Languages.Mono
 		protected enum DataItemType {
 			Unknown		= 0,
 			Class,
-			Method
+			Method,
+			DelegateInvoke
 		}
 
 		protected abstract void ReadDataItem (TargetMemoryAccess memory, DataItemType type,
@@ -188,7 +194,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2}:{3}{4})", GetType (), TableAddress,
-					      FirstChunk, current_chunk, MyToString ());
+					      first_chunk, current_chunk, MyToString ());
 		}
 	}
 
@@ -208,6 +214,7 @@ namespace Mono.Debugger.Languages.Mono
 		MonoFunctionType main_method;
 
 		Hashtable data_tables;
+		GlobalDataTable global_data_table;
 
 		ProcessServant process;
 		MonoDebuggerInfo info;
@@ -263,6 +270,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			return false;
+		}
+
+		internal bool IsDelegateTrampoline (TargetAddress address)
+		{
+			if (global_data_table == null)
+				return false;
+
+			return global_data_table.IsDelegateInvoke (address);
 		}
 
 		internal bool TryFindImage (Thread thread, string filename)
@@ -421,6 +436,7 @@ namespace Mono.Debugger.Languages.Mono
 				table.Read (target);
 			foreach (MonoSymbolFile symfile in symfile_by_index.Values)
 				symfile.TypeTable.Read (target);
+			global_data_table.Read (target);
 			data_table_time += DateTime.Now - start;
 		}
 
@@ -530,8 +546,8 @@ namespace Mono.Debugger.Languages.Mono
 					"expected {1}.", total_size, info.SymbolTableSize);
 
 			TargetAddress corlib_address = header.ReadAddress ();
-
-			TargetAddress data_table = header.ReadAddress ();
+			TargetAddress global_data_table_ptr = header.ReadAddress ();
+			TargetAddress data_table_list = header.ReadAddress ();
 
 			TargetAddress symfile_by_index = header.ReadAddress ();
 
@@ -551,7 +567,7 @@ namespace Mono.Debugger.Languages.Mono
 				load_symfile (memory, address);
 			}
 
-			ptr = data_table;
+			ptr = data_table_list;
 			while (!ptr.IsNull) {
 				TargetAddress next_ptr = memory.ReadAddress (ptr);
 				TargetAddress address = memory.ReadAddress (
@@ -560,6 +576,8 @@ namespace Mono.Debugger.Languages.Mono
 				ptr = next_ptr;
 				add_data_table (memory, address);
 			}
+
+			global_data_table = new GlobalDataTable (this, global_data_table_ptr);
 		}
 
 		void add_data_table (TargetMemoryAccess memory, TargetAddress ptr)
@@ -618,6 +636,54 @@ namespace Mono.Debugger.Languages.Mono
 			protected override string MyToString ()
 			{
 				return String.Format (":{0}", Domain);
+			}
+		}
+
+		protected class GlobalDataTable : MonoDataTable
+		{
+			public readonly MonoLanguageBackend Mono;
+			ArrayList delegate_impl_list;
+
+			public GlobalDataTable (MonoLanguageBackend mono, TargetAddress address)
+				: base (address, TargetAddress.Null)
+			{
+				this.Mono = mono;
+
+				delegate_impl_list = new ArrayList ();
+			}
+
+			protected override void ReadDataItem (TargetMemoryAccess memory,
+							      DataItemType type, TargetReader reader)
+			{
+				if (type != DataItemType.DelegateInvoke)
+					throw new InternalError (
+						"Got unknown data item: {0}", type);
+
+				TargetAddress code = reader.ReadAddress ();
+				int size = reader.BinaryReader.ReadInt32 ();
+				Report.Debug (DebugFlags.JitSymtab, "READ DELEGATE IMPL: {0} {1}",
+					      code, size);
+				delegate_impl_list.Add (new DelegateInvokeEntry (code, size));
+			}
+
+			public bool IsDelegateInvoke (TargetAddress address)
+			{
+				foreach (DelegateInvokeEntry entry in delegate_impl_list)
+					if ((address >= entry.Code) && (address < entry.Code + entry.Size))
+						return true;
+
+				return false;
+			}
+
+			struct DelegateInvokeEntry {
+				public readonly TargetAddress Code;
+				public readonly int Size;
+
+				public DelegateInvokeEntry (TargetAddress code, int size)
+				{
+					this.Code = code;
+					this.Size = size;
+				}
 			}
 		}
 

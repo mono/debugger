@@ -23,7 +23,8 @@ namespace Mono.Debugger.Architectures
 			None,
 			NativeTrampolineStart,
 			NativeTrampoline,
-			MonoTrampoline
+			MonoTrampoline,
+			DelegateInvoke
 		}
 
 		public abstract TargetAddress Address {

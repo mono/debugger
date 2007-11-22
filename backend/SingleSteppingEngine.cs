@@ -1260,6 +1260,9 @@ namespace Mono.Debugger.Backends
 				PushOperation (new OperationMonoTrampoline (
 					this, instruction, trampoline, handler));
 				return true;
+			} else if (type == Instruction.TrampolineType.DelegateInvoke) {
+				PushOperation (new OperationDelegateInvoke (this));
+				return true;
 			}
 
 			return false;
@@ -3632,6 +3635,61 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			return sse.MethodHasSource (method);
+		}
+	}
+
+	protected class OperationDelegateInvoke : OperationStepBase
+	{
+		public OperationDelegateInvoke (SingleSteppingEngine sse)
+			: base (sse, null)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			sse.do_step_native ();
+		}
+
+		bool finished;
+
+		protected override bool DoProcessEvent ()
+		{
+			TargetAddress current_frame = inferior.CurrentFrame;
+
+			Report.Debug (DebugFlags.SSE, "{0} delegate impl stopped at {1}",
+				      sse, current_frame);
+
+			if (finished)
+				return true;
+
+			/*
+			 * If this is not a call instruction, continue stepping until we leave
+			 * the current method.
+			 */
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, current_frame);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			Report.Debug (DebugFlags.SSE, "{0} delegate impl stopped at {1}: {2}",
+				      sse, current_frame, instruction);
+
+			if ((instruction.InstructionType == Instruction.Type.IndirectJump) ||
+			    (instruction.InstructionType == Instruction.Type.IndirectCall))
+				finished = true;
+
+			sse.do_step_native ();
+			return false;
+		}
+
+		protected override bool TrampolineHandler (Method method)
+		{
+			return false;
 		}
 	}
 
