@@ -129,6 +129,9 @@ namespace Mono.Debugger.Languages.Mono
 				current_chunk = first_chunk;
 			}
 
+			if (current_chunk.IsNull)
+				return;
+
 		again:
 			TargetReader reader = new TargetReader (
 				memory.ReadMemory (current_chunk, header_size));

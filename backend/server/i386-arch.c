@@ -184,7 +184,8 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 static ServerCommandError
 server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 			     guint64 method_argument, guint64 data_argument,
-			     const gchar *string_argument, guint64 callback_argument)
+			     guint64 data_argument2, const gchar *string_argument,
+			     guint64 callback_argument)
 {
 	ServerCommandError result = COMMAND_ERROR_NONE;
 	ArchInfo *arch = handle->arch;
@@ -194,7 +195,9 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	static guint8 static_code[] = { 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00,
 					0x00, 0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68,
 					0x00, 0x00, 0x00, 0x00, 0x68, 0x00, 0x00, 0x00,
-					0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0xcc };
+					0x00, 0x68, 0x00, 0x00, 0x00, 0x00, 0x68, 0x00,
+					0x00, 0x00, 0x00, 0xe8, 0x00, 0x00, 0x00, 0x00,
+					0xcc };
 	int static_size = sizeof (static_code);
 	int size = static_size + strlen (string_argument) + 1;
 	guint8 *code = g_malloc0 (size);
@@ -207,20 +210,22 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
-	cdata->call_address = new_esp + 31;
-	cdata->stack_pointer = new_esp - 20;
+	cdata->call_address = new_esp + static_size;
+	cdata->stack_pointer = new_esp - 28;
 	cdata->callback_argument = callback_argument;
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
 	call_disp = (int) method_address - new_esp;
 
-	*((guint32 *) (code+1)) = new_esp + 31;
-	*((guint32 *) (code+6)) = data_argument >> 32;
-	*((guint32 *) (code+11)) = data_argument & 0xffffffff;
-	*((guint32 *) (code+16)) = method_argument >> 32;
-	*((guint32 *) (code+21)) = method_argument & 0xffffffff;
-	*((guint32 *) (code+26)) = call_disp - 30;
+	*((guint32 *) (code+1)) = new_esp + static_size;
+	*((guint32 *) (code+6)) = data_argument2 >> 32;
+	*((guint32 *) (code+11)) = data_argument2 & 0xffffffff;
+	*((guint32 *) (code+16)) = data_argument >> 32;
+	*((guint32 *) (code+21)) = data_argument & 0xffffffff;
+	*((guint32 *) (code+26)) = method_argument >> 32;
+	*((guint32 *) (code+31)) = method_argument & 0xffffffff;
+	*((guint32 *) (code+36)) = call_disp - 40;
 
 	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
