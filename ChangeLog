@@ -40,6 +40,44 @@
 	* backend/arch/Architecture_I386.cs
 	(Architecture_I386.GetLMF): Make this work again.
 
+2007-11-22  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(OperationDelegateInvoke): New operation; step through a delegate
+	invocation trampoline.
+
+	* backend/arch/Instruction.cs
+	(Instruction.TrampolineType): Added `DelegateInvoke'.
+
+2007-11-20  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/TestDelegate.cs: Temporarily disable this.
+
+	* backend/SingleSteppingEngine.cs
+	(OperationExecuteInstruction): Make this a separate operation
+	since we need to resume the target after executing the instruction
+	if we're not single-stepping.
+	(OperationActivateBreakpoints): Use the new breakpoint code.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.InsertBreakpoint): Take a
+	`FunctionBreakpointHandle' argument, not `MethodLoadedHandler'.
+
+2007-11-19  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Main.cs
+	(Main.RunInferiorMainLoop): New public method.  This can be used
+	to run a main loop inside the nunit test suite.
+
+	* test/testsuite/NUnit.cs
+	(TestSuite.MainLoop): New public method; run an inferior main loop
+	from within the testsuite.
+
+2007-11-06  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_I386.cs
+	(Architecture_I386.GetLMF): Make this work again.
+
 2007-11-05  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Instruction.cs

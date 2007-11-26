@@ -179,13 +179,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		internal override bool InsertBreakpoint (Thread target, MethodLoadedHandler handler)
+		internal override bool InsertBreakpoint (Thread target,
+							 FunctionBreakpointHandle handle)
 		{
-			TargetAddress method = GetMethodAddress (target);
-
 			load_handler = klass.File.MonoLanguage.RegisterMethodLoadHandler (
-				target, method, handler);
-
+				target, this, handle);
 			return load_handler > 0;
 		}
 

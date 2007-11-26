@@ -33,6 +33,7 @@ namespace Mono.Debugger.Frontend
 		StyleBase current_style;
 
 		bool is_interactive;
+		bool is_script;
 		int exit_code = 0;
 		int interrupt_level;
 
@@ -53,6 +54,7 @@ namespace Mono.Debugger.Frontend
 		{
 			this.config = config;
 			this.is_interactive = is_interactive;
+			this.is_script = options.IsScript;
 			this.parser = new ExpressionParser (this);
 			this.session = new DebuggerSession (config, options, "main", parser);
 			this.engine = new DebuggerEngine (this);
@@ -149,10 +151,12 @@ namespace Mono.Debugger.Frontend
 
 		public bool IsInteractive {
 			get { return is_interactive; }
+			set { is_interactive = value; }
 		}
 
 		public bool IsScript {
-			get { return Options.IsScript; }
+			get { return is_script; }
+			set { is_script = value; }
 		}
 
 		public DebuggerOptions Options {

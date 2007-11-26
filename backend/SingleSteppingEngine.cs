@@ -941,7 +941,7 @@ namespace Mono.Debugger.Backends
 				return true;
 			}
 
-			inferior.ExecuteInstruction (instruction.Code, true);
+			PushOperation (new OperationExecuteInstruction (this, instruction));
 			return true;
 		}
 
@@ -1217,6 +1217,9 @@ namespace Mono.Debugger.Backends
 
 		void remove_temporary_breakpoint ()
 		{
+			Report.Debug (DebugFlags.SSE, "{0} remove temp breakpoint {1}",
+				      this, temp_breakpoint_id);
+
 			if (temp_breakpoint_id != 0) {
 				inferior.RemoveBreakpoint (temp_breakpoint_id);
 				temp_breakpoint_id = 0;
@@ -1256,6 +1259,9 @@ namespace Mono.Debugger.Backends
 			} else if (type == Instruction.TrampolineType.MonoTrampoline) {
 				PushOperation (new OperationMonoTrampoline (
 					this, instruction, trampoline, handler));
+				return true;
+			} else if (type == Instruction.TrampolineType.DelegateInvoke) {
+				PushOperation (new OperationDelegateInvoke (this));
 				return true;
 			}
 
@@ -1590,10 +1596,10 @@ namespace Mono.Debugger.Backends
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2,
-							  string string_argument)
+							  long arg3, string string_argument)
 		{
 			return StartOperation (new OperationCallMethod (
-				this, method, arg1, arg2, string_argument));
+				this, method, arg1, arg2, arg3, string_argument));
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2)
@@ -1698,7 +1704,7 @@ namespace Mono.Debugger.Backends
 		}
 
 		internal override void InsertBreakpoint (BreakpointHandle handle,
-							TargetAddress address, int domain)
+							 TargetAddress address, int domain)
 		{
 			SendCommand (delegate {
 				process.BreakpointManager.InsertBreakpoint (
@@ -2174,19 +2180,22 @@ namespace Mono.Debugger.Backends
 
 	protected class OperationActivateBreakpoints : Operation
 	{
+		MonoLanguageBackend language;
+
 		public OperationActivateBreakpoints (SingleSteppingEngine sse, Queue pending)
 			: base (sse, null)
 		{
 			this.pending_events = pending;
-		}
-
-		public override bool IsSourceOperation {
-			get { return true; }
+			this.language = sse.process.MonoLanguage;
 		}
 
 		protected override void DoExecute ()
 		{
 			do_execute ();
+		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
 		}
 
 		Queue pending_events;
@@ -2197,15 +2206,24 @@ namespace Mono.Debugger.Backends
 		{
 			args = null;
 
+			Report.Debug (DebugFlags.SSE,
+				      "{0} activate breakpoints: {1}", sse, completed);
+
 			while (!completed) {
 				if (do_execute ())
 					return EventResult.Running;
 
+				Report.Debug (DebugFlags.SSE,
+					      "{0} activate breakpoints done - continue", sse);
+
+				return EventResult.ResumeOperation;
 
 				sse.do_continue ();
 				return EventResult.Running;
 			}
 
+			Report.Debug (DebugFlags.SSE,
+				      "{0} activate breakpoints completed", sse);
 			return EventResult.AskParent;
 		}
 
@@ -2226,63 +2244,44 @@ namespace Mono.Debugger.Backends
 			Report.Debug (DebugFlags.SSE,
 				      "{0} activate breakpoints: {1}", sse, handle);
 
-			sse.PushOperation (new OperationMethodBreakpoint (
-				sse, handle.Function, handle.MethodLoaded));
+			sse.PushOperation (new OperationInsertBreakpoint (sse, handle));
 			return true;
 		}
 	}
 
-	protected class OperationMethodBreakpoint : OperationCallback
+	protected class OperationInsertBreakpoint : OperationCallback
 	{
-		public readonly MonoFunctionType Function;
-		public readonly MethodLoadedHandler Handler;
+		public readonly FunctionBreakpointHandle Handle;
 
-		MonoLanguageBackend language;
-		int index;
-
-		bool class_resolved;
-
-		public OperationMethodBreakpoint (SingleSteppingEngine sse, TargetFunctionType func,
-						  MethodLoadedHandler handler)
-			: base (sse)
+		public OperationInsertBreakpoint (SingleSteppingEngine sse,
+						  FunctionBreakpointHandle handle)
+			: base (sse, null)
 		{
-			this.Function = (MonoFunctionType) func;
-			this.Handler = handler;
+			this.Handle = handle;
 		}
 
 		protected override void DoExecute ()
 		{
-			language = sse.process.MonoLanguage;
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			MonoLanguageBackend mono = sse.process.MonoLanguage;
 
-			TargetAddress image = Function.MonoClass.File.MonoImage;
+			MonoFunctionType func = (MonoFunctionType) Handle.Function;
+			TargetAddress image = func.MonoClass.File.MonoImage;
+			int index = MonoLanguageBackend.GetUniqueID ();
 
-			inferior.CallMethod (sse.MonoDebuggerInfo.LookupClass, image.Address,
-					     0, Function.MonoClass.Name, ID);
+			mono.RegisterMethodLoadHandler (index, Handle.MethodLoaded);
+
+			inferior.CallMethod (
+				info.InsertSourceBreakpoint, image.Address,
+				func.Token, index, func.MonoClass.Name, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} method breakpoint callback: {1} {2:x} {3:x} {4}",
-				      sse, inferior.CurrentFrame, data1, data2, class_resolved);
+				      "{0} insert breakpoint done: {1:x} {2:x}",
+				      sse, data1, data2);
 
-			if (!class_resolved) {
-				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
-				MonoClassInfo info = Function.MonoClass.ClassResolved (sse.Client, klass);
-				TargetAddress method = info.GetMethodAddress (inferior, Function.Token);
-
-				index = MonoLanguageBackend.GetUniqueID ();
-
-				inferior.CallMethod (sse.MonoDebuggerInfo.InsertBreakpoint,
-						     method.Address, index, ID);
-
-				language.RegisterMethodLoadHandler (index, Handler);
-
-				class_resolved = true;
-				return EventResult.Running;
-			}
-
-			RestoreStack ();
 			return EventResult.AskParent;
 		}
 	}
@@ -2489,6 +2488,40 @@ namespace Mono.Debugger.Backends
 				until = TargetAddress.Null;
 				return EventResult.Running;
 			}
+
+			args = null;
+			return EventResult.ResumeOperation;
+		}
+	}
+
+	protected class OperationExecuteInstruction : Operation
+	{
+		public readonly Instruction Instruction;
+
+		public OperationExecuteInstruction (SingleSteppingEngine sse, Instruction insn)
+			: base (sse, null)
+		{
+			this.Instruction = insn;
+		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected override void DoExecute ()
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} executing instruction: {1}", sse, Instruction);
+
+			inferior.ExecuteInstruction (Instruction.Code, true);
+		}
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} executed instruction {1} at {2}: {3}",
+				      sse, Instruction, inferior.CurrentFrame, cevent);
 
 			args = null;
 			return EventResult.ResumeOperation;
@@ -2791,6 +2824,14 @@ namespace Mono.Debugger.Backends
 				sse.do_continue ();
 		}
 
+		protected override bool ResumeOperation ()
+		{
+			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
+
+			sse.do_continue ();
+			return true;
+		}
+
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
@@ -3049,7 +3090,7 @@ namespace Mono.Debugger.Backends
 					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
 
 				inferior.CallMethod (
-					sse.MonoDebuggerInfo.LookupClass, image.Address, 0,
+					sse.MonoDebuggerInfo.LookupClass, image.Address, 0, 0,
 					Function.MonoClass.Name, ID);
 				return;
 			}
@@ -3285,17 +3326,19 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress Method;
 		public readonly long Argument1;
 		public readonly long Argument2;
+		public readonly long Argument3;
 		public readonly string StringArgument;
 
 		public OperationCallMethod (SingleSteppingEngine sse,
-					    TargetAddress method, long arg1, long arg2,
+					    TargetAddress method, long arg1, long arg2, long arg3,
 					    string sarg)
 			: base (sse)
 		{
-			this.Type = CallMethodType.LongString;
+			this.Type = CallMethodType.LongLongLongString;
 			this.Method = method;
 			this.Argument1 = arg1;
 			this.Argument2 = arg2;
+			this.Argument3 = arg3;
 			this.StringArgument = sarg;
 		}
 
@@ -3316,8 +3359,8 @@ namespace Mono.Debugger.Backends
 				inferior.CallMethod (Method, Argument1, Argument2, ID);
 				break;
 
-			case CallMethodType.LongString:
-				inferior.CallMethod (Method, Argument1, Argument2,
+			case CallMethodType.LongLongLongString:
+				inferior.CallMethod (Method, Argument1, Argument2, Argument3,
 						     StringArgument, ID);
 				break;
 
@@ -3559,6 +3602,7 @@ namespace Mono.Debugger.Backends
 		protected override bool DoProcessEvent ()
 		{
 			TargetAddress current_frame = inferior.CurrentFrame;
+
 			Report.Debug (DebugFlags.SSE, "{0} wrapper stopped at {1} ({2}:{3})",
 				      sse, current_frame, method.StartAddress, method.EndAddress);
 			if ((current_frame < method.StartAddress) || (current_frame > method.EndAddress))
@@ -3591,6 +3635,61 @@ namespace Mono.Debugger.Backends
 				return true;
 
 			return sse.MethodHasSource (method);
+		}
+	}
+
+	protected class OperationDelegateInvoke : OperationStepBase
+	{
+		public OperationDelegateInvoke (SingleSteppingEngine sse)
+			: base (sse, null)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			sse.do_step_native ();
+		}
+
+		bool finished;
+
+		protected override bool DoProcessEvent ()
+		{
+			TargetAddress current_frame = inferior.CurrentFrame;
+
+			Report.Debug (DebugFlags.SSE, "{0} delegate impl stopped at {1}",
+				      sse, current_frame);
+
+			if (finished)
+				return true;
+
+			/*
+			 * If this is not a call instruction, continue stepping until we leave
+			 * the current method.
+			 */
+			Instruction instruction = inferior.Architecture.ReadInstruction (
+				inferior, current_frame);
+			if ((instruction == null) || !instruction.HasInstructionSize) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			Report.Debug (DebugFlags.SSE, "{0} delegate impl stopped at {1}: {2}",
+				      sse, current_frame, instruction);
+
+			if ((instruction.InstructionType == Instruction.Type.IndirectJump) ||
+			    (instruction.InstructionType == Instruction.Type.IndirectCall))
+				finished = true;
+
+			sse.do_step_native ();
+			return false;
+		}
+
+		protected override bool TrampolineHandler (Method method)
+		{
+			return false;
 		}
 	}
 
@@ -3692,6 +3791,6 @@ namespace Mono.Debugger.Backends
 	internal enum CallMethodType
 	{
 		LongLong,
-		LongString
+		LongLongLongString
 	}
 }

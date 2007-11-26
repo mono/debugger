@@ -142,16 +142,9 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
-		protected bool GetMonoTrampoline (TargetMemoryAccess memory,
+		protected bool GetMonoTrampoline (TargetMemoryAccess memory, TargetAddress call_target,
 						  out TargetAddress trampoline)
 		{
-			if ((InstructionType != Type.Call) && (InstructionType != Type.IndirectCall)) {
-				trampoline = TargetAddress.Null;
-				return false;
-			}
-
-			TargetAddress call_target = GetEffectiveAddress (memory);
-
 			TargetBinaryReader reader = memory.ReadMemory (call_target, 14).GetReader ();
 			byte opcode = reader.ReadByte ();
 			if (opcode != 0xe8) {
@@ -189,8 +182,24 @@ namespace Mono.Debugger.Architectures
 				}
 			}
 
+			if ((InstructionType != Type.Call) && (InstructionType != Type.IndirectCall)) {
+				trampoline = TargetAddress.Null;
+				return TrampolineType.None;
+			}
+
 			if (Opcodes.Process.IsManagedApplication) {
-				if (GetMonoTrampoline (memory, out trampoline))
+				TargetAddress target = GetEffectiveAddress (memory);
+				if (target.IsNull) {
+					trampoline = TargetAddress.Null;
+					return TrampolineType.None;
+				}
+
+				if (Opcodes.Process.MonoLanguage.IsDelegateTrampoline (target)) {
+					trampoline = target;
+					return TrampolineType.DelegateInvoke;
+				}
+
+				if (GetMonoTrampoline (memory, target, out trampoline))
 					return TrampolineType.MonoTrampoline;
 			}
 

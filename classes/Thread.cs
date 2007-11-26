@@ -559,6 +559,23 @@ namespace Mono.Debugger
 			}
 		}
 
+		public TargetAddress CallMethod (TargetAddress method, long arg1, long arg2)
+		{
+			CommandResult result;
+
+			lock (this) {
+				check_alive ();
+				result = servant.CallMethod (method, arg1, arg2);
+			}
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
+		}
+
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
 						 long arg2)
 		{
@@ -578,13 +595,14 @@ namespace Mono.Debugger
 		}
 
 		public TargetAddress CallMethod (TargetAddress method, TargetAddress arg1,
-						 long arg2, string string_arg)
+						 long arg2, long arg3, string string_arg)
 		{
 			CommandResult result;
 
 			lock (this) {
 				check_alive ();
-				result = servant.CallMethod (method, arg1.Address, arg2, string_arg);
+				result = servant.CallMethod (
+					method, arg1.Address, arg2, arg3, string_arg);
 			}
 
 			result.Wait ();

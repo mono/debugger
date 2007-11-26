@@ -1,4 +1,5 @@
-using System.Runtime.Serialization;
+using System;
+using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
@@ -72,7 +73,8 @@ namespace Mono.Debugger.Languages
 
 		public abstract TargetAddress GetMethodAddress (Thread target);
 
-		internal abstract bool InsertBreakpoint (Thread target, MethodLoadedHandler handler);
+		internal abstract bool InsertBreakpoint (Thread target,
+							 FunctionBreakpointHandle handle);
 
 		internal abstract void RemoveBreakpoint (Thread target);
 	}

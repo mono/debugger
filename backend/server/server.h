@@ -236,6 +236,7 @@ struct InferiorVTable {
 						       guint64           method,
 						       guint64           method_argument,
 						       guint64           data_argument,
+						       guint64           data_argument2,
 						       const gchar      *string_argument,
 						       guint64           callback_argument);
 
@@ -474,6 +475,7 @@ mono_debugger_server_call_method_1        (ServerHandle       *handle,
 					   guint64             method_address,
 					   guint64             method_argument,
 					   guint64             data_argument,
+					   guint64             data_argument2,
 					   const gchar        *string_argument,
 					   guint64             callback_argument);
 
