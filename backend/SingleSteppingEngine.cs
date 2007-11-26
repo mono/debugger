@@ -3149,7 +3149,9 @@ namespace Mono.Debugger.Backends
 			if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
 				return true;
 
-			if (!instance.Type.IsByRef && instance.Type.ParentType.IsByRef) {
+			TargetClassType parent_type = instance.Type.GetParentType (inferior);
+
+			if (!instance.Type.IsByRef && parent_type.IsByRef) {
 				TargetAddress klass = ((MonoClassObject) instance).GetKlassAddress (inferior);
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
@@ -3197,8 +3199,8 @@ namespace Mono.Debugger.Backends
 					      "{0} rti boxed object: {1}", sse, boxed);
 
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-				instance = (MonoClassObject) instance.Type.ParentType.GetObject (
-					inferior, new_loc);
+				TargetClassType parent_type = instance.Type.GetParentType (inferior);
+				instance = (MonoClassObject) parent_type.GetObject (inferior, new_loc);
 				stage = Stage.HasMethodAddress;
 				do_execute ();
 				return EventResult.Running;

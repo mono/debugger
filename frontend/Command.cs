@@ -3109,7 +3109,8 @@ namespace Mono.Debugger.Frontend
 			set { group = value; }
 		}
 
-		bool IsSubclassOf (TargetClassType type, TargetType parent)
+		bool IsSubclassOf (TargetMemoryAccess target, TargetClassType type,
+				   TargetType parent)
 		{
 			while (type != null) {
 				if (type == parent)
@@ -3118,7 +3119,7 @@ namespace Mono.Debugger.Frontend
 				if (!type.HasParent)
 					return false;
 
-				type = type.ParentType;
+				type = type.GetParentType (target);
 			}
 
 			return false;
@@ -3143,7 +3144,7 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			type = expr.EvaluateType (context) as TargetClassType;
-			if (!IsSubclassOf (type, exception_type))
+			if (!IsSubclassOf (context.CurrentThread, type, exception_type))
 				throw new ScriptingException ("Type `{0}' is not an exception type.", expr.Name);
 
 			if (tgroup == null)

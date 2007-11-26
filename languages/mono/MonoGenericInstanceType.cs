@@ -75,6 +75,15 @@ namespace Mono.Debugger.Languages.Mono
 			return ResolveClass (target);
 		}
 
+		public override bool HasParent {
+			get { return false; }
+		}
+
+		public override TargetClassType GetParentType (TargetMemoryAccess target)
+		{
+			throw new InvalidOperationException ();
+		}
+
 		protected MonoClassInfo ResolveClass (TargetMemoryAccess target)
 		{
 			if (class_info != null)

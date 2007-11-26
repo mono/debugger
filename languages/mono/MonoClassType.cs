@@ -82,8 +82,9 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parent_type != null; }
 		}
 
-		public override TargetClassType ParentType {
-			get { return parent_type; }
+		public override TargetClassType GetParentType (TargetMemoryAccess target)
+		{
+			return parent_type;
 		}
 
 		internal MonoClassType MonoParentType {

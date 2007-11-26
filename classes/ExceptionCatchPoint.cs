@@ -77,7 +77,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool IsSubclassOf (TargetClassType type, TargetType parent)
+		bool IsSubclassOf (TargetMemoryAccess target, TargetClassType type,
+				   TargetType parent)
 		{
 			while (type != null) {
 				if (type == parent)
@@ -86,7 +87,7 @@ namespace Mono.Debugger
 				if (!type.HasParent)
 					return false;
 
-				type = type.ParentType;
+				type = type.GetParentType (target);
 			}
 
 			return false;
@@ -104,7 +105,7 @@ namespace Mono.Debugger
 			if (exception == null)
 				return false;
 
-			return IsSubclassOf (exc.Type, exception);
+			return IsSubclassOf (target, exc.Type, exception);
 		}
 
 		protected override void GetSessionData (XmlElement root, XmlElement element)

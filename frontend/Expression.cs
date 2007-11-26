@@ -1824,7 +1824,7 @@ namespace Mono.Debugger.Frontend
 
 			TargetClassType ctype = stype as TargetClassType;
 			if ((ctype != null) && ctype.HasParent) {
-				stype = ctype.ParentType;
+				stype = ctype.GetParentType (target);
 				if (instance != null) {
 					instance = instance.GetParentObject (target);
 					if (instance == null)
@@ -2345,7 +2345,7 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		static TargetClassObject TryParentCast (ScriptingContext context, Thread target,
+		static TargetClassObject TryParentCast (ScriptingContext context,
 							TargetClassObject source,
 							TargetClassType source_type,
 							TargetClassType target_type)
@@ -2356,23 +2356,23 @@ namespace Mono.Debugger.Frontend
 			if (!source_type.HasParent)
 				return null;
 
-			source = TryParentCast (
-				context, target, source, source_type.ParentType, target_type);
+			TargetClassType parent_type = source_type.GetParentType (context.CurrentThread);
+			source = TryParentCast (context, source, parent_type, target_type);
 			if (source == null)
 				return null;
 
-			return source.GetParentObject (target);
+			return source.GetParentObject (context.CurrentThread);
 		}
 
-		static TargetClassObject TryCurrentCast (ScriptingContext context, Thread target,
+		static TargetClassObject TryCurrentCast (ScriptingContext context,
 							 TargetClassObject source,
 							 TargetClassType target_type)
 		{
-			TargetClassObject current = source.GetCurrentObject (target);
+			TargetClassObject current = source.GetCurrentObject (context.CurrentThread);
 			if (current == null)
 				return null;
 
-			return TryParentCast (context, target, current, current.Type, target_type);
+			return TryParentCast (context, current, current.Type, target_type);
 		}
 
 		public static TargetObject TryCast (ScriptingContext context, TargetObject source,
@@ -2381,18 +2381,16 @@ namespace Mono.Debugger.Frontend
 			if (source.Type == target_type)
 				return source;
 
-			Thread target = context.CurrentThread;
-
-			TargetClassObject sobj = Convert.ToClassObject (target, source);
+			TargetClassObject sobj = Convert.ToClassObject (context.CurrentThread, source);
 			if (sobj == null)
 				return null;
 
 			TargetClassObject result;
-			result = TryParentCast (context, target, sobj, sobj.Type, target_type);
+			result = TryParentCast (context, sobj, sobj.Type, target_type);
 			if (result != null)
 				return result;
 
-			return TryCurrentCast (context, target, sobj, target_type);
+			return TryCurrentCast (context, sobj, target_type);
 		}
 
 		static bool TryParentCast (ScriptingContext context,
@@ -2405,7 +2403,8 @@ namespace Mono.Debugger.Frontend
 			if (!source_type.HasParent)
 				return false;
 
-			return TryParentCast (context, source_type.ParentType, target_type);
+			TargetClassType parent_type = source_type.GetParentType (context.CurrentThread);
+			return TryParentCast (context, parent_type, target_type);
 		}
 
 		public static bool TryCast (ScriptingContext context, TargetType source,
@@ -2636,8 +2635,9 @@ namespace Mono.Debugger.Frontend
 			if (!source.HasParent)
 				return false;
 
-			return ImplicitReferenceConversionExists (
-				context, source.ParentType, target);
+			TargetClassType parent_type = source.GetParentType (context.CurrentThread);
+
+			return ImplicitReferenceConversionExists (context, parent_type, target);
 		}
 
 		static TargetObject ImplicitReferenceConversion (ScriptingContext context,

@@ -6,14 +6,6 @@ namespace Mono.Debugger.Languages
 			: base (language, kind)
 		{ }
 
-		public abstract bool HasParent {
-			get;
-		}
-
-		public abstract TargetClassType ParentType {
-			get;
-		}
-
 		public abstract TargetFieldInfo[] Fields {
 			get;
 		}
