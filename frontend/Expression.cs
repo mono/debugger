@@ -1768,34 +1768,38 @@ namespace Mono.Debugger.Frontend
 							      Name, member.GetType ());
 		}
 
-		public static MemberExpression FindMember (Thread target, TargetClassType stype,
+		public static MemberExpression FindMember (Thread target, TargetStructType stype,
 							   TargetClassObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
 		again:
-			TargetMemberInfo member = stype.FindMember (
+			TargetClassType ctype = stype as TargetClassType;
+			if (ctype == null)
+				return null;
+
+			TargetMemberInfo member = ctype.FindMember (
 				name, search_static, search_instance);
 
 			if (member != null)
-				return new StructAccessExpression (stype, instance, member);
+				return new StructAccessExpression (ctype, instance, member);
 
 			ArrayList methods = new ArrayList ();
 			bool is_instance = false;
 			bool is_static = false;
 
 			if (name == ".ctor") {
-				foreach (TargetMethodInfo method in stype.Constructors) {
+				foreach (TargetMethodInfo method in ctype.Constructors) {
 					methods.Add (method.Type);
 					is_instance = true;
 				}
 			} else if (name == ".cctor") {
-				foreach (TargetMethodInfo method in stype.StaticConstructors) {
+				foreach (TargetMethodInfo method in ctype.StaticConstructors) {
 					methods.Add (method.Type);
 					is_static = true;
 				}
 			} else {
 				if (search_instance) {
-					foreach (TargetMethodInfo method in stype.Methods) {
+					foreach (TargetMethodInfo method in ctype.Methods) {
 						if (method.Name != name)
 							continue;
 
@@ -1805,7 +1809,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				if (search_static) {
-					foreach (TargetMethodInfo method in stype.StaticMethods) {
+					foreach (TargetMethodInfo method in ctype.StaticMethods) {
 						if (method.Name != name)
 							continue;
 
@@ -1819,11 +1823,10 @@ namespace Mono.Debugger.Frontend
 				TargetFunctionType[] funcs = new TargetFunctionType [methods.Count];
 				methods.CopyTo (funcs, 0);
 				return new MethodGroupExpression (
-					stype, instance, name, funcs, is_instance, is_static);
+					ctype, instance, name, funcs, is_instance, is_static);
 			}
 
-			TargetClassType ctype = stype as TargetClassType;
-			if ((ctype != null) && ctype.HasParent) {
+			if (ctype.HasParent) {
 				stype = ctype.GetParentType (target);
 				if (instance != null) {
 					instance = instance.GetParentObject (target);
@@ -2347,8 +2350,8 @@ namespace Mono.Debugger.Frontend
 
 		static TargetClassObject TryParentCast (ScriptingContext context,
 							TargetClassObject source,
-							TargetClassType source_type,
-							TargetClassType target_type)
+							TargetStructType source_type,
+							TargetStructType target_type)
 		{
 			if (source_type == target_type)
 				return source;
@@ -2356,7 +2359,7 @@ namespace Mono.Debugger.Frontend
 			if (!source_type.HasParent)
 				return null;
 
-			TargetClassType parent_type = source_type.GetParentType (context.CurrentThread);
+			TargetStructType parent_type = source_type.GetParentType (context.CurrentThread);
 			source = TryParentCast (context, source, parent_type, target_type);
 			if (source == null)
 				return null;
@@ -2394,8 +2397,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		static bool TryParentCast (ScriptingContext context,
-					   TargetClassType source_type,
-					   TargetClassType target_type)
+					   TargetStructType source_type,
+					   TargetStructType target_type)
 		{
 			if (source_type == target_type)
 				return true;
@@ -2403,7 +2406,7 @@ namespace Mono.Debugger.Frontend
 			if (!source_type.HasParent)
 				return false;
 
-			TargetClassType parent_type = source_type.GetParentType (context.CurrentThread);
+			TargetStructType parent_type = source_type.GetParentType (context.CurrentThread);
 			return TryParentCast (context, parent_type, target_type);
 		}
 
@@ -2626,8 +2629,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		static bool ImplicitReferenceConversionExists (ScriptingContext context,
-							       TargetClassType source,
-							       TargetClassType target)
+							       TargetStructType source,
+							       TargetStructType target)
 		{
 			if (source == target)
 				return true;
@@ -2635,8 +2638,7 @@ namespace Mono.Debugger.Frontend
 			if (!source.HasParent)
 				return false;
 
-			TargetClassType parent_type = source.GetParentType (context.CurrentThread);
-
+			TargetStructType parent_type = source.GetParentType (context.CurrentThread);
 			return ImplicitReferenceConversionExists (context, parent_type, target);
 		}
 

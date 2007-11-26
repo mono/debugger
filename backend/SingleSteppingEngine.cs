@@ -3039,7 +3039,7 @@ namespace Mono.Debugger.Backends
 		MonoLanguageBackend language;
 		TargetAddress method = TargetAddress.Null;
 		TargetAddress invoke = TargetAddress.Null;
-		TargetClassObject instance;
+		TargetStructObject instance;
 		MonoClassInfo class_info;
 		Stage stage;
 
@@ -3149,7 +3149,7 @@ namespace Mono.Debugger.Backends
 			if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
 				return true;
 
-			TargetClassType parent_type = instance.Type.GetParentType (inferior);
+			TargetStructType parent_type = instance.Type.GetParentType (inferior);
 
 			if (!instance.Type.IsByRef && parent_type.IsByRef) {
 				TargetAddress klass = ((MonoClassObject) instance).GetKlassAddress (inferior);
@@ -3199,8 +3199,8 @@ namespace Mono.Debugger.Backends
 					      "{0} rti boxed object: {1}", sse, boxed);
 
 				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-				TargetClassType parent_type = instance.Type.GetParentType (inferior);
-				instance = (MonoClassObject) parent_type.GetObject (inferior, new_loc);
+				TargetStructType parent_type = instance.Type.GetParentType (inferior);
+				instance = (TargetStructObject) parent_type.GetObject (inferior, new_loc);
 				stage = Stage.HasMethodAddress;
 				do_execute ();
 				return EventResult.Running;
@@ -3227,7 +3227,7 @@ namespace Mono.Debugger.Backends
 				if (!class_type.IsByRef) {
 					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
 						2 * inferior.TargetMemoryInfo.TargetAddressSize);
-					instance = (TargetClassObject) class_type.GetObject (
+					instance = (TargetStructObject) class_type.GetObject (
 						inferior, new_loc);
 				}
 

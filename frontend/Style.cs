@@ -376,7 +376,7 @@ namespace Mono.Debugger.Frontend
 						sb.Append (" ");
 					}
 					if (ctype.HasParent) {
-						TargetClassType parent = ctype.GetParentType (target);
+						TargetStructType parent = ctype.GetParentType (target);
 						sb.Append (": ");
 						sb.Append (parent.Name);
 					}
