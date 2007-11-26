@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	// <summary>
@@ -18,12 +20,12 @@ namespace Mono.Debugger.Languages
 			get { return false; }
 		}
 
-		internal override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (InternalTargetAccess target)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		internal override TargetBlob ReadMemory (TargetMemoryAccess target, int size)
+		internal override TargetBlob ReadMemory (InternalTargetAccess target, int size)
 		{
 			if (size > blob.Size)
 				throw new ArgumentException ();
@@ -34,7 +36,7 @@ namespace Mono.Debugger.Languages
 			return new TargetBlob (data, blob.TargetMemoryInfo);
 		}
 
-		internal override void WriteBuffer (TargetAccess target, byte[] data)
+		internal override void WriteBuffer (InternalTargetAccess target, byte[] data)
 		{
 			if (data.Length > blob.Size)
 				throw new ArgumentException ();
@@ -42,7 +44,8 @@ namespace Mono.Debugger.Languages
 			data.CopyTo (blob.Contents, 0);
 		}
 
-		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
+		internal override void WriteAddress (InternalTargetAccess target,
+						     TargetAddress new_address)
 		{
 			throw new InvalidOperationException ();
 		}

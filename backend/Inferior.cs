@@ -406,10 +406,10 @@ namespace Mono.Debugger.Backends
 					continue;
 				if (obj.Location.HasAddress) {
 					blob_offsets [i] = -1;
-					addresses [i] = obj.Location.GetAddress (this).Address;
+					addresses [i] = obj.Location.GetAddress (target_access).Address;
 					continue;
 				}
-				blobs [i] = obj.Location.ReadBuffer (target, obj.Type.Size);
+				blobs [i] = obj.Location.ReadBuffer (target_access, obj.Type.Size);
 				blob_offsets [i] = blob_size;
 				blob_size += blobs [i].Length;
 			}
@@ -1573,6 +1573,36 @@ namespace Mono.Debugger.Backends
 			public override byte[] ReadBuffer (TargetAddress address, int size)
 			{
 				return Inferior.ReadBuffer (address, size);
+			}
+
+
+			public override bool CanWrite {
+				get { return false; }
+			}
+
+			public override void WriteBuffer (TargetAddress address, byte[] buffer)
+			{
+				Inferior.WriteBuffer (address, buffer);
+			}
+
+			public override void WriteByte (TargetAddress address, byte value)
+			{
+				Inferior.WriteByte (address, value);
+			}
+
+			public override void WriteInteger (TargetAddress address, int value)
+			{
+				Inferior.WriteInteger (address, value);
+			}
+
+			public override void WriteLongInteger (TargetAddress address, long value)
+			{
+				Inferior.WriteLongInteger (address, value);
+			}
+
+			public override void WriteAddress (TargetAddress address, TargetAddress value)
+			{
+				Inferior.WriteAddress (address, value);
 			}
 		}
 

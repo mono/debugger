@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	// <summary>
@@ -20,7 +22,7 @@ namespace Mono.Debugger.Languages
 			get { return relative_to.HasAddress; }
 		}
 
-		internal override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (InternalTargetAccess target)
 		{
 			return relative_to.GetAddress (target) + offset;
 		}

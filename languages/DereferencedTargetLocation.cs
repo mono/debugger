@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	internal class DereferencedTargetLocation : TargetLocation
@@ -15,7 +17,7 @@ namespace Mono.Debugger.Languages
 			get { return reference.HasAddress; }
 		}
 
-		internal override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (InternalTargetAccess target)
 		{
 			TargetAddress address = reference.GetAddress (target);
 			if (address.IsNull)

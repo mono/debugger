@@ -63,7 +63,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return is_regoffset || is_byref; }
 		}
 
-		internal override TargetAddress GetAddress (TargetMemoryAccess target)
+		internal override TargetAddress GetAddress (InternalTargetAccess target)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();
@@ -71,7 +71,7 @@ namespace Mono.Debugger.Languages.Mono
 			return address;
 		}
 
-		internal override TargetBlob ReadMemory (TargetMemoryAccess target, int size)
+		internal override TargetBlob ReadMemory (InternalTargetAccess target, int size)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();
@@ -97,7 +97,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new TargetBlob (buffer, target.TargetMemoryInfo);
 		}
 
-		internal override void WriteBuffer (TargetAccess target, byte[] data)
+		internal override void WriteBuffer (InternalTargetAccess target, byte[] data)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();
@@ -133,7 +133,8 @@ namespace Mono.Debugger.Languages.Mono
 			update (target);
 		}
 
-		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
+		internal override void WriteAddress (InternalTargetAccess target,
+						     TargetAddress new_address)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();

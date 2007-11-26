@@ -3043,6 +3043,8 @@ namespace Mono.Debugger.Backends
 		public readonly bool IsVirtual;
 		public readonly bool Debug;
 
+		private readonly InternalTargetAccess internal_target;
+
 		MonoLanguageBackend language;
 		TargetAddress method = TargetAddress.Null;
 		TargetAddress invoke = TargetAddress.Null;
@@ -3082,6 +3084,8 @@ namespace Mono.Debugger.Backends
 			this.Debug = debug;
 			this.method = TargetAddress.Null;
 			this.stage = Stage.Uninitialized;
+
+			this.internal_target = inferior.InternalTargetAccess;
 		}
 
 		protected override void DoExecute ()
@@ -3161,7 +3165,7 @@ namespace Mono.Debugger.Backends
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
-					instance.Location.GetAddress (sse).Address, ID);
+					instance.Location.GetAddress (internal_target).Address, ID);
 				return false;
 			}
 
@@ -3177,7 +3181,7 @@ namespace Mono.Debugger.Backends
 			stage = Stage.GettingVirtualMethod;
 			inferior.CallMethod (
 				sse.MonoDebuggerInfo.GetVirtualMethod,
-				instance.Location.GetAddress (sse).Address,
+				instance.Location.GetAddress (internal_target).Address,
 				method.Address, ID);
 			return false;
 		}

@@ -663,6 +663,36 @@ namespace Mono.Debugger.Backends
 				{
 					return Thread.ReadBuffer (address, size);
 				}
+
+				public override bool CanWrite {
+					get { return false; }
+				}
+
+				public override void WriteBuffer (TargetAddress address, byte[] buffer)
+				{
+					throw new InvalidOperationException ();
+				}
+
+				public override void WriteByte (TargetAddress address, byte value)
+				{
+					throw new InvalidOperationException ();
+				}
+
+				public override void WriteInteger (TargetAddress address, int value)
+				{
+					throw new InvalidOperationException ();
+				}
+
+				public override void WriteLongInteger (TargetAddress address, long value)
+				{
+					throw new InvalidOperationException ();
+				}
+
+				public override void WriteAddress (TargetAddress address,
+								   TargetAddress value)
+				{
+					throw new InvalidOperationException ();
+				}
 			}
 		}
 
