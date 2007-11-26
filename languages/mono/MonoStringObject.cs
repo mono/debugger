@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoStringObject : TargetFundamentalObject
@@ -22,7 +24,7 @@ namespace Mono.Debugger.Languages.Mono
 			return reader.ReadInteger (4) * 2;
 		}
 
-		public override object GetObject (TargetMemoryAccess target)
+		internal override object DoGetObject (InternalTargetAccess target)
 		{
 			TargetLocation dynamic_location;
 			TargetBlob object_blob = Location.ReadMemory (target, type.Size);

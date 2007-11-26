@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	public abstract class TargetType : DebuggerMarshalByRefObject
@@ -45,7 +47,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal void SetObject (TargetAccess target, TargetLocation location,
+		internal void SetObject (InternalTargetAccess target, TargetLocation location,
 					 TargetObject obj)
 		{
 			if (obj == null) {

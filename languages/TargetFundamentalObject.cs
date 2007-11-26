@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	public class TargetFundamentalObject : TargetObject
@@ -19,7 +21,15 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public virtual object GetObject (TargetMemoryAccess target)
+		public object GetObject (Thread thread)
+		{
+			return thread.ThreadServant.DoTargetAccess (
+				delegate (InternalTargetAccess target, object data) {
+					return DoGetObject (target);
+			}, null);
+		}
+
+		internal virtual object DoGetObject (InternalTargetAccess target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 
@@ -77,9 +87,13 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public void SetObject (TargetAccess target, TargetObject obj)
+		public void SetObject (Thread thread, TargetObject obj)
 		{
-			Type.SetObject (target, Location, obj);
+			thread.ThreadServant.DoTargetAccess (
+				delegate (InternalTargetAccess target, object data) {
+					Type.SetObject (target, Location, obj);
+					return null;
+			}, null);
 		}
 
 		public override string Print (Thread target)

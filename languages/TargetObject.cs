@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	public abstract class TargetObject : DebuggerMarshalByRefObject
@@ -42,12 +44,15 @@ namespace Mono.Debugger.Languages
 			get { return Location.HasAddress; }
 		}
 
-		public TargetAddress GetAddress (TargetMemoryAccess target)
+		public TargetAddress GetAddress (Thread thread)
 		{
 			if (!Location.HasAddress)
 				throw new InvalidOperationException ();
 
-			return Location.GetAddress (target);
+			return (TargetAddress) thread.ThreadServant.DoTargetAccess (
+				delegate (InternalTargetAccess target, object data) {
+					return Location.GetAddress (target);
+			}, null);
 		}
 
 		internal abstract long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
