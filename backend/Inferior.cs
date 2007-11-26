@@ -1536,9 +1536,39 @@ namespace Mono.Debugger.Backends
 				get { return Inferior; }
 			}
 
+			public override byte ReadByte (TargetAddress address)
+			{
+				return Inferior.ReadByte (address);
+			}
+
+			public override int ReadInteger (TargetAddress address)
+			{
+				return Inferior.ReadInteger (address);
+			}
+
+			public override long ReadLongInteger (TargetAddress address)
+			{
+				return Inferior.ReadLongInteger (address);
+			}
+
+			public override TargetAddress ReadAddress (TargetAddress address)
+			{
+				return Inferior.ReadAddress (address);
+			}
+
+			public override string ReadString (TargetAddress address)
+			{
+				return Inferior.ReadString (address);
+			}
+
 			public override TargetBlob ReadMemory (TargetAddress address, int size)
 			{
 				return Inferior.ReadMemory (address, size);
+			}
+
+			public override byte[] ReadBuffer (TargetAddress address, int size)
+			{
+				return Inferior.ReadBuffer (address, size);
 			}
 		}
 
