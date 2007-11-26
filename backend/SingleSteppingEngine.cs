@@ -3219,7 +3219,7 @@ namespace Mono.Debugger.Backends
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
 				TargetType class_type = MonoRuntime.ReadMonoClass (
-					language, sse.Thread, klass);
+					language, inferior.InternalTargetAccess, klass);
 
 				if (class_type == null) {
 					Result.ExceptionMessage = String.Format (
