@@ -625,6 +625,10 @@ namespace Mono.Debugger.Backends
 					get { return Thread; }
 				}
 
+				public override TargetMemoryInfo TargetMemoryInfo {
+					get { return Thread.TargetMemoryInfo; }
+				}
+
 				public override byte ReadByte (TargetAddress address)
 				{
 					return Thread.ReadByte (address);

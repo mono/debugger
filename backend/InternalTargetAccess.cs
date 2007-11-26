@@ -12,6 +12,10 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		public abstract TargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
 		public abstract byte ReadByte (TargetAddress address);
 
 		public abstract int ReadInteger (TargetAddress address);

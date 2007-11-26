@@ -1536,6 +1536,10 @@ namespace Mono.Debugger.Backends
 				get { return Inferior; }
 			}
 
+			public override TargetMemoryInfo TargetMemoryInfo {
+				get { return Inferior.TargetMemoryInfo; }
+			}
+
 			public override byte ReadByte (TargetAddress address)
 			{
 				return Inferior.ReadByte (address);
