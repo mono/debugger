@@ -446,7 +446,8 @@ namespace Mono.Debugger.Languages.Mono
 			class_info.SetStaticField (target, field, obj);
 		}
 
-		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target, TargetLocation location)
+		internal MonoClassObject GetCurrentObject (InternalTargetAccess target,
+							   TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it

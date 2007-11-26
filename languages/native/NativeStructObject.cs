@@ -12,22 +12,22 @@ namespace Mono.Debugger.Languages.Native
 			this.type = type;
 		}
 
-		public override TargetClassObject GetParentObject (TargetMemoryAccess target)
+		public override TargetClassObject GetParentObject (Thread target)
 		{
 			return null;
 		}
 
-		public override TargetClassObject GetCurrentObject (TargetMemoryAccess target)
+		public override TargetClassObject GetCurrentObject (Thread target)
 		{
 			return null;
 		}
 
-		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
+		public override TargetObject GetField (Thread target, TargetFieldInfo field)
 		{
 			return type.GetField (target, Location, (NativeFieldInfo) field);
 		}
 
-		public override void SetField (TargetAccess target, TargetFieldInfo field,
+		public override void SetField (Thread target, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			type.SetField (target, Location, (NativeFieldInfo) field, obj);

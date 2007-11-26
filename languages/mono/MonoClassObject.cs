@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetClassObject GetParentObject (TargetMemoryAccess target)
+		public override TargetClassObject GetParentObject (Thread target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
@@ -32,20 +32,23 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (parent_type, parent_info, Location);
 		}
 
-		public override TargetClassObject GetCurrentObject (TargetMemoryAccess target)
+		public override TargetClassObject GetCurrentObject (Thread thread)
 		{
 			if (!type.IsByRef)
 				return null;
 
-			return type.GetCurrentObject (target, Location);
+			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
+				delegate (InternalTargetAccess target, object data) {
+					return type.GetCurrentObject (target, Location);
+			}, null);
 		}
 
-		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
+		public override TargetObject GetField (Thread target, TargetFieldInfo field)
 		{
 			return info.GetField (target, Location, field);
 		}
 
-		public override void SetField (TargetAccess target, TargetFieldInfo field,
+		public override void SetField (Thread target, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			info.SetField (target, Location, field, obj);
