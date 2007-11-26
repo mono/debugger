@@ -24,6 +24,8 @@ namespace Mono.Debugger.Backends
 
 		protected readonly ProcessStart start;
 
+		protected readonly InferiorTargetAccess target_access;
+
 		protected readonly BfdContainer bfd_container;
 		protected readonly SymbolTableCollection symtab_collection;
 		protected readonly ProcessServant process;
@@ -276,6 +278,8 @@ namespace Mono.Debugger.Backends
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
 			this.address_domain = address_domain;
+
+			this.target_access = new InferiorTargetAccess (this);
 
 			server_handle = mono_debugger_server_create_inferior (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
@@ -835,6 +839,12 @@ namespace Mono.Debugger.Backends
 		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target_info;
+			}
+		}
+
+		internal InternalTargetAccess InternalTargetAccess {
+			get {
+				return target_access;
 			}
 		}
 
@@ -1509,6 +1519,26 @@ namespace Mono.Debugger.Backends
 					throw new InvalidOperationException ();
 
 				return signal_info.MonoThreadAbortSignal;
+			}
+		}
+
+		protected class InferiorTargetAccess : InternalTargetAccess
+		{
+			public readonly Inferior Inferior;
+
+			public InferiorTargetAccess (Inferior inferior)
+			{
+				this.Inferior = inferior;
+			}
+
+			[Obsolete("FUCK")]
+			public override TargetMemoryAccess TargetMemoryAccess {
+				get { return Inferior; }
+			}
+
+			public override TargetBlob ReadMemory (TargetAddress address, int size)
+			{
+				return Inferior.ReadMemory (address, size);
 			}
 		}
 

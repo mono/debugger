@@ -98,6 +98,9 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		internal abstract object DoTargetAccess (InternalTargetAccessHandler func,
+							 object user_data);
+
 		public abstract TargetMemoryArea[] GetMemoryMaps ();
 
 		public abstract Method Lookup (TargetAddress address);

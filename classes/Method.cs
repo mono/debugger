@@ -262,17 +262,17 @@ namespace Mono.Debugger
                         return true;
                 }
 
-		public abstract TargetClassType GetDeclaringType (TargetMemoryAccess memory);
+		public abstract TargetClassType GetDeclaringType (Thread target);
 
 		public abstract bool HasThis {
 			get;
 		}
 
-		public abstract TargetVariable GetThis (TargetMemoryAccess memory);
+		public abstract TargetVariable GetThis (Thread target);
 
-		public abstract TargetVariable[] GetParameters (TargetMemoryAccess memory);
+		public abstract TargetVariable[] GetParameters (Thread target);
 
-		public abstract TargetVariable[] GetLocalVariables (TargetMemoryAccess memory);
+		public abstract TargetVariable[] GetLocalVariables (Thread target);
 
 		public abstract string[] GetNamespaces ();
 

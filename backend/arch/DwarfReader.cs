@@ -2519,7 +2519,7 @@ namespace Mono.Debugger.Backends
 				get { return -1; }
 			}
 
-			public override TargetClassType GetDeclaringType (TargetMemoryAccess memory)
+			public override TargetClassType GetDeclaringType (Thread target)
 			{
 				return null;
 			}
@@ -2528,17 +2528,17 @@ namespace Mono.Debugger.Backends
 				get { return false; }
 			}
 
-			public override TargetVariable GetThis (TargetMemoryAccess memory)
+			public override TargetVariable GetThis (Thread target)
 			{
 				throw new InvalidOperationException ();
 			}
 
-			public override TargetVariable[] GetParameters (TargetMemoryAccess memory)
+			public override TargetVariable[] GetParameters (Thread target)
 			{
 				return subprog.Parameters;
 			}
 
-			public override TargetVariable[] GetLocalVariables (TargetMemoryAccess memory)
+			public override TargetVariable[] GetLocalVariables (Thread target)
 			{
 				return subprog.Locals;
 			}

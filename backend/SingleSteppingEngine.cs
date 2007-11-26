@@ -780,6 +780,13 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
+		internal override object DoTargetAccess (InternalTargetAccessHandler func, object data)
+		{
+			return SendCommand (delegate {
+				return func (inferior.InternalTargetAccess, data);
+			});
+		}
+
 		public override void Detach ()
 		{
 			SendCommand (delegate {

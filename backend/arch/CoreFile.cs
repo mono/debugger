@@ -204,6 +204,7 @@ namespace Mono.Debugger.Backends
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
 			public readonly Registers Registers;
+			CoreFileTargetAccess target_access;
 			Backtrace current_backtrace;
 			StackFrame current_frame;
 			Method current_method;
@@ -220,6 +221,8 @@ namespace Mono.Debugger.Backends
 				this.Thread = new Thread (this, ID);
 
 				this.Registers = read_registers ();
+
+				target_access = new CoreFileTargetAccess (this);
 			}
 
 			Registers read_registers ()
@@ -266,6 +269,12 @@ namespace Mono.Debugger.Backends
 
 			public override TargetMemoryInfo TargetMemoryInfo {
 				get { return CoreFile.TargetMemoryInfo; }
+			}
+
+			internal override object DoTargetAccess (InternalTargetAccessHandler func,
+								 object data)
+			{
+				return func (target_access, data);
 			}
 
 			public override int PID {
@@ -600,6 +609,26 @@ namespace Mono.Debugger.Backends
 			public override CommandResult AbortInvocation ()
 			{
 				throw new InvalidOperationException ();
+			}
+
+			protected class CoreFileTargetAccess : InternalTargetAccess
+			{
+				public readonly CoreFileThread Thread;
+
+				public CoreFileTargetAccess (CoreFileThread thread)
+				{
+					this.Thread = thread;
+				}
+
+				[Obsolete("FUCK")]
+				public override TargetMemoryAccess TargetMemoryAccess {
+					get { return Thread; }
+				}
+
+				public override TargetBlob ReadMemory (TargetAddress address, int size)
+				{
+					return Thread.ReadMemory (address, size);
+				}
 			}
 		}
 
