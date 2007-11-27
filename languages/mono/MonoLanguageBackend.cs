@@ -784,21 +784,6 @@ namespace Mono.Debugger.Languages.Mono
 			return file.ReadRangeEntry (target, reader, contents);
 		}
 
-		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
-							MethodLoadedHandler handler)
-		{
-			int index = GetUniqueID ();
-
-			TargetAddress retval = target.CallMethod (
-				info.InsertMethodBreakpoint, method_address, index);
-
-			if (!retval.IsNull)
-				method_from_jit_info (target, retval, handler);
-
-			method_load_handlers.Add (index, handler);
-			return index;
-		}
-
 		internal void RegisterMethodLoadHandler (int index, MethodLoadedHandler handler)
 		{
 			method_load_handlers.Add (index, handler);
@@ -810,19 +795,24 @@ namespace Mono.Debugger.Languages.Mono
 			method_load_handlers.Remove (index);
 		}
 
-		internal int RegisterMethodLoadHandler (Thread target, MonoFunctionType func,
+		internal int RegisterMethodLoadHandler (Thread thread, MonoFunctionType func,
 							FunctionBreakpointHandle handle)
 		{
 			int index = GetUniqueID ();
 
-			TargetAddress retval = target.CallMethod (
+			TargetAddress retval = thread.CallMethod (
 				info.InsertSourceBreakpoint, func.MonoClass.File.MonoImage,
 				func.Token, index, func.MonoClass.Name);
 
 			MethodLoadedHandler handler = handle.MethodLoaded;
 
-			if (!retval.IsNull)
-				method_from_jit_info (target, retval, handler);
+			if (!retval.IsNull) {
+				thread.ThreadServant.DoTargetAccess (
+					delegate (TargetMemoryAccess target, object user_data)  {
+						method_from_jit_info (target, retval, handler);
+						return null;
+				}, null);
+			}
 
 			method_load_handlers.Add (index, handler);
 			return index;
@@ -922,13 +912,13 @@ namespace Mono.Debugger.Languages.Mono
 			return GetFundamentalType (type) != null;
 		}
 
-		public override TargetFundamentalObject CreateInstance (Thread target, object obj)
+		public override TargetFundamentalObject CreateInstance (Thread thread, object obj)
 		{
 			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
 			if (type == null)
 				return null;
 
-			return type.CreateInstance (target, obj);
+			return type.CreateInstance (thread, obj);
 		}
 
 		public override TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
@@ -936,7 +926,15 @@ namespace Mono.Debugger.Languages.Mono
 			return process.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public override TargetObject CreateObject (Thread target, TargetAddress address)
+		public override TargetObject CreateObject (Thread thread, TargetAddress address)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data)  {
+					return CreateObject (target, address);
+			}, null);
+		}
+
+		internal TargetObject CreateObject (TargetMemoryAccess target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (

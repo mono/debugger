@@ -51,7 +51,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (Location.GetAddress (target).IsNull)
 				return "null";
-			object obj = GetObject (target);
+			object obj = DoGetObject (target);
 			return '"' + (string) obj + '"';
 		}
 	}
