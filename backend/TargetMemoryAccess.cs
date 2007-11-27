@@ -4,6 +4,9 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
+	internal delegate object TargetAccessHandler (TargetMemoryAccess target,
+						      object user_data);
+
 	public abstract class TargetMemoryAccess : DebuggerMarshalByRefObject
 	{
 		public abstract TargetMemoryInfo TargetMemoryInfo {
@@ -15,6 +18,22 @@ namespace Mono.Debugger
 		}
 
 		internal abstract Architecture Architecture {
+			get;
+		}
+
+		public abstract int TargetIntegerSize {
+			get;
+		}
+
+		public abstract int TargetLongIntegerSize {
+			get;
+		}
+
+		public abstract int TargetAddressSize {
+			get;
+		}
+
+		public abstract bool IsBigEndian {
 			get;
 		}
 

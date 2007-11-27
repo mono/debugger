@@ -629,6 +629,30 @@ namespace Mono.Debugger.Backends
 					get { return Thread.Architecture; }
 				}
 
+				public override int TargetIntegerSize {
+					get {
+						return Thread.TargetIntegerSize;
+					}
+				}
+
+				public override int TargetLongIntegerSize {
+					get {
+						return Thread.TargetLongIntegerSize;
+					}
+				}
+
+				public override int TargetAddressSize {
+					get {
+						return Thread.TargetAddressSize;
+					}
+				}
+
+				public override bool IsBigEndian {
+					get {
+				return Thread.IsBigEndian;
+					}
+				}
+
 				public override byte ReadByte (TargetAddress address)
 				{
 					return Thread.ReadByte (address);

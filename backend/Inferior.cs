@@ -794,37 +794,29 @@ namespace Mono.Debugger.Backends
 				TargetOutput (true, line);
 		}
 
-		//
-		// ITargetInfo
-		//
-
-		public int TargetIntegerSize {
+		public override int TargetIntegerSize {
 			get {
 				return target_info.TargetIntegerSize;
 			}
 		}
 
-		public int TargetLongIntegerSize {
+		public override int TargetLongIntegerSize {
 			get {
 				return target_info.TargetLongIntegerSize;
 			}
 		}
 
-		public int TargetAddressSize {
+		public override int TargetAddressSize {
 			get {
 				return target_info.TargetAddressSize;
 			}
 		}
 
-		public bool IsBigEndian {
+		public override bool IsBigEndian {
 			get {
 				return target_info.IsBigEndian;
 			}
 		}
-
-		//
-		// TargetMemoryAccess
-		//
 
 		public override AddressDomain AddressDomain {
 			get {

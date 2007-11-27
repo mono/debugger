@@ -38,25 +38,5 @@ namespace Mono.Debugger
 								      TargetAddress address);
 
 		public abstract AssemblerMethod DisassembleMethod (Method method);
-
-		//
-		// ITargetInfo
-		//
-
-		public abstract int TargetIntegerSize {
-			get;
-		}
-
-		public abstract int TargetLongIntegerSize {
-			get;
-		}
-
-		public abstract int TargetAddressSize {
-			get;
-		}
-
-		public abstract bool IsBigEndian {
-			get;
-		}
 	}
 }
