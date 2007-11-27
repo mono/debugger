@@ -58,32 +58,32 @@ namespace Mono.Debugger.Languages.Mono
 			StringType = MonoStringType.Create (corlib, memory, mono_defaults);
 
 			BooleanType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Boolean);
+				corlib, memory, FundamentalKind.Boolean);
 			CharType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Char);
+				corlib, memory, FundamentalKind.Char);
 			SByteType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.SByte);
+				corlib, memory, FundamentalKind.SByte);
 			Int16Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Int16);
+				corlib, memory, FundamentalKind.Int16);
 			UInt16Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UInt16);
+				corlib, memory, FundamentalKind.UInt16);
 			Int32Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Int32);
+				corlib, memory, FundamentalKind.Int32);
 			UInt32Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UInt32);
+				corlib, memory, FundamentalKind.UInt32);
 			Int64Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Int64);
+				corlib, memory, FundamentalKind.Int64);
 			UInt64Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UInt64);
+				corlib, memory, FundamentalKind.UInt64);
 			SingleType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Single);
+				corlib, memory, FundamentalKind.Single);
 			DoubleType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Double);
+				corlib, memory, FundamentalKind.Double);
 
 			IntType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.IntPtr);
+				corlib, memory, FundamentalKind.IntPtr);
 			UIntType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UIntPtr);
+				corlib, memory, FundamentalKind.UIntPtr);
 
 			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
 			TargetAddress klass = mono_defaults.ReadAddress ();

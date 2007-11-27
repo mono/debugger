@@ -168,5 +168,107 @@ namespace Mono.Debugger.Languages.Mono
 
 			return file.GetFunctionByToken (token);
 		}
+
+		//
+		// Fundamental types
+		//
+
+		public static TargetAddress GetBooleanClass (MonoLanguageBackend mono,
+							     TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsBooleanOffset);
+		}
+
+		public static TargetAddress GetCharClass (MonoLanguageBackend mono,
+							  TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsCharOffset);
+		}
+
+		public static TargetAddress GetSByteClass (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsSByteOffset);
+		}
+
+		public static TargetAddress GetByteClass (MonoLanguageBackend mono,
+							  TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsByteOffset);
+		}
+
+		public static TargetAddress GetInt16Class (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsInt16Offset);
+		}
+
+		public static TargetAddress GetUInt16Class (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsUInt16Offset);
+		}
+
+		public static TargetAddress GetInt32Class (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsInt32Offset);
+		}
+
+		public static TargetAddress GetUInt32Class (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsUInt32Offset);
+		}
+
+		public static TargetAddress GetInt64Class (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsInt64Offset);
+		}
+
+		public static TargetAddress GetUInt64Class (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsUInt64Offset);
+		}
+
+		public static TargetAddress GetSingleClass (MonoLanguageBackend mono,
+							    TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsSingleOffset);
+		}
+
+		public static TargetAddress GetDoubleClass (MonoLanguageBackend mono,
+							    TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsDoubleOffset);
+		}
+
+		public static TargetAddress GetIntPtrClass (MonoLanguageBackend mono,
+							    TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsIntOffset);
+		}
+
+		public static TargetAddress GetUIntPtrClass (MonoLanguageBackend mono,
+							     TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsUIntOffset);
+		}
 	}
 }
