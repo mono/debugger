@@ -3,7 +3,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger.Languages
 {
-	internal delegate void MethodLoadedHandler (TargetMemoryAccess target, Method method);
+	internal delegate void MethodLoadedHandler (TargetAccess target, Method method);
 
 	public abstract class TargetFunctionType : TargetType
 	{

@@ -16,7 +16,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void ChildOutputHandler (string output);
 
-	internal class Inferior : TargetMemoryAccess, ITargetNotification, IDisposable
+	internal class Inferior : TargetAccess, ITargetNotification, IDisposable
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;

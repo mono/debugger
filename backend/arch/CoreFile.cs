@@ -693,17 +693,6 @@ namespace Mono.Debugger.Backends
 					return Thread.GetRegisters ();
 				}
 
-				internal override void InsertBreakpoint (BreakpointHandle breakpoint,
-									 TargetAddress address, int domain)
-				{
-					throw new InvalidOperationException ();
-				}
-
-				internal override void RemoveBreakpoint (BreakpointHandle handle)
-				{
-					throw new InvalidOperationException ();
-				}
-
 				public override bool CanWrite {
 					get { return false; }
 				}

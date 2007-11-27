@@ -753,7 +753,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_load_handlers = new Hashtable ();
 
-		void method_from_jit_info (TargetMemoryAccess target, TargetAddress data,
+		void method_from_jit_info (TargetAccess target, TargetAddress data,
 					   MethodLoadedHandler handler)
 		{
 			int size = target.ReadInteger (data);
@@ -809,7 +809,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (!retval.IsNull) {
 				thread.ThreadServant.DoTargetAccess (
 					delegate (TargetMemoryAccess target, object user_data)  {
-						method_from_jit_info (target, retval, handler);
+						method_from_jit_info ((TargetAccess) target,
+								      retval, handler);
 						return null;
 				}, null);
 			}

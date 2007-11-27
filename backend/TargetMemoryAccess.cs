@@ -53,11 +53,6 @@ namespace Mono.Debugger
 
 		public abstract Registers GetRegisters ();
 
-		internal abstract void InsertBreakpoint (BreakpointHandle breakpoint,
-							 TargetAddress address, int domain);
-
-		internal abstract void RemoveBreakpoint (BreakpointHandle handle);
-
 		public abstract bool CanWrite {
 			get;
 		}
