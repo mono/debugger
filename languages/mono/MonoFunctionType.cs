@@ -164,13 +164,17 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetAddress GetMethodAddress (Thread target)
+		public override TargetAddress GetMethodAddress (Thread thread)
 		{
-			MonoClassInfo info = klass.HardResolveClass (target);
-			return info.GetMethodAddress (target, Token);
+			MonoClassInfo info = klass.HardResolveClass (thread);
+			return (TargetAddress) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data)  {
+					return info.GetMethodAddress (target, Token);
+			}, null);
 		}
 
-		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

@@ -43,15 +43,22 @@ namespace Mono.Debugger.Languages.Mono
 			}, null);
 		}
 
-		public override TargetObject GetField (Thread target, TargetFieldInfo field)
+		public override TargetObject GetField (Thread thread, TargetFieldInfo field)
 		{
-			return info.GetField (target, Location, field);
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object data) {
+					return info.GetField (target, Location, field);
+			}, null);
 		}
 
-		public override void SetField (Thread target, TargetFieldInfo field,
+		public override void SetField (Thread thread, TargetFieldInfo field,
 					       TargetObject obj)
 		{
-			info.SetField (target, Location, field, obj);
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object data) {
+					info.SetField (target, Location, field, obj);
+					return null;
+			}, null);
 		}
 
 		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
