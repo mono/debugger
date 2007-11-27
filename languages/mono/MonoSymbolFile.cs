@@ -1044,10 +1044,10 @@ namespace Mono.Debugger.Languages.Mono
 					return;
 
 				thread.ThreadServant.DoTargetAccess (
-					delegate (TargetMemoryAccess target, object user_data)  {
+					delegate (TargetMemoryAccess target)  {
 						do_read_variables (target);
 						return null;
-				}, null);
+				});
 			}
 
 			public override TargetVariable[] GetParameters (Thread target)

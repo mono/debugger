@@ -38,27 +38,27 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					return type.GetCurrentObject (target, Location);
-			}, null);
+			});
 		}
 
 		public override TargetObject GetField (Thread thread, TargetFieldInfo field)
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					return info.GetField (target, Location, field);
-			}, null);
+			});
 		}
 
 		public override void SetField (Thread thread, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					info.SetField (target, Location, field, obj);
 					return null;
-			}, null);
+			});
 		}
 
 		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)

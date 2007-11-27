@@ -808,11 +808,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (!retval.IsNull) {
 				thread.ThreadServant.DoTargetAccess (
-					delegate (TargetMemoryAccess target, object user_data)  {
+					delegate (TargetMemoryAccess target)  {
 						method_from_jit_info ((TargetAccess) target,
 								      retval, handler);
 						return null;
-				}, null);
+				});
 			}
 
 			method_load_handlers.Add (index, handler);
@@ -930,9 +930,9 @@ namespace Mono.Debugger.Languages.Mono
 		public override TargetObject CreateObject (Thread thread, TargetAddress address)
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					return CreateObject (target, address);
-			}, null);
+			});
 		}
 
 		internal TargetObject CreateObject (TargetMemoryAccess target, TargetAddress address)

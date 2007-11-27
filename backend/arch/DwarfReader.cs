@@ -2924,25 +2924,25 @@ namespace Mono.Debugger.Backends
 			public override TargetObject GetObject (StackFrame frame)
 			{
 				return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
-					delegate (TargetMemoryAccess memory, object data) {
+					delegate (TargetMemoryAccess memory) {
 						TargetLocation loc = location.GetLocation (frame, memory);
 						if (loc == null)
 							return null;
 
 						return type.GetObject (memory, loc);
-				}, null);
+				});
 			}
 
 			public override string PrintLocation (StackFrame frame)
 			{
 				return (string) frame.Thread.ThreadServant.DoTargetAccess (
-					delegate (TargetMemoryAccess memory, object data) {
+					delegate (TargetMemoryAccess memory) {
 						TargetLocation loc = location.GetLocation (frame, memory);
 						if (loc == null)
 							return null;
 
 						return loc.Print ();
-				}, null);
+				});
 			}
 
 			public override bool CanWrite {

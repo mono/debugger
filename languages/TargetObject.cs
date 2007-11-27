@@ -50,9 +50,9 @@ namespace Mono.Debugger.Languages
 				throw new InvalidOperationException ();
 
 			return (TargetAddress) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					return Location.GetAddress (target);
-			}, null);
+			});
 		}
 
 		internal TargetAddress GetAddress (TargetMemoryAccess target)
@@ -70,9 +70,9 @@ namespace Mono.Debugger.Languages
 		public string Print (Thread thread)
 		{
 			return (string) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess memory, object data) {
+				delegate (TargetMemoryAccess memory) {
 					return Print (memory);
-			}, null);
+			});
 		}
 
 		internal virtual string Print (TargetMemoryAccess memory)

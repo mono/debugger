@@ -35,9 +35,9 @@ namespace Mono.Debugger.Languages
 		protected bool GetArrayBounds (Thread thread)
 		{
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetArrayBounds (target);
-			}, null);
+			});
 			return bounds != null;
 		}
 
@@ -110,9 +110,9 @@ namespace Mono.Debugger.Languages
 		public TargetObject GetElement (Thread thread, int[] indices)
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetElement (target, indices);
-			}, null);
+			});
 		}
 
 		internal abstract TargetObject GetElement (TargetMemoryAccess target, int[] indices);
@@ -120,10 +120,10 @@ namespace Mono.Debugger.Languages
 		public void SetElement (Thread thread, int[] indices, TargetObject obj)
 		{
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					SetElement (target, indices, obj);
 					return null;
-			}, null);
+			});
 		}
 
 		internal abstract void SetElement (TargetMemoryAccess target, int[] indices,
@@ -136,9 +136,9 @@ namespace Mono.Debugger.Languages
 		public TargetClassObject GetClassObject (Thread thread)
 		{
 			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetClassObject (target);
-			}, null);
+			});
 		}
 
 		internal abstract TargetClassObject GetClassObject (TargetMemoryAccess target);

@@ -125,10 +125,10 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					get_field_offsets (target);
 					return null;
-			}, null);
+			});
 		}
 
 		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
@@ -177,9 +177,9 @@ namespace Mono.Debugger.Languages.Mono
 				KlassAddress, 0);
 
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					return GetStaticField (target, field, data_address);
-			}, null);
+			});
 		}
 
 		internal TargetObject GetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
@@ -207,10 +207,10 @@ namespace Mono.Debugger.Languages.Mono
 				KlassAddress, 0);
 
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					SetStaticField (target, field, data_address, obj);
 					return null;
-			}, null);
+			});
 		}
 
 		internal void SetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
@@ -282,10 +282,10 @@ namespace Mono.Debugger.Languages.Mono
 				return parent_info;
 
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					get_parent (target);
 					return null;
-			}, null);
+			});
 			return parent_info;
 		}
 	}

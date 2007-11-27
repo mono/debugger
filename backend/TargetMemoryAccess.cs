@@ -4,8 +4,7 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
-	internal delegate object TargetAccessHandler (TargetMemoryAccess target,
-						      object user_data);
+	internal delegate object TargetAccessHandler (TargetMemoryAccess target);
 
 	public abstract class TargetMemoryAccess : DebuggerMarshalByRefObject
 	{

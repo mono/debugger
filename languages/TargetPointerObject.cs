@@ -17,9 +17,9 @@ namespace Mono.Debugger.Languages
 		public TargetType GetCurrentType (Thread thread)
 		{
 			return (TargetType) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetCurrentType (target);
-			}, null);
+			});
 		}
 
 		internal abstract TargetType GetCurrentType (TargetMemoryAccess target);
@@ -30,9 +30,9 @@ namespace Mono.Debugger.Languages
 		public TargetObject GetDereferencedObject (Thread thread)
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetDereferencedObject (target);
-			}, null);
+			});
 		}
 
 		internal abstract TargetObject GetDereferencedObject (TargetMemoryAccess target);
@@ -40,9 +40,9 @@ namespace Mono.Debugger.Languages
 		public TargetObject GetArrayElement (Thread thread, int index)
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetArrayElement (target, index);
-			}, null);
+			});
 		}
 
 		internal abstract TargetObject GetArrayElement (TargetMemoryAccess target, int index);

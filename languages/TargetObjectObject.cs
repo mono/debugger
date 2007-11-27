@@ -15,9 +15,9 @@ namespace Mono.Debugger.Languages
 		public TargetClassObject GetClassObject (Thread thread)
 		{
 			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data) {
+				delegate (TargetMemoryAccess target) {
 					return GetClassObject (target);
-			}, null);
+			});
 		}
 
 		internal abstract TargetClassObject GetClassObject (TargetMemoryAccess target);

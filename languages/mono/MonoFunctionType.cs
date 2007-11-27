@@ -168,9 +168,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			MonoClassInfo info = klass.HardResolveClass (thread);
 			return (TargetAddress) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					return info.GetMethodAddress (target, Token);
-			}, null);
+			});
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target,

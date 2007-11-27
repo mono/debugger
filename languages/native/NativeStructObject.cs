@@ -25,19 +25,19 @@ namespace Mono.Debugger.Languages.Native
 		public override TargetObject GetField (Thread thread, TargetFieldInfo field)
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					return type.GetField (target, Location, (NativeFieldInfo) field);
-			}, null);
+			});
 		}
 
 		public override void SetField (Thread thread, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					type.SetField (target, Location, (NativeFieldInfo) field, obj);
 					return null;
-			}, null);
+			});
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

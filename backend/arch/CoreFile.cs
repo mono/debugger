@@ -272,10 +272,9 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetMemoryInfo; }
 			}
 
-			internal override object DoTargetAccess (TargetAccessHandler func,
-								 object data)
+			internal override object DoTargetAccess (TargetAccessHandler func)
 			{
-				return func (TargetAccess, data);
+				return func (TargetAccess);
 			}
 
 			public override int PID {

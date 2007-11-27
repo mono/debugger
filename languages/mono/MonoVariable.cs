@@ -85,9 +85,9 @@ namespace Mono.Debugger.Languages.Mono
 		public TargetLocation GetLocation (StackFrame frame)
 		{
 			return (TargetLocation) frame.Thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					return GetLocation (frame, target);
-			}, null);
+			});
 		}
 
 		internal TargetLocation GetLocation (StackFrame frame, TargetMemoryAccess target)
@@ -125,9 +125,9 @@ namespace Mono.Debugger.Languages.Mono
 		public override TargetObject GetObject (StackFrame frame)
 		{
 			return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					return GetObject (frame, target);
-			}, null);
+			});
 		}
 
 		internal TargetObject GetObject (StackFrame frame, TargetMemoryAccess target)
@@ -152,10 +152,10 @@ namespace Mono.Debugger.Languages.Mono
 		public override void SetObject (StackFrame frame, TargetObject obj)
 		{
 			frame.Thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target)  {
 					SetObject (frame, target, obj);
 					return null;
-			}, null);
+			});
 		}
 
 		internal void SetObject (StackFrame frame, TargetMemoryAccess target,

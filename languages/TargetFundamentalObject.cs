@@ -24,9 +24,9 @@ namespace Mono.Debugger.Languages
 		public object GetObject (Thread thread)
 		{
 			return thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					return DoGetObject (target);
-			}, null);
+			});
 		}
 
 		internal virtual object DoGetObject (TargetMemoryAccess target)
@@ -90,10 +90,10 @@ namespace Mono.Debugger.Languages
 		public void SetObject (Thread thread, TargetObject obj)
 		{
 			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
+				delegate (TargetMemoryAccess target) {
 					Type.SetObject (target, Location, obj);
 					return null;
-			}, null);
+			});
 		}
 
 		internal override string Print (TargetMemoryAccess target)
