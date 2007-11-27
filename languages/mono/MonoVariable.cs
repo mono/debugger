@@ -84,13 +84,21 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetLocation GetLocation (StackFrame frame)
 		{
+			return (TargetLocation) frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data)  {
+					return GetLocation (target);
+			}, null);
+		}
+
+		internal TargetLocation GetLocation (TargetMemoryAccess target)
+		{
 			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return MonoVariableLocation.Create (
-					frame.Thread, false, register, info.Offset, is_byref);
+					target, false, register, info.Offset, is_byref);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
 				return MonoVariableLocation.Create (
-					frame.Thread, true, register, info.Offset, is_byref);
+					target, true, register, info.Offset, is_byref);
 			else
 				return null;
 		}
