@@ -81,17 +81,17 @@ namespace Mono.Debugger.Languages.Mono
 			UIntType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.UIntPtr);
 
-			TargetAddress klass = OldMonoRuntime.GetArrayClass (corlib.MonoLanguage, memory);
+			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetArrayClass (memory);
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
 			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
-			klass = OldMonoRuntime.GetDelegateClass (corlib.MonoLanguage, memory);
+			klass = corlib.MonoLanguage.MonoRuntime.GetDelegateClass (memory);
 			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
-			klass = OldMonoRuntime.GetExceptionClass (corlib.MonoLanguage, memory);
+			klass = corlib.MonoLanguage.MonoRuntime.GetExceptionClass (memory);
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
 			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
@@ -212,6 +212,8 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable data_tables;
 		GlobalDataTable global_data_table;
 
+		MonoRuntime runtime;
+
 		ProcessServant process;
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
@@ -222,6 +224,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.process = process;
 			this.info = info;
+			this.runtime = new MonoRuntime (info);
 			mutex = new DebuggerMutex ("mono_mutex");
 			data_tables = new Hashtable ();
 		}
@@ -236,6 +239,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoDebuggerInfo MonoDebuggerInfo {
 			get { return info; }
+		}
+
+		internal MonoRuntime MonoRuntime {
+			get { return runtime; }
 		}
 
 		internal MonoMetadataInfo MonoMetadataInfo {
