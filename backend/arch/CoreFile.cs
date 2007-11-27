@@ -311,7 +311,7 @@ namespace Mono.Debugger.Backends
 				current_backtrace = new Backtrace (CurrentFrame);
 
 				current_backtrace.GetBacktrace (
-					TargetAccess, mode, TargetAddress.Null, max_frames);
+					this, TargetAccess, mode, TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			}

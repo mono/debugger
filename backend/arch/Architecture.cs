@@ -114,7 +114,7 @@ namespace Mono.Debugger.Backends
 
 		internal abstract Registers CopyRegisters (Registers regs);
 
-		internal abstract StackFrame GetLMF (Thread thread, TargetMemoryAccess target);
+		internal abstract StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess target);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
 							  TargetMemoryAccess memory,
@@ -128,18 +128,6 @@ namespace Mono.Debugger.Backends
 
 		protected abstract TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
 								      TargetAddress address);
-
-#if FIXME
-		internal StackFrame GetCallbackFrame (ThreadServant servant, StackFrame frame,
-						      bool exact_match)
-		{
-			Registers callback = servant.GetCallbackFrame (frame.StackPointer, exact_match);
-			if (callback != null)
-				return CreateFrame (frame.Thread, callback, false);
-
-			return null;
-		}
-#endif
 
 		internal StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
 						 TargetAddress address, TargetAddress stack,

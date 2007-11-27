@@ -579,7 +579,7 @@ namespace Mono.Debugger.Architectures
 					    regs, adjust_retaddr);
 		}
 
-		internal override StackFrame GetLMF (Thread thread, TargetMemoryAccess memory)
+		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory)
 		{
 			TargetAddress lmf = memory.ReadAddress (thread.LMFAddress);
 
@@ -606,7 +606,7 @@ namespace Mono.Debugger.Architectures
 			TargetAddress new_esp = ebp + 8;
 			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
 
-			return CreateFrame (thread, memory, eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (thread.Client, memory, eip, new_esp, new_ebp, regs, true);
 		}
 	}
 }
