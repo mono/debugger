@@ -365,7 +365,7 @@ namespace Mono.Debugger.Languages.Mono
 				class_hash.Add (klass_address, type);
 		}
 
-		public TargetType ReadMonoClass (TargetMemoryAccess target, TargetAddress klass_address)
+		public TargetType LookupMonoClass (TargetMemoryAccess target, TargetAddress klass_address)
 		{
 			TargetType type = (TargetType) class_hash [klass_address];
 			if (type != null)

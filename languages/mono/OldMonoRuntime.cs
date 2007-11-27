@@ -75,7 +75,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
 			case MonoTypeEnum.MONO_TYPE_CLASS:
-				return mono.ReadMonoClass (memory, data);
+				return mono.LookupMonoClass (memory, data);
 
 			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
 				TargetType etype = ReadMonoClass (mono, memory, data);
