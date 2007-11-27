@@ -12,9 +12,12 @@ namespace Mono.Debugger.Languages
 			this.Type = type;
 		}
 
-		public TargetObject GetValue (TargetMemoryAccess target)
+		public TargetObject GetValue (Thread thread)
 		{
-			return Type.Value.Type.GetObject (target, Location);
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data) {
+					return Type.Value.Type.GetObject (target, Location);
+			}, null);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

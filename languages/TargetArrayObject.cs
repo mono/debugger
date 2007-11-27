@@ -32,7 +32,16 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public int GetLowerBound (TargetMemoryAccess target, int dimension)
+		protected bool GetArrayBounds (Thread thread)
+		{
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data) {
+					return GetArrayBounds (target);
+			}, null);
+			return bounds != null;
+		}
+
+		public int GetLowerBound (Thread target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -43,7 +52,7 @@ namespace Mono.Debugger.Languages
 			return bounds [dimension].Lower;
 		}
 
-		public int GetUpperBound (TargetMemoryAccess target, int dimension)
+		public int GetUpperBound (Thread target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
