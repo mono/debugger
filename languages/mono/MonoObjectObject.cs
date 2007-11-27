@@ -12,7 +12,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		public override TargetClassObject GetClassObject (TargetMemoryAccess target)
+		internal override TargetClassObject GetClassObject (TargetMemoryAccess target)
 		{
 			return (TargetClassObject) Type.ClassType.GetObject (target, Location);
 		}

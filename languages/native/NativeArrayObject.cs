@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.Native
 		protected override void DoGetArrayBounds (TargetMemoryAccess target)
 		{ }
 
-		public override TargetObject GetElement (TargetMemoryAccess target, int[] indices)
+		internal override TargetObject GetElement (TargetMemoryAccess target, int[] indices)
 		{
 			if (indices.Length != 1)
 				throw new ArgumentException ();
@@ -30,8 +30,8 @@ namespace Mono.Debugger.Languages.Native
 			return Type.ElementType.GetObject (target, new_location);
 		}
 
-		public override void SetElement (TargetMemoryAccess target, int[] indices,
-						 TargetObject obj)
+		internal override void SetElement (TargetMemoryAccess target, int[] indices,
+						   TargetObject obj)
 		{
 			throw new NotSupportedException ();
 		}
@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		public override TargetClassObject GetClassObject (TargetMemoryAccess target)
+		internal override TargetClassObject GetClassObject (TargetMemoryAccess target)
 		{
 			throw new InvalidOperationException ();
 		}

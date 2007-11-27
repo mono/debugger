@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetObject GetElement (TargetMemoryAccess target, int[] indices)
+		internal override TargetObject GetElement (TargetMemoryAccess target, int[] indices)
 		{
 			int offset = GetArrayOffset (target, indices);
 
@@ -60,8 +60,8 @@ namespace Mono.Debugger.Languages.Mono
 			return Type.ElementType.GetObject (target, new_loc);
 		}
 
-		public override void SetElement (TargetMemoryAccess target, int[] indices,
-						 TargetObject obj)
+		internal override void SetElement (TargetMemoryAccess target, int[] indices,
+						   TargetObject obj)
 		{
 			int offset = GetArrayOffset (target, indices);
 
@@ -110,7 +110,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		public override TargetClassObject GetClassObject (TargetMemoryAccess target)
+		internal override TargetClassObject GetClassObject (TargetMemoryAccess target)
 		{
 			return (TargetClassObject) Type.Language.ArrayType.GetObject (target, Location);
 		}

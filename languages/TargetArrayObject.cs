@@ -98,16 +98,41 @@ namespace Mono.Debugger.Languages
 			return length;
 		}
 
-		public abstract TargetObject GetElement (TargetMemoryAccess target, int[] indices);
+		public TargetObject GetElement (Thread thread, int[] indices)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data) {
+					return GetElement (target, indices);
+			}, null);
+		}
 
-		public abstract void SetElement (TargetMemoryAccess target, int[] indices,
-						 TargetObject obj);
+		internal abstract TargetObject GetElement (TargetMemoryAccess target, int[] indices);
+
+		public void SetElement (Thread thread, int[] indices, TargetObject obj)
+		{
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data) {
+					SetElement (target, indices, obj);
+					return null;
+			}, null);
+		}
+
+		internal abstract void SetElement (TargetMemoryAccess target, int[] indices,
+						   TargetObject obj);
 
 		public abstract bool HasClassObject {
 			get;
 		}
 
-		public abstract TargetClassObject GetClassObject (TargetMemoryAccess target);
+		public TargetClassObject GetClassObject (Thread thread)
+		{
+			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data) {
+					return GetClassObject (target);
+			}, null);
+		}
+
+		internal abstract TargetClassObject GetClassObject (TargetMemoryAccess target);
 
 		public override string ToString ()
 		{
