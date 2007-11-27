@@ -17,14 +17,12 @@ namespace Mono.Debugger.Languages.Mono
 			this.typedef = typedef;
 		}
 
-		public static MonoVoidType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
-						   TargetReader mono_defaults)
+		public static MonoVoidType Create (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			MonoVoidType type = new MonoVoidType (
 				corlib, corlib.ModuleDefinition.Types ["System.Void"]);
 
-			TargetAddress klass = mono_defaults.PeekAddress (
-				corlib.MonoLanguage.MonoMetadataInfo.MonoDefaultsVoidOffset);
+			TargetAddress klass = MonoRuntime.GetVoidClass (corlib.MonoLanguage, memory);
 			type.create_type (memory, klass);
 
 			return type;

@@ -270,5 +270,47 @@ namespace Mono.Debugger.Languages.Mono
 			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
 						   mono.MonoMetadataInfo.MonoDefaultsUIntOffset);
 		}
+
+		public static TargetAddress GetVoidClass (MonoLanguageBackend mono,
+							  TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsVoidOffset);
+		}
+
+		public static TargetAddress GetStringClass (MonoLanguageBackend mono,
+							    TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsStringOffset);
+		}
+
+		public static TargetAddress GetObjectClass (MonoLanguageBackend mono,
+							    TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsObjectOffset);
+		}
+
+		public static TargetAddress GetArrayClass (MonoLanguageBackend mono,
+							   TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsArrayOffset);
+		}
+
+		public static TargetAddress GetDelegateClass (MonoLanguageBackend mono,
+							      TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsDelegateOffset);
+		}
+
+		public static TargetAddress GetExceptionClass (MonoLanguageBackend mono,
+							       TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (mono.MonoMetadataInfo.MonoDefaultsAddress +
+						   mono.MonoMetadataInfo.MonoDefaultsExceptionOffset);
+		}
 	}
 }

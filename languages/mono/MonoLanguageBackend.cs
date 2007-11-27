@@ -47,15 +47,12 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.Corlib = corlib;
 
-			TargetReader mono_defaults = new TargetReader (
-				memory.ReadMemory (info.MonoDefaultsAddress, info.MonoDefaultsSize));
-
 			MonoLanguageBackend mono = corlib.MonoLanguage;
 
-			ObjectType = MonoObjectType.Create (corlib, memory, mono_defaults);
-			VoidType = MonoVoidType.Create (corlib, memory, mono_defaults);
+			ObjectType = MonoObjectType.Create (corlib, memory);
+			VoidType = MonoVoidType.Create (corlib, memory);
 
-			StringType = MonoStringType.Create (corlib, memory, mono_defaults);
+			StringType = MonoStringType.Create (corlib, memory);
 
 			BooleanType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.Boolean);
@@ -85,20 +82,17 @@ namespace Mono.Debugger.Languages.Mono
 			UIntType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.UIntPtr);
 
-			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
-			TargetAddress klass = mono_defaults.ReadAddress ();
+			TargetAddress klass = MonoRuntime.GetArrayClass (corlib.MonoLanguage, memory);
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
 			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
-			mono_defaults.Offset = info.MonoDefaultsDelegateOffset;
-			klass = mono_defaults.ReadAddress ();
+			klass = MonoRuntime.GetDelegateClass (corlib.MonoLanguage, memory);
 			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
-			mono_defaults.Offset = info.MonoDefaultsExceptionOffset;
-			klass = mono_defaults.ReadAddress ();
+			klass = MonoRuntime.GetExceptionClass (corlib.MonoLanguage, memory);
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
 			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
