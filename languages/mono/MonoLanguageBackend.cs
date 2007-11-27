@@ -81,17 +81,17 @@ namespace Mono.Debugger.Languages.Mono
 			UIntType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.UIntPtr);
 
-			TargetAddress klass = MonoRuntime.GetArrayClass (corlib.MonoLanguage, memory);
+			TargetAddress klass = OldMonoRuntime.GetArrayClass (corlib.MonoLanguage, memory);
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
 			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
-			klass = MonoRuntime.GetDelegateClass (corlib.MonoLanguage, memory);
+			klass = OldMonoRuntime.GetDelegateClass (corlib.MonoLanguage, memory);
 			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
-			klass = MonoRuntime.GetExceptionClass (corlib.MonoLanguage, memory);
+			klass = OldMonoRuntime.GetExceptionClass (corlib.MonoLanguage, memory);
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
 			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
@@ -415,7 +415,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
 		{
-			main_method = MonoRuntime.ReadMonoMethod (this, target, method);
+			main_method = OldMonoRuntime.ReadMonoMethod (this, target, method);
 		}
 
 		internal MonoFunctionType MainMethod {

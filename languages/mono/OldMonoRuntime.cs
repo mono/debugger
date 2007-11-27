@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Mono
 		MONO_TYPE_ENUM       = 0x55        /* an enumeration */
 	}
 
-	internal static class MonoRuntime
+	internal static class OldMonoRuntime
 	{
 		public static TargetType ReadMonoClass (MonoLanguageBackend mono,
 							TargetMemoryAccess target,

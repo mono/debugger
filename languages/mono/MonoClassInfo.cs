@@ -112,7 +112,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				TargetAddress type_addr = field_blob.PeekAddress (
 					offset + metadata.FieldInfoTypeOffset);
-				field_types [i] = MonoRuntime.ReadType (
+				field_types [i] = OldMonoRuntime.ReadType (
 					SymbolFile.MonoLanguage, target, type_addr);
 				field_offsets [i] = field_blob.PeekInteger (
 					offset + metadata.FieldInfoOffsetOffset);
