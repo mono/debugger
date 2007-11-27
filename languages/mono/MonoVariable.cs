@@ -86,11 +86,11 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return (TargetLocation) frame.Thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target, object user_data)  {
-					return GetLocation (target);
+					return GetLocation (frame, target);
 			}, null);
 		}
 
-		internal TargetLocation GetLocation (TargetMemoryAccess target)
+		internal TargetLocation GetLocation (StackFrame frame, TargetMemoryAccess target)
 		{
 			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
@@ -124,16 +124,25 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetObject (StackFrame frame)
 		{
-			TargetLocation location = GetLocation (frame);
+			return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data)  {
+					return GetObject (frame, target);
+			}, null);
+		}
+
+		internal TargetObject GetObject (StackFrame frame, TargetMemoryAccess target)
+		{
+			TargetLocation location = GetLocation (frame, target);
 
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			if (location.HasAddress && location.GetAddress (frame.Thread).IsNull)
-				return process.MonoLanguage.CreateNullObject (
-					frame.Thread, type);
+			if (location.HasAddress && location.GetAddress (target).IsNull) {
+				TargetLocation null_loc = new AbsoluteTargetLocation (TargetAddress.Null);
+				return new MonoNullObject ((TargetType) type, null_loc);
+			}
 
-			return type.GetObject (frame.Thread, location);
+			return type.GetObject (target, location);
 		}
 
 		public override bool CanWrite {
@@ -142,12 +151,22 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override void SetObject (StackFrame frame, TargetObject obj)
 		{
-			TargetLocation location = GetLocation (frame);
+			frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data)  {
+					SetObject (frame, target, obj);
+					return null;
+			}, null);
+		}
+
+		internal void SetObject (StackFrame frame, TargetMemoryAccess target,
+					 TargetObject obj)
+		{
+			TargetLocation location = GetLocation (frame, target);
 
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			type.SetObject (frame.Thread, location, (TargetObject) obj);
+			type.SetObject (target, location, (TargetObject) obj);
 		}
 
 		public override string ToString ()
