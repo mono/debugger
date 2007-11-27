@@ -73,7 +73,7 @@ namespace Mono.Debugger
 			this.value = value.Address;
 		}
 
-		public void WriteRegister (TargetMemoryAccess target, long value)
+		internal void WriteRegister (TargetMemoryAccess target, long value)
 		{
 			this.value = value;
 
@@ -83,6 +83,18 @@ namespace Mono.Debugger
 				target.WriteInteger (addr_on_stack, (int) value);
 			else
 				target.WriteLongInteger (addr_on_stack, value);
+		}
+
+		public void WriteRegister (Thread thread, long value)
+		{
+			this.value = value;
+
+			if (addr_on_stack.IsNull)
+				thread.SetRegisters (registers);
+			else if (Size == target.TargetMemoryInfo.TargetIntegerSize)
+				thread.WriteInteger (addr_on_stack, (int) value);
+			else
+				thread.WriteLongInteger (addr_on_stack, value);
 		}
 
 		public bool Valid {
