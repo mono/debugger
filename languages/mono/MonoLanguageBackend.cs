@@ -422,7 +422,21 @@ namespace Mono.Debugger.Languages.Mono
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
 		{
-			main_method = OldMonoRuntime.ReadMonoMethod (this, target, method);
+			main_method = ReadMonoMethod (target, method);
+		}
+
+		internal MonoFunctionType ReadMonoMethod (TargetMemoryAccess memory,
+							  TargetAddress address)
+		{
+			int token = MonoRuntime.MonoMethodGetToken (memory, address);
+			TargetAddress klass = MonoRuntime.MonoMethodGetClass (memory, address);
+			TargetAddress image = MonoRuntime.MonoClassGetMonoImage (memory, klass);
+
+			MonoSymbolFile file = GetImage (image);
+			if (file == null)
+				return null;
+
+			return file.GetFunctionByToken (token);
 		}
 
 		internal MonoFunctionType MainMethod {
