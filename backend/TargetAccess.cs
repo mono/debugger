@@ -58,25 +58,5 @@ namespace Mono.Debugger
 		public abstract bool IsBigEndian {
 			get;
 		}
-
-		//
-		// TargetMemoryAccess
-		//
-
-		public abstract bool CanWrite {
-			get;
-		}
-
-		public abstract void WriteBuffer (TargetAddress address, byte[] buffer);
-
-		public abstract void WriteByte (TargetAddress address, byte value);
-
-		public abstract void WriteInteger (TargetAddress address, int value);
-
-		public abstract void WriteLongInteger (TargetAddress address, long value);
-
-		public abstract void WriteAddress (TargetAddress address, TargetAddress value);
-
-		public abstract void SetRegisters (Registers registers);
 	}
 }

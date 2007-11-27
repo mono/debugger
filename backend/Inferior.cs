@@ -962,13 +962,13 @@ namespace Mono.Debugger.Backends
 			return new TargetBlob (retval, target_info);
 		}
 
-		public bool CanWrite {
+		public override bool CanWrite {
 			get {
 				return true;
 			}
 		}
 
-		public void WriteBuffer (TargetAddress address, byte[] buffer)
+		public override void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -985,7 +985,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteByte (TargetAddress address, byte value)
+		public override void WriteByte (TargetAddress address, byte value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -1001,7 +1001,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteInteger (TargetAddress address, int value)
+		public override void WriteInteger (TargetAddress address, int value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -1017,7 +1017,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteLongInteger (TargetAddress address, long value)
+		public override void WriteLongInteger (TargetAddress address, long value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -1033,7 +1033,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteAddress (TargetAddress address, TargetAddress value)
+		public override void WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_disposed ();
 			switch (TargetAddressSize) {
@@ -1236,7 +1236,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void SetRegisters (Registers registers)
+		public override void SetRegisters (Registers registers)
 		{
 			IntPtr buffer = IntPtr.Zero;
 			try {
@@ -1595,9 +1595,8 @@ namespace Mono.Debugger.Backends
 			}
 
 
-#if FIXME
 			public override bool CanWrite {
-				get { return false; }
+				get { return true; }
 			}
 
 			public override void WriteBuffer (TargetAddress address, byte[] buffer)
@@ -1624,7 +1623,11 @@ namespace Mono.Debugger.Backends
 			{
 				Inferior.WriteAddress (address, value);
 			}
-#endif
+
+			public override void SetRegisters (Registers registers)
+			{
+				Inferior.SetRegisters (registers);
+			}
 		}
 
 		//
