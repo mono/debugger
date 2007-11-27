@@ -85,28 +85,19 @@ namespace Mono.Debugger.Languages.Mono
 			if (field_offsets != null)
 				return;
 
-			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
-
-			TargetAddress field_info = target.ReadAddress (
-				KlassAddress + metadata.KlassFieldOffset);
-			int field_count = target.ReadInteger (
-				KlassAddress + metadata.KlassFieldCountOffset);
-
-			TargetReader field_blob = new TargetReader (target.ReadMemory (
-				field_info, field_count * metadata.FieldInfoSize));
+			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
 
 			field_offsets = new int [field_count];
 			field_types = new TargetType [field_count];
 
 			for (int i = 0; i < field_count; i++) {
-				int offset = i * metadata.FieldInfoSize;
+				TargetAddress type_addr = MonoRuntime.MonoClassGetFieldType (
+					target, KlassAddress, i);
 
-				TargetAddress type_addr = field_blob.PeekAddress (
-					offset + metadata.FieldInfoTypeOffset);
 				field_types [i] = OldMonoRuntime.ReadType (
 					SymbolFile.MonoLanguage, target, type_addr);
-				field_offsets [i] = field_blob.PeekInteger (
-					offset + metadata.FieldInfoOffsetOffset);
+				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
+					target, KlassAddress, i);
 			}
 		}
 
@@ -226,23 +217,14 @@ namespace Mono.Debugger.Languages.Mono
 			if (methods != null)
 				return;
 
-			int address_size = target.TargetMemoryInfo.TargetAddressSize;
-			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
-
-			TargetAddress method_info = target.ReadAddress (
-				KlassAddress + metadata.KlassMethodsOffset);
-			int method_count = target.ReadInteger (
-				KlassAddress + metadata.KlassMethodCountOffset);
-
-			TargetBlob blob = target.ReadMemory (method_info, method_count * address_size);
-
 			methods = new Hashtable ();
-			TargetReader method_reader = new TargetReader (
-				blob.Contents, target.TargetMemoryInfo);
-			for (int i = 0; i < method_count; i++) {
-				TargetAddress address = method_reader.ReadAddress ();
+			int method_count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
 
-				int mtoken = target.ReadInteger (address + 4);
+			for (int i = 0; i < method_count; i++) {
+				TargetAddress address = MonoRuntime.MonoClassGetMethod (
+					target, KlassAddress, i);
+
+				int mtoken = MonoRuntime.MonoMethodGetToken (target, address);
 				if (mtoken == 0)
 					continue;
 
@@ -260,9 +242,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void get_parent (TargetMemoryAccess target)
 		{
-			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
-			parent_klass = target.ReadAddress (
-				KlassAddress + metadata.KlassParentOffset);
+			parent_klass = MonoRuntime.MonoClassGetParent (target, KlassAddress);
 
 			parent_info = ReadClassInfo (SymbolFile.MonoLanguage, target, parent_klass);
 		}
