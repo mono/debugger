@@ -91,6 +91,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		void get_field_offsets (TargetMemoryAccess target)
 		{
+			if (field_offsets != null)
+				return;
+
 			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
 
 			TargetAddress field_info = target.ReadAddress (
@@ -128,8 +131,18 @@ namespace Mono.Debugger.Languages.Mono
 			}, null);
 		}
 
-		public TargetObject GetField (Thread target, TargetLocation location,
+		[Obsolete("FUCK")]
+		public TargetObject GetField (Thread thread, TargetLocation location,
 					      TargetFieldInfo field)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object data) {
+					return GetField (target, location, field);
+			}, null);
+		}
+
+		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
+						TargetFieldInfo field)
 		{
 			get_field_offsets (target);
 
@@ -149,8 +162,19 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public void SetField (Thread target, TargetLocation location,
+		[Obsolete("FUCK")]
+		public void SetField (Thread thread, TargetLocation location,
 				      TargetFieldInfo field, TargetObject obj)
+		{
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object data) {
+					SetField (target, location, field, obj);
+					return null;
+			}, null);
+		}
+
+		internal void SetField (TargetMemoryAccess target, TargetLocation location,
+					TargetFieldInfo field, TargetObject obj)
 		{
 			get_field_offsets (target);
 
@@ -167,16 +191,25 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetObject (target, field_loc, obj);
 		}
 
-		public TargetObject GetStaticField (Thread target, TargetFieldInfo field)
+		public TargetObject GetStaticField (Thread thread, TargetFieldInfo field)
+		{
+			TargetAddress data_address = thread.CallMethod (
+				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
+				KlassAddress, 0);
+
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object data) {
+					return GetStaticField (target, field, data_address);
+			}, null);
+		}
+
+		internal TargetObject GetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
+						      TargetAddress data_address)
 		{
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
-
-			TargetAddress data_address = target.CallMethod (
-				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -187,17 +220,27 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public void SetStaticField (Thread target, TargetFieldInfo field,
+		public void SetStaticField (Thread thread, TargetFieldInfo field,
 					    TargetObject obj)
+		{
+			TargetAddress data_address = thread.CallMethod (
+				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
+				KlassAddress, 0);
+
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object data) {
+					SetStaticField (target, field, data_address, obj);
+					return null;
+			}, null);
+		}
+
+		internal void SetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
+					      TargetAddress data_address, TargetObject obj)
 		{
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
-
-			TargetAddress data_address = target.CallMethod (
-				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
