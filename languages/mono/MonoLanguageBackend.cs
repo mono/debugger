@@ -42,8 +42,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType DelegateType;
 		public readonly MonoClassType ArrayType;
 
-		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, TargetMemoryAccess memory,
-					    MonoMetadataInfo info)
+		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			this.Corlib = corlib;
 
@@ -461,7 +460,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_builtin_types (TargetMemoryAccess memory)
 		{
-			builtin_types = new MonoBuiltinTypeInfo (corlib, memory, info.MonoMetadataInfo);
+			builtin_types = new MonoBuiltinTypeInfo (corlib, memory);
 		}
 
 		MonoSymbolFile load_symfile (TargetMemoryAccess memory, TargetAddress address)
