@@ -23,17 +23,14 @@ namespace Mono.Debugger.Languages.Mono
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
 							   TargetMemoryAccess target,
-							   TargetAddress klass_address)
+							   TargetAddress klass)
 		{
-			TargetReader reader = new TargetReader (
-				target.ReadMemory (klass_address, mono.MonoMetadataInfo.KlassSize));
-
-			TargetAddress image = reader.PeekAddress (mono.MonoMetadataInfo.KlassImageOffset);
+			TargetAddress image = mono.MonoRuntime.MonoClassGetMonoImage (target, klass);
 			MonoSymbolFile file = mono.GetImage (image);
 			if (file == null)
 				throw new InternalError ();
 
-			int token = reader.PeekInteger (mono.MonoMetadataInfo.KlassTokenOffset);
+			int token = mono.MonoRuntime.MonoClassGetToken (target, klass);
 			if ((token & 0xff000000) != 0x02000000)
 				throw new InternalError ();
 
@@ -43,8 +40,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (typedef == null)
 				throw new InternalError ();
 
-			MonoClassInfo info = new MonoClassInfo (
-				file, typedef, target, reader, klass_address);
+			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			info.type = file.LookupMonoClass (typedef);
 			return info;
 		}
@@ -52,33 +48,28 @@ namespace Mono.Debugger.Languages.Mono
 		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
 							   Cecil.TypeDefinition typedef,
 							   TargetMemoryAccess target,
-							   TargetAddress klass_address,
+							   TargetAddress klass,
 							   out MonoClassType type)
 		{
-			MonoMetadataInfo metadata = file.MonoLanguage.MonoMetadataInfo;
-			TargetReader reader = new TargetReader (
-				target.ReadMemory (klass_address, metadata.KlassSize));
-
-			MonoClassInfo info = new MonoClassInfo (
-				file, typedef, target, reader, klass_address);
-
+			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			type = new MonoClassType (file, typedef, info);
 			info.type = type;
 			return info;
 		}
 
 		protected MonoClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
-					 TargetMemoryAccess target, TargetReader reader,
-					 TargetAddress klass)
+					 TargetMemoryAccess target, TargetAddress klass)
 		{
 			this.SymbolFile = file;
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
-			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
+			GenericClass = MonoRuntime.MonoClassGetGenericClass (target, klass);
+			GenericContainer = MonoRuntime.MonoClassGetGenericContainer (target, klass);
+		}
 
-			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
-			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
+		protected MonoRuntime MonoRuntime {
+			get { return SymbolFile.MonoLanguage.MonoRuntime; }
 		}
 
 		public MonoClassType ClassType {
