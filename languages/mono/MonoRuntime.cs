@@ -56,7 +56,7 @@ namespace Mono.Debugger.Languages.Mono
 			return ReadType (mono, target, address + byval_offset);
 		}
 
-		public static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess target,
+		public static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess memory,
 						   TargetAddress address)
 		{
 			TargetAddress data = memory.ReadAddress (address);
@@ -80,7 +80,7 @@ namespace Mono.Debugger.Languages.Mono
 			return target_type;
 		}
 
-		static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess target,
+		static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess memory,
 					    MonoTypeEnum type, TargetAddress data)
 		{
 			switch (type) {
@@ -153,7 +153,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public static MonoFunctionType ReadMonoMethod (MonoLanguageBackend mono,
-							       TargetMemoryAccess target,
+							       TargetMemoryAccess memory,
 							       TargetAddress address)
 		{
 			MonoMetadataInfo info = mono.MonoMetadataInfo;
