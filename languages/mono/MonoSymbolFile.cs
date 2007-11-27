@@ -990,13 +990,13 @@ namespace Mono.Debugger.Languages.Mono
 				MonoLanguageBackend mono = file.MonoLanguage;
 
 				TargetAddress decl_klass = memory.ReadAddress (address.MonoMethod + 8);
-				decl_type = OldMonoRuntime.ReadMonoClass (mono, memory, decl_klass).ClassType;
+				decl_type = mono.ReadMonoClass (memory, decl_klass).ClassType;
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
 					VariableInfo var = address.ParamVariableInfo [i];
-					TargetType type = OldMonoRuntime.ReadType (mono, memory, var.MonoType);
+					TargetType type = mono.ReadType (memory, var.MonoType);
 					if (type == null)
 						type = mono.VoidType;
 
@@ -1010,7 +1010,7 @@ namespace Mono.Debugger.Languages.Mono
 					C.LocalVariableEntry local = method.Locals [i];
 
 					VariableInfo var = address.LocalVariableInfo [local.Index];
-					TargetType type = OldMonoRuntime.ReadType (mono, memory, var.MonoType);
+					TargetType type = mono.ReadType (memory, var.MonoType);
 					if (type == null)
 						type = mono.VoidType;
 

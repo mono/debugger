@@ -439,6 +439,98 @@ namespace Mono.Debugger.Languages.Mono
 			return file.GetFunctionByToken (token);
 		}
 
+		public TargetType ReadMonoClass (TargetMemoryAccess target, TargetAddress klass)
+		{
+			TargetAddress byval_type = MonoRuntime.MonoClassGetByValType (target, klass);
+			return ReadType (target, byval_type);
+		}
+
+		public TargetType ReadType (TargetMemoryAccess memory, TargetAddress address)
+		{
+			TargetAddress data = MonoRuntime.MonoTypeGetData (memory, address);
+			MonoTypeEnum type = MonoRuntime.MonoTypeGetType (memory, address);
+			bool byref = MonoRuntime.MonoTypeGetIsByRef (memory, address);
+
+			TargetType target_type = ReadType (memory, type, data);
+			if (target_type == null)
+				return null;
+
+			if (byref)
+				target_type = new MonoPointerType (target_type);
+
+			return target_type;
+		}
+
+		TargetType ReadType (TargetMemoryAccess memory, MonoTypeEnum type, TargetAddress data)
+		{
+			switch (type) {
+			case MonoTypeEnum.MONO_TYPE_BOOLEAN:
+				return BuiltinTypes.BooleanType;
+			case MonoTypeEnum.MONO_TYPE_CHAR:
+				return BuiltinTypes.CharType;
+			case MonoTypeEnum.MONO_TYPE_I1:
+				return BuiltinTypes.SByteType;
+			case MonoTypeEnum.MONO_TYPE_U1:
+				return BuiltinTypes.ByteType;
+			case MonoTypeEnum.MONO_TYPE_I2:
+				return BuiltinTypes.Int16Type;
+			case MonoTypeEnum.MONO_TYPE_U2:
+				return BuiltinTypes.UInt16Type;
+			case MonoTypeEnum.MONO_TYPE_I4:
+				return BuiltinTypes.Int32Type;
+			case MonoTypeEnum.MONO_TYPE_U4:
+				return BuiltinTypes.UInt32Type;
+			case MonoTypeEnum.MONO_TYPE_I8:
+				return BuiltinTypes.Int64Type;
+			case MonoTypeEnum.MONO_TYPE_U8:
+				return BuiltinTypes.UInt64Type;
+			case MonoTypeEnum.MONO_TYPE_R4:
+				return BuiltinTypes.SingleType;
+			case MonoTypeEnum.MONO_TYPE_R8:
+				return BuiltinTypes.DoubleType;
+			case MonoTypeEnum.MONO_TYPE_STRING:
+				return BuiltinTypes.StringType;
+			case MonoTypeEnum.MONO_TYPE_OBJECT:
+				return BuiltinTypes.ObjectType;
+			case MonoTypeEnum.MONO_TYPE_I:
+				return BuiltinTypes.IntType;
+			case MonoTypeEnum.MONO_TYPE_U:
+				return BuiltinTypes.UIntType;
+
+			case MonoTypeEnum.MONO_TYPE_PTR: {
+				TargetType target_type = ReadType (memory, data);
+				return new MonoPointerType (target_type);
+			}
+
+			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
+			case MonoTypeEnum.MONO_TYPE_CLASS:
+				return ReadMonoClass (memory, data);
+
+			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
+				TargetType etype = ReadMonoClass (memory, data);
+				return new MonoArrayType (etype, 1);
+			}
+
+			case MonoTypeEnum.MONO_TYPE_ARRAY: {
+				TargetAddress klass = MonoRuntime.MonoArrayTypeGetClass (memory, data);
+				int rank = MonoRuntime.MonoArrayTypeGetRank (memory, data);
+
+				int numsizes = MonoRuntime.MonoArrayTypeGetNumSizes (memory, data);
+				int numlobounds = MonoRuntime.MonoArrayTypeGetNumLoBounds (memory, data);
+
+				if ((numsizes != 0) || (numlobounds != 0))
+					throw new InternalError ();
+
+				TargetType etype = ReadMonoClass (memory, klass);
+				return new MonoArrayType (etype, rank);
+			}
+
+			default:
+				Report.Error ("UNKNOWN TYPE: {0}", type);
+				return null;
+			}
+		}
+
 		internal MonoFunctionType MainMethod {
 			get { return main_method; }
 		}

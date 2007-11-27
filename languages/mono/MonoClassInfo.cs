@@ -94,8 +94,7 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress type_addr = MonoRuntime.MonoClassGetFieldType (
 					target, KlassAddress, i);
 
-				field_types [i] = OldMonoRuntime.ReadType (
-					SymbolFile.MonoLanguage, target, type_addr);
+				field_types [i] = SymbolFile.MonoLanguage.ReadType (target, type_addr);
 				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
 					target, KlassAddress, i);
 			}
