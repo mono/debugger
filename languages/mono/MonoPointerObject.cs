@@ -34,7 +34,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
 			if (HasAddress)
 				return String.Format ("{0}", GetAddress (target));

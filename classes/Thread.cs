@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
-	public class Thread : TargetMemoryAccess
+	public class Thread : OldTargetMemoryAccess
 	{
 		[Flags]
 		public enum Flags {

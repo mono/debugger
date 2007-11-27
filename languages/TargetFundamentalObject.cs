@@ -96,9 +96,9 @@ namespace Mono.Debugger.Languages
 			}, null);
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
-			object obj = GetObject (target);
+			object obj = DoGetObject (target);
 			if (obj is IntPtr)
 				return String.Format ("0x{0:x}", ((IntPtr) obj).ToInt64 ());
 			else if (obj is UIntPtr)

@@ -2779,7 +2779,8 @@ namespace Mono.Debugger.Backends
 				}
 			}
 
-			TargetLocation GetLocation (StackFrame frame, byte[] data)
+			TargetLocation GetLocation (StackFrame frame, TargetMemoryAccess memory,
+						    byte[] data)
 			{
 				TargetBinaryReader locreader = new TargetBinaryReader (
 					data, subprog.dwarf.TargetMemoryInfo);
@@ -2805,7 +2806,8 @@ namespace Mono.Debugger.Backends
 
 					if (subprog.FrameBase != null) {
 						TargetLocation rloc = new RelativeTargetLocation (
-							subprog.FrameBase.GetLocation (frame), off);
+							subprog.FrameBase.GetLocation (frame, memory),
+							off);
 						if (is_byref)
 							return new DereferencedTargetLocation (rloc);
 						else
@@ -2826,7 +2828,7 @@ namespace Mono.Debugger.Backends
 				reg = subprog.dwarf.bfd.Architecture.DwarfFrameRegisterMap [reg];
 
 				MonoVariableLocation loc = MonoVariableLocation.Create (
-					frame.Thread, is_regoffset, frame.Registers [reg],
+					memory, is_regoffset, frame.Registers [reg],
 					off, is_byref);
 
 				if (!locreader.IsEof)
@@ -2835,10 +2837,10 @@ namespace Mono.Debugger.Backends
 				return loc;
 			}
 
-			public TargetLocation GetLocation (StackFrame frame)
+			public TargetLocation GetLocation (StackFrame frame, TargetMemoryAccess memory)
 			{
 				if (location_block != null)
-					return GetLocation (frame, location_block);
+					return GetLocation (frame, memory, location_block);
 
 				DwarfBinaryReader reader = subprog.dwarf.DebugLocationReader;
 				reader.Position = loclist_offset;
@@ -2865,7 +2867,7 @@ namespace Mono.Debugger.Backends
 					if ((address < base_address+start) || (address >= base_address+end))
 						continue;
 
-					return GetLocation (frame, data);
+					return GetLocation (frame, memory, data);
 				}
 
 				return null;
@@ -2921,20 +2923,26 @@ namespace Mono.Debugger.Backends
 
 			public override TargetObject GetObject (StackFrame frame)
 			{
-				TargetLocation loc = location.GetLocation (frame);
-				if (loc == null)
-					return null;
+				return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
+					delegate (TargetMemoryAccess memory, object data) {
+						TargetLocation loc = location.GetLocation (frame, memory);
+						if (loc == null)
+							return null;
 
-				return type.GetObject (frame.Thread, loc);
+						return type.GetObject (memory, loc);
+				}, null);
 			}
 
 			public override string PrintLocation (StackFrame frame)
 			{
-				TargetLocation loc = location.GetLocation (frame);
-				if (loc == null)
-					return null;
+				return (string) frame.Thread.ThreadServant.DoTargetAccess (
+					delegate (TargetMemoryAccess memory, object data) {
+						TargetLocation loc = location.GetLocation (frame, memory);
+						if (loc == null)
+							return null;
 
-				return loc.Print ();
+						return loc.Print ();
+				}, null);
 			}
 
 			public override bool CanWrite {

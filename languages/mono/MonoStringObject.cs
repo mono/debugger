@@ -47,7 +47,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new String (retval);
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Location.GetAddress (target).IsNull)
 				return "null";

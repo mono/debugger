@@ -55,11 +55,27 @@ namespace Mono.Debugger.Languages
 			}, null);
 		}
 
+		internal TargetAddress GetAddress (TargetMemoryAccess target)
+		{
+			if (!Location.HasAddress)
+				throw new InvalidOperationException ();
+
+			return Location.GetAddress (target);
+		}
+
 		internal abstract long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location);
 
-		public virtual string Print (Thread target)
+		public string Print (Thread thread)
+		{
+			return (string) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess memory, object data) {
+					return Print (memory);
+			}, null);
+		}
+
+		internal virtual string Print (TargetMemoryAccess memory)
 		{
 			return ToString ();
 		}

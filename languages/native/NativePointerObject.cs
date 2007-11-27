@@ -46,7 +46,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.StaticType.GetObject (target, new_loc);
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Type.HasStaticType) {
 				TargetFundamentalType ftype;

@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
 			if (HasAddress)
 				return String.Format ("{0} ({1})", Type.Name, GetAddress (target));
