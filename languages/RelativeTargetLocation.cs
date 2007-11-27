@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages
 			get { return relative_to.HasAddress; }
 		}
 
-		internal override TargetAddress GetAddress (InternalTargetAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			return relative_to.GetAddress (target) + offset;
 		}

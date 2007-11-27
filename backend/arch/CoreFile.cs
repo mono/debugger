@@ -68,16 +68,17 @@ namespace Mono.Debugger.Backends
 			read_note_section ();
 			main_thread = (CoreFileThread) threads [0];
 
-			bfd.UpdateSharedLibraryInfo (null, main_thread);
+			TargetMemoryAccess target_access = ((CoreFileThread) threads [0]).TargetAccess;
+			bfd.UpdateSharedLibraryInfo (null, target_access);
 
 			TargetAddress mdb_debug_info = bfd.GetSectionAddress (".mdb_debug_info");
 			if (!mdb_debug_info.IsNull) {
 				mdb_debug_info = main_thread.ReadAddress (mdb_debug_info);
-				debugger_info = MonoDebuggerInfo.Create (main_thread, mdb_debug_info);
+				debugger_info = MonoDebuggerInfo.Create (target_access, mdb_debug_info);
 				read_thread_table ();
 				CreateMonoLanguage (debugger_info);
-				mono_language.InitializeCoreFile (main_thread);
-				mono_language.Update (main_thread);
+				mono_language.InitializeCoreFile (target_access);
+				mono_language.Update (target_access);
 			}
 		}
 
@@ -204,7 +205,7 @@ namespace Mono.Debugger.Backends
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
 			public readonly Registers Registers;
-			CoreFileTargetAccess target_access;
+			public readonly CoreFileTargetAccess TargetAccess;
 			Backtrace current_backtrace;
 			StackFrame current_frame;
 			Method current_method;
@@ -222,7 +223,7 @@ namespace Mono.Debugger.Backends
 
 				this.Registers = read_registers ();
 
-				target_access = new CoreFileTargetAccess (this);
+				this.TargetAccess = new CoreFileTargetAccess (this);
 			}
 
 			Registers read_registers ()
@@ -271,10 +272,10 @@ namespace Mono.Debugger.Backends
 				get { return CoreFile.TargetMemoryInfo; }
 			}
 
-			internal override object DoTargetAccess (InternalTargetAccessHandler func,
+			internal override object DoTargetAccess (TargetAccessHandler func,
 								 object data)
 			{
-				return func (target_access, data);
+				return func (TargetAccess, data);
 			}
 
 			public override int PID {
@@ -353,18 +354,18 @@ namespace Mono.Debugger.Backends
 
 			public override int GetInstructionSize (TargetAddress address)
 			{
-				return Disassembler.GetInstructionSize (this, address);
+				return Disassembler.GetInstructionSize (TargetAccess, address);
 			}
 
 			public override AssemblerLine DisassembleInstruction (Method method,
 									      TargetAddress address)
 			{
-				return Disassembler.DisassembleInstruction (this, method, address);
+				return Disassembler.DisassembleInstruction (TargetAccess, method, address);
 			}
 
 			public override AssemblerMethod DisassembleMethod (Method method)
 			{
-				return Disassembler.DisassembleMethod (this, method);
+				return Disassembler.DisassembleMethod (TargetAccess, method);
 			}
 
 			public override TargetMemoryArea[] GetMemoryMaps ()
@@ -407,7 +408,7 @@ namespace Mono.Debugger.Backends
 			//
 
 			public override AddressDomain AddressDomain {
-				get { return CoreFile.TargetMemoryInfo.AddressDomain; }
+				get { return Thread.AddressDomain; }
 			}
 
 			internal override Architecture Architecture {
@@ -611,7 +612,7 @@ namespace Mono.Debugger.Backends
 				throw new InvalidOperationException ();
 			}
 
-			protected class CoreFileTargetAccess : InternalTargetAccess
+			protected class CoreFileTargetAccess : TargetMemoryAccess
 			{
 				public readonly CoreFileThread Thread;
 
@@ -620,13 +621,16 @@ namespace Mono.Debugger.Backends
 					this.Thread = thread;
 				}
 
-				[Obsolete("FUCK")]
-				public override TargetMemoryAccess TargetMemoryAccess {
-					get { return Thread; }
-				}
-
 				public override TargetMemoryInfo TargetMemoryInfo {
 					get { return Thread.TargetMemoryInfo; }
+				}
+
+				public override AddressDomain AddressDomain {
+					get { return Thread.AddressDomain; }
+				}
+
+				internal override Architecture Architecture {
+					get { return Thread.Architecture; }
 				}
 
 				public override byte ReadByte (TargetAddress address)
@@ -664,32 +668,18 @@ namespace Mono.Debugger.Backends
 					return Thread.ReadBuffer (address, size);
 				}
 
-				public override bool CanWrite {
-					get { return false; }
+				public override Registers GetRegisters ()
+				{
+					return Thread.GetRegisters ();
 				}
 
-				public override void WriteBuffer (TargetAddress address, byte[] buffer)
+				internal override void InsertBreakpoint (BreakpointHandle breakpoint,
+									 TargetAddress address, int domain)
 				{
 					throw new InvalidOperationException ();
 				}
 
-				public override void WriteByte (TargetAddress address, byte value)
-				{
-					throw new InvalidOperationException ();
-				}
-
-				public override void WriteInteger (TargetAddress address, int value)
-				{
-					throw new InvalidOperationException ();
-				}
-
-				public override void WriteLongInteger (TargetAddress address, long value)
-				{
-					throw new InvalidOperationException ();
-				}
-
-				public override void WriteAddress (TargetAddress address,
-								   TargetAddress value)
+				internal override void RemoveBreakpoint (BreakpointHandle handle)
 				{
 					throw new InvalidOperationException ();
 				}

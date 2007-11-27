@@ -2,8 +2,8 @@ using System;
 
 namespace Mono.Debugger.Backends
 {
-	internal delegate object InternalTargetAccessHandler (InternalTargetAccess target,
-							      object user_data);
+	internal delegate object TargetAccessHandler (TargetMemoryAccess target,
+						      object user_data);
 
 	internal abstract class InternalTargetAccess : DebuggerMarshalByRefObject
 	{

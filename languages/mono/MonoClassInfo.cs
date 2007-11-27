@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable methods;
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
-							   InternalTargetAccess target,
+							   TargetMemoryAccess target,
 							   TargetAddress klass_address)
 		{
 			TargetReader reader = new TargetReader (
@@ -51,7 +51,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
 							   Cecil.TypeDefinition typedef,
-							   InternalTargetAccess target,
+							   TargetMemoryAccess target,
 							   TargetAddress klass_address,
 							   out MonoClassType type)
 		{
@@ -68,7 +68,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		protected MonoClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
-					 InternalTargetAccess target, TargetReader reader,
+					 TargetMemoryAccess target, TargetReader reader,
 					 TargetAddress klass)
 		{
 			this.SymbolFile = file;
@@ -89,7 +89,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return !GenericClass.IsNull; }
 		}
 
-		void get_field_offsets (InternalTargetAccess target)
+		void get_field_offsets (TargetMemoryAccess target)
 		{
 			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
 
@@ -122,7 +122,7 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			thread.ThreadServant.DoTargetAccess (
-				delegate (InternalTargetAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target, object user_data)  {
 					get_field_offsets (target);
 					return null;
 			}, null);
@@ -208,7 +208,7 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetObject (target, field_loc, obj);
 		}
 
-		void get_methods (InternalTargetAccess target)
+		void get_methods (TargetMemoryAccess target)
 		{
 			if (methods != null)
 				return;
@@ -237,7 +237,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public TargetAddress GetMethodAddress (InternalTargetAccess target, int token)
+		public TargetAddress GetMethodAddress (TargetMemoryAccess target, int token)
 		{
 			get_methods (target);
 			if (!methods.Contains (token))
@@ -245,7 +245,7 @@ namespace Mono.Debugger.Languages.Mono
 			return (TargetAddress) methods [token];
 		}
 
-		void get_parent (InternalTargetAccess target)
+		void get_parent (TargetMemoryAccess target)
 		{
 			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
 			parent_klass = target.ReadAddress (
@@ -260,7 +260,7 @@ namespace Mono.Debugger.Languages.Mono
 				return parent_info;
 
 			thread.ThreadServant.DoTargetAccess (
-				delegate (InternalTargetAccess target, object user_data)  {
+				delegate (TargetMemoryAccess target, object user_data)  {
 					get_parent (target);
 					return null;
 			}, null);

@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages
 			get { return true; }
 		}
 
-		internal override TargetAddress GetAddress (InternalTargetAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			return address;
 		}

@@ -446,7 +446,7 @@ namespace Mono.Debugger.Languages.Mono
 			class_info.SetStaticField (target, field, obj);
 		}
 
-		internal MonoClassObject GetCurrentObject (InternalTargetAccess target,
+		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target,
 							   TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,

@@ -50,7 +50,7 @@ namespace Mono.Debugger.Languages
 				throw new InvalidOperationException ();
 
 			return (TargetAddress) thread.ThreadServant.DoTargetAccess (
-				delegate (InternalTargetAccess target, object data) {
+				delegate (TargetMemoryAccess target, object data) {
 					return Location.GetAddress (target);
 			}, null);
 		}

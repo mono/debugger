@@ -780,10 +780,10 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
-		internal override object DoTargetAccess (InternalTargetAccessHandler func, object data)
+		internal override object DoTargetAccess (TargetAccessHandler func, object data)
 		{
 			return SendCommand (delegate {
-				return func (inferior.InternalTargetAccess, data);
+				return func (inferior.TargetMemoryAccess, data);
 			});
 		}
 
@@ -1517,7 +1517,8 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				try {
-					BreakpointHandle handle = breakpoint.Resolve (this, main_frame);
+					BreakpointHandle handle = breakpoint.Resolve (
+						inferior.TargetMemoryAccess, main_frame);
 					if (handle == null)
 						continue;
 
@@ -3043,7 +3044,7 @@ namespace Mono.Debugger.Backends
 		public readonly bool IsVirtual;
 		public readonly bool Debug;
 
-		private readonly InternalTargetAccess internal_target;
+		private readonly TargetMemoryAccess internal_target;
 
 		MonoLanguageBackend language;
 		TargetAddress method = TargetAddress.Null;
@@ -3085,7 +3086,7 @@ namespace Mono.Debugger.Backends
 			this.method = TargetAddress.Null;
 			this.stage = Stage.Uninitialized;
 
-			this.internal_target = inferior.InternalTargetAccess;
+			this.internal_target = inferior.TargetMemoryAccess;
 		}
 
 		protected override void DoExecute ()
@@ -3223,7 +3224,7 @@ namespace Mono.Debugger.Backends
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
 				TargetType class_type = MonoRuntime.ReadMonoClass (
-					language, inferior.InternalTargetAccess, klass);
+					language, inferior.TargetMemoryAccess, klass);
 
 				if (class_type == null) {
 					Result.ExceptionMessage = String.Format (

@@ -842,7 +842,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal InternalTargetAccess InternalTargetAccess {
+		internal TargetMemoryAccess TargetMemoryAccess {
 			get {
 				return target_access;
 			}
@@ -1522,7 +1522,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		protected class InferiorTargetAccess : InternalTargetAccess
+		protected class InferiorTargetAccess : TargetMemoryAccess
 		{
 			public readonly Inferior Inferior;
 
@@ -1531,13 +1531,16 @@ namespace Mono.Debugger.Backends
 				this.Inferior = inferior;
 			}
 
-			[Obsolete("FUCK")]
-			public override TargetMemoryAccess TargetMemoryAccess {
-				get { return Inferior; }
-			}
-
 			public override TargetMemoryInfo TargetMemoryInfo {
 				get { return Inferior.TargetMemoryInfo; }
+			}
+
+			public override AddressDomain AddressDomain {
+				get { return Inferior.AddressDomain; }
+			}
+
+			internal override Architecture Architecture {
+				get { return Inferior.Architecture; }
 			}
 
 			public override byte ReadByte (TargetAddress address)
@@ -1575,7 +1578,24 @@ namespace Mono.Debugger.Backends
 				return Inferior.ReadBuffer (address, size);
 			}
 
+			public override Registers GetRegisters ()
+			{
+				return Inferior.GetRegisters ();
+			}
 
+			internal override void InsertBreakpoint (BreakpointHandle breakpoint,
+								 TargetAddress address, int domain)
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal override void RemoveBreakpoint (BreakpointHandle handle)
+			{
+				throw new InvalidOperationException ();
+			}
+
+
+#if FIXME
 			public override bool CanWrite {
 				get { return false; }
 			}
@@ -1604,6 +1624,7 @@ namespace Mono.Debugger.Backends
 			{
 				Inferior.WriteAddress (address, value);
 			}
+#endif
 		}
 
 		//

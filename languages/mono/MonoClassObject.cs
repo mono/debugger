@@ -38,7 +38,7 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
-				delegate (InternalTargetAccess target, object data) {
+				delegate (TargetMemoryAccess target, object data) {
 					return type.GetCurrentObject (target, Location);
 			}, null);
 		}

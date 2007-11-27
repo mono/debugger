@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages
 			get { return reference.HasAddress; }
 		}
 
-		internal override TargetAddress GetAddress (InternalTargetAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			TargetAddress address = reference.GetAddress (target);
 			if (address.IsNull)

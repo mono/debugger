@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages
 			get { return false; }
 		}
 
-		internal override TargetAddress GetAddress (InternalTargetAccess target)
+		internal override TargetAddress GetAddress (TargetMemoryAccess target)
 		{
 			throw new InvalidOperationException ();
 		}
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages
 			return sb.ToString ();
 		}
 
-		internal override TargetBlob ReadMemory (InternalTargetAccess target, int size)
+		internal override TargetBlob ReadMemory (TargetMemoryAccess target, int size)
 		{
 			byte[] data = relative_to.ReadBuffer (target, size);
 

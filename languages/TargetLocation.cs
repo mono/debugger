@@ -19,9 +19,9 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal abstract TargetAddress GetAddress (InternalTargetAccess target);
+		internal abstract TargetAddress GetAddress (TargetMemoryAccess target);
 
-		internal virtual TargetBlob ReadMemory (InternalTargetAccess target, int size)
+		internal virtual TargetBlob ReadMemory (TargetMemoryAccess target, int size)
 		{
 			return target.ReadMemory (GetAddress (target), size);
 		}
@@ -29,17 +29,17 @@ namespace Mono.Debugger.Languages
 		// <summary>
 		//   Same than ReadMemory(), but returns a byte[] array.
 		// </summary>
-		internal byte[] ReadBuffer (InternalTargetAccess target, int size)
+		internal byte[] ReadBuffer (TargetMemoryAccess target, int size)
 		{
 			return ReadMemory (target, size).Contents;
 		}
 
-		internal virtual void WriteBuffer (InternalTargetAccess target, byte[] data)
+		internal virtual void WriteBuffer (TargetMemoryAccess target, byte[] data)
 		{
 			target.WriteBuffer (GetAddress (target), data);
 		}
 
-		internal virtual void WriteAddress (InternalTargetAccess target, TargetAddress address)
+		internal virtual void WriteAddress (TargetMemoryAccess target, TargetAddress address)
 		{
 			target.WriteAddress (GetAddress (target), address);
 		}

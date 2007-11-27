@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		internal override object DoGetObject (InternalTargetAccess target)
+		internal override object DoGetObject (TargetMemoryAccess target)
 		{
 			try {
 				return ReadString (target, Location);

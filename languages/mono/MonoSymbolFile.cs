@@ -1044,7 +1044,7 @@ namespace Mono.Debugger.Languages.Mono
 					return;
 
 				thread.ThreadServant.DoTargetAccess (
-					delegate (InternalTargetAccess target, object user_data)  {
+					delegate (TargetMemoryAccess target, object user_data)  {
 						do_read_variables (target.TargetMemoryAccess);
 						return null;
 				}, null);

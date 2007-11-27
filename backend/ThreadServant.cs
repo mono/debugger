@@ -15,7 +15,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
-	internal abstract class ThreadServant : TargetAccess
+	internal abstract class ThreadServant : OldTargetAccess
 	{
 		protected ThreadServant (ThreadManager manager, ProcessServant process)
 		{
@@ -98,7 +98,7 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		internal abstract object DoTargetAccess (InternalTargetAccessHandler func,
+		internal abstract object DoTargetAccess (TargetAccessHandler func,
 							 object user_data);
 
 		public abstract TargetMemoryArea[] GetMemoryMaps ();

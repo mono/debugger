@@ -24,12 +24,12 @@ namespace Mono.Debugger.Languages
 		public object GetObject (Thread thread)
 		{
 			return thread.ThreadServant.DoTargetAccess (
-				delegate (InternalTargetAccess target, object data) {
+				delegate (TargetMemoryAccess target, object data) {
 					return DoGetObject (target);
 			}, null);
 		}
 
-		internal virtual object DoGetObject (InternalTargetAccess target)
+		internal virtual object DoGetObject (TargetMemoryAccess target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 
@@ -90,7 +90,7 @@ namespace Mono.Debugger.Languages
 		public void SetObject (Thread thread, TargetObject obj)
 		{
 			thread.ThreadServant.DoTargetAccess (
-				delegate (InternalTargetAccess target, object data) {
+				delegate (TargetMemoryAccess target, object data) {
 					Type.SetObject (target, Location, obj);
 					return null;
 			}, null);
