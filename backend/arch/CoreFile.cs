@@ -625,10 +625,6 @@ namespace Mono.Debugger.Backends
 					get { return Thread.AddressDomain; }
 				}
 
-				internal override Architecture Architecture {
-					get { return Thread.Architecture; }
-				}
-
 				public override int TargetIntegerSize {
 					get {
 						return Thread.TargetIntegerSize;

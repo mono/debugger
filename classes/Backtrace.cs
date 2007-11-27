@@ -82,7 +82,7 @@ namespace Mono.Debugger
 				if (thread.LMFAddress.IsNull)
 					return null;
 
-				StackFrame new_frame = memory.Architecture.GetLMF (thread, memory);
+				StackFrame new_frame = thread.Architecture.GetLMF (thread, memory);
 				if (new_frame == null)
 					return null;
 

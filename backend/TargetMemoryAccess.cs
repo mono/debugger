@@ -17,10 +17,6 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract Architecture Architecture {
-			get;
-		}
-
 		public abstract int TargetIntegerSize {
 			get;
 		}

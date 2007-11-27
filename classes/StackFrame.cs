@@ -387,7 +387,7 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			return memory.Architecture.UnwindStack (this, memory, null, 0);
+			return thread.Architecture.UnwindStack (this, memory, null, 0);
 		}
 
 		public override string ToString ()

@@ -141,7 +141,7 @@ namespace Mono.Debugger
 			int offset = (int) (frame.TargetAddress - StartAddress);
 
 			byte[] prologue = memory.ReadBuffer (StartAddress, prologue_size);
-			return memory.Architecture.UnwindStack (frame, memory, prologue, offset);
+			return frame.Thread.Architecture.UnwindStack (frame, memory, prologue, offset);
 		}
 
 		//

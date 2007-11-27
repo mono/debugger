@@ -235,7 +235,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.MonoLanguage = language;
 			this.TargetMemoryInfo = memory.TargetMemoryInfo;
-			this.Architecture = memory.Architecture;
+			this.Architecture = process.Architecture;
 			this.process = process;
 
 			ThreadManager = process.ThreadManager;
