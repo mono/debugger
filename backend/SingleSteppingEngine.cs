@@ -1517,7 +1517,7 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				try {
-					BreakpointHandle handle = breakpoint.Resolve (inferior, main_frame);
+					BreakpointHandle handle = breakpoint.Resolve (thread, main_frame);
 					if (handle == null)
 						continue;
 
