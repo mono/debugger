@@ -407,10 +407,6 @@ namespace Mono.Debugger.Backends
 			// TargetMemoryAccess
 			//
 
-			public override AddressDomain AddressDomain {
-				get { return Thread.AddressDomain; }
-			}
-
 			internal override Architecture Architecture {
 				get { return CoreFile.Architecture; }
 			}
