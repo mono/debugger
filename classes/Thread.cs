@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
-	public class Thread : TargetAccess
+	public class Thread : TargetMemoryAccess
 	{
 		[Flags]
 		public enum Flags {
@@ -70,7 +70,7 @@ namespace Mono.Debugger
 		//   The single-stepping engine's target state.  This will be
 		//   TargetState.RUNNING while the engine is stepping.
 		// </summary>
-		public override TargetState State {
+		public TargetState State {
 			get {
 				if (servant == null)
 					return TargetState.NoTarget;
@@ -139,7 +139,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal override ProcessServant ProcessServant {
+		internal ProcessServant ProcessServant {
 			get {
 				check_servant ();
 				return servant.ProcessServant;
@@ -153,7 +153,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal override ThreadManager ThreadManager {
+		internal ThreadManager ThreadManager {
 			get {
 				check_servant ();
 				return servant.ThreadManager;
@@ -199,14 +199,14 @@ namespace Mono.Debugger
 		//   unnecessarily compute this several times if more than one client
 		//   accesses this property.
 		// </summary>
-		public override StackFrame CurrentFrame {
+		public StackFrame CurrentFrame {
 			get {
 				check_servant ();
 				return servant.CurrentFrame;
 			}
 		}
 
-		public override TargetAddress CurrentFrameAddress {
+		public TargetAddress CurrentFrameAddress {
 			get {
 				check_servant ();
 				return servant.CurrentFrameAddress;
@@ -222,7 +222,7 @@ namespace Mono.Debugger
 		//   without doing any stepping operations in the meantime, you'll always
 		//   get the same backtrace.
 		// </summary>
-		public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
+		public Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
 		{
 			check_servant ();
 			return servant.GetBacktrace (mode, max_frames);
@@ -243,7 +243,7 @@ namespace Mono.Debugger
 			return GetBacktrace (Backtrace.Mode.Default, -1);
 		}
 
-		public override Backtrace CurrentBacktrace {
+		public Backtrace CurrentBacktrace {
 			get {
 				check_servant ();
 				return servant.CurrentBacktrace;
@@ -526,19 +526,19 @@ namespace Mono.Debugger
 		// Disassembling.
 		//
 
-		public override int GetInstructionSize (TargetAddress address)
+		public int GetInstructionSize (TargetAddress address)
 		{
 			check_alive ();
 			return servant.GetInstructionSize (address);
 		}
 
-		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
+		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			check_alive ();
 			return servant.DisassembleInstruction (method, address);
 		}
 
-		public override AssemblerMethod DisassembleMethod (Method method)
+		public AssemblerMethod DisassembleMethod (Method method)
 		{
 			check_alive ();
 			return servant.DisassembleMethod (method);

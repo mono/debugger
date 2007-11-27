@@ -4,6 +4,7 @@ namespace Mono.Debugger
 {
 	using Mono.Debugger.Backends;
 
+	[Obsolete("FUCK")]
 	public abstract class TargetAccess : TargetMemoryAccess
 	{
 		internal abstract ThreadManager ThreadManager {
