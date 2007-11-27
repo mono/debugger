@@ -32,12 +32,17 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		public override void Activate (Thread target)
+		public override void Activate (Thread thread)
 		{
-			Resolve (target, target.CurrentFrame);
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target, object user_data)  {
+					Resolve (target, thread.CurrentFrame);
+					return null;
+			}, null);
+
 			if (handle == null)
 				throw new TargetException (TargetError.LocationInvalid);
-			handle.Insert (target);
+			handle.Insert (thread);
 		}
 
 		public override void Deactivate (Thread target)
