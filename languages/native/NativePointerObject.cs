@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Native
 			: base (type, location)
 		{ }
 
-		public override TargetType GetCurrentType (TargetMemoryAccess target)
+		internal override TargetType GetCurrentType (TargetMemoryAccess target)
 		{
 			if (!Type.HasStaticType)
 				throw new InvalidOperationException ();
@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Native
 			return Type.StaticType;
 		}
 
-		public override TargetObject GetDereferencedObject (TargetMemoryAccess target)
+		internal override TargetObject GetDereferencedObject (TargetMemoryAccess target)
 		{
 			if (!Type.HasStaticType)
 				throw new InvalidOperationException ();
@@ -32,7 +32,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (TargetMemoryAccess target, int index)
+		internal override TargetObject GetArrayElement (TargetMemoryAccess target, int index)
 		{
 			if (!Type.IsArray)
 				throw new InvalidOperationException ();

@@ -131,16 +131,6 @@ namespace Mono.Debugger.Languages.Mono
 			}, null);
 		}
 
-		[Obsolete("FUCK")]
-		public TargetObject GetField (Thread thread, TargetLocation location,
-					      TargetFieldInfo field)
-		{
-			return (TargetObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
-					return GetField (target, location, field);
-			}, null);
-		}
-
 		internal TargetObject GetField (TargetMemoryAccess target, TargetLocation location,
 						TargetFieldInfo field)
 		{
@@ -160,17 +150,6 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			return type.GetObject (target, field_loc);
-		}
-
-		[Obsolete("FUCK")]
-		public void SetField (Thread thread, TargetLocation location,
-				      TargetFieldInfo field, TargetObject obj)
-		{
-			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target, object data) {
-					SetField (target, location, field, obj);
-					return null;
-			}, null);
 		}
 
 		internal void SetField (TargetMemoryAccess target, TargetLocation location,

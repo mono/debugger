@@ -21,7 +21,7 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetArrayElement (TargetMemoryAccess target, int index)
+		internal override TargetObject GetArrayElement (TargetMemoryAccess target, int index)
 		{
 			throw new InvalidOperationException ();
 		}
