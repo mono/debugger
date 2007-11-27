@@ -76,13 +76,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		private StackFrame TryLMF (TargetMemoryAccess target)
+		private StackFrame TryLMF (Thread thread, TargetMemoryAccess memory)
 		{
 			try {
-				if (target.LMFAddress.IsNull)
+				if (thread.LMFAddress.IsNull)
 					return null;
 
-				StackFrame new_frame = target.Architecture.GetLMF (target);
+				StackFrame new_frame = memory.Architecture.GetLMF (memory);
 				if (new_frame == null)
 					return null;
 
