@@ -60,7 +60,7 @@ namespace Mono.Debugger.Languages.Mono
 			return Type.ElementType.GetObject (target, new_loc);
 		}
 
-		public override void SetElement (TargetAccess target, int[] indices,
+		public override void SetElement (TargetMemoryAccess target, int[] indices,
 						 TargetObject obj)
 		{
 			int offset = GetArrayOffset (target, indices);
