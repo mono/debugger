@@ -73,7 +73,7 @@ namespace Mono.Debugger
 			this.value = value.Address;
 		}
 
-		public void WriteRegister (TargetAccess target, long value)
+		public void WriteRegister (TargetMemoryAccess target, long value)
 		{
 			this.value = value;
 

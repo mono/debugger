@@ -59,7 +59,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal void GetBacktrace (ThreadServant target, Mode mode, TargetAddress until,
+		internal void GetBacktrace (TargetMemoryAccess target, Mode mode, TargetAddress until,
 					    int max_frames)
 		{
 			while (TryUnwind (target, mode, until)) {
@@ -76,7 +76,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		private StackFrame TryLMF (ThreadServant target)
+		private StackFrame TryLMF (TargetMemoryAccess target)
 		{
 			try {
 				if (target.LMFAddress.IsNull)
@@ -96,7 +96,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		private bool TryCallback (ThreadServant target, StackFrame last_frame, bool exact_match)
+		private bool TryCallback (TargetMemoryAccess target, StackFrame last_frame,
+					  bool exact_match)
 		{
 			StackFrame new_frame = null;
 			try{
@@ -130,7 +131,7 @@ namespace Mono.Debugger
 			return frame.Method.WrapperType == WrapperType.None;
 		}
 
-		internal bool TryUnwind (ThreadServant target, Mode mode, TargetAddress until)
+		internal bool TryUnwind (TargetMemoryAccess target, Mode mode, TargetAddress until)
 		{
 			StackFrame new_frame = null;
 			try {

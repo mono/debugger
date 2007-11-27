@@ -1630,7 +1630,9 @@ namespace Mono.Debugger.Backends
 				process.UpdateSymbolTable (inferior);
 
 				Backtrace bt = new Backtrace (current_frame);
-				bt.GetBacktrace (this, Backtrace.Mode.Native, TargetAddress.Null, 2);
+				bt.GetBacktrace (
+					inferior.TargetMemoryAccess, Backtrace.Mode.Native,
+					TargetAddress.Null, 2);
 
 				if (bt.Count < 2)
 					throw new TargetException (TargetError.NoStack);
@@ -1685,7 +1687,9 @@ namespace Mono.Debugger.Backends
 
 				current_backtrace = new Backtrace (current_frame);
 
-				current_backtrace.GetBacktrace (this, mode, TargetAddress.Null, max_frames);
+				current_backtrace.GetBacktrace (
+					inferior.TargetMemoryAccess, mode,
+					TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			});

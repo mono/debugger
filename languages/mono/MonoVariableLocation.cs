@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.is_byref = is_byref;
 		}
 
-		public static MonoVariableLocation Create (TargetAccess target, bool is_regoffset,
+		public static MonoVariableLocation Create (TargetMemoryAccess target, bool is_regoffset,
 							   Register register, long regoffset,
 							   bool is_byref)
 		{
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			return location;
 		}
 
-		void update (TargetAccess target)
+		void update (TargetMemoryAccess target)
 		{
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
