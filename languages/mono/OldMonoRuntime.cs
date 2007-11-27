@@ -83,12 +83,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			case MonoTypeEnum.MONO_TYPE_ARRAY: {
-				TargetReader reader = new TargetReader (memory.ReadMemory (
-					data, 4 * memory.TargetMemoryInfo.TargetAddressSize));
-				TargetAddress klass = reader.ReadAddress ();
-				int rank = reader.ReadByte ();
-				int numsizes = reader.ReadByte ();
-				int numlobounds = reader.ReadByte ();
+				TargetAddress klass = mono.MonoRuntime.MonoArrayTypeGetClass (memory, data);
+				int rank = mono.MonoRuntime.MonoArrayTypeGetRank (memory, data);
+
+				int numsizes = mono.MonoRuntime.MonoArrayTypeGetNumSizes (memory, data);
+				int numlobounds = mono.MonoRuntime.MonoArrayTypeGetNumLoBounds (memory, data);
 
 				if ((numsizes != 0) || (numlobounds != 0))
 					throw new InternalError ();
