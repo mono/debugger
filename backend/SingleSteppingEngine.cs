@@ -783,7 +783,7 @@ namespace Mono.Debugger.Backends
 		internal override object DoTargetAccess (TargetAccessHandler func, object data)
 		{
 			return SendCommand (delegate {
-				return func (inferior.TargetMemoryAccess, data);
+				return func (inferior, data);
 			});
 		}
 
@@ -1517,8 +1517,7 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				try {
-					BreakpointHandle handle = breakpoint.Resolve (
-						inferior.TargetMemoryAccess, main_frame);
+					BreakpointHandle handle = breakpoint.Resolve (inferior, main_frame);
 					if (handle == null)
 						continue;
 
@@ -1630,9 +1629,7 @@ namespace Mono.Debugger.Backends
 				process.UpdateSymbolTable (inferior);
 
 				Backtrace bt = new Backtrace (current_frame);
-				bt.GetBacktrace (
-					inferior.TargetMemoryAccess, Backtrace.Mode.Native,
-					TargetAddress.Null, 2);
+				bt.GetBacktrace (inferior, Backtrace.Mode.Native, TargetAddress.Null, 2);
 
 				if (bt.Count < 2)
 					throw new TargetException (TargetError.NoStack);
@@ -1688,8 +1685,7 @@ namespace Mono.Debugger.Backends
 				current_backtrace = new Backtrace (current_frame);
 
 				current_backtrace.GetBacktrace (
-					inferior.TargetMemoryAccess, mode,
-					TargetAddress.Null, max_frames);
+					inferior, mode, TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			});
@@ -3090,7 +3086,7 @@ namespace Mono.Debugger.Backends
 			this.method = TargetAddress.Null;
 			this.stage = Stage.Uninitialized;
 
-			this.internal_target = inferior.TargetMemoryAccess;
+			this.internal_target = inferior;
 		}
 
 		protected override void DoExecute ()
@@ -3228,7 +3224,7 @@ namespace Mono.Debugger.Backends
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
 				TargetType class_type = MonoRuntime.ReadMonoClass (
-					language, inferior.TargetMemoryAccess, klass);
+					language, inferior, klass);
 
 				if (class_type == null) {
 					Result.ExceptionMessage = String.Format (

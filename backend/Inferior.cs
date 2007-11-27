@@ -24,8 +24,6 @@ namespace Mono.Debugger.Backends
 
 		protected readonly ProcessStart start;
 
-		protected readonly InferiorTargetAccess target_access;
-
 		protected readonly BfdContainer bfd_container;
 		protected readonly SymbolTableCollection symtab_collection;
 		protected readonly ProcessServant process;
@@ -279,8 +277,6 @@ namespace Mono.Debugger.Backends
 			this.breakpoint_manager = bpm;
 			this.address_domain = address_domain;
 
-			this.target_access = new InferiorTargetAccess (this);
-
 			server_handle = mono_debugger_server_create_inferior (breakpoint_manager.Manager);
 			if (server_handle == IntPtr.Zero)
 				throw new InternalError ("mono_debugger_server_initialize() failed.");
@@ -406,10 +402,10 @@ namespace Mono.Debugger.Backends
 					continue;
 				if (obj.Location.HasAddress) {
 					blob_offsets [i] = -1;
-					addresses [i] = obj.Location.GetAddress (target_access).Address;
+					addresses [i] = obj.Location.GetAddress (this).Address;
 					continue;
 				}
-				blobs [i] = obj.Location.ReadBuffer (target_access, obj.Type.Size);
+				blobs [i] = obj.Location.ReadBuffer (this, obj.Type.Size);
 				blob_offsets [i] = blob_size;
 				blob_size += blobs [i].Length;
 			}
@@ -839,12 +835,6 @@ namespace Mono.Debugger.Backends
 		public override TargetMemoryInfo TargetMemoryInfo {
 			get {
 				return target_info;
-			}
-		}
-
-		internal TargetMemoryAccess TargetMemoryAccess {
-			get {
-				return target_access;
 			}
 		}
 
@@ -1519,114 +1509,6 @@ namespace Mono.Debugger.Backends
 					throw new InvalidOperationException ();
 
 				return signal_info.MonoThreadAbortSignal;
-			}
-		}
-
-		protected class InferiorTargetAccess : TargetMemoryAccess
-		{
-			public readonly Inferior Inferior;
-
-			public InferiorTargetAccess (Inferior inferior)
-			{
-				this.Inferior = inferior;
-			}
-
-			public override TargetMemoryInfo TargetMemoryInfo {
-				get { return Inferior.TargetMemoryInfo; }
-			}
-
-			public override AddressDomain AddressDomain {
-				get { return Inferior.AddressDomain; }
-			}
-
-			internal override Architecture Architecture {
-				get { return Inferior.Architecture; }
-			}
-
-			public override byte ReadByte (TargetAddress address)
-			{
-				return Inferior.ReadByte (address);
-			}
-
-			public override int ReadInteger (TargetAddress address)
-			{
-				return Inferior.ReadInteger (address);
-			}
-
-			public override long ReadLongInteger (TargetAddress address)
-			{
-				return Inferior.ReadLongInteger (address);
-			}
-
-			public override TargetAddress ReadAddress (TargetAddress address)
-			{
-				return Inferior.ReadAddress (address);
-			}
-
-			public override string ReadString (TargetAddress address)
-			{
-				return Inferior.ReadString (address);
-			}
-
-			public override TargetBlob ReadMemory (TargetAddress address, int size)
-			{
-				return Inferior.ReadMemory (address, size);
-			}
-
-			public override byte[] ReadBuffer (TargetAddress address, int size)
-			{
-				return Inferior.ReadBuffer (address, size);
-			}
-
-			public override Registers GetRegisters ()
-			{
-				return Inferior.GetRegisters ();
-			}
-
-			internal override void InsertBreakpoint (BreakpointHandle breakpoint,
-								 TargetAddress address, int domain)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			internal override void RemoveBreakpoint (BreakpointHandle handle)
-			{
-				throw new InvalidOperationException ();
-			}
-
-
-			public override bool CanWrite {
-				get { return true; }
-			}
-
-			public override void WriteBuffer (TargetAddress address, byte[] buffer)
-			{
-				Inferior.WriteBuffer (address, buffer);
-			}
-
-			public override void WriteByte (TargetAddress address, byte value)
-			{
-				Inferior.WriteByte (address, value);
-			}
-
-			public override void WriteInteger (TargetAddress address, int value)
-			{
-				Inferior.WriteInteger (address, value);
-			}
-
-			public override void WriteLongInteger (TargetAddress address, long value)
-			{
-				Inferior.WriteLongInteger (address, value);
-			}
-
-			public override void WriteAddress (TargetAddress address, TargetAddress value)
-			{
-				Inferior.WriteAddress (address, value);
-			}
-
-			public override void SetRegisters (Registers registers)
-			{
-				Inferior.SetRegisters (registers);
 			}
 		}
 

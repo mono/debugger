@@ -400,7 +400,8 @@ namespace Mono.Debugger.Architectures
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
+					    regs, true);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -432,7 +433,8 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
+						    regs, true);
 			}
 
 			// push %ebp
@@ -455,7 +457,8 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_rip, new_rsp,
+						    new_rbp, regs, true);
 			}
 
 			if (code [pos++] != 0x48) {
@@ -500,7 +503,8 @@ namespace Mono.Debugger.Architectures
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame.Thread, new_rip, new_rsp, new_rbp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
+					    regs, true);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, TargetMemoryAccess memory)
@@ -583,10 +587,10 @@ namespace Mono.Debugger.Architectures
 			inferior.SetRegisters (regs);
 		}
 
-		protected override TargetAddress AdjustReturnAddress (Thread thread,
+		protected override TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
 								      TargetAddress address)
 		{
-			TargetBinaryReader reader = thread.ReadMemory (address-7, 7).GetReader ();
+			TargetBinaryReader reader = target.ReadMemory (address-7, 7).GetReader ();
 
 			byte[] code = reader.ReadBuffer (7);
 			if (code [2] == 0xe8)
@@ -608,30 +612,30 @@ namespace Mono.Debugger.Architectures
 			return address;
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, Registers regs,
-							  bool adjust_retaddr)
+		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory,
+							  Registers regs, bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
-				thread.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				thread.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				thread.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
 
-			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
-					    adjust_retaddr);
+			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer,
+					    regs, adjust_retaddr);
 		}
 
 
-		internal override StackFrame GetLMF (Thread thread)
+		internal override StackFrame GetLMF (Thread thread, TargetMemoryAccess memory)
 		{
-			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
-			return GetLMF (thread, lmf);
+			TargetAddress lmf = memory.ReadAddress (thread.LMFAddress);
+			return GetLMF (thread, memory, lmf);
 		}
 
-		StackFrame GetLMF (Thread thread, TargetAddress lmf)
+		StackFrame GetLMF (Thread thread, TargetMemoryAccess memory, TargetAddress lmf)
 		{
-			TargetBinaryReader reader = thread.ReadMemory (lmf, 88).GetReader ();
+			TargetBinaryReader reader = memory.ReadMemory (lmf, 88).GetReader ();
 
 			reader.ReadTargetAddress (); // prev
 			TargetAddress lmf_addr = reader.ReadTargetAddress ();
@@ -659,10 +663,10 @@ namespace Mono.Debugger.Architectures
 			regs [(int) X86_64_Register.R14].SetValue (lmf + 72, r14);
 			regs [(int) X86_64_Register.R15].SetValue (lmf + 80, r15);
 
-			TargetAddress new_rbp = thread.ReadAddress (rbp);
+			TargetAddress new_rbp = memory.ReadAddress (rbp);
 			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
 
-			return CreateFrame (thread, rip, rsp, new_rbp, regs, true);
+			return CreateFrame (thread, memory, rip, rsp, new_rbp, regs, true);
 		}
 	}
 }
