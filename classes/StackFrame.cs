@@ -91,7 +91,7 @@ namespace Mono.Debugger
 
 			if (addr_on_stack.IsNull)
 				thread.SetRegisters (registers);
-			else if (Size == target.TargetMemoryInfo.TargetIntegerSize)
+			else if (Size == thread.TargetMemoryInfo.TargetIntegerSize)
 				thread.WriteInteger (addr_on_stack, (int) value);
 			else
 				thread.WriteLongInteger (addr_on_stack, value);
