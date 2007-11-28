@@ -92,16 +92,21 @@ namespace Mono.Debugger.Languages.Mono
 
 			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
 
+			fields = new MonoFieldInfo [field_count];
 			field_offsets = new int [field_count];
 			field_types = new TargetType [field_count];
 
 			for (int i = 0; i < field_count; i++) {
+				Cecil.FieldDefinition field = CecilType.Fields [i];
+
 				TargetAddress type_addr = MonoRuntime.MonoClassGetFieldType (
 					target, KlassAddress, i);
 
 				field_types [i] = SymbolFile.MonoLanguage.ReadType (target, type_addr);
 				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
 					target, KlassAddress, i);
+
+				fields [i] = new MonoFieldInfo (type, field_types [i], i, field);
 			}
 		}
 
@@ -117,11 +122,8 @@ namespace Mono.Debugger.Languages.Mono
 			});
 		}
 
-		void get_fields ()
+		void get_fields (TargetMemoryAccess memory)
 		{
-			if (fields != null)
-				return;
-
 			int num_fields = CecilType.Fields.Count;
 			fields = new MonoFieldInfo [num_fields];
 
@@ -135,11 +137,18 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetFieldInfo[] Fields {
-			get {
-				get_fields ();
+		public override TargetFieldInfo[] GetFields (Thread thread)
+		{
+			if (fields != null)
 				return fields;
-			}
+
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					get_fields (target);
+					return null;
+			});
+
+			return fields;
 		}
 
 		public override TargetObject GetField (Thread thread,

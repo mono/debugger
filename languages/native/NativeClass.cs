@@ -26,8 +26,9 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetFieldInfo[] Fields {
-			get { return fields; }
+		public override TargetFieldInfo[] GetFields (Thread thread)
+		{
+			return fields;
 		}
 
 		public override TargetObject GetField (Thread thread,

@@ -1,8 +1,16 @@
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClass.cs
-	(TargetClass.Fields): New public property; this includes both
+	(TargetClass.GetFields): New public method; this includes both
 	instance and static fields.
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.GetFields): Get the field types from the runtime
+	and not from Cecil.
+
+	* frontend/ObjectFormatter.cs
+	(ObjectFormatter.FormatClassObject): Use the new `TargetClass' to
+	display fields.
 
 2007-11-28  Martin Baulig  <martin@ximian.com>
 

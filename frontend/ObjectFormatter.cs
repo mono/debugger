@@ -219,7 +219,7 @@ namespace Mono.Debugger.Frontend
 				indent_level -= 3;
 			}
 
-			TargetFieldInfo[] fields = class_info.Fields;
+			TargetFieldInfo[] fields = class_info.GetFields (target);
 			for (int i = 0; i < fields.Length; i++) {
 				if (fields [i].IsStatic || fields [i].HasConstValue)
 					continue;
