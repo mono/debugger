@@ -1,5 +1,9 @@
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
+	Renamed `Mono.Debugger.Backends' => `Mono.Debugger.Backend'.
+
+2007-11-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/X86_Instruction.cs
 	(X86_Instruction.GetMonoTrampoline): New protected abstract method.
 	(X86_Instruction.CheckTrampoline): Implement this here.

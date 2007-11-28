@@ -3,7 +3,7 @@ using System.Threading;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class BreakpointManager : IDisposable
 	{

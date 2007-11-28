@@ -4,7 +4,7 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {

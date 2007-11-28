@@ -1,7 +1,7 @@
 using System;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal abstract class BreakpointHandle : DebuggerMarshalByRefObject
 	{

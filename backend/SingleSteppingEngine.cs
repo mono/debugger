@@ -16,7 +16,7 @@ using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 using Mono.Debugger.Architectures;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 // <summary>
 //   The single stepping engine is responsible for doing all the stepping

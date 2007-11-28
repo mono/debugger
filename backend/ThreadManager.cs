@@ -13,7 +13,7 @@ using System.Runtime.Remoting.Messaging;
 
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class ThreadManager : DebuggerMarshalByRefObject
 	{

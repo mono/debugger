@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	using Mono.Debugger.Backends;
+	using Mono.Debugger.Backend;
 
 	public abstract class TargetAccess : TargetMemoryAccess
 	{

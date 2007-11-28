@@ -1,6 +1,6 @@
 using System;
 using System.Xml;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {

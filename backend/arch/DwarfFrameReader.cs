@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class DwarfFrameReader
 	{

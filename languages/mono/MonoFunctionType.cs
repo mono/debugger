@@ -5,7 +5,7 @@ using C = Mono.CompilerServices.SymbolWriter;
 using Cecil = Mono.Cecil;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {

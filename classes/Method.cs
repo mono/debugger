@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections;
 
 using Mono.Debugger.Languages;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {

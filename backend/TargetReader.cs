@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Text;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	[Serializable]
 	internal class TargetReader

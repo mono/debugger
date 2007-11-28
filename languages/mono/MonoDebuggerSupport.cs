@@ -1,6 +1,6 @@
 using System;
 using Mono.Debugger;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Cecil;
 using Mono.Cecil.Metadata;
 using C = Mono.CompilerServices.SymbolWriter;

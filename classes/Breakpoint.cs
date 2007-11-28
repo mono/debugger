@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using System.Runtime.Serialization;
 using System.Xml;
 

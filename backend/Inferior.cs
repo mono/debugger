@@ -12,7 +12,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal delegate void ChildOutputHandler (string output);
 

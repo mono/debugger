@@ -5,10 +5,10 @@ using System.Collections;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Architectures;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class BfdDisassembler : Disassembler, IDisposable
 	{

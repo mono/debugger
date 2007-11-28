@@ -5,7 +5,7 @@ using ST = System.Threading;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Frontend
 {

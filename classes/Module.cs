@@ -8,7 +8,7 @@ using System.Xml;
 using System.Xml.XPath;
 
 using Mono.Debugger.Languages;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {

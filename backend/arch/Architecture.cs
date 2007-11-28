@@ -1,8 +1,8 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Architectures;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	// <summary>
 	//   Architecture-dependent interface.

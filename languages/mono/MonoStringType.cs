@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono

@@ -10,7 +10,7 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
