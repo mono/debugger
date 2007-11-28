@@ -365,6 +365,14 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
+		public override TargetClass GetClass (Thread thread)
+		{
+			return (TargetClass) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return ResolveClass (target, true);
+			});
+		}
+
 		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
 			if (class_info != null)
@@ -431,27 +439,6 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			return null;
-		}
-
-		public override TargetObject GetStaticField (Thread thread, TargetFieldInfo field)
-		{
-			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					ResolveClass (target, true);
-					return null;
-			});
-			return class_info.GetStaticField (thread, field);
-		}
-
-		public override void SetStaticField (Thread thread, TargetFieldInfo field,
-						     TargetObject obj)
-		{
-			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					ResolveClass (target, true);
-					return null;
-			});
-			class_info.SetStaticField (thread, field, obj);
 		}
 
 		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target,

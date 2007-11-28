@@ -73,6 +73,7 @@ namespace Mono.Debugger.Languages.Native
 		string name;
 		int size;
 		NativeFieldInfo[] fields;
+		NativeClass class_info;
 
 		internal NativeStructType (Language language, string name, int size)
 			: base (language, TargetObjectKind.Struct)
@@ -148,18 +149,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetObject GetStaticField (Thread target,
-							     TargetFieldInfo field)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		public override void SetStaticField (Thread target, TargetFieldInfo field,
-						     TargetObject obj)
-		{
-			throw new InvalidOperationException ();
-		}
-
 		public override TargetPropertyInfo[] Properties {
 			get {
 				return new TargetPropertyInfo [0];
@@ -206,6 +195,14 @@ namespace Mono.Debugger.Languages.Native
 			get {
 				return new TargetMethodInfo [0];
 			}
+		}
+
+		public override TargetClass GetClass (Thread thread)
+		{
+			if (class_info == null)
+				class_info = new NativeClass (this, fields);
+
+			return class_info;
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)

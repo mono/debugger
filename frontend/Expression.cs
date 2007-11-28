@@ -1645,6 +1645,7 @@ namespace Mono.Debugger.Frontend
 		public readonly TargetClassType Type;
 		public readonly TargetMemberInfo Member;
 		protected readonly TargetClassObject instance;
+		TargetClass class_info;
 
 		protected StructAccessExpression (TargetClassType type,
 						  TargetClassObject instance,
@@ -1683,6 +1684,17 @@ namespace Mono.Debugger.Frontend
 				func.DeclaringType, instance, func.Name,
 				new TargetFunctionType[] { func },
 				!func.IsStatic, func.IsStatic);
+		}
+
+		protected void ResolveClass (Thread target)
+		{
+			if (class_info != null)
+				return;
+
+			class_info = Type.GetClass (target);
+			if (class_info == null)
+				throw new ScriptingException ("Class `{0}' not initialized yet.",
+							      Type.Name);
 		}
 
 		protected override MethodExpression DoResolveMethod (ScriptingContext context,
@@ -1733,12 +1745,8 @@ namespace Mono.Debugger.Frontend
 
 		protected TargetObject GetField (Thread target, TargetFieldInfo field)
 		{
-			if (field.HasConstValue)
-				return field.Type.Language.CreateInstance (target, field.ConstValue);
-			else if (field.IsStatic)
-				return Type.GetStaticField (target, field);
-			else
-				return InstanceObject.GetField (target, field);
+			ResolveClass (target);
+			return class_info.GetField (target, InstanceObject, field);
 		}
 
 		protected TargetObject GetProperty (ScriptingContext context,
@@ -1917,10 +1925,8 @@ namespace Mono.Debugger.Frontend
 
 		protected void SetField (Thread target, TargetFieldInfo field, TargetObject obj)
 		{
-			if (field.IsStatic)
-				Type.SetStaticField (target, field, obj);
-			else
-				InstanceObject.SetField (target, field, obj);
+			ResolveClass (target);
+			class_info.SetField (target, InstanceObject, field, obj);
 		}
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)

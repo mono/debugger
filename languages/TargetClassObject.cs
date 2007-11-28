@@ -13,10 +13,5 @@ namespace Mono.Debugger.Languages
 		public abstract TargetClassObject GetParentObject (Thread target);
 
 		public abstract TargetClassObject GetCurrentObject (Thread target);
-
-		public abstract TargetObject GetField (Thread target, TargetFieldInfo field);
-
-		public abstract void SetField (Thread target, TargetFieldInfo field,
-					       TargetObject obj);
 	}
 }

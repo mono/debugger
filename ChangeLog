@@ -1,5 +1,19 @@
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClass.cs
+	(TargetClass): New public abstract class.
+
+	* languages/TargetClassType.cs
+	(TargetClassType.GetClass): New public method.
+	(TargetClassType): Removed GetStaticField() and SetStaticField(),
+	they're now in the `TargetClass'.
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject): Removed GetField() and SetField(), they're
+	now in the `TargetClass'.
+
+2007-11-28  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetFunctionType.cs
 	(TargetFunctionType.GetMethodAddress): Removed.
 

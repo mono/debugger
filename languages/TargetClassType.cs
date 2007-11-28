@@ -10,6 +10,8 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract TargetClass GetClass (Thread target);
+
 		public abstract Module Module {
 			get;
 		}
@@ -25,12 +27,6 @@ namespace Mono.Debugger.Languages
 		public abstract TargetFieldInfo[] StaticFields {
 			get;
 		}
-
-		public abstract TargetObject GetStaticField (Thread target,
-							     TargetFieldInfo field);
-
-		public abstract void SetStaticField (Thread target, TargetFieldInfo field,
-						     TargetObject obj);
 
 		public abstract TargetPropertyInfo[] Properties {
 			get;

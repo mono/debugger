@@ -213,6 +213,12 @@ namespace Mono.Debugger.Frontend
 				first = false;
 			}
 
+			TargetClass class_info = obj.Type.GetClass (target);
+			if (class_info == null) {
+				Append (first ? "}" : " }");
+				indent_level -= 3;
+			}
+
 			TargetFieldInfo[] fields = obj.Type.Fields;
 			for (int i = 0; i < fields.Length; i++) {
 				if (!first) {
@@ -222,7 +228,7 @@ namespace Mono.Debugger.Frontend
 				first = false;
 				Append (fields [i].Name + " = ");
 				try {
-					TargetObject fobj = obj.GetField (target, fields [i]);
+					TargetObject fobj = class_info.GetField (target, obj, fields [i]);
 					if (fobj == null)
 						Append ("null");
 					else
