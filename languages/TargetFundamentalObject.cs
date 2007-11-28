@@ -29,7 +29,12 @@ namespace Mono.Debugger.Languages
 			});
 		}
 
-		internal virtual object DoGetObject (TargetMemoryAccess target)
+		internal object GetObject (TargetMemoryAccess target)
+		{
+			return DoGetObject (target);
+		}
+
+		protected virtual object DoGetObject (TargetMemoryAccess target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 

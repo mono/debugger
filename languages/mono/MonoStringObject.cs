@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.Mono
 			return reader.ReadInteger (4) * 2;
 		}
 
-		internal override object DoGetObject (TargetMemoryAccess target)
+		protected override object DoGetObject (TargetMemoryAccess target)
 		{
 			TargetLocation dynamic_location;
 			TargetBlob object_blob = Location.ReadMemory (target, type.Size);

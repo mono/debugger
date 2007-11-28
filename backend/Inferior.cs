@@ -377,9 +377,10 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public void RuntimeInvoke (Thread target, TargetAddress invoke_method,
+		public void RuntimeInvoke (TargetAddress invoke_method,
 					   TargetAddress method_argument,
-					   TargetObject object_argument, TargetObject[] param_objects,
+					   TargetObject object_argument,
+					   TargetObject[] param_objects,
 					   long callback_arg, bool debug)
 		{
 			check_disposed ();

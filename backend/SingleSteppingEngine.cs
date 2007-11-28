@@ -3139,7 +3139,7 @@ namespace Mono.Debugger.Backend
 				sse.insert_temporary_breakpoint (invoke);
 
 				inferior.RuntimeInvoke (
-					sse.Thread, sse.MonoDebuggerInfo.RuntimeInvoke,
+					sse.MonoDebuggerInfo.RuntimeInvoke,
 					method, instance, ParamObjects, ID, Debug);
 
 				stage = Stage.InvokedMethod;
@@ -3266,10 +3266,9 @@ namespace Mono.Debugger.Backend
 					TargetAddress exc_address = new TargetAddress (
 						inferior.AddressDomain, data2);
 					TargetFundamentalObject exc_obj = (TargetFundamentalObject)
-						language.CreateObject (sse.Thread, exc_address);
+						language.CreateObject (inferior, exc_address);
 
-					Result.ExceptionMessage = (string) exc_obj.GetObject (
-						sse.Thread);
+					Result.ExceptionMessage = (string) exc_obj.GetObject (inferior);
 				}
 
 				if (data1 != 0) {
@@ -3277,7 +3276,7 @@ namespace Mono.Debugger.Backend
 						inferior.AddressDomain, data1);
 
 					Result.ReturnObject = language.CreateObject (
-						sse.Thread, retval_address);
+						inferior, retval_address);
 				}
 
 				Result.InvocationCompleted = true;

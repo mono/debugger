@@ -1,5 +1,17 @@
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetFundamentalObject.cs
+	(TargetFundamentalObject.GetObject): Added internal overloaded
+	version taking a `TargetMemoryAccess'.
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine): Kill some more `sse.Thread' madness.
+
+	* backend/Inferior.cs
+	(Inferior.RuntimeInvoke): Removed the `Thread' argument.
+
+2007-11-28  Martin Baulig  <martin@ximian.com>
+
 	Renamed `Mono.Debugger.Backends' => `Mono.Debugger.Backend'.
 
 2007-11-28  Martin Baulig  <martin@ximian.com>
