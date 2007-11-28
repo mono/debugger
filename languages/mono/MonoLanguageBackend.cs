@@ -118,7 +118,7 @@ namespace Mono.Debugger.Languages.Mono
 			int header_size = 16 + address_size;
 
 			if (first_chunk.IsNull) {
-				first_chunk = memory.ReadAddress (TableAddress + address_size);
+				first_chunk = memory.ReadAddress (TableAddress + 8);
 				current_chunk = first_chunk;
 			}
 
@@ -774,9 +774,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			public bool IsDelegateInvoke (TargetAddress address)
 			{
-				foreach (DelegateInvokeEntry entry in delegate_impl_list)
+				foreach (DelegateInvokeEntry entry in delegate_impl_list) {
 					if ((address >= entry.Code) && (address < entry.Code + entry.Size))
 						return true;
+				}
 
 				return false;
 			}
