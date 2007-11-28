@@ -16,7 +16,7 @@ namespace Mono.Debugger.Backends
 {
 	internal delegate void ChildOutputHandler (string output);
 
-	internal class Inferior : TargetMemoryAccess, ITargetNotification, IDisposable
+	internal class Inferior : TargetAccess, ITargetNotification, IDisposable
 	{
 		protected IntPtr server_handle;
 		protected Bfd bfd;
@@ -405,7 +405,7 @@ namespace Mono.Debugger.Backends
 					addresses [i] = obj.Location.GetAddress (this).Address;
 					continue;
 				}
-				blobs [i] = obj.Location.ReadBuffer (target, obj.Type.Size);
+				blobs [i] = obj.Location.ReadBuffer (this, obj.Type.Size);
 				blob_offsets [i] = blob_size;
 				blob_size += blobs [i].Length;
 			}
@@ -794,37 +794,29 @@ namespace Mono.Debugger.Backends
 				TargetOutput (true, line);
 		}
 
-		//
-		// ITargetInfo
-		//
-
-		public int TargetIntegerSize {
+		public override int TargetIntegerSize {
 			get {
 				return target_info.TargetIntegerSize;
 			}
 		}
 
-		public int TargetLongIntegerSize {
+		public override int TargetLongIntegerSize {
 			get {
 				return target_info.TargetLongIntegerSize;
 			}
 		}
 
-		public int TargetAddressSize {
+		public override int TargetAddressSize {
 			get {
 				return target_info.TargetAddressSize;
 			}
 		}
 
-		public bool IsBigEndian {
+		public override bool IsBigEndian {
 			get {
 				return target_info.IsBigEndian;
 			}
 		}
-
-		//
-		// TargetMemoryAccess
-		//
 
 		public override AddressDomain AddressDomain {
 			get {
@@ -952,13 +944,13 @@ namespace Mono.Debugger.Backends
 			return new TargetBlob (retval, target_info);
 		}
 
-		public bool CanWrite {
+		public override bool CanWrite {
 			get {
 				return true;
 			}
 		}
 
-		public void WriteBuffer (TargetAddress address, byte[] buffer)
+		public override void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -975,7 +967,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteByte (TargetAddress address, byte value)
+		public override void WriteByte (TargetAddress address, byte value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -991,7 +983,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteInteger (TargetAddress address, int value)
+		public override void WriteInteger (TargetAddress address, int value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -1007,7 +999,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteLongInteger (TargetAddress address, long value)
+		public override void WriteLongInteger (TargetAddress address, long value)
 		{
 			check_disposed ();
 			IntPtr data = IntPtr.Zero;
@@ -1023,7 +1015,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void WriteAddress (TargetAddress address, TargetAddress value)
+		public override void WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_disposed ();
 			switch (TargetAddressSize) {
@@ -1193,7 +1185,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		internal override Architecture Architecture {
+		internal Architecture Architecture {
 			get {
 				check_disposed ();
 				return arch;
@@ -1226,7 +1218,7 @@ namespace Mono.Debugger.Backends
 			}
 		}
 
-		public void SetRegisters (Registers registers)
+		public override void SetRegisters (Registers registers)
 		{
 			IntPtr buffer = IntPtr.Zero;
 			try {

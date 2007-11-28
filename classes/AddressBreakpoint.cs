@@ -34,8 +34,7 @@ namespace Mono.Debugger
 			get { return handle != null; }
 		}
 
-		internal override BreakpointHandle Resolve (TargetMemoryAccess target,
-							    StackFrame frame)
+		internal override BreakpointHandle Resolve (Thread target, StackFrame frame)
 		{
 			if (handle != null)
 				return handle;
@@ -73,18 +72,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		public override void Activate (Thread target)
+		public override void Activate (Thread thread)
 		{
-			Resolve (target, target.CurrentFrame);
+			Resolve (thread, thread.CurrentFrame);
 			if (handle == null)
 				throw new TargetException (TargetError.LocationInvalid);
-			handle.Insert (target);
+			handle.Insert (thread);
 		}
 
-		public override void Deactivate (Thread target)
+		public override void Deactivate (Thread thread)
 		{
 			if (handle != null) {
-				handle.Remove (target);
+				handle.Remove (thread);
 				handle = null;
 			}
 		}

@@ -780,6 +780,13 @@ namespace Mono.Debugger.Backends
 			});
 		}
 
+		internal override object DoTargetAccess (TargetAccessHandler func)
+		{
+			return SendCommand (delegate {
+				return func (inferior);
+			});
+		}
+
 		public override void Detach ()
 		{
 			SendCommand (delegate {
@@ -1510,7 +1517,7 @@ namespace Mono.Debugger.Backends
 					continue;
 
 				try {
-					BreakpointHandle handle = breakpoint.Resolve (this, main_frame);
+					BreakpointHandle handle = breakpoint.Resolve (thread, main_frame);
 					if (handle == null)
 						continue;
 
@@ -1622,7 +1629,8 @@ namespace Mono.Debugger.Backends
 				process.UpdateSymbolTable (inferior);
 
 				Backtrace bt = new Backtrace (current_frame);
-				bt.GetBacktrace (this, Backtrace.Mode.Native, TargetAddress.Null, 2);
+				bt.GetBacktrace (this, inferior, Backtrace.Mode.Native,
+						 TargetAddress.Null, 2);
 
 				if (bt.Count < 2)
 					throw new TargetException (TargetError.NoStack);
@@ -1677,7 +1685,8 @@ namespace Mono.Debugger.Backends
 
 				current_backtrace = new Backtrace (current_frame);
 
-				current_backtrace.GetBacktrace (this, mode, TargetAddress.Null, max_frames);
+				current_backtrace.GetBacktrace (
+					this, inferior, mode, TargetAddress.Null, max_frames);
 
 				return current_backtrace;
 			});
@@ -3036,6 +3045,8 @@ namespace Mono.Debugger.Backends
 		public readonly bool IsVirtual;
 		public readonly bool Debug;
 
+		private readonly TargetMemoryAccess internal_target;
+
 		MonoLanguageBackend language;
 		TargetAddress method = TargetAddress.Null;
 		TargetAddress invoke = TargetAddress.Null;
@@ -3075,6 +3086,8 @@ namespace Mono.Debugger.Backends
 			this.Debug = debug;
 			this.method = TargetAddress.Null;
 			this.stage = Stage.Uninitialized;
+
+			this.internal_target = inferior;
 		}
 
 		protected override void DoExecute ()
@@ -3154,7 +3167,7 @@ namespace Mono.Debugger.Backends
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
-					instance.Location.GetAddress (sse).Address, ID);
+					instance.Location.GetAddress (internal_target).Address, ID);
 				return false;
 			}
 
@@ -3170,7 +3183,7 @@ namespace Mono.Debugger.Backends
 			stage = Stage.GettingVirtualMethod;
 			inferior.CallMethod (
 				sse.MonoDebuggerInfo.GetVirtualMethod,
-				instance.Location.GetAddress (sse).Address,
+				instance.Location.GetAddress (internal_target).Address,
 				method.Address, ID);
 			return false;
 		}
@@ -3184,7 +3197,7 @@ namespace Mono.Debugger.Backends
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolved class: {1}", sse, klass);
 
-				class_info = Function.MonoClass.ClassResolved (sse.Thread, klass);
+				class_info = Function.MonoClass.ClassResolved (inferior, klass);
 				stage = Stage.ResolvedClass;
 				do_execute ();
 				return EventResult.Running;
@@ -3211,8 +3224,7 @@ namespace Mono.Debugger.Backends
 					      "{0} rti got virtual method: {1}", sse, method);
 
 				TargetAddress klass = inferior.ReadAddress (method + 8);
-				TargetType class_type = MonoRuntime.ReadMonoClass (
-					language, sse.Thread, klass);
+				TargetType class_type = language.ReadMonoClass (inferior, klass);
 
 				if (class_type == null) {
 					Result.ExceptionMessage = String.Format (

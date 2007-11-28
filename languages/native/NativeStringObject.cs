@@ -1,6 +1,8 @@
 using System;
 using System.Text;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeStringObject : TargetFundamentalObject
@@ -21,7 +23,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override object GetObject (TargetMemoryAccess target)
+		internal override object DoGetObject (TargetMemoryAccess target)
 		{
 			try {
 				return ReadString (target, Location);

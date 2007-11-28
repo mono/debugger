@@ -46,127 +46,423 @@ namespace Mono.Debugger.Languages.Mono
 		MONO_TYPE_ENUM       = 0x55        /* an enumeration */
 	}
 
-	internal static class MonoRuntime
+	internal class MonoRuntime : DebuggerMarshalByRefObject
 	{
-		public static TargetType ReadMonoClass (MonoLanguageBackend mono,
-							TargetMemoryAccess memory,
-							TargetAddress address)
+		protected readonly MonoDebuggerInfo MonoDebuggerInfo;
+		protected readonly MetadataInfo MonoMetadataInfo;
+
+		protected MonoRuntime (MonoDebuggerInfo info, MetadataInfo metadata)
 		{
-			int byval_offset = mono.MonoMetadataInfo.KlassByValArgOffset;
-			return ReadType (mono, memory, address + byval_offset);
+			this.MonoDebuggerInfo = info;
+			this.MonoMetadataInfo = metadata;
 		}
 
-		public static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess memory,
-						   TargetAddress address)
+		public static MonoRuntime Create (TargetMemoryAccess memory, MonoDebuggerInfo info)
 		{
-			TargetAddress data = memory.ReadAddress (address);
+			MetadataInfo metadata = new MetadataInfo (memory, info.MonoMetadataInfo);
+			return new MonoRuntime (info, metadata);
+		}
+
+		//
+		// MonoClass
+		//
+
+		public TargetAddress MonoClassGetMonoImage (TargetMemoryAccess memory,
+							    TargetAddress klass)
+		{
+			return memory.ReadAddress (klass + MonoMetadataInfo.KlassImageOffset);
+		}
+
+		public int MonoClassGetToken (TargetMemoryAccess memory,
+					      TargetAddress klass)
+		{
+			return memory.ReadInteger (klass + MonoMetadataInfo.KlassTokenOffset);
+		}
+
+		public TargetAddress MonoClassGetParent (TargetMemoryAccess memory,
+							 TargetAddress klass)
+		{
+			return memory.ReadAddress (klass + MonoMetadataInfo.KlassParentOffset);
+		}
+
+		public TargetAddress MonoClassGetGenericClass (TargetMemoryAccess memory,
+							       TargetAddress klass)
+		{
+			return memory.ReadAddress (klass + MonoMetadataInfo.KlassGenericClassOffset);
+		}
+
+		public TargetAddress MonoClassGetGenericContainer (TargetMemoryAccess memory,
+								   TargetAddress klass)
+		{
+			return memory.ReadAddress (klass + MonoMetadataInfo.KlassGenericContainerOffset);
+		}
+
+		public TargetAddress MonoClassGetByValType (TargetMemoryAccess memory,
+							    TargetAddress klass)
+		{
+			return klass + MonoMetadataInfo.KlassByValArgOffset;
+		}
+
+		public int MonoClassGetFieldCount (TargetMemoryAccess memory, TargetAddress klass)
+		{
+			return memory.ReadInteger (klass + MonoMetadataInfo.KlassFieldCountOffset);
+		}
+
+		public TargetAddress MonoClassGetFieldType (TargetMemoryAccess memory, TargetAddress klass,
+							    int index)
+		{
+			int offset = index * MonoMetadataInfo.FieldInfoSize +
+				MonoMetadataInfo.FieldInfoTypeOffset;
+
+			TargetAddress fields = memory.ReadAddress (
+				klass + MonoMetadataInfo.KlassFieldOffset);
+
+			return memory.ReadAddress (fields + offset);
+		}
+
+		public int MonoClassGetFieldOffset (TargetMemoryAccess memory, TargetAddress klass,
+						    int index)
+		{
+			int offset = index * MonoMetadataInfo.FieldInfoSize +
+				MonoMetadataInfo.FieldInfoOffsetOffset;
+
+			TargetAddress fields = memory.ReadAddress (
+				klass + MonoMetadataInfo.KlassFieldOffset);
+
+			return memory.ReadInteger (fields + offset);
+		}
+
+		public int MonoClassGetMethodCount (TargetMemoryAccess memory, TargetAddress klass)
+		{
+			return memory.ReadInteger (klass + MonoMetadataInfo.KlassMethodCountOffset);
+		}
+
+		public TargetAddress MonoClassGetMethod (TargetMemoryAccess memory, TargetAddress klass,
+							 int index)
+		{
+			TargetAddress methods = memory.ReadAddress (
+				klass + MonoMetadataInfo.KlassMethodsOffset);
+
+			methods += index * memory.TargetAddressSize;
+			return memory.ReadAddress (methods);
+		}
+
+		//
+		// MonoMethod
+		//
+
+		public int MonoMethodGetToken (TargetMemoryAccess memory, TargetAddress method)
+		{
+			return memory.ReadInteger (method + MonoMetadataInfo.MonoMethodTokenOffset);
+		}
+
+		public TargetAddress MonoMethodGetClass (TargetMemoryAccess memory, TargetAddress method)
+		{
+			return memory.ReadAddress (method + MonoMetadataInfo.MonoMethodKlassOffset);
+		}
+
+		//
+		// MonoType
+		//
+
+		public MonoTypeEnum MonoTypeGetType (TargetMemoryAccess memory, TargetAddress type)
+		{
 			uint flags = (uint) memory.ReadInteger (
-				address + memory.TargetMemoryInfo.TargetAddressSize);
+				type + memory.TargetMemoryInfo.TargetAddressSize);
 
-			MonoTypeEnum type = (MonoTypeEnum) ((flags & 0x00ff0000) >> 16);
-			bool byref = (int) ((flags & 0x40000000) >> 30) != 0;
-
-			// int attrs = (int) (flags & 0x0000ffff);
-			// int num_mods = (int) ((flags & 0x3f000000) >> 24);
-			// int pinned = (int) ((flags & 0x80000000) >> 31);
-
-			TargetType target_type = ReadType (mono, memory, type, data);
-			if (target_type == null)
-				return null;
-
-			if (byref)
-				target_type = new MonoPointerType (target_type);
-
-			return target_type;
+			return (MonoTypeEnum) ((flags & 0x00ff0000) >> 16);
 		}
 
-		static TargetType ReadType (MonoLanguageBackend mono, TargetMemoryAccess memory,
-					    MonoTypeEnum type, TargetAddress data)
+		public bool MonoTypeGetIsByRef (TargetMemoryAccess memory, TargetAddress type)
 		{
-			switch (type) {
-			case MonoTypeEnum.MONO_TYPE_BOOLEAN:
-				return mono.BuiltinTypes.BooleanType;
-			case MonoTypeEnum.MONO_TYPE_CHAR:
-				return mono.BuiltinTypes.CharType;
-			case MonoTypeEnum.MONO_TYPE_I1:
-				return mono.BuiltinTypes.SByteType;
-			case MonoTypeEnum.MONO_TYPE_U1:
-				return mono.BuiltinTypes.ByteType;
-			case MonoTypeEnum.MONO_TYPE_I2:
-				return mono.BuiltinTypes.Int16Type;
-			case MonoTypeEnum.MONO_TYPE_U2:
-				return mono.BuiltinTypes.UInt16Type;
-			case MonoTypeEnum.MONO_TYPE_I4:
-				return mono.BuiltinTypes.Int32Type;
-			case MonoTypeEnum.MONO_TYPE_U4:
-				return mono.BuiltinTypes.UInt32Type;
-			case MonoTypeEnum.MONO_TYPE_I8:
-				return mono.BuiltinTypes.Int64Type;
-			case MonoTypeEnum.MONO_TYPE_U8:
-				return mono.BuiltinTypes.UInt64Type;
-			case MonoTypeEnum.MONO_TYPE_R4:
-				return mono.BuiltinTypes.SingleType;
-			case MonoTypeEnum.MONO_TYPE_R8:
-				return mono.BuiltinTypes.DoubleType;
-			case MonoTypeEnum.MONO_TYPE_STRING:
-				return mono.BuiltinTypes.StringType;
-			case MonoTypeEnum.MONO_TYPE_OBJECT:
-				return mono.BuiltinTypes.ObjectType;
-			case MonoTypeEnum.MONO_TYPE_I:
-				return mono.BuiltinTypes.IntType;
-			case MonoTypeEnum.MONO_TYPE_U:
-				return mono.BuiltinTypes.UIntType;
-
-			case MonoTypeEnum.MONO_TYPE_PTR: {
-				TargetType target_type = ReadType (mono, memory, data);
-				return new MonoPointerType (target_type);
-			}
-
-			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
-			case MonoTypeEnum.MONO_TYPE_CLASS:
-				return mono.ReadMonoClass (memory, data);
-
-			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
-				TargetType etype = ReadMonoClass (mono, memory, data);
-				return new MonoArrayType (etype, 1);
-			}
-
-			case MonoTypeEnum.MONO_TYPE_ARRAY: {
-				TargetReader reader = new TargetReader (memory.ReadMemory (
-					data, 4 * memory.TargetMemoryInfo.TargetAddressSize));
-				TargetAddress klass = reader.ReadAddress ();
-				int rank = reader.ReadByte ();
-				int numsizes = reader.ReadByte ();
-				int numlobounds = reader.ReadByte ();
-
-				if ((numsizes != 0) || (numlobounds != 0))
-					throw new InternalError ();
-
-				TargetType etype = ReadMonoClass (mono, memory, klass);
-				return new MonoArrayType (etype, rank);
-			}
-
-			default:
-				Report.Error ("UNKNOWN TYPE: {0}", type);
-				return null;
-			}
+			uint flags = (uint) memory.ReadInteger (
+				type + memory.TargetMemoryInfo.TargetAddressSize);
+			return (int) ((flags & 0x40000000) >> 30) != 0;
 		}
 
-		public static MonoFunctionType ReadMonoMethod (MonoLanguageBackend mono,
-							       TargetMemoryAccess memory,
-							       TargetAddress address)
+		public TargetAddress MonoTypeGetData (TargetMemoryAccess memory, TargetAddress type)
 		{
-			MonoMetadataInfo info = mono.MonoMetadataInfo;
+			return memory.ReadAddress (type);
+		}
 
-			int token = memory.ReadInteger (address + info.MonoMethodTokenOffset);
-			TargetAddress klass = memory.ReadAddress (address + info.MonoMethodKlassOffset);
-			TargetAddress image = memory.ReadAddress (klass + info.KlassImageOffset);
+		public TargetAddress MonoArrayTypeGetClass (TargetMemoryAccess memory,
+							    TargetAddress atype)
+		{
+			return memory.ReadAddress (atype);
+		}
 
-			MonoSymbolFile file = mono.GetImage (image);
-			if (file == null)
-				return null;
+		public int MonoArrayTypeGetRank (TargetMemoryAccess memory,
+						 TargetAddress atype)
+		{
+			return memory.ReadByte (atype + memory.TargetAddressSize);
+		}
 
-			return file.GetFunctionByToken (token);
+		public int MonoArrayTypeGetNumSizes (TargetMemoryAccess memory,
+						     TargetAddress atype)
+		{
+			return memory.ReadByte (atype + memory.TargetAddressSize + 1);
+		}
+
+		public int MonoArrayTypeGetNumLoBounds (TargetMemoryAccess memory,
+							TargetAddress atype)
+		{
+			return memory.ReadByte (atype + memory.TargetAddressSize + 2);
+		}
+
+		//
+		// Fundamental types
+		//
+
+		public TargetAddress GetBooleanClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsBooleanOffset);
+		}
+
+		public TargetAddress GetCharClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsCharOffset);
+		}
+
+		public TargetAddress GetSByteClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsSByteOffset);
+		}
+
+		public TargetAddress GetByteClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsByteOffset);
+		}
+
+		public TargetAddress GetInt16Class (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsInt16Offset);
+		}
+
+		public TargetAddress GetUInt16Class (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsUInt16Offset);
+		}
+
+		public TargetAddress GetInt32Class (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsInt32Offset);
+		}
+
+		public TargetAddress GetUInt32Class (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsUInt32Offset);
+		}
+
+		public TargetAddress GetInt64Class (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsInt64Offset);
+		}
+
+		public TargetAddress GetUInt64Class (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsUInt64Offset);
+		}
+
+		public TargetAddress GetSingleClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsSingleOffset);
+		}
+
+		public TargetAddress GetDoubleClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsDoubleOffset);
+		}
+
+		public TargetAddress GetIntPtrClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsIntOffset);
+		}
+
+		public TargetAddress GetUIntPtrClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsUIntOffset);
+		}
+
+		public TargetAddress GetVoidClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsVoidOffset);
+		}
+
+		public TargetAddress GetStringClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsStringOffset);
+		}
+
+		public TargetAddress GetObjectClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsObjectOffset);
+		}
+
+		public TargetAddress GetArrayClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsArrayOffset);
+		}
+
+		public TargetAddress GetDelegateClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsDelegateOffset);
+		}
+
+		public TargetAddress GetExceptionClass (TargetMemoryAccess memory)
+		{
+			return memory.ReadAddress (MonoMetadataInfo.MonoDefaultsAddress +
+						   MonoMetadataInfo.MonoDefaultsExceptionOffset);
+		}
+
+		protected class MetadataInfo
+		{
+			public readonly int MonoDefaultsSize;
+			public readonly TargetAddress MonoDefaultsAddress;
+			public readonly int TypeSize;
+			public readonly int ArrayTypeSize;
+			public readonly int KlassSize;
+			public readonly int ThreadSize;
+
+			public readonly int ThreadTidOffset;
+			public readonly int ThreadStackPtrOffset;
+			public readonly int ThreadEndStackOffset;
+
+			public readonly int KlassImageOffset;
+			public readonly int KlassInstanceSizeOffset;
+			public readonly int KlassParentOffset;
+			public readonly int KlassTokenOffset;
+			public readonly int KlassFieldOffset;
+			public readonly int KlassFieldCountOffset;
+			public readonly int KlassMethodsOffset;
+			public readonly int KlassMethodCountOffset;
+			public readonly int KlassThisArgOffset;
+			public readonly int KlassByValArgOffset;
+			public readonly int KlassGenericClassOffset;
+			public readonly int KlassGenericContainerOffset;
+			public readonly int KlassVTableOffset;
+			public readonly int FieldInfoSize;
+			public readonly int FieldInfoTypeOffset;
+			public readonly int FieldInfoOffsetOffset;
+
+			public readonly int MonoDefaultsCorlibOffset;
+			public readonly int MonoDefaultsObjectOffset;
+			public readonly int MonoDefaultsByteOffset;
+			public readonly int MonoDefaultsVoidOffset;
+			public readonly int MonoDefaultsBooleanOffset;
+			public readonly int MonoDefaultsSByteOffset;
+			public readonly int MonoDefaultsInt16Offset;
+			public readonly int MonoDefaultsUInt16Offset;
+			public readonly int MonoDefaultsInt32Offset;
+			public readonly int MonoDefaultsUInt32Offset;
+			public readonly int MonoDefaultsIntOffset;
+			public readonly int MonoDefaultsUIntOffset;
+			public readonly int MonoDefaultsInt64Offset;
+			public readonly int MonoDefaultsUInt64Offset;
+			public readonly int MonoDefaultsSingleOffset;
+			public readonly int MonoDefaultsDoubleOffset;
+			public readonly int MonoDefaultsCharOffset;
+			public readonly int MonoDefaultsStringOffset;
+			public readonly int MonoDefaultsEnumOffset;
+			public readonly int MonoDefaultsArrayOffset;
+			public readonly int MonoDefaultsDelegateOffset;
+			public readonly int MonoDefaultsExceptionOffset;
+
+			public readonly int MonoMethodKlassOffset;
+			public readonly int MonoMethodTokenOffset;
+			public readonly int MonoMethodFlagsOffset;
+			public readonly int MonoMethodInflatedOffset;
+
+			public readonly int MonoVTableKlassOffset;
+			public readonly int MonoVTableVTableOffset;
+
+			public MetadataInfo (TargetMemoryAccess memory, TargetAddress address)
+			{
+				int size = memory.ReadInteger (address);
+				TargetBinaryReader reader = memory.ReadMemory (address, size).GetReader ();
+				reader.ReadInt32 ();
+
+				MonoDefaultsSize = reader.ReadInt32 ();
+				MonoDefaultsAddress = new TargetAddress (
+					memory.AddressDomain, reader.ReadAddress ());
+
+				TypeSize = reader.ReadInt32 ();
+				ArrayTypeSize = reader.ReadInt32 ();
+				KlassSize = reader.ReadInt32 ();
+				ThreadSize = reader.ReadInt32 ();
+
+				ThreadTidOffset = reader.ReadInt32 ();
+				ThreadStackPtrOffset = reader.ReadInt32 ();
+				ThreadEndStackOffset = reader.ReadInt32 ();
+
+				KlassImageOffset = reader.ReadInt32 ();
+				KlassInstanceSizeOffset = reader.ReadInt32 ();
+				KlassParentOffset = reader.ReadInt32 ();
+				KlassTokenOffset = reader.ReadInt32 ();
+				KlassFieldOffset = reader.ReadInt32 ();
+				KlassMethodsOffset = reader.ReadInt32 ();
+				KlassMethodCountOffset = reader.ReadInt32 ();
+				KlassThisArgOffset = reader.ReadInt32 ();
+				KlassByValArgOffset = reader.ReadInt32 ();
+				KlassGenericClassOffset = reader.ReadInt32 ();
+				KlassGenericContainerOffset = reader.ReadInt32 ();
+				KlassVTableOffset = reader.ReadInt32 ();
+
+				FieldInfoSize = reader.ReadInt32 ();
+				FieldInfoTypeOffset = reader.ReadInt32 ();
+				FieldInfoOffsetOffset = reader.ReadInt32 ();
+
+				KlassFieldCountOffset = KlassMethodCountOffset - 8;
+
+				MonoDefaultsCorlibOffset = reader.ReadInt32 ();
+				MonoDefaultsObjectOffset = reader.ReadInt32 ();
+				MonoDefaultsByteOffset = reader.ReadInt32 ();
+				MonoDefaultsVoidOffset = reader.ReadInt32 ();
+				MonoDefaultsBooleanOffset = reader.ReadInt32 ();
+				MonoDefaultsSByteOffset = reader.ReadInt32 ();
+				MonoDefaultsInt16Offset = reader.ReadInt32 ();
+				MonoDefaultsUInt16Offset = reader.ReadInt32 ();
+				MonoDefaultsInt32Offset = reader.ReadInt32 ();
+				MonoDefaultsUInt32Offset = reader.ReadInt32 ();
+				MonoDefaultsIntOffset = reader.ReadInt32 ();
+				MonoDefaultsUIntOffset = reader.ReadInt32 ();
+				MonoDefaultsInt64Offset = reader.ReadInt32 ();
+				MonoDefaultsUInt64Offset = reader.ReadInt32 ();
+				MonoDefaultsSingleOffset = reader.ReadInt32 ();
+				MonoDefaultsDoubleOffset = reader.ReadInt32 ();
+				MonoDefaultsCharOffset = reader.ReadInt32 ();
+				MonoDefaultsStringOffset = reader.ReadInt32 ();
+				MonoDefaultsEnumOffset = reader.ReadInt32 ();
+				MonoDefaultsArrayOffset = reader.ReadInt32 ();
+				MonoDefaultsDelegateOffset = reader.ReadInt32 ();
+				MonoDefaultsExceptionOffset = reader.ReadInt32 ();
+
+				MonoMethodKlassOffset = reader.ReadInt32 ();
+				MonoMethodTokenOffset = reader.ReadInt32 ();
+				MonoMethodFlagsOffset = reader.ReadInt32 ();
+				MonoMethodInflatedOffset = reader.ReadInt32 ();
+
+				MonoVTableKlassOffset = reader.ReadInt32 ();
+				MonoVTableVTableOffset = reader.ReadInt32 ();
+			}
 		}
 	}
 }

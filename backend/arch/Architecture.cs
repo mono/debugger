@@ -114,7 +114,7 @@ namespace Mono.Debugger.Backends
 
 		internal abstract Registers CopyRegisters (Registers regs);
 
-		internal abstract StackFrame GetLMF (Thread thread);
+		internal abstract StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess target);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
 							  TargetMemoryAccess memory,
@@ -123,25 +123,16 @@ namespace Mono.Debugger.Backends
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
 							       TargetMemoryAccess memory);
 
-		internal abstract StackFrame CreateFrame (Thread thread, Registers regs,
-							  bool adjust_retaddr);
+		internal abstract StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
+							  Registers regs, bool adjust_retaddr);
 
-		protected abstract TargetAddress AdjustReturnAddress (Thread thread,
+		protected abstract TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
 								      TargetAddress address);
 
-		internal StackFrame GetCallbackFrame (ThreadServant servant, StackFrame frame,
-						      bool exact_match)
-		{
-			Registers callback = servant.GetCallbackFrame (frame.StackPointer, exact_match);
-			if (callback != null)
-				return CreateFrame (frame.Thread, callback, false);
-
-			return null;
-		}
-
-		internal StackFrame CreateFrame (Thread thread, TargetAddress address,
-						 TargetAddress stack, TargetAddress frame_pointer,
-						 Registers regs, bool adjust_retaddr)
+		internal StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
+						 TargetAddress address, TargetAddress stack,
+						 TargetAddress frame_pointer, Registers regs,
+						 bool adjust_retaddr)
 		{
 			if ((address.IsNull) || (address.Address == 0))
 				return null;
@@ -149,7 +140,7 @@ namespace Mono.Debugger.Backends
 			if (adjust_retaddr) {
 				TargetAddress old_address = address;
 				try {
-					address = AdjustReturnAddress (thread, old_address);
+					address = AdjustReturnAddress (target, old_address);
 				} catch {
 					address = old_address;
 				}
@@ -163,7 +154,7 @@ namespace Mono.Debugger.Backends
 			Symbol name = process.SymbolTableManager.SimpleLookup (address, false);
 			return new StackFrame (
 				thread, address, stack, frame_pointer, regs,
-				thread.NativeLanguage, name);
+				process.NativeLanguage, name);
 		}
 
 		//

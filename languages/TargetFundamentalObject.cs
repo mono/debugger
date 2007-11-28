@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	public class TargetFundamentalObject : TargetObject
@@ -19,7 +21,15 @@ namespace Mono.Debugger.Languages
 			throw new InvalidOperationException ();
 		}
 
-		public virtual object GetObject (TargetMemoryAccess target)
+		public object GetObject (Thread thread)
+		{
+			return thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return DoGetObject (target);
+			});
+		}
+
+		internal virtual object DoGetObject (TargetMemoryAccess target)
 		{
 			TargetBlob blob = Location.ReadMemory (target, Type.Size);
 
@@ -77,14 +87,18 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public void SetObject (TargetAccess target, TargetObject obj)
+		public void SetObject (Thread thread, TargetObject obj)
 		{
-			Type.SetObject (target, Location, obj);
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					Type.SetObject (target, Location, obj);
+					return null;
+			});
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
-			object obj = GetObject (target);
+			object obj = DoGetObject (target);
 			if (obj is IntPtr)
 				return String.Format ("0x{0:x}", ((IntPtr) obj).ToInt64 ());
 			else if (obj is UIntPtr)

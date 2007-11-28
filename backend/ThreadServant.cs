@@ -15,7 +15,7 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backends
 {
-	internal abstract class ThreadServant : TargetAccess
+	internal abstract class ThreadServant : DebuggerMarshalByRefObject
 	{
 		protected ThreadServant (ThreadManager manager, ProcessServant process)
 		{
@@ -76,6 +76,14 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		internal abstract ThreadManager ThreadManager {
+			get;
+		}
+
+		internal abstract ProcessServant ProcessServant {
+			get;
+		}
+
 		internal ProcessServant Process {
 			get { return process; }
 		}
@@ -98,6 +106,8 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
+		internal abstract object DoTargetAccess (TargetAccessHandler func);
+
 		public abstract TargetMemoryArea[] GetMemoryMaps ();
 
 		public abstract Method Lookup (TargetAddress address);
@@ -115,6 +125,24 @@ namespace Mono.Debugger.Backends
 		public abstract Method CurrentMethod {
 			get;
 		}
+
+		public abstract TargetState State {
+			get;
+		}
+
+		public abstract StackFrame CurrentFrame {
+			get;
+		}
+
+		public abstract TargetAddress CurrentFrameAddress {
+			get;
+		}
+
+		public abstract Backtrace CurrentBacktrace {
+			get;
+		}
+
+		public abstract Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames);
 
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
@@ -166,14 +194,14 @@ namespace Mono.Debugger.Backends
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		internal abstract override void InsertBreakpoint (BreakpointHandle handle,
-								  TargetAddress address, int domain);
+		internal abstract void InsertBreakpoint (BreakpointHandle handle,
+							 TargetAddress address, int domain);
 
 		// <summary>
 		//   Remove breakpoint @index.  @index is the breakpoint number which has
 		//   been returned by InsertBreakpoint().
 		// </summary>
-		internal abstract override void RemoveBreakpoint (BreakpointHandle handle);
+		internal abstract void RemoveBreakpoint (BreakpointHandle handle);
 
 		// <summary>
 		//   Add an event handler.
@@ -239,25 +267,72 @@ namespace Mono.Debugger.Backends
 			get;
 		}
 
-		public override int TargetAddressSize {
+		public abstract TargetMemoryInfo TargetMemoryInfo {
+			get;
+		}
+
+		internal abstract Architecture Architecture {
+			get;
+		}
+
+		public int TargetAddressSize {
 			get { return TargetMemoryInfo.TargetAddressSize; }
 		}
 
-		public override int TargetIntegerSize {
+		public int TargetIntegerSize {
 			get { return TargetMemoryInfo.TargetIntegerSize; }
 		}
 
-		public override int TargetLongIntegerSize {
+		public int TargetLongIntegerSize {
 			get { return TargetMemoryInfo.TargetLongIntegerSize; }
 		}
 
-		public override bool IsBigEndian {
+		public bool IsBigEndian {
 			get { return TargetMemoryInfo.IsBigEndian; }
 		}
 
-		public override AddressDomain AddressDomain {
+		public AddressDomain AddressDomain {
 			get { return TargetMemoryInfo.AddressDomain; }
 		}
+
+		public abstract byte ReadByte (TargetAddress address);
+
+		public abstract int ReadInteger (TargetAddress address);
+
+		public abstract long ReadLongInteger (TargetAddress address);
+
+		public abstract TargetAddress ReadAddress (TargetAddress address);
+
+		public abstract string ReadString (TargetAddress address);
+
+		public abstract TargetBlob ReadMemory (TargetAddress address, int size);
+
+		public abstract byte[] ReadBuffer (TargetAddress address, int size);
+
+		public abstract Registers GetRegisters ();
+
+		public abstract bool CanWrite {
+			get;
+		}
+
+		public abstract void WriteBuffer (TargetAddress address, byte[] buffer);
+
+		public abstract void WriteByte (TargetAddress address, byte value);
+
+		public abstract void WriteInteger (TargetAddress address, int value);
+
+		public abstract void WriteLongInteger (TargetAddress address, long value);
+
+		public abstract void WriteAddress (TargetAddress address, TargetAddress value);
+
+		public abstract void SetRegisters (Registers registers);
+
+		public abstract int GetInstructionSize (TargetAddress address);
+
+		public abstract AssemblerLine DisassembleInstruction (Method method,
+								      TargetAddress address);
+
+		public abstract AssemblerMethod DisassembleMethod (Method method);
 
 #region IDisposable implementation
 		private bool disposed = false;

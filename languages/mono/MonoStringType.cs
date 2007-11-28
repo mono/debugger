@@ -19,8 +19,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.CreateString = file.MonoLanguage.MonoDebuggerInfo.CreateString;
 		}
 
-		public static MonoStringType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
-						     TargetReader mono_defaults)
+		public static MonoStringType Create (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			int object_size = 2 * memory.TargetMemoryInfo.TargetAddressSize;
 
@@ -28,8 +27,7 @@ namespace Mono.Debugger.Languages.Mono
 				corlib, corlib.ModuleDefinition.Types ["System.String"],
 				object_size, object_size + 4);
 
-			TargetAddress klass = mono_defaults.PeekAddress (
-				corlib.MonoLanguage.MonoMetadataInfo.MonoDefaultsStringOffset);
+			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetStringClass (memory);
 			type.create_type (memory, klass);
 
 			return type;

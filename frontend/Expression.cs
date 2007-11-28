@@ -43,7 +43,7 @@ namespace Mono.Debugger.Frontend
 			return new SourceLocation (source, file, line);
 		}
 
-		protected SourceLocation DoParseExpression (TargetMemoryAccess target, StackFrame frame,
+		protected SourceLocation DoParseExpression (Thread target, StackFrame frame,
 							    LocationType type, string arg)
 		{
 			ScriptingContext context = new ScriptingContext (Interpreter);
@@ -62,7 +62,7 @@ namespace Mono.Debugger.Frontend
 				return context.FindMethod (arg);
 		}
 
-		public static bool ParseLocation (TargetMemoryAccess target, StackFrame frame,
+		public static bool ParseLocation (Thread target, StackFrame frame,
 						  string arg, out SourceLocation location)
 		{
 			int line;
@@ -95,7 +95,7 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
-		protected SourceLocation DoParse (TargetMemoryAccess target, StackFrame frame,
+		protected SourceLocation DoParse (Thread target, StackFrame frame,
 						  LocationType type, string arg)
 		{
 			if (type != LocationType.Default)
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Frontend
 			return DoParseExpression (target, frame, type, arg);
 		}
 
-		public SourceLocation Parse (TargetMemoryAccess target, StackFrame frame,
+		public SourceLocation Parse (Thread target, StackFrame frame,
 					     LocationType type, string arg)
 		{
 			try {

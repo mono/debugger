@@ -124,7 +124,7 @@ namespace Mono.Debugger.Backends
 			has_load_handler = function.InsertBreakpoint (target, this);
 		}
 
-		internal void MethodLoaded (TargetMemoryAccess target, Method method)
+		internal void MethodLoaded (TargetAccess target, Method method)
 		{
 			TargetAddress address;
 			if (line != -1) {

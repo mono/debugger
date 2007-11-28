@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backends;
+
 namespace Mono.Debugger.Languages
 {
 	internal class DereferencedTargetLocation : TargetLocation

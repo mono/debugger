@@ -4,6 +4,8 @@ using Mono.Debugger.Backends;
 
 namespace Mono.Debugger
 {
+	internal delegate object TargetAccessHandler (TargetMemoryAccess target);
+
 	public abstract class TargetMemoryAccess : DebuggerMarshalByRefObject
 	{
 		public abstract TargetMemoryInfo TargetMemoryInfo {
@@ -14,7 +16,19 @@ namespace Mono.Debugger
 			get;
 		}
 
-		internal abstract Architecture Architecture {
+		public abstract int TargetIntegerSize {
+			get;
+		}
+
+		public abstract int TargetLongIntegerSize {
+			get;
+		}
+
+		public abstract int TargetAddressSize {
+			get;
+		}
+
+		public abstract bool IsBigEndian {
 			get;
 		}
 
@@ -34,9 +48,20 @@ namespace Mono.Debugger
 
 		public abstract Registers GetRegisters ();
 
-		internal abstract void InsertBreakpoint (BreakpointHandle breakpoint,
-							 TargetAddress address, int domain);
+		public abstract bool CanWrite {
+			get;
+		}
 
-		internal abstract void RemoveBreakpoint (BreakpointHandle handle);
+		public abstract void WriteBuffer (TargetAddress address, byte[] buffer);
+
+		public abstract void WriteByte (TargetAddress address, byte value);
+
+		public abstract void WriteInteger (TargetAddress address, int value);
+
+		public abstract void WriteLongInteger (TargetAddress address, long value);
+
+		public abstract void WriteAddress (TargetAddress address, TargetAddress value);
+
+		public abstract void SetRegisters (Registers registers);
 	}
 }
