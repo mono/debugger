@@ -10,16 +10,16 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetClass GetParent (TargetMemoryAccess memory);
+		public abstract TargetClass GetParent (Thread thread);
 
-		public abstract TargetObject GetField (TargetMemoryAccess target,
+		public abstract TargetObject GetField (Thread thread,
 						       TargetStructObject instance,
 						       TargetFieldInfo field);
 
 		public abstract TargetObject GetStaticField (Thread target,
 							     TargetFieldInfo field);
 
-		public abstract void SetField (TargetAccess target, TargetStructObject instance,
+		public abstract void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value);
 
 		public abstract void SetStaticField (Thread target, TargetFieldInfo field,

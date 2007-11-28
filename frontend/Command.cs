@@ -3109,7 +3109,7 @@ namespace Mono.Debugger.Frontend
 			set { group = value; }
 		}
 
-		bool IsSubclassOf (TargetMemoryAccess target, TargetStructType type,
+		bool IsSubclassOf (Thread target, TargetStructType type,
 				   TargetType parent)
 		{
 			while (type != null) {

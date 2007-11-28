@@ -40,9 +40,9 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoGenericInstanceObject (ginst, parent_info, Location);
 		}
 
-		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
+		public override TargetObject GetField (Thread thread, TargetFieldInfo field)
 		{
-			return class_info.GetField (target, this, field);
+			return class_info.GetField (thread, this, field);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

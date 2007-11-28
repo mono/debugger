@@ -21,14 +21,25 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		public override TargetClass GetParent (TargetMemoryAccess memory)
+		public override TargetClass GetParent (Thread thread)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override TargetObject GetField (TargetMemoryAccess target,
+		public override TargetObject GetField (Thread thread,
 						       TargetStructObject instance,
 						       TargetFieldInfo field)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					GetField (target, instance, field);
+					return null;
+			});
+		}
+
+		internal TargetObject GetField (TargetMemoryAccess target,
+						TargetStructObject instance,
+						TargetFieldInfo field)
 		{
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (field.Offset);
 
@@ -49,7 +60,7 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
-		public override void SetField (TargetAccess target, TargetStructObject instance,
+		public override void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value)
 		{
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (field.Offset);

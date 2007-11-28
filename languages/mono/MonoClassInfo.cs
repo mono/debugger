@@ -55,7 +55,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			Console.WriteLine ("READ CLASS INFO: {0} {1} {2} {3}",
-					   klass_address, typedef, info.GenericContainer,
+					   klass, typedef, info.GenericContainer,
 					   info.GenericClass);
 			info.type = file.LookupMonoClass (typedef);
 			return info;
@@ -451,7 +451,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation ();
 
-			type.SetObject (target, field_loc, value);
+			type.SetObject (target, field_loc, obj);
 		}
 
 		public override TargetObject GetStaticField (Thread thread, TargetFieldInfo field)

@@ -984,7 +984,7 @@ namespace Mono.Debugger.Backend
 					      "{0} invoking exception handler {1} for {0}",
 					      this, handle.Name, exc);
 
-				if (!handle.CheckException (thread, exc))
+				if (!handle.CheckException (process.MonoLanguage, inferior, exc))
 					continue;
 
 				Report.Debug (DebugFlags.SSE,

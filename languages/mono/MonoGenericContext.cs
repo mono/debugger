@@ -3,7 +3,7 @@ using System.Text;
 using Cecil = Mono.Cecil;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -69,7 +69,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetType[] types = new TargetType [type_argc];
 			for (int i = 0; i < type_argc; i++) {
 				TargetAddress ptr = memory.ReadAddress (type_argv_ptr + i * addr_size);
-				types [i] = MonoRuntime.ReadType (mono, memory, ptr);
+				types [i] = mono.ReadType (memory, ptr);
 			}
 
 			return new MonoGenericInst (types);

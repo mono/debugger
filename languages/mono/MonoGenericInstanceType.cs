@@ -79,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return false; }
 		}
 
-		public override TargetStructType GetParentType (TargetMemoryAccess target)
+		internal override TargetStructType GetParentType (TargetMemoryAccess target)
 		{
 			throw new InvalidOperationException ();
 		}

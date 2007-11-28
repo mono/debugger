@@ -4,6 +4,7 @@ using Mono.Debugger.Backend;
 using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
@@ -93,9 +94,9 @@ namespace Mono.Debugger
 			return false;
 		}
 
-		internal bool CheckException (Thread target, TargetAddress address)
+		internal bool CheckException (MonoLanguageBackend mono, TargetMemoryAccess target,
+					      TargetAddress address)
 		{
-			Language mono = target.Process.Servant.MonoLanguage;
 			TargetClassObject exc = mono.CreateObject (target, address) as TargetClassObject;
 			if (exc == null)
 				return false; // OOOPS

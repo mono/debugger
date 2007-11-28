@@ -14,7 +14,15 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetStructType GetParentType (TargetMemoryAccess target);
+		internal abstract TargetStructType GetParentType (TargetMemoryAccess target);
+
+		public TargetStructType GetParentType (Thread thread)
+		{
+			return (TargetStructType) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetParentType (thread);
+			});
+		}
 
 		public abstract TargetClass GetClass (TargetMemoryAccess target);
 	}

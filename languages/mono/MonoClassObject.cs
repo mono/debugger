@@ -45,13 +45,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetField (Thread thread, TargetFieldInfo field)
 		{
-			return info.GetField (target, this, field);
+			return info.GetField (thread, this, field);
 		}
 
 		public override void SetField (Thread thread, TargetFieldInfo field,
 					       TargetObject obj)
 		{
-			info.SetField (target, this, field, obj);
+			info.SetField (thread, this, field, obj);
 		}
 
 		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
