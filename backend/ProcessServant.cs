@@ -5,12 +5,12 @@ using ST = System.Threading;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Architectures;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class ProcessServant : DebuggerMarshalByRefObject
 	{

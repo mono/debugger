@@ -3,7 +3,7 @@ using System.Text;
 using System.Collections;
 
 using Mono.Debugger.Languages;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {
@@ -141,7 +141,7 @@ namespace Mono.Debugger
 			int offset = (int) (frame.TargetAddress - StartAddress);
 
 			byte[] prologue = memory.ReadBuffer (StartAddress, prologue_size);
-			return memory.Architecture.UnwindStack (frame, memory, prologue, offset);
+			return frame.Thread.Architecture.UnwindStack (frame, memory, prologue, offset);
 		}
 
 		//
@@ -262,17 +262,17 @@ namespace Mono.Debugger
                         return true;
                 }
 
-		public abstract TargetClass GetDeclaringType (TargetMemoryAccess memory);
+		public abstract TargetClass GetDeclaringType (Thread target);
 
 		public abstract bool HasThis {
 			get;
 		}
 
-		public abstract TargetVariable GetThis (TargetMemoryAccess memory);
+		public abstract TargetVariable GetThis (Thread target);
 
-		public abstract TargetVariable[] GetParameters (TargetMemoryAccess memory);
+		public abstract TargetVariable[] GetParameters (Thread target);
 
-		public abstract TargetVariable[] GetLocalVariables (TargetMemoryAccess memory);
+		public abstract TargetVariable[] GetLocalVariables (Thread target);
 
 		public abstract string[] GetNamespaces ();
 

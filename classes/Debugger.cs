@@ -10,7 +10,7 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 

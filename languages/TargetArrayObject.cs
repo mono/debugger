@@ -32,7 +32,16 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		public int GetLowerBound (TargetMemoryAccess target, int dimension)
+		protected bool GetArrayBounds (Thread thread)
+		{
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetArrayBounds (target);
+			});
+			return bounds != null;
+		}
+
+		public int GetLowerBound (Thread target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -43,7 +52,7 @@ namespace Mono.Debugger.Languages
 			return bounds [dimension].Lower;
 		}
 
-		public int GetUpperBound (TargetMemoryAccess target, int dimension)
+		public int GetUpperBound (Thread target, int dimension)
 		{
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
@@ -98,16 +107,41 @@ namespace Mono.Debugger.Languages
 			return length;
 		}
 
-		public abstract TargetObject GetElement (TargetMemoryAccess target, int[] indices);
+		public TargetObject GetElement (Thread thread, int[] indices)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetElement (target, indices);
+			});
+		}
 
-		public abstract void SetElement (TargetAccess target, int[] indices,
-						 TargetObject obj);
+		internal abstract TargetObject GetElement (TargetMemoryAccess target, int[] indices);
+
+		public void SetElement (Thread thread, int[] indices, TargetObject obj)
+		{
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					SetElement (target, indices, obj);
+					return null;
+			});
+		}
+
+		internal abstract void SetElement (TargetMemoryAccess target, int[] indices,
+						   TargetObject obj);
 
 		public abstract bool HasClassObject {
 			get;
 		}
 
-		public abstract TargetClassObject GetClassObject (TargetMemoryAccess target);
+		public TargetClassObject GetClassObject (Thread thread)
+		{
+			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetClassObject (target);
+			});
+		}
+
+		internal abstract TargetClassObject GetClassObject (TargetMemoryAccess target);
 
 		public override string ToString ()
 		{

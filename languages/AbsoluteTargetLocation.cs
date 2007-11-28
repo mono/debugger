@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backend;
+
 namespace Mono.Debugger.Languages
 {
 	// <summary>

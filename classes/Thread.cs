@@ -10,7 +10,7 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Messaging;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
-	public class Thread : TargetAccess
+	public class Thread : DebuggerMarshalByRefObject
 	{
 		[Flags]
 		public enum Flags {
@@ -70,7 +70,7 @@ namespace Mono.Debugger
 		//   The single-stepping engine's target state.  This will be
 		//   TargetState.RUNNING while the engine is stepping.
 		// </summary>
-		public override TargetState State {
+		public TargetState State {
 			get {
 				if (servant == null)
 					return TargetState.NoTarget;
@@ -132,14 +132,14 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal override Architecture Architecture {
+		internal Architecture Architecture {
 			get {
 				check_servant ();
 				return servant.Architecture;
 			}
 		}
 
-		internal override ProcessServant ProcessServant {
+		internal ProcessServant ProcessServant {
 			get {
 				check_servant ();
 				return servant.ProcessServant;
@@ -153,7 +153,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal override ThreadManager ThreadManager {
+		internal ThreadManager ThreadManager {
 			get {
 				check_servant ();
 				return servant.ThreadManager;
@@ -199,14 +199,14 @@ namespace Mono.Debugger
 		//   unnecessarily compute this several times if more than one client
 		//   accesses this property.
 		// </summary>
-		public override StackFrame CurrentFrame {
+		public StackFrame CurrentFrame {
 			get {
 				check_servant ();
 				return servant.CurrentFrame;
 			}
 		}
 
-		public override TargetAddress CurrentFrameAddress {
+		public TargetAddress CurrentFrameAddress {
 			get {
 				check_servant ();
 				return servant.CurrentFrameAddress;
@@ -222,7 +222,7 @@ namespace Mono.Debugger
 		//   without doing any stepping operations in the meantime, you'll always
 		//   get the same backtrace.
 		// </summary>
-		public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
+		public Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
 		{
 			check_servant ();
 			return servant.GetBacktrace (mode, max_frames);
@@ -243,20 +243,20 @@ namespace Mono.Debugger
 			return GetBacktrace (Backtrace.Mode.Default, -1);
 		}
 
-		public override Backtrace CurrentBacktrace {
+		public Backtrace CurrentBacktrace {
 			get {
 				check_servant ();
 				return servant.CurrentBacktrace;
 			}
 		}
 
-		public override Registers GetRegisters ()
+		public Registers GetRegisters ()
 		{
 			check_servant ();
 			return servant.GetRegisters ();
 		}
 
-		public override void SetRegisters (Registers registers)
+		public void SetRegisters (Registers registers)
 		{
 			check_alive ();
 			servant.SetRegisters (registers);
@@ -469,8 +469,8 @@ namespace Mono.Debugger
 		//   Returns a number which may be passed to RemoveBreakpoint() to remove
 		//   the breakpoint.
 		// </summary>
-		internal override void InsertBreakpoint (BreakpointHandle handle,
-							TargetAddress address, int domain)
+		internal void InsertBreakpoint (BreakpointHandle handle,
+						TargetAddress address, int domain)
 		{
 			check_alive ();
 			servant.InsertBreakpoint (handle, address, domain);
@@ -480,7 +480,7 @@ namespace Mono.Debugger
 		//   Remove breakpoint @index.  @index is the breakpoint number which has
 		//   been returned by InsertBreakpoint().
 		// </summary>
-		internal override void RemoveBreakpoint (BreakpointHandle handle)
+		internal void RemoveBreakpoint (BreakpointHandle handle)
 		{
 			check_disposed ();
 			if (servant != null)
@@ -526,19 +526,19 @@ namespace Mono.Debugger
 		// Disassembling.
 		//
 
-		public override int GetInstructionSize (TargetAddress address)
+		public int GetInstructionSize (TargetAddress address)
 		{
 			check_alive ();
 			return servant.GetInstructionSize (address);
 		}
 
-		public override AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
+		public AssemblerLine DisassembleInstruction (Method method, TargetAddress address)
 		{
 			check_alive ();
 			return servant.DisassembleInstruction (method, address);
 		}
 
-		public override AssemblerMethod DisassembleMethod (Method method)
+		public AssemblerMethod DisassembleMethod (Method method)
 		{
 			check_alive ();
 			return servant.DisassembleMethod (method);
@@ -660,7 +660,7 @@ namespace Mono.Debugger
 			get { return (servant != null) && servant.IsStopped; }
 		}
 
-		public override TargetMemoryInfo TargetMemoryInfo {
+		public TargetMemoryInfo TargetMemoryInfo {
 			get {
 				check_servant ();
 				return servant.TargetMemoryInfo;
@@ -668,19 +668,19 @@ namespace Mono.Debugger
 		}
 
 #region ITargetInfo implementation
-		public override int TargetAddressSize {
+		public int TargetAddressSize {
 			get { return TargetMemoryInfo.TargetAddressSize; }
 		}
 
-		public override int TargetIntegerSize {
+		public int TargetIntegerSize {
 			get { return TargetMemoryInfo.TargetIntegerSize; }
 		}
 
-		public override int TargetLongIntegerSize {
+		public int TargetLongIntegerSize {
 			get { return TargetMemoryInfo.TargetLongIntegerSize; }
 		}
 
-		public override bool IsBigEndian {
+		public bool IsBigEndian {
 			get { return TargetMemoryInfo.IsBigEndian; }
 		}
 #endregion
@@ -692,83 +692,83 @@ namespace Mono.Debugger
 			servant.WriteBuffer (address, buffer);
 		}
 
-		public override AddressDomain AddressDomain {
+		public AddressDomain AddressDomain {
 			get {
 				return TargetMemoryInfo.AddressDomain;
 			}
 		}
 
-		public override byte ReadByte (TargetAddress address)
+		public byte ReadByte (TargetAddress address)
 		{
 			check_alive ();
 			return servant.ReadByte (address);
 		}
 
-		public override int ReadInteger (TargetAddress address)
+		public int ReadInteger (TargetAddress address)
 		{
 			check_alive ();
 			return servant.ReadInteger (address);
 		}
 
-		public override long ReadLongInteger (TargetAddress address)
+		public long ReadLongInteger (TargetAddress address)
 		{
 			check_alive ();
 			return servant.ReadLongInteger (address);
 		}
 
-		public override TargetAddress ReadAddress (TargetAddress address)
+		public TargetAddress ReadAddress (TargetAddress address)
 		{
 			check_alive ();
 			return servant.ReadAddress (address);
 		}
 
-		public override string ReadString (TargetAddress address)
+		public string ReadString (TargetAddress address)
 		{
 			check_alive ();
 			return servant.ReadString (address);
 		}
 
-		public override TargetBlob ReadMemory (TargetAddress address, int size)
+		public TargetBlob ReadMemory (TargetAddress address, int size)
 		{
 			check_alive ();
 			byte[] buffer = servant.ReadBuffer (address, size);
 			return new TargetBlob (buffer, TargetMemoryInfo);
 		}
 
-		public override byte[] ReadBuffer (TargetAddress address, int size)
+		public byte[] ReadBuffer (TargetAddress address, int size)
 		{
 			check_alive ();
 			return servant.ReadBuffer (address, size);
 		}
 
-		public override bool CanWrite {
+		public bool CanWrite {
 			get {
 				check_servant ();
 				return servant.CanWrite;
 			}
 		}
 
-		public override void WriteBuffer (TargetAddress address, byte[] buffer)
+		public void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			write_memory (address, buffer);
 		}
 
-		public override void WriteByte (TargetAddress address, byte value)
+		public void WriteByte (TargetAddress address, byte value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override void WriteInteger (TargetAddress address, int value)
+		public void WriteInteger (TargetAddress address, int value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override void WriteLongInteger (TargetAddress address, long value)
+		public void WriteLongInteger (TargetAddress address, long value)
 		{
 			throw new InvalidOperationException ();
 		}
 
-		public override void WriteAddress (TargetAddress address, TargetAddress value)
+		public void WriteAddress (TargetAddress address, TargetAddress value)
 		{
 			check_alive ();
 			TargetBinaryWriter writer = new TargetBinaryWriter (

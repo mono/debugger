@@ -4,7 +4,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger.Languages;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {
@@ -73,7 +73,7 @@ namespace Mono.Debugger
 			this.value = value.Address;
 		}
 
-		public void WriteRegister (TargetAccess target, long value)
+		internal void WriteRegister (TargetMemoryAccess target, long value)
 		{
 			this.value = value;
 
@@ -83,6 +83,18 @@ namespace Mono.Debugger
 				target.WriteInteger (addr_on_stack, (int) value);
 			else
 				target.WriteLongInteger (addr_on_stack, value);
+		}
+
+		public void WriteRegister (Thread thread, long value)
+		{
+			this.value = value;
+
+			if (addr_on_stack.IsNull)
+				thread.SetRegisters (registers);
+			else if (Size == thread.TargetMemoryInfo.TargetIntegerSize)
+				thread.WriteInteger (addr_on_stack, (int) value);
+			else
+				thread.WriteLongInteger (addr_on_stack, value);
 		}
 
 		public bool Valid {
@@ -375,7 +387,7 @@ namespace Mono.Debugger
 					return new_frame;
 			}
 
-			return memory.Architecture.UnwindStack (this, memory, null, 0);
+			return thread.Architecture.UnwindStack (this, memory, null, 0);
 		}
 
 		public override string ToString ()

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {

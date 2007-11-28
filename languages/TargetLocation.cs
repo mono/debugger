@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backend;
+
 namespace Mono.Debugger.Languages
 {
 	// <summary>
@@ -32,12 +34,12 @@ namespace Mono.Debugger.Languages
 			return ReadMemory (target, size).Contents;
 		}
 
-		internal virtual void WriteBuffer (TargetAccess target, byte[] data)
+		internal virtual void WriteBuffer (TargetMemoryAccess target, byte[] data)
 		{
 			target.WriteBuffer (GetAddress (target), data);
 		}
 
-		internal virtual void WriteAddress (TargetAccess target, TargetAddress address)
+		internal virtual void WriteAddress (TargetMemoryAccess target, TargetAddress address)
 		{
 			target.WriteAddress (GetAddress (target), address);
 		}

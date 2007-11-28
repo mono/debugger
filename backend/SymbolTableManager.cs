@@ -3,9 +3,9 @@ using System.Collections;
 using ST = System.Threading;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	// <summary>
 	//   This class maintains the debugger's symbol tables.

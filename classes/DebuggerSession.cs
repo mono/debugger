@@ -10,7 +10,7 @@ using System.Xml;
 using System.Xml.XPath;
 
 using Mono.Debugger.Languages;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {
@@ -30,7 +30,7 @@ namespace Mono.Debugger
 
 	public interface IExpressionParser
 	{
-		SourceLocation Parse (TargetMemoryAccess target, StackFrame frame,
+		SourceLocation Parse (Thread target, StackFrame frame,
 				      LocationType type, string name);
 	}
 
@@ -206,7 +206,7 @@ namespace Mono.Debugger
 			return handle;
 		}
 
-		internal SourceLocation ParseLocation (TargetMemoryAccess target, StackFrame frame,
+		internal SourceLocation ParseLocation (Thread target, StackFrame frame,
 						       LocationType type, string name)
 		{
 			return parser.Parse (target, frame, type, name);

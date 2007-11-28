@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Architectures
 {
@@ -514,6 +514,55 @@ namespace Mono.Debugger.Architectures
 				code = new byte [insn_size];
 				Array.Copy (reader.Contents, 0, code, 0, insn_size);
 			}
+		}
+
+		protected abstract bool GetMonoTrampoline (TargetMemoryAccess memory,
+							   TargetAddress call_target,
+							   out TargetAddress trampoline);
+
+		public override TrampolineType CheckTrampoline (TargetMemoryAccess memory,
+								out TargetAddress trampoline)
+		{
+			if (InstructionType == Type.Call) {
+				TargetAddress target = GetEffectiveAddress (memory);
+				if (target.IsNull) {
+					trampoline = TargetAddress.Null;
+					return TrampolineType.None;
+				}
+
+				bool is_start;
+				if (Opcodes.Process.BfdContainer.GetTrampoline (
+					    memory, target, out trampoline, out is_start)) {
+					target = trampoline;
+					return is_start ? 
+						TrampolineType.NativeTrampolineStart :
+						TrampolineType.NativeTrampoline;
+				}
+			}
+
+			if ((InstructionType != Type.Call) && (InstructionType != Type.IndirectCall)) {
+				trampoline = TargetAddress.Null;
+				return TrampolineType.None;
+			}
+
+			if (Opcodes.Process.IsManagedApplication) {
+				TargetAddress target = GetEffectiveAddress (memory);
+				if (target.IsNull) {
+					trampoline = TargetAddress.Null;
+					return TrampolineType.None;
+				}
+
+				if (Opcodes.Process.MonoLanguage.IsDelegateTrampoline (target)) {
+					trampoline = target;
+					return TrampolineType.DelegateInvoke;
+				}
+
+				if (GetMonoTrampoline (memory, target, out trampoline))
+					return TrampolineType.MonoTrampoline;
+			}
+
+			trampoline = TargetAddress.Null;
+			return TrampolineType.None;
 		}
 
 		public override string ToString ()

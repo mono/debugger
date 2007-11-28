@@ -8,7 +8,7 @@ using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Architectures;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  

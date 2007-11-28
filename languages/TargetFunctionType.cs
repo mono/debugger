@@ -1,9 +1,9 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages
 {
-	internal delegate void MethodLoadedHandler (TargetMemoryAccess target, Method method);
+	internal delegate void MethodLoadedHandler (TargetAccess target, Method method);
 
 	public abstract class TargetFunctionType : TargetType
 	{
@@ -70,8 +70,6 @@ namespace Mono.Debugger.Languages
 		public abstract bool IsManaged {
 			get;
 		}
-
-		public abstract TargetAddress GetMethodAddress (Thread target);
 
 		internal abstract bool InsertBreakpoint (Thread target,
 							 FunctionBreakpointHandle handle);

@@ -1,6 +1,6 @@
 using System;
 using System.Xml;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
@@ -23,7 +23,7 @@ namespace Mono.Debugger
 			get { return true; }
 		}
 
-		internal override BreakpointHandle Resolve (TargetMemoryAccess target, StackFrame frame)
+		internal override BreakpointHandle Resolve (Thread target, StackFrame frame)
 		{
 			if (handle != null)
 				return handle;

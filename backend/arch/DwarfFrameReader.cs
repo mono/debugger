@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class DwarfFrameReader
 	{
@@ -360,7 +360,7 @@ namespace Mono.Debugger.Backends
 						target.AddressDomain, ebp.Value);
 
 				return arch.CreateFrame (
-					frame.Thread, address, stack, frame_addr, regs, true);
+					frame.Thread, target, address, stack, frame_addr, regs, true);
 			}
 		}
 

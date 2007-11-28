@@ -5,7 +5,7 @@ using System.Text;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal enum StepMode
 	{

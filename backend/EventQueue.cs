@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal abstract class DebuggerWaitHandle
 	{

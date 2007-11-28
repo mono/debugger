@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Native;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal class BfdContainer : DebuggerMarshalByRefObject, IDisposable
 	{

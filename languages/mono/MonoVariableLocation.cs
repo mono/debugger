@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -26,7 +26,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.is_byref = is_byref;
 		}
 
-		public static MonoVariableLocation Create (TargetAccess target, bool is_regoffset,
+		public static MonoVariableLocation Create (TargetMemoryAccess target, bool is_regoffset,
 							   Register register, long regoffset,
 							   bool is_byref)
 		{
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 			return location;
 		}
 
-		void update (TargetAccess target)
+		void update (TargetMemoryAccess target)
 		{
 			// If this is a reference type, the register just holds the
 			// address of the actual data, so read the address from the
@@ -97,7 +97,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new TargetBlob (buffer, target.TargetMemoryInfo);
 		}
 
-		internal override void WriteBuffer (TargetAccess target, byte[] data)
+		internal override void WriteBuffer (TargetMemoryAccess target, byte[] data)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();
@@ -133,7 +133,8 @@ namespace Mono.Debugger.Languages.Mono
 			update (target);
 		}
 
-		internal override void WriteAddress (TargetAccess target, TargetAddress new_address)
+		internal override void WriteAddress (TargetMemoryAccess target,
+						     TargetAddress new_address)
 		{
 			if (!is_valid)
 				throw new LocationInvalidException ();

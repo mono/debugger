@@ -1,5 +1,7 @@
 using System;
 
+using Mono.Debugger.Backend;
+
 namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoStringObject : TargetFundamentalObject
@@ -22,7 +24,7 @@ namespace Mono.Debugger.Languages.Mono
 			return reader.ReadInteger (4) * 2;
 		}
 
-		public override object GetObject (TargetMemoryAccess target)
+		protected override object DoGetObject (TargetMemoryAccess target)
 		{
 			TargetLocation dynamic_location;
 			TargetBlob object_blob = Location.ReadMemory (target, type.Size);
@@ -45,11 +47,11 @@ namespace Mono.Debugger.Languages.Mono
 			return new String (retval);
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Location.GetAddress (target).IsNull)
 				return "null";
-			object obj = GetObject (target);
+			object obj = DoGetObject (target);
 			return '"' + (string) obj + '"';
 		}
 	}

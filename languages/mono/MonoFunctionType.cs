@@ -5,7 +5,7 @@ using C = Mono.CompilerServices.SymbolWriter;
 using Cecil = Mono.Cecil;
 
 using Mono.Debugger;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -164,13 +164,8 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetAddress GetMethodAddress (Thread target)
-		{
-			MonoClassInfo info = klass.HardResolveClass (target);
-			return info.GetMethodAddress (target, Token);
-		}
-
-		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
 			throw new InvalidOperationException ();
 		}

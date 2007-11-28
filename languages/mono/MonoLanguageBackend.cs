@@ -6,7 +6,7 @@ using System.Collections;
 using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -42,63 +42,56 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoClassType DelegateType;
 		public readonly MonoClassType ArrayType;
 
-		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, TargetMemoryAccess memory,
-					    MonoMetadataInfo info)
+		public MonoBuiltinTypeInfo (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			this.Corlib = corlib;
 
-			TargetReader mono_defaults = new TargetReader (
-				memory.ReadMemory (info.MonoDefaultsAddress, info.MonoDefaultsSize));
-
 			MonoLanguageBackend mono = corlib.MonoLanguage;
 
-			ObjectType = MonoObjectType.Create (corlib, memory, mono_defaults);
-			VoidType = MonoVoidType.Create (corlib, memory, mono_defaults);
+			ObjectType = MonoObjectType.Create (corlib, memory);
+			VoidType = MonoVoidType.Create (corlib, memory);
 
-			StringType = MonoStringType.Create (corlib, memory, mono_defaults);
+			StringType = MonoStringType.Create (corlib, memory);
 
 			BooleanType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Boolean);
+				corlib, memory, FundamentalKind.Boolean);
 			CharType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Char);
+				corlib, memory, FundamentalKind.Char);
 			SByteType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.SByte);
+				corlib, memory, FundamentalKind.SByte);
 			Int16Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Int16);
+				corlib, memory, FundamentalKind.Int16);
 			UInt16Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UInt16);
+				corlib, memory, FundamentalKind.UInt16);
 			Int32Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Int32);
+				corlib, memory, FundamentalKind.Int32);
 			UInt32Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UInt32);
+				corlib, memory, FundamentalKind.UInt32);
 			Int64Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Int64);
+				corlib, memory, FundamentalKind.Int64);
 			UInt64Type = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UInt64);
+				corlib, memory, FundamentalKind.UInt64);
 			SingleType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Single);
+				corlib, memory, FundamentalKind.Single);
 			DoubleType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.Double);
+				corlib, memory, FundamentalKind.Double);
 
 			IntType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.IntPtr);
+				corlib, memory, FundamentalKind.IntPtr);
 			UIntType = MonoFundamentalType.Create (
-				corlib, memory, mono_defaults, FundamentalKind.UIntPtr);
+				corlib, memory, FundamentalKind.UIntPtr);
 
-			mono_defaults.Offset = info.MonoDefaultsArrayOffset;
-			TargetAddress klass = mono_defaults.ReadAddress ();
+			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetArrayClass (memory);
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
 			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
-			mono_defaults.Offset = info.MonoDefaultsDelegateOffset;
-			klass = mono_defaults.ReadAddress ();
+			klass = corlib.MonoLanguage.MonoRuntime.GetDelegateClass (memory);
 			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
-			mono_defaults.Offset = info.MonoDefaultsExceptionOffset;
-			klass = mono_defaults.ReadAddress ();
+			klass = corlib.MonoLanguage.MonoRuntime.GetExceptionClass (memory);
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
 			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
@@ -125,7 +118,7 @@ namespace Mono.Debugger.Languages.Mono
 			int header_size = 16 + address_size;
 
 			if (first_chunk.IsNull) {
-				first_chunk = memory.ReadAddress (TableAddress + address_size);
+				first_chunk = memory.ReadAddress (TableAddress + 8);
 				current_chunk = first_chunk;
 			}
 
@@ -219,6 +212,8 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable data_tables;
 		GlobalDataTable global_data_table;
 
+		MonoRuntime runtime;
+
 		ProcessServant process;
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
@@ -245,8 +240,8 @@ namespace Mono.Debugger.Languages.Mono
 			get { return info; }
 		}
 
-		internal MonoMetadataInfo MonoMetadataInfo {
-			get { return info.MonoMetadataInfo; }
+		internal MonoRuntime MonoRuntime {
+			get { return runtime; }
 		}
 
 		internal MonoBuiltinTypeInfo BuiltinTypes {
@@ -369,7 +364,7 @@ namespace Mono.Debugger.Languages.Mono
 				class_hash.Add (klass_address, type);
 		}
 
-		public TargetType ReadMonoClass (TargetMemoryAccess target, TargetAddress klass_address)
+		public TargetType LookupMonoClass (TargetMemoryAccess target, TargetAddress klass_address)
 		{
 			TargetType type = (TargetType) class_hash [klass_address];
 			if (type != null)
@@ -406,6 +401,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_mono_debugger_info (TargetMemoryAccess memory)
 		{
+			runtime = MonoRuntime.Create (memory, info);
+
 			trampolines = new TargetAddress [info.MonoTrampolineNum];
 
 			TargetAddress address = info.MonoTrampolineCode;
@@ -426,7 +423,129 @@ namespace Mono.Debugger.Languages.Mono
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
 		{
-			main_method = MonoRuntime.ReadMonoMethod (this, target, method);
+			main_method = ReadMonoMethod (target, method);
+		}
+
+		internal MonoFunctionType ReadMonoMethod (TargetMemoryAccess memory,
+							  TargetAddress address)
+		{
+			int token = MonoRuntime.MonoMethodGetToken (memory, address);
+			TargetAddress klass = MonoRuntime.MonoMethodGetClass (memory, address);
+			TargetAddress image = MonoRuntime.MonoClassGetMonoImage (memory, klass);
+
+			MonoSymbolFile file = GetImage (image);
+			if (file == null)
+				return null;
+
+			return file.GetFunctionByToken (token);
+		}
+
+		public TargetType ReadMonoClass (TargetMemoryAccess target, TargetAddress klass)
+		{
+			TargetAddress byval_type = MonoRuntime.MonoClassGetByValType (target, klass);
+			return ReadType (target, byval_type);
+		}
+
+		public TargetType ReadType (TargetMemoryAccess memory, TargetAddress address)
+		{
+			TargetAddress data = MonoRuntime.MonoTypeGetData (memory, address);
+			MonoTypeEnum type = MonoRuntime.MonoTypeGetType (memory, address);
+			bool byref = MonoRuntime.MonoTypeGetIsByRef (memory, address);
+
+			TargetType target_type = ReadType (memory, type, data);
+			if (target_type == null)
+				return null;
+
+			if (byref)
+				target_type = new MonoPointerType (target_type);
+
+			return target_type;
+		}
+
+		TargetType ReadType (TargetMemoryAccess memory, MonoTypeEnum type, TargetAddress data)
+		{
+			switch (type) {
+			case MonoTypeEnum.MONO_TYPE_BOOLEAN:
+				return BuiltinTypes.BooleanType;
+			case MonoTypeEnum.MONO_TYPE_CHAR:
+				return BuiltinTypes.CharType;
+			case MonoTypeEnum.MONO_TYPE_I1:
+				return BuiltinTypes.SByteType;
+			case MonoTypeEnum.MONO_TYPE_U1:
+				return BuiltinTypes.ByteType;
+			case MonoTypeEnum.MONO_TYPE_I2:
+				return BuiltinTypes.Int16Type;
+			case MonoTypeEnum.MONO_TYPE_U2:
+				return BuiltinTypes.UInt16Type;
+			case MonoTypeEnum.MONO_TYPE_I4:
+				return BuiltinTypes.Int32Type;
+			case MonoTypeEnum.MONO_TYPE_U4:
+				return BuiltinTypes.UInt32Type;
+			case MonoTypeEnum.MONO_TYPE_I8:
+				return BuiltinTypes.Int64Type;
+			case MonoTypeEnum.MONO_TYPE_U8:
+				return BuiltinTypes.UInt64Type;
+			case MonoTypeEnum.MONO_TYPE_R4:
+				return BuiltinTypes.SingleType;
+			case MonoTypeEnum.MONO_TYPE_R8:
+				return BuiltinTypes.DoubleType;
+			case MonoTypeEnum.MONO_TYPE_STRING:
+				return BuiltinTypes.StringType;
+			case MonoTypeEnum.MONO_TYPE_OBJECT:
+				return BuiltinTypes.ObjectType;
+			case MonoTypeEnum.MONO_TYPE_I:
+				return BuiltinTypes.IntType;
+			case MonoTypeEnum.MONO_TYPE_U:
+				return BuiltinTypes.UIntType;
+
+			case MonoTypeEnum.MONO_TYPE_PTR: {
+				TargetType target_type = ReadType (memory, data);
+				return new MonoPointerType (target_type);
+			}
+
+			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
+			case MonoTypeEnum.MONO_TYPE_CLASS:
+				return LookupMonoClass (memory, data);
+
+			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
+				TargetType etype = ReadMonoClass (memory, data);
+				return new MonoArrayType (etype, 1);
+			}
+
+			case MonoTypeEnum.MONO_TYPE_ARRAY: {
+				TargetAddress klass = MonoRuntime.MonoArrayTypeGetClass (memory, data);
+				int rank = MonoRuntime.MonoArrayTypeGetRank (memory, data);
+
+				int numsizes = MonoRuntime.MonoArrayTypeGetNumSizes (memory, data);
+				int numlobounds = MonoRuntime.MonoArrayTypeGetNumLoBounds (memory, data);
+
+				if ((numsizes != 0) || (numlobounds != 0))
+					throw new InternalError ();
+
+				TargetType etype = ReadMonoClass (memory, klass);
+				return new MonoArrayType (etype, rank);
+			}
+
+			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
+				TargetAddress ptr = data;
+
+				TargetAddress container_addr = memory.ReadAddress (ptr);
+				ptr += memory.TargetMemoryInfo.TargetAddressSize;
+
+				MonoClassType container = (MonoClassType) mono.ReadMonoClass (
+					memory, container_addr);
+
+				MonoGenericContext context = MonoGenericContext.ReadGenericContext (
+					mono, memory, ptr);
+
+				ptr += 3 * memory.TargetMemoryInfo.TargetAddressSize;
+				return new MonoGenericInstanceType (container, context, ptr);
+			}
+
+			default:
+				Report.Error ("UNKNOWN TYPE: {0}", type);
+				return null;
+			}
 		}
 
 		internal MonoFunctionType MainMethod {
@@ -471,7 +590,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_builtin_types (TargetMemoryAccess memory)
 		{
-			builtin_types = new MonoBuiltinTypeInfo (corlib, memory, info.MonoMetadataInfo);
+			builtin_types = new MonoBuiltinTypeInfo (corlib, memory);
 		}
 
 		MonoSymbolFile load_symfile (TargetMemoryAccess memory, TargetAddress address)
@@ -675,9 +794,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			public bool IsDelegateInvoke (TargetAddress address)
 			{
-				foreach (DelegateInvokeEntry entry in delegate_impl_list)
+				foreach (DelegateInvokeEntry entry in delegate_impl_list) {
 					if ((address >= entry.Code) && (address < entry.Code + entry.Size))
 						return true;
+				}
 
 				return false;
 			}
@@ -757,7 +877,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Hashtable method_load_handlers = new Hashtable ();
 
-		void method_from_jit_info (TargetMemoryAccess target, TargetAddress data,
+		void method_from_jit_info (TargetAccess target, TargetAddress data,
 					   MethodLoadedHandler handler)
 		{
 			int size = target.ReadInteger (data);
@@ -788,21 +908,6 @@ namespace Mono.Debugger.Languages.Mono
 			return file.ReadRangeEntry (target, reader, contents);
 		}
 
-		internal int RegisterMethodLoadHandler (Thread target, TargetAddress method_address,
-							MethodLoadedHandler handler)
-		{
-			int index = GetUniqueID ();
-
-			TargetAddress retval = target.CallMethod (
-				info.InsertMethodBreakpoint, method_address, index);
-
-			if (!retval.IsNull)
-				method_from_jit_info (target, retval, handler);
-
-			method_load_handlers.Add (index, handler);
-			return index;
-		}
-
 		internal void RegisterMethodLoadHandler (int index, MethodLoadedHandler handler)
 		{
 			method_load_handlers.Add (index, handler);
@@ -814,19 +919,25 @@ namespace Mono.Debugger.Languages.Mono
 			method_load_handlers.Remove (index);
 		}
 
-		internal int RegisterMethodLoadHandler (Thread target, MonoFunctionType func,
+		internal int RegisterMethodLoadHandler (Thread thread, MonoFunctionType func,
 							FunctionBreakpointHandle handle)
 		{
 			int index = GetUniqueID ();
 
-			TargetAddress retval = target.CallMethod (
+			TargetAddress retval = thread.CallMethod (
 				info.InsertSourceBreakpoint, func.MonoClass.File.MonoImage,
 				func.Token, index, func.MonoClass.Name);
 
 			MethodLoadedHandler handler = handle.MethodLoaded;
 
-			if (!retval.IsNull)
-				method_from_jit_info (target, retval, handler);
+			if (!retval.IsNull) {
+				thread.ThreadServant.DoTargetAccess (
+					delegate (TargetMemoryAccess target)  {
+						method_from_jit_info ((TargetAccess) target,
+								      retval, handler);
+						return null;
+				});
+			}
 
 			method_load_handlers.Add (index, handler);
 			return index;
@@ -926,13 +1037,13 @@ namespace Mono.Debugger.Languages.Mono
 			return GetFundamentalType (type) != null;
 		}
 
-		public override TargetFundamentalObject CreateInstance (Thread target, object obj)
+		public override TargetFundamentalObject CreateInstance (Thread thread, object obj)
 		{
 			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
 			if (type == null)
 				return null;
 
-			return type.CreateInstance (target, obj);
+			return type.CreateInstance (thread, obj);
 		}
 
 		public override TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
@@ -940,7 +1051,15 @@ namespace Mono.Debugger.Languages.Mono
 			return process.BfdContainer.NativeLanguage.CreatePointer (frame, address);
 		}
 
-		public override TargetObject CreateObject (Thread target, TargetAddress address)
+		public override TargetObject CreateObject (Thread thread, TargetAddress address)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return CreateObject (target, address);
+			});
+		}
+
+		internal TargetObject CreateObject (TargetMemoryAccess target, TargetAddress address)
 		{
 			TargetLocation location = new AbsoluteTargetLocation (address);
 			MonoObjectObject obj = (MonoObjectObject)builtin_types.ObjectType.GetObject (

@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -84,13 +84,21 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetLocation GetLocation (StackFrame frame)
 		{
+			return (TargetLocation) frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return GetLocation (frame, target);
+			});
+		}
+
+		internal TargetLocation GetLocation (StackFrame frame, TargetMemoryAccess target)
+		{
 			Register register = frame.Registers [info.Index];
 			if (info.Mode == VariableInfo.AddressMode.Register)
 				return MonoVariableLocation.Create (
-					frame.Thread, false, register, info.Offset, is_byref);
+					target, false, register, info.Offset, is_byref);
 			else if (info.Mode == VariableInfo.AddressMode.RegOffset)
 				return MonoVariableLocation.Create (
-					frame.Thread, true, register, info.Offset, is_byref);
+					target, true, register, info.Offset, is_byref);
 			else
 				return null;
 		}
@@ -116,16 +124,25 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetObject GetObject (StackFrame frame)
 		{
-			TargetLocation location = GetLocation (frame);
+			return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return GetObject (frame, target);
+			});
+		}
+
+		internal TargetObject GetObject (StackFrame frame, TargetMemoryAccess target)
+		{
+			TargetLocation location = GetLocation (frame, target);
 
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			if (location.HasAddress && location.GetAddress (frame.Thread).IsNull)
-				return process.MonoLanguage.CreateNullObject (
-					frame.Thread, type);
+			if (location.HasAddress && location.GetAddress (target).IsNull) {
+				TargetLocation null_loc = new AbsoluteTargetLocation (TargetAddress.Null);
+				return new MonoNullObject ((TargetType) type, null_loc);
+			}
 
-			return type.GetObject (frame.Thread, location);
+			return type.GetObject (target, location);
 		}
 
 		public override bool CanWrite {
@@ -134,12 +151,22 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override void SetObject (StackFrame frame, TargetObject obj)
 		{
-			TargetLocation location = GetLocation (frame);
+			frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					SetObject (frame, target, obj);
+					return null;
+			});
+		}
+
+		internal void SetObject (StackFrame frame, TargetMemoryAccess target,
+					 TargetObject obj)
+		{
+			TargetLocation location = GetLocation (frame, target);
 
 			if (location == null)
 				throw new LocationInvalidException ();
 
-			type.SetObject (frame.Thread, location, (TargetObject) obj);
+			type.SetObject (target, location, (TargetObject) obj);
 		}
 
 		public override string ToString ()

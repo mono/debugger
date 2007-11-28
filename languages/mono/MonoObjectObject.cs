@@ -12,12 +12,12 @@ namespace Mono.Debugger.Languages.Mono
 			this.Type = type;
 		}
 
-		public override TargetClassObject GetClassObject (TargetMemoryAccess target)
+		internal override TargetClassObject GetClassObject (TargetMemoryAccess target)
 		{
 			return (TargetClassObject) Type.ClassType.GetObject (target, Location);
 		}
 
-		public override TargetType GetCurrentType (TargetMemoryAccess target)
+		internal override TargetType GetCurrentType (TargetMemoryAccess target)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
@@ -26,10 +26,10 @@ namespace Mono.Debugger.Languages.Mono
 			address = target.ReadAddress (Location.GetAddress (target));
 			address = target.ReadAddress (address);
 
-			return MonoRuntime.ReadMonoClass (Type.File.MonoLanguage, target, address);
+			return Type.File.MonoLanguage.ReadMonoClass (target, address);
 		}
 
-		public override TargetObject GetDereferencedObject (TargetMemoryAccess target)
+		internal override TargetObject GetDereferencedObject (TargetMemoryAccess target)
 		{
 			TargetType current_type = GetCurrentType (target);
 			if (current_type == null)

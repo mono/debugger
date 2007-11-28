@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
@@ -17,14 +17,12 @@ namespace Mono.Debugger.Languages.Mono
 			this.typedef = typedef;
 		}
 
-		public static MonoVoidType Create (MonoSymbolFile corlib, TargetMemoryAccess memory,
-						   TargetReader mono_defaults)
+		public static MonoVoidType Create (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			MonoVoidType type = new MonoVoidType (
 				corlib, corlib.ModuleDefinition.Types ["System.Void"]);
 
-			TargetAddress klass = mono_defaults.PeekAddress (
-				corlib.MonoLanguage.MonoMetadataInfo.MonoDefaultsVoidOffset);
+			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetVoidClass (memory);
 			type.create_type (memory, klass);
 
 			return type;

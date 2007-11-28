@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetClassObject GetParentObject (TargetMemoryAccess target)
+		public override TargetClassObject GetParentObject (Thread target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
@@ -32,20 +32,23 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (parent_type, parent_info, Location);
 		}
 
-		public override TargetClassObject GetCurrentObject (TargetMemoryAccess target)
+		public override TargetClassObject GetCurrentObject (Thread thread)
 		{
 			if (!type.IsByRef)
 				return null;
 
-			return type.GetCurrentObject (target, Location);
+			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return type.GetCurrentObject (target, Location);
+			});
 		}
 
-		public override TargetObject GetField (TargetMemoryAccess target, TargetFieldInfo field)
+		public override TargetObject GetField (Thread thread, TargetFieldInfo field)
 		{
 			return info.GetField (target, this, field);
 		}
 
-		public override void SetField (TargetAccess target, TargetFieldInfo field,
+		public override void SetField (Thread thread, TargetFieldInfo field,
 					       TargetObject obj)
 		{
 			info.SetField (target, this, field, obj);
@@ -63,7 +66,7 @@ namespace Mono.Debugger.Languages.Mono
 			throw new InvalidOperationException ();
 		}
 
-		public override string Print (Thread target)
+		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Location.HasAddress)
 				return String.Format ("{0}", Location.GetAddress (target));

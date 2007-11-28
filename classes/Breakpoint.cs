@@ -1,5 +1,5 @@
 using System;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 using System.Runtime.Serialization;
 using System.Xml;
 
@@ -17,8 +17,7 @@ namespace Mono.Debugger
 	// </summary>
 	public abstract class Breakpoint : Event
 	{
-		internal abstract BreakpointHandle Resolve (TargetMemoryAccess target,
-							    StackFrame frame);
+		internal abstract BreakpointHandle Resolve (Thread target, StackFrame frame);
 
 		public virtual bool HideFromUser {
 			get { return false; }

@@ -4,7 +4,7 @@ using System.Text;
 using System.Collections;
 using System.Runtime.InteropServices;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
 {
@@ -59,10 +59,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal void GetBacktrace (ThreadServant target, Mode mode, TargetAddress until,
-					    int max_frames)
+		internal void GetBacktrace (ThreadServant thread, TargetMemoryAccess memory,
+					    Mode mode, TargetAddress until, int max_frames)
 		{
-			while (TryUnwind (target, mode, until)) {
+			while (TryUnwind (thread, memory, mode, until)) {
 				if ((max_frames != -1) && (frames.Count > max_frames))
 					break;
 			}
@@ -76,13 +76,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		private StackFrame TryLMF (ThreadServant target)
+		private StackFrame TryLMF (ThreadServant thread, TargetMemoryAccess memory)
 		{
 			try {
-				if (target.LMFAddress.IsNull)
+				if (thread.LMFAddress.IsNull)
 					return null;
 
-				StackFrame new_frame = target.Architecture.GetLMF (target.Client);
+				StackFrame new_frame = thread.Architecture.GetLMF (thread, memory);
 				if (new_frame == null)
 					return null;
 
@@ -96,12 +96,18 @@ namespace Mono.Debugger
 			}
 		}
 
-		private bool TryCallback (ThreadServant target, StackFrame last_frame, bool exact_match)
+		private bool TryCallback (ThreadServant thread, TargetMemoryAccess memory,
+					  StackFrame last_frame, bool exact_match)
 		{
 			StackFrame new_frame = null;
-			try{
-				new_frame = target.Architecture.GetCallbackFrame (
-					target, last_frame, exact_match);
+			try {
+				Registers callback = thread.GetCallbackFrame (
+					last_frame.StackPointer, exact_match);
+				if (callback == null)
+					return false;
+
+				new_frame = thread.Architecture.CreateFrame (
+					thread.Client, memory, callback, false);
 			} catch (TargetException) {
 				return false;
 			}
@@ -110,8 +116,8 @@ namespace Mono.Debugger
 				return false;
 
 			AddFrame (new StackFrame (
-				target.Client, new_frame.TargetAddress, new_frame.StackPointer,
-				new_frame.FrameAddress, new_frame.Registers, target.NativeLanguage,
+				thread.Client, new_frame.TargetAddress, new_frame.StackPointer,
+				new_frame.FrameAddress, new_frame.Registers, thread.NativeLanguage,
 				new Symbol ("<method called from mdb>", new_frame.TargetAddress, 0)));
 			AddFrame (new_frame);
 			return true;
@@ -130,22 +136,23 @@ namespace Mono.Debugger
 			return frame.Method.WrapperType == WrapperType.None;
 		}
 
-		internal bool TryUnwind (ThreadServant target, Mode mode, TargetAddress until)
+		internal bool TryUnwind (ThreadServant thread, TargetMemoryAccess memory,
+					 Mode mode, TargetAddress until)
 		{
 			StackFrame new_frame = null;
 			try {
-				new_frame = last_frame.UnwindStack (target);
+				new_frame = last_frame.UnwindStack (memory);
 			} catch (TargetException) {
 			}
 
 			if ((new_frame == null) || !IsFrameOkForMode (new_frame, mode)) {
-				if (TryCallback (target, last_frame, false))
+				if (TryCallback (thread, memory, last_frame, false))
 					return true;
 
-				new_frame = TryLMF (target);
+				new_frame = TryLMF (thread, memory);
 				if (new_frame == null)
 					return false;
-			} else if (TryCallback (target, new_frame, true))
+			} else if (TryCallback (thread, memory, new_frame, true))
 				return true;
 
 			if (new_frame == null)

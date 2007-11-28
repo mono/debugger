@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Architectures
 {
@@ -293,7 +293,8 @@ namespace Mono.Debugger.Architectures
 				ebp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
+					    new_ebp, regs, true);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -326,7 +327,8 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_eip, new_esp,
+						    new_ebp, regs, true);
 			}
 
 			// push %ebp
@@ -348,7 +350,8 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) I386Register.ESP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_eip, new_esp,
+						    new_ebp, regs, true);
 			}
 
 			// mov %ebp, %esp
@@ -432,7 +435,7 @@ namespace Mono.Debugger.Architectures
 			esp += 0x40;
 			regs [(int)I386Register.ESP].SetValue (esp.Address);
 
-			return CreateFrame (frame.Thread, eip, esp, ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, eip, esp, ebp, regs, true);
 		}
 
 		StackFrame try_syscall_trampoline (StackFrame frame, TargetMemoryAccess memory)
@@ -455,7 +458,8 @@ namespace Mono.Debugger.Architectures
 			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
 			regs [(int)I386Register.EBP].SetValue (new_ebp);
 
-			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
+					    new_ebp, regs, true);
 		}
 
 		StackFrame do_hacks (StackFrame frame, TargetMemoryAccess memory)
@@ -511,7 +515,8 @@ namespace Mono.Debugger.Architectures
 
 			ebp -= addr_size;
 
-			return CreateFrame (frame.Thread, new_eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
+					    new_ebp, regs, true);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,
@@ -535,10 +540,10 @@ namespace Mono.Debugger.Architectures
 			inferior.SetRegisters (regs);
 		}
 
-		protected override TargetAddress AdjustReturnAddress (Thread thread,
+		protected override TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
 								      TargetAddress address)
 		{
-			TargetBinaryReader reader = thread.ReadMemory (address-7, 7).GetReader ();
+			TargetBinaryReader reader = target.ReadMemory (address-7, 7).GetReader ();
 
 			byte[] code = reader.ReadBuffer (7);
 			if (code [2] == 0xe8)
@@ -560,25 +565,25 @@ namespace Mono.Debugger.Architectures
 			return address;
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, Registers regs,
-							  bool adjust_retaddr)
+		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory,
+							  Registers regs, bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
-				thread.AddressDomain, regs [(int) I386Register.EIP].GetValue ());
+				memory.AddressDomain, regs [(int) I386Register.EIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				thread.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+				memory.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				thread.AddressDomain, regs [(int) I386Register.EBP].GetValue ());
+				memory.AddressDomain, regs [(int) I386Register.EBP].GetValue ());
 
-			return CreateFrame (thread, address, stack_pointer, frame_pointer, regs,
-					    adjust_retaddr);
+			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer,
+					    regs, adjust_retaddr);
 		}
 
-		internal override StackFrame GetLMF (Thread thread)
+		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory)
 		{
-			TargetAddress lmf = thread.ReadAddress (thread.LMFAddress);
+			TargetAddress lmf = memory.ReadAddress (thread.LMFAddress);
 
-			TargetBinaryReader reader = thread.ReadMemory (lmf, 36).GetReader ();
+			TargetBinaryReader reader = memory.ReadMemory (lmf, 36).GetReader ();
 
 			reader.Position = 16;
 
@@ -595,13 +600,13 @@ namespace Mono.Debugger.Architectures
 			regs [(int) I386Register.EBP].SetValue (lmf + 28, ebp);
 			regs [(int) I386Register.EIP].SetValue (lmf + 32, eip);
 
-			TargetAddress new_ebp = thread.ReadAddress (ebp);
+			TargetAddress new_ebp = memory.ReadAddress (ebp);
 			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
 
 			TargetAddress new_esp = ebp + 8;
 			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
 
-			return CreateFrame (thread, eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (thread.Client, memory, eip, new_esp, new_ebp, regs, true);
 		}
 	}
 }

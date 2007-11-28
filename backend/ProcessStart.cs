@@ -4,7 +4,7 @@ using System.Configuration;
 using System.Collections;
 using System.Collections.Specialized;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	internal sealed class ProcessStart : DebuggerMarshalByRefObject
 	{

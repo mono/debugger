@@ -4,7 +4,7 @@ using System.Collections;
 using C = Mono.CompilerServices.SymbolWriter;
 using Cecil = Mono.Cecil;
 
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -454,20 +454,29 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		public override TargetObject GetStaticField (Thread target, TargetFieldInfo field)
+		public override TargetObject GetStaticField (Thread thread, TargetFieldInfo field)
 		{
-			ResolveClass (target, true);
-			return class_info.GetStaticField (target, field);
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					ResolveClass (target, true);
+					return null;
+			});
+			return class_info.GetStaticField (thread, field);
 		}
 
-		public override void SetStaticField (Thread target, TargetFieldInfo field,
+		public override void SetStaticField (Thread thread, TargetFieldInfo field,
 						     TargetObject obj)
 		{
-			ResolveClass (target, true);
-			class_info.SetStaticField (target, field, obj);
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					ResolveClass (target, true);
+					return null;
+			});
+			class_info.SetStaticField (thread, field, obj);
 		}
 
-		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target, TargetLocation location)
+		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target,
+							   TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
@@ -476,7 +485,7 @@ namespace Mono.Debugger.Languages.Mono
 			address = target.ReadAddress (location.GetAddress (target));
 			address = target.ReadAddress (address);
 
-			TargetType current = MonoRuntime.ReadMonoClass (File.MonoLanguage, target, address);
+			TargetType current = File.MonoLanguage.ReadMonoClass (target, address);
 			if (current == null)
 				return null;
 
@@ -485,22 +494,6 @@ namespace Mono.Debugger.Languages.Mono
 					2 * target.TargetMemoryInfo.TargetAddressSize);
 
 			return (MonoClassObject) current.GetObject (target, location);
-		}
-
-		internal MonoClassInfo HardResolveClass (Thread target)
-		{
-			if (ResolveClass (target, false) != null)
-				return class_info;
-
-			TargetAddress klass_address = target.CallMethod (
-				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
-				file.MonoImage, 0, 0, Name);
-
-			class_info = file.MonoLanguage.ReadClassInfo (target, klass_address);
-			if (class_info == null)
-				throw new InternalError ();
-
-			return class_info;
 		}
 	}
 }

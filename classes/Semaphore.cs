@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger.Backends
+namespace Mono.Debugger.Backend
 {
 	public static class Semaphore
 	{

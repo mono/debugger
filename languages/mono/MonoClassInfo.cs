@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using Mono.Debugger.Backends;
+using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
 {
@@ -36,17 +36,14 @@ namespace Mono.Debugger.Languages.Mono
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
 							   TargetMemoryAccess target,
-							   TargetAddress klass_address)
+							   TargetAddress klass)
 		{
-			TargetReader reader = new TargetReader (
-				target.ReadMemory (klass_address, mono.MonoMetadataInfo.KlassSize));
-
-			TargetAddress image = reader.PeekAddress (mono.MonoMetadataInfo.KlassImageOffset);
+			TargetAddress image = mono.MonoRuntime.MonoClassGetMonoImage (target, klass);
 			MonoSymbolFile file = mono.GetImage (image);
 			if (file == null)
 				throw new InternalError ();
 
-			int token = reader.PeekInteger (mono.MonoMetadataInfo.KlassTokenOffset);
+			int token = mono.MonoRuntime.MonoClassGetToken (target, klass);
 			if ((token & 0xff000000) != 0x02000000)
 				throw new InternalError ();
 
@@ -56,8 +53,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (typedef == null)
 				throw new InternalError ();
 
-			MonoClassInfo info = new MonoClassInfo (
-				file, typedef, target, reader, klass_address);
+			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			Console.WriteLine ("READ CLASS INFO: {0} {1} {2} {3}",
 					   klass_address, typedef, info.GenericContainer,
 					   info.GenericClass);
@@ -68,33 +64,28 @@ namespace Mono.Debugger.Languages.Mono
 		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
 							   Cecil.TypeDefinition typedef,
 							   TargetMemoryAccess target,
-							   TargetAddress klass_address,
+							   TargetAddress klass,
 							   out MonoClassType type)
 		{
-			MonoMetadataInfo metadata = file.MonoLanguage.MonoMetadataInfo;
-			TargetReader reader = new TargetReader (
-				target.ReadMemory (klass_address, metadata.KlassSize));
-
-			MonoClassInfo info = new MonoClassInfo (
-				file, typedef, target, reader, klass_address);
-
+			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			type = new MonoClassType (file, typedef, info);
 			info.type = type;
 			return info;
 		}
 
 		protected MonoClassInfo (MonoSymbolFile file, Cecil.TypeDefinition typedef,
-					 TargetMemoryAccess target, TargetReader reader,
-					 TargetAddress klass)
+					 TargetMemoryAccess target, TargetAddress klass)
 		{
 			this.SymbolFile = file;
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
-			MonoMetadataInfo info = file.MonoLanguage.MonoMetadataInfo;
+			GenericClass = MonoRuntime.MonoClassGetGenericClass (target, klass);
+			GenericContainer = MonoRuntime.MonoClassGetGenericContainer (target, klass);
+		}
 
-			GenericClass = reader.PeekAddress (info.KlassGenericClassOffset);
-			GenericContainer = reader.PeekAddress (info.KlassGenericContainerOffset);
+		protected MonoRuntime MonoRuntime {
+			get { return SymbolFile.MonoLanguage.MonoRuntime; }
 		}
 
 		public override TargetClassType Type {
@@ -387,34 +378,35 @@ namespace Mono.Debugger.Languages.Mono
 			if (field_offsets != null)
 				return;
 
-			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
-
-			TargetAddress field_info = target.ReadAddress (
-				KlassAddress + metadata.KlassFieldOffset);
-			int field_count = target.ReadInteger (
-				KlassAddress + metadata.KlassFieldCountOffset);
-
-			TargetReader field_blob = new TargetReader (target.ReadMemory (
-				field_info, field_count * metadata.FieldInfoSize));
+			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
 
 			field_offsets = new int [field_count];
 			field_types = new TargetType [field_count];
 
 			for (int i = 0; i < field_count; i++) {
-				int offset = i * metadata.FieldInfoSize;
+				TargetAddress type_addr = MonoRuntime.MonoClassGetFieldType (
+					target, KlassAddress, i);
 
-				TargetAddress type_addr = field_blob.PeekAddress (
-					offset + metadata.FieldInfoTypeOffset);
-				field_types [i] = MonoRuntime.ReadType (
-					SymbolFile.MonoLanguage, target, type_addr);
-				field_offsets [i] = field_blob.PeekInteger (
-					offset + metadata.FieldInfoOffsetOffset);
+				field_types [i] = SymbolFile.MonoLanguage.ReadType (target, type_addr);
+				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
+					target, KlassAddress, i);
 			}
 		}
 
-		public override TargetObject GetField (TargetMemoryAccess target,
+		public override TargetObject GetField (Thread thread,
 						       TargetStructObject instance,
 						       TargetFieldInfo field)
+		{
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					GetField (target, instance, field);
+					return null;
+			});
+		}
+
+		internal TargetObject GetField (TargetMemoryAccess target,
+						TargetStructObject instance,
+						TargetFieldInfo field)
 		{
 			get_field_offsets (target);
 
@@ -434,8 +426,18 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public override void SetField (TargetAccess target, TargetStructObject instance,
+		public override void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value)
+		{
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					SetField (target, instance, field, value);
+					return null;
+			});
+		}
+
+		internal void SetField (TargetMemoryAccess target, TargetStructObject instance,
+					TargetFieldInfo field, TargetObject obj)
 		{
 			get_field_offsets (target);
 
@@ -452,16 +454,25 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetObject (target, field_loc, value);
 		}
 
-		public override TargetObject GetStaticField (Thread target, TargetFieldInfo field)
+		public override TargetObject GetStaticField (Thread thread, TargetFieldInfo field)
+		{
+			TargetAddress data_address = thread.CallMethod (
+				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
+				KlassAddress, 0);
+
+			return (TargetObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetStaticField (target, field, data_address);
+			});
+		}
+
+		internal TargetObject GetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
+						      TargetAddress data_address)
 		{
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
-
-			TargetAddress data_address = target.CallMethod (
-				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -472,17 +483,27 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public override void SetStaticField (Thread target, TargetFieldInfo field,
+		public override void SetStaticField (Thread thread, TargetFieldInfo field,
 						     TargetObject obj)
+		{
+			TargetAddress data_address = thread.CallMethod (
+				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
+				KlassAddress, 0);
+
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					SetStaticField (target, field, data_address, obj);
+					return null;
+			});
+		}
+
+		internal void SetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
+					      TargetAddress data_address, TargetObject obj)
 		{
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
-
-			TargetAddress data_address = target.CallMethod (
-				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
-				KlassAddress, 0);
 
 			TargetLocation location = new AbsoluteTargetLocation (data_address);
 			TargetLocation field_loc = location.GetLocationAtOffset (offset);
@@ -498,23 +519,14 @@ namespace Mono.Debugger.Languages.Mono
 			if (methods != null)
 				return;
 
-			int address_size = target.TargetMemoryInfo.TargetAddressSize;
-			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
-
-			TargetAddress method_info = target.ReadAddress (
-				KlassAddress + metadata.KlassMethodsOffset);
-			int method_count = target.ReadInteger (
-				KlassAddress + metadata.KlassMethodCountOffset);
-
-			TargetBlob blob = target.ReadMemory (method_info, method_count * address_size);
-
 			method_hash = new Hashtable ();
-			TargetReader method_reader = new TargetReader (
-				blob.Contents, target.TargetMemoryInfo);
-			for (int i = 0; i < method_count; i++) {
-				TargetAddress address = method_reader.ReadAddress ();
+			int method_count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
 
-				int mtoken = target.ReadInteger (address + 4);
+			for (int i = 0; i < method_count; i++) {
+				TargetAddress address = MonoRuntime.MonoClassGetMethod (
+					target, KlassAddress, i);
+
+				int mtoken = MonoRuntime.MonoMethodGetToken (target, address);
 				if (mtoken == 0)
 					continue;
 
@@ -532,12 +544,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void get_parent (TargetMemoryAccess target)
 		{
-			if (!parent_klass.IsNull)
-				return;
-
-			MonoMetadataInfo metadata = SymbolFile.MonoLanguage.MonoMetadataInfo;
-			parent_klass = target.ReadAddress (
-				KlassAddress + metadata.KlassParentOffset);
+			parent_klass = MonoRuntime.MonoClassGetParent (target, KlassAddress);
 
 			parent_info = ReadClassInfo (SymbolFile.MonoLanguage, target, parent_klass);
 		}
@@ -546,9 +553,16 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.HasParent; }
 		}
 
-		public override TargetClass GetParent (TargetMemoryAccess target)
+		public override TargetClass GetParent (Thread thread)
 		{
-			get_parent (target);
+			if (!parent_klass.IsNull)
+				return parent_info;
+
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					get_parent (target);
+					return null;
+			});
 			return parent_info;
 		}
 	}
