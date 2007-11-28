@@ -224,7 +224,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.process = process;
 			this.info = info;
-			this.runtime = new MonoRuntime (info);
 			mutex = new DebuggerMutex ("mono_mutex");
 			data_tables = new Hashtable ();
 		}
@@ -243,10 +242,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoRuntime MonoRuntime {
 			get { return runtime; }
-		}
-
-		internal MonoMetadataInfo MonoMetadataInfo {
-			get { return info.MonoMetadataInfo; }
 		}
 
 		internal MonoBuiltinTypeInfo BuiltinTypes {
@@ -402,6 +397,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_mono_debugger_info (TargetMemoryAccess memory)
 		{
+			runtime = MonoRuntime.Create (memory, info);
+
 			trampolines = new TargetAddress [info.MonoTrampolineNum];
 
 			TargetAddress address = info.MonoTrampolineCode;
@@ -504,7 +501,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			case MonoTypeEnum.MONO_TYPE_VALUETYPE:
 			case MonoTypeEnum.MONO_TYPE_CLASS:
-				return ReadMonoClass (memory, data);
+				return LookupMonoClass (memory, data);
 
 			case MonoTypeEnum.MONO_TYPE_SZARRAY: {
 				TargetType etype = ReadMonoClass (memory, data);

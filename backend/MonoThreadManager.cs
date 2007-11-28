@@ -156,10 +156,6 @@ namespace Mono.Debugger.Backends
 			get { return debugger_info; }
 		}
 
-		internal MonoMetadataInfo MonoMetadataInfo {
-			get { return debugger_info.MonoMetadataInfo; }
-		}
-
 		int index;
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
@@ -330,6 +326,7 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress NotificationAddress;
 		public readonly TargetAddress SymbolTable;
 		public readonly int SymbolTableSize;
+		public readonly TargetAddress MonoMetadataInfo;
 		public readonly TargetAddress DebuggerVersion;
 		public readonly TargetAddress CompileMethod;
 		public readonly TargetAddress GetVirtualMethod;
@@ -354,8 +351,6 @@ namespace Mono.Debugger.Backends
 		public readonly TargetAddress BreakpointInfoIndex;
 		public readonly int ExecutableCodeBufferSize;
 		public readonly int BreakpointArraySize;
-
-		public readonly MonoMetadataInfo MonoMetadataInfo;
 
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
@@ -393,7 +388,7 @@ namespace Mono.Debugger.Backends
 			MonoTrampolineCode        = reader.ReadAddress ();
 			NotificationAddress       = reader.ReadAddress ();
 			SymbolTable               = reader.ReadAddress ();
-			TargetAddress metadata_info = reader.ReadAddress ();
+			MonoMetadataInfo          = reader.ReadAddress ();
 			DebuggerVersion           = reader.ReadAddress ();
 
 			CompileMethod             = reader.ReadAddress ();
@@ -425,8 +420,6 @@ namespace Mono.Debugger.Backends
 
 			ExecutableCodeBufferSize  = reader.ReadInteger ();
 			BreakpointArraySize       = reader.ReadInteger ();
-
-			MonoMetadataInfo = new MonoMetadataInfo (memory, metadata_info);
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
