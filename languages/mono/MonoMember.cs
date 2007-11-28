@@ -11,9 +11,9 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly Cecil.FieldDefinition FieldInfo;
 		public readonly MonoClassType DeclaringType;
 
-		public MonoFieldInfo (MonoClassType type, TargetType field_type, int index, int pos,
+		public MonoFieldInfo (MonoClassType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
-			: base (field_type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
+			: base (field_type, finfo.Name, pos, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
 			DeclaringType = type;

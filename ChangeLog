@@ -1,6 +1,12 @@
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClass.cs
+	(TargetClass.Fields): New public property; this includes both
+	instance and static fields.
+
+2007-11-28  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClass.cs
 	(TargetClass): New public abstract class.
 
 	* languages/TargetClassType.cs

@@ -18,6 +18,7 @@ namespace Mono.Debugger.Languages.Mono
 		MonoClassInfo parent_info;
 		TargetAddress parent_klass = TargetAddress.Null;
 		TargetType[] field_types;
+		MonoFieldInfo[] fields;
 		int[] field_offsets;
 		Hashtable methods;
 
@@ -114,6 +115,31 @@ namespace Mono.Debugger.Languages.Mono
 					get_field_offsets (target);
 					return null;
 			});
+		}
+
+		void get_fields ()
+		{
+			if (fields != null)
+				return;
+
+			int num_fields = CecilType.Fields.Count;
+			fields = new MonoFieldInfo [num_fields];
+
+			for (int i = 0; i < num_fields; i++) {
+				Cecil.FieldDefinition field = CecilType.Fields [i];
+				TargetType ftype = SymbolFile.MonoLanguage.LookupMonoType (field.FieldType);
+				if (ftype == null)
+					ftype = SymbolFile.MonoLanguage.VoidType;
+
+				fields [i] = new MonoFieldInfo (type, ftype, i, field);
+			}
+		}
+
+		public override TargetFieldInfo[] Fields {
+			get {
+				get_fields ();
+				return fields;
+			}
 		}
 
 		public override TargetObject GetField (Thread thread,

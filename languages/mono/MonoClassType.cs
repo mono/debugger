@@ -126,11 +126,11 @@ namespace Mono.Debugger.Languages.Mono
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
 				if (field.IsStatic) {
 					static_fields [spos] = new MonoFieldInfo (
-						this, ftype, spos, i, field);
+						this, ftype, i, field);
 					spos++;
 				} else {
 					fields [pos] = new MonoFieldInfo (
-						this, ftype, pos, i, field);
+						this, ftype, i, field);
 					pos++;
 				}
 

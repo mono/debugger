@@ -219,8 +219,11 @@ namespace Mono.Debugger.Frontend
 				indent_level -= 3;
 			}
 
-			TargetFieldInfo[] fields = obj.Type.Fields;
+			TargetFieldInfo[] fields = class_info.Fields;
 			for (int i = 0; i < fields.Length; i++) {
+				if (fields [i].IsStatic || fields [i].HasConstValue)
+					continue;
+
 				if (!first) {
 					Append (", ");
 					CheckLineWrap ();

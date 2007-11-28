@@ -26,6 +26,10 @@ namespace Mono.Debugger.Languages.Native
 			throw new InvalidOperationException ();
 		}
 
+		public override TargetFieldInfo[] Fields {
+			get { return fields; }
+		}
+
 		public override TargetObject GetField (Thread thread,
 						       TargetClassObject instance,
 						       TargetFieldInfo field)
@@ -74,14 +78,6 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 #if FIXME
-		public override TargetFieldInfo[] Fields {
-			get { return fields; }
-		}
-
-		public override TargetFieldInfo[] StaticFields {
-			get { return new TargetFieldInfo [0]; }
-		}
-
 		public override TargetPropertyInfo[] Properties {
 			get { return new TargetPropertyInfo [0]; }
 		}
