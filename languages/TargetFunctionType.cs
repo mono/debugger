@@ -71,8 +71,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetAddress GetMethodAddress (Thread target);
-
 		internal abstract bool InsertBreakpoint (Thread target,
 							 FunctionBreakpointHandle handle);
 

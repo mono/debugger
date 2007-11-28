@@ -1,5 +1,17 @@
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.GetMethodAddress): Removed.
+
+	* languages/mono/MonoClassType.cs
+	(MonoClassType.HardResolveClass): Removed.
+
+	* backend/SingleSteppingEngine.cs
+	(SingleSteppingEngine.OperationRuntimeInvoke): Call
+	GetMethodAddress() directly on the `MonoClassInfo'.
+
+2007-11-28  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetFundamentalObject.cs
 	(TargetFundamentalObject.GetObject): Added internal overloaded
 	version taking a `TargetMemoryAccess'.

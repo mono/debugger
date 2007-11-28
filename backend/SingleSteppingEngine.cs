@@ -3153,7 +3153,7 @@ namespace Mono.Debugger.Backend
 
 		bool get_method_address ()
 		{
-			method = Function.GetMethodAddress (sse.Thread);
+			method = class_info.GetMethodAddress (inferior, Function.Token);
 
 			if ((instance == null) || instance.Type.IsByRef)
 				return true;

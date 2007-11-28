@@ -474,33 +474,5 @@ namespace Mono.Debugger.Languages.Mono
 
 			return (MonoClassObject) current.GetObject (target, location);
 		}
-
-		internal MonoClassInfo HardResolveClass (Thread thread)
-		{
-			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					ResolveClass (target, false);
-					return null;
-			});
-
-			if (class_info != null)
-				return class_info;
-
-			TargetAddress klass_address = thread.CallMethod (
-				file.MonoLanguage.MonoDebuggerInfo.LookupClass,
-				file.MonoImage, 0, 0, Name);
-
-			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					class_info = file.MonoLanguage.ReadClassInfo (
-						target, klass_address);
-					return null;
-			});
-
-			if (class_info == null)
-				throw new InternalError ();
-
-			return class_info;
-		}
 	}
 }
