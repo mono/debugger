@@ -31,7 +31,7 @@ namespace Mono.Debugger.Languages.Mono
 					   parent_info.GenericClass);
 
 			TargetAddress generic_class = parent_info.GenericClass;
-			if (!generic_class.IsNull)
+			if (generic_class.IsNull)
 				return new MonoClassObject (parent_type, parent_info, Location);
 
 			MonoGenericInstanceType ginst = new MonoGenericInstanceType (

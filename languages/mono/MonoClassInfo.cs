@@ -119,7 +119,6 @@ namespace Mono.Debugger.Languages.Mono
 			int pos = 0, spos = 0, i = 0;
 			foreach (Cecil.FieldDefinition field in CecilType.Fields) {
 				TargetType ftype = SymbolFile.MonoLanguage.LookupMonoType (field.FieldType);
-
 				if (ftype == null)
 					ftype = SymbolFile.MonoLanguage.VoidType;
 
@@ -399,8 +398,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			return (TargetObject) thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target)  {
-					GetField (target, instance, field);
-					return null;
+					return GetField (target, instance, field);
 			});
 		}
 
@@ -408,6 +406,7 @@ namespace Mono.Debugger.Languages.Mono
 						TargetStructObject instance,
 						TargetFieldInfo field)
 		{
+			get_fields ();
 			get_field_offsets (target);
 
 			int offset = field_offsets [field.Position];

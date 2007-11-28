@@ -20,7 +20,7 @@ namespace Mono.Debugger.Languages
 		{
 			return (TargetStructType) thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target) {
-					return GetParentType (thread);
+					return GetParentType (target);
 			});
 		}
 
