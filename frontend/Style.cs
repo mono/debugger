@@ -385,36 +385,56 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 				sb.Append ("\n" + prefix + "{\n");
-				foreach (TargetFieldInfo field in stype.Fields)
-					sb.Append (FormatMember (
-							   prefix, field, false, hash) + ";\n");
-				foreach (TargetFieldInfo field in stype.StaticFields)
-					sb.Append (FormatMember (
-							   prefix, field, true, hash) + ";\n");
-				foreach (TargetPropertyInfo property in stype.Properties)
-					sb.Append (FormatProperty (
-							   prefix, property, false, hash));
-				foreach (TargetPropertyInfo property in stype.StaticProperties)
-					sb.Append (FormatProperty (
-							   prefix, property, true, hash));
-				foreach (TargetEventInfo ev in stype.Events)
-					sb.Append (FormatEvent (
-							   prefix, ev, false, hash));
-				foreach (TargetEventInfo ev in stype.StaticEvents)
-					sb.Append (FormatEvent (
-							   prefix, ev, true, hash));
-				foreach (TargetMethodInfo method in stype.Methods)
-					sb.Append (FormatMethod (
-							   prefix, method, false, false, hash));
-				foreach (TargetMethodInfo method in stype.StaticMethods)
-					sb.Append (FormatMethod (
-							   prefix, method, true, false, hash));
-				foreach (TargetMethodInfo method in stype.Constructors)
-					sb.Append (FormatMethod (
-							   prefix, method, false, true, hash));
-				foreach (TargetMethodInfo method in stype.StaticConstructors)
-					sb.Append (FormatMethod (
-							   prefix, method, true, true, hash));
+				foreach (TargetFieldInfo field in stype.Fields) {
+					if (field.IsStatic)
+						continue;
+					sb.Append (FormatMember (prefix, field, false, hash) + ";\n");
+				}
+				foreach (TargetFieldInfo field in stype.Fields) {
+					if (!field.IsStatic)
+						continue;
+					sb.Append (FormatMember (prefix, field, true, hash) + ";\n");
+				}
+				foreach (TargetPropertyInfo property in stype.Properties) {
+					if (property.IsStatic)
+						continue;
+					sb.Append (FormatProperty (prefix, property, false, hash));
+				}
+				foreach (TargetPropertyInfo property in stype.Properties) {
+					if (!property.IsStatic)
+						continue;
+					sb.Append (FormatProperty (prefix, property, true, hash));
+				}
+				foreach (TargetEventInfo ev in stype.Events) {
+					if (ev.IsStatic)
+						continue;
+					sb.Append (FormatEvent (prefix, ev, false, hash));
+				}
+				foreach (TargetEventInfo ev in stype.Events) {
+					if (!ev.IsStatic)
+						continue;
+					sb.Append (FormatEvent (prefix, ev, true, hash));
+				}
+				foreach (TargetMethodInfo method in stype.Methods) {
+					if (method.IsStatic)
+						continue;
+					sb.Append (FormatMethod (prefix, method, false, false, hash));
+				}
+				foreach (TargetMethodInfo method in stype.Methods) {
+					if (!method.IsStatic)
+						continue;
+					sb.Append (FormatMethod (prefix, method, true, false, hash));
+				}
+				foreach (TargetMethodInfo method in stype.Constructors) {
+					if (method.IsStatic)
+						continue;
+					sb.Append (FormatMethod (prefix, method, false, true, hash));
+				}
+				foreach (TargetMethodInfo method in stype.Constructors) {
+					if (!method.IsStatic)
+						continue;
+					sb.Append (FormatMethod (prefix, method, true, true, hash));
+				}
 
 				sb.Append (prefix);
 				sb.Append ("}");

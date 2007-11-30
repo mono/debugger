@@ -1793,33 +1793,32 @@ namespace Mono.Debugger.Frontend
 
 			if (name == ".ctor") {
 				foreach (TargetMethodInfo method in stype.Constructors) {
+					if (method.IsStatic)
+						continue;
 					methods.Add (method.Type);
 					is_instance = true;
 				}
 			} else if (name == ".cctor") {
-				foreach (TargetMethodInfo method in stype.StaticConstructors) {
+				foreach (TargetMethodInfo method in stype.Constructors) {
+					if (!method.IsStatic)
+						continue;
 					methods.Add (method.Type);
 					is_static = true;
 				}
 			} else {
-				if (search_instance) {
-					foreach (TargetMethodInfo method in stype.Methods) {
-						if (method.Name != name)
-							continue;
+				foreach (TargetMethodInfo method in stype.Methods) {
+					if (method.IsStatic && !search_static)
+						continue;
+					if (!method.IsStatic && !search_instance)
+						continue;
+					if (method.Name != name)
+						continue;
 
-						methods.Add (method.Type);
-						is_instance = true;
-					}
-				}
-
-				if (search_static) {
-					foreach (TargetMethodInfo method in stype.StaticMethods) {
-						if (method.Name != name)
-							continue;
-
-						methods.Add (method.Type);
+					methods.Add (method.Type);
+					if (method.IsStatic)
 						is_static = true;
-					}
+					else
+						is_instance = true;
 				}
 			}
 

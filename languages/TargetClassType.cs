@@ -24,15 +24,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetFieldInfo[] StaticFields {
-			get;
-		}
-
 		public abstract TargetPropertyInfo[] Properties {
-			get;
-		}
-
-		public abstract TargetPropertyInfo[] StaticProperties {
 			get;
 		}
 
@@ -40,15 +32,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetEventInfo[] StaticEvents {
-			get;
-		}
-
 		public abstract TargetMethodInfo[] Methods {
-			get;
-		}
-
-		public abstract TargetMethodInfo[] StaticMethods {
 			get;
 		}
 
@@ -56,11 +40,37 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract TargetMethodInfo[] StaticConstructors {
-			get;
-		}
+		public virtual TargetMemberInfo FindMember (string name, bool search_static,
+							    bool search_instance)
+		{
+			foreach (TargetFieldInfo field in Fields) {
+				if (field.IsStatic && !search_static)
+					continue;
+				if (!field.IsStatic && !search_instance)
+					continue;
+				if (field.Name == name)
+					return field;
+			}
 
-		public abstract  TargetMemberInfo FindMember (string name, bool search_static,
-							      bool search_instance);
+			foreach (TargetPropertyInfo property in Properties) {
+				if (property.IsStatic && !search_static)
+					continue;
+				if (!property.IsStatic && !search_instance)
+					continue;
+				if (property.Name == name)
+					return property;
+			}
+
+			foreach (TargetEventInfo ev in Events) {
+				if (ev.IsStatic && !search_static)
+					continue;
+				if (!ev.IsStatic && !search_instance)
+					continue;
+				if (ev.Name == name)
+					return ev;
+			}
+
+			return null;
+		}
 	}
 }

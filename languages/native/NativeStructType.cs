@@ -143,19 +143,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetFieldInfo[] StaticFields {
-			get {
-				return new TargetFieldInfo [0];
-			}
-		}
-
 		public override TargetPropertyInfo[] Properties {
-			get {
-				return new TargetPropertyInfo [0];
-			}
-		}
-
-		public override TargetPropertyInfo[] StaticProperties {
 			get {
 				return new TargetPropertyInfo [0];
 			}
@@ -167,31 +155,13 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetEventInfo[] StaticEvents {
-			get {
-				return new TargetEventInfo [0];
-			}
-		}
-
 		public override TargetMethodInfo[] Methods {
 			get {
 				return new TargetMethodInfo [0];
 			}
 		}
 
-		public override TargetMethodInfo[] StaticMethods {
-			get {
-				return new TargetMethodInfo [0];
-			}
-		}
-
 		public override TargetMethodInfo[] Constructors {
-			get {
-				return new TargetMethodInfo [0];
-			}
-		}
-
-		public override TargetMethodInfo[] StaticConstructors {
 			get {
 				return new TargetMethodInfo [0];
 			}
@@ -239,40 +209,6 @@ namespace Mono.Debugger.Languages.Native
 
 			// field.Type.SetObject (field_loc, obj);
 			throw new NotImplementedException ();
-		}
-
-		public override TargetMemberInfo FindMember (string name, bool search_static,
-							     bool search_instance)
-		{
-			if (search_static) {
-				foreach (TargetFieldInfo field in StaticFields)
-					if (field.Name == name)
-						return field;
-
-				foreach (TargetPropertyInfo property in StaticProperties)
-					if (property.Name == name)
-						return property;
-
-				foreach (TargetEventInfo ev in StaticEvents)
-					if (ev.Name == name)
-						return ev;
-			}
-
-			if (search_instance) {
-				foreach (TargetFieldInfo field in Fields)
-					if (field.Name == name)
-						return field;
-
-				foreach (TargetPropertyInfo property in Properties)
-					if (property.Name == name)
-						return property;
-
-				foreach (TargetEventInfo ev in Events)
-					if (ev.Name == name)
-						return ev;
-			}
-
-			return null;
 		}
 	}
 }

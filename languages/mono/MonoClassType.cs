@@ -13,18 +13,10 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoClassType : TargetClassType
 	{
 		MonoFieldInfo[] fields;
-		MonoFieldInfo[] static_fields;
 		MonoMethodInfo[] methods;
-		MonoMethodInfo[] static_methods;
 		MonoPropertyInfo[] properties;
-		MonoPropertyInfo[] static_properties;
 		MonoEventInfo[] events;
-		MonoEventInfo[] static_events;
 		MonoMethodInfo[] constructors;
-		MonoMethodInfo[] static_constructors;
-
-		int num_methods = 0, num_smethods = 0;
-		int num_fields = 0, num_sfields = 0;
 
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
@@ -111,30 +103,12 @@ namespace Mono.Debugger.Languages.Mono
 			if (fields != null)
 				return;
 
-			foreach (Cecil.FieldDefinition field in type.Fields) {
-				if (field.IsStatic)
-					num_sfields++;
-				else
-					num_fields++;
-			}
+			fields = new MonoFieldInfo [type.Fields.Count];
 
-			fields = new MonoFieldInfo [num_fields];
-			static_fields = new MonoFieldInfo [num_sfields];
-
-			int pos = 0, spos = 0, i = 0;
-			foreach (Cecil.FieldDefinition field in type.Fields) {
+			for (int i = 0; i < fields.Length; i++) {
+				Cecil.FieldDefinition field = type.Fields [i];
 				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
-				if (field.IsStatic) {
-					static_fields [spos] = new MonoFieldInfo (
-						this, ftype, i, field);
-					spos++;
-				} else {
-					fields [pos] = new MonoFieldInfo (
-						this, ftype, i, field);
-					pos++;
-				}
-
-				i++;
+				fields [i] = new MonoFieldInfo (this, ftype, i, field);
 			}
 		}
 
@@ -145,59 +119,26 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetFieldInfo[] StaticFields {
-			get {
-				get_fields ();
-				return static_fields;
-			}
-		}
-
-		public int CountMethods {
-			get {
-				if (parent_type != null)
-					return parent_type.CountMethods + num_methods;
-				else
-					return num_methods;
-			}
-		}
-
-		public int CountStaticMethods {
-			get {
-				if (parent_type != null)
-					return parent_type.CountStaticMethods + num_smethods;
-				else
-					return num_smethods;
-			}
-		}
-
 		void get_methods ()
 		{
 			if (methods != null)
 				return;
 
+			int num_methods = 0;
 			foreach (Cecil.MethodDefinition method in type.Methods) {
 				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
-				if (method.IsStatic)
-					num_smethods++;
-				else
-					num_methods++;
+				num_methods++;
 			}
 
 			methods = new MonoMethodInfo [num_methods];
-			static_methods = new MonoMethodInfo [num_smethods];
 
-			int pos = 0, spos = 0;
+			int pos = 0;
 			foreach (Cecil.MethodDefinition method in type.Methods) {
 				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 					continue;
-				if (method.IsStatic) {
-					static_methods [spos] = MonoMethodInfo.Create (this, spos, method);
-					spos++;
-				} else {
-					methods [pos] = MonoMethodInfo.Create (this, pos, method);
-					pos++;
-				}
+				methods [pos] = MonoMethodInfo.Create (this, pos, method);
+				pos++;
 			}
 		}
 
@@ -206,36 +147,14 @@ namespace Mono.Debugger.Languages.Mono
 			if (properties != null)
 				return;
 
-			int num_sproperties = 0, num_properties = 0;
+			properties = new MonoPropertyInfo [type.Properties.Count];
 
-			foreach (Cecil.PropertyDefinition prop in type.Properties) {
+			for (int i = 0; i < properties.Length; i++) {
+				Cecil.PropertyDefinition prop = type.Properties [i];
 				Cecil.MethodDefinition m = prop.GetMethod;
 				if (m == null) m = prop.SetMethod;
 
-				if (m.IsStatic)
-					num_sproperties++;
-				else
-					num_properties++;
-			}
-
-			properties = new MonoPropertyInfo [num_properties];
-			static_properties = new MonoPropertyInfo [num_sproperties];
-
-			int pos = 0, spos = 0;
-			foreach (Cecil.PropertyDefinition prop in type.Properties) {
-				Cecil.MethodDefinition m = prop.GetMethod;
-				if (m == null) m = prop.SetMethod;
-
-				if (m.IsStatic) {
-					static_properties [spos] = MonoPropertyInfo.Create (
-						this, spos, prop, true);
-					spos++;
-				}
-				else {
-					properties [pos] = MonoPropertyInfo.Create (
-						this, pos, prop, false);
-					pos++;
-				}
+				properties [i] = MonoPropertyInfo.Create (this, i, prop);
 			}
 		}
 
@@ -246,24 +165,10 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetMethodInfo[] StaticMethods {
-			get {
-				get_methods ();
-				return static_methods;
-			}
-		}
-
 		public override TargetPropertyInfo[] Properties {
 			get {
 				get_properties ();
 				return properties;
-			}
-		}
-
-		public override TargetPropertyInfo[] StaticProperties {
-			get {
-				get_properties ();
-				return static_properties;
 			}
 		}
 
@@ -272,31 +177,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (events != null)
 				return;
 
-			int num_sevents = 0, num_events = 0;
-			foreach (Cecil.EventDefinition ev in type.Events) {
-				Cecil.MethodDefinition m = ev.AddMethod;
+			events = new MonoEventInfo [type.Events.Count];
 
-				if (m.IsStatic)
-					num_sevents++;
-				else
-					num_events++;
-			}
-
-			events = new MonoEventInfo [num_events];
-			static_events = new MonoEventInfo [num_sevents];
-
-			int pos = 0, spos = 0;
-			foreach (Cecil.EventDefinition ev in type.Events) {
-				Cecil.MethodDefinition m = ev.AddMethod;
-
-				if (m.IsStatic) {
-					static_events [spos] = MonoEventInfo.Create (this, spos, ev, true);
-					spos++;
-				}
-				else {
-					events [pos] = MonoEventInfo.Create (this, pos, ev, false);
-					pos++;
-				}
+			for (int i = 0; i < events.Length; i++) {
+				Cecil.EventDefinition ev = type.Events [i];
+				events [i] = MonoEventInfo.Create (this, i, ev);
 			}
 		}
 
@@ -304,13 +189,6 @@ namespace Mono.Debugger.Languages.Mono
 			get {
 				get_events ();
 				return events;
-			}
-		}
-
-		public override TargetEventInfo[] StaticEvents {
-			get {
-				get_events ();
-				return static_events;
 			}
 		}
 
@@ -325,29 +203,11 @@ namespace Mono.Debugger.Languages.Mono
 			if (constructors != null)
 				return;
 
-			int num_ctors = 0, num_sctors = 0;
+			constructors = new MonoMethodInfo [type.Constructors.Count];
 
-			foreach (Cecil.MethodDefinition method in type.Constructors) {
-				if (method.IsStatic)
-					num_sctors++;
-				else
-					num_ctors++;
-			}
-
-			constructors = new MonoMethodInfo [num_ctors];
-			static_constructors = new MonoMethodInfo [num_sctors];
-
-			int pos = 0, spos = 0;
-			foreach (Cecil.MethodDefinition method in type.Constructors) {
-				if (method.IsStatic) {
-					static_constructors [spos] = MonoMethodInfo.Create (
-						this, spos, method);
-					spos++;
-				} else {
-					constructors [pos] = MonoMethodInfo.Create (
-						this, pos, method);
-					pos++;
-				}
+			for (int i = 0; i < constructors.Length; i++) {
+				Cecil.MethodDefinition method = type.Constructors [i];
+				constructors [i] = MonoMethodInfo.Create (this, i, method);
 			}
 		}
 
@@ -358,18 +218,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetMethodInfo[] StaticConstructors {
-			get {
-				get_constructors ();
-				return static_constructors;
-			}
-		}
-
 		public override TargetClass GetClass (Thread thread)
 		{
 			return (TargetClass) thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target) {
-					return ResolveClass (target, true);
+					return ResolveClass (target, false);
 			});
 		}
 
@@ -405,40 +258,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			ResolveClass (target, true);
 			return new MonoClassObject (this, class_info, location);
-		}
-
-		public override TargetMemberInfo FindMember (string name, bool search_static,
-							     bool search_instance)
-		{
-			if (search_static) {
-				foreach (TargetFieldInfo field in StaticFields)
-					if (field.Name == name)
-						return field;
-
-				foreach (TargetPropertyInfo property in StaticProperties)
-					if (property.Name == name)
-						return property;
-
-				foreach (TargetEventInfo ev in StaticEvents)
-					if (ev.Name == name)
-						return ev;
-			}
-
-			if (search_instance) {
-				foreach (TargetFieldInfo field in Fields)
-					if (field.Name == name)
-						return field;
-
-				foreach (TargetPropertyInfo property in Properties)
-					if (property.Name == name)
-						return property;
-
-				foreach (TargetEventInfo ev in Events)
-					if (ev.Name == name)
-						return ev;
-			}
-
-			return null;
 		}
 
 		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target,

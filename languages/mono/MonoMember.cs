@@ -84,7 +84,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
 		private MonoEventInfo (MonoClassType klass, int index, Cecil.EventDefinition einfo,
-				       bool is_static, TargetType type, MonoFunctionType add,
+				       TargetType type, bool is_static,  MonoFunctionType add,
 				       MonoFunctionType remove, MonoFunctionType raise)
 			: base (type, einfo.Name, index, is_static, add, remove, raise)
 		{
@@ -95,28 +95,32 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal static MonoEventInfo Create (MonoClassType klass, int index,
-						      Cecil.EventDefinition einfo, bool is_static)
+						      Cecil.EventDefinition einfo)
 		{
 			TargetType type = klass.File.MonoLanguage.LookupMonoType (einfo.EventType);
 
+			bool is_static = false;
 			MonoFunctionType add, remove, raise;
-			if (einfo.AddMethod != null)
+			if (einfo.AddMethod != null) {
 				add = klass.File.LookupFunction (klass, einfo.AddMethod);
-			else
+				is_static = einfo.AddMethod.IsStatic;
+			} else
 				add = null;
 
-			if (einfo.RemoveMethod != null)
+			if (einfo.RemoveMethod != null) {
 				remove = klass.File.LookupFunction (klass, einfo.RemoveMethod);
-			else
+				is_static = einfo.RemoveMethod.IsStatic;
+			} else
 				remove = null;
 
-			if (einfo.InvokeMethod != null)
+			if (einfo.InvokeMethod != null) {
 				raise = klass.File.LookupFunction (klass, einfo.InvokeMethod);
-			else
+				is_static = einfo.InvokeMethod.IsStatic;
+			} else
 				raise = null;
 
-			return new MonoEventInfo (klass, index, einfo, is_static,
-						  type, add, remove, raise);
+			return new MonoEventInfo (
+				klass, index, einfo, type, is_static, add, remove, raise);
 		}
 	}
 
@@ -127,7 +131,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFunctionType GetterType, SetterType;
 
 		private MonoPropertyInfo (TargetType type, MonoClassType klass, int index,
-					  Cecil.PropertyDefinition pinfo, bool is_static,
+					  bool is_static, Cecil.PropertyDefinition pinfo,
 					  MonoFunctionType getter, MonoFunctionType setter)
 			: base (type, pinfo.Name, index, is_static, getter, setter)
 		{
@@ -137,24 +141,26 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal static MonoPropertyInfo Create (MonoClassType klass, int index,
-							 Cecil.PropertyDefinition pinfo,
-							 bool is_static)
+							 Cecil.PropertyDefinition pinfo)
 		{
 			TargetType type = klass.File.MonoLanguage.LookupMonoType (pinfo.PropertyType);
 
+			bool is_static = false;
 			MonoFunctionType getter, setter;
-			if (pinfo.GetMethod != null)
+			if (pinfo.GetMethod != null) {
 				getter = klass.File.LookupFunction (klass, pinfo.GetMethod);
-			else
+				is_static = pinfo.GetMethod.IsStatic;
+			} else
 				getter = null;
 
-			if (pinfo.SetMethod != null)
+			if (pinfo.SetMethod != null) {
 				setter = klass.File.LookupFunction (klass, pinfo.SetMethod);
-			else
+				is_static = pinfo.SetMethod.IsStatic;
+			} else
 				setter = null;
 
 			return new MonoPropertyInfo (
-				type, klass, index, pinfo, is_static, getter, setter);
+				type, klass, index, is_static, pinfo, getter, setter);
 		}
 	}
 }

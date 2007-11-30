@@ -1,3 +1,13 @@
+2007-11-30  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClassType.cs
+	(TargetClassType.StaticFields): Merged with `Fields'.
+	(TargetClassType.StaticProperties): Merged with `Properties'.
+	(TargetClassType.StaticEvents): Merged with `Events'.
+	(TargetClassType.StaticMethods): Merged with `Methods'.
+	(TargetClassType.StaticConstructors): Merged with `Constructors'.
+	(TargetClassType.FindMember): Provide a virtual implementation here.
+
 2007-11-28  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClass.cs
