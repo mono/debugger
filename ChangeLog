@@ -1,3 +1,8 @@
+2007-12-05  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_X86_64.cs
+	(X86_64_Register): Actually sync with backend/arch/x86_64-arch.h.
+
 2007-11-30  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetClassType.cs

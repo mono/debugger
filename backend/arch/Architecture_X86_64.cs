@@ -32,6 +32,7 @@ namespace Mono.Debugger.Architectures
 		GS_BASE,
 		DS,
 		ES,
+		FS,
 		GS,
 
 		COUNT
@@ -133,6 +134,7 @@ namespace Mono.Debugger.Architectures
 				   (int) X86_64_Register.GS_BASE,
 				   (int) X86_64_Register.DS,
 				   (int) X86_64_Register.ES,
+				   (int) X86_64_Register.FS,
 				   (int) X86_64_Register.GS };
 
 		int[] important_regs = { (int) X86_64_Register.RBP,
@@ -175,10 +177,10 @@ namespace Mono.Debugger.Architectures
 		string[] registers = { "r15", "r14", "r13", "r12", "rbp", "rbx", "r11", "r10",
 				       "r9", "r8", "rax", "rcx", "rdx", "rsi", "rdi", "orig_rax",
 				       "rip", "cs", "eflags", "rsp", "ss", "fs_base", "gs_base",
-				       "ds", "es", "gs" };
+				       "ds", "es", "fs", "gs" };
 
 		int[] reg_sizes = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-				    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
+				    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
 
 		public override string PrintRegister (Register register)
 		{
