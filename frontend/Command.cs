@@ -1282,13 +1282,18 @@ namespace Mono.Debugger.Frontend
 			if (in_background)
 				return result;
 
-			Thread ret = context.Interpreter.WaitAll (result.Thread, result, wait);
-			if (ret == null)
-				return null;
+			if (context.Interpreter.DebuggerConfiguration.BrokenThreading) {
+				Thread ret = context.Interpreter.WaitAll (result.Thread, result, wait);
+				if (ret == null)
+					return null;
 
-			if (ret.IsAlive)
-				context.Interpreter.CurrentThread = ret;
-			return ret;
+				if (ret.IsAlive)
+					context.Interpreter.CurrentThread = ret;
+				return ret;
+			}
+
+			context.Interpreter.WaitOne (result.Thread);
+			return result.Thread;
 		}
 
 		protected abstract ThreadCommandResult DoStep (Thread thread, ScriptingContext context);

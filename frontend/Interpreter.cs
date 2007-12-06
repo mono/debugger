@@ -421,6 +421,26 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
+		public bool WaitOne (Thread thread)
+		{
+			ClearInterrupt ();
+
+			WaitHandle[] handles = new WaitHandle [2];
+			handles [0] = interrupt_event;
+			handles [1] = thread.WaitHandle;
+
+			int ret = WaitHandle.WaitAny (handles);
+
+			if (ret == 0) {
+				thread.Stop ();
+				thread.WaitHandle.WaitOne ();
+				return false;
+			}
+
+			CheckLastEvent (thread);
+			return true;
+		}
+
 		public Thread WaitAll (Thread thread, CommandResult result, bool wait)
 		{
 			if (result == null)
