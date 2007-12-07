@@ -1,3 +1,9 @@
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
+	* backend/ThreadDB.cs
+	(ThreadDB.GetThreadInfo): Added `TargetMemoryAccess' argument;
+	operate on that target.  This fixes the XSP issue.
+
 2007-12-07  Martin Baulig  <martin@ximian.com>
 
 	Unify registers on i386 and x86_64.

@@ -220,8 +220,7 @@ namespace Mono.Debugger.Backend
 						      "{0} created gc thread: {1:x} {2}",
 						      engine, tid, data);
 
-					engine = engine.ProcessServant.GetEngineByTID (tid);
-
+					engine = engine.ProcessServant.GetEngineByTID (inferior, tid);
 					if (engine == null)
 						throw new InternalError ();
 

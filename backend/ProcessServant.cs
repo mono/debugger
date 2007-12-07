@@ -183,7 +183,7 @@ namespace Mono.Debugger.Backend
 				mono_manager.ThreadCreated (new_thread);
 
 			if (!do_attach)
-				get_thread_info (new_thread);
+				get_thread_info (inferior, new_thread);
 			OnThreadCreatedEvent (new_thread);
 		}
 
@@ -395,7 +395,7 @@ namespace Mono.Debugger.Backend
 				return;
 			}
 
-			thread_db.GetThreadInfo (delegate (int lwp, long tid) {
+			thread_db.GetThreadInfo (target, delegate (int lwp, long tid) {
 				SingleSteppingEngine engine = (SingleSteppingEngine) thread_hash [lwp];
 				if (engine == null) {
 					Report.Error ("Unknown thread {0} in {1}", lwp,
@@ -406,7 +406,7 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
-		void get_thread_info (SingleSteppingEngine engine)
+		void get_thread_info (Inferior inferior, SingleSteppingEngine engine)
 		{
 			if (thread_db == null) {
 				Report.Error ("Failed to initialize thread_db on {0}: {1} {2}",
@@ -415,7 +415,7 @@ namespace Mono.Debugger.Backend
 			}
 
 			bool found = false;
-			thread_db.GetThreadInfo (delegate (int lwp, long tid) {
+			thread_db.GetThreadInfo (inferior, delegate (int lwp, long tid) {
 				if (lwp != engine.PID)
 					return;
 
@@ -428,14 +428,32 @@ namespace Mono.Debugger.Backend
 					      engine.PID, start.CommandLine);
 		}
 
-		internal SingleSteppingEngine GetEngineByTID (long tid)
+		internal SingleSteppingEngine GetEngineByTID (Inferior inferior, long tid)
 		{
 			foreach (SingleSteppingEngine engine in thread_hash.Values) {
 				if (engine.TID == tid)
 					return engine;
 			}
 
-			return null;
+			if (thread_db == null) {
+				Report.Error ("Failed to initialize thread_db on {0}: {1} {2}",
+					      start.CommandLine, start, Environment.StackTrace);
+				throw new InternalError ();
+			}
+
+			SingleSteppingEngine result = null;
+			thread_db.GetThreadInfo (inferior, delegate (int t_lwp, long t_tid) {
+				if (tid != t_tid)
+					return;
+				result = (SingleSteppingEngine) thread_hash [t_lwp];
+
+			});
+
+			if (result == null)
+				Report.Error ("Cannot find thread {0:x} in {1}",
+					      tid, start.CommandLine);
+
+			return result;
 		}
 
 		public void Kill ()

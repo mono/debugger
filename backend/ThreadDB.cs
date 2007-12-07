@@ -8,6 +8,7 @@ namespace Mono.Debugger.Backend
 		IntPtr handle;
 		ProcessServant process;
 		TargetMemoryAccess target;
+		DebuggerMutex mutex;
 
 		enum PsErr {
 			Ok = 0,
@@ -42,30 +43,36 @@ namespace Mono.Debugger.Backend
 		ReadMemoryFunc read_memory_func;
 		WriteMemoryFunc write_memory_func;
 
-		protected ThreadDB (ProcessServant process, TargetMemoryAccess target)
+		protected ThreadDB (ProcessServant process)
 		{
 			this.process = process;
-			this.target = target;
+
+			mutex = new DebuggerMutex ("thread_db_mutex");
 
 			global_lookup_func = new GlobalLookupFunc (global_lookup);
 			read_memory_func = new ReadMemoryFunc (read_memory);
 			write_memory_func = new WriteMemoryFunc (write_memory);
-
-			handle = mono_debugger_thread_db_init (
-				global_lookup_func, read_memory_func, write_memory_func);
 		}
 
-		protected bool Initialize ()
+		protected bool Initialize (TargetMemoryAccess target)
 		{
-			handle = mono_debugger_thread_db_init (
-				global_lookup_func, read_memory_func, write_memory_func);
-			return handle != IntPtr.Zero;
+			try {
+				mutex.Lock ();
+				this.target = target;
+
+				handle = mono_debugger_thread_db_init (
+					global_lookup_func, read_memory_func, write_memory_func);
+				return handle != IntPtr.Zero;
+			} finally {
+				this.target = null;
+				mutex.Unlock ();
+			}
 		}
 
 		public static ThreadDB Create (ProcessServant process, TargetMemoryAccess target)
 		{
-			ThreadDB db = new ThreadDB (process, target);
-			if (!db.Initialize ())
+			ThreadDB db = new ThreadDB (process);
+			if (!db.Initialize (target))
 				return null;
 
 			return db;
@@ -80,18 +87,25 @@ namespace Mono.Debugger.Backend
 			return true;
 		}
 
-		public void GetThreadInfo (GetThreadInfoFunc func)
+		public void GetThreadInfo (TargetMemoryAccess target, GetThreadInfoFunc func)
 		{
-			mono_debugger_thread_db_iterate_over_threads (
-				handle, delegate (IntPtr th) {
-					long tid, tls, lwp;
-					if (!mono_debugger_thread_db_get_thread_info (
-						    th, out tid, out tls, out lwp))
-						return false;
+			try {
+				mutex.Lock ();
+				this.target = target;
+				mono_debugger_thread_db_iterate_over_threads (
+					handle, delegate (IntPtr th) {
+						long tid, tls, lwp;
+						if (!mono_debugger_thread_db_get_thread_info (
+							    th, out tid, out tls, out lwp))
+							return false;
 
-					func ((int) lwp, tid);
-					return true;
-			});
+						func ((int) lwp, tid);
+						return true;
+					});
+			} finally {
+				this.target = null;
+				mutex.Unlock ();
+			}
 		}
 
 		PsErr global_lookup (string obj_name, string sym_name, out long sym_addr)
