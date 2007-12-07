@@ -4,32 +4,10 @@ using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Architectures
 {
-	// Keep in sync with DebuggerI386Registers in backends/server/i386-arch.h.
-	internal enum I386Register
-	{
-		EBX		= 0,
-		ECX		= 1,
-		EDX		= 2,
-		ESI		= 3,
-		EDI		= 4,
-		EBP		= 5,
-		EAX		= 6,
-		DS		= 7,
-		ES		= 8,
-		FS		= 9,
-		GS		= 10,
-		EIP		= 11,
-		CS		= 12,
-		EFLAGS		= 13,
-		ESP		= 14,
-		SS		= 15,
-		COUNT		= 16
-	}
-
 	// <summary>
 	//   Architecture-dependent stuff for the i386.
 	// </summary>
-	internal class Architecture_I386 : Architecture
+	internal class Architecture_I386 : X86_Architecture
 	{
 		internal Architecture_I386 (ProcessServant process, TargetInfo info)
 			: base (process, info)
@@ -56,103 +34,96 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
-		public override string[] RegisterNames {
+		public override int[] AllRegisterIndices {
 			get {
-				return registers;
+				return new int[] {
+					(int) X86_Register.RAX, (int) X86_Register.RCX,
+					(int) X86_Register.RDX, (int) X86_Register.RBX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+
+					(int) X86_Register.RIP,
+					(int) X86_Register.EFLAGS,
+					(int) X86_Register.ORIG_RAX,
+
+					(int) X86_Register.CS,  (int) X86_Register.SS,
+					(int) X86_Register.DS,  (int) X86_Register.ES,
+					(int) X86_Register.FS,  (int) X86_Register.GS,
+
+					(int) X86_Register.FS_BASE,
+					(int) X86_Register.GS_BASE
+				};
 			}
 		}
 
 		public override int[] RegisterIndices {
 			get {
-				return important_regs;
+				return new int[] {
+					(int) X86_Register.RAX, (int) X86_Register.RCX,
+					(int) X86_Register.RDX, (int) X86_Register.RBX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+
+					(int) X86_Register.RIP, (int) X86_Register.EFLAGS
+				};
 			}
 		}
 
-		public override int[] AllRegisterIndices {
-			get {
-				return all_regs;
-			}
-		}
-
-		public override int[] RegisterSizes {
-			get {
-				return reg_sizes;
-			}
-		}
-
+		// FIXME: Map mono/arch/x86/x86-codegen.h registers to
+		//        debugger/arch/IArchitecture_I386.cs registers.
 		internal override int[] RegisterMap {
 			get {
-				return register_map;
+				return new int[] {
+					(int) X86_Register.RAX, (int) X86_Register.RCX,
+					(int) X86_Register.RDX, (int) X86_Register.RBX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI
+				};
 			}
 		}
 
 		internal override int[] DwarfFrameRegisterMap {
 			get {
-				return dwarf_frame_register_map;
+				return new int[] {
+					(int) X86_Register.RIP, (int) X86_Register.RSP,
+					(int) X86_Register.RBP,
+
+					(int) X86_Register.RAX, (int) X86_Register.RBX,
+					(int) X86_Register.RCX, (int) X86_Register.RDX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+				};
 			}
 		}
 
-		internal override int CountRegisters {
+
+		public override string[] RegisterNames {
 			get {
-				return (int) I386Register.COUNT;
+				return new string[] {
+					"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi",
+					null, null, null, null, null, null, null, null,
+					"eip", "eflags", null, "cs", "ss", "ds", "es",
+					"fs", "gs", null, null
+				};
 			}
 		}
 
-		int[] all_regs = { (int) I386Register.EBX,
-				   (int) I386Register.ECX,
-				   (int) I386Register.EDX,
-				   (int) I386Register.ESI,
-				   (int) I386Register.EDI,
-				   (int) I386Register.EBP,
-				   (int) I386Register.EAX,
-				   (int) I386Register.DS,
-				   (int) I386Register.ES,
-				   (int) I386Register.FS,
-				   (int) I386Register.GS,
-				   (int) I386Register.EIP,
-				   (int) I386Register.CS,
-				   (int) I386Register.EFLAGS,
-				   (int) I386Register.ESP,
-				   (int) I386Register.SS };
-
-		int[] important_regs = { (int) I386Register.EAX,
-					 (int) I386Register.EBX,
-					 (int) I386Register.ECX,
-					 (int) I386Register.EDX,
-					 (int) I386Register.ESI,
-					 (int) I386Register.EDI,
-					 (int) I386Register.EBP,
-					 (int) I386Register.ESP,
-					 (int) I386Register.EIP,
-					 (int) I386Register.EFLAGS };
-
-		// FIXME: Map mono/arch/x86/x86-codegen.h registers to
-		//        debugger/arch/IArchitecture_I386.cs registers.
-		int[] register_map = { (int) I386Register.EAX, (int) I386Register.ECX,
-				       (int) I386Register.EDX, (int) I386Register.EBX,
-				       (int) I386Register.ESP, (int) I386Register.EBP,
-				       (int) I386Register.ESI, (int) I386Register.EDI };
-
-		int[] dwarf_frame_register_map = new int [] {
-			(int) I386Register.EIP, (int) I386Register.ESP, (int) I386Register.EBP,
-
-			(int) I386Register.EAX, (int) I386Register.EBX, (int) I386Register.ECX,
-			(int) I386Register.EDX, (int) I386Register.ESP, (int) I386Register.EBP,
-			(int) I386Register.ESI, (int) I386Register.EDI
-		};
-				
-		string[] registers = { "ebx", "ecx", "edx", "esi", "edi", "ebp", "eax", "ds",
-				       "es", "fs", "gs", "eip", "cs", "eflags", "esp", "ss" };
-
-		int[] reg_sizes = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
+		public override int[] RegisterSizes {
+			get {
+				return new int[] {
+					4, 4, 4, 4, 4, 4, 4, 4, -1, -1, -1, -1, -1, -1, -1, -1,
+					4, 4, -1, 4, 4, 4, 4, 4, 4, -1, -1
+				};
+			}
+		}
 
 		public override string PrintRegister (Register register)
 		{
 			if (!register.Valid)
 				return "XXXXXXXX";
 
-			switch ((I386Register) register.Index) {
-			case I386Register.EFLAGS: {
+			switch ((X86_Register) register.Index) {
+			case X86_Register.EFLAGS: {
 				ArrayList flags = new ArrayList ();
 				long value = register.Value;
 				if ((value & (1 << 0)) != 0)
@@ -215,16 +186,16 @@ namespace Mono.Debugger.Architectures
 			return String.Format (
 				"EAX={0}  EBX={1}  ECX={2}  EDX={3}  ESI={4}  EDI={5}\n" +
 				"EBP={6}  ESP={7}  EIP={8}  EFLAGS={9}\n",
-				format (registers [(int) I386Register.EAX]),
-				format (registers [(int) I386Register.EBX]),
-				format (registers [(int) I386Register.ECX]),
-				format (registers [(int) I386Register.EDX]),
-				format (registers [(int) I386Register.ESI]),
-				format (registers [(int) I386Register.EDI]),
-				format (registers [(int) I386Register.EBP]),
-				format (registers [(int) I386Register.ESP]),
-				format (registers [(int) I386Register.EIP]),
-				PrintRegister (registers [(int) I386Register.EFLAGS]));
+				format (registers [(int) X86_Register.RAX]),
+				format (registers [(int) X86_Register.RBX]),
+				format (registers [(int) X86_Register.RCX]),
+				format (registers [(int) X86_Register.RDX]),
+				format (registers [(int) X86_Register.RSI]),
+				format (registers [(int) X86_Register.RDI]),
+				format (registers [(int) X86_Register.RBP]),
+				format (registers [(int) X86_Register.RSP]),
+				format (registers [(int) X86_Register.RIP]),
+				PrintRegister (registers [(int) X86_Register.EFLAGS]));
 		}
 
 		internal override int MaxPrologueSize {
@@ -238,20 +209,20 @@ namespace Mono.Debugger.Architectures
 			Registers regs = new Registers (old_regs);
 
 			TargetAddress ebp = new TargetAddress (
-				memory.AddressDomain, old_regs [(int) I386Register.EBP].GetValue ());
+				memory.AddressDomain, old_regs [(int) X86_Register.RBP].GetValue ());
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
-			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
+			regs [(int) X86_Register.RBP].SetValue (ebp, new_ebp);
 
 			TargetAddress new_eip = memory.ReadAddress (ebp + addr_size);
-			regs [(int) I386Register.EIP].SetValue (ebp + addr_size, new_eip);
+			regs [(int) X86_Register.RIP].SetValue (ebp + addr_size, new_eip);
 
 			TargetAddress new_esp = ebp + 2 * addr_size;
-			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
+			regs [(int) X86_Register.RSP].SetValue (ebp, new_esp);
 
-			regs [(int) I386Register.ESI].Valid = true;
-			regs [(int) I386Register.EDI].Valid = true;
+			regs [(int) X86_Register.RSI].Valid = true;
+			regs [(int) X86_Register.RDI].Valid = true;
 
 			ebp -= addr_size;
 
@@ -266,27 +237,27 @@ namespace Mono.Debugger.Architectures
 				switch (opcode) {
 				case 0x50: /* eax */
 					value = (long) (uint) memory.ReadInteger (ebp);
-					regs [(int) I386Register.EAX].SetValue (ebp, value);
+					regs [(int) X86_Register.RAX].SetValue (ebp, value);
 					break;
 				case 0x51: /* ecx */
 					value = (long) (uint) memory.ReadInteger (ebp);
-					regs [(int) I386Register.ECX].SetValue (ebp, value);
+					regs [(int) X86_Register.RCX].SetValue (ebp, value);
 					break;
 				case 0x52: /* edx */
 					value = (long) (uint) memory.ReadInteger (ebp);
-					regs [(int) I386Register.EDX].SetValue (ebp, value);
+					regs [(int) X86_Register.RDX].SetValue (ebp, value);
 					break;
 				case 0x53: /* ebx */
 					value = (long) (uint) memory.ReadInteger (ebp);
-					regs [(int) I386Register.EBX].SetValue (ebp, value);
+					regs [(int) X86_Register.RBX].SetValue (ebp, value);
 					break;
 				case 0x56: /* esi */
 					value = (long) (uint) memory.ReadInteger (ebp);
-					regs [(int) I386Register.ESI].SetValue (ebp, value);
+					regs [(int) X86_Register.RSI].SetValue (ebp, value);
 					break;
 				case 0x57: /* edi */
 					value = (long) (uint) memory.ReadInteger (ebp);
-					regs [(int) I386Register.EDI].SetValue (ebp, value);
+					regs [(int) X86_Register.RDI].SetValue (ebp, value);
 					break;
 				}
 
@@ -320,12 +291,12 @@ namespace Mono.Debugger.Architectures
 				Registers regs = new Registers (old_regs);
 
 				TargetAddress new_eip = memory.ReadAddress (frame.StackPointer);
-				regs [(int) I386Register.EIP].SetValue (frame.StackPointer, new_eip);
+				regs [(int) X86_Register.RIP].SetValue (frame.StackPointer, new_eip);
 
 				TargetAddress new_esp = frame.StackPointer + TargetAddressSize;
 				TargetAddress new_ebp = frame.FrameAddress;
 
-				regs [(int) I386Register.ESP].SetValue (new_esp);
+				regs [(int) X86_Register.RSP].SetValue (new_esp);
 
 				return CreateFrame (frame.Thread, memory, new_eip, new_esp,
 						    new_ebp, regs, true);
@@ -341,14 +312,14 @@ namespace Mono.Debugger.Architectures
 
 				int addr_size = TargetAddressSize;
 				TargetAddress new_ebp = memory.ReadAddress (frame.StackPointer);
-				regs [(int) I386Register.EBP].SetValue (frame.StackPointer, new_ebp);
+				regs [(int) X86_Register.RBP].SetValue (frame.StackPointer, new_ebp);
 
 				TargetAddress new_esp = frame.StackPointer + addr_size;
 				TargetAddress new_eip = memory.ReadAddress (new_esp);
-				regs [(int) I386Register.EIP].SetValue (new_esp, new_eip);
+				regs [(int) X86_Register.RIP].SetValue (new_esp, new_eip);
 				new_esp -= addr_size;
 
-				regs [(int) I386Register.ESP].SetValue (new_esp);
+				regs [(int) X86_Register.RSP].SetValue (new_esp);
 
 				return CreateFrame (frame.Thread, memory, new_eip, new_esp,
 						    new_ebp, regs, true);
@@ -372,10 +343,10 @@ namespace Mono.Debugger.Architectures
 		{
 			Registers regs = new Registers (old_regs);
 
-			regs [(int) I386Register.EBP].Valid = true;
-			regs [(int) I386Register.EBX].Valid = true;
-			regs [(int) I386Register.ESI].Valid = true;
-			regs [(int) I386Register.EDI].Valid = true;
+			regs [(int) X86_Register.RBP].Valid = true;
+			regs [(int) X86_Register.RBX].Valid = true;
+			regs [(int) X86_Register.RSI].Valid = true;
+			regs [(int) X86_Register.RDI].Valid = true;
 
 			return regs;
 		}
@@ -426,14 +397,14 @@ namespace Mono.Debugger.Architectures
 			TargetAddress ebp = memory.ReadAddress (esp + 0x38);
 			TargetAddress eip = memory.ReadAddress (esp + 0x3c);
 
-			regs [(int)I386Register.EBX].SetValue (esp + 0x2c, ebx);
-			regs [(int)I386Register.ESI].SetValue (esp + 0x30, esi);
-			regs [(int)I386Register.EDI].SetValue (esp + 0x34, edi);
-			regs [(int)I386Register.EBP].SetValue (esp + 0x38, ebp);
-			regs [(int)I386Register.EIP].SetValue (esp + 0x3c, eip);
+			regs [(int)X86_Register.RBX].SetValue (esp + 0x2c, ebx);
+			regs [(int)X86_Register.RSI].SetValue (esp + 0x30, esi);
+			regs [(int)X86_Register.RDI].SetValue (esp + 0x34, edi);
+			regs [(int)X86_Register.RBP].SetValue (esp + 0x38, ebp);
+			regs [(int)X86_Register.RIP].SetValue (esp + 0x3c, eip);
 
 			esp += 0x40;
-			regs [(int)I386Register.ESP].SetValue (esp.Address);
+			regs [(int)X86_Register.RSP].SetValue (esp.Address);
 
 			return CreateFrame (frame.Thread, memory, eip, esp, ebp, regs, true);
 		}
@@ -455,8 +426,8 @@ namespace Mono.Debugger.Architectures
 			TargetAddress new_esp = esp + 4;
 			TargetAddress new_ebp = frame.FrameAddress;
 
-			regs [(int)I386Register.EIP].SetValue (esp, new_eip);
-			regs [(int)I386Register.EBP].SetValue (new_ebp);
+			regs [(int)X86_Register.RIP].SetValue (esp, new_eip);
+			regs [(int)X86_Register.RBP].SetValue (new_ebp);
 
 			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
 					    new_ebp, regs, true);
@@ -505,13 +476,13 @@ namespace Mono.Debugger.Architectures
 			Registers regs = new Registers (this);
 
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
-			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
+			regs [(int) X86_Register.RBP].SetValue (ebp, new_ebp);
 
 			TargetAddress new_eip = memory.ReadAddress (ebp + addr_size);
-			regs [(int) I386Register.EIP].SetValue (ebp + addr_size, new_eip);
+			regs [(int) X86_Register.RIP].SetValue (ebp + addr_size, new_eip);
 
 			TargetAddress new_esp = ebp + 2 * addr_size;
-			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
+			regs [(int) X86_Register.RSP].SetValue (ebp, new_esp);
 
 			ebp -= addr_size;
 
@@ -529,13 +500,13 @@ namespace Mono.Debugger.Architectures
 		{
 			Registers regs = inferior.GetRegisters ();
 			TargetAddress esp = new TargetAddress (
-				inferior.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+				inferior.AddressDomain, regs [(int) X86_Register.RSP].GetValue ());
 			TargetAddress eip = inferior.ReadAddress (esp);
 			esp += TargetAddressSize;
 
-			regs [(int) I386Register.EIP].SetValue (eip);
-			regs [(int) I386Register.ESP].SetValue (esp);
-			regs [(int) I386Register.EAX].SetValue (TargetAddress.Null);
+			regs [(int) X86_Register.RIP].SetValue (eip);
+			regs [(int) X86_Register.RSP].SetValue (esp);
+			regs [(int) X86_Register.RAX].SetValue (TargetAddress.Null);
 
 			inferior.SetRegisters (regs);
 		}
@@ -569,11 +540,11 @@ namespace Mono.Debugger.Architectures
 							  Registers regs, bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
-				memory.AddressDomain, regs [(int) I386Register.EIP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				memory.AddressDomain, regs [(int) I386Register.ESP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RSP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				memory.AddressDomain, regs [(int) I386Register.EBP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RBP].GetValue ());
 
 			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer,
 					    regs, adjust_retaddr);
@@ -594,17 +565,17 @@ namespace Mono.Debugger.Architectures
 			TargetAddress eip = reader.ReadTargetAddress ();
 
 			Registers regs = new Registers (this);
-			regs [(int) I386Register.EBX].SetValue (lmf + 16, ebx);
-			regs [(int) I386Register.EDI].SetValue (lmf + 20, edi);
-			regs [(int) I386Register.ESI].SetValue (lmf + 24, esi);
-			regs [(int) I386Register.EBP].SetValue (lmf + 28, ebp);
-			regs [(int) I386Register.EIP].SetValue (lmf + 32, eip);
+			regs [(int) X86_Register.RBX].SetValue (lmf + 16, ebx);
+			regs [(int) X86_Register.RDI].SetValue (lmf + 20, edi);
+			regs [(int) X86_Register.RSI].SetValue (lmf + 24, esi);
+			regs [(int) X86_Register.RBP].SetValue (lmf + 28, ebp);
+			regs [(int) X86_Register.RIP].SetValue (lmf + 32, eip);
 
 			TargetAddress new_ebp = memory.ReadAddress (ebp);
-			regs [(int) I386Register.EBP].SetValue (ebp, new_ebp);
+			regs [(int) X86_Register.RBP].SetValue (ebp, new_ebp);
 
 			TargetAddress new_esp = ebp + 8;
-			regs [(int) I386Register.ESP].SetValue (ebp, new_esp);
+			regs [(int) X86_Register.RSP].SetValue (ebp, new_esp);
 
 			return CreateFrame (thread.Client, memory, eip, new_esp, new_ebp, regs, true);
 		}

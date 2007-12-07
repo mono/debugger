@@ -1227,6 +1227,8 @@ namespace Mono.Debugger.Backend
 
 				Registers old_regs = GetRegisters ();
 				for (int i = 0; i < count; i++) {
+					if (registers [i] == null)
+						continue;
 					if (!registers [i].Valid)
 						registers [i].SetValue (old_regs [i].Value);
 				}

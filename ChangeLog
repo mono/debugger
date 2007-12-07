@@ -1,3 +1,21 @@
+2007-12-07  Martin Baulig  <martin@ximian.com>
+
+	Unify registers on i386 and x86_64.
+
+	* backend/arch/X86_Architecture.cs: New file.
+	(X86_Architecture): New internal abstract class.
+	(X86_Register): New internal enum.
+
+	* backend/arch/Architecture_X86_64.cs
+	(X86_64_Register): Removed; use `X86_Register' instead.
+
+	* backend/arch/Architecture_I386.cs
+	(I386Register): Removed; use `X86_Register' instead.
+
+	* backend/server/x86-arch.h
+	(DebuggerX86Register): Use an unified register representation on
+	i386 and x86_64.
+
 2007-12-05  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Architecture_X86_64.cs

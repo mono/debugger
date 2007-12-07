@@ -4,44 +4,10 @@ using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Architectures
 {
-	// Keep in sync with DebuggerRegisters in backends/server/x86-arch.h.
-	internal enum X86_64_Register
-	{
-		R15		= 0,
-		R14,
-		R13,
-		R12,
-		RBP,
-		RBX,
-		R11,
-		R10,
-		R9,
-		R8,
-		RAX,
-		RCX,
-		RDX,
-		RSI,
-		RDI,
-		ORIG_RAX,
-		RIP,
-		CS,
-		EFLAGS,
-		RSP,
-		SS,
-		FS_BASE,
-		GS_BASE,
-		DS,
-		ES,
-		FS,
-		GS,
-
-		COUNT
-	}
-
 	// <summary>
 	//   Architecture-dependent stuff for the x86_64.
 	// </summary>
-	internal class Architecture_X86_64 : Architecture
+	internal class Architecture_X86_64 : X86_Architecture
 	{
 		protected const int MONO_FAKE_IMT_METHOD = -1;
 		protected const int MONO_FAKE_VTABLE_METHOD = -2;
@@ -67,128 +33,113 @@ namespace Mono.Debugger.Architectures
 			}
 		}
 
-		public override string[] RegisterNames {
+		public override int[] AllRegisterIndices {
 			get {
-				return registers;
+				return new int[] {
+					(int) X86_Register.RAX, (int) X86_Register.RCX,
+					(int) X86_Register.RDX, (int) X86_Register.RBX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+					(int) X86_Register.R8,  (int) X86_Register.R9,
+					(int) X86_Register.R10, (int) X86_Register.R11,
+					(int) X86_Register.R12, (int) X86_Register.R13,
+					(int) X86_Register.R14, (int) X86_Register.R15,
+
+					(int) X86_Register.RIP,
+					(int) X86_Register.EFLAGS,
+					(int) X86_Register.ORIG_RAX,
+
+					(int) X86_Register.CS,  (int) X86_Register.SS,
+					(int) X86_Register.DS,  (int) X86_Register.ES,
+					(int) X86_Register.FS,  (int) X86_Register.GS,
+
+					(int) X86_Register.FS_BASE,
+					(int) X86_Register.GS_BASE
+				};
 			}
 		}
 
 		public override int[] RegisterIndices {
 			get {
-				return important_regs;
+				return new int[] {
+					(int) X86_Register.RAX, (int) X86_Register.RCX,
+					(int) X86_Register.RDX, (int) X86_Register.RBX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+					(int) X86_Register.R8,  (int) X86_Register.R9,
+					(int) X86_Register.R10, (int) X86_Register.R11,
+					(int) X86_Register.R12, (int) X86_Register.R13,
+					(int) X86_Register.R14, (int) X86_Register.R15,
+
+					(int) X86_Register.RIP, (int) X86_Register.EFLAGS
+				};
 			}
 		}
 
-		public override int[] AllRegisterIndices {
-			get {
-				return all_regs;
-			}
-		}
-
-		public override int[] RegisterSizes {
-			get {
-				return reg_sizes;
-			}
-		}
-
+		// FIXME: Map mono/arch/amd64/amd64-codegen.h registers to
+		//        debugger/arch/IArchitecture_X86_64.cs registers.
 		internal override int[] RegisterMap {
 			get {
-				return register_map;
+				return new int[] {
+					(int) X86_Register.RAX, (int) X86_Register.RCX,
+					(int) X86_Register.RDX, (int) X86_Register.RBX,
+					(int) X86_Register.RSP, (int) X86_Register.RBP,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+					(int) X86_Register.R8,  (int) X86_Register.R9,
+					(int) X86_Register.R10, (int) X86_Register.R11,
+					(int) X86_Register.R12, (int) X86_Register.R13,
+					(int) X86_Register.R14, (int) X86_Register.R15,
+					(int) X86_Register.RIP
+				};
 			}
 		}
 
 		internal override int[] DwarfFrameRegisterMap {
 			get {
-				return dwarf_frame_register_map;
+				return new int[] {
+					(int) X86_Register.RIP, (int) X86_Register.RSP,
+					(int) X86_Register.RBP,
+
+					(int) X86_Register.RAX, (int) X86_Register.RDX,
+					(int) X86_Register.RCX, (int) X86_Register.RBX,
+					(int) X86_Register.RSI, (int) X86_Register.RDI,
+					(int) X86_Register.RBP, (int) X86_Register.RSP,
+					(int) X86_Register.R8,  (int) X86_Register.R9,
+					(int) X86_Register.R10, (int) X86_Register.R11,
+					(int) X86_Register.R12, (int) X86_Register.R13,
+					(int) X86_Register.R14, (int) X86_Register.R15,
+					(int) X86_Register.RIP
+				};
 			}
 		}
 
-		internal override int CountRegisters {
+		public override string[] RegisterNames {
 			get {
-				return (int) X86_64_Register.COUNT;
+				return new string[] {
+					"rax", "rcx", "rdx", "rbx", "rsp", "rbp", "rsi", "rdi",
+					"r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+					"rip", "eflags", "orig_rax", "cs", "ss", "ds", "es",
+					"fs", "gs", "fs_base", "gs_base"
+				};
 			}
 		}
 
-		int[] all_regs = { (int) X86_64_Register.R15,
-				   (int) X86_64_Register.R14,
-				   (int) X86_64_Register.R13,
-				   (int) X86_64_Register.R12,
-				   (int) X86_64_Register.RBP,
-				   (int) X86_64_Register.RBX,
-				   (int) X86_64_Register.R11,
-				   (int) X86_64_Register.R10,
-				   (int) X86_64_Register.R9,
-				   (int) X86_64_Register.R8,
-				   (int) X86_64_Register.RAX,
-				   (int) X86_64_Register.RCX,
-				   (int) X86_64_Register.RDX,
-				   (int) X86_64_Register.RSI,
-				   (int) X86_64_Register.RDI,
-				   (int) X86_64_Register.ORIG_RAX,
-				   (int) X86_64_Register.RIP,
-				   (int) X86_64_Register.CS,
-				   (int) X86_64_Register.EFLAGS,
-				   (int) X86_64_Register.RSP,
-				   (int) X86_64_Register.SS,
-				   (int) X86_64_Register.FS_BASE,
-				   (int) X86_64_Register.GS_BASE,
-				   (int) X86_64_Register.DS,
-				   (int) X86_64_Register.ES,
-				   (int) X86_64_Register.FS,
-				   (int) X86_64_Register.GS };
-
-		int[] important_regs = { (int) X86_64_Register.RBP,
-					 (int) X86_64_Register.RBX,
-					 (int) X86_64_Register.RAX,
-					 (int) X86_64_Register.RCX,
-					 (int) X86_64_Register.RDX,
-					 (int) X86_64_Register.RSI,
-					 (int) X86_64_Register.RDI,
-					 (int) X86_64_Register.RIP,
-					 (int) X86_64_Register.EFLAGS,
-					 (int) X86_64_Register.RSP };
-
-		// FIXME: Map mono/arch/amd64/amd64-codegen.h registers to
-		//        debugger/arch/IArchitecture_X86_64.cs registers.
-		int[] register_map = { (int) X86_64_Register.RAX, (int) X86_64_Register.RCX,
-				       (int) X86_64_Register.RDX, (int) X86_64_Register.RBX,
-				       (int) X86_64_Register.RSP, (int) X86_64_Register.RBP,
-				       (int) X86_64_Register.RSI, (int) X86_64_Register.RDI,
-				       (int) X86_64_Register.R8, (int) X86_64_Register.R9,
-				       (int) X86_64_Register.R10, (int) X86_64_Register.R11,
-				       (int) X86_64_Register.R12, (int) X86_64_Register.R13,
-				       (int) X86_64_Register.R14, (int) X86_64_Register.R15,
-				       (int) X86_64_Register.RIP };
-
-		int[] dwarf_frame_register_map = new int[] {
-			(int) X86_64_Register.RIP, (int) X86_64_Register.RSP, (int) X86_64_Register.RBP,
-
-			(int) X86_64_Register.RAX, (int) X86_64_Register.RDX,
-			(int) X86_64_Register.RCX, (int) X86_64_Register.RBX,
-			(int) X86_64_Register.RSI, (int) X86_64_Register.RDI,
-			(int) X86_64_Register.RBP, (int) X86_64_Register.RSP,
-			(int) X86_64_Register.R8, (int) X86_64_Register.R9,
-			(int) X86_64_Register.R10, (int) X86_64_Register.R11,
-			(int) X86_64_Register.R12, (int) X86_64_Register.R13,
-			(int) X86_64_Register.R14, (int) X86_64_Register.R15,
-			(int) X86_64_Register.RIP
-		};
-
-		string[] registers = { "r15", "r14", "r13", "r12", "rbp", "rbx", "r11", "r10",
-				       "r9", "r8", "rax", "rcx", "rdx", "rsi", "rdi", "orig_rax",
-				       "rip", "cs", "eflags", "rsp", "ss", "fs_base", "gs_base",
-				       "ds", "es", "fs", "gs" };
-
-		int[] reg_sizes = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-				    8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
+		public override int[] RegisterSizes {
+			get {
+				return new int[] {
+					8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+					8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
+				};
+			}
+		}
 
 		public override string PrintRegister (Register register)
 		{
 			if (!register.Valid)
 				return "XXXXXXXXXXXXXXXX";
 
-			switch ((X86_64_Register) register.Index) {
-			case X86_64_Register.EFLAGS: {
+			switch ((X86_Register) register.Index) {
+			case X86_Register.EFLAGS: {
 				ArrayList flags = new ArrayList ();
 				long value = register.Value;
 				if ((value & (1 << 0)) != 0)
@@ -258,24 +209,24 @@ namespace Mono.Debugger.Architectures
 				"R8 ={8}  R9 ={9}  R10={10}  R11={11}\n" +
 				"R12={12}  R13={13}  R14={14}  R15={15}\n" +
 				"RIP={16}  EFLAGS={17}\n",
-				format (registers [(int) X86_64_Register.RAX]),
-				format (registers [(int) X86_64_Register.RBX]),
-				format (registers [(int) X86_64_Register.RCX]),
-				format (registers [(int) X86_64_Register.RDX]),
-				format (registers [(int) X86_64_Register.RSI]),
-				format (registers [(int) X86_64_Register.RDI]),
-				format (registers [(int) X86_64_Register.RBP]),
-				format (registers [(int) X86_64_Register.RSP]),
-				format (registers [(int) X86_64_Register.R8]),
-				format (registers [(int) X86_64_Register.R9]),
-				format (registers [(int) X86_64_Register.R10]),
-				format (registers [(int) X86_64_Register.R11]),
-				format (registers [(int) X86_64_Register.R12]),
-				format (registers [(int) X86_64_Register.R13]),
-				format (registers [(int) X86_64_Register.R14]),
-				format (registers [(int) X86_64_Register.R15]),
-				format (registers [(int) X86_64_Register.RIP]),
-				PrintRegister (registers [(int) X86_64_Register.EFLAGS]));
+				format (registers [(int) X86_Register.RAX]),
+				format (registers [(int) X86_Register.RBX]),
+				format (registers [(int) X86_Register.RCX]),
+				format (registers [(int) X86_Register.RDX]),
+				format (registers [(int) X86_Register.RSI]),
+				format (registers [(int) X86_Register.RDI]),
+				format (registers [(int) X86_Register.RBP]),
+				format (registers [(int) X86_Register.RSP]),
+				format (registers [(int) X86_Register.R8]),
+				format (registers [(int) X86_Register.R9]),
+				format (registers [(int) X86_Register.R10]),
+				format (registers [(int) X86_Register.R11]),
+				format (registers [(int) X86_Register.R12]),
+				format (registers [(int) X86_Register.R13]),
+				format (registers [(int) X86_Register.R14]),
+				format (registers [(int) X86_Register.R15]),
+				format (registers [(int) X86_Register.RIP]),
+				PrintRegister (registers [(int) X86_Register.EFLAGS]));
 		}
 
 		internal override int MaxPrologueSize {
@@ -288,12 +239,12 @@ namespace Mono.Debugger.Architectures
 
 			// According to the AMD64 ABI, rbp, rbx and r12-r15 are preserved
 			// across function calls.
-			regs [(int) X86_64_Register.RBX].Valid = true;
-			regs [(int) X86_64_Register.RBP].Valid = true;
-			regs [(int) X86_64_Register.R12].Valid = true;
-			regs [(int) X86_64_Register.R13].Valid = true;
-			regs [(int) X86_64_Register.R14].Valid = true;
-			regs [(int) X86_64_Register.R15].Valid = true;
+			regs [(int) X86_Register.RBX].Valid = true;
+			regs [(int) X86_Register.RBP].Valid = true;
+			regs [(int) X86_Register.R12].Valid = true;
+			regs [(int) X86_Register.R13].Valid = true;
+			regs [(int) X86_Register.R14].Valid = true;
+			regs [(int) X86_Register.R15].Valid = true;
 
 			return regs;
 		}
@@ -304,21 +255,21 @@ namespace Mono.Debugger.Architectures
 			Registers old_regs = frame.Registers;
 			Registers regs = CopyRegisters (old_regs);
 
-			if (!old_regs [(int) X86_64_Register.RBP].Valid)
+			if (!old_regs [(int) X86_Register.RBP].Valid)
 				return null;
 
 			TargetAddress rbp = new TargetAddress (
-				memory.AddressDomain, old_regs [(int) X86_64_Register.RBP].Value);
+				memory.AddressDomain, old_regs [(int) X86_Register.RBP].Value);
 
 			int addr_size = TargetAddressSize;
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
-			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
+			regs [(int) X86_Register.RBP].SetValue (rbp, new_rbp);
 
 			TargetAddress new_rip = memory.ReadAddress (rbp + addr_size);
-			regs [(int) X86_64_Register.RIP].SetValue (rbp + addr_size, new_rip);
+			regs [(int) X86_Register.RIP].SetValue (rbp + addr_size, new_rip);
 
 			TargetAddress new_rsp = rbp + 2 * addr_size;
-			regs [(int) X86_64_Register.RSP].SetValue (rbp, new_rsp);
+			regs [(int) X86_Register.RSP].SetValue (rbp, new_rsp);
 
 			rbp -= addr_size;
 
@@ -336,35 +287,35 @@ namespace Mono.Debugger.Architectures
 					switch (opcode2) {
 					case 0x50: /* r8 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R8].SetValue (rbp, value);
+						regs [(int) X86_Register.R8].SetValue (rbp, value);
 						break;
 					case 0x51: /* r9 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R9].SetValue (rbp, value);
+						regs [(int) X86_Register.R9].SetValue (rbp, value);
 						break;
 					case 0x52: /* r10 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R10].SetValue (rbp, value);
+						regs [(int) X86_Register.R10].SetValue (rbp, value);
 						break;
 					case 0x53: /* r11 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R11].SetValue (rbp, value);
+						regs [(int) X86_Register.R11].SetValue (rbp, value);
 						break;
 					case 0x54: /* r12 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R12].SetValue (rbp, value);
+						regs [(int) X86_Register.R12].SetValue (rbp, value);
 						break;
 					case 0x55: /* r13 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R13].SetValue (rbp, value);
+						regs [(int) X86_Register.R13].SetValue (rbp, value);
 						break;
 					case 0x56: /* r14 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R14].SetValue (rbp, value);
+						regs [(int) X86_Register.R14].SetValue (rbp, value);
 						break;
 					case 0x57: /* r15 */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.R15].SetValue (rbp, value);
+						regs [(int) X86_Register.R15].SetValue (rbp, value);
 						break;
 					}
 				} else {
@@ -374,27 +325,27 @@ namespace Mono.Debugger.Architectures
 					switch (opcode) {
 					case 0x50: /* rax */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.RAX].SetValue (rbp, value);
+						regs [(int) X86_Register.RAX].SetValue (rbp, value);
 						break;
 					case 0x51: /* rcx */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.RCX].SetValue (rbp, value);
+						regs [(int) X86_Register.RCX].SetValue (rbp, value);
 						break;
 					case 0x52: /* rdx */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.RDX].SetValue (rbp, value);
+						regs [(int) X86_Register.RDX].SetValue (rbp, value);
 						break;
 					case 0x53: /* rbx */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.RBX].SetValue (rbp, value);
+						regs [(int) X86_Register.RBX].SetValue (rbp, value);
 						break;
 					case 0x56: /* rsi */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.RSI].SetValue (rbp, value);
+						regs [(int) X86_Register.RSI].SetValue (rbp, value);
 						break;
 					case 0x57: /* rdi */
 						value = (long) memory.ReadInteger (rbp);
-						regs [(int) X86_64_Register.RDI].SetValue (rbp, value);
+						regs [(int) X86_Register.RDI].SetValue (rbp, value);
 						break;
 					}
 				}
@@ -428,12 +379,12 @@ namespace Mono.Debugger.Architectures
 				Registers regs = CopyRegisters (frame.Registers);
 
 				TargetAddress new_rip = memory.ReadAddress (frame.StackPointer);
-				regs [(int) X86_64_Register.RIP].SetValue (frame.StackPointer, new_rip);
+				regs [(int) X86_Register.RIP].SetValue (frame.StackPointer, new_rip);
 
 				TargetAddress new_rsp = frame.StackPointer + TargetAddressSize;
 				TargetAddress new_rbp = frame.FrameAddress;
 
-				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
+				regs [(int) X86_Register.RSP].SetValue (new_rsp);
 
 				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
 						    regs, true);
@@ -450,14 +401,14 @@ namespace Mono.Debugger.Architectures
 
 				int addr_size = TargetAddressSize;
 				TargetAddress new_rbp = memory.ReadAddress (frame.StackPointer);
-				regs [(int) X86_64_Register.RBP].SetValue (frame.StackPointer, new_rbp);
+				regs [(int) X86_Register.RBP].SetValue (frame.StackPointer, new_rbp);
 
 				TargetAddress new_rsp = frame.StackPointer + addr_size;
 				TargetAddress new_rip = memory.ReadAddress (new_rsp);
-				regs [(int) X86_64_Register.RIP].SetValue (new_rsp, new_rip);
+				regs [(int) X86_Register.RIP].SetValue (new_rsp, new_rip);
 				new_rsp -= addr_size;
 
-				regs [(int) X86_64_Register.RSP].SetValue (new_rsp);
+				regs [(int) X86_Register.RSP].SetValue (new_rsp);
 
 				return CreateFrame (frame.Thread, memory, new_rip, new_rsp,
 						    new_rbp, regs, true);
@@ -495,13 +446,13 @@ namespace Mono.Debugger.Architectures
 			Registers regs = CopyRegisters (frame.Registers);
 
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
-			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
+			regs [(int) X86_Register.RBP].SetValue (rbp, new_rbp);
 
 			TargetAddress new_rip = memory.ReadAddress (rbp + addr_size);
-			regs [(int) X86_64_Register.RIP].SetValue (rbp + addr_size, new_rip);
+			regs [(int) X86_Register.RIP].SetValue (rbp + addr_size, new_rip);
 
 			TargetAddress new_rsp = rbp + 2 * addr_size;
-			regs [(int) X86_64_Register.RSP].SetValue (rbp, new_rsp);
+			regs [(int) X86_Register.RSP].SetValue (rbp, new_rsp);
 
 			rbp -= addr_size;
 
@@ -529,15 +480,15 @@ namespace Mono.Debugger.Architectures
 			TargetAddress stack = frame.StackPointer;
 			/* See `struct sigcontext' in <asm/sigcontext.h> */
 			int[] regoffsets = {
-				(int) X86_64_Register.R8,  (int) X86_64_Register.R9,
-				(int) X86_64_Register.R10, (int) X86_64_Register.R11,
-				(int) X86_64_Register.R12, (int) X86_64_Register.R13,
-				(int) X86_64_Register.R14, (int) X86_64_Register.R15,
-				(int) X86_64_Register.RDI, (int) X86_64_Register.RSI,
-				(int) X86_64_Register.RBP, (int) X86_64_Register.RBX,
-				(int) X86_64_Register.RDX, (int) X86_64_Register.RAX,
-				(int) X86_64_Register.RCX, (int) X86_64_Register.RSP,
-				(int) X86_64_Register.RIP, (int) X86_64_Register.EFLAGS
+				(int) X86_Register.R8,  (int) X86_Register.R9,
+				(int) X86_Register.R10, (int) X86_Register.R11,
+				(int) X86_Register.R12, (int) X86_Register.R13,
+				(int) X86_Register.R14, (int) X86_Register.R15,
+				(int) X86_Register.RDI, (int) X86_Register.RSI,
+				(int) X86_Register.RBP, (int) X86_Register.RBX,
+				(int) X86_Register.RDX, (int) X86_Register.RAX,
+				(int) X86_Register.RCX, (int) X86_Register.RSP,
+				(int) X86_Register.RIP, (int) X86_Register.EFLAGS
 			};
 
 			Registers regs = CopyRegisters (frame.Registers);
@@ -552,11 +503,11 @@ namespace Mono.Debugger.Architectures
 			}
 
 			TargetAddress rip = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RIP].GetValue ());
 			TargetAddress rsp = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RSP].GetValue ());
 			TargetAddress rbp = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RBP].GetValue ());
 
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
@@ -578,13 +529,13 @@ namespace Mono.Debugger.Architectures
 		{
 			Registers regs = inferior.GetRegisters ();
 			TargetAddress rsp = new TargetAddress (
-				inferior.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				inferior.AddressDomain, regs [(int) X86_Register.RSP].GetValue ());
 			TargetAddress rip = inferior.ReadAddress (rsp);
 			rsp += TargetAddressSize;
 
-			regs [(int) X86_64_Register.RIP].SetValue (rip);
-			regs [(int) X86_64_Register.RSP].SetValue (rsp);
-			regs [(int) X86_64_Register.RAX].SetValue (TargetAddress.Null);
+			regs [(int) X86_Register.RIP].SetValue (rip);
+			regs [(int) X86_Register.RSP].SetValue (rsp);
+			regs [(int) X86_Register.RAX].SetValue (TargetAddress.Null);
 
 			inferior.SetRegisters (regs);
 		}
@@ -618,11 +569,11 @@ namespace Mono.Debugger.Architectures
 							  Registers regs, bool adjust_retaddr)
 		{
 			TargetAddress address = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RIP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RIP].GetValue ());
 			TargetAddress stack_pointer = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RSP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RSP].GetValue ());
 			TargetAddress frame_pointer = new TargetAddress (
-				memory.AddressDomain, regs [(int) X86_64_Register.RBP].GetValue ());
+				memory.AddressDomain, regs [(int) X86_Register.RBP].GetValue ());
 
 			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer,
 					    regs, adjust_retaddr);
@@ -656,17 +607,17 @@ namespace Mono.Debugger.Architectures
 			TargetAddress r15 = reader.ReadTargetAddress ();
 
 			Registers regs = new Registers (this);
-			regs [(int) X86_64_Register.RBX].SetValue (lmf + 24, rip);
-			regs [(int) X86_64_Register.RBX].SetValue (lmf + 32, rbx);
-			regs [(int) X86_64_Register.RBP].SetValue (lmf + 40, rbp);
-			regs [(int) X86_64_Register.RSP].SetValue (lmf + 48, rsp);
-			regs [(int) X86_64_Register.R12].SetValue (lmf + 56, r12);
-			regs [(int) X86_64_Register.R13].SetValue (lmf + 64, r13);
-			regs [(int) X86_64_Register.R14].SetValue (lmf + 72, r14);
-			regs [(int) X86_64_Register.R15].SetValue (lmf + 80, r15);
+			regs [(int) X86_Register.RBX].SetValue (lmf + 24, rip);
+			regs [(int) X86_Register.RBX].SetValue (lmf + 32, rbx);
+			regs [(int) X86_Register.RBP].SetValue (lmf + 40, rbp);
+			regs [(int) X86_Register.RSP].SetValue (lmf + 48, rsp);
+			regs [(int) X86_Register.R12].SetValue (lmf + 56, r12);
+			regs [(int) X86_Register.R13].SetValue (lmf + 64, r13);
+			regs [(int) X86_Register.R14].SetValue (lmf + 72, r14);
+			regs [(int) X86_Register.R15].SetValue (lmf + 80, r15);
 
 			TargetAddress new_rbp = memory.ReadAddress (rbp);
-			regs [(int) X86_64_Register.RBP].SetValue (rbp, new_rbp);
+			regs [(int) X86_Register.RBP].SetValue (rbp, new_rbp);
 
 			return CreateFrame (thread.Client, memory, rip, rsp, new_rbp, regs, true);
 		}

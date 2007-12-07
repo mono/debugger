@@ -129,10 +129,13 @@ namespace Mono.Debugger
 		internal Registers (Architecture arch)
 		{
 			regs = new Register [arch.CountRegisters];
-			for (int i = 0; i < regs.Length; i++)
+			for (int i = 0; i < regs.Length; i++) {
+				if (arch.RegisterSizes [i] < 0)
+					continue;
 				regs [i] = new Register (
 					this, arch.RegisterNames [i], i,
 					arch.RegisterSizes [i], false, 0);
+			}
 		}
 
 		internal Registers (Architecture arch, long[] values)
@@ -140,20 +143,26 @@ namespace Mono.Debugger
 			regs = new Register [arch.CountRegisters];
 			if (regs.Length != values.Length)
 				throw new ArgumentException ();
-			for (int i = 0; i < regs.Length; i++)
+			for (int i = 0; i < regs.Length; i++) {
+				if (arch.RegisterSizes [i] < 0)
+					continue;
 				regs [i] = new Register (
 					this, arch.RegisterNames [i], i,
 					arch.RegisterSizes [i], true, values [i]);
+			}
 			from_current_frame = true;
 		}
 
 		internal Registers (Registers old_regs)
 		{
 			regs = new Register [old_regs.regs.Length];
-			for (int i = 0; i < regs.Length; i++)
+			for (int i = 0; i < regs.Length; i++) {
+				if (old_regs [i] == null)
+					continue;
 				regs [i] = new Register (
 					this, old_regs [i].Name, i, old_regs [i].Size,
 					false, old_regs [i].GetValue ());
+			}
 		}
 
 		public Register this [int index] {
@@ -164,9 +173,12 @@ namespace Mono.Debugger
 
 		public Register this [string name] {
 			get {
-				foreach (Register reg in regs)
+				foreach (Register reg in regs) {
+					if (reg == null)
+						continue;
 					if (reg.Name == name)
 						return reg;
+				}
 
 				return null;
 			}
@@ -175,8 +187,11 @@ namespace Mono.Debugger
 		internal long[] Values {
 			get {
 				long[] retval = new long [regs.Length];
-				for (int i = 0; i < regs.Length; i++)
+				for (int i = 0; i < regs.Length; i++) {
+					if (regs [i] == null)
+						continue;
 					retval [i] = regs [i].GetValue ();
+				}
 
 				return retval;
 			}

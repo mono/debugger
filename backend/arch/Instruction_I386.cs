@@ -17,21 +17,21 @@ namespace Mono.Debugger.Architectures
 		{
 			switch (register) {
 			case 0: /* eax */
-				return (int) I386Register.EAX;
+				return (int) X86_Register.RAX;
 			case 1: /* ecx */
-				return (int) I386Register.ECX;
+				return (int) X86_Register.RCX;
 			case 2: /* edx */
-				return (int) I386Register.EDX;
+				return (int) X86_Register.RDX;
 			case 3: /* ebx */
-				return (int) I386Register.EBX;
+				return (int) X86_Register.RBX;
 			case 4: /* esp */
-				return (int) I386Register.ESP;
+				return (int) X86_Register.RSP;
 			case 5: /* ebp */
-				return (int) I386Register.EBP;
+				return (int) X86_Register.RBP;
 			case 6: /* esi */
-				return (int) I386Register.ESI;
+				return (int) X86_Register.RSI;
 			case 7: /* edi */
-				return (int) I386Register.EDI;
+				return (int) X86_Register.RDI;
 			default:
 				/* can never happen */
 				throw new InvalidOperationException ();
@@ -62,7 +62,7 @@ namespace Mono.Debugger.Architectures
 			case Type.Jump: {
 				TargetAddress target = GetEffectiveAddress (inferior);
 				Registers regs = inferior.GetRegisters ();
-				regs [(int) I386Register.EIP].SetValue (target);
+				regs [(int) X86_Register.RIP].SetValue (target);
 				inferior.SetRegisters (regs);
 				return true;
 			}
@@ -73,14 +73,14 @@ namespace Mono.Debugger.Architectures
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress eip = new TargetAddress (
-					inferior.AddressDomain, regs [(int) I386Register.EIP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RIP].Value);
 				TargetAddress esp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RSP].Value);
 
 				inferior.WriteAddress (esp - 4, eip + InstructionSize);
 
-				regs [(int) I386Register.ESP].SetValue (esp - 4);
-				regs [(int) I386Register.EIP].SetValue (target);
+				regs [(int) X86_Register.RSP].SetValue (esp - 4);
+				regs [(int) X86_Register.RIP].SetValue (target);
 				inferior.SetRegisters (regs);
 				return true;
 			}
@@ -89,13 +89,13 @@ namespace Mono.Debugger.Architectures
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress esp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RSP].Value);
 
 				TargetAddress eip = inferior.ReadAddress (esp);
 				esp += 4 + Displacement;
 
-				regs [(int) I386Register.ESP].SetValue (esp);
-				regs [(int) I386Register.EIP].SetValue (eip);
+				regs [(int) X86_Register.RSP].SetValue (esp);
+				regs [(int) X86_Register.RIP].SetValue (eip);
 				inferior.SetRegisters (regs);
 				return true;
 			}
@@ -104,16 +104,16 @@ namespace Mono.Debugger.Architectures
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress esp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) I386Register.ESP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RSP].Value);
 				TargetAddress ebp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) I386Register.EBP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RBP].Value);
 				TargetAddress eip = new TargetAddress (
-					inferior.AddressDomain, regs [(int) I386Register.EIP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RIP].Value);
 
 				if (Code [0] == 0x55) /* push %ebp */ {
 					inferior.WriteAddress (esp - 4, ebp);
-					regs [(int) I386Register.ESP].SetValue (esp - 4);
-					regs [(int) I386Register.EIP].SetValue (eip + 1);
+					regs [(int) X86_Register.RSP].SetValue (esp - 4);
+					regs [(int) X86_Register.RIP].SetValue (eip + 1);
 					inferior.SetRegisters (regs);
 					return true;
 				}

@@ -17,37 +17,37 @@ namespace Mono.Debugger.Architectures
 		{
 			switch (register) {
 			case 0: /* rax */
-				return (int) X86_64_Register.RAX;
+				return (int) X86_Register.RAX;
 			case 1: /* rcx */
-				return (int) X86_64_Register.RCX;
+				return (int) X86_Register.RCX;
 			case 2: /* rdx */
-				return (int) X86_64_Register.RDX;
+				return (int) X86_Register.RDX;
 			case 3: /* rbx */
-				return (int) X86_64_Register.RBX;
+				return (int) X86_Register.RBX;
 			case 4: /* rsp */
-				return (int) X86_64_Register.RSP;
+				return (int) X86_Register.RSP;
 			case 5: /* rbp */
-				return (int) X86_64_Register.RBP;
+				return (int) X86_Register.RBP;
 			case 6: /* rsi */
-				return (int) X86_64_Register.RSI;
+				return (int) X86_Register.RSI;
 			case 7: /* rdi */
-				return (int) X86_64_Register.RDI;
+				return (int) X86_Register.RDI;
 			case 8: /* r8 */
-				return (int) X86_64_Register.R8;
+				return (int) X86_Register.R8;
 			case 9: /* r9 */
-				return (int) X86_64_Register.R9;
+				return (int) X86_Register.R9;
 			case 10: /* r10 */
-				return (int) X86_64_Register.R10;
+				return (int) X86_Register.R10;
 			case 11: /* r11 */
-				return (int) X86_64_Register.R11;
+				return (int) X86_Register.R11;
 			case 12: /* r12 */
-				return (int) X86_64_Register.R12;
+				return (int) X86_Register.R12;
 			case 13: /* r13 */
-				return (int) X86_64_Register.R13;
+				return (int) X86_Register.R13;
 			case 14: /* r14 */
-				return (int) X86_64_Register.R14;
+				return (int) X86_Register.R14;
 			case 15: /* r15 */
-				return (int) X86_64_Register.R15;
+				return (int) X86_Register.R15;
 			default:
 				/* can never happen */
 				throw new InvalidOperationException ();
@@ -78,7 +78,7 @@ namespace Mono.Debugger.Architectures
 			case Type.Jump: {
 				TargetAddress target = GetEffectiveAddress (inferior);
 				Registers regs = inferior.GetRegisters ();
-				regs [(int) X86_64_Register.RIP].SetValue (target);
+				regs [(int) X86_Register.RIP].SetValue (target);
 				inferior.SetRegisters (regs);
 				return true;
 			}
@@ -89,14 +89,14 @@ namespace Mono.Debugger.Architectures
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress rip = new TargetAddress (
-					inferior.AddressDomain, regs [(int) X86_64_Register.RIP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RIP].Value);
 				TargetAddress rsp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) X86_64_Register.RSP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RSP].Value);
 
 				inferior.WriteAddress (rsp - 8, rip + InstructionSize);
 
-				regs [(int) X86_64_Register.RSP].SetValue (rsp - 8);
-				regs [(int) X86_64_Register.RIP].SetValue (target);
+				regs [(int) X86_Register.RSP].SetValue (rsp - 8);
+				regs [(int) X86_Register.RIP].SetValue (target);
 				inferior.SetRegisters (regs);
 				return true;
 			}
@@ -105,13 +105,13 @@ namespace Mono.Debugger.Architectures
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress rsp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) X86_64_Register.RSP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RSP].Value);
 
 				TargetAddress rip = inferior.ReadAddress (rsp);
 				rsp += 8 + Displacement;
 
-				regs [(int) X86_64_Register.RSP].SetValue (rsp);
-				regs [(int) X86_64_Register.RIP].SetValue (rip);
+				regs [(int) X86_Register.RSP].SetValue (rsp);
+				regs [(int) X86_Register.RIP].SetValue (rip);
 				inferior.SetRegisters (regs);
 				return true;
 			}
@@ -120,16 +120,16 @@ namespace Mono.Debugger.Architectures
 				Registers regs = inferior.GetRegisters ();
 
 				TargetAddress rsp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) X86_64_Register.RSP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RSP].Value);
 				TargetAddress rbp = new TargetAddress (
-					inferior.AddressDomain, regs [(int) X86_64_Register.RBP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RBP].Value);
 				TargetAddress rip = new TargetAddress (
-					inferior.AddressDomain, regs [(int) X86_64_Register.RIP].Value);
+					inferior.AddressDomain, regs [(int) X86_Register.RIP].Value);
 
 				if (Code [0] == 0x55) /* push %rbp */ {
 					inferior.WriteAddress (rsp - 8, rbp);
-					regs [(int) X86_64_Register.RSP].SetValue (rsp - 8);
-					regs [(int) X86_64_Register.RIP].SetValue (rip + 1);
+					regs [(int) X86_Register.RSP].SetValue (rsp - 8);
+					regs [(int) X86_Register.RIP].SetValue (rip + 1);
 					inferior.SetRegisters (regs);
 					return true;
 				}

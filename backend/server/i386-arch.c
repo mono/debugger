@@ -590,21 +590,21 @@ server_ptrace_get_registers (ServerHandle *handle, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
 
-	values [DEBUGGER_REG_EBX] = (guint32) INFERIOR_REG_EBX (arch->current_regs);
-	values [DEBUGGER_REG_ECX] = (guint32) INFERIOR_REG_ECX (arch->current_regs);
-	values [DEBUGGER_REG_EDX] = (guint32) INFERIOR_REG_EDX (arch->current_regs);
-	values [DEBUGGER_REG_ESI] = (guint32) INFERIOR_REG_ESI (arch->current_regs);
-	values [DEBUGGER_REG_EDI] = (guint32) INFERIOR_REG_EDI (arch->current_regs);
-	values [DEBUGGER_REG_EBP] = (guint32) INFERIOR_REG_EBP (arch->current_regs);
-	values [DEBUGGER_REG_EAX] = (guint32) INFERIOR_REG_EAX (arch->current_regs);
+	values [DEBUGGER_REG_RBX] = (guint32) INFERIOR_REG_EBX (arch->current_regs);
+	values [DEBUGGER_REG_RCX] = (guint32) INFERIOR_REG_ECX (arch->current_regs);
+	values [DEBUGGER_REG_RDX] = (guint32) INFERIOR_REG_EDX (arch->current_regs);
+	values [DEBUGGER_REG_RSI] = (guint32) INFERIOR_REG_ESI (arch->current_regs);
+	values [DEBUGGER_REG_RDI] = (guint32) INFERIOR_REG_EDI (arch->current_regs);
+	values [DEBUGGER_REG_RBP] = (guint32) INFERIOR_REG_EBP (arch->current_regs);
+	values [DEBUGGER_REG_RAX] = (guint32) INFERIOR_REG_EAX (arch->current_regs);
 	values [DEBUGGER_REG_DS] = (guint32) INFERIOR_REG_DS (arch->current_regs);
 	values [DEBUGGER_REG_ES] = (guint32) INFERIOR_REG_ES (arch->current_regs);
 	values [DEBUGGER_REG_FS] = (guint32) INFERIOR_REG_FS (arch->current_regs);
 	values [DEBUGGER_REG_GS] = (guint32) INFERIOR_REG_GS (arch->current_regs);
-	values [DEBUGGER_REG_EIP] = (guint32) INFERIOR_REG_EIP (arch->current_regs);
+	values [DEBUGGER_REG_RIP] = (guint32) INFERIOR_REG_EIP (arch->current_regs);
 	values [DEBUGGER_REG_CS] = (guint32) INFERIOR_REG_CS (arch->current_regs);
 	values [DEBUGGER_REG_EFLAGS] = (guint32) INFERIOR_REG_EFLAGS (arch->current_regs);
-	values [DEBUGGER_REG_ESP] = (guint32) INFERIOR_REG_ESP (arch->current_regs);
+	values [DEBUGGER_REG_RSP] = (guint32) INFERIOR_REG_ESP (arch->current_regs);
 	values [DEBUGGER_REG_SS] = (guint32) INFERIOR_REG_SS (arch->current_regs);
 
 	return COMMAND_ERROR_NONE;
@@ -615,21 +615,21 @@ server_ptrace_set_registers (ServerHandle *handle, guint64 *values)
 {
 	ArchInfo *arch = handle->arch;
 
-	INFERIOR_REG_EBX (arch->current_regs) = values [DEBUGGER_REG_EBX];
-	INFERIOR_REG_ECX (arch->current_regs) = values [DEBUGGER_REG_ECX];
-	INFERIOR_REG_EDX (arch->current_regs) = values [DEBUGGER_REG_EDX];
-	INFERIOR_REG_ESI (arch->current_regs) = values [DEBUGGER_REG_ESI];
-	INFERIOR_REG_EDI (arch->current_regs) = values [DEBUGGER_REG_EDI];
-	INFERIOR_REG_EBP (arch->current_regs) = values [DEBUGGER_REG_EBP];
-	INFERIOR_REG_EAX (arch->current_regs) = values [DEBUGGER_REG_EAX];
+	INFERIOR_REG_EBX (arch->current_regs) = values [DEBUGGER_REG_RBX];
+	INFERIOR_REG_ECX (arch->current_regs) = values [DEBUGGER_REG_RCX];
+	INFERIOR_REG_EDX (arch->current_regs) = values [DEBUGGER_REG_RDX];
+	INFERIOR_REG_ESI (arch->current_regs) = values [DEBUGGER_REG_RSI];
+	INFERIOR_REG_EDI (arch->current_regs) = values [DEBUGGER_REG_RDI];
+	INFERIOR_REG_EBP (arch->current_regs) = values [DEBUGGER_REG_RBP];
+	INFERIOR_REG_EAX (arch->current_regs) = values [DEBUGGER_REG_RAX];
 	INFERIOR_REG_DS (arch->current_regs) = values [DEBUGGER_REG_DS];
 	INFERIOR_REG_ES (arch->current_regs) = values [DEBUGGER_REG_ES];
 	INFERIOR_REG_FS (arch->current_regs) = values [DEBUGGER_REG_FS];
 	INFERIOR_REG_GS (arch->current_regs) = values [DEBUGGER_REG_GS];
-	INFERIOR_REG_EIP (arch->current_regs) = values [DEBUGGER_REG_EIP];
+	INFERIOR_REG_EIP (arch->current_regs) = values [DEBUGGER_REG_RIP];
 	INFERIOR_REG_CS (arch->current_regs) = values [DEBUGGER_REG_CS];
 	INFERIOR_REG_EFLAGS (arch->current_regs) = values [DEBUGGER_REG_EFLAGS];
-	INFERIOR_REG_ESP (arch->current_regs) = values [DEBUGGER_REG_ESP];
+	INFERIOR_REG_ESP (arch->current_regs) = values [DEBUGGER_REG_RSP];
 	INFERIOR_REG_SS (arch->current_regs) = values [DEBUGGER_REG_SS];
 
 	return _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
@@ -1201,21 +1201,21 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 			}
 		}
 
-		registers [DEBUGGER_REG_EBX] = (guint32) INFERIOR_REG_EBX (cdata->saved_regs);
-		registers [DEBUGGER_REG_ECX] = (guint32) INFERIOR_REG_ECX (cdata->saved_regs);
-		registers [DEBUGGER_REG_EDX] = (guint32) INFERIOR_REG_EDX (cdata->saved_regs);
-		registers [DEBUGGER_REG_ESI] = (guint32) INFERIOR_REG_ESI (cdata->saved_regs);
-		registers [DEBUGGER_REG_EDI] = (guint32) INFERIOR_REG_EDI (cdata->saved_regs);
-		registers [DEBUGGER_REG_EBP] = (guint32) INFERIOR_REG_EBP (cdata->saved_regs);
-		registers [DEBUGGER_REG_EAX] = (guint32) INFERIOR_REG_EAX (cdata->saved_regs);
+		registers [DEBUGGER_REG_RBX] = (guint32) INFERIOR_REG_EBX (cdata->saved_regs);
+		registers [DEBUGGER_REG_RCX] = (guint32) INFERIOR_REG_ECX (cdata->saved_regs);
+		registers [DEBUGGER_REG_RDX] = (guint32) INFERIOR_REG_EDX (cdata->saved_regs);
+		registers [DEBUGGER_REG_RSI] = (guint32) INFERIOR_REG_ESI (cdata->saved_regs);
+		registers [DEBUGGER_REG_RDI] = (guint32) INFERIOR_REG_EDI (cdata->saved_regs);
+		registers [DEBUGGER_REG_RBP] = (guint32) INFERIOR_REG_EBP (cdata->saved_regs);
+		registers [DEBUGGER_REG_RAX] = (guint32) INFERIOR_REG_EAX (cdata->saved_regs);
 		registers [DEBUGGER_REG_DS] = (guint32) INFERIOR_REG_DS (cdata->saved_regs);
 		registers [DEBUGGER_REG_ES] = (guint32) INFERIOR_REG_ES (cdata->saved_regs);
 		registers [DEBUGGER_REG_FS] = (guint32) INFERIOR_REG_FS (cdata->saved_regs);
 		registers [DEBUGGER_REG_GS] = (guint32) INFERIOR_REG_GS (cdata->saved_regs);
-		registers [DEBUGGER_REG_EIP] = (guint32) INFERIOR_REG_EIP (cdata->saved_regs);
+		registers [DEBUGGER_REG_RIP] = (guint32) INFERIOR_REG_EIP (cdata->saved_regs);
 		registers [DEBUGGER_REG_CS] = (guint32) INFERIOR_REG_CS (cdata->saved_regs);
 		registers [DEBUGGER_REG_EFLAGS] = (guint32) INFERIOR_REG_EFLAGS (cdata->saved_regs);
-		registers [DEBUGGER_REG_ESP] = (guint32) INFERIOR_REG_ESP (cdata->saved_regs);
+		registers [DEBUGGER_REG_RSP] = (guint32) INFERIOR_REG_ESP (cdata->saved_regs);
 		registers [DEBUGGER_REG_SS] = (guint32) INFERIOR_REG_SS (cdata->saved_regs);
 
 		return COMMAND_ERROR_NONE;
