@@ -96,7 +96,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		internal void RunMainLoop ()
+		protected void RunMainLoop ()
 		{
 			is_inferior_main = false;
 
@@ -115,6 +115,7 @@ namespace Mono.Debugger.Frontend
 			} catch (Exception ex) {
 				interpreter.Error ("ERROR: {0}", ex);
 			} finally {
+				interpreter.DebuggerConfiguration.SaveConfiguration ();
 				interpreter.Exit ();
 			}
 		}
@@ -246,6 +247,8 @@ namespace Mono.Debugger.Frontend
 				is_terminal, config, options);
 
 			interpreter.RunMainLoop ();
+
+			config.SaveConfiguration ();
 		}
 	}
 }

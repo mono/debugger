@@ -85,6 +85,12 @@ namespace Mono.Debugger
 			while (iter.MoveNext ()) {
 				if (iter.Current.Name == "LoadNativeSymtabs")
 					LoadNativeSymtabs = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "BrokenThreading")
+					BrokenThreading = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "StayInThread")
+					StayInThread = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "FollowFork")
+					FollowFork = Boolean.Parse (iter.Current.Value);
 				else
 					throw new InvalidOperationException ();
 			}
@@ -110,6 +116,18 @@ namespace Mono.Debugger
 				load_native_symtabs_e.InnerText = LoadNativeSymtabs ? "true" : "false";
 				element.AppendChild (load_native_symtabs_e);
 
+				XmlElement broken_threading_e = doc.CreateElement ("BrokenThreading");
+				broken_threading_e.InnerText = BrokenThreading ? "true" : "false";
+				element.AppendChild (broken_threading_e);
+
+				XmlElement stay_in_thread_e = doc.CreateElement ("StayInThread");
+				stay_in_thread_e.InnerText = StayInThread ? "true" : "false";
+				element.AppendChild (stay_in_thread_e);
+
+				XmlElement follow_fork_e = doc.CreateElement ("FollowFork");
+				follow_fork_e.InnerText = FollowFork ? "true" : "false";
+				element.AppendChild (follow_fork_e);
+
 				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
 				doc.DocumentElement.AppendChild (module_groups);
 
@@ -123,6 +141,7 @@ namespace Mono.Debugger
 		bool stay_in_thread;
 		bool broken_threading = true;
 		bool load_native_symtabs;
+		bool follow_fork = true;
 		Hashtable module_groups;
 
 		//
@@ -207,17 +226,22 @@ namespace Mono.Debugger
 		//
 		public bool LoadNativeSymtabs {
 			get { return load_native_symtabs; }
-			set { load_native_symtabs = true; }
+			set { load_native_symtabs = value; }
 		}
 
 		public bool StayInThread {
 			get { return stay_in_thread; }
-			set { stay_in_thread = false; }
+			set { stay_in_thread = value; }
 		}
 
 		public bool BrokenThreading {
 			get { return broken_threading; }
 			set { broken_threading = value; }
+		}
+
+		public bool FollowFork {
+			get { return follow_fork; }
+			set { follow_fork = value; }
 		}
 	}
 }

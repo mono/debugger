@@ -1,5 +1,10 @@
 2007-12-08  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.FollowFork): New property.  Not yet implemented.
+
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
 	* backend/ThreadDB.cs
 	(ThreadDB.GetThreadInfo): Added `TargetMemoryAccess' argument;
 	operate on that target.  This fixes the XSP issue.
