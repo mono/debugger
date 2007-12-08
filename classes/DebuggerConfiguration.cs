@@ -76,7 +76,7 @@ namespace Mono.Debugger
 			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));
 			Assembly ass = Assembly.GetExecutingAssembly ();
 			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
-				reader.Schemas.Add ("", new XmlTextReader (schema));
+				reader.Schemas.Add (null, new XmlTextReader (schema));
 
 			XPathDocument doc = new XPathDocument (reader);
 			XPathNavigator nav = doc.CreateNavigator ();
