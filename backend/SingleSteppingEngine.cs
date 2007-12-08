@@ -127,6 +127,13 @@ namespace Mono.Debugger.Backend
 			return result;
 		}
 
+		internal void InitAfterFork ()
+		{
+			CommandResult result = new ThreadCommandResult (thread);
+			current_operation = new OperationRun (this, result);
+			PushOperation (new OperationInitAfterFork (this));
+		}
+
 #region child event processing
 		// <summary>
 		//   This is called from the SingleSteppingEngine's main event loop to give
@@ -967,8 +974,8 @@ namespace Mono.Debugger.Backend
 				      "{0} throwing exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
 
-			if ((current_operation != null) && !current_operation.StartFrame.IsNull &&
-			    current_operation.StartFrame == ip)
+			if ((current_operation != null) && (current_operation.StartFrame != null) &&
+			    (current_operation.StartFrame.Address == ip))
 				return false;
 
 			if (current_operation is OperationRuntimeInvoke)
@@ -1974,7 +1981,7 @@ namespace Mono.Debugger.Backend
 		protected readonly Inferior inferior;
 
 		public readonly CommandResult Result;
-		public TargetAddress StartFrame = TargetAddress.Null;
+		public Inferior.StackFrame StartFrame;
 		public int PendingBreakpoint = -1;
 
 		protected Operation (SingleSteppingEngine sse, CommandResult result)
@@ -1990,7 +1997,7 @@ namespace Mono.Debugger.Backend
 
 		public virtual void Execute ()
 		{
-			StartFrame = inferior.CurrentFrame;
+			StartFrame = inferior.GetCurrentFrame (true);
 			Report.Debug (DebugFlags.SSE, "{0} executing {1} at {2}",
 				      sse, this, StartFrame);
 			DoExecute ();
@@ -2341,6 +2348,33 @@ namespace Mono.Debugger.Backend
 
 			sse.PushOperation (new OperationGetLMFAddr (sse, null));
 			return EventResult.Running;
+		}
+	}
+
+	protected class OperationInitAfterFork : Operation
+	{
+		public OperationInitAfterFork (SingleSteppingEngine sse)
+			: base (sse, null)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected override void DoExecute ()
+		{ }
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} init after fork ({1})", sse,
+				      DebuggerWaitHandle.CurrentThread);
+
+			sse.ProcessServant.BreakpointManager.InitializeAfterFork (inferior);
+
+			args = null;
+			return EventResult.AskParent;
 		}
 	}
 

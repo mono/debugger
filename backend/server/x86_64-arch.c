@@ -521,7 +521,7 @@ runtime_info_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoin
 }
 
 static ServerCommandError
-do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
+x86_arch_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
@@ -576,7 +576,7 @@ do_enable (ServerHandle *handle, BreakpointInfo *breakpoint)
 }
 
 static ServerCommandError
-do_disable (ServerHandle *handle, BreakpointInfo *breakpoint)
+x86_arch_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint)
 {
 	ServerCommandError result;
 	ArchInfo *arch = handle->arch;
@@ -649,7 +649,7 @@ server_ptrace_insert_breakpoint (ServerHandle *handle, guint64 address, guint32 
 	breakpoint->id = mono_debugger_breakpoint_manager_get_next_id ();
 	breakpoint->dr_index = -1;
 
-	result = do_enable (handle, breakpoint);
+	result = x86_arch_enable_breakpoint (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
 		mono_debugger_breakpoint_manager_unlock ();
 		g_free (breakpoint);
@@ -683,7 +683,7 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
 		goto out;
 	}
 
-	result = do_disable (handle, breakpoint);
+	result = x86_arch_disable_breakpoint (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE)
 		goto out;
 
@@ -693,26 +693,6 @@ server_ptrace_remove_breakpoint (ServerHandle *handle, guint32 bhandle)
  out:
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
-}
-
-static ServerCommandError
-server_ptrace_init_after_fork (ServerHandle *handle, gboolean follow_fork)
-{
-	GPtrArray *breakpoints;
-	int i;
-
-	mono_debugger_breakpoint_manager_lock ();
-
-	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
-	for (i = 0; i < breakpoints->len; i++) {
-		BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
-
-		if (!follow_fork || (info->dr_index >= 0))
-			do_disable (handle, info);
-	}
-
-	mono_debugger_breakpoint_manager_unlock ();
-	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -758,7 +738,7 @@ server_ptrace_insert_hw_breakpoint (ServerHandle *handle, guint32 type, guint32 
 	breakpoint->is_hardware_bpt = TRUE;
 	breakpoint->dr_index = *idx;
 
-	result = do_enable (handle, breakpoint);
+	result = x86_arch_enable_breakpoint (handle, breakpoint);
 	if (result != COMMAND_ERROR_NONE) {
 		mono_debugger_breakpoint_manager_unlock ();
 		g_free (breakpoint);
@@ -787,7 +767,7 @@ server_ptrace_enable_breakpoint (ServerHandle *handle, guint32 bhandle)
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 	}
 
-	result = do_enable (handle, breakpoint);
+	result = x86_arch_enable_breakpoint (handle, breakpoint);
 	breakpoint->enabled = TRUE;
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;
@@ -806,7 +786,7 @@ server_ptrace_disable_breakpoint (ServerHandle *handle, guint32 bhandle)
 		return COMMAND_ERROR_NO_SUCH_BREAKPOINT;
 	}
 
-	result = do_disable (handle, breakpoint);
+	result = x86_arch_disable_breakpoint (handle, breakpoint);
 	breakpoint->enabled = FALSE;
 	mono_debugger_breakpoint_manager_unlock ();
 	return result;

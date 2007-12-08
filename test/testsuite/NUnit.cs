@@ -80,6 +80,8 @@ namespace Mono.Debugger.Tests
 			this.inferior_stdout = inferior_stdout;
 			this.inferior_stderr = inferior_stderr;
 
+			config.FollowFork = true;
+
 			queue = Queue.Synchronized (new Queue ());
 			wait_event = new ST.ManualResetEvent (false);
 

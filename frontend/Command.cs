@@ -87,6 +87,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("save", typeof (SaveCommand));
 			RegisterCommand ("load", typeof (LoadCommand));
 			RegisterCommand ("module", typeof (ModuleCommand));
+			RegisterCommand ("config", typeof (ConfigCommand));
 		}
 	}
 
@@ -3553,6 +3554,78 @@ namespace Mono.Debugger.Frontend
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Support; } }
 		public string Description { get { return "Test."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class ConfigCommand : DebuggerCommand, IDocumentableCommand
+	{
+		bool expert_mode;
+
+		public bool Expert {
+			get { return expert_mode; }
+			set { expert_mode = value; }
+		}
+
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			DebuggerConfiguration config = context.Interpreter.DebuggerConfiguration;
+
+			if (Args == null) {
+				context.Print (config.PrintConfiguration (expert_mode));
+				return true;
+			}
+
+			foreach (string arg in Args) {
+				if ((arg [0] != '+') && (arg [0] != '-'))
+					throw new ScriptingException ("Expected `+option' or `-option'.");
+
+				bool enable = arg [0] == '+';
+
+				string option = arg.Substring (1);
+				switch (option) {
+				case "native-symtabs":
+					config.LoadNativeSymtabs = enable;
+					break;
+
+				case "follow-fork":
+					config.FollowFork = enable;
+					break;
+
+				case "broken-threading":
+					if (!expert_mode)
+						throw new ScriptingException (
+							"This option is only available in expert mode.");
+
+					config.BrokenThreading = enable;
+					break;
+
+				case "stay-in-thread":
+					if (!expert_mode)
+						throw new ScriptingException (
+							"This option is only available in expert mode.");
+
+					config.StayInThread = enable;
+					break;
+
+				default:
+					throw new ScriptingException (
+						"No such configuration option `{0}'.", option);
+				}
+			}
+
+			config.SaveConfiguration ();
+			context.Print ("Configuration changed.");
+			return true;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			return null;
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Support; } }
+		public string Description { get { return "Modify configuration options."; } }
 		public string Documentation { get { return ""; } }
 	}
 }

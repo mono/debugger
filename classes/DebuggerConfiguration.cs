@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Reflection;
 using System.Collections;
 using System.Configuration;
@@ -138,10 +139,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool stay_in_thread;
+		bool stay_in_thread = false;
 		bool broken_threading = true;
-		bool load_native_symtabs;
-		bool follow_fork = true;
+		bool load_native_symtabs = false;
+		bool follow_fork = false;
 		Hashtable module_groups;
 
 		//
@@ -242,6 +243,23 @@ namespace Mono.Debugger
 		public bool FollowFork {
 			get { return follow_fork; }
 			set { follow_fork = value; }
+		}
+
+		public string PrintConfiguration (bool expert_mode)
+		{
+			StringBuilder sb = new StringBuilder ("Debugger Configuration:\n");
+			sb.Append (String.Format ("  Load native symtabs (native-symtabs):  {0}\n",
+						  LoadNativeSymtabs ? "yes" : "no"));
+			sb.Append (String.Format ("  Follow fork (follow-fork):             {0}\n",
+						  FollowFork ? "yes" : "no"));
+			if (expert_mode) {
+				sb.Append ("\nExpert Settings:\n");
+				sb.Append (String.Format ("  Broken threading (broken-threading):   {0}\n",
+							  BrokenThreading ? "enabled" : "disabled"));
+				sb.Append (String.Format ("  Stay in thread (stay-in-thread):       {0}\n",
+							  BrokenThreading ? "yes" : "no"));
+			}
+			return sb.ToString ();
 		}
 	}
 }

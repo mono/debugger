@@ -200,9 +200,8 @@ namespace Mono.Debugger.Backend
 				manager, new_process, new_process.ProcessStart);
 			new_inferior.InitializeThread (pid);
 
-			new_inferior.InitializeAfterFork (manager.Debugger.Configuration.FollowFork);
 			if (!manager.Debugger.Configuration.FollowFork) {
-				new_inferior.Detach ();
+				new_inferior.DetachAfterFork ();
 				return;
 			}
 
@@ -216,7 +215,7 @@ namespace Mono.Debugger.Backend
 			// Order is important: first add the new engine to the manager's hash table,
 			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
-			new_thread.StartThread (false);
+			new_thread.InitAfterFork ();
 
 			manager.Debugger.OnProcessCreatedEvent (new_process);
 			new_process.OnThreadCreatedEvent (new_thread);

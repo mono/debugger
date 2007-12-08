@@ -74,9 +74,6 @@ namespace Mono.Debugger.Frontend
 
 		public void Exit ()
 		{
-			if (config != null)
-				config.SaveConfiguration ();
-
 			try {
 				Dispose ();
 			} catch (Exception ex) {

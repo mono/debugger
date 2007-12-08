@@ -1,5 +1,51 @@
 2007-12-08  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Bumped version number to 0.60.
+
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
+	Changed default behavior: don't follow fork() by default.
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.FollowFork): Changed default to false.
+
+	* test/testsuite/NUnit.cs
+	(NUnitInterpreter.ctor): Override configuration: enable `FollowFork'.
+
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(ConfigCommand): New command.
+
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
+	* backend/Inferior.cs
+	(Inferior): Replaced InitializeAfterFork() by DetachAfterFork().
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.InitAfterFork): New method.
+	(OperationInitializeAfterFork): New operation.  To avoid a race
+	condition, we need to wait until the target stopped the first time
+	before we can disable the local breakpoints.
+
+	* backend/server/server.h
+	(mono_debugger_server_init_after_fork): Renamed info
+	mono_debugger_server_detach_after_fork().
+
+	* backend/server/x86-arch.h
+	(x86_arch_enable_breakpoint): Add prototype.
+	(x86_arch_disable_breakpoint): Add prototype.
+
+	* backend/server/i386-arch.c
+	(do_enable): Renamed into x86_arch_enable_breakpoint().
+	(do_disable): Renamed into x86_arch_disable_breakpoint().
+
+	* backend/server/x86_64-arch.c
+	(do_enable): Renamed into x86_arch_enable_breakpoint().
+	(do_disable): Renamed into x86_arch_disable_breakpoint().
+
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
 	* backend/ProcessServant.cs
 	(ProcessServant.ChildForked): Implement detach-after-fork, ie. not
 	following fork().  At the moment, this can only be enabled in the

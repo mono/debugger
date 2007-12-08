@@ -455,3 +455,29 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 	g_ptr_array_free (array, FALSE);
 	return COMMAND_ERROR_NONE;
 }
+
+static ServerCommandError
+server_ptrace_detach_after_fork (ServerHandle *handle)
+{
+	GPtrArray *breakpoints;
+	guint32 status;
+	int i;
+
+	do_wait (handle->inferior->pid, &status);
+
+	mono_debugger_breakpoint_manager_lock ();
+
+	breakpoints = mono_debugger_breakpoint_manager_get_breakpoints (handle->bpm);
+	for (i = 0; i < breakpoints->len; i++) {
+		BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
+
+		x86_arch_disable_breakpoint (handle, info);
+	}
+
+	mono_debugger_breakpoint_manager_unlock ();
+
+	if (ptrace (PT_DETACH, handle->inferior->pid, NULL, NULL) != 0)
+		return _server_ptrace_check_errno (handle->inferior);
+
+	return COMMAND_ERROR_NONE;
+}

@@ -73,7 +73,10 @@ static ServerCommandError
 x86_arch_get_registers (ServerHandle *handle);
 
 static ServerCommandError
-server_ptrace_init_after_fork (ServerHandle *handle, gboolean follow_fork);
+x86_arch_disable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint);
+
+static ServerCommandError
+x86_arch_enable_breakpoint (ServerHandle *handle, BreakpointInfo *breakpoint);
 
 #if defined(__i386__)
 #include "i386-arch.h"

@@ -168,7 +168,7 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_get_application (IntPtr handle, out string exe_file, out string cwd, out int nargs, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_init_after_fork (IntPtr handle, bool follow_fork);
+		static extern TargetError mono_debugger_server_detach_after_fork (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_push_registers (IntPtr handle, out long new_rsp);
@@ -1284,11 +1284,10 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public void InitializeAfterFork (bool follow_fork)
+		public void DetachAfterFork ()
 		{
-			check_error (mono_debugger_server_init_after_fork (server_handle, follow_fork));
-			if (follow_fork)
-				breakpoint_manager.InitializeAfterFork (this);
+			mono_debugger_server_detach_after_fork (server_handle);
+			Dispose ();
 		}
 
 		public TargetAddress PushRegisters ()
@@ -1381,16 +1380,27 @@ namespace Mono.Debugger.Backend
 		{
 			check_disposed ();
 			ServerStackFrame frame;
-			TargetError result = mono_debugger_server_get_frame (
-				server_handle, out frame);
+			TargetError result = mono_debugger_server_get_frame (server_handle, out frame);
 			check_error (result);
 			return frame;
 		}
 
+		public StackFrame GetCurrentFrame (bool may_fail)
+		{
+			check_disposed ();
+			ServerStackFrame frame;
+			TargetError result = mono_debugger_server_get_frame (server_handle, out frame);
+			if (result == TargetError.None)
+				return new StackFrame (target_info, frame);
+			else if (may_fail)
+				return null;
+			else
+				throw new TargetException (result);
+		}
+
 		public StackFrame GetCurrentFrame ()
 		{
-			ServerStackFrame frame = get_current_frame ();
-			return new StackFrame (target_info, frame);
+			return GetCurrentFrame (false);
 		}
 
 		public TargetMemoryArea[] GetMemoryMaps ()
