@@ -115,7 +115,6 @@ namespace Mono.Debugger.Frontend
 			} catch (Exception ex) {
 				interpreter.Error ("ERROR: {0}", ex);
 			} finally {
-				interpreter.DebuggerConfiguration.SaveConfiguration ();
 				interpreter.Exit ();
 			}
 		}
