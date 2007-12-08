@@ -73,7 +73,7 @@ static ServerCommandError
 x86_arch_get_registers (ServerHandle *handle);
 
 static ServerCommandError
-server_ptrace_init_after_fork (ServerHandle *handle);
+server_ptrace_init_after_fork (ServerHandle *handle, gboolean follow_fork);
 
 #if defined(__i386__)
 #include "i386-arch.h"

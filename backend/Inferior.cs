@@ -168,7 +168,7 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_get_application (IntPtr handle, out string exe_file, out string cwd, out int nargs, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_init_after_fork (IntPtr handle);
+		static extern TargetError mono_debugger_server_init_after_fork (IntPtr handle, bool follow_fork);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_push_registers (IntPtr handle, out long new_rsp);
@@ -1284,10 +1284,11 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public void InitializeAfterFork ()
+		public void InitializeAfterFork (bool follow_fork)
 		{
-			check_error (mono_debugger_server_init_after_fork (server_handle));
-			breakpoint_manager.InitializeAfterFork (this);
+			check_error (mono_debugger_server_init_after_fork (server_handle, follow_fork));
+			if (follow_fork)
+				breakpoint_manager.InitializeAfterFork (this);
 		}
 
 		public TargetAddress PushRegisters ()

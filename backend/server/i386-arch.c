@@ -930,7 +930,7 @@ x86_arch_remove_hardware_breakpoints (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_init_after_fork (ServerHandle *handle)
+server_ptrace_init_after_fork (ServerHandle *handle, gboolean follow_fork)
 {
 	GPtrArray *breakpoints;
 	int i;
@@ -941,7 +941,7 @@ server_ptrace_init_after_fork (ServerHandle *handle)
 	for (i = 0; i < breakpoints->len; i++) {
 		BreakpointInfo *info = g_ptr_array_index (breakpoints, i);
 
-		if (info->dr_index >= 0)
+		if (!follow_fork || (info->dr_index >= 0))
 			do_disable (handle, info);
 	}
 

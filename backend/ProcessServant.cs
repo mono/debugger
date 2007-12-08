@@ -168,6 +168,10 @@ namespace Mono.Debugger.Backend
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)
 		{
 			Inferior new_inferior = inferior.CreateThread ();
+			if (do_attach)
+				new_inferior.Attach (pid);
+			else
+				new_inferior.InitializeThread (pid);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, pid);
@@ -177,6 +181,7 @@ namespace Mono.Debugger.Backend
 			// Order is important: first add the new engine to the manager's hash table,
 			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
+
 			new_thread.StartThread (do_attach);
 
 			if ((mono_manager != null) && !do_attach)
@@ -193,6 +198,13 @@ namespace Mono.Debugger.Backend
 
 			Inferior new_inferior = Inferior.CreateInferior (
 				manager, new_process, new_process.ProcessStart);
+			new_inferior.InitializeThread (pid);
+
+			new_inferior.InitializeAfterFork (manager.Debugger.Configuration.FollowFork);
+			if (!manager.Debugger.Configuration.FollowFork) {
+				new_inferior.Detach ();
+				return;
+			}
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, new_process, new_inferior, pid);
@@ -205,8 +217,6 @@ namespace Mono.Debugger.Backend
 			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
 			new_thread.StartThread (false);
-
-			new_inferior.InitializeAfterFork ();
 
 			manager.Debugger.OnProcessCreatedEvent (new_process);
 			new_process.OnThreadCreatedEvent (new_thread);
@@ -238,6 +248,7 @@ namespace Mono.Debugger.Backend
 			bfd_container = new BfdContainer (this);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
+			new_inferior.InitializeThread (inferior.PID);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, inferior.PID);

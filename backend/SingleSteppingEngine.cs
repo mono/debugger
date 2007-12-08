@@ -119,11 +119,6 @@ namespace Mono.Debugger.Backend
 
 		public CommandResult StartThread (bool do_attach)
 		{
-			if (do_attach)
-				inferior.Attach (pid);
-			else
-				inferior.InitializeThread (pid);
-
 			CommandResult result = new ThreadCommandResult (thread);
 			if (do_attach)
 				current_operation = new OperationInitialize (this, result);

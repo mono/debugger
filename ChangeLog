@@ -1,5 +1,20 @@
 2007-12-08  Martin Baulig  <martin@ximian.com>
 
+	* backend/ProcessServant.cs
+	(ProcessServant.ChildForked): Implement detach-after-fork, ie. not
+	following fork().  At the moment, this can only be enabled in the
+	configuration file
+	[FIXME: add user-interface option to enable/disable this].
+
+	* backend/Inferior.cs
+	(Inferior.InitializeAfterFork): Added `bool follow_fork' argument.
+
+	* backend/server/server.h
+	(mono_debugger_server_init_after_fork): Added
+	`gboolean follow_fork' argument; remove all breakpoints if false.
+
+2007-12-08  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerConfiguration.cs
 	(DebuggerConfiguration.FollowFork): New property.  Not yet implemented.
 
