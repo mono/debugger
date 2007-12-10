@@ -269,7 +269,7 @@ namespace Mono.Debugger
 		static void About ()
 		{
 			Console.WriteLine (
-				"The Mono Debugger is (C) 2003-2006 Novell, Inc.\n\n" +
+				"The Mono Debugger is (C) 2003-2007 Novell, Inc.\n\n" +
 				"The debugger source code is released under the terms of the GNU GPL\n\n" +
 
 				"For more information on Mono, visit the project Web site\n" +
@@ -283,17 +283,18 @@ namespace Mono.Debugger
 		static void Usage ()
 		{
 			Console.WriteLine (
-				"Mono Debugger, (C) 2003-2006 Novell, Inc.\n" +
+				"Mono Debugger, (C) 2003-2007 Novell, Inc.\n" +
 				"mdb [options] [exe-file]\n" +
 				"mdb [options] -args exe-file [inferior-arguments ...]\n\n" +
 				
 				"   -args                     Arguments after exe-file are passed to inferior\n" +
 				"   -debug-flags:PARAM        Sets the debugging flags\n" +
 				"   -fullname                 Sets the debugging flags (short -f)\n" +
+				"   -jit-arg:PARAM	      Additional argument for the inferior mono\n" +
 				"   -jit-optimizations:PARAM  Set jit optimizations used on the inferior process\n" +
 				"   -mono:PATH                Override the inferior mono\n" +
 				"   -mono-prefix:PATH         Override the mono prefix\n" +
-				"   -native-symtabs           Load native symtabs\n" +
+				"   -run                      Start inferior without halting in Main()\n" +
 				"   -script                  \n" +
 				"   -usage                   \n" +
 				"   -version                  Display version and licensing information (short -V)\n" +

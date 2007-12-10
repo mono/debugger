@@ -1323,7 +1323,7 @@ namespace Mono.Debugger.Frontend
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Running; } }
-		public string Description { get { return "Step program untli it reaches a different source line, proceeding into function calls."; } }
+		public string Description { get { return "Step program until it reaches a different source line, proceeding into function calls."; } }
 		public string Documentation { get { return ""; } }
 	}
 
@@ -3400,7 +3400,7 @@ namespace Mono.Debugger.Frontend
 	{
 		public override object Execute (Engine e)
 		{
-			Console.WriteLine ("Mono Debugger (C) 2003, 2004 Novell, Inc.\n" +
+			Console.WriteLine ("Mono Debugger (C) 2003-2007 Novell, Inc.\n" +
 					   "Written by Martin Baulig (martin@ximian.com)\n" +
 					   "        and Chris Toshok (toshok@ximian.com)\n");
 			return null;
@@ -3408,7 +3408,7 @@ namespace Mono.Debugger.Frontend
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Support; } }
-		public string Description { get { return "Print copyright/authour info."; } }
+		public string Description { get { return "Print copyright/author info."; } }
 		public string Documentation { get { return ""; } }
 	}
 

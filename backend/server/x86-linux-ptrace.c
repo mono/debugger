@@ -397,7 +397,7 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 	gchar *exe_filename = g_strdup_printf ("/proc/%d/exe", handle->inferior->pid);
 	gchar *cwd_filename = g_strdup_printf ("/proc/%d/cwd", handle->inferior->pid);
 	gchar *cmdline_filename = g_strdup_printf ("/proc/%d/cmdline", handle->inferior->pid);
-	char buffer [BUFSIZ];
+	char buffer [BUFSIZ+1];
 	GPtrArray *array;
 	gchar *cmdline, **ptr;
 	gsize pos, len;

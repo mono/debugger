@@ -1,3 +1,18 @@
+2007-12-10  Martin Baulig  <martin@ximian.com>
+
+	Applied a patch from Harald Krapfenbauer <krapfenbauer@ict.tuwien.ac.at>:
+
+	* backend/server/i386-arch.c
+	(x86_arch_get_registers): Store the return value each time to
+	`result' to check for errors.
+
+	* backend/server/x86_64-arch.c
+	(x86_arch_get_registers): Store the return value each time to
+	`result' to check for errors.
+
+	* backend/server/x86-linux-ptrace.c
+	(server_ptrace_get_application): Increase size of `buffer' by 1.
+
 2007-12-08  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Bumped version number to 0.60.
