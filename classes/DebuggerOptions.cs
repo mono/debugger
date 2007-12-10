@@ -295,6 +295,7 @@ namespace Mono.Debugger
 				"   -mono:PATH                Override the inferior mono\n" +
 				"   -mono-prefix:PATH         Override the mono prefix\n" +
 				"   -run                      Start inferior without halting in Main()\n" +
+				"   -start                    Start inferior and stop in Main()\n" +
 				"   -script                  \n" +
 				"   -usage                   \n" +
 				"   -version                  Display version and licensing information (short -V)\n" +
@@ -511,6 +512,16 @@ namespace Mono.Debugger
 					Environment.Exit (1);
 				}
 				debug_options.StartTarget = true;
+				debug_options.StopInMain = false;
+				return true;
+
+			case "-start":
+				if (ms_value != null) {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.StartTarget = true;
+				debug_options.StopInMain = true;
 				return true;
 			}
 

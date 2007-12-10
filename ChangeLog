@@ -1,5 +1,12 @@
 2007-12-10  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerOptions.cs: Added new `-start' command line
+	argument to stop in Main(); made `-run' run the target without
+	stopping.  This makes the command line arguments consistent with
+	the `start' and `run' commands.
+
+2007-12-10  Martin Baulig  <martin@ximian.com>
+
 	Applied a patch from Harald Krapfenbauer <krapfenbauer@ict.tuwien.ac.at>:
 
 	* backend/server/i386-arch.c
