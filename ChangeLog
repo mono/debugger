@@ -1,5 +1,12 @@
 2007-12-10  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClass.cs
+	(TargetClass.GetField): Take a `TargetStructObject' instead of a
+	`TargetClassObject'.
+	(TargetClass.SetField): Likewise.
+
+2007-12-10  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetStructType.cs: New file.
 	(TargetStructType): New public abstract type.
 

@@ -152,7 +152,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetObject GetField (Thread thread,
-						       TargetClassObject instance,
+						       TargetStructObject instance,
 						       TargetFieldInfo field)
 		{
 			if (field.HasConstValue)
@@ -172,7 +172,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal TargetObject GetInstanceField (TargetMemoryAccess target,
-							TargetClassObject instance,
+							TargetStructObject instance,
 							TargetFieldInfo field)
 		{
 			get_field_offsets (target);
@@ -222,7 +222,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public override void SetField (Thread thread, TargetClassObject instance,
+		public override void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value)
 		{
 			if (field.IsStatic) {
@@ -243,7 +243,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal void SetInstanceField (TargetMemoryAccess target,
-						TargetClassObject instance,
+						TargetStructObject instance,
 						TargetFieldInfo field, TargetObject obj)
 		{
 			get_field_offsets (target);

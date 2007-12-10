@@ -15,10 +15,10 @@ namespace Mono.Debugger.Languages
 		public abstract TargetFieldInfo[] GetFields (Thread thread);
 
 		public abstract TargetObject GetField (Thread thread,
-						       TargetClassObject instance,
+						       TargetStructObject instance,
 						       TargetFieldInfo field);
 
-		public abstract void SetField (Thread thread, TargetClassObject instance,
+		public abstract void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value);
 	}
 }
