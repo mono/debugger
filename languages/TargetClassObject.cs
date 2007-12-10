@@ -1,6 +1,6 @@
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetClassObject : TargetObject
+	public abstract class TargetClassObject : TargetStructObject
 	{
 		public readonly new TargetClassType Type;
 

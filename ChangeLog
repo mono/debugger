@@ -1,5 +1,21 @@
 2007-12-10  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetStructType.cs: New file.
+	(TargetStructType): New public abstract type.
+
+	* languages/TargetStructObject.cs: New file.
+	(TargetStructObject): New public abstract type.
+
+	* languages/TargetClassType.cs
+	(TargetClassType): Derive from `TargetStructType'; removed
+	`HasParent', `GetClass', `Module' and `ParentType' which are now
+	provided by `TargetStructType'.
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject): Derive from `TargetClassObject'.
+
+2007-12-10  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs: Added new `-start' command line
 	argument to stop in Main(); made `-run' run the target without
 	stopping.  This makes the command line arguments consistent with

@@ -101,8 +101,9 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		public override TargetClassType ParentType {
-			get { throw new InvalidOperationException (); }
+		internal override TargetStructType GetParentType (TargetMemoryAccess target)
+		{
+			throw new InvalidOperationException ();
 		}
 
 		public override Module Module {
@@ -167,7 +168,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetClass GetClass (Thread thread)
+		internal override TargetClass GetClass (TargetMemoryAccess target)
 		{
 			if (class_info == null)
 				class_info = new NativeClass (this, fields);

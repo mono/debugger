@@ -1,24 +1,10 @@
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetClassType : TargetType
+	public abstract class TargetClassType : TargetStructType
 	{
 		protected TargetClassType (Language language, TargetObjectKind kind)
 			: base (language, kind)
 		{ }
-
-		public abstract bool HasParent {
-			get;
-		}
-
-		public abstract TargetClass GetClass (Thread target);
-
-		public abstract Module Module {
-			get;
-		}
-
-		public abstract TargetClassType ParentType {
-			get;
-		}
 
 		public abstract TargetFieldInfo[] Fields {
 			get;

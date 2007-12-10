@@ -4,6 +4,7 @@ using Mono.Debugger.Backend;
 using System.Runtime.Serialization;
 
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
@@ -77,7 +78,8 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool IsSubclassOf (TargetClassType type, TargetType parent)
+		bool IsSubclassOf (TargetMemoryAccess target, TargetStructType type,
+				   TargetType parent)
 		{
 			while (type != null) {
 				if (type == parent)
@@ -86,15 +88,15 @@ namespace Mono.Debugger
 				if (!type.HasParent)
 					return false;
 
-				type = type.ParentType;
+				type = type.GetParentType (target);
 			}
 
 			return false;
 		}
 
-		internal bool CheckException (Thread target, TargetAddress address)
+		internal bool CheckException (MonoLanguageBackend mono, TargetMemoryAccess target,
+					      TargetAddress address)
 		{
-			Language mono = target.Process.Servant.MonoLanguage;
 			TargetClassObject exc = mono.CreateObject (target, address) as TargetClassObject;
 			if (exc == null)
 				return false; // OOOPS
@@ -104,7 +106,7 @@ namespace Mono.Debugger
 			if (exception == null)
 				return false;
 
-			return IsSubclassOf (exc.Type, exception);
+			return IsSubclassOf (target, exc.Type, exception);
 		}
 
 		protected override void GetSessionData (XmlElement root, XmlElement element)

@@ -74,8 +74,9 @@ namespace Mono.Debugger.Languages.Mono
 			get { return parent_type != null; }
 		}
 
-		public override TargetClassType ParentType {
-			get { return parent_type; }
+		internal override TargetStructType GetParentType (TargetMemoryAccess target)
+		{
+			return parent_type;
 		}
 
 		internal MonoClassType MonoParentType {
@@ -218,12 +219,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetClass GetClass (Thread thread)
+		internal override TargetClass GetClass (TargetMemoryAccess target)
 		{
-			return (TargetClass) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					return ResolveClass (target, false);
-			});
+			return ResolveClass (target, false);
 		}
 
 		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
