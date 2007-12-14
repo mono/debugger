@@ -10,19 +10,4 @@ $(top_builddir)/frontend/CSharpExpressionParser.cs: CSharpExpressionParser.jay $
 
 DISTCLEANFILES = CSharpExpressionParser.cs y.output
 
-EXTRA_DIST = \
-	CL.cs				\
-	Command.cs			\
-	Completer.cs			\
-	DebuggerTextWriter.cs		\
-	Expression.cs			\
-	CSharpExpressionParser.jay	\
-	CSharpTokenizer.cs		\
-	GnuReadLine.cs			\
-	Interpreter.cs			\
-	Main.cs				\
-	MyTextReader.cs			\
-	ScriptingContext.cs		\
-	Style.cs			\
-	ObjectFormatter.cs		\
-	skeleton
+EXTRA_DIST = skeleton CSharpExpressionParser.jay *.cs
