@@ -70,7 +70,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 0; }
 		}
 
-		public override TargetClass GetClass (TargetMemoryAccess target)
+		internal override TargetClass GetClass (TargetMemoryAccess target)
 		{
 			return ResolveClass (target);
 		}

@@ -97,7 +97,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return this; }
 		}
 
-		public override TargetClass GetClass (TargetMemoryAccess target)
+		internal override TargetClass GetClass (TargetMemoryAccess target)
 		{
 			if (class_info == null)
 				class_info = new NativeClass (this, fields);

@@ -376,7 +376,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public override TargetClass GetClass (TargetMemoryAccess target)
+		internal override TargetClass GetClass (TargetMemoryAccess target)
 		{
 			return ResolveClass (target, true);
 		}
