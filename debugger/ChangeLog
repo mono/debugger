@@ -1,5 +1,18 @@
 2007-12-18  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime): Made this abstract.
+
+	* languages/mono/MonoRuntimeCompat.cs: New file.
+	(MonoRuntimeCompat): Compatibility implementation of
+	`MonoRuntime'.
+
+	* languages/mono/MonoRuntimeLibrary.cs: New file.
+	(MonoRuntimeLibrary): Implementation of `MonoRuntime' using the
+	library; fallback to `MonoRuntimeCompat' for the moment.
+
+2007-12-18  Martin Baulig  <martin@ximian.com>
+
 	Created new `terrania' branch based on the 0.60 release.
 
 2007-12-18  Martin Baulig  <martin@ximian.com>
