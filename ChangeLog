@@ -1,3 +1,9 @@
+2007-12-18  Martin Baulig  <martin@ximian.com>
+
+	Released version 0.60 "Madrid" of the Mono Debugger :-)
+
+	* configure.in: Require Mono >= 1.2.6.
+
 2007-12-14  Wade Berrier  <wberrier@novell.com>
 
 	* frontend/Makefile.am:
