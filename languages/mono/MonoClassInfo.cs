@@ -85,9 +85,9 @@ namespace Mono.Debugger.Languages.Mono
 			get { return !GenericClass.IsNull; }
 		}
 
-		void get_field_offsets (TargetMemoryAccess target)
+		void get_fields (TargetMemoryAccess target)
 		{
-			if (field_offsets != null)
+			if (fields != null)
 				return;
 
 			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
@@ -107,33 +107,6 @@ namespace Mono.Debugger.Languages.Mono
 					target, KlassAddress, i);
 
 				fields [i] = new MonoFieldInfo (type, field_types [i], i, field);
-			}
-		}
-
-		void get_field_offsets (Thread thread)
-		{
-			if (field_offsets != null)
-				return;
-
-			thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target)  {
-					get_field_offsets (target);
-					return null;
-			});
-		}
-
-		void get_fields (TargetMemoryAccess memory)
-		{
-			int num_fields = CecilType.Fields.Count;
-			fields = new MonoFieldInfo [num_fields];
-
-			for (int i = 0; i < num_fields; i++) {
-				Cecil.FieldDefinition field = CecilType.Fields [i];
-				TargetType ftype = SymbolFile.MonoLanguage.LookupMonoType (field.FieldType);
-				if (ftype == null)
-					ftype = SymbolFile.MonoLanguage.VoidType;
-
-				fields [i] = new MonoFieldInfo (type, ftype, i, field);
 			}
 		}
 
@@ -175,7 +148,7 @@ namespace Mono.Debugger.Languages.Mono
 							TargetStructObject instance,
 							TargetFieldInfo field)
 		{
-			get_field_offsets (target);
+			get_fields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -208,7 +181,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal TargetObject GetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
 						      TargetAddress data_address)
 		{
-			get_field_offsets (target);
+			get_fields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -246,7 +219,7 @@ namespace Mono.Debugger.Languages.Mono
 						TargetStructObject instance,
 						TargetFieldInfo field, TargetObject obj)
 		{
-			get_field_offsets (target);
+			get_fields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -278,7 +251,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal void SetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
 					      TargetAddress data_address, TargetObject obj)
 		{
-			get_field_offsets (target);
+			get_fields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
