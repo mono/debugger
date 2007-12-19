@@ -138,6 +138,8 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
 GLIB_REQUIRED_VERSION=2.0.0
 MONO_REQUIRED_VERSION=1.2.6
 
+MONO_DEBUGGER_REQUIRED_VERSION=66
+
 
 PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 AC_SUBST(BASE_DEPENDENCIES_CFLAGS)
@@ -149,9 +151,9 @@ AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
 if test x$server_only != xyes ; then
-   PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
-   AC_SUBST(WRAPPER_CFLAGS)
-   AC_SUBST(WRAPPER_LIBS)
+   PKG_CHECK_MODULES(MONO, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
+   AC_SUBST(MONO_CFLAGS)
+   AC_SUBST(MONO_LIBS)
 
    GACUTIL_FLAGS='/package $(PACKAGE) /gacdir $(prefix)/lib /root $(DESTDIR)$(prefix)/lib'
    AC_PATH_PROG(GACUTIL, gacutil, no)
@@ -217,11 +219,11 @@ AC_CHECK_FUNCS(strlcpy strlcat)
 CHECK_READLINE
 
 AC_MSG_CHECKING([Whether your Mono is working])
-old_CFLAGS=$cflags
-CFLAGS=$WRAPPER_CFLAGS
+old_CFLAGS=$CFLAGS
+CFLAGS=$MONO_CFLAGS
 AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
 ], [
-#if MONO_DEBUGGER_VERSION < 59
+#if MONO_DEBUGGER_VERSION < $MONO_DEBUGGER_REQUIRED_VERSION
 #error "Your mono is too old for this version of the debugger."
 #endif
 ], mono_working=yes, mono_working=no)
@@ -230,6 +232,28 @@ CFLAGS=$old_CFLAGS
 if test x$mono_working != xyes; then
    AC_MSG_ERROR([*** Your Mono is too old for this version of the debugger.])
 fi
+
+AC_MSG_CHECKING([for libmono-dbg])
+old_CFLAGS=$CFLAGS
+old_LIBS=$LIBS
+CFLAGS=$MONO_CFLAGS
+LIBS="$MONO_LIBS -lmono-dbg"
+AC_RUN_IFELSE([#include <mono/jit/mono-dbg.h>
+
+int
+main (void)
+{
+	if (mono_dbg_get_version () < $MONO_DEBUGGER_REQUIRED_VERSION)
+		return 1;
+	else
+		return 0;
+}
+], mono_dbg_working=yes, mono_dbg_working=no)
+CFLAGS=$old_CFLAGS
+LIBS=$old_LIBS
+AC_MSG_RESULT($mono_dbg_working)
+AM_CONDITIONAL(HAVE_MONO_DBG_LIBRARY, test x$mono_dbg_working = xyes)
+
 
 AM_CONDITIONAL(DISABLED, false)
 

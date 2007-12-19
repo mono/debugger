@@ -1,3 +1,11 @@
+2007-12-19  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Check for the debugger runtime library as an
+	optional dependency; added `HAVE_MONO_DBG_LIBRARY' automake
+	conditional.
+
+	* build/Makefile.am: Define `HAVE_MONO_DBG_LIBRARY'.
+
 2007-12-18  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoRuntime.cs

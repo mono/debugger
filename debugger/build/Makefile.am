@@ -6,6 +6,10 @@ one_SCRIPTS = mdb.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
+if HAVE_MONO_DBG_LIBRARY
+MCS_FLAGS += -define:HAVE_MONO_DBG_LIBRARY
+endif
+
 noinst_SCRIPTS = \
 	Mono.Debugger.dll				\
 	Mono.Debugger.Backend.dll			\
