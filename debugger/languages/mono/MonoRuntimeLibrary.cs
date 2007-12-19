@@ -10,9 +10,15 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		protected readonly MonoRuntime compat;
 
+		[DllImport("mono-dbg")]
+		static extern int mono_dbg_get_version ();
+
 		internal MonoRuntimeLibrary (MonoRuntime compat)
 		{
 			this.compat = compat;
+
+			if (mono_dbg_get_version () < 66)
+				throw new InternalError ();
 		}
 
 		//
@@ -248,6 +254,75 @@ namespace Mono.Debugger.Languages.Mono
 		public override TargetAddress GetExceptionClass (TargetMemoryAccess memory)
 		{
 			return compat.GetExceptionClass (memory);
+		}
+
+		//
+		// `terrania' API
+		//
+
+		delegate bool MonoDbgMemoryAccess (IntPtr address, IntPtr buffer, int size);
+
+		[DllImport("mono-dbg")]
+		static extern bool mono_dbg_read_generic_class (MonoDbgMemoryAccess memory, IntPtr address,
+								out MonoDbgGenericClass info);
+
+		[StructLayout(LayoutKind.Sequential)]
+		struct MonoDbgGenericClass {
+			public IntPtr container_class;
+			public IntPtr generic_inst;
+			public IntPtr klass;
+		}
+
+		public override GenericClassInfo GetGenericClass (TargetMemoryAccess memory,
+								  TargetAddress address)
+		{
+			MonoDbgGenericClass info;
+			if (!mono_dbg_read_generic_class (
+				    memory.ReadMemory, new IntPtr (address.Address), out info))
+				return null;
+
+			TargetAddress[] type_args = GetGenericInst (
+				memory, new TargetAddress (memory.AddressDomain, info.generic_inst));
+			if (type_args == null)
+				return null;
+
+			return new GenericClassInfo (
+				new TargetAddress (memory.AddressDomain, info.container_class),
+				type_args,
+				new TargetAddress (memory.AddressDomain, info.klass));
+		}
+		[DllImport("mono-dbg")]
+		extern static bool mono_dbg_read_generic_inst (MonoDbgMemoryAccess memory, IntPtr address,
+							       out MonoDbgGenericInst info);
+
+		[StructLayout(LayoutKind.Sequential)]
+		struct MonoDbgGenericInst {
+			public int id;
+			public int type_argc;
+			public IntPtr type_argv;
+		}
+
+		public TargetAddress[] GetGenericInst (TargetMemoryAccess memory, TargetAddress address)
+		{
+			MonoDbgGenericInst info;
+			if (!mono_dbg_read_generic_inst (
+				    memory.ReadMemory, new IntPtr (address.Address), out info))
+				return null;
+
+			TargetAddress[] type_argv = new TargetAddress [info.type_argc];
+			if (memory.TargetMemoryInfo.TargetAddressSize == 4) {
+				int[] temp = new int [info.type_argc];
+				Marshal.Copy (info.type_argv, temp, 0, info.type_argc);
+				for (int i = 0; i < info.type_argc; i++)
+					type_argv [i] = new TargetAddress (memory.AddressDomain, temp [i]);
+			} else {
+				long[] temp = new long [info.type_argc];
+				Marshal.Copy (info.type_argv, temp, 0, info.type_argc);
+				for (int i = 0; i < info.type_argc; i++)
+					type_argv [i] = new TargetAddress (memory.AddressDomain, temp [i]);
+			}
+
+			return type_argv;
 		}
 	}
 }

@@ -522,6 +522,24 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoArrayType (etype, rank);
 			}
 
+			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
+				Console.WriteLine ("GENERIC INST: {0}", data);
+				MonoRuntime.GenericClassInfo info = MonoRuntime.GetGenericClass (
+					memory, data);
+				if (info == null)
+					return null;
+
+				Console.WriteLine ("GENERIC INST #1: {0} {1}",
+						   info.ContainerClass, info.Klass);
+
+				for (int i = 0; i < info.TypeArguments.Length; i++) {
+					TargetType arg = ReadType (memory, info.TypeArguments [i]);
+					Console.WriteLine ("GENERIC INST #2: {0} {1}", i, arg);
+				}
+
+				return LookupMonoClass (memory, info.Klass);
+			}
+
 			default:
 				Report.Error ("UNKNOWN TYPE: {0}", type);
 				return null;

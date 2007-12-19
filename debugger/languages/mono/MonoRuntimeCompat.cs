@@ -427,5 +427,15 @@ namespace Mono.Debugger.Languages.Mono
 				MonoVTableVTableOffset = reader.ReadInt32 ();
 			}
 		}
+
+		//
+		// `terrania' API - we need the runtime library for this.
+		//
+
+		public override GenericClassInfo GetGenericClass (TargetMemoryAccess memory,
+								  TargetAddress address)
+		{
+			throw new NotImplementedException ();
+		}
 	}
 }

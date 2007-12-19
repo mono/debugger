@@ -1,5 +1,11 @@
 2007-12-19  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime): Add GetGenericClass().
+	(MonoRuntime.GenericClassInfo): New nested public class.
+
+2007-12-19  Martin Baulig  <martin@ximian.com>
+
 	* backend/TargetMemoryAccess.cs
 	(TargetMemoryAccess.ReadMemory): Add internal version of this
 	taking two `IntPtr' arguments.

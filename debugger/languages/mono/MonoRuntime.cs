@@ -167,5 +167,32 @@ namespace Mono.Debugger.Languages.Mono
 		public abstract TargetAddress GetDelegateClass (TargetMemoryAccess memory);
 
 		public abstract TargetAddress GetExceptionClass (TargetMemoryAccess memory);
+
+		//
+		// The following API is new in `terrania'.
+		//
+
+		public abstract GenericClassInfo GetGenericClass (TargetMemoryAccess memory,
+								  TargetAddress address);
+
+		public class GenericClassInfo
+		{
+			/* `MonoClass *' of the container class. */
+			public readonly TargetAddress ContainerClass;
+
+			/* `MonoType *' array of the instantiation. */
+			public readonly TargetAddress[] TypeArguments;
+
+			/* `MonoClass *' of this instantiation, if present. */
+			public readonly TargetAddress Klass;
+
+			public GenericClassInfo (TargetAddress container, TargetAddress[] type_args,
+						 TargetAddress klass)
+			{
+				this.ContainerClass = container;
+				this.TypeArguments = type_args;
+				this.Klass = klass;
+			}
+		}
 	}
 }
