@@ -42,6 +42,12 @@ namespace Mono.Debugger
 			this.address = (ulong) address;
 		}
 
+		public TargetAddress (AddressDomain domain, IntPtr address)
+		{
+			this.domain = domain;
+			this.address = (ulong) address.ToInt64 ();
+		}
+
 		// <summary>
 		//   This is not what it looks like.
 		//   Never use this property unless you know exactly what you're doing.
