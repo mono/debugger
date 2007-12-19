@@ -1,5 +1,5 @@
 using System;
-
+using System.Runtime.InteropServices;
 using Mono.Debugger.Backend;
 
 namespace Mono.Debugger
@@ -63,5 +63,19 @@ namespace Mono.Debugger
 		public abstract void WriteAddress (TargetAddress address, TargetAddress value);
 
 		public abstract void SetRegisters (Registers registers);
+
+		internal bool ReadMemory (IntPtr address, IntPtr buffer, int size)
+		{
+			try {
+				TargetAddress t_address = new TargetAddress (
+					AddressDomain, address.ToInt64 ());
+
+				byte[] data = ReadBuffer (t_address, size);
+				Marshal.Copy (data, 0, buffer, size);
+				return true;
+			} catch {
+				return false;
+			}
+		}
 	}
 }
