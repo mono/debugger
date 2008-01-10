@@ -1,14 +1,5 @@
 2007-12-18  Martin Baulig  <martin@ximian.com>
 
-	* languages/mono/MonoRuntime.cs
-	(MonoRuntime): Made this abstract.
-
-	* languages/mono/MonoRuntimeCompat.cs: New file.
-	(MonoRuntimeCompat): Compatibility implementation of
-	`MonoRuntime'.
-
-2007-12-18  Martin Baulig  <martin@ximian.com>
-
 	* languages/mono/MonoClassInfo.cs
 	(MonoClassInfo): Merge get_fields() and get_field_offsets().
 
