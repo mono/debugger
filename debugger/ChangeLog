@@ -1,36 +1,3 @@
-2007-12-19  Martin Baulig  <martin@ximian.com>
-
-	* languages/mono/MonoRuntime.cs
-	(MonoRuntime): Add GetGenericClass().
-	(MonoRuntime.GenericClassInfo): New nested public class.
-
-2007-12-19  Martin Baulig  <martin@ximian.com>
-
-	* backend/TargetMemoryAccess.cs
-	(TargetMemoryAccess.ReadMemory): Add internal version of this
-	taking two `IntPtr' arguments.
-
-2007-12-19  Martin Baulig  <martin@ximian.com>
-
-	* configure.in: Check for the debugger runtime library as an
-	optional dependency; added `HAVE_MONO_DBG_LIBRARY' automake
-	conditional.
-
-	* build/Makefile.am: Define `HAVE_MONO_DBG_LIBRARY'.
-
-2007-12-18  Martin Baulig  <martin@ximian.com>
-
-	* languages/mono/MonoRuntime.cs
-	(MonoRuntime): Made this abstract.
-
-	* languages/mono/MonoRuntimeCompat.cs: New file.
-	(MonoRuntimeCompat): Compatibility implementation of
-	`MonoRuntime'.
-
-	* languages/mono/MonoRuntimeLibrary.cs: New file.
-	(MonoRuntimeLibrary): Implementation of `MonoRuntime' using the
-	library; fallback to `MonoRuntimeCompat' for the moment.
-
 2007-12-18  Martin Baulig  <martin@ximian.com>
 
 	Created new `terrania' branch based on the 0.60 release.
