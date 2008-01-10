@@ -1,3 +1,11 @@
+2007-12-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime.GetGenericClass): New public method; implement this
+	locally and hard-code the field offsets; the library is dead and
+	won't be used in the debugger.	
+	(MonoRuntime.GenericClassInfo): New nested public class.
+
 2007-12-18  Martin Baulig  <martin@ximian.com>
 
 	Created new `terrania' branch based on the 0.60 release.

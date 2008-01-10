@@ -469,8 +469,32 @@ namespace Mono.Debugger.Languages.Mono
 		// The following API is new in `terrania'.
 		//
 
-		public abstract GenericClassInfo GetGenericClass (TargetMemoryAccess memory,
-								  TargetAddress address);
+		public GenericClassInfo GetGenericClass (TargetMemoryAccess memory,
+							 TargetAddress address)
+		{
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+
+			TargetReader reader = new TargetReader (memory.ReadMemory (address, 5 * addr_size));
+			TargetAddress container = reader.ReadAddress ();
+			TargetAddress class_inst = reader.ReadAddress ();
+			TargetAddress method_inst = reader.ReadAddress ();
+			reader.ReadAddress ();
+			TargetAddress cached_class = reader.ReadAddress ();
+
+			int inst_data = memory.ReadInteger (class_inst + addr_size);
+			TargetAddress inst_argv = memory.ReadAddress (class_inst + 2 * addr_size);
+
+			int type_argc = inst_data & 0x7fffff;
+
+			TargetReader argv_reader = new TargetReader (
+				memory.ReadMemory (inst_argv, type_argc * addr_size));
+
+			TargetAddress[] type_args = new TargetAddress [type_argc];
+			for (int i = 0; i < type_argc; i++)
+				type_args [i] = argv_reader.ReadAddress ();
+
+			return new GenericClassInfo (container, type_args, cached_class);
+		}
 
 		public class GenericClassInfo
 		{
