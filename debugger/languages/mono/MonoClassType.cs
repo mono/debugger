@@ -26,6 +26,8 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable load_handlers;
 		int load_handler_id;
 
+		string full_name;
+
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage, TargetObjectKind.Class)
 		{
@@ -37,6 +39,19 @@ namespace Mono.Debugger.Languages.Mono
 				if (parent != null)
 					parent_type = (MonoClassType) parent.ClassType;
 			}
+
+			if (type.GenericParameters.Count > 0) {
+				StringBuilder sb = new StringBuilder (type.FullName);
+				sb.Append ('<');
+				for (int i = 0; i < type.GenericParameters.Count; i++) {
+					if (i > 0)
+						sb.Append (',');
+					sb.Append (type.GenericParameters [i].Name);
+				}
+				sb.Append ('>');
+				full_name = sb.ToString ();
+			} else
+				full_name = type.FullName;
 		}
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
@@ -51,7 +66,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override string Name {
-			get { return type.FullName; }
+			get { return full_name; }
 		}
 
 		public override bool IsByRef {
@@ -76,7 +91,19 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)
 		{
-			return parent_type;
+			if (parent_type != null)
+				return parent_type;
+
+			ResolveClass (target, true);
+
+			MonoClassInfo parent = class_info.GetParent (target);
+			if (parent == null)
+				return null;
+
+			if (parent.GenericClass.IsNull)
+				return parent.ClassType;
+
+			return File.MonoLanguage.ReadGenericClass (target, parent.GenericClass);
 		}
 
 		internal MonoClassType MonoParentType {

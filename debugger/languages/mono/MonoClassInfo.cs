@@ -65,6 +65,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
+			parent_klass = MonoRuntime.MonoClassGetParent (target, klass);
 			GenericClass = MonoRuntime.MonoClassGetGenericClass (target, klass);
 			GenericContainer = MonoRuntime.MonoClassGetGenericContainer (target, klass);
 		}
@@ -301,12 +302,21 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasParent {
-			get { return type.HasParent; }
+			get { return !parent_klass.IsNull; }
+		}
+
+		internal MonoClassInfo GetParent (TargetMemoryAccess target)
+		{
+			if (parent_info != null)
+				return parent_info;
+
+			get_parent (target);
+			return parent_info;
 		}
 
 		public override TargetClass GetParent (Thread thread)
 		{
-			if (!parent_klass.IsNull)
+			if (parent_info != null)
 				return parent_info;
 
 			thread.ThreadServant.DoTargetAccess (

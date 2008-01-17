@@ -16,7 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetClassObject GetParentObject (Thread target)
+		public override TargetStructObject GetParentObject (Thread target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
@@ -58,9 +58,11 @@ namespace Mono.Debugger.Languages.Mono
 		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Location.HasAddress)
-				return String.Format ("{0}", Location.GetAddress (target));
+				return String.Format ("({0}) {1}",
+						      Type.Name, Location.GetAddress (target));
 			else
-				return String.Format ("{0}", Location);
+				return String.Format ("({0}) {1}",
+						      Type.Name, Location);
 		}
 	}
 }

@@ -202,7 +202,7 @@ namespace Mono.Debugger.Frontend
 				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
 			}
 
-			cobj = cobj.GetParentObject (CurrentThread);
+			cobj = cobj.GetParentObject (CurrentThread) as TargetClassObject;
 			if (cobj != null)
 				goto again;
 

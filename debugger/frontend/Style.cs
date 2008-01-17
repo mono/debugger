@@ -363,93 +363,25 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct: {
-				TargetClassType stype = (TargetClassType) type;
 				StringBuilder sb = new StringBuilder ();
-				TargetClassType ctype = type as TargetClassType;
+				TargetClassType ctype = (TargetClassType) type;
 				if (type.Kind == TargetObjectKind.Struct)
 					sb.Append ("struct ");
 				else
 					sb.Append ("class ");
-				if (ctype != null) {
-					if (ctype.Name != null) {
-						sb.Append (ctype.Name);
-						sb.Append (" ");
-					}
-					if (ctype.HasParent) {
-						TargetStructType parent = ctype.GetParentType (target);
-						sb.Append (": ");
-						sb.Append (parent.Name);
-					}
-				} else {
-					if (stype.Name != null) {
-						sb.Append (stype.Name);
-						sb.Append (" ");
-					}
+				if (ctype.Name != null) {
+					sb.Append (ctype.Name);
+					sb.Append (" ");
 				}
-				sb.Append ("\n" + prefix + "{\n");
-				foreach (TargetFieldInfo field in stype.Fields) {
-					if (field.IsStatic)
-						continue;
-					sb.Append (FormatMember (
-							   prefix, field, false, hash) + ";\n");
-				}
-				foreach (TargetFieldInfo field in stype.Fields) {
-					if (!field.IsStatic)
-						continue;
-					sb.Append (FormatMember (
-							   prefix, field, true, hash) + ";\n");
-				}
-				foreach (TargetPropertyInfo property in stype.Properties) {
-					if (property.IsStatic)
-						continue;
-					sb.Append (FormatProperty (
-							   prefix, property, false, hash));
-				}
-				foreach (TargetPropertyInfo property in stype.Properties) {
-					if (!property.IsStatic)
-						continue;
-					sb.Append (FormatProperty (
-							   prefix, property, true, hash));
-				}
-				foreach (TargetEventInfo ev in stype.Events) {
-					if (ev.IsStatic)
-						continue;
-					sb.Append (FormatEvent (
-							   prefix, ev, false, hash));
-				}
-				foreach (TargetEventInfo ev in stype.Events) {
-					if (!ev.IsStatic)
-						continue;
-					sb.Append (FormatEvent (
-							   prefix, ev, true, hash));
-				}
-				foreach (TargetMethodInfo method in stype.Methods) {
-					if (method.IsStatic)
-						continue;
-					sb.Append (FormatMethod (
-							   prefix, method, false, false, hash));
-				}
-				foreach (TargetMethodInfo method in stype.Methods) {
-					if (!method.IsStatic)
-						continue;
-					sb.Append (FormatMethod (
-							   prefix, method, true, false, hash));
-				}
-				foreach (TargetMethodInfo method in stype.Constructors) {
-					if (method.IsStatic)
-						continue;
-					sb.Append (FormatMethod (
-							   prefix, method, false, true, hash));
-				}
-				foreach (TargetMethodInfo method in stype.Constructors) {
-					if (!method.IsStatic)
-						continue;
-					sb.Append (FormatMethod (
-							   prefix, method, true, true, hash));
+				if (ctype.HasParent) {
+					TargetStructType parent = ctype.GetParentType (target);
+					sb.Append (": ");
+					sb.Append (parent.Name);
 				}
 
-				sb.Append (prefix);
-				sb.Append ("}");
+				sb.Append ("\n" + prefix + "{\n");
+				sb.Append (FormatStruct (prefix, ctype, hash));
+				sb.Append (prefix + "}");
 
 				retval = sb.ToString ();
 				break;
@@ -468,6 +400,30 @@ namespace Mono.Debugger.Frontend
 			}
 #endif
 
+			case TargetObjectKind.GenericInstance: {
+				TargetGenericInstanceType gtype = (TargetGenericInstanceType) type;
+
+				StringBuilder sb = new StringBuilder ();
+				if (gtype.ContainerType.Kind == TargetObjectKind.Struct)
+					sb.Append ("struct ");
+				else
+					sb.Append ("class ");
+
+				sb.Append (String.Format ("{0} = ", gtype.Name));
+
+				try {
+				TargetStructType parent = gtype.ContainerType.GetParentType (target);
+				sb.Append (String.Format ("{0}", gtype.ContainerType.Name));
+				sb.Append (String.Format (" : {0}", parent.Name));
+
+				sb.Append ("\n" + prefix + "{\n");
+				sb.Append (FormatStruct (prefix, gtype.ContainerType, hash));
+				sb.Append (prefix + "}");
+
+				retval = sb.ToString ();
+				break;
+			}
+
 			default:
 				retval = type.Name;
 				break;
@@ -475,6 +431,64 @@ namespace Mono.Debugger.Frontend
 
 			hash.Remove (type);
 			return retval;
+		}
+
+		protected string FormatStruct (string prefix, TargetClassType type, Hashtable hash)
+		{
+			StringBuilder sb = new StringBuilder ();
+
+			foreach (TargetFieldInfo field in type.Fields) {
+				if (field.IsStatic)
+					continue;
+				sb.Append (FormatMember (prefix, field, false, hash) + ";\n");
+			}
+			foreach (TargetFieldInfo field in type.Fields) {
+				if (!field.IsStatic)
+					continue;
+				sb.Append (FormatMember (prefix, field, true, hash) + ";\n");
+			}
+			foreach (TargetPropertyInfo property in type.Properties) {
+				if (property.IsStatic)
+					continue;
+				sb.Append (FormatProperty (prefix, property, false, hash));
+			}
+			foreach (TargetPropertyInfo property in type.Properties) {
+				if (!property.IsStatic)
+					continue;
+				sb.Append (FormatProperty (prefix, property, true, hash));
+			}
+			foreach (TargetEventInfo ev in type.Events) {
+				if (ev.IsStatic)
+					continue;
+				sb.Append (FormatEvent (prefix, ev, false, hash));
+			}
+			foreach (TargetEventInfo ev in type.Events) {
+				if (!ev.IsStatic)
+					continue;
+				sb.Append (FormatEvent (prefix, ev, true, hash));
+			}
+			foreach (TargetMethodInfo method in type.Methods) {
+				if (method.IsStatic)
+					continue;
+				sb.Append (FormatMethod (prefix, method, false, false, hash));
+			}
+			foreach (TargetMethodInfo method in type.Methods) {
+				if (!method.IsStatic)
+					continue;
+				sb.Append (FormatMethod (prefix, method, true, false, hash));
+			}
+			foreach (TargetMethodInfo method in type.Constructors) {
+				if (method.IsStatic)
+					continue;
+				sb.Append (FormatMethod (prefix, method, false, true, hash));
+			}
+			foreach (TargetMethodInfo method in type.Constructors) {
+				if (!method.IsStatic)
+					continue;
+				sb.Append (FormatMethod (prefix, method, true, true, hash));
+			}
+
+			return sb.ToString ();
 		}
 
 		protected string PrintObject (Thread target, TargetObject obj)

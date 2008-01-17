@@ -484,7 +484,7 @@ namespace Mono.Debugger.Languages.Mono
 			int inst_data = memory.ReadInteger (class_inst + addr_size);
 			TargetAddress inst_argv = memory.ReadAddress (class_inst + 2 * addr_size);
 
-			int type_argc = inst_data & 0x7fffff;
+			int type_argc = inst_data & 0x3fffff;
 
 			TargetReader argv_reader = new TargetReader (
 				memory.ReadMemory (inst_argv, type_argc * addr_size));
@@ -493,7 +493,10 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < type_argc; i++)
 				type_args [i] = argv_reader.ReadAddress ();
 
-			return new GenericClassInfo (container, type_args, cached_class);
+			TargetAddress cached_class_ptr = address + 4 * addr_size;
+
+			return new GenericClassInfo (container, type_args, cached_class_ptr,
+						     cached_class);
 		}
 
 		public class GenericClassInfo
@@ -505,14 +508,51 @@ namespace Mono.Debugger.Languages.Mono
 			public readonly TargetAddress[] TypeArguments;
 
 			/* `MonoClass *' of this instantiation, if present. */
+			public readonly TargetAddress KlassPtr;
 			public readonly TargetAddress Klass;
 
 			public GenericClassInfo (TargetAddress container, TargetAddress[] type_args,
-						 TargetAddress klass)
+						 TargetAddress klass_ptr, TargetAddress klass)
 			{
 				this.ContainerClass = container;
 				this.TypeArguments = type_args;
+				this.KlassPtr = klass_ptr;
 				this.Klass = klass;
+			}
+		}
+
+		public GenericParamInfo GetGenericParameter (TargetMemoryAccess memory,
+							     TargetAddress address)
+		{
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address, 4 * addr_size + 4));
+			TargetAddress container = reader.ReadAddress ();
+			TargetAddress klass = reader.ReadAddress ();
+			TargetAddress name_addr = reader.ReadAddress ();
+			int flags = reader.BinaryReader.ReadInt16 ();
+			int pos = reader.BinaryReader.ReadInt16 ();
+
+			string name = memory.ReadString (name_addr);
+
+			return new GenericParamInfo (container, klass, name, pos);
+		}
+
+		public class GenericParamInfo
+		{
+			public readonly TargetAddress Container;
+			public readonly TargetAddress Klass;
+			public readonly string Name;
+			public readonly int Position;
+
+			public GenericParamInfo (TargetAddress container, TargetAddress klass,
+						 string name, int pos)
+			{
+				this.Container = container;
+				this.Klass = klass;
+				this.Name = name;
+				this.Position = pos;
 			}
 		}
 	}

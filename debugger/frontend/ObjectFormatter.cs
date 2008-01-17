@@ -192,31 +192,48 @@ namespace Mono.Debugger.Frontend
 				FormatEnum (target, (TargetEnumObject) obj);
 				break;
 
+			case TargetObjectKind.GenericInstance:
+				FormatGenericInstance (target, (TargetGenericInstanceObject) obj);
+				break;
+
 			default:
 				PrintObject (target, obj);
 				break;
 			}
 		}
 
-		protected void FormatClassObject (Thread target, TargetClassObject obj)
+		protected void FormatGenericInstance (Thread target, TargetGenericInstanceObject obj)
+		{
+			bool first = true;
+
+			TargetClass class_info = obj.Type.GetClass (target);
+			if (class_info != null)
+				FormatClassObject (target, obj, class_info, ref first);
+		}
+
+		protected void FormatClassObject (Thread target, TargetStructObject obj)
+		{
+			bool first = true;
+
+			TargetClass class_info = obj.Type.GetClass (target);
+			if (class_info != null)
+				FormatClassObject (target, obj, class_info, ref first);
+		}
+
+		protected void FormatClassObject (Thread target, TargetStructObject obj,
+						  TargetClass class_info, ref bool first)
 		{
 			Append ("{ ");
 			indent_level += 3;
 
-			bool first = true;
-
-			TargetClassObject parent = obj.GetParentObject (target);
-			if ((parent != null) && (parent.Type != parent.Type.Language.ObjectType)) {
-				Append ("<{0}> = ", parent.Type.Name);
-				CheckLineWrap ();
-				FormatClassObject (target, parent);
-				first = false;
-			}
-
-			TargetClass class_info = obj.Type.GetClass (target);
-			if (class_info == null) {
-				Append (first ? "}" : " }");
-				indent_level -= 3;
+			if (obj.Type.HasParent) {
+				TargetStructObject parent = obj.GetParentObject (target);
+				if ((parent != null) && (parent.Type != parent.Type.Language.ObjectType)) {
+					Append ("<{0}> = ", parent.Type.Name);
+					CheckLineWrap ();
+					FormatClassObject (target, parent);
+					first = false;
+				}
 			}
 
 			TargetFieldInfo[] fields = class_info.GetFields (target);

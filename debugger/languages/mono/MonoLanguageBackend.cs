@@ -325,6 +325,27 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoPointerType (element_type);
 			}
 
+			Cecil.GenericParameter gen_param = type as Cecil.GenericParameter;
+			if (gen_param != null)
+				return new MonoGenericParameterType (this, gen_param.Name);
+
+			Cecil.GenericInstanceType gen_inst = type as Cecil.GenericInstanceType;
+			if (gen_inst != null) {
+				TargetType[] args = new TargetType [gen_inst.GenericArguments.Count];
+				for (int i = 0; i < args.Length; i++) {
+					args [i] = LookupMonoType (gen_inst.GenericArguments [i]);
+					if (args [i] == null)
+						return null;
+				}
+
+				MonoClassType container = LookupMonoType (gen_inst.ElementType)
+					as MonoClassType;
+				if (container == null)
+					return null;
+
+				return new MonoGenericInstanceType (container, args, TargetAddress.Null);
+			}
+
 			int rank = 0;
 
 			string full_name = type.FullName;
@@ -522,28 +543,44 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoArrayType (etype, rank);
 			}
 
-			case MonoTypeEnum.MONO_TYPE_GENERICINST: {
-				Console.WriteLine ("GENERIC INST: {0}", data);
-				MonoRuntime.GenericClassInfo info = MonoRuntime.GetGenericClass (
+			case MonoTypeEnum.MONO_TYPE_GENERICINST:
+				return ReadGenericClass (memory, data);
+
+			case MonoTypeEnum.MONO_TYPE_VAR:
+			case MonoTypeEnum.MONO_TYPE_MVAR: {
+				MonoRuntime.GenericParamInfo info = MonoRuntime.GetGenericParameter (
 					memory, data);
-				if (info == null)
-					return null;
 
-				Console.WriteLine ("GENERIC INST #1: {0} {1}",
-						   info.ContainerClass, info.Klass);
-
-				for (int i = 0; i < info.TypeArguments.Length; i++) {
-					TargetType arg = ReadType (memory, info.TypeArguments [i]);
-					Console.WriteLine ("GENERIC INST #2: {0} {1}", i, arg);
-				}
-
-				return LookupMonoClass (memory, info.Klass);
+				return new MonoGenericParameterType (this, info.Name);
 			}
 
 			default:
 				Report.Error ("UNKNOWN TYPE: {0}", type);
 				return null;
 			}
+		}
+
+		public MonoGenericInstanceType ReadGenericClass (TargetMemoryAccess memory,
+								 TargetAddress address)
+		{
+			MonoRuntime.GenericClassInfo info = MonoRuntime.GetGenericClass (memory, address);
+			if (info == null)
+				return null;
+
+			TargetType[] args = new TargetType [info.TypeArguments.Length];
+
+			for (int i = 0; i < info.TypeArguments.Length; i++) {
+				args [i] = ReadType (memory, info.TypeArguments [i]);
+				if (args [i] == null)
+					return null;
+			}
+
+			MonoClassType container = LookupMonoClass (memory, info.ContainerClass)
+				as MonoClassType;
+			if (container == null)
+				return null;
+
+			return new MonoGenericInstanceType (container, args, info.KlassPtr);
 		}
 
 		internal MonoFunctionType MainMethod {

@@ -1836,7 +1836,7 @@ namespace Mono.Debugger.Frontend
 			if (ctype.HasParent) {
 				stype = ctype.GetParentType (target);
 				if (instance != null) {
-					instance = instance.GetParentObject (target);
+					instance = instance.GetParentObject (target) as TargetClassObject;
 					if (instance == null)
 						return null;
 				}
@@ -2369,7 +2369,7 @@ namespace Mono.Debugger.Frontend
 			if (source == null)
 				return null;
 
-			return source.GetParentObject (context.CurrentThread);
+			return source.GetParentObject (context.CurrentThread) as TargetClassObject;
 		}
 
 		static TargetClassObject TryCurrentCast (ScriptingContext context,

@@ -9,5 +9,7 @@ namespace Mono.Debugger.Languages
 		{
 			this.Type = type;
 		}
+
+		public abstract TargetStructObject GetParentObject (Thread target);
 	}
 }
