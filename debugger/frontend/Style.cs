@@ -411,7 +411,6 @@ namespace Mono.Debugger.Frontend
 
 				sb.Append (String.Format ("{0} = ", gtype.Name));
 
-				try {
 				TargetStructType parent = gtype.ContainerType.GetParentType (target);
 				sb.Append (String.Format ("{0}", gtype.ContainerType.Name));
 				sb.Append (String.Format (" : {0}", parent.Name));

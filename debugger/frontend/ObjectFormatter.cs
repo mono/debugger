@@ -179,7 +179,7 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.Class:
 			case TargetObjectKind.Struct:
-				FormatClassObject (target, (TargetClassObject) obj);
+				FormatStructObject (target, (TargetStructObject) obj);
 				break;
 
 			case TargetObjectKind.Fundamental: {
@@ -193,7 +193,7 @@ namespace Mono.Debugger.Frontend
 				break;
 
 			case TargetObjectKind.GenericInstance:
-				FormatGenericInstance (target, (TargetGenericInstanceObject) obj);
+				FormatStructObject (target, (TargetStructObject) obj);
 				break;
 
 			default:
@@ -202,16 +202,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void FormatGenericInstance (Thread target, TargetGenericInstanceObject obj)
-		{
-			bool first = true;
-
-			TargetClass class_info = obj.Type.GetClass (target);
-			if (class_info != null)
-				FormatClassObject (target, obj, class_info, ref first);
-		}
-
-		protected void FormatClassObject (Thread target, TargetStructObject obj)
+		protected void FormatStructObject (Thread target, TargetStructObject obj)
 		{
 			bool first = true;
 
@@ -231,7 +222,7 @@ namespace Mono.Debugger.Frontend
 				if ((parent != null) && (parent.Type != parent.Type.Language.ObjectType)) {
 					Append ("<{0}> = ", parent.Type.Name);
 					CheckLineWrap ();
-					FormatClassObject (target, parent);
+					FormatStructObject (target, parent);
 					first = false;
 				}
 			}

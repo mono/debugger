@@ -83,7 +83,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (parent == null)
 				return null;
 
-			if (parent.GenericClass.IsNull)
+			if (!parent.IsGenericClass)
 				return parent.ClassType;
 
 			return File.MonoLanguage.ReadGenericClass (target, parent.GenericClass);
