@@ -4,7 +4,7 @@ using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
 {
-	internal class MonoGenericInstanceType : TargetGenericInstanceType
+	internal class MonoGenericInstanceType : TargetGenericInstanceType, IMonoStructType
 	{
 		public readonly MonoClassType Container;
 		TargetType[] type_args;
@@ -29,6 +29,10 @@ namespace Mono.Debugger.Languages.Mono
 			}
 			sb.Append ('>');
 			full_name = sb.ToString ();
+		}
+
+		TargetStructType IMonoStructType.Type {
+			get { return this; }
 		}
 
 		public override string Name {
@@ -89,7 +93,7 @@ namespace Mono.Debugger.Languages.Mono
 			return File.MonoLanguage.ReadGenericClass (target, parent.GenericClass);
 		}
 
-		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
+		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
 			if (class_info != null)
 				return class_info;
@@ -102,14 +106,21 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			class_info = File.MonoLanguage.ReadClassInfo (target, klass);
-			if (class_info != null)
+			if (class_info != null) {
+				ResolveClass (target, class_info, fail);
 				return class_info;
+			}
 
 			if (fail)
 				throw new TargetException (TargetError.ClassNotInitialized,
 							   "Class `{0}' not initialized yet.", Name);
 
 			return null;
+		}
+
+		public void ResolveClass (TargetMemoryAccess target, MonoClassInfo info, bool fail)
+		{
+			this.class_info = info;
 		}
 
 		internal override TargetClass GetClass (TargetMemoryAccess target)

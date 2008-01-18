@@ -10,7 +10,16 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal delegate void ClassInitHandler (TargetMemoryAccess target, TargetAddress klass);
 
-	internal class MonoClassType : TargetClassType
+	internal interface IMonoStructType
+	{
+		TargetStructType Type {
+			get;
+		}
+
+		void ResolveClass (TargetMemoryAccess target, MonoClassInfo info, bool fail);
+	}
+
+	internal class MonoClassType : TargetClassType, IMonoStructType
 	{
 		MonoFieldInfo[] fields;
 		MonoMethodInfo[] methods;
@@ -20,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
-		MonoClassType parent_type;
+		IMonoStructType parent_type;
 		MonoClassInfo class_info;
 
 		Hashtable load_handlers;
@@ -36,8 +45,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (type.BaseType != null) {
 				TargetType parent = file.MonoLanguage.LookupMonoType (type.BaseType);
-				if (parent != null)
-					parent_type = (MonoClassType) parent.ClassType;
+				if (parent is MonoGenericInstanceType)
+					parent_type = (IMonoStructType) parent;
+				else if (parent != null)
+					parent_type = (IMonoStructType) parent.ClassType;
 			}
 
 			if (type.GenericParameters.Count > 0) {
@@ -59,6 +70,10 @@ namespace Mono.Debugger.Languages.Mono
 			: this (file, typedef)
 		{
 			this.class_info = class_info;
+		}
+
+		TargetStructType IMonoStructType.Type {
+			get { return this; }
 		}
 
 		public Cecil.TypeDefinition Type {
@@ -92,7 +107,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)
 		{
 			if (parent_type != null)
-				return parent_type;
+				return parent_type.Type;
 
 			ResolveClass (target, true);
 
@@ -107,7 +122,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal MonoClassType MonoParentType {
-			get { return parent_type; }
+			get { return parent_type as MonoClassType; }
 		}
 
 		public override Module Module {
@@ -251,19 +266,16 @@ namespace Mono.Debugger.Languages.Mono
 			return ResolveClass (target, false);
 		}
 
-		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
+		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
 			if (class_info != null)
 				return class_info;
 
-			if (parent_type != null) {
-				if (parent_type.ResolveClass (target, fail) == null)
-					return null;
-			}
-
 			class_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
-			if (class_info != null)
+			if (class_info != null) {
+				ResolveClass (target, class_info, fail);
 				return class_info;
+			}
 
 			if (fail)
 				throw new TargetException (TargetError.ClassNotInitialized,
@@ -272,10 +284,14 @@ namespace Mono.Debugger.Languages.Mono
 			return null;
 		}
 
-		internal MonoClassInfo ClassResolved (TargetMemoryAccess target, TargetAddress klass)
+		public void ResolveClass (TargetMemoryAccess target, MonoClassInfo info, bool fail)
 		{
-			class_info = File.MonoLanguage.ReadClassInfo (target, klass);
-			return class_info;
+			this.class_info = info;
+
+			if (parent_type != null) {
+				MonoClassInfo parent_info = class_info.GetParent (target);
+				parent_type.ResolveClass (target, parent_info, fail);
+			}
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target,

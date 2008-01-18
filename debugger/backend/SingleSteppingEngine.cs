@@ -3228,7 +3228,8 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolved class: {1}", sse, klass);
 
-				class_info = Function.MonoClass.ClassResolved (inferior, klass);
+				class_info = language.ReadClassInfo (inferior, klass);
+				Function.MonoClass.ResolveClass (inferior, class_info, false);
 				stage = Stage.ResolvedClass;
 				do_execute ();
 				return EventResult.Running;

@@ -16,20 +16,24 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetStructObject GetParentObject (Thread target)
+		public override TargetStructObject GetParentObject (Thread thread)
+		{
+			return (TargetStructObject) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetParentObject (target);
+			});
+		}
+
+		internal TargetStructObject GetParentObject (TargetMemoryAccess target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
 
-			MonoClassInfo parent_info = (MonoClassInfo) info.GetParent (target);
-			if (parent_info == null)
+			TargetStructType sparent = type.GetParentType (target);
+			if (sparent == null)
 				return null;
 
-			MonoClassType parent_type = parent_info.ClassType;
-			if (!type.IsByRef && parent_type.IsByRef)
-				return null;
-
-			return new MonoClassObject (parent_type, parent_info, Location);
+			return (TargetStructObject) sparent.GetObject (target, Location);
 		}
 
 		public override TargetClassObject GetCurrentObject (Thread thread)
