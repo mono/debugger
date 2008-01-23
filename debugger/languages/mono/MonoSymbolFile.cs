@@ -932,7 +932,7 @@ namespace Mono.Debugger.Languages.Mono
 			MethodSource source;
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
-			TargetClassType decl_type;
+			TargetStructType decl_type;
 			TargetVariable this_var;
 			TargetVariable[] parameters;
 			TargetVariable[] locals;
@@ -991,7 +991,11 @@ namespace Mono.Debugger.Languages.Mono
 
 				TargetAddress decl_klass = mono.MonoRuntime.MonoMethodGetClass (
 					memory, address.MonoMethod);
-				decl_type = mono.ReadMonoClass (memory, decl_klass).ClassType;
+				TargetType decl = mono.ReadMonoClass (memory, decl_klass);
+				if (decl.HasClassType)
+					decl_type = decl.ClassType;
+				else
+					decl_type = (TargetStructType) decl;
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
 				parameters = new TargetVariable [param_info.Count];
@@ -1063,7 +1067,7 @@ namespace Mono.Debugger.Languages.Mono
 				return locals;
 			}
 
-			public override TargetClassType GetDeclaringType (Thread target)
+			public override TargetStructType GetDeclaringType (Thread target)
 			{
 				read_variables (target);
 				return decl_type;
@@ -1567,7 +1571,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source; }
 			}
 
-			public override TargetClassType GetDeclaringType (Thread target)
+			public override TargetStructType GetDeclaringType (Thread target)
 			{
 				return null;
 			}

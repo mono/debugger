@@ -52,6 +52,11 @@ namespace Mono.Debugger.Tests
 			// FIXME: Use correct method name
 			AssertStopped (thread, "Foo`1.Hello()", LineFooHello);
 
+			AssertPrint (thread, "this", "(Foo`1<int>) { Data = 5 }");
+			AssertType (thread, "this",
+				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
+				    "{\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
+
 			AssertExecute ("continue");
 			AssertTargetOutput ("5");
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", LineMain2);

@@ -1,5 +1,11 @@
 2008-01-23  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(Method.GetDeclaringType): Return a `TargetStructType' instead of
+	a `TargetClassType'.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
 	* test/{testsuite|src}/TestSimpleGenerics.cs: New test.
 
 2008-01-19  Martin Baulig  <martin@ximian.com>

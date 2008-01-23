@@ -895,7 +895,7 @@ namespace Mono.Debugger.Frontend
 			if (method == null)
 				return null;
 
-			TargetClassType decl_type = method.GetDeclaringType (context.CurrentThread);
+			TargetStructType decl_type = method.GetDeclaringType (context.CurrentThread);
 			if (decl_type == null)
 				return null;
 
