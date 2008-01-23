@@ -1,5 +1,9 @@
 2008-01-19  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Use gmcs, not mcs.
+
+2008-01-19  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassType.cs
 	(IMonoStructType): New internal interface.
 	(MonoClassType): Make things work if our parent class is a
