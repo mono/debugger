@@ -93,6 +93,27 @@ namespace Mono.Debugger.Languages.Mono
 			return File.MonoLanguage.ReadGenericClass (target, parent.GenericClass);
 		}
 
+		internal TargetStructObject GetCurrentObject (TargetMemoryAccess target,
+							      TargetLocation location)
+		{
+			// location.Address resolves to the address of the MonoObject,
+			// dereferencing it once gives us the vtable, dereferencing it
+			// twice the class.
+			TargetAddress address;
+			address = target.ReadAddress (location.GetAddress (target));
+			address = target.ReadAddress (address);
+
+			TargetType current = File.MonoLanguage.ReadMonoClass (target, address);
+			if (current == null)
+				return null;
+
+			if (IsByRef && !current.IsByRef) // Unbox
+				location = location.GetLocationAtOffset (
+					2 * target.TargetMemoryInfo.TargetAddressSize);
+
+			return (TargetStructObject) current.GetObject (target, location);
+		}
+
 		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
 			if (class_info != null)

@@ -247,7 +247,7 @@ namespace Mono.Debugger.Frontend
 			if (obj == null)
 				return null;
 
-			TargetClassObject cobj = obj as TargetClassObject;
+			TargetStructObject cobj = obj as TargetStructObject;
 			if (cobj != null) {
 				TargetObject current;
 				try {
@@ -2353,10 +2353,10 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		static TargetClassObject TryParentCast (ScriptingContext context,
-							TargetClassObject source,
-							TargetStructType source_type,
-							TargetStructType target_type)
+		static TargetStructObject TryParentCast (ScriptingContext context,
+							 TargetStructObject source,
+							 TargetStructType source_type,
+							 TargetStructType target_type)
 		{
 			if (source_type == target_type)
 				return source;
@@ -2372,11 +2372,11 @@ namespace Mono.Debugger.Frontend
 			return source.GetParentObject (context.CurrentThread) as TargetClassObject;
 		}
 
-		static TargetClassObject TryCurrentCast (ScriptingContext context,
-							 TargetClassObject source,
-							 TargetClassType target_type)
+		static TargetStructObject TryCurrentCast (ScriptingContext context,
+							  TargetClassObject source,
+							  TargetClassType target_type)
 		{
-			TargetClassObject current = source.GetCurrentObject (context.CurrentThread);
+			TargetStructObject current = source.GetCurrentObject (context.CurrentThread);
 			if (current == null)
 				return null;
 
@@ -2393,8 +2393,7 @@ namespace Mono.Debugger.Frontend
 			if (sobj == null)
 				return null;
 
-			TargetClassObject result;
-			result = TryParentCast (context, sobj, sobj.Type, target_type);
+			TargetStructObject result = TryParentCast (context, sobj, sobj.Type, target_type);
 			if (result != null)
 				return result;
 

@@ -69,6 +69,10 @@ namespace Mono.Debugger.Tests
 
 			AssertStopped (thread, "Foo`1.Hello()", LineFooHello);
 
+			AssertPrint (thread, "this", "(Bar`1<int>) { <Foo`1<int>> = { Data = 5 } }");
+			AssertType (thread, "this",
+				    "class Bar`1<int> = Bar`1<U> : Foo`1<U>\n{\n   .ctor (U);\n}");
+
 			AssertExecute ("continue");
 			AssertTargetOutput ("5");
 			AssertHitBreakpoint (thread, bpt_main_3, "X.Main()", LineMain3);

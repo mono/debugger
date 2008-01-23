@@ -1,5 +1,16 @@
 2008-01-23  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetStructObject.cs
+	(TargetStructObject.GetParentObject): Provide the `Thread'
+	implementation here; made the `TargetMemoryAccess' version
+	abstract.
+	(TargetStructObject.GetCurrentObject): Moved here from
+	`TargetClassObject'; changed return type into
+	`TargetStructObject'; provide the `Thread' implementation here;
+	made the `TargetMemoryAccess' version abstract.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
 	* classes/Method.cs
 	(Method.GetDeclaringType): Return a `TargetStructType' instead of
 	a `TargetClassType'.

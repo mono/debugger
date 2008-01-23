@@ -301,8 +301,8 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (this, class_info, location);
 		}
 
-		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target,
-							   TargetLocation location)
+		internal TargetStructObject GetCurrentObject (TargetMemoryAccess target,
+							      TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
@@ -319,7 +319,7 @@ namespace Mono.Debugger.Languages.Mono
 				location = location.GetLocationAtOffset (
 					2 * target.TargetMemoryInfo.TargetAddressSize);
 
-			return (MonoClassObject) current.GetObject (target, location);
+			return (TargetStructObject) current.GetObject (target, location);
 		}
 	}
 }

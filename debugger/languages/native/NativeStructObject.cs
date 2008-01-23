@@ -12,12 +12,12 @@ namespace Mono.Debugger.Languages.Native
 			this.type = type;
 		}
 
-		public override TargetStructObject GetParentObject (Thread target)
+		internal override TargetStructObject GetParentObject (TargetMemoryAccess target)
 		{
 			return null;
 		}
 
-		public override TargetClassObject GetCurrentObject (Thread target)
+		internal override TargetStructObject GetCurrentObject (TargetMemoryAccess target)
 		{
 			return null;
 		}

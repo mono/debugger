@@ -17,15 +17,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetStructObject GetParentObject (Thread thread)
-		{
-			return (TargetStructObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					return GetParentObject (target);
-			});
-		}
-
-		internal TargetStructObject GetParentObject (TargetMemoryAccess target)
+		internal override TargetStructObject GetParentObject (TargetMemoryAccess target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
@@ -35,6 +27,14 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			return (TargetStructObject) sparent.GetObject (target, Location);
+		}
+
+		internal override TargetStructObject GetCurrentObject (TargetMemoryAccess target)
+		{
+			if (!type.IsByRef)
+				return null;
+
+			return type.GetCurrentObject (target, Location);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
