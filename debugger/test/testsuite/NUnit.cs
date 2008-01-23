@@ -5,6 +5,7 @@ using System.Globalization;
 using SD = System.Diagnostics;
 using ST = System.Threading;
 using System.Text;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -621,6 +622,28 @@ namespace Mono.Debugger.Tests
 			if (text != exp_result)
 				Assert.Fail ("Expression `{0}' evaluated to `{1}', but expected `{2}'.",
 					     expression, text, exp_result);
+		}
+
+		public void AssertPrintRegex (Thread thread, DisplayFormat format,
+					      string expression, string exp_re)
+		{
+			string text = null;
+			try {
+				ScriptingContext context = GetContext (thread);
+
+				object obj = EvaluateExpression (context, expression);
+				text = context.FormatObject (obj, format);
+			} catch (AssertionException) {
+				throw;
+			} catch (Exception ex) {
+				Assert.Fail ("Failed to print expression `{0}': {1}",
+					     expression, ex);
+			}
+
+			Match match = Regex.Match (text, exp_re);
+			if (!match.Success)
+				Assert.Fail ("Expression `{0}' evaluated to `{1}', but expected `{2}'.",
+					     expression, text, exp_re);
 		}
 
 		public void AssertPrintException (Thread thread, string expression, string exp_result)
