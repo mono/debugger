@@ -625,6 +625,24 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)
 		{
+			if (mdef.DeclaringType.GenericParameters.Count > 0) {
+				StringBuilder sb = new StringBuilder (mdef.DeclaringType.FullName);
+				sb.Append ('<');
+				bool first = true;
+				foreach (Cecil.GenericParameter p in mdef.DeclaringType.GenericParameters) {
+					if (first)
+						first = false;
+					else
+						sb.Append (",");
+					sb.Append (p.Name);
+				}
+				sb.Append (">.");
+				sb.Append (mdef.Name);
+				sb.Append (GetMethodSignature (mdef));
+				return sb.ToString ();
+			    
+				;
+			}
 			return mdef.DeclaringType.FullName + '.' + mdef.Name +
 				GetMethodSignature (mdef);
 		}

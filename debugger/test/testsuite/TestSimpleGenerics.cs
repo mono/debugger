@@ -49,8 +49,7 @@ namespace Mono.Debugger.Tests
 				    "{\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
 
 			AssertExecute ("step");
-			// FIXME: Use correct method name
-			AssertStopped (thread, "Foo`1.Hello()", LineFooHello);
+			AssertStopped (thread, "Foo`1<T>.Hello()", LineFooHello);
 
 			AssertPrint (thread, "this", "(Foo`1<int>) { Data = 5 }");
 			AssertType (thread, "this",
@@ -67,7 +66,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 
-			AssertStopped (thread, "Foo`1.Hello()", LineFooHello);
+			AssertStopped (thread, "Foo`1<T>.Hello()", LineFooHello);
 
 			AssertPrint (thread, "this", "(Bar`1<int>) { <Foo`1<int>> = { Data = 5 } }");
 			AssertType (thread, "this",
