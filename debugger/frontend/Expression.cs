@@ -3121,4 +3121,56 @@ namespace Mono.Debugger.Frontend
 			return obj;
 		}
 	}
+
+	public class ParentExpression : Expression
+	{
+		Expression expr;
+		int level;
+		string name;
+
+		public ParentExpression (Expression expr, int level)
+		{
+			this.expr = expr;
+			this.level = level;
+
+			if (level > 0)
+				name = String.Format ("$parent+{0} ({1})", level, expr.Name);
+			else
+				name = String.Format ("$parent ({0})", expr.Name);
+		}
+
+		public override string Name {
+			get { return name; }
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			expr = expr.Resolve (context);
+			if (expr == null)
+				return null;
+
+			resolved = true;
+			return this;
+		}
+
+		protected override TargetObject DoEvaluateObject (ScriptingContext context)
+		{
+			TargetVariable var = expr.EvaluateVariable (context);
+			if (var == null)
+				return null;
+
+			TargetObject obj = var.GetObject (context.CurrentFrame);
+			if (obj == null)
+				return null;
+
+			TargetStructObject sobj = (TargetStructObject) obj;
+			for (int i = 0; i <= level; i++) {
+				sobj = sobj.GetParentObject (context.CurrentThread);
+				if (sobj == null)
+					return null;
+			}
+
+			return sobj;
+		}
+	}
 }

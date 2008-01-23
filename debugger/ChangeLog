@@ -1,5 +1,20 @@
 2008-01-23  Martin Baulig  <martin@ximian.com>
 
+	Added `$parent (expr)' and `$parent+N (expr)' syntax.
+
+	* frontend/CSharpExpressionParser.jay
+	(PARENT): New token.
+	(PARENT opt_parent_level OPAREN expression CPAREN): New rule.
+
+	* frontend/CSharpTokenizer.cs: Add `$parent' => `Token.PARENT'.
+
+	* frontend/Expression.cs
+	(ParentExpression): New expression.
+
+	* test/testsuite/TestSimpleGenerics.cs: Added tests.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoSymbolFile.cs
 	(MonoSymbolFile.GetMethodName): Include type parameters.
 

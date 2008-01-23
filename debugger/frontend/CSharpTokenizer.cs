@@ -71,6 +71,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			keywords.Add ("True", Token.TRUE);
 			keywords.Add ("False", Token.FALSE);
 			keywords.Add ("null", Token.NULL);
+			keywords.Add ("@parent", Token.PARENT);
 		}
 
 		public string error {
@@ -576,12 +577,26 @@ namespace Mono.Debugger.Frontend.CSharp
 					return ReadDigit ((char)c);
 				}
 
-				if (c == '#')
-					return Token.HASH;
-				else if (c == '@')
+				if (c == '$') {
+					id_builder.Length = 0;
+					
+					while ((c = PeekChar ()) != -1) {
+						if (Char.IsLetterOrDigit ((char)c) || c == '_') {
+							id_builder.Append ((char)GetChar ());
+							col++;
+						} else 
+							break;
+					}
+
+					string ids = id_builder.ToString ();
+					if (ids == "parent")
+						return Token.PARENT;
+					else
+						throw new ScriptingException ("Unknown #-expression");
+				} else if (c == '@')
 					return Token.AT;
-				else if (c == '$')
-					return Token.DOLLAR;
+				else if (c == '#')
+					return Token.HASH;
 				else if (c == '.') {
 					if (Char.IsDigit ((char)PeekChar())) {
 						putback(c);

@@ -44,6 +44,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", LineMain + 1);
 
 			AssertPrint (thread, "foo", "(Foo`1<int>) { Data = 5 }");
+			AssertPrint (thread, "$parent (foo)", "(System.Object) { }");
 			AssertType (thread, "foo",
 				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
 				    "{\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
@@ -61,8 +62,12 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", LineMain2);
 
 			AssertPrint (thread, "bar", "(Bar`1<int>) { <Foo`1<int>> = { Data = 5 } }");
+			AssertPrint (thread, "$parent (bar)", "(Foo`1<int>) { Data = 5 }");
 			AssertType (thread, "bar",
 				    "class Bar`1<int> = Bar`1<U> : Foo`1<U>\n{\n   .ctor (U);\n}");
+			AssertType (thread, "$parent (bar)",
+				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
+				    "{\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
 
 			AssertExecute ("step");
 
@@ -78,6 +83,10 @@ namespace Mono.Debugger.Tests
 
 			AssertPrintRegex (thread, DisplayFormat.Object, "baz",
 					  @"\(Baz`1<int>\) { <Foo`1<Hello`1<int>>> = { Data = \(Hello`1<int>\) 0x[0-9a-f]+ } }");
+			AssertPrintRegex (thread, DisplayFormat.Object, "$parent (baz)",
+					  @"\(Foo`1<Hello`1<int>>\) { Data = \(Hello`1<int>\) 0x[0-9a-f]+ }");
+			AssertPrint (thread, "$parent+1 (baz)", "(System.Object) { }");
+
 			AssertType (thread, "baz",
 				    "class Baz`1<int> = Baz`1<U> : Foo`1<Hello`1<U>>\n{\n   .ctor (U);\n}");
 
@@ -87,9 +96,13 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, bpt_main_4, "X.Main()", LineMain4);
 
 			AssertPrint (thread, "test", "(Test) { <Foo`1<int>> = { Data = 9 } }");
+			AssertPrint (thread, "$parent (test)", "(Foo`1<int>) { Data = 9 }");
 			AssertType (thread, "test",
 				    "class Test : Foo`1<int>\n{\n   static void Hello`1 (T);\n" +
 				    "   .ctor ();\n}");
+			AssertType (thread, "$parent (test)",
+				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
+				    "{\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
