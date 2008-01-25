@@ -298,9 +298,14 @@ member_name
 	  {
 		$$ = (string) $1;
 	  }
-	| IDENTIFIER BACKTICK INT
+	| IDENTIFIER BACKTICK
 	  {
-		$$ = String.Format ("{0}`{1}", (string) $1, (int) $3);
+		lexer.ReadGenericArity = true;
+	  }
+	  INT
+	  {
+		lexer.ReadGenericArity = false;
+		$$ = String.Format ("{0}`{1}", (string) $1, (int) $4);
 	  }
 	;
 

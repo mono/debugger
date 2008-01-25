@@ -45,7 +45,8 @@ namespace Mono.Debugger.Frontend.CSharp
 		// Details about the error encoutered by the tokenizer
 		//
 		string error_details;
-		
+
+		public bool ReadGenericArity { get; set; }
 
 		//
 		// Class initializer
@@ -248,6 +249,26 @@ namespace Mono.Debugger.Frontend.CSharp
 			bool isfloat    = false;
 			bool isdouble   = false;
 			bool isdecimal  = false;
+
+			string digit;
+
+			if (ReadGenericArity) {
+				while (Char.IsDigit((char)PeekChar())) {
+					sb.Append((char)GetChar());
+					++col;
+				}
+
+				digit = sb.ToString ();
+
+				try {
+					val = Int32.Parse(digit, NumberStyles.Number);
+					return Token.INT;
+				} catch (Exception) {
+					error_details = String.Format("Can't parse int {0}", digit);
+					val = 0;
+					return Token.ERROR;
+				}
+			}
 			
 			if (ch == '0' && Char.ToUpper((char)PeekChar()) == 'X') {
 				const string hex = "0123456789ABCDEF";
@@ -333,7 +354,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				}
 			}
 			
-			string digit = sb.ToString();
+			digit = sb.ToString();
 			//string stringValue = String.Concat(prefix.ToString(), digit, suffix.ToString());
 			if (isfloat) {
 				try {
