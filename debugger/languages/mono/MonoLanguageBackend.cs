@@ -204,7 +204,6 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable assembly_by_name;
 		Hashtable class_hash;
 		Hashtable class_info_by_addr;
-		Hashtable class_info_by_type;
 		MonoSymbolFile corlib;
 		MonoBuiltinTypeInfo builtin_types;
 		MonoFunctionType main_method;
@@ -435,7 +434,6 @@ namespace Mono.Debugger.Languages.Mono
 			assembly_by_name = new Hashtable ();
 			class_hash = new Hashtable ();
 			class_info_by_addr = new Hashtable ();
-			class_info_by_type = new Hashtable ();
 		}
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
@@ -877,8 +875,6 @@ namespace Mono.Debugger.Languages.Mono
 				info = MonoClassInfo.ReadClassInfo (this, memory, klass);
 
 				class_info_by_addr.Add (klass, info);
-				if (!info.IsGenericClass)
-					class_info_by_type.Add (info.CecilType, info);
 			}
 
 			return info;
@@ -891,7 +887,6 @@ namespace Mono.Debugger.Languages.Mono
 			MonoClassInfo info = MonoClassInfo.ReadClassInfo (
 				file, typedef, memory, klass, out type);
 			class_info_by_addr.Add (klass, info);
-			class_info_by_type.Add (typedef, info);
 
 			return type;
 		}
