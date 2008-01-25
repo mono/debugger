@@ -1,5 +1,32 @@
 2008-01-25  Martin Baulig  <martin@ximian.com>
 
+	Fix the parent type madness.
+
+	* languages/TargetClass.cs
+	(TargetClass.Type): Changed type into `TargetStructType'.
+	(TargetClass.RealType): New public property.
+
+	* languages/Language.cs
+	(Language.IsExceptionType): New public method.
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.ReadClassInfo): Create `info.type' here.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.LookupMonoClass): Fix the madness; just call
+	ReadClassInfo() here and return its `RealType'.
+
+	* languages/mono/MonoClassType.cs
+	(IMonoStructType.ClassInfo): New property.
+	(IMonoStructType.ResolveClass): Removed the `MonoClassInfo' argument.
+	(MonoClassType.ResolveClass): Maintain a `resolved' flag instead
+	of checking whether `class_info' is not null; the `class_info' may
+	now be set via `IMonoStructType.ClassInfo' without actually
+	resolving the class.  This was necessary to support recursive
+	generic types like "class Test : Foo<Test>".
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/Thread.cs
 	(Thread.RuntimeInvoke): Changed type of `object_argument' from
 	`TargetClassObject' -> `TargetStructObject'.

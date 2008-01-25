@@ -16,7 +16,11 @@ namespace Mono.Debugger.Languages.Mono
 			get;
 		}
 
-		void ResolveClass (TargetMemoryAccess target, MonoClassInfo info, bool fail);
+		MonoClassInfo ClassInfo {
+			get; set;
+		}
+
+		MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail);
 	}
 
 	internal class MonoClassType : TargetClassType, IMonoStructType
@@ -32,6 +36,7 @@ namespace Mono.Debugger.Languages.Mono
 		IMonoStructType parent_type;
 		MonoClassInfo class_info;
 
+		bool resolved;
 		Hashtable load_handlers;
 		int load_handler_id;
 
@@ -42,14 +47,6 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.type = type;
 			this.file = file;
-
-			if (type.BaseType != null) {
-				TargetType parent = file.MonoLanguage.LookupMonoType (type.BaseType);
-				if (parent is MonoGenericInstanceType)
-					parent_type = (IMonoStructType) parent;
-				else if (parent != null)
-					parent_type = (IMonoStructType) parent.ClassType;
-			}
 
 			if (type.GenericParameters.Count > 0) {
 				StringBuilder sb = new StringBuilder (type.FullName);
@@ -101,7 +98,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasParent {
-			get { return parent_type != null; }
+			get { return type.BaseType != null; }
 		}
 
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)
@@ -110,19 +107,7 @@ namespace Mono.Debugger.Languages.Mono
 				return parent_type.Type;
 
 			ResolveClass (target, true);
-
-			MonoClassInfo parent = class_info.GetParent (target);
-			if (parent == null)
-				return null;
-
-			if (!parent.IsGenericClass)
-				return parent.ClassType;
-
-			return File.MonoLanguage.ReadGenericClass (target, parent.GenericClass);
-		}
-
-		internal MonoClassType MonoParentType {
-			get { return parent_type as MonoClassType; }
+			return parent_type.Type;
 		}
 
 		public override Module Module {
@@ -268,30 +253,37 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
-			if (class_info != null)
+			if (resolved)
 				return class_info;
 
-			class_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
-			if (class_info != null) {
-				ResolveClass (target, class_info, fail);
-				return class_info;
+			if (class_info == null) {
+				int token = (int) type.MetadataToken.ToUInt ();
+				class_info = file.LookupClassInfo (target, token);
 			}
 
-			if (fail)
+			if (class_info == null) {
+				if (!fail)
+					return null;
+
 				throw new TargetException (TargetError.ClassNotInitialized,
 							   "Class `{0}' not initialized yet.", Name);
+			}
 
-			return null;
+			if (class_info.HasParent) {
+				MonoClassInfo parent_info = class_info.GetParent (target);
+				parent_type = (IMonoStructType) parent_info.Type;
+				parent_type.ClassInfo = parent_info;
+				if (parent_type.ResolveClass (target, fail) == null)
+					return null;
+			}
+
+			resolved = true;
+			return class_info;
 		}
 
-		public void ResolveClass (TargetMemoryAccess target, MonoClassInfo info, bool fail)
-		{
-			this.class_info = info;
-
-			if (parent_type != null) {
-				MonoClassInfo parent_info = class_info.GetParent (target);
-				parent_type.ResolveClass (target, parent_info, fail);
-			}
+		MonoClassInfo IMonoStructType.ClassInfo {
+			get { return class_info; }
+			set { class_info = value; }
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target,

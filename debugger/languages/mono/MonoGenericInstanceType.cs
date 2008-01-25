@@ -10,7 +10,9 @@ namespace Mono.Debugger.Languages.Mono
 		TargetType[] type_args;
 		TargetAddress class_ptr;
 		MonoClassInfo class_info;
+		IMonoStructType parent_type;
 		string full_name;
+		bool resolved;
 
 		public MonoGenericInstanceType (MonoClassType container, TargetType[] type_args,
 						TargetAddress class_ptr)
@@ -87,10 +89,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (parent == null)
 				return null;
 
-			if (!parent.IsGenericClass)
-				return parent.ClassType;
-
-			return File.MonoLanguage.ReadGenericClass (target, parent.GenericClass);
+			return parent.Type;
 		}
 
 		internal TargetStructObject GetCurrentObject (TargetMemoryAccess target,
@@ -116,32 +115,43 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
-			if (class_info != null)
+			if (resolved)
 				return class_info;
 
-			if (class_ptr.IsNull)
-				return null;
+			if (class_info == null) {
+				if (class_ptr.IsNull)
+					return null;
 
-			TargetAddress klass = target.ReadAddress (class_ptr);
-			if (klass.IsNull)
-				return null;
+				TargetAddress klass = target.ReadAddress (class_ptr);
+				if (klass.IsNull)
+					return null;
 
-			class_info = File.MonoLanguage.ReadClassInfo (target, klass);
-			if (class_info != null) {
-				ResolveClass (target, class_info, fail);
-				return class_info;
+				class_info = File.MonoLanguage.ReadClassInfo (target, klass);
 			}
 
-			if (fail)
+			if (class_info == null) {
+				if (!fail)
+					return null;
+
 				throw new TargetException (TargetError.ClassNotInitialized,
 							   "Class `{0}' not initialized yet.", Name);
+			}
 
-			return null;
+			if (class_info.HasParent) {
+				MonoClassInfo parent_info = class_info.GetParent (target);
+				parent_type = (IMonoStructType) parent_info.Type;
+				parent_type.ClassInfo = parent_info;
+				if (parent_type.ResolveClass (target, fail) == null)
+					return null;
+			}
+
+			resolved = true;
+			return class_info;
 		}
 
-		public void ResolveClass (TargetMemoryAccess target, MonoClassInfo info, bool fail)
-		{
-			this.class_info = info;
+		MonoClassInfo IMonoStructType.ClassInfo {
+			get { return class_info; }
+			set { class_info = value; }
 		}
 
 		internal override TargetClass GetClass (TargetMemoryAccess target)

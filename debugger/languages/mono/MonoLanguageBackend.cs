@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
 
@@ -203,7 +204,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable assembly_hash;
 		Hashtable assembly_by_name;
 		Hashtable class_hash;
-		Hashtable class_info_by_addr;
+		Dictionary<TargetAddress,MonoClassInfo> class_info_by_addr;
 		MonoSymbolFile corlib;
 		MonoBuiltinTypeInfo builtin_types;
 		MonoFunctionType main_method;
@@ -382,27 +383,26 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetType LookupMonoClass (TargetMemoryAccess target, TargetAddress klass_address)
 		{
-			TargetType type = (TargetType) class_hash [klass_address];
-			if (type != null)
-				return type;
+			return ReadClassInfo (target, klass_address).RealType;
+		}
 
-			MonoClassInfo info;
+		public override bool IsExceptionType (TargetClassType ctype)
+		{
+			MonoClassType mono_type = ctype as MonoClassType;
+			if (mono_type == null)
+				return false;
 
-			try {
-				info = MonoClassInfo.ReadClassInfo (this, target, klass_address);
-				if (info == null)
-					return null;
+			Cecil.TypeDefinition exc_type = builtin_types.ExceptionType.Type;
+			Cecil.TypeDefinition type = mono_type.Type;
 
-				type = info.SymbolFile.LookupMonoType (info.CecilType);
-			} catch {
-				return null;
+			while (type != null) {
+				if (type == exc_type)
+					return true;
+
+				type = type.BaseType as Cecil.TypeDefinition;
 			}
 
-			if (type == null)
-				return null;
-
-			class_hash.Add (klass_address, type);
-			return type;
+			return false;
 		}
 
 		public MonoSymbolFile GetImage (TargetAddress address)
@@ -433,7 +433,7 @@ namespace Mono.Debugger.Languages.Mono
 			assembly_hash = new Hashtable ();
 			assembly_by_name = new Hashtable ();
 			class_hash = new Hashtable ();
-			class_info_by_addr = new Hashtable ();
+			class_info_by_addr = new Dictionary<TargetAddress,MonoClassInfo> ();
 		}
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
@@ -870,13 +870,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoClassInfo ReadClassInfo (TargetMemoryAccess memory, TargetAddress klass)
 		{
-			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass];
-			if (info == null) {
-				info = MonoClassInfo.ReadClassInfo (this, memory, klass);
+			if (class_info_by_addr.ContainsKey (klass))
+				return class_info_by_addr [klass];
 
-				class_info_by_addr.Add (klass, info);
-			}
-
+			MonoClassInfo info = MonoClassInfo.ReadClassInfo (this, memory, klass);
+			class_info_by_addr.Add (klass, info);
 			return info;
 		}
 
@@ -884,7 +882,7 @@ namespace Mono.Debugger.Languages.Mono
 						       TargetMemoryAccess memory, TargetAddress klass)
 		{
 			MonoClassType type;
-			MonoClassInfo info = MonoClassInfo.ReadClassInfo (
+			MonoClassInfo info = MonoClassInfo.ReadCoreType (
 				file, typedef, memory, klass, out type);
 			class_info_by_addr.Add (klass, info);
 

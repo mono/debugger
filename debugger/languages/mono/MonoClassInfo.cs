@@ -13,7 +13,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		public readonly Cecil.TypeDefinition CecilType;
 
-		MonoClassType type;
+		TargetType type;
+		TargetStructType struct_type;
 
 		MonoClassInfo parent_info;
 		TargetAddress parent_klass = TargetAddress.Null;
@@ -42,18 +43,29 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InternalError ();
 
 			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
-			info.type = file.LookupMonoClass (typedef);
+			if (info.IsGenericClass)
+				info.type = info.struct_type = file.MonoLanguage.ReadGenericClass (
+					target, info.GenericClass);
+			else {
+				info.type = file.LookupMonoType (typedef);
+				if (info.type is TargetStructType)
+					info.struct_type = (TargetStructType) info.type;
+				else
+					info.struct_type = info.type.ClassType;
+			}
+			((IMonoStructType) info.struct_type).ClassInfo = info;
 			return info;
 		}
 
-		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
-							   Cecil.TypeDefinition typedef,
-							   TargetMemoryAccess target,
-							   TargetAddress klass,
-							   out MonoClassType type)
+		public static MonoClassInfo ReadCoreType (MonoSymbolFile file,
+							  Cecil.TypeDefinition typedef,
+							  TargetMemoryAccess target,
+							  TargetAddress klass,
+							  out MonoClassType type)
 		{
 			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			type = new MonoClassType (file, typedef, info);
+			((IMonoStructType) type).ClassInfo = info;
 			info.type = type;
 			return info;
 		}
@@ -74,12 +86,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return SymbolFile.MonoLanguage.MonoRuntime; }
 		}
 
-		public override TargetClassType Type {
+		public override TargetType RealType {
 			get { return type; }
 		}
 
-		public MonoClassType ClassType {
-			get { return type; }
+		public override TargetStructType Type {
+			get { return struct_type; }
 		}
 
 		public bool IsGenericClass {
@@ -107,7 +119,7 @@ namespace Mono.Debugger.Languages.Mono
 				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
 					target, KlassAddress, i);
 
-				fields [i] = new MonoFieldInfo (type, field_types [i], i, field);
+				fields [i] = new MonoFieldInfo (struct_type, field_types [i], i, field);
 			}
 		}
 
@@ -154,7 +166,7 @@ namespace Mono.Debugger.Languages.Mono
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
 
-			if (!ClassType.IsByRef)
+			if (!Type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 
@@ -225,7 +237,7 @@ namespace Mono.Debugger.Languages.Mono
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
 
-			if (!ClassType.IsByRef)
+			if (!Type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 

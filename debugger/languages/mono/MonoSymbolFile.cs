@@ -369,7 +369,7 @@ namespace Mono.Debugger.Languages.Mono
 			return range.GetMethod ();
 		}
 
-		public MonoClassType LookupMonoClass (Cecil.TypeReference typeref)
+		protected MonoClassType LookupMonoClass (Cecil.TypeReference typeref)
 		{
 			TargetType type = LookupMonoType (typeref);
 			if (type == null)

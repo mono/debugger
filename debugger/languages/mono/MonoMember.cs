@@ -9,9 +9,9 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
-		public readonly MonoClassType DeclaringType;
+		public readonly TargetStructType DeclaringType;
 
-		public MonoFieldInfo (MonoClassType type, TargetType field_type, int pos,
+		public MonoFieldInfo (TargetStructType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
 			: base (field_type, finfo.Name, pos, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
