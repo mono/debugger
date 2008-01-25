@@ -1,5 +1,9 @@
 2008-01-25  Martin Baulig  <martin@ximian.com>
 
+	* test/{testsuite|src}/TestRecursiveGenerics.cs: New test.
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
 	Fix the parent type madness.
 
 	* languages/TargetClass.cs
