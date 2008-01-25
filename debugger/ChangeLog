@@ -1,5 +1,19 @@
 2008-01-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/Thread.cs
+	(Thread.RuntimeInvoke): Changed type of `object_argument' from
+	`TargetClassObject' -> `TargetStructObject'.
+
+	* backend/ThreadServant.cs
+	(ThreadServant.RuntimeInvoke): Changed type of `object_argument'
+	from `TargetClassObject' -> `TargetStructObject'.
+
+	* frontend/Interpreter.cs
+	(Interpreter.RuntimeInvoke): Changed type of `object_argument' from
+	`TargetClassObject' -> `TargetStructObject'.
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
 	* frontend/CSharpTokenizer.cs
 	(CSharpTokenizer.ReadGenericArity): New public property.
 	(CSharpTokenizer.ReadDigit): If `ReadGenericArity' is true, only
