@@ -2543,6 +2543,10 @@ namespace Mono.Debugger.Backend
 				return subprog.Locals;
 			}
 
+			public override bool IsWrapper {
+				get { return false; }
+			}
+
 			public override bool HasSource {
 				get {
 					read_line_numbers ();

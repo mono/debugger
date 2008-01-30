@@ -1,5 +1,15 @@
 2008-01-30  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(WrapperType): Updated.
+	(Method.IsWrapper): New public abstract property.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStep.TrampolineHandler): Improved; don't step into
+	compiler-generated .ctor's.
+
+2008-01-30  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClass.cs
 	(TargetClass.GetMethods): New public abstract method.
 	(TargetClass.FindMember): New public virtual method.

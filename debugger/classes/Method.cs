@@ -16,6 +16,7 @@ namespace Mono.Debugger
 		RuntimeInvoke,
 		NativeToManaged,
 		ManagedToNative,
+		ManagedToManaged,
 		RemotingInvoke,
 		RemotingInvokeWithCheck,
 		XDomainInvoke,
@@ -27,11 +28,16 @@ namespace Mono.Debugger
 		Synchronized,
 		DynamicMethod,
 		IsInst,
-		CastClass,
+		CanCast,
 		ProxyIsInst,
 		StelemRef,
 		UnBox,
-		Unknown
+		LdFldA,
+		WriteBarrier,
+		Unknown,
+		ComInteropInvoke,
+		ComInterop,
+		Alloc
 	}
 
 	public struct LineEntry : IComparable {
@@ -167,6 +173,10 @@ namespace Mono.Debugger
 		}
 
 		public abstract int Domain {
+			get;
+		}
+
+		public abstract bool IsWrapper {
 			get;
 		}
 

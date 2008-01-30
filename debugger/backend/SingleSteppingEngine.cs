@@ -1297,6 +1297,9 @@ namespace Mono.Debugger.Backend
 					return false;
 			}
 
+			if (!method.HasSource || method.IsWrapper)
+				return false;
+
 			LineNumberTable lnt = method.LineNumberTable;
 			if (lnt == null)
 				return false;
@@ -2711,6 +2714,8 @@ namespace Mono.Debugger.Backend
 
 			if (method.WrapperType == WrapperType.DelegateInvoke)
 				return true;
+			else if (method.WrapperType == WrapperType.Alloc)
+				return false;
 
 			if (StepMode == StepMode.SourceLine)
 				return sse.MethodHasSource (method);

@@ -978,6 +978,10 @@ namespace Mono.Debugger.Languages.Mono
 				get { return domain; }
 			}
 
+			public override bool IsWrapper {
+				get { return false; }
+			}
+
 			public override bool HasSource {
 				get { return true; }
 			}
@@ -1579,6 +1583,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override int Domain {
 				get { return domain; }
+			}
+
+			public override bool IsWrapper {
+				get { return true; }
 			}
 
 			public override bool HasSource {
