@@ -953,8 +953,8 @@ namespace Mono.Debugger.Languages.Mono
 			int index = GetUniqueID ();
 
 			TargetAddress retval = thread.CallMethod (
-				info.InsertSourceBreakpoint, func.MonoClass.File.MonoImage,
-				func.Token, index, func.MonoClass.Name);
+				info.InsertSourceBreakpoint, func.SymbolFile.MonoImage,
+				func.Token, index, func.DeclaringType.Name);
 
 			MethodLoadedHandler handler = handle.MethodLoaded;
 

@@ -12,6 +12,10 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal interface IMonoStructType
 	{
+		MonoSymbolFile File {
+			get;
+		}
+
 		TargetStructType Type {
 			get;
 		}

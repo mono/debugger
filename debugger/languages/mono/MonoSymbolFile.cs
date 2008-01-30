@@ -465,7 +465,7 @@ namespace Mono.Debugger.Languages.Mono
 			return retval;
 		}
 
-		public MonoFunctionType LookupFunction (MonoClassType klass, Cecil.MethodDefinition mdef)
+		public MonoFunctionType LookupFunction (IMonoStructType klass, Cecil.MethodDefinition mdef)
 		{
 			ensure_sources ();
 			int token = MonoDebuggerSupport.GetMethodToken (mdef);

@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFunctionType : TargetFunctionType
 	{
-		MonoClassType klass;
+		IMonoStructType klass;
 		SourceFile file;
 		int start_row, end_row;
 		Cecil.MethodDefinition method_info;
@@ -23,7 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		int load_handler;
 
-		internal MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef)
+		internal MonoFunctionType (IMonoStructType klass, Cecil.MethodDefinition mdef)
 			: base (klass.File.MonoLanguage)
 		{
 			this.klass = klass;
@@ -47,7 +47,7 @@ namespace Mono.Debugger.Languages.Mono
 					mdef.Parameters[i].ParameterType);
 		}
 
-		internal MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef,
+		internal MonoFunctionType (IMonoStructType klass, Cecil.MethodDefinition mdef,
 					   SourceFile file, int start_row, int end_row)
 			: this (klass, mdef)
 		{
@@ -78,7 +78,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override string FullName {
-			get { return klass.Name + '.' + name; }
+			get { return klass.Type.Name + '.' + name; }
 		}
 
 		public override bool IsByRef {
@@ -109,12 +109,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return token; }
 		}
 
-		public override TargetClassType DeclaringType {
-			get { return klass; }
+		public override TargetStructType DeclaringType {
+			get { return klass.Type; }
 		}
 
-		internal MonoClassType MonoClass {
-			get { return klass; }
+		internal MonoSymbolFile SymbolFile {
+			get { return klass.File; }
 		}
 
 		internal Cecil.MethodDefinition MethodInfo {
@@ -188,6 +188,11 @@ namespace Mono.Debugger.Languages.Mono
 				klass.File.MonoLanguage.RemoveMethodLoadHandler (target, load_handler);
 				load_handler = -1;
 			}
+		}
+
+		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
+		{
+			return klass.ResolveClass (target, fail);
 		}
 	}
 }

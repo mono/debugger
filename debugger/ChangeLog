@@ -1,3 +1,25 @@
+2008-01-30  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClass.cs
+	(TargetClass.GetMethods): New public abstract method.
+	(TargetClass.FindMember): New public virtual method.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.DeclaringType): Changed type from
+	`TargetClassType' into `TargetStructType'.
+
+	* languages/mono/MonoFunctionType.cs
+	(MonoFunctionType.MonoClass): Removed.
+	(MonoFunctionType.SymbolFile): New internal property.
+	(MonoFunctionType.ResolveClass): New internal method.
+
+	* languages/mono/MonoMember.cs
+	(MonoMethodInfo): Operate on `IMonoStructType'.
+
+	* frontend/Expression.cs
+	(StructAccessExpression.FindMember): Search both in the
+	`TargetClass' and in the `TargetClassType'.
+
 2008-01-25  Martin Baulig  <martin@ximian.com>
 
 	* test/{testsuite|src}/TestRecursiveGenerics.cs: New test.

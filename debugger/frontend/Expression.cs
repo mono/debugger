@@ -899,10 +899,10 @@ namespace Mono.Debugger.Frontend
 			if (decl_type == null)
 				return null;
 
-			TargetClassObject instance = null;
+			TargetStructObject instance = null;
 			if (method.HasThis) {
 				TargetVariable this_var = method.GetThis (context.CurrentThread);
-				instance = (TargetClassObject) this_var.GetObject (frame);
+				instance = (TargetStructObject) this_var.GetObject (frame);
 			}
 
 			member = StructAccessExpression.FindMember (
@@ -1114,7 +1114,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (lexpr != null) {
-				TargetClassObject sobj = Convert.ToClassObject (
+				TargetStructObject sobj = Convert.ToStructObject (
 					target, lexpr.EvaluateObject (context));
 				if (sobj == null)
 					throw new ScriptingException (
@@ -1213,7 +1213,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class MemberExpression : Expression
 	{
-		public abstract TargetClassObject InstanceObject {
+		public abstract TargetStructObject InstanceObject {
 			get;
 		}
 
@@ -1255,13 +1255,13 @@ namespace Mono.Debugger.Frontend
 
 	public class MethodGroupExpression : MethodExpression
 	{
-		protected readonly TargetClassType stype;
-		protected readonly TargetClassObject instance;
+		protected readonly TargetStructType stype;
+		protected readonly TargetStructObject instance;
 		protected readonly string name;
 		protected readonly TargetFunctionType[] methods;
 		protected readonly bool is_instance, is_static;
 
-		public MethodGroupExpression (TargetClassType stype, TargetClassObject instance,
+		public MethodGroupExpression (TargetStructType stype, TargetStructObject instance,
 					      string name, TargetFunctionType[] methods,
 					      bool is_instance, bool is_static)
 		{
@@ -1278,7 +1278,7 @@ namespace Mono.Debugger.Frontend
 			get { return stype.Name + "." + name; }
 		}
 
-		public override TargetClassObject InstanceObject {
+		public override TargetStructObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1642,13 +1642,13 @@ namespace Mono.Debugger.Frontend
 
 	public class StructAccessExpression : MemberExpression
 	{
-		public readonly TargetClassType Type;
+		public readonly TargetStructType Type;
 		public readonly TargetMemberInfo Member;
-		protected readonly TargetClassObject instance;
+		protected readonly TargetStructObject instance;
 		TargetClass class_info;
 
-		protected StructAccessExpression (TargetClassType type,
-						  TargetClassObject instance,
+		protected StructAccessExpression (TargetStructType type,
+						  TargetStructObject instance,
 						  TargetMemberInfo member)
 		{
 			this.Type = type;
@@ -1661,7 +1661,7 @@ namespace Mono.Debugger.Frontend
 			get { return Member.Name; }
 		}
 
-		public override TargetClassObject InstanceObject {
+		public override TargetStructObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1777,40 +1777,22 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public static MemberExpression FindMember (Thread target, TargetStructType stype,
-							   TargetClassObject instance, string name,
+							   TargetStructObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
 		again:
-			TargetClassType ctype = stype as TargetClassType;
-			if (ctype == null)
-				return null;
+			TargetClass klass = stype.GetClass (target);
+			if (klass != null) {
+				TargetMemberInfo member = klass.FindMember (
+					target, name, search_static, search_instance);
+				if (member != null)
+					return new StructAccessExpression (stype, instance, member);
 
-			TargetMemberInfo member = ctype.FindMember (
-				name, search_static, search_instance);
+				ArrayList methods = new ArrayList ();
+				bool is_instance = false;
+				bool is_static = false;
 
-			if (member != null)
-				return new StructAccessExpression (ctype, instance, member);
-
-			ArrayList methods = new ArrayList ();
-			bool is_instance = false;
-			bool is_static = false;
-
-			if (name == ".ctor") {
-				foreach (TargetMethodInfo method in ctype.Constructors) {
-					if (method.IsStatic)
-						continue;
-					methods.Add (method.Type);
-					is_instance = true;
-				}
-			} else if (name == ".cctor") {
-				foreach (TargetMethodInfo method in ctype.Constructors) {
-					if (!method.IsStatic)
-						continue;
-					methods.Add (method.Type);
-					is_static = true;
-				}
-			} else {
-				foreach (TargetMethodInfo method in ctype.Methods) {
+				foreach (TargetMethodInfo method in klass.GetMethods (target)) {
 					if (method.IsStatic && !search_static)
 						continue;
 					if (!method.IsStatic && !search_instance)
@@ -1824,13 +1806,64 @@ namespace Mono.Debugger.Frontend
 					else
 						is_instance = true;
 				}
+
+				if (methods.Count > 0) {
+					TargetFunctionType[] funcs = new TargetFunctionType [methods.Count];
+					methods.CopyTo (funcs, 0);
+					return new MethodGroupExpression (
+						stype, instance, name, funcs, is_instance, is_static);
+				}
 			}
 
-			if (methods.Count > 0) {
-				TargetFunctionType[] funcs = new TargetFunctionType [methods.Count];
-				methods.CopyTo (funcs, 0);
-				return new MethodGroupExpression (
-					ctype, instance, name, funcs, is_instance, is_static);
+			TargetClassType ctype = stype as TargetClassType;
+			if (ctype != null) {
+				TargetMemberInfo member = ctype.FindMember (
+					name, search_static, search_instance);
+
+				if (member != null)
+					return new StructAccessExpression (ctype, instance, member);
+
+				ArrayList methods = new ArrayList ();
+				bool is_instance = false;
+				bool is_static = false;
+
+				if (name == ".ctor") {
+					foreach (TargetMethodInfo method in ctype.Constructors) {
+						if (method.IsStatic)
+							continue;
+						methods.Add (method.Type);
+						is_instance = true;
+					}
+				} else if (name == ".cctor") {
+					foreach (TargetMethodInfo method in ctype.Constructors) {
+						if (!method.IsStatic)
+							continue;
+						methods.Add (method.Type);
+						is_static = true;
+					}
+				} else {
+					foreach (TargetMethodInfo method in ctype.Methods) {
+						if (method.IsStatic && !search_static)
+							continue;
+						if (!method.IsStatic && !search_instance)
+							continue;
+						if (method.Name != name)
+							continue;
+
+						methods.Add (method.Type);
+						if (method.IsStatic)
+							is_static = true;
+						else
+							is_instance = true;
+					}
+				}
+
+				if (methods.Count > 0) {
+					TargetFunctionType[] funcs = new TargetFunctionType [methods.Count];
+					methods.CopyTo (funcs, 0);
+					return new MethodGroupExpression (
+						ctype, instance, name, funcs, is_instance, is_static);
+				}
 			}
 
 			if (ctype.HasParent) {
@@ -2748,6 +2781,23 @@ namespace Mono.Debugger.Frontend
 
 			return null;
 		}
+
+		public static TargetStructObject ToStructObject (Thread target, TargetObject obj)
+		{
+			TargetStructObject sobj = obj as TargetStructObject;
+			if (sobj != null)
+				return sobj;
+
+			TargetObjectObject oobj = obj as TargetObjectObject;
+			if (oobj != null)
+				return oobj.GetClassObject (target);
+
+			TargetArrayObject aobj = obj as TargetArrayObject;
+			if ((aobj != null) && aobj.HasClassObject)
+				return aobj.GetClassObject (target);
+
+			return null;
+		}
 	}
 
 	public class ConditionalExpression : Expression
@@ -2877,7 +2927,7 @@ namespace Mono.Debugger.Frontend
 			return mg;
 		}
 
-		public override TargetClassObject InstanceObject {
+		public override TargetStructObject InstanceObject {
 			get { return method_expr.InstanceObject; }
 		}
 
@@ -2976,7 +3026,7 @@ namespace Mono.Debugger.Frontend
 					context, args [i], method.ParameterTypes [i]);
 			}
 
-			TargetClassObject instance = method_expr.InstanceObject;
+			TargetStructObject instance = method_expr.InstanceObject;
 
 			if (!method.IsStatic && !method.IsConstructor && (instance == null))
 				throw new ScriptingException (

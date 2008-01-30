@@ -1487,7 +1487,7 @@ namespace Mono.Debugger.Backend
 
 				MonoFunctionType main = mono.MainMethod;
 
-				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
+				MethodSource source = main.SymbolFile.GetMethodByToken (main.Token);
 				if (source != null) {
 					SourceLocation location = new SourceLocation (source);
 
@@ -2277,14 +2277,14 @@ namespace Mono.Debugger.Backend
 			MonoLanguageBackend mono = sse.process.MonoLanguage;
 
 			MonoFunctionType func = (MonoFunctionType) Handle.Function;
-			TargetAddress image = func.MonoClass.File.MonoImage;
+			TargetAddress image = func.SymbolFile.MonoImage;
 			int index = MonoLanguageBackend.GetUniqueID ();
 
 			mono.RegisterMethodLoadHandler (index, Handle.MethodLoaded);
 
 			inferior.CallMethod (
 				info.InsertSourceBreakpoint, image.Address,
-				func.Token, index, func.MonoClass.Name, ID);
+				func.Token, index, func.DeclaringType.Name, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -2996,7 +2996,12 @@ namespace Mono.Debugger.Backend
 		public override void Execute ()
 		{
 			stack_data = sse.save_stack (ID);
-			base.Execute ();
+			try {
+				base.Execute ();
+			} catch {
+				RestoreStack ();
+				throw;
+			}
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3123,17 +3128,23 @@ namespace Mono.Debugger.Backend
 		{
 			language = sse.process.MonoLanguage;
 
-			class_info = Function.MonoClass.ResolveClass (inferior, false);
+			class_info = Function.ResolveClass (inferior, false);
 			if (class_info == null) {
-				TargetAddress image = Function.MonoClass.File.MonoImage;
-				int token = Function.MonoClass.Token;
+				MonoClassType klass = Function.DeclaringType as MonoClassType;
+				if (klass == null)
+					throw new TargetException (TargetError.ClassNotInitialized,
+								   "Class `{0}' not initialized yet.",
+								   Function.DeclaringType.Name);
+
+				TargetAddress image = Function.SymbolFile.MonoImage;
+				int token = klass.Token;
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
 
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.LookupClass, image.Address, 0, 0,
-					Function.MonoClass.Name, ID);
+					Function.DeclaringType.Name, ID);
 				return;
 			}
 
@@ -3229,8 +3240,8 @@ namespace Mono.Debugger.Backend
 					      "{0} rti resolved class: {1}", sse, klass);
 
 				class_info = language.ReadClassInfo (inferior, klass);
-				((IMonoStructType) Function.MonoClass).ClassInfo = class_info;
-				Function.MonoClass.ResolveClass (inferior, false);
+				((IMonoStructType) Function.DeclaringType).ClassInfo = class_info;
+				((IMonoStructType) Function.DeclaringType).ResolveClass (inferior, false);
 				stage = Stage.ResolvedClass;
 				do_execute ();
 				return EventResult.Running;

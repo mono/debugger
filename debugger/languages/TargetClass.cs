@@ -1,3 +1,5 @@
+using System;
+
 namespace Mono.Debugger.Languages
 {
 	public abstract class TargetClass : DebuggerMarshalByRefObject
@@ -24,5 +26,22 @@ namespace Mono.Debugger.Languages
 
 		public abstract void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value);
+
+		public abstract TargetMethodInfo[] GetMethods (Thread thread);
+
+		public virtual TargetMemberInfo FindMember (Thread thread, string name,
+							    bool search_static, bool search_instance)
+		{
+			foreach (TargetFieldInfo field in GetFields (thread)) {
+				if (field.IsStatic && !search_static)
+					continue;
+				if (!field.IsStatic && !search_instance)
+					continue;
+				if (field.Name == name)
+					return field;
+			}
+
+			return null;
+		}
 	}
 }

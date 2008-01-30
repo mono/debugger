@@ -82,6 +82,11 @@ namespace Mono.Debugger.Languages.Native
 			throw new NotImplementedException ();
 		}
 
+		public override TargetMethodInfo[] GetMethods (Thread target)
+		{
+			return new TargetMethodInfo [0];
+		}
+
 #if FIXME
 		public override TargetPropertyInfo[] Properties {
 			get { return new TargetPropertyInfo [0]; }

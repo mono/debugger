@@ -96,7 +96,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetClassType DeclaringType {
+		public override TargetStructType DeclaringType {
 			get {
 				return null;
 			}

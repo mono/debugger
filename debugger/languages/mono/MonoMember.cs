@@ -9,14 +9,12 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
-		public readonly TargetStructType DeclaringType;
 
-		public MonoFieldInfo (TargetStructType type, TargetType field_type, int pos,
+		public MonoFieldInfo (IMonoStructType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
 			: base (field_type, finfo.Name, pos, finfo.IsStatic, pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
-			DeclaringType = type;
 		}
 
 		public override object ConstValue {
@@ -58,18 +56,16 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoMethodInfo : TargetMethodInfo
 	{
 		public readonly MonoFunctionType FunctionType;
-		public readonly MonoClassType Klass;
 
-		private MonoMethodInfo (MonoClassType klass, int index, Cecil.MethodDefinition minfo,
+		private MonoMethodInfo (IMonoStructType klass, int index, Cecil.MethodDefinition minfo,
 					MonoFunctionType type)
 			: base (type, MonoFunctionType.GetMethodName (minfo), index,
 				minfo.IsStatic, type.FullName)
 		{
-			Klass = klass;
 			FunctionType = type;
 		}
 
-		internal static MonoMethodInfo Create (MonoClassType klass, int index,
+		internal static MonoMethodInfo Create (IMonoStructType klass, int index,
 						       Cecil.MethodDefinition minfo)
 		{
 			MonoFunctionType type = klass.File.LookupFunction (klass, minfo);
