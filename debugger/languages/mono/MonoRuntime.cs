@@ -481,8 +481,8 @@ namespace Mono.Debugger.Languages.Mono
 			reader.ReadAddress ();
 			TargetAddress cached_class = reader.ReadAddress ();
 
-			int inst_data = memory.ReadInteger (class_inst + addr_size);
-			TargetAddress inst_argv = memory.ReadAddress (class_inst + 2 * addr_size);
+			int inst_data = memory.ReadInteger (class_inst + 4);
+			TargetAddress inst_argv = memory.ReadAddress (class_inst + 8);
 
 			int type_argc = inst_data & 0x3fffff;
 
