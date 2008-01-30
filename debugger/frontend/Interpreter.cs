@@ -550,11 +550,12 @@ namespace Mono.Debugger.Frontend
 					result.Abort ();
 					return null;
 				}
-			} else {
+			} else if (debug) {
 				Wait (thread);
 
-				if (debug)
-					CheckLastEvent (thread);
+				CheckLastEvent (thread);
+			} else {
+				Wait (result);
 			}
 
 			return result;
