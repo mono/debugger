@@ -2925,16 +2925,14 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
-			public override TargetObject GetObject (StackFrame frame)
+			internal override TargetObject GetObject (StackFrame frame,
+								  TargetMemoryAccess target)
 			{
-				return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
-					delegate (TargetMemoryAccess memory) {
-						TargetLocation loc = location.GetLocation (frame, memory);
-						if (loc == null)
-							return null;
+				TargetLocation loc = location.GetLocation (frame, target);
+				if (loc == null)
+					return null;
 
-						return type.GetObject (memory, loc);
-				});
+				return type.GetObject (target, loc);
 			}
 
 			public override string PrintLocation (StackFrame frame)

@@ -1,5 +1,13 @@
 2008-02-02  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/CapturedVariable.cs: New file.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoMethod.do_read_variables): Support captured variables and
+	parameters.	
+
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
 	* test/testuite/NUnit.cs: Read the source files and scan for
 	`// @MDB LINE: name' patterns; automatically compute the line
 	numbers.

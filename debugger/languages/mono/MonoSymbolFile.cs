@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using C = Mono.CompilerServices.SymbolWriter;
@@ -951,9 +952,9 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
 			TargetStructType decl_type;
-			TargetVariable this_var;
-			TargetVariable[] parameters;
-			TargetVariable[] locals;
+			MonoVariable this_var;
+			List<TargetVariable> parameters;
+			List<TargetVariable> locals;
 			bool has_variables;
 			bool is_loaded;
 			MethodAddress address;
@@ -1019,20 +1020,21 @@ namespace Mono.Debugger.Languages.Mono
 				else
 					decl_type = (TargetStructType) decl;
 
+				locals = new List<TargetVariable> ();
+				parameters = new List<TargetVariable> ();
+
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
-				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
 					VariableInfo var = address.ParamVariableInfo [i];
 					TargetType type = mono.ReadType (memory, var.MonoType);
 					if (type == null)
 						type = mono.VoidType;
 
-					parameters [i] = new MonoVariable (
-						file.process, param_info [i].Name, type,
-						false, type.IsByRef, this, var, 0, 0);
+					parameters.Add (new MonoVariable (
+						param_info [i].Name, type, false, type.IsByRef,
+						this, var, 0, 0));
 				}
 
-				locals = new TargetVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
 
@@ -1044,21 +1046,59 @@ namespace Mono.Debugger.Languages.Mono
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
 						JitLexicalBlockEntry block = address.LexicalBlocks [index];
-						locals [i] = new MonoVariable (
-							file.process, local.Name, type, true,
-							type.IsByRef, this, var,
-							block.StartAddress, block.EndAddress);
+						locals.Add (new MonoVariable (
+							local.Name, type, true, type.IsByRef, this, var,
+							block.StartAddress, block.EndAddress));
 					} else {
-						locals [i] = new MonoVariable (
-							file.process, local.Name, type, true,
-							type.IsByRef, this, var);
+						locals.Add (new MonoVariable (
+							local.Name, type, true, type.IsByRef, this, var));
 					}
 				}
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
-						file.process, "this", decl_type, true,
-						true, this, address.ThisVariableInfo);
+						"this", decl_type, true, true, this,
+						address.ThisVariableInfo);
+
+				Dictionary<int,ScopeInfo> scopes = new Dictionary<int,ScopeInfo> ();
+
+				for (int i = 0; i < method.NumAnonymousScopes; i++) {
+					C.AnonymousScope scope = method.AnonymousScopes [i];
+
+					if (scope.Parent >= 0) {
+						ScopeInfo parent = scopes [scope.Parent];
+						string fname = String.Format (
+							"<{0}:scope{1}>", parent.ID, scope.ID);
+
+						CapturedVariable pvar = new CapturedVariable (
+							parent, this, fname, fname);
+						scopes.Add (scope.ID, new ScopeInfo (scope.ID, pvar));
+						continue;
+					}
+
+					VariableInfo var;
+					if (scope.Index < 0)
+						var = address.ThisVariableInfo;
+					else
+						var = address.LocalVariableInfo [scope.Index];
+
+					TargetStructType type = mono.ReadStructType (memory, var.MonoType);
+					MonoVariable scope_var = new MonoVariable (
+						"$__" + scope.ID, type, true, type.IsByRef, this, var);
+					scopes.Add (scope.ID, new ScopeInfo (scope.ID, scope_var, type));
+				}
+
+				for (int i = 0; i < method.NumCapturedVariables; i++) {
+					C.CapturedVariable captured = method.CapturedVariables [i];
+					ScopeInfo scope = scopes [captured.Scope];
+
+					CapturedVariable cv = new CapturedVariable (
+						scope, this, captured.Name, captured.CapturedName);
+					if (captured.IsLocal)
+						locals.Add (cv);
+					else
+						parameters.Add (cv);
+				}
 
 				has_variables = true;
 			}
@@ -1080,13 +1120,13 @@ namespace Mono.Debugger.Languages.Mono
 			public override TargetVariable[] GetParameters (Thread target)
 			{
 				read_variables (target);
-				return parameters;
+				return parameters.ToArray ();
 			}
 
 			public override TargetVariable[] GetLocalVariables (Thread target)
 			{
 				read_variables (target);
-				return locals;
+				return locals.ToArray ();
 			}
 
 			public override TargetStructType GetDeclaringType (Thread target)

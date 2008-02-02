@@ -8,16 +8,14 @@ namespace Mono.Debugger.Languages.Mono
 		VariableInfo info;
 		string name;
 		TargetType type;
-		ProcessServant process;
 		TargetAddress start_liveness, end_liveness;
 		TargetAddress start_scope, end_scope;
 		bool has_liveness_info, is_byref;
 
-		public MonoVariable (ProcessServant process, string name, TargetType type,
-				     bool is_local, bool is_byref, Method method,
-				     VariableInfo info, int start_scope_offset,
+		public MonoVariable (string name, TargetType type, bool is_local, bool is_byref,
+				     Method method, VariableInfo info, int start_scope_offset,
 				     int end_scope_offset)
-			: this (process, name, type, is_local, is_byref, method, info)
+			: this (name, type, is_local, is_byref, method, info)
 		{
 			if (is_local) {
 				start_scope = method.StartAddress + start_scope_offset;
@@ -42,11 +40,9 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoVariable (ProcessServant process, string name, TargetType type,
-				     bool is_local, bool is_byref, Method method,
-				     VariableInfo info)
+		public MonoVariable (string name, TargetType type, bool is_local, bool is_byref,
+				     Method method, VariableInfo info)
 		{
-			this.process = process;
 			this.name = name;
 			this.type = type;
 			this.info = info;
@@ -64,6 +60,10 @@ namespace Mono.Debugger.Languages.Mono
 				end_liveness = method.MethodEndAddress;
 				has_liveness_info = false;
 			}
+		}
+
+		public VariableInfo VariableInfo {
+			get { return info; }
 		}
 
 		public override string Name {
@@ -122,15 +122,8 @@ namespace Mono.Debugger.Languages.Mono
 			return location.Print ();
 		}
 
-		public override TargetObject GetObject (StackFrame frame)
-		{
-			return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target)  {
-					return GetObject (frame, target);
-			});
-		}
-
-		internal TargetObject GetObject (StackFrame frame, TargetMemoryAccess target)
+		internal override TargetObject GetObject (StackFrame frame,
+							  TargetMemoryAccess target)
 		{
 			TargetLocation location = GetLocation (frame, target);
 

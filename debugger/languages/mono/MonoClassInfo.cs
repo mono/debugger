@@ -102,10 +102,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return !GenericClass.IsNull; }
 		}
 
-		void get_fields (TargetMemoryAccess target)
+		internal MonoFieldInfo[] GetFields (TargetMemoryAccess target)
 		{
 			if (fields != null)
-				return;
+				return fields;
 
 			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
 
@@ -125,6 +125,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				fields [i] = new MonoFieldInfo (struct_type, field_types [i], i, field);
 			}
+
+			return fields;
 		}
 
 		public override TargetFieldInfo[] GetFields (Thread thread)
@@ -134,7 +136,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target)  {
-					get_fields (target);
+					GetFields (target);
 					return null;
 			});
 
@@ -165,7 +167,7 @@ namespace Mono.Debugger.Languages.Mono
 							TargetStructObject instance,
 							TargetFieldInfo field)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -198,7 +200,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal TargetObject GetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
 						      TargetAddress data_address)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -236,7 +238,7 @@ namespace Mono.Debugger.Languages.Mono
 						TargetStructObject instance,
 						TargetFieldInfo field, TargetObject obj)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -268,7 +270,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal void SetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
 					      TargetAddress data_address, TargetObject obj)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
