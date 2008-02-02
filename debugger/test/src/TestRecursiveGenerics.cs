@@ -22,7 +22,7 @@ class X
 {
 	static void Main ()
 	{
-		Test test = new Test ();
+		Test test = new Test ();		// @MDB LINE: main
 		test.Hello ();
 	}
 }

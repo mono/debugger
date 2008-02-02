@@ -14,8 +14,6 @@ namespace Mono.Debugger.Tests
 			: base ("TestRecursiveGenerics")
 		{ }
 
-		const int LineMain = 25;
-
 		[Test]
 		[Category("Generics")]
 		public void Main ()
@@ -26,13 +24,13 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main()", LineMain);
+			AssertStopped (thread, "X.Main()", GetLine ("main"));
 
 			AssertType (thread, "test",
 				    "class Test : Foo`1<Test>\n{\n   .ctor ();\n}");
 
 			AssertExecute ("next");
-			AssertStopped (thread, "X.Main()", LineMain + 1);
+			AssertStopped (thread, "X.Main()", GetLine ("main") + 1);
 
 			AssertPrintRegex (thread, DisplayFormat.Object, "test",
 					  @"\(Test\) { <Foo`1<Test>> = { Data = \(Test\) 0x[0-9a-f]+ } }");

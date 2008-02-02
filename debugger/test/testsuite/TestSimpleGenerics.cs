@@ -14,13 +14,6 @@ namespace Mono.Debugger.Tests
 			: base ("TestSimpleGenerics")
 		{ }
 
-		const int LineFooHello = 22;
-
-		const int LineMain = 56;
-		const int LineMain2 = 60;
-		const int LineMain3 = 63;
-		const int LineMain4 = 67;
-
 		int bpt_main_2;
 		int bpt_main_3;
 		int bpt_main_4;
@@ -35,13 +28,13 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main()", LineMain);
-			bpt_main_2 = AssertBreakpoint (LineMain2);
-			bpt_main_3 = AssertBreakpoint (LineMain3);
-			bpt_main_4 = AssertBreakpoint (LineMain4);
+			AssertStopped (thread, "X.Main()", GetLine ("main"));
+			bpt_main_2 = AssertBreakpoint (GetLine ("main2"));
+			bpt_main_3 = AssertBreakpoint (GetLine ("main3"));
+			bpt_main_4 = AssertBreakpoint (GetLine ("main4"));
 
 			AssertExecute ("next");
-			AssertStopped (thread, "X.Main()", LineMain + 1);
+			AssertStopped (thread, "X.Main()", GetLine ("main") + 1);
 
 			AssertPrint (thread, "foo", "(Foo`1<int>) { Data = 5 }");
 			AssertPrint (thread, "$parent (foo)", "(System.Object) { }");
@@ -50,7 +43,7 @@ namespace Mono.Debugger.Tests
 				    "{\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "Foo`1<T>.Hello()", LineFooHello);
+			AssertStopped (thread, "Foo`1<T>.Hello()", GetLine ("foo hello"));
 
 			AssertPrint (thread, "this", "(Foo`1<int>) { Data = 5 }");
 			AssertType (thread, "this",
@@ -59,7 +52,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("5");
-			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", LineMain2);
+			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", GetLine ("main2"));
 
 			AssertPrint (thread, "bar", "(Bar`1<int>) { <Foo`1<int>> = { Data = 5 } }");
 			AssertPrint (thread, "$parent (bar)", "(Foo`1<int>) { Data = 5 }");
@@ -71,7 +64,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 
-			AssertStopped (thread, "Foo`1<T>.Hello()", LineFooHello);
+			AssertStopped (thread, "Foo`1<T>.Hello()", GetLine ("foo hello"));
 
 			AssertPrint (thread, "this", "(Bar`1<int>) { <Foo`1<int>> = { Data = 5 } }");
 			AssertType (thread, "this",
@@ -79,7 +72,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("5");
-			AssertHitBreakpoint (thread, bpt_main_3, "X.Main()", LineMain3);
+			AssertHitBreakpoint (thread, bpt_main_3, "X.Main()", GetLine ("main3"));
 
 			AssertPrintRegex (thread, DisplayFormat.Object, "baz",
 					  @"\(Baz`1<int>\) { <Foo`1<Hello`1<int>>> = { Data = \(Hello`1<int>\) 0x[0-9a-f]+ } }");
@@ -93,7 +86,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertTargetOutput ("8");
 			AssertTargetOutput ("Hello`1[System.Int32]");
-			AssertHitBreakpoint (thread, bpt_main_4, "X.Main()", LineMain4);
+			AssertHitBreakpoint (thread, bpt_main_4, "X.Main()", GetLine ("main4"));
 
 			AssertPrint (thread, "test", "(Test) { <Foo`1<int>> = { Data = 9 } }");
 			AssertPrint (thread, "$parent (test)", "(Foo`1<int>) { Data = 9 }");

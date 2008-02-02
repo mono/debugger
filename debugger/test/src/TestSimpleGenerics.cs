@@ -19,7 +19,7 @@ public class Foo<T>
 
 	public void Hello ()
 	{
-		Console.WriteLine (Data);
+		Console.WriteLine (Data); // @MDB LINE: foo hello
 	}
 }
 
@@ -53,18 +53,18 @@ class X
 {
 	static void Main ()
 	{
-		Foo<int> foo = new Foo<int> (5);
+		Foo<int> foo = new Foo<int> (5);	// @MDB LINE: main
 		foo.Hello ();
 
 		Bar<int> bar = new Bar<int> (5);
-		bar.Hello ();
+		bar.Hello ();				// @MDB LINE: main2
 
 		Baz<int> baz = new Baz<int> (5);
-		baz.Data.World (8);
+		baz.Data.World (8);			// @MDB LINE: main3
 		baz.Hello ();
 
 		Test test = new Test ();
-		test.Hello ();
+		test.Hello ();				// @MDB LINE: main4
 		Test.Hello (8);
 		Test.Hello ("World");
 	}

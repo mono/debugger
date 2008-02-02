@@ -12,7 +12,8 @@ TEST_SRC = \
 	TestBreakpoint.cs TestNamespace.cs TestException.cs \
 	TestRestart.cs TestExec.cs TestChild.cs TestAttach.cs \
 	TestMethodLookup.cs TestMultiThread.cs TestSession.cs \
-	TestCCtor.cs TestSimpleGenerics.cs TestRecursiveGenerics.cs
+	TestCCtor.cs TestSimpleGenerics.cs TestRecursiveGenerics.cs \
+	TestAnonymous.cs
 
 EXTRA_TEST_SRC = \
 	TestAppDomain.cs TestAppDomain-Module.cs TestAppDomain-Hello.cs \

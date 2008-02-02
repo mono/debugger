@@ -1,3 +1,11 @@
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
+	* test/testuite/NUnit.cs: Read the source files and scan for
+	`// @MDB LINE: name' patterns; automatically compute the line
+	numbers.
+
+	* test/{testsuite|src}/TestAnonymous.cs: New test.
+
 2008-01-30  Martin Baulig  <martin@ximian.com>
 
 	* classes/Method.cs

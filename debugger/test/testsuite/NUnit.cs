@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using SD = System.Diagnostics;
 using ST = System.Threading;
@@ -197,6 +198,8 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
+		Dictionary<string,int> lines;
+
 		static TestSuite ()
 		{
 			Report.Initialize ();
@@ -220,6 +223,30 @@ namespace Mono.Debugger.Tests
 
 			inferior_stdout = new LineReader ();
 			inferior_stderr = new LineReader ();
+
+			ReadSourceFile ();
+		}
+
+		protected void ReadSourceFile ()
+		{
+			lines = new Dictionary<string,int> ();
+
+			using (StreamReader reader = new StreamReader (FileName)) {
+				string text;
+				int line = 0;
+				while ((text = reader.ReadLine ()) != null) {
+					line++;
+
+					Match match = Regex.Match (text, @"//\s+@MDB LINE:\s+(.*)$");
+					if (match.Success)
+						lines.Add (match.Groups [1].Value, line);
+				}
+			}
+		}
+
+		protected int GetLine (string text)
+		{
+			return lines [text];
 		}
 
 		public NUnitInterpreter Interpreter {
