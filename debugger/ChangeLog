@@ -1,5 +1,12 @@
 2008-02-02  Martin Baulig  <martin@ximian.com>
 
+	HEADS UP: We now require Mono 1.9 with some local changes; see
+	          README.terrania for details.
+
+	* README.terrania: New file.
+
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/CapturedVariable.cs: New file.
 
 	* languages/mono/MonoSymbolFile.cs
