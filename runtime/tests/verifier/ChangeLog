@@ -1,0 +1,569 @@
+2008-01-23 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_call_test.sh: test generator for call and callvirt.
+
+	* make_tests.sh: added tests for call and callvirt.
+
+2008-01-21 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_ldstr_bad_token.il: added. check the index
+	against the the #US heap.
+
+2008-01-21 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* unverifiable_newobj_no_visibility.il: added. visibility
+	check for newobj.
+
+2008-01-21 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* unverifiable_ldftn_no_visibility.il: added. visibility
+	check for ldftn.
+
+	* unverifiable_ldvirtftn_no_visibility.il: added. visibility
+	check for ldvirtftn.
+
+2008-01-18 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_tests.sh: added tests for ovf math with floats.
+
+2008-01-17 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_localloc_test.sh: test generator for localloc.
+
+	* make_tests.sh: added tests for localloc.
+
+2008-01-17 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_sizeof_test.sh: test generator for sizeof.
+
+	* make_tests.sh: added tests for sizeof.
+
+2008-01-17 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_cp_test.sh: test generator for cpobj.
+
+	* make_tests.sh: added tests for cpobj.
+
+2008-01-17 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_initobj_invalid_token_out_of_bounds.il: tests for initobj.
+
+	* invalid_initobj_invalid_token_type.il: same.
+
+	* make_initobj_test.sh: test generator for initobj.
+
+	* make_tests.sh: added tests for initobj.
+
+2008-01-11 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* unverifiable_ldfld_reference_type_by_ref.il: new test for ldfld.
+
+	* invalid_stojb_bad_token.il: test for bad ldobj token.
+
+	* invalid_stojb_token_out_of_bounds.il: same.
+
+	* make_stobj_test.sh: new test generator.
+
+	* make_test.sh: added new tests for stobj.
+	
+2008-01-10 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_ldftn_method_spec_token.il: new test
+	for loading function pointers for generic methods.
+
+2008-01-09 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for unbox.any.
+
+	* make_unbox_any_test.sh: new test generator.
+
+2008-01-09 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for add|sub|mul ovf;
+
+	* unverifiable_unbox_toke_is_reference_type.il: New test for regressions
+	found while validating vbnc.
+
+	* valid_stind_ref_with_boxed_value.il: same.
+	*  valid_ldelema_enum_array.il: same.
+
+2008-01-09 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_isinst_with_boxed_valuetype.il: New test for regressions
+	found while validating vbnc.
+
+	* valid_ldfld_valuetype_by_ref.il: same.
+	* valid_ldfld_valuetype_by_value.il: same.
+	* valid_stelem_ref_boxed_value.il: same.
+	* valid_stloc_boxed_valuetype.il: same.
+	* valid_sub_class_of_generic_type_is_compatible.il: same.
+	* unverifiable_ldfld_valuetype_boxed.il:  same.
+	* unverifiable_ldfld_reference_type_by_ref.il: same.
+
+	* make_test.sh: new tests for stfld and cgt.un.
+	
+
+2008-01-08 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_delegate_test.sh: increased max stack for
+	ldvirtftn tests.
+
+	* make_tests.sh: added new tests for delegates
+	constructed with ldvirtftn.
+
+2008-01-07 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_delegate_test.sh: added.
+
+	* make_tests.sh: added new tests for delegates
+	constructed with ldftn.
+
+2008-01-03 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_ldvirtftn_invalid_token_type.il: added.
+	
+	* make_ldvirtftn_test.sh: added.
+
+	* invalid_ldvirtftn_invalid_token_out_of_bounds.il: added.
+
+	* make_ldftn_test.sh: changed to allow more tests.
+
+	* make_tests.sh: added new tests for ldvirtftn and
+	a buch more for ldftn.
+
+2007-12-31 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_ldftn_invalid_token_out_of_bounds.il: added.
+	
+	* invalid_ldftn_invalid_token_type.il: added.
+
+	* make_ldftn_test.sh: added.
+
+	* make_test.sh: new tests for ldftn.
+
+	* AssemblyRunner.cs: added BadImageFormatException
+	to the list of invalid code errors. Removed
+	some dead code and an useless message.
+
+
+2007-12-27 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_non_empty_stack_at_try_begin.il: added.
+
+	* valid_branch_to_first_intruction_of_try.il: added.
+
+
+2007-12-27 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_exception_overlap_test.sh: new test generator.
+
+	* make_tests.sh: new tests for exception clause restrictions
+	enumerated in P1 12.4.2.7.
+
+	* invalid_catch_block_starts_after_prefix.il: new test
+	for a catch block that starts in the middle of an instruction.
+
+2007-12-24 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_switch_test.sh: new test generator.
+
+	* make_exception_branch_test.sh: the filter
+	handler did not pop the exception argument.
+
+	* make_tests.sh: add tests for switch.
+
+2007-12-21 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_branch_test.sh: new test generator.
+
+	* make_exception_branch_test.sh: added
+	support to test generator to specify
+	the expected result.
+
+	* make_tests.sh: some results for
+	make_exception_branch_test.sh were
+	wrong, fixed that.
+
+	* make_tests.sh: added some tests
+	to beq and bge.
+
+	* make_tests.sh added tests for br.
+
+2007-12-20 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_exception_sequence.il: new test
+	for what blocks take an exception on
+	stack at the begin.
+
+2007-12-19 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_empty_catch_block.il
+	* invalid_empty_fault_block.il
+	* invalid_empty_filter_block.il
+	* invalid_empty_finally_block.il
+	* invalid_empty_handler_block.il
+	* invalid_empty_try_block.il
+	tests for empty protected blocks.
+
+	* invalid_exception_blocks_order.il:
+	test for the required ordering of exception
+	clauses.
+
+	* invalid_finally_block_overlap_try_block.il
+	* invalid_try_block_includes_catch_block.il
+	* invalid_try_block_inside_filter_block.il
+	tests for ill formed exception clauses.
+		
+	* invalid_fallout_of_filter_block.il
+	* invalid_fallout_of_handler_block.il
+	* invalid_fallthru_into_filter_block.il
+	* invalid_fallthru_into_handler_block.il
+	* unverifiable_fallout_of_catch_block.il
+	* unverifiable_fallout_of_fault_block.il
+	* unverifiable_fallout_of_finally_block.il
+	* unverifiable_fallout_of_try_block.il
+	* unverifiable_fallthru_into_catch_block.il
+	* unverifiable_fallthru_into_fault_block.il
+	* unverifiable_fallthru_into_finally_block.il
+	* valid_end_try_block_with_throw.il:
+	tests for fallthru in and out of protected blocks.
+
+2007-12-18 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for filter
+
+	* make_filter_test.sh: new test generator
+
+2007-12-14 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for endfilter
+
+	* make_endfilter_test.sh: new test generator
+
+2007-12-14 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* Makefile: add support to check strict tests.
+
+	* AssemblyRunner.cs: start using peverify as part of the
+	process. Support for strict tests.
+
+2007-12-12 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_filter_ends_at_endfilter_1.il: tests if the
+	filter block is limited by the start of the associated 
+	handler clause or it is limited by the ocurrence of
+	endfilter. These 3 tests show that even if the endfilter
+	instruction must be the last, it doesn't define the end
+	of the filter block.
+
+	* invalid_filter_ends_at_endfilter_2.il: same
+
+	* invalid_filter_ends_at_endfilter_3.il: same
+
+	* make_test.sh: added tests for endfinally / endfault
+	* make_endfinally_test.sh: new test generator
+
+2007-12-11 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for rethrow
+	* make_rethrow_test.sh: new test generator
+
+2007-12-11 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for throw
+	* make_throw_test.sh: new test generator
+
+2007-12-07 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for castclass and isinst
+	* make_cast_test.sh: new test generator
+
+2007-12-07 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for stelem.X
+	* make_stelem_test.sh: new test generator
+
+2007-12-06 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for ldelem
+
+2007-12-06 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: fixed compilation issues with some tests.
+
+2007-12-06 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for ldelem.X
+	* make_ldelem_test.sh: new test generator
+
+2007-12-05 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for ldelema
+	* make_ldelema_test.sh: new test generator
+
+2007-12-05 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added tests for ldlen
+	* make_ldlen_test.sh: new test generator
+
+2007-10-26 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_array_method.cs: test for invoking array methods.
+
+2007-10-09 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_tests.sh: tests for the return type of the invoked method.
+	tests for passing typedbyref as param.
+
+	* make_obj_store_test.sh: add new optional script parameter to tell
+	if class fields should be generated. This fix some bogus tests using
+	typedbyref.
+
+2007-10-09 Rodrigo Kumpera <rkumpera@novell.com>
+	* make_tests.sh: unbox_byref_like test was flawed, it was not testing
+	the proper unverifable condition.
+
+2007-10-09 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_unary_test.sh: fixed an invalid struct that has no fields,
+	this was not the subject of the tests.
+	* make_newobj_test.sh: added, generate tests for newobj.
+	* make_tests.sh: added the new tests for newobj and some corner
+	cases of local/arg load/store.
+
+
+2007-10-04 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_store_indirect_test.sh: added, generate tests for stind.X.
+	* make_tests.sh: added the new tests for ldind.X.
+
+2007-10-02 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_tests.sh: added the new tests for ops mixing Int32 and IntPtr, disabled
+	the overlapped tests for now
+	* make_unary_test.sh: disabled the overlapped tests for now
+	* make_field_store_test.sh: sames
+
+2007-09-27 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_load_indirect_test.sh: added, generate tests for ldind.X.
+	* make_tests.sh: added the new tests for ldind.X and new tests for stloc/starg using 
+	native int and int32.
+
+2007-09-25 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_load_addr.il: Tests for valid uses of ldarga and ldloca
+	* make_double_nesting_test.sh: Generate tests for calling nested classes from a diferent outer class
+
+2007-09-25 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_generic_params.cs (added): Tests for valid use of generic types.
+	* Makedfile: added valid_generic_params.cs
+
+2007-08-16 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_newarr_test.sh (added):  Generate newarr related tests.
+	* make_tests.sh: Addes tests for newarr.
+
+
+2007-08-15 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_unbox_test.sh (added):  Generate unbox related tests.
+	* make_tests.sh: Addes tests for unbox.
+
+
+2007-08-15 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_ldobj_test.sh (added):  Generate ldobj related tests.
+	* make_tests.sh: Addes tests for ldobj.
+
+2007-08-13 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_ldtoken_test.sh (added):  Generate ldtoken related tests
+	* make_tests.sh: Addes tests for ldtoken, conv.*.* and visibility checks
+	for nested classes mixed with inheritance
+
+2007-08-10 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: Added new visibility tests and not/neg tests
+	* make_cross_nested_access_test.sh: new test script for visibility
+	between two classes nested in the same class
+	* unverifiable_ldsfld_no_fld.il: added main method
+	* make_unary_test.sh: added some types to make room for more tests
+	* make_exception_branch_test.sh: fix the test to trigger the right error
+
+
+2007-08-02 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_exception_branch_test.sh: Fix the generation of the tests, so only
+	branching problems are validated.
+
+2007-07-20 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added more visibility tests
+	* Makefile: changed again the clean target to work with the larger number of tests
+	* make_self_nested_test.sh: new visibility tests
+
+2007-07-19 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_test.sh: added reference compatibility tests
+
+2007-07-05 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* AssemblyRunner.cs: bug fix: handles missing fields corrently
+	* make_test.sh: correct some tests based on fixed AssemblyRunner
+	
+2007-07-05 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* AssemblyRunner.cs: Allow running the test suite from the same VM instance
+	* make_tests.sh: improved the test-suite, now it works running under a VM, not just the verifier
+	* unverifiable_ldflda_other_class_on_simple_method.il: same
+	* unverifiable_ptr_nop.il: same
+	* unverifiable_ldsflda_other_class_field_on_cctor.il: same
+	* make_load_test.sh: same
+	* make_stack_0_test.sh: same
+	* make_obj_store_test.sh: same
+	* unverifiable_m_ptr_ldloc.il: same
+	* make_ret_test.sh: same
+	* make_store_test.sh: same
+	* unverifiable_ldsflda_other_class_on_simple_method.il: same
+	* make_access_test.sh: same
+	* unverifiable_ptr_ldloc.il: same
+	* invalid_call_no_method.il: same
+	* unverifiable_ldsfld_no_fld.il: same
+	* unverifiable_ldflda_owner_class_on_simple_method.il: same
+	* unverifiable_m_ptr_ldarg.il: same
+	* make_stack_merge_test.sh: same
+	* unverifiable_stack_2_ret.il: same
+	* unverifiable_ldflda_other_class_field_on_ctor.il: same
+	* unverifiable_ldflda_other_class_field_on_cctor.il: same
+	* make_field_store_test.sh: same
+	* invalid_backward_branch.il: same
+	* unverifiable_ldfld_initonly.il: same
+	* make_nested_access_test.sh: same
+	* invalid_stack_2_ret.il: same
+	* unverifiable_ldsflda_owner_class_on_simple_method.il: same
+	* unverifiable_ptr_ldarg.il: same
+	* valid_fld_initonly.il: same
+	* make_bin_test.sh: same
+	* make_field_valuetype_test.sh: new tests
+	
+
+2007-07-03 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_tests.sh: new access verification tests
+	* make_access_test.sh: create member access test
+	* make_nested_access_tests.sh: create nested member access test
+
+2007-07-03 Rodrigo Kumpera <rkumpera@novell.com>
+
+	*make_tests.sh: fixed two tests to produce valid results with .net
+	*make_field_test.sh: make fields public
+
+2007-06-22  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	* unverifiable_ldflda_other_class_on_simple_method.il: test for load field address in .ctor
+	* unverifiable_ldsflda_other_class_on_simple_method.il: same
+	* unverifiable_ldsflda_other_class_field_on_cctor.il: same
+	* unverifiable_ldflda_other_class_field_on_cctor.il: same
+	* unverifiable_ldsflda_owner_class_on_simple_method.il: same
+	* unverifiable_ldflda_owner_class_on_simple_method.il: same
+	* valid_ldflda_owned_field_on_cctor.il: same
+	* valid_ldsflda_owned_field_on_cctor.il: same
+	* valid_local_ref_ref_store.il: valid local store that was not covered before
+	* unverifiable_ptr_nop.il:  unmanaged pointer ops
+	* unverifiable_ptr_ldloc.il: same
+	* unverifiable_ptr_ldarg.il: same
+	* unverifiable_m_ptr_ldloc.il: same
+	* unverifiable_m_ptr_ldarg.il: same
+
+2007-06-20  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	*make_tests.sh: new ldsfld tests, more call conv tests
+
+2007-06-19  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	*make_tests.sh: new ldfld tests (they check everything but visibility)
+	*make_field_store_test.sh: generated the new field tests
+
+2007-06-14  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	* invalid_dup_maxstack.il: the test wasn't generating the failing condition
+	* make_tests.sh: fixed the generation of stack merge tests and a typo on the return coercion tests
+	* unverifiable_ldfld_initonly.il: add assembly manifest (so it tests the right thing)
+	* invalid_stack_2_ret.il: fix the entry point
+
+2007-06-14  Rodrigo Kumpera  <kumpera@gmail.com>
+	
+	* invalid_call_empty_stack.il: added assembly manifest (so it tests the right thing)
+	* invalid_ldsfld_nonstatic_fld.il: same
+	* invalid_dup_maxstack.il: same
+	* invalid_ldsfld_no_fld.il: same
+	* unverifiable_call_private.il: same
+	* invalid_backward_branch.il: same
+	* make_unary_test.sh: same
+	* invalid_ldloc_no_local.il: same
+	* make_obj_store_test.sh: added static field to have stsfld tests
+	* make_store_test.sh: fixed the entrypoint
+	* make_tests.sh: fixed tests to be faithfull to the spec
+
+2007-06-14  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	*Changelog: fixed the dates of my commits
+
+2007-06-14  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	*make_load_test.sh: Fixed the entrypoint to generate valid code
+	*make_ret_test.sh: Fixed the entrypoint to generate valid code. Removed invalid generics classes
+	*make_tests.sh: Fixed the testsuite to not generate wrong tests
+	*Makefile: split the clean step as it was failing due to the huge file list
+	 (it might need further tweaking as the testsuite grows)
+
+2007-06-12  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	* make_tests.sh: New boolean branch tests
+	* make_bool_branch_test.sh: Test the stack value that boolean branches use (brfalse / brtrue)
+	* make_ret_test.sh: removed unused variable from sed expression
+
+2007-06-06  Rodrigo Kumpera  <kumpera@gmail.com>
+
+	* Makefile (run-test): Make it use pedump instead of mono for validation
+	* make_tests.sh: New tests
+	* invalid_stack_2_tet.il: New test
+	* make_ret_test.sh: New test script
+	* make_load_test.sh: New test script
+	* make_obj_store_test.sh: Test did not generate valid code for some cases
+	* make_store_test.sh: Test did not generate valid code for some cases
+
+2006-06-06  Zoltan Varga  <vargaz@gmail.com>
+
+	* Makefile (run-test): Split 'test' target into a 'compile' and 'run-test' target.
+
+	* make_tests.sh: Remove some stack merge tests which are verifiable.
+
+	* make_unary_test.sh *.cil Makefile: Change extension of all static and generated
+	test files to the standard .il.
+
+2006-05-25  Zoltan Varga  <vargaz@gmail.com>
+
+	* *.sh: Fix more verification problems.
+
+	* TestRunner.cs: Use Assembly.EntryPoint instead of searching for a Main method.
+
+2006-05-23  Zoltan Varga  <vargaz@gmail.com>
+
+	* make_store_test.sh make_obj_store_test.sh make_stack_merge_test.sh: Fix
+	more ilasm and verification problems.
+
+	* TestRunner.cs: New file.
+
+2006-05-12  Zoltan Varga  <vargaz@gmail.com>
+
+	* make_store_test.sh make_obj_store_test.sh make_stack_merge_test.sh: Make
+	valuetypes sealed to fix ilasm warnings.
+
+Sun Mar 12 16:18:04 CET 2006 Paolo Molaro <lupus@ximian.com>
+
+	* Initial import of the verifiers tests developed by
+	Jim Purbrick <babbage@lindenlab.com>.
+
