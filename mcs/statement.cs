@@ -1170,6 +1170,8 @@ namespace Mono.CSharp {
 			get;
 		}
 
+		public abstract void EmitSymbolInfo (EmitContext ec);
+
 		public abstract void EmitInstance (EmitContext ec);
 
 		public abstract void Emit (EmitContext ec);
@@ -1261,8 +1263,7 @@ namespace Mono.CSharp {
 
 		public void EmitSymbolInfo (EmitContext ec, string name)
 		{
-			if (builder != null)
-				ec.DefineLocalVariable (name, builder);
+			var.EmitSymbolInfo (ec);
 		}
 
 		public bool IsThisAssigned (EmitContext ec)
@@ -1413,6 +1414,11 @@ namespace Mono.CSharp {
 
 			public override bool NeedsTemporary {
 				get { return false; }
+			}
+
+			public override void EmitSymbolInfo (EmitContext ec)
+			{
+				ec.DefineLocalVariable (LocalInfo.Name, builder);
 			}
 
 			public override void EmitInstance (EmitContext ec)
@@ -2307,17 +2313,22 @@ namespace Mono.CSharp {
 				if (is_lexical_block)
 					ec.EndScope ();
 
-				if (variables != null) {
-					foreach (DictionaryEntry de in variables) {
-						string name = (string) de.Key;
-						LocalInfo vi = (LocalInfo) de.Value;
-
-						vi.EmitSymbolInfo (ec, name);
-					}
-				}
+				EmitSymbolInfo (ec);
 			}
 
 			ec.CurrentBlock = prev_block;
+		}
+
+		protected virtual void EmitSymbolInfo (EmitContext ec)
+		{
+			if (variables != null) {
+				foreach (DictionaryEntry de in variables) {
+					string name = (string) de.Key;
+					LocalInfo vi = (LocalInfo) de.Value;
+
+					vi.EmitSymbolInfo (ec, name);
+				}
+			}
 		}
 
 		public override string ToString ()
@@ -2803,6 +2814,19 @@ namespace Mono.CSharp {
 				Variables.Remove ("this");
 			base.EmitMeta (ec);
 			parameters.ResolveVariable (this);
+		}
+
+		protected override void EmitSymbolInfo (EmitContext ec)
+		{
+			if (AnonymousContainer != null) {
+				ScopeInfo scope = AnonymousContainer.Scope;
+				if (scope != null) {
+					ec.DefineAnonymousScope (scope.ID, -1);
+					scope.EmitSymbolInfo (ec);
+				}
+			}
+
+			base.EmitSymbolInfo (ec);
 		}
 
 		public void MakeIterator (Iterator iterator)

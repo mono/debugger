@@ -67,6 +67,17 @@ namespace Mono.CSharp {
 			DefineLocalVariable (index, name, signature);
 		}
 
+		public void DefineAnonymousScope (int id, LocalBuilder builder)
+		{
+			int index = MonoDebuggerSupport.GetLocalIndex (builder);
+			DefineAnonymousScope (id, -1, index);
+		}
+
+		public void DefineAnonymousScope (int id, int parent)
+		{
+			DefineAnonymousScope (id, parent, -1);
+		}
+
 		public int OpenScope (ILGenerator ig)
 		{
 			int offset = get_il_offset_func (ig);

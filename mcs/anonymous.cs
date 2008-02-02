@@ -410,6 +410,22 @@ namespace Mono.CSharp {
 			return var;
 		}
 
+		public void EmitSymbolInfo (EmitContext ec)
+		{
+			foreach (CapturedLocal local in locals.Values)
+				local.EmitSymbolInfo (ec);
+
+			if (captured_params != null) {
+				foreach (CapturedParameter param in captured_params.Values)
+					param.EmitSymbolInfo (ec);
+			}
+
+			foreach (CapturedScope scope in CapturedScopes) {
+				ec.DefineAnonymousScope (scope.ChildScope.ID, ID);
+				scope.ChildScope.EmitSymbolInfo (ec);
+			}
+		}
+
 		protected string MakeFieldName (string local_name)
 		{
 			return "<" + ID + ":" + local_name + ">";
@@ -504,6 +520,11 @@ namespace Mono.CSharp {
 				this.Idx = idx;
 			}
 
+			public override void EmitSymbolInfo (EmitContext ec)
+			{
+				ec.DefineCapturedVariable (Scope.ID, Parameter.Name, Field.Name, false);
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("{0} ({1}:{2}:{3})", GetType (), Field,
@@ -520,6 +541,11 @@ namespace Mono.CSharp {
 				this.Local = local;
 			}
 
+			public override void EmitSymbolInfo (EmitContext ec)
+			{
+				ec.DefineCapturedVariable (Scope.ID, Local.Name, Field.Name, true);
+			}
+
 			public override string ToString ()
 			{
 				return String.Format ("{0} ({1}:{2})", GetType (), Field,
@@ -531,6 +557,11 @@ namespace Mono.CSharp {
 			public CapturedThis (RootScopeInfo host)
 				: base (host, "<>THIS", host.ParentType)
 			{ }
+
+			public override void EmitSymbolInfo (EmitContext ec)
+			{
+				throw new InvalidOperationException ();
+			}
 		}
 
 		protected class CapturedScope : CapturedVariable {
@@ -540,6 +571,11 @@ namespace Mono.CSharp {
 				: base (root, "scope" + child.ID)
 			{
 				this.ChildScope = child;
+			}
+
+			public override void EmitSymbolInfo (EmitContext ec)
+			{
+				throw new InvalidOperationException ();
 			}
 
 			public bool DefineMembers ()
@@ -643,8 +679,11 @@ namespace Mono.CSharp {
 
 					Report.Debug (128, "RESOLVE THE INIT #1", this,
 						      captured_scope, fe);
-				} else
+				} else {
 					scope_instance = ec.ig.DeclareLocal (type);
+					if (!Scope.RootScope.IsIterator)
+						ec.DefineAnonymousScope (Scope.ID, scope_instance);
+				}
 
 				foreach (CapturedLocal local in Scope.locals.Values) {
 					FieldExpr fe = (FieldExpr) Expression.MemberLookup (
