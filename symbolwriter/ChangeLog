@@ -1,3 +1,20 @@
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(OffsetTable.Version): Bump to 40.
+	(CapturedVariable): New public struct.
+	(AnonymousScope): New public struct.
+	(SourceFileEntry.DefineMethod): Added overloaded version taking a
+	additional `CapturedVariable[]' and `AnonymousScope[]' arguments.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.DefineAnonymousScope): New public method.
+	(MonoSymbolWriter.DefineCapturedVariable): New public method.
+
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
+	***** Terrania changes start at this point *****
+
 2007-08-27  Jb Evain  <jbevain@novell.com>
 
 	* MonoSymbolFile.cs, SymbolWriterImpl.cs: add some Cecil specific

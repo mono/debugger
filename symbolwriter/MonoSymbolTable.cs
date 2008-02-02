@@ -71,7 +71,7 @@ namespace Mono.CompilerServices.SymbolWriter
 {
 	public struct OffsetTable
 	{
-		public const int  Version = 39;
+		public const int  Version = 40;
 		public const long Magic   = 0x45e82623fd7fa614;
 
 		#region This is actually written to the symbol file
@@ -240,12 +240,12 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int BlockIndex;
 		#endregion
 
-		public LocalVariableEntry (int Index, string Name, byte[] Signature, int BlockIndex)
+		public LocalVariableEntry (int index, string name, byte[] sig, int block)
 		{
-			this.Index = Index;
-			this.Name = Name;
-			this.Signature = Signature;
-			this.BlockIndex = BlockIndex;
+			this.Index = index;
+			this.Name = name;
+			this.Signature = sig;
+			this.BlockIndex = block;
 		}
 
 		internal LocalVariableEntry (MyBinaryReader reader)
@@ -268,7 +268,85 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public override string ToString ()
 		{
-			return String.Format ("[LocalVariable {0}]", Name);
+			return String.Format ("[LocalVariable {0}:{1}:{2}]",
+					      Name, Index, BlockIndex);
+		}
+	}
+
+	public struct CapturedVariable
+	{
+		#region This is actually written to the symbol file
+		public readonly int Scope;
+		public readonly string Name;
+		public readonly string CapturedName;
+		public readonly bool IsLocal;
+		#endregion
+
+		public CapturedVariable (int scope, string name, string captured_name,
+					 bool is_local)
+		{
+			this.Scope = scope;
+			this.Name = name;
+			this.CapturedName = captured_name;
+			this.IsLocal = is_local;
+		}
+
+		internal CapturedVariable (MyBinaryReader reader)
+		{
+			Scope = reader.ReadLeb128 ();
+			Name = reader.ReadString ();
+			CapturedName = reader.ReadString ();
+			IsLocal = reader.ReadBoolean ();
+		}
+
+		internal void Write (MonoSymbolFile file, MyBinaryWriter bw)
+		{
+			bw.WriteLeb128 (Scope);
+			bw.Write (Name);
+			bw.Write (CapturedName);
+			bw.Write (IsLocal);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[CapturedVariable {0}:{1}:{2}:{3}]",
+					      Scope, Name, CapturedName, IsLocal);
+		}
+	}
+
+	public struct AnonymousScope
+	{
+		#region This is actually written to the symbol file
+		public readonly int ID;
+		public readonly int Index;
+		public readonly int Parent;
+		#endregion
+
+		public AnonymousScope (int id, int parent, int index)
+		{
+			this.ID = id;
+			this.Index = index;
+			this.Parent = parent;
+		}
+
+		internal AnonymousScope (MyBinaryReader reader)
+		{
+			ID = reader.ReadLeb128 ();
+			Index = reader.ReadLeb128 ();
+			Parent = reader.ReadLeb128 ();
+		}
+
+		internal void Write (MonoSymbolFile file, MyBinaryWriter bw)
+		{
+			bw.WriteLeb128 (ID);
+			bw.WriteLeb128 (Index);
+			bw.WriteLeb128 (Parent);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("[AnonymousScope {0}:{1}:{2}]",
+					      ID, Index, Parent);
 		}
 	}
 
@@ -308,12 +386,21 @@ namespace Mono.CompilerServices.SymbolWriter
 					  LineNumberEntry[] lines, LexicalBlockEntry[] blocks,
 					  int start, int end, int namespace_id)
 		{
+			DefineMethod (name, token, null, null, locals, lines, blocks,
+				      start, end, namespace_id);
+		}
+
+		public void DefineMethod (string name, int token, CapturedVariable[] captured_vars,
+					  AnonymousScope[] scopes, LocalVariableEntry[] locals,
+					  LineNumberEntry[] lines, LexicalBlockEntry[] blocks,
+					  int start, int end, int namespace_id)
+		{
 			if (!creating)
 				throw new InvalidOperationException ();
 
 			MethodEntry entry = new MethodEntry (
-				file, this, name, (int) token, locals, lines, blocks,
-				start, end, namespace_id);
+				file, this, name, (int) token, captured_vars, scopes, locals, lines,
+				blocks, start, end, namespace_id);
 
 			methods.Add (entry);
 			file.AddMethod (entry);
@@ -536,6 +623,11 @@ namespace Mono.CompilerServices.SymbolWriter
 		int LineNumberTableOffset;
 		int NumLexicalBlocks;
 		int LexicalBlockTableOffset;
+
+		public readonly int NumCapturedVariables;
+		public readonly int NumAnonymousScopes;
+		int CapturedVariableTableOffset;
+		int AnonymousScopeTableOffset;
 		#endregion
 
 		int index;
@@ -544,6 +636,8 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly SourceFileEntry SourceFile;
 		public readonly LineNumberEntry[] LineNumbers;
 		public readonly int[] LocalTypeIndices;
+		public readonly CapturedVariable[] CapturedVariables;
+		public readonly AnonymousScope[] AnonymousScopes;
 		public readonly LocalVariableEntry[] Locals;
 		public readonly LexicalBlockEntry[] LexicalBlocks;
 
@@ -576,6 +670,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			LexicalBlockTableOffset = reader.ReadInt32 ();
 			NamespaceID = reader.ReadInt32 ();
 			LocalNamesAmbiguous = reader.ReadInt32 () != 0;
+
+			NumCapturedVariables = reader.ReadInt32 ();
+			NumAnonymousScopes = reader.ReadInt32 ();
+			CapturedVariableTableOffset = reader.ReadInt32 ();
+			AnonymousScopeTableOffset = reader.ReadInt32 ();
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 
@@ -625,10 +724,35 @@ namespace Mono.CompilerServices.SymbolWriter
 
 				reader.BaseStream.Position = old_pos;
 			}
+
+			if (CapturedVariableTableOffset != 0) {
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = CapturedVariableTableOffset;
+
+				CapturedVariables = new CapturedVariable [NumCapturedVariables];
+
+				for (int i = 0; i < NumCapturedVariables; i++)
+					CapturedVariables [i] = new CapturedVariable (reader);
+
+				reader.BaseStream.Position = old_pos;
+			}
+
+			if (AnonymousScopeTableOffset != 0) {
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = AnonymousScopeTableOffset;
+
+				AnonymousScopes = new AnonymousScope [NumAnonymousScopes];
+
+				for (int i = 0; i < NumAnonymousScopes; i++)
+					AnonymousScopes [i] = new AnonymousScope (reader);
+
+				reader.BaseStream.Position = old_pos;
+			}
 		}
 
 		internal MethodEntry (MonoSymbolFile file, SourceFileEntry source,
-				      string name, int token, LocalVariableEntry[] locals,
+				      string name, int token, CapturedVariable[] captured_vars,
+				      AnonymousScope[] scopes, LocalVariableEntry[] locals,
 				      LineNumberEntry[] lines, LexicalBlockEntry[] blocks,
 				      int start_row, int end_row, int namespace_id)
 		{
@@ -684,6 +808,12 @@ namespace Mono.CompilerServices.SymbolWriter
 			LocalTypeIndices = new int [NumLocals];
 			for (int i = 0; i < NumLocals; i++)
 				LocalTypeIndices [i] = file.GetNextTypeIndex ();
+
+			NumCapturedVariables = captured_vars != null ? captured_vars.Length : 0;
+			CapturedVariables = captured_vars;
+
+			NumAnonymousScopes = scopes != null ? scopes.Length : 0;
+			AnonymousScopes = scopes;
 		}
 		
 		static LineNumberEntry [] tmp_buff = new LineNumberEntry [20];
@@ -746,6 +876,14 @@ namespace Mono.CompilerServices.SymbolWriter
 			for (int i = 0; i < NumLocals; i++)
 				bw.Write (LocalTypeIndices [i]);
 
+			CapturedVariableTableOffset = (int) bw.BaseStream.Position;
+			for (int i = 0; i < NumCapturedVariables; i++)
+				CapturedVariables [i].Write (file, bw);
+
+			AnonymousScopeTableOffset = (int) bw.BaseStream.Position;
+			for (int i = 0; i < NumAnonymousScopes; i++)
+				AnonymousScopes [i].Write (file, bw);
+
 			LocalVariableTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumLocals; i++)
 				Locals [i].Write (file, bw);
@@ -775,6 +913,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (LexicalBlockTableOffset);
 			bw.Write (NamespaceID);
 			bw.Write (LocalNamesAmbiguous ? 1 : 0);
+
+			bw.Write (NumCapturedVariables);
+			bw.Write (NumAnonymousScopes);
+			bw.Write (CapturedVariableTableOffset);
+			bw.Write (AnonymousScopeTableOffset);
 
 			return new MethodSourceEntry (index, file_offset, StartRow, EndRow);
 		}
