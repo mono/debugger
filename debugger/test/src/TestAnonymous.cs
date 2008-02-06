@@ -45,8 +45,10 @@ namespace Test2
 
 	public class X
 	{
-		public void Hello<U> (U u)
-		{ }							// @MDB BREAKPOINT: test2 hello
+		public U Hello<U> (U u)
+		{
+			return u;
+		}							// @MDB BREAKPOINT: test2 hello
 
 		public void Test<T> (T t)
 		{

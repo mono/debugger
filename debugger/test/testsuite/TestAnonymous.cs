@@ -83,6 +83,8 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "test2 after foo", "Test2.X.Test(T)");
@@ -97,9 +99,13 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
 
