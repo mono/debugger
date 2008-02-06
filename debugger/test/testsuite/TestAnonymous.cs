@@ -28,6 +28,10 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "RunTests.Main()", GetLine ("main"));
 			AssertExecute ("continue");
 
+			//
+			// Test1
+			//
+
 			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1(R,int)");
 
 			AssertPrint (thread, "a", "(int) 2");
@@ -40,7 +44,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 			// FIXME: Print a better method name
-			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated2`1<R>.<Test1>c__3()",
+			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated3`1<R>.<Test1>c__4()",
 				       GetLine ("test1 foo"));
 
 			AssertPrint (thread, "a", "(int) 2");
@@ -66,6 +70,39 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("500");
 			AssertTargetOutput ("-1");
 			AssertTargetOutput ("500");
+
+			//
+			// Test2
+			//
+
+			AssertHitBreakpoint (thread, "test2", "Test2.X.Test(T)");
+			AssertPrint (thread, "t", "(int) 3");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "t", "int");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test2 after foo", "Test2.X.Test(T)");
+
+			AssertExecute ("step");
+			AssertStopped (thread,
+				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__5()",
+				       GetLine ("test2 foo"));
+
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+
+			AssertExecute ("continue");
+
 			AssertTargetExited (thread.Process);
 		}
 	}
