@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -14,10 +15,6 @@ namespace Mono.Debugger.Tests
 			: base ("TestAnonymous")
 		{ }
 
-		int bpt_test1;
-		int bpt_test2;
-		int bpt_test1_foo;
-
 		[Test]
 		[Category("Generics")]
 		public void Main ()
@@ -28,12 +25,10 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main()", GetLine ("main"));
-			bpt_test1 = AssertBreakpoint (GetLine ("test1"));
-			bpt_test2 = AssertBreakpoint (GetLine ("test2"));
-
+			AssertStopped (thread, "RunTests.Main()", GetLine ("main"));
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, bpt_test1, "X.Test1(R,int)", GetLine ("test1"));
+
+			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1(R,int)");
 
 			AssertPrint (thread, "a", "(int) 2");
 			AssertPrint (thread, "b", "(int) 2");
@@ -41,11 +36,11 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("500");
-			AssertHitBreakpoint (thread, bpt_test2, "X.Test1(R,int)", GetLine ("test2"));
+			AssertHitBreakpoint (thread, "test1 after foo", "Test1.X.Test1(R,int)");
 
 			AssertExecute ("step");
 			// FIXME: Print a better method name
-			AssertStopped (thread, "X/<>c__CompilerGenerated2`1<R>.<Test1>c__3()",
+			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated2`1<R>.<Test1>c__3()",
 				       GetLine ("test1 foo"));
 
 			AssertPrint (thread, "a", "(int) 2");
@@ -58,12 +53,12 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("500");
 			AssertTargetOutput ("2");
 			AssertTargetOutput ("500");
-			AssertHitBreakpoint (thread, bpt_test1, "X.Test1(R,int)", GetLine ("test1"));
+			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1(R,int)");
 
 			AssertPrint (thread, "b", "(int) 1");
 
-			AssertExecute ("disable " + bpt_test1);
-			AssertExecute ("disable " + bpt_test2);
+			AssertExecute ("disable " + GetBreakpoint ("test1"));
+			AssertExecute ("disable " + GetBreakpoint ("test1 after foo"));
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("500");

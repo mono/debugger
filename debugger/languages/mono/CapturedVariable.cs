@@ -77,20 +77,16 @@ namespace Mono.Debugger.Languages.Mono
 		public TargetObject GetVariable (StackFrame frame, TargetMemoryAccess target,
 						 string name)
 		{
-			if (!Resolve (target))
+			TargetObject obj = GetObject (frame, target);
+			if ((obj == null) || (obj is MonoNullObject))
 				return null;
 
-			TargetStructObject obj;
-			if (Parent != null)
-				obj = (TargetStructObject) Parent.GetObject (frame, target);
-			else
-				obj = (TargetStructObject) var.GetObject (frame, target);
-
+			TargetStructObject sobj = (TargetStructObject) obj;
 			foreach (TargetFieldInfo field in fields) {
 				if (field.Name != name)
 					continue;
 
-				return klass.GetInstanceField (target, obj, field);
+				return klass.GetInstanceField (target, sobj, field);
 			}
 
 			return null;

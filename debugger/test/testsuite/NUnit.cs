@@ -199,6 +199,7 @@ namespace Mono.Debugger.Tests
 		public readonly string FileName;
 
 		Dictionary<string,int> lines;
+		Dictionary<string,int> automatic_breakpoints;
 
 		static TestSuite ()
 		{
@@ -223,13 +224,14 @@ namespace Mono.Debugger.Tests
 
 			inferior_stdout = new LineReader ();
 			inferior_stderr = new LineReader ();
-
-			ReadSourceFile ();
 		}
+
+		const string mdb_line_re = @"//\s+@MDB (LINE|BREAKPOINT):\s+(.*)$";
 
 		protected void ReadSourceFile ()
 		{
 			lines = new Dictionary<string,int> ();
+			automatic_breakpoints = new Dictionary<string,int> ();
 
 			using (StreamReader reader = new StreamReader (FileName)) {
 				string text;
@@ -237,11 +239,27 @@ namespace Mono.Debugger.Tests
 				while ((text = reader.ReadLine ()) != null) {
 					line++;
 
-					Match match = Regex.Match (text, @"//\s+@MDB LINE:\s+(.*)$");
-					if (match.Success)
-						lines.Add (match.Groups [1].Value, line);
+					Match match = Regex.Match (text, mdb_line_re);
+					if (!match.Success)
+						continue;
+
+					string name = match.Groups [2].Value;
+					lines.Add (name, line);
+					if (match.Groups [1].Value == "BREAKPOINT")
+						automatic_breakpoints [name] = AssertBreakpoint (line);
 				}
 			}
+		}
+
+		protected void AssertHitBreakpoint (Thread thread, string name, string function)
+		{
+			AssertHitBreakpoint (thread, automatic_breakpoints [name],
+					     function, GetLine (name));
+		}
+
+		protected int GetBreakpoint (string text)
+		{
+			return automatic_breakpoints [text];
 		}
 
 		protected int GetLine (string text)
@@ -298,6 +316,8 @@ namespace Mono.Debugger.Tests
 
 			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
+
+			ReadSourceFile ();
 		}
 
 		[TestFixtureTearDown]

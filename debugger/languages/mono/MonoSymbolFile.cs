@@ -1023,37 +1023,7 @@ namespace Mono.Debugger.Languages.Mono
 				locals = new List<TargetVariable> ();
 				parameters = new List<TargetVariable> ();
 
-				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
-				for (int i = 0; i < param_info.Count; i++) {
-					VariableInfo var = address.ParamVariableInfo [i];
-					TargetType type = mono.ReadType (memory, var.MonoType);
-					if (type == null)
-						type = mono.VoidType;
-
-					parameters.Add (new MonoVariable (
-						param_info [i].Name, type, false, type.IsByRef,
-						this, var, 0, 0));
-				}
-
-				for (int i = 0; i < method.NumLocals; i++) {
-					C.LocalVariableEntry local = method.Locals [i];
-
-					VariableInfo var = address.LocalVariableInfo [local.Index];
-					TargetType type = mono.ReadType (memory, var.MonoType);
-					if (type == null)
-						type = mono.VoidType;
-
-					if (local.BlockIndex > 0) {
-						int index = local.BlockIndex - 1;
-						JitLexicalBlockEntry block = address.LexicalBlocks [index];
-						locals.Add (new MonoVariable (
-							local.Name, type, true, type.IsByRef, this, var,
-							block.StartAddress, block.EndAddress));
-					} else {
-						locals.Add (new MonoVariable (
-							local.Name, type, true, type.IsByRef, this, var));
-					}
-				}
+				var captured_vars = new Dictionary<string,CapturedVariable> ();
 
 				if (address.HasThis)
 					this_var = new MonoVariable (
@@ -1098,6 +1068,46 @@ namespace Mono.Debugger.Languages.Mono
 						locals.Add (cv);
 					else
 						parameters.Add (cv);
+
+					captured_vars.Add (captured.Name, cv);
+				}
+
+				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
+				for (int i = 0; i < param_info.Count; i++) {
+					if (captured_vars.ContainsKey (param_info [i].Name))
+						continue;
+
+					VariableInfo var = address.ParamVariableInfo [i];
+					TargetType type = mono.ReadType (memory, var.MonoType);
+					if (type == null)
+						type = mono.VoidType;
+
+					parameters.Add (new MonoVariable (
+						param_info [i].Name, type, false, type.IsByRef,
+						this, var, 0, 0));
+				}
+
+				for (int i = 0; i < method.NumLocals; i++) {
+					C.LocalVariableEntry local = method.Locals [i];
+
+					if (captured_vars.ContainsKey (local.Name))
+						continue;
+
+					VariableInfo var = address.LocalVariableInfo [local.Index];
+					TargetType type = mono.ReadType (memory, var.MonoType);
+					if (type == null)
+						type = mono.VoidType;
+
+					if (local.BlockIndex > 0) {
+						int index = local.BlockIndex - 1;
+						JitLexicalBlockEntry block = address.LexicalBlocks [index];
+						locals.Add (new MonoVariable (
+							local.Name, type, true, type.IsByRef, this, var,
+							block.StartAddress, block.EndAddress));
+					} else {
+						locals.Add (new MonoVariable (
+							local.Name, type, true, type.IsByRef, this, var));
+					}
 				}
 
 				has_variables = true;

@@ -1,3 +1,8 @@
+2008-02-06  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/NUnit.cs: Also scan for `// @MDB BREAKPOINT: name'
+	patterns and automatically insert breakpoints.
+
 2008-02-02  Martin Baulig  <martin@ximian.com>
 
 	HEADS UP: We now require Mono 1.9 with some local changes; see
