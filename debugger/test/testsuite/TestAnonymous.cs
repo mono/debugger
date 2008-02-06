@@ -44,7 +44,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 			// FIXME: Print a better method name
-			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated3`1<R>.<Test1>c__4()",
+			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated4`1<R>.<Test1>c__5()",
 				       GetLine ("test1 foo"));
 
 			AssertPrint (thread, "a", "(int) 2");
@@ -91,9 +91,12 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 			AssertStopped (thread,
-				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__5()",
+				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__6()",
 				       GetLine ("test2 foo"));
 
+			// FIXME
+			// AssertPrint (thread, "t", "(int) 3");
+			// AssertType (thread, "t", "int");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
@@ -104,6 +107,40 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+
+			//
+			// Test3
+			//
+
+			AssertHitBreakpoint (thread, "test3", "Test3.X.Test(T)");
+			AssertPrint (thread, "t", "(int) 3");
+			AssertType (thread, "t", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello(U)");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test3 after foo", "Test3.X.Test(T)");
+
+			AssertExecute ("step");
+			AssertStopped (thread,
+				       "Test3.X/<>c__CompilerGenerated2`1<T>.<Test>c__7(S)",
+				       GetLine ("test3 foo"));
+
+			// FIXME
+			// AssertPrint (thread, "t", "(int) 3");
+			// AssertType (thread, "t", "int");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 

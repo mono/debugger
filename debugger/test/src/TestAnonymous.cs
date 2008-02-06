@@ -7,6 +7,7 @@ public static class RunTests
 	{
 		Test1.X.Run ();						// @MDB LINE: main
 		Test2.X.Run ();
+		Test3.X.Run ();
 	}
 }
 
@@ -59,6 +60,34 @@ namespace Test2
 			};
 			foo ();						// @MDB BREAKPOINT: test2 after foo
 			Hello (u);
+		}
+
+		public static void Run ()
+		{
+			X x = new X ();
+			x.Test (3);
+		}
+	}
+}
+
+namespace Test3
+{
+	delegate void Foo<S> (S s);
+
+	public class X
+	{
+		public U Hello<U> (U u)
+		{
+			return u;					// @MDB BREAKPOINT: test3 hello
+		}
+
+		public void Test<T> (T t)
+		{
+			Hello (t);					// @MDB BREAKPOINT: test3
+			Foo<T> foo = delegate (T u) {
+				Hello (u);				// @MDB LINE: test3 foo
+			};
+			foo (t);					// @MDB BREAKPOINT: test3 after foo
 		}
 
 		public static void Run ()
