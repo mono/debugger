@@ -44,7 +44,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 			// FIXME: Print a better method name
-			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated4`1<R>.<Test1>c__5()",
+			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated5`1<R>.<Test1>c__6()",
 				       GetLine ("test1 foo"));
 
 			AssertPrint (thread, "a", "(int) 2");
@@ -91,7 +91,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 			AssertStopped (thread,
-				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__6()",
+				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__7()",
 				       GetLine ("test2 foo"));
 
 			// FIXME
@@ -130,7 +130,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("step");
 			AssertStopped (thread,
-				       "Test3.X/<>c__CompilerGenerated2`1<T>.<Test>c__7(S)",
+				       "Test3.X/<>c__CompilerGenerated2`1<T>.<Test>c__8(S)",
 				       GetLine ("test3 foo"));
 
 			// FIXME
@@ -145,6 +145,27 @@ namespace Mono.Debugger.Tests
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
+
+			//
+			// Test4
+			//
+
+			AssertHitBreakpoint (thread, "test4", "Test4.Test`1<T>.Hello(T,S)");
+			AssertPrint (thread, "t", "(string) \"Kahalo\"");
+			AssertType (thread, "t", "string");
+			AssertPrint (thread, "s", String.Format ("(double) {0}", System.Math.PI));
+			AssertType (thread, "s", "double");
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("5");
+			AssertTargetOutput ("5");
+			AssertTargetOutput ("Kahalo");
+			AssertTargetOutput (System.Math.PI.ToString ());
+			AssertTargetOutput ("Kahalo");
+
+			//
+			// Done
+			//
 
 			AssertTargetExited (thread.Process);
 		}

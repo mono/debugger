@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.type_args = type_args;
 			this.class_ptr = class_ptr;
 
-			StringBuilder sb = new StringBuilder (container.Type.FullName);
+			StringBuilder sb = new StringBuilder (container.BaseName);
 			sb.Append ('<');
 			for (int i = 0; i < type_args.Length; i++) {
 				if (i > 0)
@@ -35,6 +35,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		TargetStructType IMonoStructType.Type {
 			get { return this; }
+		}
+
+		public override string BaseName {
+			get { return Container.BaseName; }
 		}
 
 		public override string Name {

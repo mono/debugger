@@ -73,6 +73,10 @@ namespace Mono.Debugger.Languages.Mono
 			this.class_info = class_info;
 		}
 
+		public override string BaseName {
+			get { return type.FullName; }
+		}
+
 		TargetStructType IMonoStructType.Type {
 			get { return this; }
 		}

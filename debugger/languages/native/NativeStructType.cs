@@ -115,6 +115,10 @@ namespace Mono.Debugger.Languages.Native
 			this.fields = fields;
 		}
 
+		public override string BaseName {
+			get { return name; }
+		}
+
 		public override string Name {
 			get { return name; }
 		}

@@ -8,9 +8,11 @@ public static class RunTests
 		Test1.X.Run ();						// @MDB LINE: main
 		Test2.X.Run ();
 		Test3.X.Run ();
+		Test4.X.Run ();
 	}
 }
 
+// gtest-anon-8.cs
 namespace Test1
 {
 	delegate int Foo ();
@@ -40,6 +42,7 @@ namespace Test1
 	}
 }
 
+// gtest-anon-1.cs
 namespace Test2
 {
 	delegate void Foo ();
@@ -70,6 +73,7 @@ namespace Test2
 	}
 }
 
+// gtest-anon-3.cs
 namespace Test3
 {
 	delegate void Foo<S> (S s);
@@ -94,6 +98,40 @@ namespace Test3
 		{
 			X x = new X ();
 			x.Test (3);
+		}
+	}
+}
+
+// gtest-anon-15.cs
+namespace Test4
+{
+	public delegate void Foo<V> (V v);
+
+	public delegate void Bar<W> (W w);
+
+	public class Test<T>
+	{
+		public static void Hello<S> (T t, S s)
+		{
+			Foo<long> foo = delegate (long r) {
+				Console.WriteLine (r);			// @MDB LINE: test4 foo
+				Bar<T> bar = delegate (T x) {
+					Console.WriteLine (r);
+					Console.WriteLine (t);
+					Console.WriteLine (s);
+					Console.WriteLine (x);
+				};
+				bar (t);
+			};
+			foo (5);					// @MDB BREAKPOINT: test4
+		}
+	}
+
+	public class X
+	{
+		public static void Run ()
+		{
+			Test<string>.Hello ("Kahalo", Math.PI);
 		}
 	}
 }

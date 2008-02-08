@@ -1,10 +1,14 @@
 using System;
 
-public class Foo
+namespace Test
 {
-	public static void Hello<T> (T t)
+	public class Foo<T>
 	{
-		Console.WriteLine (t);
+		public static void Hello<S> (S s, T t)
+		{
+			Console.WriteLine (s);
+			Console.WriteLine (t);
+		}
 	}
 }
 
@@ -12,7 +16,6 @@ class X
 {
 	static void Main ()
 	{
-		Foo.Hello (8);
-		Foo.Hello ("World");
+		Test.Foo<int>.Hello ("Hello World", 8);
 	}
 }

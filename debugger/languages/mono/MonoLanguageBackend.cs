@@ -962,7 +962,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress retval = thread.CallMethod (
 				info.InsertSourceBreakpoint, func.SymbolFile.MonoImage,
-				func.Token, index, func.DeclaringType.Name);
+				func.Token, index, func.DeclaringType.BaseName);
 
 			MethodLoadedHandler handler = handle.MethodLoaded;
 

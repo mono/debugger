@@ -2287,7 +2287,7 @@ namespace Mono.Debugger.Backend
 
 			inferior.CallMethod (
 				info.InsertSourceBreakpoint, image.Address,
-				func.Token, index, func.DeclaringType.Name, ID);
+				func.Token, index, func.DeclaringType.BaseName, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)

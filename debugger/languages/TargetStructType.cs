@@ -6,6 +6,10 @@ namespace Mono.Debugger.Languages
 			: base (language, kind)
 		{ }
 
+		public abstract string BaseName {
+			get;
+		}
+
 		public abstract Module Module {
 			get;
 		}

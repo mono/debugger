@@ -1,3 +1,16 @@
+2008-02-08  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetStructType.cs
+	(TargetStructType.BaseName): New public abstract property.  This
+	is the full name (including namespace and generic arity) without
+	the type arguments.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.RegisterMethodLoadHandler): Use
+	`TargetStructType.BaseName' to insert the breakpoint.
+
+	* test/{testsuite|src}/TestAnonymous.cs: Added new tests here.
+
 2008-02-06  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/NUnit.cs: Also scan for `// @MDB BREAKPOINT: name'
