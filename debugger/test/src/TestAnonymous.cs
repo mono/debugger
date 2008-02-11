@@ -60,6 +60,7 @@ namespace Test2
 			Hello (u);					// @MDB BREAKPOINT: test2
 			Foo foo = delegate {
 				Hello (u);				// @MDB LINE: test2 foo
+				Hello (t);
 			};
 			foo ();						// @MDB BREAKPOINT: test2 after foo
 			Hello (u);
@@ -90,6 +91,7 @@ namespace Test3
 			Hello (t);					// @MDB BREAKPOINT: test3
 			Foo<T> foo = delegate (T u) {
 				Hello (u);				// @MDB LINE: test3 foo
+				Hello (t);
 			};
 			foo (t);					// @MDB BREAKPOINT: test3 after foo
 		}
@@ -113,15 +115,15 @@ namespace Test4
 	{
 		public static void Hello<S> (T t, S s)
 		{
-			Foo<long> foo = delegate (long r) {
-				Console.WriteLine (r);			// @MDB LINE: test4 foo
+			Foo<long> foo = delegate (long r) {		// @MDB LINE: test4 foo
+				Console.WriteLine (r);
 				Bar<T> bar = delegate (T x) {
-					Console.WriteLine (r);
+					Console.WriteLine (r);		// @MDB LINE: test4 bar
 					Console.WriteLine (t);
 					Console.WriteLine (s);
 					Console.WriteLine (x);
 				};
-				bar (t);
+				bar (t);				// @MDB LINE: test4 foo2
 			};
 			foo (5);					// @MDB BREAKPOINT: test4
 		}

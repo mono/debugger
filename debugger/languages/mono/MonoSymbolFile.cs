@@ -955,6 +955,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoVariable this_var;
 			List<TargetVariable> parameters;
 			List<TargetVariable> locals;
+			Dictionary<int,ScopeInfo> scopes;
 			bool has_variables;
 			bool is_loaded;
 			MethodAddress address;
@@ -1022,6 +1023,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				locals = new List<TargetVariable> ();
 				parameters = new List<TargetVariable> ();
+				scopes = new Dictionary<int,ScopeInfo> ();
 
 				var captured_vars = new Dictionary<string,CapturedVariable> ();
 
@@ -1030,46 +1032,43 @@ namespace Mono.Debugger.Languages.Mono
 						"this", decl_type, true, true, this,
 						address.ThisVariableInfo);
 
-				Dictionary<int,ScopeInfo> scopes = new Dictionary<int,ScopeInfo> ();
+				var scope_list = new List<ScopeInfo> ();
 
-				for (int i = 0; i < method.NumAnonymousScopes; i++) {
-					C.AnonymousScope scope = method.AnonymousScopes [i];
-
-					if (scope.Parent >= 0) {
-						ScopeInfo parent = scopes [scope.Parent];
-						string fname = String.Format (
-							"<{0}:scope{1}>", parent.ID, scope.ID);
-
-						CapturedVariable pvar = new CapturedVariable (
-							parent, this, fname, fname);
-						scopes.Add (scope.ID, new ScopeInfo (scope.ID, pvar));
-						continue;
-					}
+				for (int i = 0; i < method.NumScopeVariables; i++) {
+					C.ScopeVariable sv = method.ScopeVariables [i];
 
 					VariableInfo var;
-					if (scope.Index < 0)
+					if (sv.Index < 0)
 						var = address.ThisVariableInfo;
 					else
-						var = address.LocalVariableInfo [scope.Index];
+						var = address.LocalVariableInfo [sv.Index];
 
 					TargetStructType type = mono.ReadStructType (memory, var.MonoType);
 					MonoVariable scope_var = new MonoVariable (
-						"$__" + scope.ID, type, true, type.IsByRef, this, var);
-					scopes.Add (scope.ID, new ScopeInfo (scope.ID, scope_var, type));
+						"$__" + sv.Scope, type, true, type.IsByRef, this, var);
+
+					ScopeInfo info = new ScopeInfo (sv.Scope, scope_var, type);
+					scopes.Add (sv.Scope, info);
+
+					scope_list.Add (info);
 				}
 
-				for (int i = 0; i < method.NumCapturedVariables; i++) {
-					C.CapturedVariable captured = method.CapturedVariables [i];
-					ScopeInfo scope = scopes [captured.Scope];
+				foreach (ScopeInfo scope in scope_list) {
+					read_scope (scope);
+				}
 
-					CapturedVariable cv = new CapturedVariable (
-						scope, this, captured.Name, captured.CapturedName);
-					if (captured.IsLocal)
-						locals.Add (cv);
-					else
-						parameters.Add (cv);
+				foreach (ScopeInfo scope in scopes.Values) {
+					C.AnonymousScopeEntry entry = file.File.GetAnonymousScope (scope.ID);
+					foreach (C.CapturedVariable captured in entry.CapturedVariables) {
+						CapturedVariable cv = new CapturedVariable (
+							scope, this, captured.Name, captured.CapturedName);
+						if (captured.IsLocal)
+							locals.Add (cv);
+						else
+							parameters.Add (cv);
 
-					captured_vars.Add (captured.Name, cv);
+						captured_vars.Add (captured.Name, cv);
+					}
 				}
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
@@ -1125,6 +1124,22 @@ namespace Mono.Debugger.Languages.Mono
 						do_read_variables (target);
 						return null;
 				});
+			}
+
+			void read_scope (ScopeInfo scope)
+			{
+				C.AnonymousScopeEntry entry = file.File.GetAnonymousScope (scope.ID);
+				foreach (C.CapturedScope captured in entry.CapturedScopes) {
+					if (scopes.ContainsKey (captured.Scope))
+						continue;
+
+					CapturedVariable pvar = new CapturedVariable (
+						scope, this, captured.CapturedName, captured.CapturedName);
+					ScopeInfo child = new ScopeInfo (captured.Scope, pvar);
+
+					scopes.Add (captured.Scope, child);
+					read_scope (child);
+				}
 			}
 
 			public override TargetVariable[] GetParameters (Thread target)
@@ -1398,6 +1413,11 @@ namespace Mono.Debugger.Languages.Mono
 				base.DumpLineNumbers ();
 
 				Console.WriteLine ();
+				Console.WriteLine ("Method: {0} - {1} {2} - {3} {4}",
+						   method.Name, method.StartAddress, method.EndAddress,
+						   method.MethodStartAddress, method.MethodEndAddress);
+
+				Console.WriteLine ();
 				Console.WriteLine ("Symfile Line Numbers:");
 				Console.WriteLine ("---------------------");
 
@@ -1420,6 +1440,18 @@ namespace Mono.Debugger.Languages.Mono
 							   lne.Address, method.StartAddress + lne.Address);
 				}
 				Console.WriteLine ("-----------------");
+
+				Console.WriteLine ();
+				Console.WriteLine ("Generated Lines:");
+				Console.WriteLine ("----------------");
+				for (int i = 0; i < Data.Addresses.Length; i++) {
+					LineEntry entry = (LineEntry) Data.Addresses [i];
+
+					Console.WriteLine ("{0,4} {1,4} {2,4:x}", i, entry.Line,
+							   entry.Address);
+				}
+				Console.WriteLine ("----------------");
+
 			}
 		}
 

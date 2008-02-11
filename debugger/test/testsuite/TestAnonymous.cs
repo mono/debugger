@@ -94,9 +94,13 @@ namespace Mono.Debugger.Tests
 				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__7()",
 				       GetLine ("test2 foo"));
 
-			// FIXME
-			// AssertPrint (thread, "t", "(int) 3");
-			// AssertType (thread, "t", "int");
+			AssertPrint (thread, "t", "(int) 3");
+			AssertType (thread, "t", "int");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
@@ -133,9 +137,13 @@ namespace Mono.Debugger.Tests
 				       "Test3.X/<>c__CompilerGenerated2`1<T>.<Test>c__8(S)",
 				       GetLine ("test3 foo"));
 
-			// FIXME
-			// AssertPrint (thread, "t", "(int) 3");
-			// AssertType (thread, "t", "int");
+			AssertPrint (thread, "t", "(int) 3");
+			AssertType (thread, "t", "int");
+			AssertPrint (thread, "u", "(int) 3");
+			AssertType (thread, "u", "int");
+
+			AssertExecute ("continue");
+			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
@@ -156,8 +164,48 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "s", String.Format ("(double) {0}", System.Math.PI));
 			AssertType (thread, "s", "double");
 
-			AssertExecute ("continue");
+			AssertExecute ("step");
+			AssertStopped (thread,
+				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
+				       GetLine ("test4 foo"));
+			AssertExecute ("step");
+			AssertStopped (thread,
+				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
+				       GetLine ("test4 foo") + 1);
+
+			AssertPrint (thread, "r", "(long) 5");
+			AssertType (thread, "r", "long");
+			AssertPrint (thread, "t", "(string) \"Kahalo\"");
+			AssertType (thread, "t", "string");
+			AssertPrint (thread, "s", String.Format ("(double) {0}", System.Math.PI));
+			AssertType (thread, "s", "double");
+
+			AssertExecute ("next");
 			AssertTargetOutput ("5");
+			AssertStopped (thread,
+				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
+				       GetLine ("test4 foo") + 2);
+
+			AssertExecute ("next");
+			AssertStopped (thread,
+				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
+				       GetLine ("test4 foo2"));
+
+			AssertExecute ("step");
+			AssertStopped (thread,
+				       "Test4.Test`1/<>c__CompilerGenerated3`1/<>c__CompilerGenerated9<T,S>.<Hello>c__10(T)",
+				       GetLine ("test4 bar"));
+
+			AssertPrint (thread, "r", "(long) 5");
+			AssertType (thread, "r", "long");
+			AssertPrint (thread, "x", "(string) \"Kahalo\"");
+			AssertType (thread, "x", "string");
+			AssertPrint (thread, "t", "(string) \"Kahalo\"");
+			AssertType (thread, "t", "string");
+			AssertPrint (thread, "s", String.Format ("(double) {0}", System.Math.PI));
+			AssertType (thread, "s", "double");
+
+			AssertExecute ("continue");
 			AssertTargetOutput ("5");
 			AssertTargetOutput ("Kahalo");
 			AssertTargetOutput (System.Math.PI.ToString ());
