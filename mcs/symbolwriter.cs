@@ -67,15 +67,15 @@ namespace Mono.CSharp {
 			DefineLocalVariable (index, name, signature);
 		}
 
-		public void DefineAnonymousScope (int id, LocalBuilder builder)
+		public void DefineScopeVariable (int scope, LocalBuilder builder)
 		{
 			int index = MonoDebuggerSupport.GetLocalIndex (builder);
-			DefineAnonymousScope (id, -1, index);
+			DefineScopeVariable (scope, index);
 		}
 
-		public void DefineAnonymousScope (int id, int parent)
+		public void DefineScopeVariable (int scope)
 		{
-			DefineAnonymousScope (id, parent, -1);
+			DefineScopeVariable (scope, -1);
 		}
 
 		public int OpenScope (ILGenerator ig)

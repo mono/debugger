@@ -1170,8 +1170,6 @@ namespace Mono.CSharp {
 			get;
 		}
 
-		public abstract void EmitSymbolInfo (EmitContext ec);
-
 		public abstract void EmitInstance (EmitContext ec);
 
 		public abstract void Emit (EmitContext ec);
@@ -1263,7 +1261,8 @@ namespace Mono.CSharp {
 
 		public void EmitSymbolInfo (EmitContext ec, string name)
 		{
-			var.EmitSymbolInfo (ec);
+			if (builder != null)
+				ec.DefineLocalVariable (Name, builder);
 		}
 
 		public bool IsThisAssigned (EmitContext ec)
@@ -1414,11 +1413,6 @@ namespace Mono.CSharp {
 
 			public override bool NeedsTemporary {
 				get { return false; }
-			}
-
-			public override void EmitSymbolInfo (EmitContext ec)
-			{
-				ec.DefineLocalVariable (LocalInfo.Name, builder);
 			}
 
 			public override void EmitInstance (EmitContext ec)
@@ -2298,7 +2292,9 @@ namespace Mono.CSharp {
 				if (is_lexical_block)
 					ec.BeginScope ();
 			}
+
 			ec.Mark (StartLocation, true);
+
 			if (scope_init != null)
 				scope_init.EmitStatement (ec);
 			if (scope_initializers != null) {
@@ -2310,10 +2306,10 @@ namespace Mono.CSharp {
 			ec.Mark (EndLocation, true); 
 
 			if (emit_debug_info) {
+				EmitSymbolInfo (ec);
+
 				if (is_lexical_block)
 					ec.EndScope ();
-
-				EmitSymbolInfo (ec);
 			}
 
 			ec.CurrentBlock = prev_block;
@@ -2818,13 +2814,8 @@ namespace Mono.CSharp {
 
 		protected override void EmitSymbolInfo (EmitContext ec)
 		{
-			if (AnonymousContainer != null) {
-				ScopeInfo scope = AnonymousContainer.Scope;
-				if (scope != null) {
-					ec.DefineAnonymousScope (scope.ID, -1);
-					scope.EmitSymbolInfo (ec);
-				}
-			}
+			if ((AnonymousContainer != null) && (AnonymousContainer.Scope != null))
+				EmitContext.DefineScopeVariable (AnonymousContainer.Scope.ID);
 
 			base.EmitSymbolInfo (ec);
 		}

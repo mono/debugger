@@ -6215,11 +6215,6 @@ namespace Mono.CSharp {
 				get { return false; }
 			}
 
-			public override void EmitSymbolInfo (EmitContext ec)
-			{
-				throw new InvalidOperationException ();
-			}
-
 			public override void EmitInstance (EmitContext ec)
 			{
 				// Do nothing.

@@ -868,30 +868,46 @@ namespace Mono.CSharp {
 			CodeGen.SymbolWriter.DefineLocalVariable (name, builder);
 		}
 
-		public void DefineAnonymousScope (int index, LocalBuilder builder)
+		public void DefineScopeVariable (int scope, LocalBuilder builder)
 		{
 			if (CodeGen.SymbolWriter == null)
 				return;
 
-			CodeGen.SymbolWriter.DefineAnonymousScope (index, builder);
+			CodeGen.SymbolWriter.DefineScopeVariable (scope, builder);
 		}
 
-		public void DefineAnonymousScope (int index, int parent)
+		public static void DefineScopeVariable (int scope)
 		{
 			if (CodeGen.SymbolWriter == null)
 				return;
 
-			CodeGen.SymbolWriter.DefineAnonymousScope (index, parent);
+			CodeGen.SymbolWriter.DefineScopeVariable (scope);
 		}
 
-		public void DefineCapturedVariable (int scope, string name, string captured_name,
-						    bool is_local)
+		public static void DefineAnonymousScope (int scope)
+		{
+			if (CodeGen.SymbolWriter == null)
+				return;
+
+			CodeGen.SymbolWriter.DefineAnonymousScope (scope);
+		}
+
+		public static void DefineCapturedVariable (int scope, string name,
+							   string captured_name, bool is_local)
 		{
 			if (CodeGen.SymbolWriter == null)
 				return;
 
 			CodeGen.SymbolWriter.DefineCapturedVariable (
 				scope, name, captured_name, is_local);
+		}
+
+		public static void DefineCapturedScope (int scope, int id, string captured_name)
+		{
+			if (CodeGen.SymbolWriter == null)
+				return;
+
+			CodeGen.SymbolWriter.DefineCapturedScope (scope, id, captured_name);
 		}
 
 		public void BeginScope ()

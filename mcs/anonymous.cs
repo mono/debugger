@@ -410,20 +410,22 @@ namespace Mono.CSharp {
 			return var;
 		}
 
-		public void EmitSymbolInfo (EmitContext ec)
+		public override void EmitType ()
 		{
+			EmitContext.DefineAnonymousScope (ID);
 			foreach (CapturedLocal local in locals.Values)
-				local.EmitSymbolInfo (ec);
+				local.EmitSymbolInfo ();
 
 			if (captured_params != null) {
 				foreach (CapturedParameter param in captured_params.Values)
-					param.EmitSymbolInfo (ec);
+					param.EmitSymbolInfo ();
 			}
 
 			foreach (CapturedScope scope in CapturedScopes) {
-				ec.DefineAnonymousScope (scope.ChildScope.ID, ID);
-				scope.ChildScope.EmitSymbolInfo (ec);
+				scope.EmitSymbolInfo ();
 			}
+
+			base.EmitType ();
 		}
 
 		protected string MakeFieldName (string local_name)
@@ -482,6 +484,8 @@ namespace Mono.CSharp {
 					return FieldInstance.FieldInfo;
 			}
 
+			public abstract void EmitSymbolInfo ();
+
 			public override void EmitInstance (EmitContext ec)
 			{
 				if ((ec.CurrentAnonymousMethod != null) &&
@@ -520,9 +524,10 @@ namespace Mono.CSharp {
 				this.Idx = idx;
 			}
 
-			public override void EmitSymbolInfo (EmitContext ec)
+			public override void EmitSymbolInfo ()
 			{
-				ec.DefineCapturedVariable (Scope.ID, Parameter.Name, Field.Name, false);
+				EmitContext.DefineCapturedVariable (
+					Scope.ID, Parameter.Name, Field.Name, false);
 			}
 
 			public override string ToString ()
@@ -541,9 +546,10 @@ namespace Mono.CSharp {
 				this.Local = local;
 			}
 
-			public override void EmitSymbolInfo (EmitContext ec)
+			public override void EmitSymbolInfo ()
 			{
-				ec.DefineCapturedVariable (Scope.ID, Local.Name, Field.Name, true);
+				EmitContext.DefineCapturedVariable (
+					Scope.ID, Local.Name, Field.Name, true);
 			}
 
 			public override string ToString ()
@@ -558,9 +564,10 @@ namespace Mono.CSharp {
 				: base (host, "<>THIS", host.ParentType)
 			{ }
 
-			public override void EmitSymbolInfo (EmitContext ec)
+			public override void EmitSymbolInfo ()
 			{
-				throw new InvalidOperationException ();
+				// FIXME
+				throw new InternalErrorException ();
 			}
 		}
 
@@ -573,9 +580,9 @@ namespace Mono.CSharp {
 				this.ChildScope = child;
 			}
 
-			public override void EmitSymbolInfo (EmitContext ec)
+			public override void EmitSymbolInfo ()
 			{
-				throw new InvalidOperationException ();
+				EmitContext.DefineCapturedScope (Scope.ID, ChildScope.ID, Field.Name);
 			}
 
 			public bool DefineMembers ()
@@ -682,7 +689,7 @@ namespace Mono.CSharp {
 				} else {
 					scope_instance = ec.ig.DeclareLocal (type);
 					if (!Scope.RootScope.IsIterator)
-						ec.DefineAnonymousScope (Scope.ID, scope_instance);
+						ec.DefineScopeVariable (Scope.ID, scope_instance);
 				}
 
 				foreach (CapturedLocal local in Scope.locals.Values) {

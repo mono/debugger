@@ -4,17 +4,8 @@
 	(EmitContext.DefineAnonymousScope): New public method.
 	(EmitContext.DefineCapturedVariable): New public method.
 
-	* statement.cs
-	(Variable.EmitSymbolInfo): New public abstract method.
-	(LocalInfo.EmitSymbolInfo): Call `var.EmitSymbolInfo ()' rather
-	than doing it directly on the builder.
-	(Block.EmitSymbolInfo): New protected virtual method.
-	(Block.Emit): Moved the symbol writer code into EmitSymbolInfo().
-	(ToplevelBlock.EmitSymbolInfo): Overwrite this and call
-	`ScopeInfo.EmitSymbolInfo()' if appropriate.
-
 	* anonymous.cs
-	(ScopeInfo.EmitSymbolInfo): New public method; emit debugging
+	(ScopeInfo.EmitType): Override this and emit debugging
 	information for captured variables.
 
 2008-02-02  Martin Baulig  <martin@ximian.com>
