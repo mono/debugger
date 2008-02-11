@@ -2,14 +2,24 @@
 
 	* MonoSymbolTable.cs
 	(OffsetTable.Version): Bump to 40.
+	(OffsetTable): Add `AnonymousScopeCount',
+	`AnonymousScopeTableOffset' and `AnonymousScopeTableSize'.
 	(CapturedVariable): New public struct.
-	(AnonymousScope): New public struct.
-	(SourceFileEntry.DefineMethod): Added overloaded version taking a
-	additional `CapturedVariable[]' and `AnonymousScope[]' arguments.
+	(CapturedScope): New public struct.
+	(ScopeVariable): New public struct.
+	(AnonymousScopeEntry): New public class.
+	(SourceFileEntry.DefineMethod): Added overloaded version taking an
+	additional `ScopeVariable[]' argument.
+
+	* MonoSymbolFile.cs
+	(MonoSymbolFile.AnonymousScopeCount): New public property.
+	(MonoSymbolFile.GetAnonymousScope): New public method.
 
 	* MonoSymbolWriter.cs
 	(MonoSymbolWriter.DefineAnonymousScope): New public method.
 	(MonoSymbolWriter.DefineCapturedVariable): New public method.
+	(MonoSymbolWriter.DefineCapturedScope): New public method.
+	(MonoSymbolWriter.DefineScopeVariable): New public method.
 
 2008-02-02  Martin Baulig  <martin@ximian.com>
 

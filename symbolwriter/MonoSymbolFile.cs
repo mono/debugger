@@ -131,6 +131,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		ArrayList sources = new ArrayList ();
 		Hashtable method_source_hash = new Hashtable ();
 		Hashtable type_hash = new Hashtable ();
+		Hashtable anonymous_scopes;
 
 		OffsetTable ot;
 		int last_type_index;
@@ -162,6 +163,27 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal void AddMethod (MethodEntry entry)
 		{
 			methods.Add (entry);
+		}
+
+		internal void DefineAnonymousScope (int id)
+		{
+			if (anonymous_scopes == null)
+				anonymous_scopes = new Hashtable ();
+
+			anonymous_scopes.Add (id, new AnonymousScopeEntry (id));
+		}
+
+		internal void DefineCapturedVariable (int scope_id, string name, string captured_name,
+						      bool is_local)
+		{
+			AnonymousScopeEntry scope = (AnonymousScopeEntry) anonymous_scopes [scope_id];
+			scope.AddCapturedVariable (name, captured_name, is_local);
+		}
+
+		internal void DefineCapturedScope (int scope_id, int id, string captured_name)
+		{
+			AnonymousScopeEntry scope = (AnonymousScopeEntry) anonymous_scopes [scope_id];
+			scope.AddCapturedScope (id, captured_name);
 		}
 
 		internal int GetNextTypeIndex ()
@@ -239,6 +261,17 @@ namespace Mono.CompilerServices.SymbolWriter
 				source.Write (bw);
 			}
 			ot.SourceTableSize = (int) bw.BaseStream.Position - ot.SourceTableOffset;
+
+			//
+			// Write anonymous scope table.
+			//
+			ot.AnonymousScopeCount = anonymous_scopes != null ? anonymous_scopes.Count : 0;
+			ot.AnonymousScopeTableOffset = (int) bw.BaseStream.Position;
+			if (anonymous_scopes != null) {
+				foreach (AnonymousScopeEntry scope in anonymous_scopes.Values)
+					scope.Write (bw);
+			}
+			ot.AnonymousScopeTableSize = (int) bw.BaseStream.Position - ot.AnonymousScopeTableOffset;
 
 			//
 			// Fixup offset table.
@@ -365,6 +398,10 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public int TypeCount {
 			get { return ot.TypeCount; }
+		}
+
+		public int AnonymousScopeCount {
+			get { return ot.AnonymousScopeCount; }
 		}
 
 		public int NamespaceCount {
@@ -523,6 +560,23 @@ namespace Mono.CompilerServices.SymbolWriter
 			if (value == null)
 				return -1;
 			return (int) value;
+		}
+
+		public AnonymousScopeEntry GetAnonymousScope (int id)
+		{
+			if (anonymous_scopes != null)
+				return (AnonymousScopeEntry) anonymous_scopes [id];
+			if (reader == null)
+				throw new InvalidOperationException ();
+
+			anonymous_scopes = new Hashtable ();
+			reader.BaseStream.Position = ot.AnonymousScopeTableOffset;
+			for (int i = 0; i < ot.AnonymousScopeCount; i++) {
+				AnonymousScopeEntry scope = new AnonymousScopeEntry (reader);
+				anonymous_scopes.Add (scope.ID, scope);
+			}
+
+			return (AnonymousScopeEntry) anonymous_scopes [id];
 		}
 
 		internal MyBinaryReader BinaryReader {

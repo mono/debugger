@@ -104,11 +104,20 @@ namespace Mono.CompilerServices.SymbolWriter
 			current_method.AddLocal (index, name, signature);
 		}
 
-		public void DefineCapturedVariable (int scope, string name, string captured_name,
+		public void DefineCapturedVariable (int scope_id, string name, string captured_name,
 						    bool is_local)
 		{
-			current_method.AddCapturedVariable (
-				scope, name, captured_name, is_local);
+			file.DefineCapturedVariable (scope_id, name, captured_name, is_local);
+		}
+
+		public void DefineCapturedScope (int scope_id, int id, string captured_name)
+		{
+			file.DefineCapturedScope (scope_id, id, captured_name);
+		}
+
+		public void DefineScopeVariable (int scope, int index)
+		{
+			current_method.AddScopeVariable (scope, index);
 		}
 
 		public void MarkSequencePoint (int offset, int line, int column)
@@ -178,9 +187,9 @@ namespace Mono.CompilerServices.SymbolWriter
 			current_method.EndBlock (endOffset);
 		}
 
-		public void DefineAnonymousScope (int id, int parent, int index)
+		public void DefineAnonymousScope (int id)
 		{
-			current_method.AddAnonymousScope (id, parent, index);
+			file.DefineAnonymousScope (id);
 		}
 
 		public void WriteSymbolFile (Guid guid)
@@ -188,8 +197,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			foreach (SourceMethod method in methods) {
 				method.SourceFile.Entry.DefineMethod (
 					method.Method.Name, method.Method.Token,
-					method.CapturedVariables, method.AnonymousScopes,
-					method.Locals, method.Lines, method.Blocks,
+					method.ScopeVariables, method.Locals,
+					method.Lines, method.Blocks,
 					method.Start.Row, method.End.Row,
 					method.Method.NamespaceID);
 			}
@@ -210,8 +219,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			LineNumberEntry [] lines;
 			private ArrayList _locals;
 			private ArrayList _blocks;
-			private ArrayList _anonymous_scopes;
-			private ArrayList _captured;
+			private ArrayList _scope_vars;
 			private Stack _block_stack;
 			private int next_block_id = 0;
 			private ISourceMethod _method;
@@ -281,29 +289,6 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
-			public CapturedVariable[] CapturedVariables {
-				get {
-					if (_captured == null)
-						return new CapturedVariable [0];
-
-					CapturedVariable[] retval = new CapturedVariable [_captured.Count];
-					_captured.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-
-			public AnonymousScope[] AnonymousScopes {
-				get {
-					if (_anonymous_scopes == null)
-						return new AnonymousScope [0];
-
-					AnonymousScope[] retval =
-						new AnonymousScope [_anonymous_scopes.Count];
-					_anonymous_scopes.CopyTo (retval, 0);
-					return retval;
-				}
-			}
-
 			public LocalVariableEntry[] Locals {
 				get {
 					if (_locals == null)
@@ -325,19 +310,23 @@ namespace Mono.CompilerServices.SymbolWriter
 						     index, name, signature, CurrentBlock.Index));
 			}
 
-			public void AddAnonymousScope (int id, int parent, int index)
-			{
-				if (_anonymous_scopes == null)
-					_anonymous_scopes = new ArrayList ();
-				_anonymous_scopes.Add (new AnonymousScope (id, parent, index));
+			public ScopeVariable[] ScopeVariables {
+				get {
+					if (_scope_vars == null)
+						return new ScopeVariable [0];
+
+					ScopeVariable[] retval = new ScopeVariable [_scope_vars.Count];
+					_scope_vars.CopyTo (retval);
+					return retval;
+				}
 			}
 
-			public void AddCapturedVariable (int scope, string name, string cname,
-							 bool is_local)
+			public void AddScopeVariable (int scope, int index)
 			{
-				if (_captured == null)
-					_captured = new ArrayList ();
-				_captured.Add (new CapturedVariable (scope, name, cname, is_local));
+				if (_scope_vars == null)
+					_scope_vars = new ArrayList ();
+				_scope_vars.Add (
+					new ScopeVariable (scope, index));
 			}
 
 			public ISourceFile SourceFile {
