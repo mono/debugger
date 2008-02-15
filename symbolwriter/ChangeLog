@@ -1,3 +1,16 @@
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(CodeBlockEntry): New public class.
+	(MethodEntry): Replace the old lexical blocks with a new concept
+	of `code blocks'.  Keep backwards compatibility.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter): Add OpenCompilerGeneratedBlock(),
+	CloseCompilerGeneratedBlock(), StartIteratorBody(),
+	EndIteratorBody(), StartIteratorDispatcher(),
+	EndIteratorDispatcher().	
+
 2008-02-02  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs

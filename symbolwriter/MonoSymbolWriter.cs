@@ -170,21 +170,54 @@ namespace Mono.CompilerServices.SymbolWriter
 			return source.DefineNamespace (name, using_clauses, parent);
 		}
 
-		public int OpenScope (int startOffset)
+		public int OpenScope (int start_offset)
 		{
 			if (current_method == null)
 				return 0;
 
-			current_method.StartBlock (startOffset);
+			current_method.StartBlock (CodeBlockEntry.Type.Lexical, start_offset);
 			return 0;
 		}
 
-		public void CloseScope (int endOffset)
+		public void CloseScope (int end_offset)
 		{
 			if (current_method == null)
 				return;
 
-			current_method.EndBlock (endOffset);
+			current_method.EndBlock (end_offset);
+		}
+
+		public void OpenCompilerGeneratedBlock (int start_offset)
+		{
+			current_method.StartBlock (CodeBlockEntry.Type.CompilerGenerated,
+						   start_offset);
+		}
+
+		public void CloseCompilerGeneratedBlock (int end_offset)
+		{
+			current_method.EndBlock (end_offset);
+		}
+
+		public void StartIteratorBody (int start_offset)
+		{
+			current_method.StartBlock (CodeBlockEntry.Type.IteratorBody,
+						   start_offset);
+		}
+
+		public void EndIteratorBody (int end_offset)
+		{
+			current_method.EndBlock (end_offset);
+		}
+
+		public void StartIteratorDispatcher (int start_offset)
+		{
+			current_method.StartBlock (CodeBlockEntry.Type.IteratorDispatcher,
+						   start_offset);
+		}
+
+		public void EndIteratorDispatcher (int end_offset)
+		{
+			current_method.EndBlock (end_offset);
 		}
 
 		public void DefineAnonymousScope (int id)
@@ -198,7 +231,7 @@ namespace Mono.CompilerServices.SymbolWriter
 				method.SourceFile.Entry.DefineMethod (
 					method.Method.Name, method.Method.Token,
 					method.ScopeVariables, method.Locals,
-					method.Lines, method.Blocks,
+					method.Lines, null, method.Blocks,
 					method.Start.Row, method.End.Row,
 					method.Method.NamespaceID);
 			}
@@ -221,12 +254,9 @@ namespace Mono.CompilerServices.SymbolWriter
 			private ArrayList _blocks;
 			private ArrayList _scope_vars;
 			private Stack _block_stack;
-			private int next_block_id = 0;
 			private ISourceMethod _method;
 			private ISourceFile _file;
 			private LineNumberEntry _start, _end;
-
-			private LexicalBlockEntry _implicit_block;
 
 			public SourceMethod (ISourceFile file, ISourceMethod method,
 					     int startLine, int startColumn,
@@ -237,49 +267,47 @@ namespace Mono.CompilerServices.SymbolWriter
 
 				this._start = new LineNumberEntry (startLine, 0);
 				this._end = new LineNumberEntry (endLine, 0);
-
-				this._implicit_block = new LexicalBlockEntry (0, 0);
 			}
 
-			public void StartBlock (int startOffset)
+			public void StartBlock (CodeBlockEntry.Type type, int start_offset)
 			{
-				LexicalBlockEntry block = new LexicalBlockEntry (
-					++next_block_id, startOffset);
 				if (_block_stack == null)
 					_block_stack = new Stack ();
-				_block_stack.Push (block);
 				if (_blocks == null)
 					_blocks = new ArrayList ();
+
+				int parent = CurrentBlock != null ? CurrentBlock.Index : -1;
+
+				CodeBlockEntry block = new CodeBlockEntry (
+					_blocks.Count + 1, parent, type, start_offset);
+
+				_block_stack.Push (block);
 				_blocks.Add (block);
 			}
 
-			public void EndBlock (int endOffset)
+			public void EndBlock (int end_offset)
 			{
-				LexicalBlockEntry block =
-					(LexicalBlockEntry) _block_stack.Pop ();
-
-				block.Close (endOffset);
+				CodeBlockEntry block = (CodeBlockEntry) _block_stack.Pop ();
+				block.Close (end_offset);
 			}
 
-			public LexicalBlockEntry[] Blocks {
+			public CodeBlockEntry[] Blocks {
 				get {
 					if (_blocks == null)
-						return new LexicalBlockEntry [0];
-					else {
-						LexicalBlockEntry[] retval =
-							new LexicalBlockEntry [_blocks.Count];
-						_blocks.CopyTo (retval, 0);
-						return retval;
-					}
+						return new CodeBlockEntry [0];
+
+					CodeBlockEntry[] retval = new CodeBlockEntry [_blocks.Count];
+					_blocks.CopyTo (retval, 0);
+					return retval;
 				}
 			}
 
-			public LexicalBlockEntry CurrentBlock {
+			public CodeBlockEntry CurrentBlock {
 				get {
 					if ((_block_stack != null) && (_block_stack.Count > 0))
-						return (LexicalBlockEntry) _block_stack.Peek ();
+						return (CodeBlockEntry) _block_stack.Peek ();
 					else
-						return _implicit_block;
+						return null;
 				}
 			}
 
@@ -302,12 +330,12 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
-			public void AddLocal (int index, string name, byte[] signature)
+			public void AddLocal (int index, string name, byte[] sig)
 			{
 				if (_locals == null)
 					_locals = new ArrayList ();
-				_locals.Add (new LocalVariableEntry (
-						     index, name, signature, CurrentBlock.Index));
+				int block_idx = CurrentBlock != null ? CurrentBlock.Index : 0;
+				_locals.Add (new LocalVariableEntry (index, name, sig, block_idx));
 			}
 
 			public ScopeVariable[] ScopeVariables {
