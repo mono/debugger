@@ -1,3 +1,23 @@
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	Reflect latest symbol writer changes.  Keep compatibility with
+	older symbol file versions.
+
+	* debug-mono-symfile.h
+	(MONO_SYMBOL_FILE_COMPATIBILITY_VERSION): New #define; keep
+	compatibility with this version.
+	(MonoSymbolFileOffsetTable): Added `_num_code_blocks' and
+	`_code_block_table_offset'.
+	(MonoSymbolFileMethodEntry): Added `num_code_blocks' and
+	`code_block_table_offset'.
+	(MonoDebugMethodInfo): Likewise.
+	(MonoSymbolFileCodeBlockEntry): New typedef.
+	(MonoSymbolFile): Added `version'.
+
+	* mono-debug.h
+	(__MonoDebugMethodJitInfo): Replaced `num_lexical_blocks' and
+	`lexical_blocks' with `num_code_blocks' and `code_blocks'.
+
 2008-02-02  Martin Baulig  <martin@ximian.com>
 
 	* debug-mono-symfile.h

@@ -19,6 +19,7 @@ typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
 typedef struct MonoSymbolFileMethodIndexEntry	MonoSymbolFileMethodIndexEntry;
 typedef struct MonoSymbolFileLexicalBlockEntry	MonoSymbolFileLexicalBlockEntry;
+typedef struct MonoSymbolFileCodeBlockEntry	MonoSymbolFileCodeBlockEntry;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -49,6 +50,9 @@ struct MonoSymbolFileMethodEntry {
 	guint32 _lexical_block_table_offset;
 	guint32 _namespace_idx;
 	guint32 _local_names_ambiguous;
+
+	guint32 _num_code_blocks;
+	guint32 _code_block_table_offset;
 };
 
 struct MonoSymbolFileSourceEntry {
@@ -80,10 +84,24 @@ struct MonoSymbolFileMethodAddress {
 	guint32 line_number_offset;
 	guint32 num_lexical_blocks;
 	guint32 lexical_block_table_offset;
+	guint32 num_code_blocks;
+	guint32 code_block_table_offset;
 	guint8 data [MONO_ZERO_LEN_ARRAY];
 };
 
 struct MonoSymbolFileLexicalBlockEntry {
+	guint32 _start_offset;
+	guint32 _end_offset;
+};
+
+typedef enum {
+	MONO_DEBUG_CODE_BLOCK_TYPE_LEXICAL		= 1,
+	MONO_DEBUG_CODE_BLOCK_TYPE_COMPILER_GENERATED	= 2
+} MonoSymbolFileCodeBlockType;
+
+struct MonoSymbolFileCodeBlockEntry {
+	guint32 _block_type;
+	gint32 _parent_idx;
 	guint32 _start_offset;
 	guint32 _end_offset;
 };
@@ -101,6 +119,8 @@ struct _MonoDebugMethodInfo {
 	MonoSymbolFileLineNumberEntry *il_offsets;
 	guint32 num_lexical_blocks;
 	MonoSymbolFileLexicalBlockEntry *lexical_blocks;
+	guint32 num_code_blocks;
+	MonoSymbolFileCodeBlockEntry *code_blocks;
 	MonoSymbolFileMethodEntry *entry;
 };
 
@@ -111,20 +131,31 @@ struct _MonoDebugLexicalBlockEntry {
 	guint32 native_end_offset;
 };
 
+struct _MonoDebugCodeBlockEntry {
+	guint32 block_type;
+	gint32 parent_block;
+	guint32 il_start_offset;
+	guint32 native_start_offset;
+	guint32 il_end_offset;
+	guint32 native_end_offset;
+};
+
 struct _MonoDebugLineNumberEntry {
-	guint32 il_offset;
+	gint32 il_offset;
 	guint32 native_offset;
 };
 
 struct _MonoSymbolFile {
 	const guint8 *raw_contents;
 	int raw_contents_size;
+	int version;
 	gchar *filename;
 	GHashTable *method_hash;
 	MonoSymbolFileOffsetTable *offset_table;
 };
 
 #define MONO_SYMBOL_FILE_VERSION		40
+#define MONO_SYMBOL_FILE_COMPATIBILITY_VERSION	39
 #define MONO_SYMBOL_FILE_MAGIC			0x45e82623fd7fa614ULL
 
 G_BEGIN_DECLS
