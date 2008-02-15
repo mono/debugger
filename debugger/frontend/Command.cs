@@ -2233,6 +2233,8 @@ namespace Mono.Debugger.Frontend
 					       "frame pointer at {2}.", CurrentFrame.Level,
 					       CurrentFrame.StackPointer,
 					       CurrentFrame.FrameAddress);
+				if (CurrentFrame.SourceAddress != null)
+					context.Print ("Source: {0}", CurrentFrame.SourceAddress);
 				return null;
 			}
 		}
