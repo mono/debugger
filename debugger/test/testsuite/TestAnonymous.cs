@@ -168,10 +168,6 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread,
 				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
 				       GetLine ("test4 foo"));
-			AssertExecute ("step");
-			AssertStopped (thread,
-				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
-				       GetLine ("test4 foo") + 1);
 
 			AssertPrint (thread, "r", "(long) 5");
 			AssertType (thread, "r", "long");
@@ -184,7 +180,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("5");
 			AssertStopped (thread,
 				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
-				       GetLine ("test4 foo") + 2);
+				       GetLine ("test4 foo") + 1);
 
 			AssertExecute ("next");
 			AssertStopped (thread,

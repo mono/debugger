@@ -51,8 +51,8 @@ namespace Test2
 	{
 		public U Hello<U> (U u)
 		{
-			return u;
-		}							// @MDB BREAKPOINT: test2 hello
+			return u;					// @MDB BREAKPOINT: test2 hello
+		}
 
 		public void Test<T> (T t)
 		{
@@ -115,8 +115,8 @@ namespace Test4
 	{
 		public static void Hello<S> (T t, S s)
 		{
-			Foo<long> foo = delegate (long r) {		// @MDB LINE: test4 foo
-				Console.WriteLine (r);
+			Foo<long> foo = delegate (long r) {
+				Console.WriteLine (r);			// @MDB LINE: test4 foo
 				Bar<T> bar = delegate (T x) {
 					Console.WriteLine (r);		// @MDB LINE: test4 bar
 					Console.WriteLine (t);

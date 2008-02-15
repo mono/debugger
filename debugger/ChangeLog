@@ -1,3 +1,16 @@
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* test/{testsuite|src}/TestSSE.cs: New tests.
+
+	* test/{testsuite|src}/TestAnonymous.cs: Added new tests here.
+
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetBinaryReader.cs
+	(TargetBinaryReader): Added ReadSByte() and PeekSByte().
+
+	* backend/arch/X86_Instruction.cs: Use ReadSByte(), not ReadByte().
+
 2008-02-08  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetStructType.cs
