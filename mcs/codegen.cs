@@ -292,7 +292,9 @@ namespace Mono.CSharp {
 			
 			InferReturnType = 1 << 9,
 			
-			InCompoundAssignment = 1 << 10
+			InCompoundAssignment = 1 << 10,
+
+			OmitDebuggingInfo = 1 << 11
 		}
 
 		Flags flags;
@@ -599,6 +601,16 @@ namespace Mono.CSharp {
 			get { return current_flow_branching; }
 		}
 
+		public bool OmitDebuggingInfo {
+			get { return (flags & Flags.OmitDebuggingInfo) != 0; }
+			set {
+				if (value)
+					flags |= Flags.OmitDebuggingInfo;
+				else
+					flags &= ~Flags.OmitDebuggingInfo;
+			}
+		}
+
 		// <summary>
 		//   Starts a new code branching.  This inherits the state of all local
 		//   variables and parameters from the current branching.
@@ -851,7 +863,7 @@ namespace Mono.CSharp {
 		/// </summary>
 		public void Mark (Location loc, bool check_file)
 		{
-			if ((CodeGen.SymbolWriter == null) || loc.IsNull)
+			if ((CodeGen.SymbolWriter == null) || OmitDebuggingInfo || loc.IsNull)
 				return;
 
 			if (check_file && (CurrentFile != loc.File))
@@ -915,7 +927,7 @@ namespace Mono.CSharp {
 			ig.BeginScope();
 
 			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.OpenScope(ig);
+				CodeGen.SymbolWriter.OpenScope (ig);
 		}
 
 		public void EndScope ()
@@ -923,7 +935,19 @@ namespace Mono.CSharp {
 			ig.EndScope();
 
 			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.CloseScope(ig);
+				CodeGen.SymbolWriter.CloseScope (ig);
+		}
+
+		public void BeginCompilerGeneratedBlock ()
+		{
+			if (CodeGen.SymbolWriter != null)
+				CodeGen.SymbolWriter.OpenCompilerGeneratedBlock (ig);
+		}
+
+		public void EndCompilerGeneratedBlock ()
+		{
+			if (CodeGen.SymbolWriter != null)
+				CodeGen.SymbolWriter.CloseCompilerGeneratedBlock (ig);
 		}
 
 		/// <summary>

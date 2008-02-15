@@ -521,6 +521,7 @@ namespace Mono.CSharp {
 				Statement.Emit (ec);
 			
 				ig.MarkLabel (ec.LoopBegin);
+				ec.Mark (loc, true);
 
 				expr.EmitBranchable (ec, while_loop, true);
 				
@@ -529,6 +530,11 @@ namespace Mono.CSharp {
 
 			ec.LoopBegin = old_begin;
 			ec.LoopEnd = old_end;
+		}
+
+		public override void Emit (EmitContext ec)
+		{
+			DoEmit (ec);
 		}
 
 		protected override void CloneTo (CloneContext clonectx, Statement t)
@@ -2286,24 +2292,38 @@ namespace Mono.CSharp {
 			ec.CurrentBlock = this;
 
 			bool emit_debug_info = (CodeGen.SymbolWriter != null);
-			bool is_lexical_block = this == Explicit && Parent != null;
+			bool is_lexical_block = (this == Explicit) && (Parent != null) &&
+				((flags & Flags.IsIterator) == 0);
+
+			bool omit_debug_info = ec.OmitDebuggingInfo;
 
 			if (emit_debug_info) {
 				if (is_lexical_block)
 					ec.BeginScope ();
 			}
 
-			ec.Mark (StartLocation, true);
-
-			if (scope_init != null)
-				scope_init.EmitStatement (ec);
-			if (scope_initializers != null) {
-				foreach (StatementExpression s in scope_initializers)
-					s.Emit (ec);
+			if ((scope_init != null) || (scope_initializers != null)) {
+				ec.BeginCompilerGeneratedBlock ();
 			}
 
+			if (scope_init != null) {
+				ec.OmitDebuggingInfo = true;
+				scope_init.EmitStatement (ec);
+				ec.OmitDebuggingInfo = omit_debug_info;
+			}
+			if (scope_initializers != null) {
+				ec.OmitDebuggingInfo = true;
+				foreach (StatementExpression s in scope_initializers)
+					s.Emit (ec);
+				ec.OmitDebuggingInfo = omit_debug_info;
+			}
+
+			if ((scope_init != null) || (scope_initializers != null)) {
+				ec.EndCompilerGeneratedBlock ();
+			}
+
+			ec.Mark (StartLocation, true);
 			DoEmit (ec);
-			ec.Mark (EndLocation, true); 
 
 			if (emit_debug_info) {
 				EmitSymbolInfo (ec);
@@ -2382,6 +2402,10 @@ namespace Mono.CSharp {
 			this.Explicit = this;
 		}
 
+		public bool IsIterator {
+			get { return (flags & Flags.IsIterator) != 0; }
+		}
+
 		HybridDictionary known_variables;
 
 		// <summary>
@@ -2454,10 +2478,6 @@ namespace Mono.CSharp {
 		public bool HasVarargs {
 			get { return (flags & Flags.HasVarargs) != 0; }
 			set { flags |= Flags.HasVarargs; }
-		}
-
-		public bool IsIterator {
-			get { return (flags & Flags.IsIterator) != 0; }
 		}
 
 		//
@@ -2824,7 +2844,7 @@ namespace Mono.CSharp {
 		{
 			flags |= Flags.IsIterator;
 
-			Block block = new ExplicitBlock (this, StartLocation, EndLocation);
+			Block block = new ExplicitBlock (this, flags, StartLocation, EndLocation);
 			foreach (Statement stmt in statements)
 				block.AddStatement (stmt);
 			statements.Clear ();

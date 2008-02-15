@@ -90,6 +90,42 @@ namespace Mono.CSharp {
 			CloseScope (offset);
 		}
 
+		public void OpenCompilerGeneratedBlock (ILGenerator ig)
+		{
+			int offset = get_il_offset_func (ig);
+			OpenCompilerGeneratedBlock (offset);
+		}
+
+		public void CloseCompilerGeneratedBlock (ILGenerator ig)
+		{
+			int offset = get_il_offset_func (ig);
+			CloseCompilerGeneratedBlock (offset);
+		}
+
+		public void StartIteratorBody (ILGenerator ig)
+		{
+			int offset = get_il_offset_func (ig);
+			StartIteratorBody (offset);
+		}
+
+		public void EndIteratorBody (ILGenerator ig)
+		{
+			int offset = get_il_offset_func (ig);
+			EndIteratorBody (offset);
+		}
+
+		public void StartIteratorDispatcher (ILGenerator ig)
+		{
+			int offset = get_il_offset_func (ig);
+			StartIteratorDispatcher (offset);
+		}
+
+		public void EndIteratorDispatcher (ILGenerator ig)
+		{
+			int offset = get_il_offset_func (ig);
+			EndIteratorDispatcher (offset);
+		}
+
 		public void MarkSequencePoint (ILGenerator ig, int row, int column)
 		{
 			int offset = get_il_offset_func (ig);

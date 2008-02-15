@@ -1,3 +1,18 @@
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* iterators.cs: Emit debugging info.
+
+	* codegen.cs
+	(EmitContext.Flags): Add `OmitDebuggingInfo'.
+	(EmitContext.OmitDebuggingInfo): New public property.
+
+	* statement.cs
+	(While): Override Emit() and don't emit symbol info there; do it
+	inside DoEmit() instead.
+	(Block.Emit): Omit symbol information while emitting the scope
+	initializers; don't ec.Mark() the `EndLocation'.  Fix the lexical
+	block logic.
+
 2008-02-02  Martin Baulig  <martin@ximian.com>
 
 	* codegen.cs
