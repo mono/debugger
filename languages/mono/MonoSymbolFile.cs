@@ -1347,7 +1347,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		private struct MethodHashEntry
+		protected struct MethodHashEntry
 		{
 			public readonly TargetAddress Method;
 			public readonly int Domain;
@@ -1443,7 +1443,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		private class WrapperEntry
+		protected class WrapperEntry
 		{
 			public readonly TargetAddress WrapperMethod;
 			public readonly WrapperType WrapperType;

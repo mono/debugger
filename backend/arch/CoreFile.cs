@@ -206,6 +206,7 @@ namespace Mono.Debugger.Backend
 			public readonly Thread Thread;
 			public readonly Registers Registers;
 			public readonly CoreFileTargetAccess TargetAccess;
+			
 			Backtrace current_backtrace;
 			StackFrame current_frame;
 			Method current_method;
@@ -607,7 +608,7 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			protected class CoreFileTargetAccess : TargetMemoryAccess
+			public class CoreFileTargetAccess : TargetMemoryAccess
 			{
 				public readonly CoreFileThread Thread;
 
