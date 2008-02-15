@@ -1407,6 +1407,18 @@ namespace Mono.Debugger.Backend
 				return do_lookup (address, 0, addresses.Length-1);
 			}
 
+			public override bool HasMethodBounds {
+				get { return false; }
+			}
+
+			public override TargetAddress MethodStartAddress {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override TargetAddress MethodEndAddress {
+				get { throw new InvalidOperationException (); }
+			}
+
 			public override void DumpLineNumbers ()
 			{
 				Console.WriteLine ("--------");
@@ -2616,17 +2628,6 @@ namespace Mono.Debugger.Backend
 				SetLineNumbers (engine);
 
 				read_line_numbers ();
-
-#if FIXME
-				if ((lines != null) && (lines.Length > 2)) {
-					LineNumber start = lines [1];
-					LineNumber end = lines [lines.Length - 1];
-
-					SetMethodBounds (
-						subprog.dwarf.GetAddress (start.Offset),
-						subprog.dwarf.GetAddress (end.Offset));
-				}
-#endif
 
 				return true;
 			}

@@ -1,5 +1,18 @@
 2008-02-15  Martin Baulig  <martin@ximian.com>
 
+	* classes/Block.cs: New file.
+	(Block): New public abstract class.
+	(Method.IsIterator): New internal abstract property.
+	(Method.LookupBlock): New internal abstract method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.frame_changed): Use the new Method.LookupBlock() to check
+	which code block we're in and start an `OperationStepIterator' if
+	necessary.	
+	(SSE.OperationStepIterator): New operation.
+
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
 	* test/{testsuite|src}/TestSSE.cs: New tests.
 
 	* test/{testsuite|src}/TestAnonymous.cs: Added new tests here.

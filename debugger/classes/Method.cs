@@ -289,6 +289,16 @@ namespace Mono.Debugger
 		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
 
+		internal virtual bool IsIterator {
+			get { return false; }
+		}
+
+		internal virtual Block LookupBlock (TargetMemoryAccess memory,
+						    TargetAddress address)
+		{
+			return null;
+		}
+
 		//
 		// ISourceLookup
 		//

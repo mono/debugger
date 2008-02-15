@@ -1054,6 +1054,13 @@ namespace Mono.Debugger.Backend
 
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasLineNumbers) {
+				Block block = current_method.LookupBlock (inferior, address);
+				if (block != null) {
+					if (block.BlockType == Block.Type.IteratorDispatcher)
+						return new OperationStepIterator (
+							this, current_method, operation.Result);
+				}
+
 				SourceAddress source = current_method.LineNumberTable.Lookup (address);
 
 				if (!same_method) {
@@ -1120,6 +1127,10 @@ namespace Mono.Debugger.Backend
 			if (method.WrapperType != WrapperType.None)
 				return new OperationWrapper (this, method, operation.Result);
 
+			Block block = method.LookupBlock (inferior, address);
+			if (method.IsIterator)
+				return new OperationStepIterator (this, method, operation.Result);
+
 			Language language = method.Module.Language;
 			if (source == null)
 				return null;
@@ -1132,6 +1143,13 @@ namespace Mono.Debugger.Backend
 				return new OperationStep (this, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
 					null, language, StepMode.SourceLine), operation.Result);
+			}
+
+			LineNumberTable lnt = method.LineNumberTable;
+			if (lnt.HasMethodBounds && (address < lnt.MethodStartAddress)) {
+				return new OperationStep (this, new StepFrame (
+					method.StartAddress, lnt.MethodStartAddress, null,
+					null, StepMode.Finish), operation.Result);
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
@@ -3750,6 +3768,56 @@ namespace Mono.Debugger.Backend
 		protected override bool TrampolineHandler (Method method)
 		{
 			return false;
+		}
+	}
+
+	protected class OperationStepIterator : OperationStepBase
+	{
+		Method method;
+
+		public OperationStepIterator (SingleSteppingEngine sse,
+					      Method method, CommandResult result)
+			: base (sse, result)
+		{
+			this.method = method;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			sse.do_next_native ();
+		}
+
+		protected override bool DoProcessEvent ()
+		{
+			TargetAddress current_frame = inferior.CurrentFrame;
+
+			Report.Debug (DebugFlags.SSE, "{0} iterator stopped at {1} ({2}:{3})",
+				      sse, current_frame, method.StartAddress, method.EndAddress);
+			if ((current_frame < method.StartAddress) || (current_frame > method.EndAddress))
+				return true;
+
+			Block block = method.LookupBlock (inferior, current_frame);
+
+			if ((block != null) && (block.BlockType == Block.Type.IteratorBody))
+				return true;
+
+			sse.do_next_native ();
+			return false;
+		}
+
+		protected override bool TrampolineHandler (Method method)
+		{
+			if (method == null)
+				return false;
+
+			if (method.WrapperType == WrapperType.DelegateInvoke)
+				return true;
+
+			return sse.MethodHasSource (method);
 		}
 	}
 

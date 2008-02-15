@@ -80,17 +80,22 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	// managed version of struct _MonoDebugLexicalBlockEntry
-	internal struct JitLexicalBlockEntry
+	// managed version of struct _MonoDebugCodeBlockEntry
+	internal struct JitCodeBlockEntry
 	{
+		public readonly Block.Type BlockType;
+		public readonly int Parent;
 		public readonly int StartOffset;
 		public readonly int StartAddress;
 		public readonly int EndOffset;
 		public readonly int EndAddress;
 
-		public JitLexicalBlockEntry (int start_offset, int start_address,
-					     int end_offset, int end_address)
+		public JitCodeBlockEntry (int type, int parent,
+					  int start_offset, int start_address,
+					  int end_offset, int end_address)
 		{
+			BlockType = (Block.Type) type;
+			Parent = parent;
 			StartOffset = start_offset;
 			StartAddress = start_address;
 			EndOffset = end_offset;
@@ -99,7 +104,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override string ToString ()
 		{
-			return String.Format ("[JitLexicalBlockEntry {0:x}:{1:x}-{2:x}:{3:x}]", StartOffset, StartAddress, EndOffset, EndAddress);
+			return String.Format ("[JitCodeBlockEntry {0}:{1} ({2:x}:{3:x}) - ({4:x}:{5:x})]",
+					      BlockType, Parent, StartOffset, StartAddress,
+					      EndOffset, EndAddress);
 		}
 	}
 
@@ -113,8 +120,8 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress MethodStartAddress;
 		public readonly TargetAddress MethodEndAddress;
 		public readonly TargetAddress WrapperAddress;
-		public readonly JitLineNumberEntry[] LineNumbers;
-		public readonly JitLexicalBlockEntry[] LexicalBlocks;
+		public readonly List<JitLineNumberEntry> LineNumbers;
+		public readonly JitCodeBlockEntry[] CodeBlocks;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
@@ -148,36 +155,33 @@ namespace Mono.Debugger.Languages.Mono
 			MethodEndAddress = StartAddress + reader.ReadLeb128 ();
 
 			int num_line_numbers = reader.ReadLeb128 ();
-			LineNumbers = new JitLineNumberEntry [num_line_numbers];
+			LineNumbers = new List<JitLineNumberEntry> ();
 
-			int il_offset = 0, native_offset = 0;
 			for (int i = 0; i < num_line_numbers; i++) {
-				il_offset += reader.ReadSLeb128 ();
-				native_offset += reader.ReadSLeb128 ();
+				int il_offset = reader.ReadSLeb128 ();
+				int native_offset = reader.ReadSLeb128 ();
 
-				LineNumbers [i] = new JitLineNumberEntry (il_offset, native_offset);
+				if (il_offset < 0)
+					continue;
+
+				LineNumbers.Add (new JitLineNumberEntry (il_offset, native_offset));
 			}
 
-			int num_lexical_blocks = reader.ReadLeb128 ();
-			LexicalBlocks = new JitLexicalBlockEntry [num_lexical_blocks];
+			int num_code_blocks = reader.ReadLeb128 ();
+			CodeBlocks = new JitCodeBlockEntry [num_code_blocks];
 
-			il_offset = 0;
-			native_offset = 0;
-			for (int i = 0; i < num_lexical_blocks; i ++) {
-				int start_offset, end_offset, start_address, end_address;
+			for (int i = 0; i < num_code_blocks; i ++) {
+				int type = reader.ReadSLeb128 ();
 
-				il_offset += reader.ReadSLeb128 ();
-				start_offset = il_offset;
-				native_offset += reader.ReadSLeb128 ();
-				start_address = native_offset;
+				int parent = reader.ReadLeb128 ();
+				int start_offset = reader.ReadSLeb128 ();
+				int start_address = reader.ReadSLeb128 ();
+				int end_offset = reader.ReadSLeb128 ();
+				int end_address = reader.ReadSLeb128 ();
 
-				il_offset += reader.ReadSLeb128 ();
-				end_offset = il_offset;
-				native_offset += reader.ReadSLeb128 ();
-				end_address = native_offset;
-
-				LexicalBlocks [i] = new JitLexicalBlockEntry (start_offset, start_address,
-									      end_offset, end_address);
+				CodeBlocks [i] = new JitCodeBlockEntry (
+					type, parent, start_offset, start_address,
+					end_offset, end_address);
 			}
 
 			HasThis = reader.ReadByte () != 0;
@@ -198,7 +202,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override string ToString ()
 		{
 			return String.Format ("[Address {0:x}:{1:x}:{3:x}:{4:x},{5:x},{2}]",
-					      StartAddress, EndAddress, LineNumbers.Length,
+					      StartAddress, EndAddress, LineNumbers.Count,
 					      MethodStartAddress, MethodEndAddress, WrapperAddress);
 		}
 	}
@@ -944,6 +948,54 @@ namespace Mono.Debugger.Languages.Mono
 				get { throw new InvalidOperationException (); }
 			}
 		}
+
+		protected class MonoCodeBlock : Block
+		{
+			List<MonoCodeBlock> children;
+
+			protected MonoCodeBlock (int index, JitCodeBlockEntry block)
+				: base (block.BlockType, index, block.StartAddress, block.EndAddress)
+			{
+			}
+
+			protected void AddChildBlock (MonoCodeBlock child)
+			{
+				if (children == null)
+					children = new List<MonoCodeBlock> ();
+				children.Add (child);
+			}
+
+			public override Block[] Children {
+				get {
+					if (children == null)
+						return null;
+
+					return children.ToArray ();
+				}
+			}
+
+			public static List<MonoCodeBlock> CreateBlocks (MonoMethod method,
+									JitCodeBlockEntry[] jit)
+			{
+				MonoCodeBlock[] blocks = new MonoCodeBlock [jit.Length];
+				for (int i = 0; i < blocks.Length; i++)
+					blocks [i] = new MonoCodeBlock (i, jit [i]);
+
+				List<MonoCodeBlock> root_blocks = new List<MonoCodeBlock> ();
+
+				for (int i = 0; i < blocks.Length; i++) {
+					if (jit [i].Parent < 0)
+						root_blocks.Add (blocks [i]);
+					else {
+						MonoCodeBlock parent = blocks [jit [i].Parent - 1];
+						blocks [i].Parent = parent;
+						parent.AddChildBlock (blocks [i]);
+					}
+				}
+
+				return root_blocks;
+			}
+		}
 		
 		protected class MonoMethod : Method
 		{
@@ -953,11 +1005,13 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition mdef;
 			TargetStructType decl_type;
 			MonoVariable this_var;
+			List<MonoCodeBlock> root_blocks;
 			List<TargetVariable> parameters;
 			List<TargetVariable> locals;
 			Dictionary<int,ScopeInfo> scopes;
 			bool has_variables;
 			bool is_loaded;
+			bool is_iterator;
 			MethodAddress address;
 			int domain;
 
@@ -1006,11 +1060,16 @@ namespace Mono.Debugger.Languages.Mono
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
 				SetLineNumbers (new MonoMethodLineNumberTable (
-					this, source, method, address.LineNumbers));
+					this, source, method, address.LineNumbers.ToArray ()));
 			}
 
 			void do_read_variables (TargetMemoryAccess memory)
 			{
+				if (!is_loaded)
+					throw new TargetException (TargetError.MethodNotLoaded);
+				if (has_variables)
+					return;
+
 				MonoLanguageBackend mono = file.MonoLanguage;
 
 				TargetAddress decl_klass = mono.MonoRuntime.MonoMethodGetClass (
@@ -1020,6 +1079,12 @@ namespace Mono.Debugger.Languages.Mono
 					decl_type = decl.ClassType;
 				else
 					decl_type = (TargetStructType) decl;
+
+				root_blocks = MonoCodeBlock.CreateBlocks (this, address.CodeBlocks);
+
+				foreach (JitCodeBlockEntry block in address.CodeBlocks)
+					if (block.BlockType == Block.Type.IteratorBody)
+						is_iterator = true;
 
 				locals = new List<TargetVariable> ();
 				parameters = new List<TargetVariable> ();
@@ -1099,7 +1164,7 @@ namespace Mono.Debugger.Languages.Mono
 
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
-						JitLexicalBlockEntry block = address.LexicalBlocks [index];
+						JitCodeBlockEntry block = address.CodeBlocks [index];
 						locals.Add (new MonoVariable (
 							local.Name, type, true, type.IsByRef, this, var,
 							block.StartAddress, block.EndAddress));
@@ -1140,6 +1205,44 @@ namespace Mono.Debugger.Languages.Mono
 					scopes.Add (captured.Scope, child);
 					read_scope (child);
 				}
+			}
+
+			void dump_blocks (Block[] blocks, string ident)
+			{
+				foreach (MonoCodeBlock block in blocks) {
+					Console.WriteLine ("{0} {1}", ident, block);
+					if (block.Children != null)
+						dump_blocks (block.Children, ident + "  ");
+				}
+			}
+
+			Block lookup_block (TargetAddress address, Block[] blocks)
+			{
+				foreach (MonoCodeBlock block in blocks) {
+					if ((address < StartAddress + block.StartAddress) ||
+					    (address >= StartAddress + block.EndAddress))
+						continue;
+
+					if (block.Children != null) {
+						Block child = lookup_block (address, block.Children);
+						return child ?? block;
+					}
+
+					return block;
+				}
+
+				return null;
+			}
+
+			internal override Block LookupBlock (TargetMemoryAccess memory,
+							     TargetAddress address)
+			{
+				do_read_variables (memory);
+				return lookup_block (address, root_blocks.ToArray ());
+			}
+
+			internal override bool IsIterator {
+				get { return is_iterator; }
 			}
 
 			public override TargetVariable[] GetParameters (Thread target)
@@ -1247,6 +1350,31 @@ namespace Mono.Debugger.Languages.Mono
 
 			protected abstract LineNumberTableData ReadLineNumbers ();
 
+			public override bool HasMethodBounds {
+				get {
+					return Data.Addresses.Length > 0;
+				}
+			}
+
+			public override TargetAddress MethodStartAddress {
+				get {
+					if (!HasMethodBounds)
+						throw new InvalidOperationException ();
+
+					return Data.Addresses [0].Address;
+				}
+			}
+
+			public override TargetAddress MethodEndAddress {
+				get {
+					if (!HasMethodBounds)
+						throw new InvalidOperationException ();
+
+					return method.HasMethodBounds ?
+						method.MethodEndAddress : method.EndAddress;
+				}
+			}
+
 			private LineEntry[] Addresses {
 				get {
 					return Data.Addresses;
@@ -1292,10 +1420,8 @@ namespace Mono.Debugger.Languages.Mono
 				if (method.MethodSource.HasSourceBuffer)
 					buffer = method.MethodSource.SourceBuffer;
 
-				if (address < method_start)
-					return new SourceAddress (
-						file, buffer, StartRow, (int) (address - start),
-						(int) (method_start - address));
+				if (Addresses.Length < 1)
+					return null;
 
 				TargetAddress next_address = end;
 
@@ -1313,25 +1439,35 @@ namespace Mono.Debugger.Languages.Mono
 					return new SourceAddress (file, buffer, entry.Line, offset, range);
 				}
 
-				if (Addresses.Length > 0)
-					return new SourceAddress (
-						file, buffer, Addresses [0].Line, (int) (address - start),
-						(int) (end - address));
+				if (Addresses.Length < 1)
+					return null;
 
-				return null;
+				return new SourceAddress (
+					file, buffer, Addresses [0].Line, (int) (address - start),
+					(int) (Addresses [0].Address - address));
 			}
 
 			public override void DumpLineNumbers ()
 			{
-				Console.WriteLine ("--------");
-				Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0}", method);
-				Console.WriteLine ("--------");
+				Console.WriteLine ();
+				Console.Write ("Dumping Line Number Table: {0} - {1} {2}",
+					       method.Name, method.StartAddress, method.EndAddress);
+				if (method.HasMethodBounds)
+					Console.Write (" - {0} {1}", method.MethodStartAddress,
+						       method.MethodEndAddress);
+				Console.WriteLine ();
+				Console.WriteLine ();
+
+				Console.WriteLine ("Generated Lines:");
+				Console.WriteLine ("----------------");
+
 				for (int i = 0; i < Addresses.Length; i++) {
 					LineEntry entry = (LineEntry) Addresses [i];
 					Console.WriteLine ("{0,4} {1,4}  {2}", i,
 							   entry.Line, entry.Address);
 				}
-				Console.WriteLine ("--------");
+
+				Console.WriteLine ("----------------");
 			}
 
 			protected class LineNumberTableData
@@ -1411,11 +1547,6 @@ namespace Mono.Debugger.Languages.Mono
 			public override void DumpLineNumbers ()
 			{
 				base.DumpLineNumbers ();
-
-				Console.WriteLine ();
-				Console.WriteLine ("Method: {0} - {1} {2} - {3} {4}",
-						   method.Name, method.StartAddress, method.EndAddress,
-						   method.MethodStartAddress, method.MethodEndAddress);
 
 				Console.WriteLine ();
 				Console.WriteLine ("Symfile Line Numbers:");
@@ -1765,7 +1896,7 @@ namespace Mono.Debugger.Languages.Mono
 				ArrayList lines = new ArrayList ();
 				int last_line = -1;
 
-				JitLineNumberEntry[] line_numbers = address.LineNumbers;
+				JitLineNumberEntry[] line_numbers = address.LineNumbers.ToArray ();
 
 				string[] cil_code = wrapper.MethodSource.SourceBuffer.Contents;
 
