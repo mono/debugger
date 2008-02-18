@@ -1,3 +1,9 @@
+2008-02-18  Martin Baulig  <martin@ximian.com>
+
+	* anonymous.cs
+	(RootScopeInfo.EmitType): Override this and emit symbol
+	information for a captured `this'.
+
 2008-02-15  Martin Baulig  <martin@ximian.com>
 
 	* iterators.cs: Emit debugging info.

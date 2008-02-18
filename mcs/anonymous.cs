@@ -526,8 +526,9 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				EmitContext.DefineCapturedVariable (
-					Scope.ID, Parameter.Name, Field.Name, false);
+				if (CodeGen.SymbolWriter != null)
+					CodeGen.SymbolWriter.DefineCapturedParameter (
+						Scope.ID, Parameter.Name, Field.Name);
 			}
 
 			public override string ToString ()
@@ -548,8 +549,9 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				EmitContext.DefineCapturedVariable (
-					Scope.ID, Local.Name, Field.Name, true);
+				if (CodeGen.SymbolWriter != null)
+					CodeGen.SymbolWriter.DefineCapturedLocal (
+						Scope.ID, Local.Name, Field.Name);
 			}
 
 			public override string ToString ()
@@ -566,8 +568,8 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				// FIXME
-				throw new InternalErrorException ();
+				if (CodeGen.SymbolWriter != null)
+					CodeGen.SymbolWriter.DefineCapturedThis (Scope.ID, Field.Name);
 			}
 		}
 
@@ -1002,6 +1004,13 @@ namespace Mono.CSharp {
 				ec.ig.Emit (OpCodes.Stfld, pfield.FieldBuilder);
 				pos++;
 			}
+		}
+
+		public override void EmitType ()
+		{
+			base.EmitType ();
+			if (THIS != null)
+				THIS.EmitSymbolInfo ();
 		}
 
 		protected class TheCtor : Statement

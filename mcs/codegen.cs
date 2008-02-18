@@ -904,16 +904,6 @@ namespace Mono.CSharp {
 			CodeGen.SymbolWriter.DefineAnonymousScope (scope);
 		}
 
-		public static void DefineCapturedVariable (int scope, string name,
-							   string captured_name, bool is_local)
-		{
-			if (CodeGen.SymbolWriter == null)
-				return;
-
-			CodeGen.SymbolWriter.DefineCapturedVariable (
-				scope, name, captured_name, is_local);
-		}
-
 		public static void DefineCapturedScope (int scope, int id, string captured_name)
 		{
 			if (CodeGen.SymbolWriter == null)
