@@ -3,31 +3,25 @@ using System.Collections;
 
 class X
 {
-	static int total;
+	int total;
 
-	static IEnumerator GetRange ()
+	IEnumerator GetRange (int a)
 	{
-		yield return 1;
-
-		{
-			int a = 3;
-			yield return a;
-		}
-
-		for (;;) {
-			if (total > 3)
-				yield break;
-
-			yield return 4;
-		}
+		yield return total * a;
 	}
 
-	static void Main ()
+	void Test ()
 	{
-		IEnumerator e = GetRange ();
+		IEnumerator e = GetRange (9);
 		while (e.MoveNext ())
 			total += (int) e.Current;
 
 		Console.WriteLine (total);
+	}
+
+	static void Main ()
+	{
+		X x = new X ();
+		x.Test ();
 	}
 }

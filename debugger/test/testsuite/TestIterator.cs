@@ -107,6 +107,9 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test2 statement", "Test2.X.Run()");
 
 			AssertExecute ("step");
+			AssertStopped (thread, "test2 stop", "Test2.X.Run()");
+
+			AssertExecute ("step");
 			AssertStopped (thread, "test2 loop", "Test2.X.Run()");
 
 			AssertExecute ("step");
@@ -116,6 +119,8 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("step");
 			AssertStopped (thread, "test2 iterator if",
 				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+
+			AssertPrint (thread, "this", "(Test2.X) { total = 2, stop = true }");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "test2 iterator break",

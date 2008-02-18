@@ -1,5 +1,10 @@
 2008-02-18  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoMethod.do_read_variables): Support a captured 'this'.
+
+2008-02-18  Martin Baulig  <martin@ximian.com>
+
 	Improved iterator support and added some tests.
 
 	* test/{src|testsuite}/TestIterator.cs: New tests.

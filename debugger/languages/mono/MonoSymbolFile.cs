@@ -1004,7 +1004,7 @@ namespace Mono.Debugger.Languages.Mono
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
 			TargetStructType decl_type;
-			MonoVariable this_var;
+			TargetVariable this_var;
 			List<MonoCodeBlock> root_blocks;
 			List<TargetVariable> parameters;
 			List<TargetVariable> locals;
@@ -1127,10 +1127,20 @@ namespace Mono.Debugger.Languages.Mono
 					foreach (C.CapturedVariable captured in entry.CapturedVariables) {
 						CapturedVariable cv = new CapturedVariable (
 							scope, this, captured.Name, captured.CapturedName);
-						if (captured.IsLocal)
+
+						switch (captured.Kind) {
+						case C.CapturedVariable.CapturedKind.Local:
 							locals.Add (cv);
-						else
+							break;
+						case C.CapturedVariable.CapturedKind.Parameter:
 							parameters.Add (cv);
+							break;
+						case C.CapturedVariable.CapturedKind.This:
+							this_var = cv;
+							continue;
+						default:
+							throw new InternalError ();
+						}
 
 						captured_vars.Add (captured.Name, cv);
 					}

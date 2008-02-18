@@ -46,7 +46,7 @@ namespace Test2
 {
 	public class X
 	{
-		int total;
+		int total = 1;
 		bool stop;
 
 		IEnumerator<int> GetRange ()
@@ -62,8 +62,10 @@ namespace Test2
 		public int Run ()
 		{
 			IEnumerator<int> e = GetRange ();		// @MDB BREAKPOINT: test2 run
-			while (e.MoveNext ())				// @MDB LINE: test2 loop
-				stop = true;				// @MDB LINE: test2 statement
+			while (e.MoveNext ()) {				// @MDB LINE: test2 loop
+				total += e.Current;			// @MDB LINE: test2 statement
+				stop = true;				// @MDB LINE: test2 stop
+			}
 
 			return total;					// @MDB LINE: test2 return
 		}
