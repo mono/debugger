@@ -1,11 +1,13 @@
 2008-02-18  Martin Baulig  <martin@ximian.com>
 
-	* backend/arch/Instruction_I386.cs
-	(Instruction_I386.GetMonoTrampoline): Support short 0x6a `push' insns.
+	Improved iterator support and added some tests.
+
+	* test/{src|testsuite}/TestIterator.cs: New tests.
 
 2008-02-18  Martin Baulig  <martin@ximian.com>
 
-	* test/{src|testsuite}/TestIterator.cs: New tests.
+	* backend/arch/Instruction_I386.cs
+	(Instruction_I386.GetMonoTrampoline): Support short 0x6a `push' insns.
 
 2008-02-15  Martin Baulig  <martin@ximian.com>
 

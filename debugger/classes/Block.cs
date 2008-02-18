@@ -41,6 +41,17 @@ namespace Mono.Debugger
 			private set;
 		}
 
+		public bool IsIteratorBody {
+			get {
+				if (BlockType == Type.IteratorBody)
+					return true;
+				else if ((BlockType == Type.Lexical) && (Parent != null))
+					return Parent.IsIteratorBody;
+				else
+					return false;
+			}
+		}
+
 		protected Block (Type type, int index, int start, int end)
 		{
 			this.BlockType = type;

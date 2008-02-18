@@ -3801,8 +3801,8 @@ namespace Mono.Debugger.Backend
 				return true;
 
 			Block block = method.LookupBlock (inferior, current_frame);
-
-			if ((block != null) && (block.BlockType == Block.Type.IteratorBody))
+			Report.Debug (DebugFlags.SSE, "{0} iterator block: {1}", sse, block);
+			if ((block != null) && block.IsIteratorBody)
 				return true;
 
 			sse.do_next_native ();

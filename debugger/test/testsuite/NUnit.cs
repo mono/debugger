@@ -257,6 +257,11 @@ namespace Mono.Debugger.Tests
 					     function, GetLine (name));
 		}
 
+		protected void AssertStopped (Thread thread, string name, string function)
+		{
+			AssertStopped (thread, function, GetLine (name));
+		}
+
 		protected int GetBreakpoint (string text)
 		{
 			return automatic_breakpoints [text];
@@ -264,6 +269,8 @@ namespace Mono.Debugger.Tests
 
 		protected int GetLine (string text)
 		{
+			if (!lines.ContainsKey (text))
+				throw new InternalError ("No such line: {0}", text);
 			return lines [text];
 		}
 
