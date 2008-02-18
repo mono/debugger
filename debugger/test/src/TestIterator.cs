@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 
 public static class RunTests
@@ -20,7 +19,7 @@ namespace Test1
 	{
 		int total;
 
-		static IEnumerator GetRange ()
+		static IEnumerator<int> GetRange ()
 		{
 			yield return 1;					// @MDB LINE: test1 yield1
 
@@ -34,9 +33,9 @@ namespace Test1
 
 		public int Run ()
 		{
-			IEnumerator e = GetRange ();			// @MDB BREAKPOINT: test1 run
+			IEnumerator<int> e = GetRange ();		// @MDB BREAKPOINT: test1 run
 			while (e.MoveNext ())				// @MDB LINE: test1 loop
-				total += (int) e.Current;		// @MDB LINE: test1 statement
+				total += e.Current;			// @MDB LINE: test1 statement
 
 			return total;					// @MDB LINE: test1 return
 		}
@@ -50,7 +49,7 @@ namespace Test2
 		int total;
 		bool stop;
 
-		IEnumerator GetRange ()
+		IEnumerator<int> GetRange ()
 		{							// @MDB LINE: test2 iterator start
 			while (total < 100) {				// @MDB LINE: test2 iterator loop
 				if (stop)				// @MDB LINE: test2 iterator if
@@ -62,7 +61,7 @@ namespace Test2
 
 		public int Run ()
 		{
-			IEnumerator e = GetRange ();			// @MDB BREAKPOINT: test2 run
+			IEnumerator<int> e = GetRange ();		// @MDB BREAKPOINT: test2 run
 			while (e.MoveNext ())				// @MDB LINE: test2 loop
 				stop = true;				// @MDB LINE: test2 statement
 
