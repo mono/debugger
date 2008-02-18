@@ -132,12 +132,14 @@ namespace Mono.Debugger.Architectures
 		{
 			TargetBinaryReader reader = memory.ReadMemory (call_target, 10).GetReader ();
 			byte opcode = reader.ReadByte ();
-			if (opcode != 0x68) {
+			if (opcode == 0x6a)
+				reader.Position ++;
+			else if (opcode == 0x68)
+				reader.Position += 4;
+			else {
 				trampoline = TargetAddress.Null;
 				return false;
 			}
-
-			reader.Position += 4;
 
 			opcode = reader.ReadByte ();
 			if (opcode != 0xe9) {
@@ -145,7 +147,7 @@ namespace Mono.Debugger.Architectures
 				return false;
 			}
 
-			TargetAddress call = call_target + reader.ReadInt32 () + 10;
+			TargetAddress call = call_target + reader.ReadInt32 () + reader.Position;
 			if (!Opcodes.Process.MonoLanguage.IsTrampolineAddress (call)) {
 				trampoline = TargetAddress.Null;
 				return false;
