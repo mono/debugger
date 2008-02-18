@@ -174,10 +174,10 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 
 		internal void DefineCapturedVariable (int scope_id, string name, string captured_name,
-						      bool is_local)
+						      CapturedVariable.CapturedKind kind)
 		{
 			AnonymousScopeEntry scope = (AnonymousScopeEntry) anonymous_scopes [scope_id];
-			scope.AddCapturedVariable (name, captured_name, is_local);
+			scope.AddCapturedVariable (name, captured_name, kind);
 		}
 
 		internal void DefineCapturedScope (int scope_id, int id, string captured_name)

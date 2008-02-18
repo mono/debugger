@@ -104,10 +104,22 @@ namespace Mono.CompilerServices.SymbolWriter
 			current_method.AddLocal (index, name, signature);
 		}
 
-		public void DefineCapturedVariable (int scope_id, string name, string captured_name,
-						    bool is_local)
+		public void DefineCapturedLocal (int scope_id, string name, string captured_name)
 		{
-			file.DefineCapturedVariable (scope_id, name, captured_name, is_local);
+			file.DefineCapturedVariable (scope_id, name, captured_name,
+						     CapturedVariable.CapturedKind.Local);
+		}
+
+		public void DefineCapturedParameter (int scope_id, string name, string captured_name)
+		{
+			file.DefineCapturedVariable (scope_id, name, captured_name,
+						     CapturedVariable.CapturedKind.Parameter);
+		}
+
+		public void DefineCapturedThis (int scope_id, string captured_name)
+		{
+			file.DefineCapturedVariable (scope_id, "this", captured_name,
+						     CapturedVariable.CapturedKind.This);
 		}
 
 		public void DefineCapturedScope (int scope_id, int id, string captured_name)

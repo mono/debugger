@@ -341,35 +341,42 @@ namespace Mono.CompilerServices.SymbolWriter
 		#region This is actually written to the symbol file
 		public readonly string Name;
 		public readonly string CapturedName;
-		public readonly bool IsLocal;
+		public readonly CapturedKind Kind;
 		#endregion
 
+		public enum CapturedKind : byte
+		{
+			Local,
+			Parameter,
+			This
+		}
+
 		public CapturedVariable (string name, string captured_name,
-					 bool is_local)
+					 CapturedKind kind)
 		{
 			this.Name = name;
 			this.CapturedName = captured_name;
-			this.IsLocal = is_local;
+			this.Kind = kind;
 		}
 
 		internal CapturedVariable (MyBinaryReader reader)
 		{
 			Name = reader.ReadString ();
 			CapturedName = reader.ReadString ();
-			IsLocal = reader.ReadBoolean ();
+			Kind = (CapturedKind) reader.ReadByte ();
 		}
 
 		internal void Write (MyBinaryWriter bw)
 		{
 			bw.Write (Name);
 			bw.Write (CapturedName);
-			bw.Write (IsLocal);
+			bw.Write ((byte) Kind);
 		}
 
 		public override string ToString ()
 		{
 			return String.Format ("[CapturedVariable {0}:{1}:{2}]",
-					      Name, CapturedName, IsLocal);
+					      Name, CapturedName, Kind);
 		}
 	}
 
@@ -463,9 +470,10 @@ namespace Mono.CompilerServices.SymbolWriter
 				captured_scopes.Add (new CapturedScope (reader));
 		}
 
-		internal void AddCapturedVariable (string name, string captured_name, bool is_local)
+		internal void AddCapturedVariable (string name, string captured_name,
+						   CapturedVariable.CapturedKind kind)
 		{
-			captured_vars.Add (new CapturedVariable (name, captured_name, is_local));
+			captured_vars.Add (new CapturedVariable (name, captured_name, kind));
 		}
 
 		public CapturedVariable[] CapturedVariables {

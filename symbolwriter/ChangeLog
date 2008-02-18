@@ -1,3 +1,14 @@
+2008-02-18  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(CapturedVariable.CapturedKind): New public enum.
+	(CapturedVariable): Replaced `IsLocal' by `Kind'.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.DefineCapturedVariable): Split into
+	DefineCapturedLocal(), DefineCapturedParameter() and
+	DefineCapturedThis().	
+
 2008-02-15  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs
