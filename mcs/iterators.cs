@@ -668,12 +668,13 @@ namespace Mono.CSharp {
 
 			original_block.Emit (ec);
 
+			if (CodeGen.SymbolWriter != null) 
+				CodeGen.SymbolWriter.EndIteratorBody (ec.ig);
+
 			EmitYieldBreak (ig);
 
-			if (CodeGen.SymbolWriter != null) {
-				CodeGen.SymbolWriter.EndIteratorBody (ec.ig);
+			if (CodeGen.SymbolWriter != null)
 				CodeGen.SymbolWriter.StartIteratorDispatcher (ec.ig);
-			}
 
 			ig.MarkLabel (dispatcher);
 
