@@ -821,7 +821,7 @@ static MonoDebugMethodJitInfo *
 mono_debug_read_method (MonoDebugMethodAddress *address)
 {
 	MonoDebugMethodJitInfo *jit;
-	guint32 i, il_offset = 0, native_offset = 0;
+	guint32 i;
 	guint8 *ptr;
 
 	jit = g_new0 (MonoDebugMethodJitInfo, 1);
@@ -839,15 +839,10 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 	for (i = 0; i < jit->num_line_numbers; i++) {
 		MonoDebugLineNumberEntry *lne = &jit->line_numbers [i];
 
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		lne->il_offset = il_offset;
-		lne->native_offset = native_offset;
+		lne->il_offset = read_sleb128 (ptr, &ptr);
+		lne->native_offset = read_sleb128 (ptr, &ptr);
 	}
 
-	il_offset = 0;
-	native_offset = 0;
 	jit->num_code_blocks = read_leb128 (ptr, &ptr);
 	jit->code_blocks = g_new0 (MonoDebugCodeBlockEntry, jit->num_code_blocks);
 	for (i = 0; i < jit->num_code_blocks; i ++) {
@@ -856,17 +851,11 @@ mono_debug_read_method (MonoDebugMethodAddress *address)
 		cbe->block_type = read_sleb128 (ptr, &ptr);
 		cbe->parent_block = read_leb128 (ptr, &ptr);
 
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
+		cbe->il_start_offset = read_sleb128 (ptr, &ptr);
+		cbe->native_start_offset = read_sleb128 (ptr, &ptr);
 
-		cbe->il_start_offset = il_offset;
-		cbe->native_start_offset = native_offset;
-
-		il_offset += read_sleb128 (ptr, &ptr);
-		native_offset += read_sleb128 (ptr, &ptr);
-
-		cbe->il_end_offset = il_offset;
-		cbe->native_end_offset = native_offset;
+		cbe->il_end_offset = read_sleb128 (ptr, &ptr);
+		cbe->native_end_offset = read_sleb128 (ptr, &ptr);
 	}
 
 	if (*ptr++) {
