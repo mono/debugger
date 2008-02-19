@@ -115,7 +115,7 @@ namespace Mono.Debugger.Languages.Mono
 				return parent_type.Type;
 
 			ResolveClass (target, true);
-			return parent_type.Type;
+			return parent_type != null ? parent_type.Type : null;
 		}
 
 		public override Module Module {
