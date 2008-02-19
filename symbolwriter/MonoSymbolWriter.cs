@@ -157,6 +157,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			methods.Add (current_method);
 		}
 
+		public void SetRealMethodName (string name)
+		{
+			current_method.RealMethodName = name;
+		}
+
 		public void CloseMethod ()
 		{
 			current_method.SetLineNumbers (
@@ -241,9 +246,8 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			foreach (SourceMethod method in methods) {
 				method.SourceFile.Entry.DefineMethod (
-					method.Method.Name, method.Method.Token,
-					method.ScopeVariables, method.Locals,
-					method.Lines, null, method.Blocks,
+					method.Method.Token, method.ScopeVariables, method.Locals,
+					method.Lines, null, method.Blocks, method.RealMethodName,
 					method.Start.Row, method.End.Row,
 					method.Method.NamespaceID);
 			}
@@ -269,6 +273,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			private ISourceMethod _method;
 			private ISourceFile _file;
 			private LineNumberEntry _start, _end;
+			private string _real_name;
 
 			public SourceMethod (ISourceFile file, ISourceMethod method,
 					     int startLine, int startColumn,
@@ -367,6 +372,11 @@ namespace Mono.CompilerServices.SymbolWriter
 					_scope_vars = new ArrayList ();
 				_scope_vars.Add (
 					new ScopeVariable (scope, index));
+			}
+
+			public string RealMethodName {
+				get { return _real_name; }
+				set { _real_name = value; }
 			}
 
 			public ISourceFile SourceFile {

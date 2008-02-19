@@ -1,3 +1,12 @@
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.SetRealMethodName): New public method.
+
+	* MonoSymbolTable.cs
+	(MethodEntry.RealName): New public field; this is only used for
+	anonymous methods and iterators.
+
 2008-02-18  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs

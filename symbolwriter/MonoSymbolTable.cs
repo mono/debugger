@@ -552,21 +552,21 @@ namespace Mono.CompilerServices.SymbolWriter
 					  LineNumberEntry[] lines, LexicalBlockEntry[] blocks,
 					  int start, int end, int namespace_id)
 		{
-			DefineMethod (name, token, null, locals, lines, blocks, null,
+			DefineMethod (token, null, locals, lines, blocks, null, null,
 				      start, end, namespace_id);
 		}
 
-		public void DefineMethod (string name, int token, ScopeVariable[] scope_vars,
+		public void DefineMethod (int token, ScopeVariable[] scope_vars,
 					  LocalVariableEntry[] locals, LineNumberEntry[] lines,
 					  LexicalBlockEntry[] lexical, CodeBlockEntry[] blocks,
-					  int start, int end, int namespace_id)
+					  string real_name, int start, int end, int namespace_id)
 		{
 			if (!creating)
 				throw new InvalidOperationException ();
 
 			MethodEntry entry = new MethodEntry (
-				file, this, name, (int) token, scope_vars, locals, lines,
-				lexical, blocks, start, end, namespace_id);
+				file, this, (int) token, scope_vars, locals, lines,
+				lexical, blocks, real_name, start, end, namespace_id);
 
 			methods.Add (entry);
 			file.AddMethod (entry);
@@ -795,6 +795,8 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public readonly int NumScopeVariables;
 		int ScopeVariableTableOffset;
+
+		int RealNameOffset;
 		#endregion
 
 		int index;
@@ -807,6 +809,8 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly LexicalBlockEntry[] LexicalBlocks;
 		public readonly CodeBlockEntry[] CodeBlocks;
 		public readonly ScopeVariable[] ScopeVariables;
+
+		public readonly string RealName;
 
 		public readonly MonoSymbolFile SymbolFile;
 
@@ -843,6 +847,10 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			NumScopeVariables = reader.ReadInt32 ();
 			ScopeVariableTableOffset = reader.ReadInt32 ();
+
+			RealNameOffset = reader.ReadInt32 ();
+			if (RealNameOffset != 0)
+				RealName = file.ReadString (RealNameOffset);
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 
@@ -917,10 +925,11 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 
 		internal MethodEntry (MonoSymbolFile file, SourceFileEntry source,
-				      string name, int token, ScopeVariable[] scope_vars,
+				      int token, ScopeVariable[] scope_vars,
 				      LocalVariableEntry[] locals, LineNumberEntry[] lines,
 				      LexicalBlockEntry[] lexical, CodeBlockEntry[] blocks,
-				      int start_row, int end_row, int namespace_id)
+				      string real_name, int start_row, int end_row,
+				      int namespace_id)
 		{
 			this.SymbolFile = file;
 
@@ -980,6 +989,8 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			NumScopeVariables = scope_vars != null ? scope_vars.Length : 0;
 			ScopeVariables = scope_vars;
+
+			RealName = real_name;
 		}
 		
 		static LineNumberEntry [] tmp_buff = new LineNumberEntry [20];
@@ -1064,6 +1075,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			for (int i = 0; i < NumScopeVariables; i++)
 				ScopeVariables [i].Write (bw);
 
+			if (RealName != null) {
+				RealNameOffset = (int) bw.BaseStream.Position;
+				bw.Write (RealName);
+			}
+
 			file_offset = (int) bw.BaseStream.Position;
 
 			bw.Write (SourceFileIndex);
@@ -1086,6 +1102,8 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			bw.Write (NumScopeVariables);
 			bw.Write (ScopeVariableTableOffset);
+
+			bw.Write (RealNameOffset);
 
 			return new MethodSourceEntry (index, file_offset, StartRow, EndRow);
 		}
