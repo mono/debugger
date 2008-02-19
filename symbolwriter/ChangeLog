@@ -1,5 +1,17 @@
 2008-02-19  Martin Baulig  <martin@ximian.com>
 
+	* MonoSymbolFile.cs
+	(MonoSymbolFile.Version): New public readonly field.
+	(MonoSymbolFile.CompatibilityMode): Likewise; this is enabled if
+	we're reading an old `39' file.
+
+	* MonoSymbolTable.cs
+	(OffsetTable.CompatibilityVersion): New public const; we keep
+	backwards compatibility with this version.
+	(MethodEntry): Check `file.CompatiblityMode'.
+
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
 	* MonoSymbolWriter.cs
 	(MonoSymbolWriter.SetRealMethodName): New public method.
 

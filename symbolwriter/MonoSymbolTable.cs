@@ -72,6 +72,7 @@ namespace Mono.CompilerServices.SymbolWriter
 	public struct OffsetTable
 	{
 		public const int  Version = 40;
+		public const int  CompatibilityVersion = 39;
 		public const long Magic   = 0x45e82623fd7fa614;
 
 		#region This is actually written to the symbol file
@@ -90,7 +91,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		public int AnonymousScopeTableSize;
 		#endregion
 
-		internal OffsetTable (BinaryReader reader)
+		internal OffsetTable (BinaryReader reader, int version)
 		{
 			TotalFileSize = reader.ReadInt32 ();
 			DataSectionOffset = reader.ReadInt32 ();
@@ -102,9 +103,16 @@ namespace Mono.CompilerServices.SymbolWriter
 			MethodTableOffset = reader.ReadInt32 ();
 			MethodTableSize = reader.ReadInt32 ();
 			TypeCount = reader.ReadInt32 ();
-			AnonymousScopeCount = reader.ReadInt32 ();
-			AnonymousScopeTableOffset = reader.ReadInt32 ();
-			AnonymousScopeTableSize = reader.ReadInt32 ();
+
+			if (version == CompatibilityVersion) {
+				AnonymousScopeCount = 0;
+				AnonymousScopeTableOffset = 0;
+				AnonymousScopeTableSize = 0;
+			} else {
+				AnonymousScopeCount = reader.ReadInt32 ();
+				AnonymousScopeTableOffset = reader.ReadInt32 ();
+				AnonymousScopeTableSize = reader.ReadInt32 ();
+			}
 		}
 
 		internal void Write (BinaryWriter bw)
@@ -819,10 +827,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			set { index = value; }
 		}
 
-		public static int Size {
-			get { return 52; }
-		}
-
 		internal MethodEntry (MonoSymbolFile file, MyBinaryReader reader, int index)
 		{
 			this.SymbolFile = file;
@@ -842,15 +846,17 @@ namespace Mono.CompilerServices.SymbolWriter
 			NamespaceID = reader.ReadInt32 ();
 			LocalNamesAmbiguous = reader.ReadInt32 () != 0;
 
-			NumCodeBlocks = reader.ReadInt32 ();
-			CodeBlockTableOffset = reader.ReadInt32 ();
+			if (!file.CompatibilityMode) {
+				NumCodeBlocks = reader.ReadInt32 ();
+				CodeBlockTableOffset = reader.ReadInt32 ();
 
-			NumScopeVariables = reader.ReadInt32 ();
-			ScopeVariableTableOffset = reader.ReadInt32 ();
+				NumScopeVariables = reader.ReadInt32 ();
+				ScopeVariableTableOffset = reader.ReadInt32 ();
 
-			RealNameOffset = reader.ReadInt32 ();
-			if (RealNameOffset != 0)
-				RealName = file.ReadString (RealNameOffset);
+				RealNameOffset = reader.ReadInt32 ();
+				if (RealNameOffset != 0)
+					RealName = file.ReadString (RealNameOffset);
+			}
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 

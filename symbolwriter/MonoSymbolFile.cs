@@ -139,6 +139,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		int last_source_index;
 		int last_namespace_index;
 
+		public readonly int Version = OffsetTable.Version;
+		public readonly bool CompatibilityMode = false;
+
 		public int NumLineNumbers;
 
 		public MonoSymbolFile ()
@@ -318,15 +321,20 @@ namespace Mono.CompilerServices.SymbolWriter
 					throw new MonoSymbolFileException (
 						"Symbol file `{0}' is not a valid " +
 						"Mono symbol file", filename);
-				if (version != OffsetTable.Version)
+				if ((version != OffsetTable.Version) &&
+				    (version != OffsetTable.CompatibilityVersion))
 					throw new MonoSymbolFileException (
 						"Symbol file `{0}' has version {1}, " +
 						"but expected {2}", filename, version,
 						OffsetTable.Version);
 
+				Version = (int) version;
+				if (version == OffsetTable.CompatibilityVersion)
+					CompatibilityMode = true;
+
 				guid = new Guid (reader.ReadBytes (16));
 
-				ot = new OffsetTable (reader);
+				ot = new OffsetTable (reader, (int) version);
 			} catch {
 				throw new MonoSymbolFileException (
 					"Cannot read symbol file `{0}'", filename);
