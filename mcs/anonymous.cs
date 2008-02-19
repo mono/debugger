@@ -1698,15 +1698,18 @@ namespace Mono.CSharp {
 		{
 			public readonly AnonymousContainer AnonymousMethod;
 			public readonly ScopeInfo Scope;
+			public readonly string RealName;
 
 			public AnonymousMethodMethod (AnonymousContainer am, ScopeInfo scope,
 						      GenericMethod generic, TypeExpr return_type,
-						      int mod, MemberName name, Parameters parameters)
+						      int mod, string real_name, MemberName name,
+						      Parameters parameters)
 				: base (scope != null ? scope : am.Host,
 					generic, return_type, mod | Modifiers.COMPILER_GENERATED, false, name, parameters, null)
 			{
 				this.AnonymousMethod = am;
 				this.Scope = scope;
+				this.RealName = real_name;
 
 				if (scope != null) {
 					scope.CheckMembersDefined ();
@@ -1724,6 +1727,12 @@ namespace Mono.CSharp {
 				aec.ig = ig;
 				aec.MethodIsStatic = Scope == null;
 				return aec;
+			}
+
+			public override void EmitExtraSymbolInfo ()
+			{
+				if (CodeGen.SymbolWriter != null)
+					CodeGen.SymbolWriter.SetRealMethodName (RealName);
 			}
 		}
 	}
@@ -1844,9 +1853,14 @@ namespace Mono.CSharp {
 #endif
 				member_name = new MemberName (name, Location);
 
+			string real_name = String.Format (
+				"{0}~{1}{2}", mc.GetSignatureForError (), GetSignatureForError (),
+				Parameters.GetSignatureForError ());
+
 			return new AnonymousMethodMethod (
 				this, scope, generic_method, new TypeExpression (ReturnType, Location),
-				scope == null ? Modifiers.PRIVATE : Modifiers.INTERNAL, member_name, Parameters);
+				scope == null ? Modifiers.PRIVATE : Modifiers.INTERNAL,
+				real_name, member_name, Parameters);
 		}
 
 		public override Expression DoResolve (EmitContext ec)

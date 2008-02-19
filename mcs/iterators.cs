@@ -948,11 +948,14 @@ namespace Mono.CSharp {
 		{
 			Report.Debug (128, "CREATE METHOD HOST", this, IteratorHost);
 
+			MemberCore mc = ec.ResolveContext as MemberCore;
+
 			IteratorHost.CaptureScopes ();
 
 			return new AnonymousMethodMethod (
 				this, RootScope, null, TypeManager.system_boolean_expr,
-				Modifiers.PUBLIC, new MemberName ("MoveNext", Location),
+				Modifiers.PUBLIC, mc.GetSignatureForError (),
+				new MemberName ("MoveNext", Location),
 				Parameters.EmptyReadOnlyParameters);
 		}
 
