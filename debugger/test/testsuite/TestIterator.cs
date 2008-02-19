@@ -38,8 +38,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test1 loop", "Test1.X.Run()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test1 yield1",
-				       "Test1.X/<>c__CompilerGenerated0.MoveNext()");
+			AssertStopped (thread, "test1 yield1", "Test1.X.GetRange()");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "test1 statement", "Test1.X.Run()");
@@ -48,12 +47,10 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test1 loop", "Test1.X.Run()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test1 lexical",
-				       "Test1.X/<>c__CompilerGenerated0.MoveNext()");
+			AssertStopped (thread, "test1 lexical", "Test1.X.GetRange()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test1 yield2",
-				       "Test1.X/<>c__CompilerGenerated0.MoveNext()");
+			AssertStopped (thread, "test1 yield2", "Test1.X.GetRange()");
 
 			AssertPrint (thread, "a", "(int) 3");
 
@@ -64,8 +61,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test1 loop", "Test1.X.Run()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test1 yield3",
-				       "Test1.X/<>c__CompilerGenerated0.MoveNext()");
+			AssertStopped (thread, "test1 yield3", "Test1.X.GetRange()");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "test1 statement", "Test1.X.Run()");
@@ -88,20 +84,16 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test2 loop", "Test2.X.Run()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator start",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator start", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator loop",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator loop", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator if",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator if", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator yield",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator yield", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "test2 statement", "Test2.X.Run()");
@@ -113,18 +105,17 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test2 loop", "Test2.X.Run()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator loop",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator loop", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator if",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator if", "Test2.X.GetRange()");
 
+			AssertPrint (thread, "total", "(int) 2");
+			AssertPrint (thread, "stop", "(bool) true");
 			AssertPrint (thread, "this", "(Test2.X) { total = 2, stop = true }");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator break",
-				       "Test2.X/<>c__CompilerGenerated1.MoveNext()");
+			AssertStopped (thread, "test2 iterator break", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "test2 return", "Test2.X.Run()");

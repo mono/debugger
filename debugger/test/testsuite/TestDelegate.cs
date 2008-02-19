@@ -44,14 +44,10 @@ namespace Mono.Debugger.Tests
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.foo(int)", 18);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.foo(int)", 19);
-			AssertExecute ("step");
 			AssertStopped (thread, "X.boston(int)", 23);
 			AssertExecute ("next");
 			AssertTargetOutput ("Boston: 4");
 			AssertStopped (thread, "X.boston(int)", 24);
-			AssertExecute ("step");
-			AssertStopped (thread, "X.boston(int)", 25);
 			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 31);
 
@@ -75,19 +71,16 @@ namespace Mono.Debugger.Tests
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.foo(int)", 18);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.foo(int)", 19);
-			AssertExecute ("step");
 			AssertStopped (thread, "X.boston(int)", 23);
 			AssertExecute ("next");
 			AssertTargetOutput ("Boston: 11");
 			AssertNoTargetOutput ();
 			AssertStopped (thread, "X.boston(int)", 24);
 			AssertExecute ("step");
-			AssertStopped (thread, "X.boston(int)", 25);
-			AssertExecute ("step");
 			AssertStopped (thread, "X.Main()", 33);
 
 			AssertExecute ("continue");
+			AssertTargetOutput ("Back again");
 			AssertTargetExited (thread.Process);
 		}
 	}

@@ -1,3 +1,9 @@
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.GetMethodName): Use a format which is compatible
+	with mcs's GetSignatureForError().
+
 2008-02-18  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

@@ -25,14 +25,14 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "RunTests.Main()", GetLine ("main"));
+			AssertStopped (thread, "main", "RunTests.Main()");
 			AssertExecute ("continue");
 
 			//
 			// Test1
 			//
 
-			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1(R,int)");
+			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1<R>(R, int)");
 
 			AssertPrint (thread, "a", "(int) 2");
 			AssertPrint (thread, "b", "(int) 2");
@@ -40,12 +40,10 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("500");
-			AssertHitBreakpoint (thread, "test1 after foo", "Test1.X.Test1(R,int)");
+			AssertHitBreakpoint (thread, "test1 after foo", "Test1.X.Test1<R>(R, int)");
 
 			AssertExecute ("step");
-			// FIXME: Print a better method name
-			AssertStopped (thread, "Test1.X/<>c__CompilerGenerated5`1<R>.<Test1>c__6()",
-				       GetLine ("test1 foo"));
+			AssertStopped (thread, "test1 foo", "Test1.X.Test1<R>(R, int)~Test1.Foo()");
 
 			AssertPrint (thread, "a", "(int) 2");
 			AssertPrint (thread, "b", "(int) 2");
@@ -57,7 +55,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("500");
 			AssertTargetOutput ("2");
 			AssertTargetOutput ("500");
-			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1(R,int)");
+			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1<R>(R, int)");
 
 			AssertPrint (thread, "b", "(int) 1");
 
@@ -75,24 +73,22 @@ namespace Mono.Debugger.Tests
 			// Test2
 			//
 
-			AssertHitBreakpoint (thread, "test2", "Test2.X.Test(T)");
+			AssertHitBreakpoint (thread, "test2", "Test2.X.Test<T>(T)");
 			AssertPrint (thread, "t", "(int) 3");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "t", "int");
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test2 after foo", "Test2.X.Test(T)");
+			AssertHitBreakpoint (thread, "test2 after foo", "Test2.X.Test<T>(T)");
 
 			AssertExecute ("step");
-			AssertStopped (thread,
-				       "Test2.X/<>c__CompilerGenerated1`1<T>.<Test>c__7()",
-				       GetLine ("test2 foo"));
+			AssertStopped (thread, "test2 foo", "Test2.X.Test<T>(T)~Test2.Foo()");
 
 			AssertPrint (thread, "t", "(int) 3");
 			AssertType (thread, "t", "int");
@@ -100,17 +96,17 @@ namespace Mono.Debugger.Tests
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test2 hello", "Test2.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
@@ -120,22 +116,20 @@ namespace Mono.Debugger.Tests
 			// Test3
 			//
 
-			AssertHitBreakpoint (thread, "test3", "Test3.X.Test(T)");
+			AssertHitBreakpoint (thread, "test3", "Test3.X.Test<T>(T)");
 			AssertPrint (thread, "t", "(int) 3");
 			AssertType (thread, "t", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test3 after foo", "Test3.X.Test(T)");
+			AssertHitBreakpoint (thread, "test3 after foo", "Test3.X.Test<T>(T)");
 
 			AssertExecute ("step");
-			AssertStopped (thread,
-				       "Test3.X/<>c__CompilerGenerated2`1<T>.<Test>c__8(S)",
-				       GetLine ("test3 foo"));
+			AssertStopped (thread, "test3 foo", "Test3.X.Test<T>(T)~Test3.Foo<T>(T)");
 
 			AssertPrint (thread, "t", "(int) 3");
 			AssertType (thread, "t", "int");
@@ -143,12 +137,12 @@ namespace Mono.Debugger.Tests
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello(U)");
+			AssertHitBreakpoint (thread, "test3 hello", "Test3.X.Hello<U>(U)");
 			AssertPrint (thread, "u", "(int) 3");
 			AssertType (thread, "u", "int");
 
@@ -158,16 +152,15 @@ namespace Mono.Debugger.Tests
 			// Test4
 			//
 
-			AssertHitBreakpoint (thread, "test4", "Test4.Test`1<T>.Hello(T,S)");
+			AssertHitBreakpoint (thread, "test4", "Test4.Test<T>.Hello<S>(T, S)");
 			AssertPrint (thread, "t", "(string) \"Kahalo\"");
 			AssertType (thread, "t", "string");
 			AssertPrint (thread, "s", String.Format ("(double) {0}", System.Math.PI));
 			AssertType (thread, "s", "double");
 
 			AssertExecute ("step");
-			AssertStopped (thread,
-				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
-				       GetLine ("test4 foo"));
+			AssertStopped (thread, "test4 foo",
+				       "Test4.Test<T>.Hello<S>(T, S)~Test4.Foo<long>(long)");
 
 			AssertPrint (thread, "r", "(long) 5");
 			AssertType (thread, "r", "long");
@@ -178,19 +171,16 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("next");
 			AssertTargetOutput ("5");
-			AssertStopped (thread,
-				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
-				       GetLine ("test4 foo") + 1);
+			AssertStopped (thread, "test4 foo2",
+				       "Test4.Test<T>.Hello<S>(T, S)~Test4.Foo<long>(long)");
 
 			AssertExecute ("next");
-			AssertStopped (thread,
-				       "Test4.Test`1/<>c__CompilerGenerated3`1<T,S>.<Hello>c__11(long)",
-				       GetLine ("test4 foo2"));
+			AssertStopped (thread, "test4 foo3",
+				       "Test4.Test<T>.Hello<S>(T, S)~Test4.Foo<long>(long)");
 
 			AssertExecute ("step");
-			AssertStopped (thread,
-				       "Test4.Test`1/<>c__CompilerGenerated3`1/<>c__CompilerGenerated9<T,S>.<Hello>c__10(T)",
-				       GetLine ("test4 bar"));
+			AssertStopped (thread, "test4 bar",
+				       "Test4.Test<T>.Hello<S>(T, S)~Test4.Bar<T>(T)");
 
 			AssertPrint (thread, "r", "(long) 5");
 			AssertType (thread, "r", "long");

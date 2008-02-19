@@ -30,5 +30,6 @@ class X
 		x.Foo (4);
 		Console.WriteLine ("Back in main");
 		x.Foo (11);
+		Console.WriteLine ("Back again");
 	}
 }

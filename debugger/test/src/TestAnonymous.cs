@@ -117,13 +117,13 @@ namespace Test4
 		{
 			Foo<long> foo = delegate (long r) {
 				Console.WriteLine (r);			// @MDB LINE: test4 foo
-				Bar<T> bar = delegate (T x) {
+				Bar<T> bar = delegate (T x) {		// @MDB LINE: test4 foo2
 					Console.WriteLine (r);		// @MDB LINE: test4 bar
 					Console.WriteLine (t);
 					Console.WriteLine (s);
 					Console.WriteLine (x);
 				};
-				bar (t);				// @MDB LINE: test4 foo2
+				bar (t);				// @MDB LINE: test4 foo3
 			};
 			foo (5);					// @MDB BREAKPOINT: test4
 		}

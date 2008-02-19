@@ -609,7 +609,7 @@ namespace Mono.Debugger.Languages.Mono
 			case "System.Double":	return "double";
 			case "System.String":	return "string";
 			case "System.Object":	return "object";
-			default:		return t.FullName;
+			default:		return RemoveGenericArity (t.FullName);
 			}
 		}
 
@@ -621,35 +621,72 @@ namespace Mono.Debugger.Languages.Mono
 				if (first)
 					first = false;
 				else
-					sb.Append (",");
+					sb.Append (", ");
 				sb.Append (GetTypeSignature (p.ParameterType).Replace ('+','/'));
 			}
 			sb.Append (")");
 			return sb.ToString ();
 		}
 
+		internal static string RemoveGenericArity (string name)
+		{
+			int start = 0;
+			StringBuilder sb = null;
+			do {
+				int pos = name.IndexOf ('`', start);
+				if (pos < 0) {
+					if (start == 0)
+						return name;
+
+					sb.Append (name.Substring (start));
+					break;
+				}
+
+				if (sb == null)
+					sb = new StringBuilder ();
+				sb.Append (name.Substring (start, pos-start));
+
+				pos++;
+				while ((pos < name.Length) && Char.IsNumber (name [pos]))
+					pos++;
+
+				start = pos;
+			} while (start < name.Length);
+
+			return sb.ToString ();
+		}
+
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)
 		{
+			StringBuilder sb = new StringBuilder (GetTypeSignature (mdef.DeclaringType));
 			if (mdef.DeclaringType.GenericParameters.Count > 0) {
-				StringBuilder sb = new StringBuilder (mdef.DeclaringType.FullName);
 				sb.Append ('<');
 				bool first = true;
 				foreach (Cecil.GenericParameter p in mdef.DeclaringType.GenericParameters) {
 					if (first)
 						first = false;
 					else
-						sb.Append (",");
+						sb.Append (',');
 					sb.Append (p.Name);
 				}
-				sb.Append (">.");
-				sb.Append (mdef.Name);
-				sb.Append (GetMethodSignature (mdef));
-				return sb.ToString ();
-			    
-				;
+				sb.Append ('>');
 			}
-			return mdef.DeclaringType.FullName + '.' + mdef.Name +
-				GetMethodSignature (mdef);
+			sb.Append ('.');
+			sb.Append (mdef.Name);
+			if (mdef.GenericParameters.Count > 0) {
+				sb.Append ('<');
+				bool first = true;
+				foreach (Cecil.GenericParameter p in mdef.GenericParameters) {
+					if (first)
+						first = false;
+					else
+						sb.Append (',');
+					sb.Append (p.Name);
+				}
+				sb.Append ('>');
+			}
+			sb.Append (GetMethodSignature (mdef));
+			return sb.ToString ();
 		}
 
 		Cecil.MethodDefinition FindCecilMethod (string full_name)
@@ -879,7 +916,10 @@ namespace Mono.Debugger.Languages.Mono
 				this.method = method;
 				this.source = source;
 				this.mdef = mdef;
-				this.full_name = MonoSymbolFile.GetMethodName (mdef);
+				if (method.RealName != null)
+					this.full_name = method.RealName;
+				else
+					this.full_name = MonoSymbolFile.GetMethodName (mdef);
 				this.function = function;
 				this.klass = klass;
 			}
@@ -1114,7 +1154,6 @@ namespace Mono.Debugger.Languages.Mono
 
 					ScopeInfo info = new ScopeInfo (sv.Scope, scope_var, type);
 					scopes.Add (sv.Scope, info);
-
 					scope_list.Add (info);
 				}
 
@@ -1136,6 +1175,12 @@ namespace Mono.Debugger.Languages.Mono
 							parameters.Add (cv);
 							break;
 						case C.CapturedVariable.CapturedKind.This:
+							if (!cv.Resolve (memory))
+								throw new InternalError ();
+							if (cv.Type.HasClassType)
+								decl_type = cv.Type.ClassType;
+							else
+								decl_type = (TargetStructType) cv.Type;
 							this_var = cv;
 							continue;
 						default:

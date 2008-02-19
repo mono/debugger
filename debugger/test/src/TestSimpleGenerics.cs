@@ -54,17 +54,17 @@ class X
 	static void Main ()
 	{
 		Foo<int> foo = new Foo<int> (5);	// @MDB LINE: main
-		foo.Hello ();
+		foo.Hello ();				// @MDB LINE: main1
 
 		Bar<int> bar = new Bar<int> (5);
-		bar.Hello ();				// @MDB LINE: main2
+		bar.Hello ();				// @MDB BREAKPOINT: main2
 
 		Baz<int> baz = new Baz<int> (5);
-		baz.Data.World (8);			// @MDB LINE: main3
+		baz.Data.World (8);			// @MDB BREAKPOINT: main3
 		baz.Hello ();
 
 		Test test = new Test ();
-		test.Hello ();				// @MDB LINE: main4
+		test.Hello ();				// @MDB BREAKPOINT: main4
 		Test.Hello (8);
 		Test.Hello ("World");
 	}
