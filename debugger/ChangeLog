@@ -1,5 +1,9 @@
 2008-02-19  Martin Baulig  <martin@ximian.com>
 
+	* README.terrania: Updated.
+
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClassType.cs
 	(TargetClassType.IsCompilerGenerated): New public abstract property.
 

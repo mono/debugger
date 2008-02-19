@@ -32,14 +32,24 @@ support.
 
   We can currently print fields in generic instances, print their types and parent classes.
 
-  Recursive generic type (see test/src/TestRecursiveGenerics.cs for an example) are supported,
+  Recursive generic types (see test/src/TestRecursiveGenerics.cs for an example) are supported,
   but need more testing.
 
   There is some limited support for method invocations, but we can't get their types yet.
   Properties aren't done yet.
 
-  Support for anonymous methods and iterators should now be pretty much complete; we can debug
-  them, access captured variables etc.
+  Support for anonymous methods and iterators should now be pretty much complete; we can fully
+  debug them, access captured variables etc.
+
+  There are a few single-stepping improvements which aren't merged back into trunk yet.
+
+  The symbol writer now has a compatibility mode which allows us to real old 39-files.
+
+* TODO:
+  -----
+
+  Property access and generic interfaces is the next step; especially accessing a generic
+  iterator's `Current'.
 
 
 Last changed Feb 19nd, 2008
