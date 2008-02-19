@@ -336,6 +336,8 @@ namespace Mono.Debugger.Languages.Mono
 		void get_parent (TargetMemoryAccess target)
 		{
 			parent_klass = MonoRuntime.MonoClassGetParent (target, KlassAddress);
+			if (parent_klass.IsNull)
+				return;
 
 			parent_info = ReadClassInfo (SymbolFile.MonoLanguage, target, parent_klass);
 		}

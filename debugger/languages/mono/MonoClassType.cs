@@ -44,6 +44,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable load_handlers;
 		int load_handler_id;
 
+		bool is_compiler_generated;
 		string full_name;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
@@ -64,6 +65,12 @@ namespace Mono.Debugger.Languages.Mono
 				full_name = sb.ToString ();
 			} else
 				full_name = type.FullName;
+
+			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
+				string cname = cattr.Constructor.DeclaringType.FullName;
+				if (cname == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+					is_compiler_generated = true;
+			}
 		}
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
@@ -83,6 +90,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public Cecil.TypeDefinition Type {
 			get { return type; }
+		}
+
+		public override bool IsCompilerGenerated {
+			get { return is_compiler_generated; }
 		}
 
 		public override string Name {

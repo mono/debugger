@@ -6,6 +6,7 @@ using System.Collections;
 using System.Globalization;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Frontend
 {
@@ -255,7 +256,13 @@ namespace Mono.Debugger.Frontend
 				} catch {
 					current = null;
 				}
-				if (current != null)
+				if (current == null)
+					return obj;
+
+				TargetClassObject scurrent = current as TargetClassObject;
+				if ((scurrent != null) && scurrent.Type.IsCompilerGenerated)
+					return obj;
+				else
 					return current;
 			}
 

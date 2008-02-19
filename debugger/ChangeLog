@@ -1,5 +1,16 @@
 2008-02-19  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetClassType.cs
+	(TargetClassType.IsCompilerGenerated): New public abstract property.
+
+	* frontend/Expression.cs
+	(Expression.DoEvaluateObject): Don't use the result of
+	TargetStructObject.GetCurrentObject() if it's a compiler generated
+	class; this should fix iterators and print the `IEnumerable<T>'
+	interface instead.
+
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoSymbolFile.cs
 	(MonoSymbolFile.GetMethodName): Use a format which is compatible
 	with mcs's GetSignatureForError().

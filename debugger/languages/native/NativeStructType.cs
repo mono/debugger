@@ -115,6 +115,10 @@ namespace Mono.Debugger.Languages.Native
 			this.fields = fields;
 		}
 
+		public override bool IsCompilerGenerated {
+			get { return false; }
+		}
+
 		public override string BaseName {
 			get { return name; }
 		}
