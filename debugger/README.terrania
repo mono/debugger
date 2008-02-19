@@ -22,9 +22,7 @@ To make things work, you need to checkup Mono from the stable branch, ie.
 
 You may also use Mono from trunk and then apply these patches.
 
-The branch directories were created based on Mono 1.9 - the only change in the runtime is
-the increased symbol file version number in debug-mono-symfile.h, there won't be any other
-runtime changes in near future.
+The branch directories were created based on Mono 1.9.
 
 The custom versions of the compiler and the symbol writer are required for anonymous method
 support.
@@ -40,11 +38,9 @@ support.
   There is some limited support for method invocations, but we can't get their types yet.
   Properties aren't done yet.
 
-  We may access captured variables and debug anonymous methods - this is still very experimental,
-  but it looks like we already get the complicated generics scenarios right.  Next week, I'll
-  provide a few more regression tests for that - if possible, I'd like to be able to run all the
-  mcs/test/gtest-anon-*.cs in the debugger.
+  Support for anonymous methods and iterators should now be pretty much complete; we can debug
+  them, access captured variables etc.
 
 
-Last changed Feb 2nd, 2008
+Last changed Feb 19nd, 2008
 Martin Baulig <martin@ximian.com>
