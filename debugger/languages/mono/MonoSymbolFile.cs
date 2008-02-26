@@ -470,26 +470,19 @@ namespace Mono.Debugger.Languages.Mono
 			return retval;
 		}
 
-		public MonoFunctionType LookupFunction (IMonoStructType klass, Cecil.MethodDefinition mdef)
+		internal SourceFile GetSourceFile (int token, out int start, out int end)
 		{
 			ensure_sources ();
-			int token = MonoDebuggerSupport.GetMethodToken (mdef);
-			MonoFunctionType function = (MonoFunctionType) function_hash [token];
-			if (function != null)
-				return function;
-
 			C.MethodEntry entry = File != null ? File.GetMethodByToken (token) : null;
-			if (entry != null) {
-				C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
-				SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
-				function = new MonoFunctionType (
-					klass, mdef, file, source.StartRow, source.EndRow);
-			} else {
-				function = new MonoFunctionType (klass, mdef);
+			if (entry == null) {
+				start = end = 0;
+				return null;
 			}
 
-			function_hash.Add (token, function);
-			return function;
+			C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
+			start = source.StartRow;
+			end = source.EndRow;
+			return (SourceFile) source_file_hash [entry.SourceFile];
 		}
 
 		public MonoFunctionType GetFunctionByToken (int token)
@@ -502,7 +495,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (klass == null)
 				throw new InternalError ();
 
-			return LookupFunction (klass, mdef);
+			return klass.LookupFunction (mdef);
 		}
 
 		MonoMethodSource GetMethodSource (int index)
@@ -540,7 +533,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (klass == null)
 				throw new InternalError ();
 
-			MonoFunctionType function = LookupFunction (klass, mdef);
+			MonoFunctionType function = klass.LookupFunction (mdef);
 
 			MonoMethodSource method = new MonoMethodSource (
 				this, file, entry, source, mdef, klass, function);

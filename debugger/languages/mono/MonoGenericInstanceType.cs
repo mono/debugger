@@ -1,5 +1,7 @@
 using System;
 using System.Text;
+using System.Collections;
+using System.Collections.Generic;
 using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
@@ -169,6 +171,22 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			ResolveClass (target, true);
 			return new MonoGenericInstanceObject (this, class_info, location);
+		}
+
+		Dictionary<int,MonoFunctionType> function_hash;
+
+		MonoFunctionType IMonoStructType.LookupFunction (Cecil.MethodDefinition mdef)
+		{
+			int token = MonoDebuggerSupport.GetMethodToken (mdef);
+			if (function_hash == null)
+				function_hash = new Dictionary<int,MonoFunctionType> ();
+			if (!function_hash.ContainsKey (token)) {
+				MonoFunctionType function = new MonoFunctionType (this, mdef);
+				function_hash.Add (token, function);
+				return function;
+			}
+
+			return function_hash [token];
 		}
 	}
 }

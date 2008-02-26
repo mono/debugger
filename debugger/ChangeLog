@@ -1,3 +1,13 @@
+2008-02-26  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassType.cs
+	(IMonoStructType.LookupFunction): New interface method.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.LookupFunction): Moved into `IMonoStructType'.
+	With generics, we can't just use the `token' as a key, so we need
+	a separate hash table per class.
+
 2008-02-19  Martin Baulig  <martin@ximian.com>
 
 	* README.terrania: Updated.

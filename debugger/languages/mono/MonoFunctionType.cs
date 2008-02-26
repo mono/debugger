@@ -45,15 +45,8 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < mdef.Parameters.Count; i++)
 				parameter_types [i] = klass.File.MonoLanguage.LookupMonoType (
 					mdef.Parameters[i].ParameterType);
-		}
 
-		internal MonoFunctionType (IMonoStructType klass, Cecil.MethodDefinition mdef,
-					   SourceFile file, int start_row, int end_row)
-			: this (klass, mdef)
-		{
-			this.file = file;
-			this.start_row = start_row;
-			this.end_row = end_row;
+			file = klass.File.GetSourceFile (token, out start_row, out end_row);
 		}
 
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)

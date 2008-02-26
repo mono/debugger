@@ -68,7 +68,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal static MonoMethodInfo Create (IMonoStructType klass, int index,
 						       Cecil.MethodDefinition minfo)
 		{
-			MonoFunctionType type = klass.File.LookupFunction (klass, minfo);
+			MonoFunctionType type = klass.LookupFunction (minfo);
 			return new MonoMethodInfo (klass, index, minfo, type);
 		}
 	}
@@ -98,19 +98,19 @@ namespace Mono.Debugger.Languages.Mono
 			bool is_static = false;
 			MonoFunctionType add, remove, raise;
 			if (einfo.AddMethod != null) {
-				add = klass.File.LookupFunction (klass, einfo.AddMethod);
+				add = klass.LookupFunction (einfo.AddMethod);
 				is_static = einfo.AddMethod.IsStatic;
 			} else
 				add = null;
 
 			if (einfo.RemoveMethod != null) {
-				remove = klass.File.LookupFunction (klass, einfo.RemoveMethod);
+				remove = klass.LookupFunction (einfo.RemoveMethod);
 				is_static = einfo.RemoveMethod.IsStatic;
 			} else
 				remove = null;
 
 			if (einfo.InvokeMethod != null) {
-				raise = klass.File.LookupFunction (klass, einfo.InvokeMethod);
+				raise = klass.LookupFunction (einfo.InvokeMethod);
 				is_static = einfo.InvokeMethod.IsStatic;
 			} else
 				raise = null;
@@ -144,13 +144,13 @@ namespace Mono.Debugger.Languages.Mono
 			bool is_static = false;
 			MonoFunctionType getter, setter;
 			if (pinfo.GetMethod != null) {
-				getter = klass.File.LookupFunction (klass, pinfo.GetMethod);
+				getter = klass.LookupFunction (pinfo.GetMethod);
 				is_static = pinfo.GetMethod.IsStatic;
 			} else
 				getter = null;
 
 			if (pinfo.SetMethod != null) {
-				setter = klass.File.LookupFunction (klass, pinfo.SetMethod);
+				setter = klass.LookupFunction (pinfo.SetMethod);
 				is_static = pinfo.SetMethod.IsStatic;
 			} else
 				setter = null;
