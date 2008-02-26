@@ -367,5 +367,12 @@ namespace Mono.Debugger.Languages.Mono
 			});
 			return parent_info;
 		}
+
+		public override string ToString ()
+		{
+			return String.Format ("ClassInfo ({0}:{1}:{2}:{3})",
+					      SymbolFile.Assembly.Name.Name, KlassAddress,
+					      GenericContainer, GenericClass);
+		}
 	}
 }
