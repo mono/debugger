@@ -3079,6 +3079,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 	}
 	mono_thread_init_apartment_state ();
 
+	mono_debugger_event (MONO_DEBUGGER_EVENT_REACHED_MAIN, 0, 0);
+
 	/* FIXME: check signature of method */
 	if (mono_method_signature (method)->ret->type == MONO_TYPE_I4) {
 		MonoObject *res;
@@ -3103,6 +3105,8 @@ mono_runtime_exec_main (MonoMethod *method, MonoArray *args, MonoObject **exc)
 			mono_environment_exitcode_set (rval);
 		}
 	}
+
+	mono_debugger_event (MONO_DEBUGGER_EVENT_MAIN_EXITED, (guint64) (gsize) rval, 0);
 
 	return rval;
 }

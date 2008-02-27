@@ -1,3 +1,9 @@
+2008-02-27  Martin Baulig  <martin@ximian.com>
+
+	* object.c (mono_runtime_exec_main): Call
+	`mono_debugger_event (MONO_DEBUGGER_EVENT_REACHED_MAIN)' and
+	`mono_debugger_event (MONO_DEBUGGER_EVENT_MAIN_EXITED)' here.
+
 2008-02-15  Martin Baulig  <martin@ximian.com>
 
 	Reflect latest symbol writer changes.  Keep compatibility with

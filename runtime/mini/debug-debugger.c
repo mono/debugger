@@ -488,18 +488,7 @@ main_thread_handler (gpointer user_data)
 	MainThreadArgs *main_args = (MainThreadArgs *) user_data;
 	int retval;
 
-	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_REACHED_MAIN,
-					     (guint64) (gsize) main_args->method, 0);
-
-	retval = mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
-
-	/*
-	 * This will never return.
-	 */
-	mono_debugger_notification_function (MONO_DEBUGGER_EVENT_MAIN_EXITED, 0,
-					     (guint64) (gsize) retval);
-
-	return retval;
+	return mono_runtime_run_main (main_args->method, main_args->argc, main_args->argv, NULL);
 }
 
 int
