@@ -27,6 +27,8 @@ namespace Mono.Debugger.Languages
 		public abstract void SetField (Thread thread, TargetStructObject instance,
 					       TargetFieldInfo field, TargetObject value);
 
+		public abstract TargetPropertyInfo[] GetProperties (Thread thread);
+
 		public abstract TargetMethodInfo[] GetMethods (Thread thread);
 
 		public virtual TargetMemberInfo FindMember (Thread thread, string name,
@@ -39,6 +41,15 @@ namespace Mono.Debugger.Languages
 					continue;
 				if (field.Name == name)
 					return field;
+			}
+
+			foreach (TargetPropertyInfo property in GetProperties (thread)) {
+				if (property.IsStatic && !search_static)
+					continue;
+				if (!property.IsStatic && !search_instance)
+					continue;
+				if (property.Name == name)
+					return property;
 			}
 
 			return null;

@@ -123,10 +123,10 @@ namespace Mono.Debugger.Languages.Mono
 	[Serializable]
 	internal class MonoPropertyInfo : TargetPropertyInfo
 	{
-		public readonly MonoClassType Klass;
+		public readonly IMonoStructType Klass;
 		public readonly MonoFunctionType GetterType, SetterType;
 
-		private MonoPropertyInfo (TargetType type, MonoClassType klass, int index,
+		private MonoPropertyInfo (TargetType type, IMonoStructType klass, int index,
 					  bool is_static, Cecil.PropertyDefinition pinfo,
 					  MonoFunctionType getter, MonoFunctionType setter)
 			: base (type, pinfo.Name, index, is_static, getter, setter)
@@ -136,7 +136,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.SetterType = setter;
 		}
 
-		internal static MonoPropertyInfo Create (MonoClassType klass, int index,
+		internal static MonoPropertyInfo Create (IMonoStructType klass, int index,
 							 Cecil.PropertyDefinition pinfo)
 		{
 			TargetType type = klass.File.MonoLanguage.LookupMonoType (pinfo.PropertyType);

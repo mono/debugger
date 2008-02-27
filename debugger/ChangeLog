@@ -1,3 +1,8 @@
+2008-02-27  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClass.cs
+	(TargetClass.GetProperties): New public abstract method.
+
 2008-02-26  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoClassType.cs

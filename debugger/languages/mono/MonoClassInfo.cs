@@ -23,6 +23,7 @@ namespace Mono.Debugger.Languages.Mono
 		MonoFieldInfo[] fields;
 		int[] field_offsets;
 		MonoMethodInfo[] methods;
+		MonoPropertyInfo[] properties;
 		Dictionary<int,TargetAddress> methods_by_token;
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
@@ -282,6 +283,29 @@ namespace Mono.Debugger.Languages.Mono
 				field_loc = field_loc.GetDereferencedLocation ();
 
 			type.SetObject (target, field_loc, obj);
+		}
+
+		internal MonoPropertyInfo[] GetProperties (TargetMemoryAccess target)
+		{
+			if (properties != null)
+				return properties;
+
+			properties = new MonoPropertyInfo [CecilType.Properties.Count];
+
+			for (int i = 0; i < CecilType.Properties.Count; i++) {
+				Cecil.PropertyDefinition prop = CecilType.Properties [i];
+				properties [i] = MonoPropertyInfo.Create (struct_type, i, prop);
+			}
+
+			return properties;
+		}
+
+		public override TargetPropertyInfo[] GetProperties (Thread thread)
+		{
+			return (MonoPropertyInfo []) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return GetProperties (target);
+			});
 		}
 
 		void get_methods (TargetMemoryAccess target)
