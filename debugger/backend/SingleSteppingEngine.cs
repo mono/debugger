@@ -525,6 +525,11 @@ namespace Mono.Debugger.Backend
 			this.extended_notifications_addr = extended_notifications_addr;
 		}
 
+		internal void SetMainReturnAddress (TargetAddress main_ret)
+		{
+			this.main_retaddr = main_ret + inferior.TargetAddressSize;
+		}
+
 		internal void OnManagedThreadExited ()
 		{
 			this.end_stack_address = TargetAddress.Null;
@@ -1051,6 +1056,9 @@ namespace Mono.Debugger.Backend
 
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			registers = inferior.GetRegisters ();
+
+			if (!main_retaddr.IsNull && (iframe.StackPointer >= main_retaddr))
+				return new OperationRun (this, false, operation.Result);
 
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasLineNumbers) {
@@ -1954,6 +1962,7 @@ namespace Mono.Debugger.Backend
 		TargetAddress lmf_address = TargetAddress.Null;
 		TargetAddress end_stack_address = TargetAddress.Null;
 		TargetAddress extended_notifications_addr = TargetAddress.Null;
+		TargetAddress main_retaddr = TargetAddress.Null;
 
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject

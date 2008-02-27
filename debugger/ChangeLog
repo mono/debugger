@@ -1,5 +1,11 @@
 2008-02-27  Martin Baulig  <martin@ximian.com>
 
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Store the return stack
+	pointer in `NotificationType.ReachedMain'.
+
+2008-02-27  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetClass.cs
 	(TargetClass.GetProperties): New public abstract method.
 

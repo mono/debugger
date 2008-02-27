@@ -246,6 +246,13 @@ namespace Mono.Debugger.Backend
 
 					break;
 
+				case NotificationType.ReachedMain: {
+					Inferior.StackFrame iframe = inferior.GetCurrentFrame (false);
+					engine.SetMainReturnAddress (iframe.StackPointer);
+					resume_target = !engine.OnModuleLoaded ();
+					return true;
+				}
+
 				case NotificationType.WrapperMain:
 				case NotificationType.MainExited:
 					break;

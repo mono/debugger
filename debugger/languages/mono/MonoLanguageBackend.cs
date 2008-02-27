@@ -1253,11 +1253,6 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 			}
 
-			case NotificationType.ReachedMain:
-				if (engine.OnModuleLoaded ())
-					return false;
-				break;
-
 			case NotificationType.UnloadModule:
 				Report.Debug (DebugFlags.JitSymtab,
 					      "Module unload: {0} {1}", data, arg);
