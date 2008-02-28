@@ -1,3 +1,9 @@
+2008-02-28  Martin Baulig  <martin@ximian.com>
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.MonoObjectToString): Operate on
+	`TargetStructObject' so we can also print generic instances.
+
 2008-02-27  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadManager.cs
