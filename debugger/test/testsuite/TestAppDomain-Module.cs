@@ -106,11 +106,8 @@ namespace Mono.Debugger.Tests
 
 			AssertFrame (thread, "X.Main()", LineEnd);
 
-			AssertExecute ("next");
-			AssertTargetOutput ("UNLOADED!");
-			AssertStopped (thread, "X.Main()", LineEnd + 1);
-
 			AssertExecute ("continue");
+			AssertTargetOutput ("UNLOADED!");
 			AssertTargetExited (thread.Process);
 		}
 	}

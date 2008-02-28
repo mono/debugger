@@ -52,18 +52,13 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("TEST: Hello");
 
 			AssertHitBreakpoint (thread, bpt_hello, "Hello.World()", LineHello);
-			AssertExecute ("next");
-			AssertTargetOutput ("Hello World from Test!");
-			AssertStopped (thread, "Hello.World()", LineHello + 1);
 
 			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World from Test!");
 
 			AssertHitBreakpoint (thread, bpt_hello, "Hello.World()", LineHello);
-			AssertExecute ("next");
-			AssertTargetOutput ("Hello World from TestAppDomain.exe!");
-			AssertStopped (thread, "Hello.World()", LineHello + 1);
-
 			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World from TestAppDomain.exe!");
 
 			AssertHitBreakpoint (thread, bpt_main2, "X.Main()", LineMain2);
 
@@ -154,18 +149,12 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("TEST: Hello");
 
 			AssertHitBreakpoint (thread, bpt_hello, "Hello.World()", LineHello);
-			AssertExecute ("next");
-			AssertTargetOutput ("Hello World from Test!");
-			AssertStopped (thread, "Hello.World()", LineHello + 1);
-
 			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World from Test!");
 
 			AssertHitBreakpoint (thread, bpt_hello, "Hello.World()", LineHello);
-			AssertExecute ("next");
-			AssertTargetOutput ("Hello World from TestAppDomain.exe!");
-			AssertStopped (thread, "Hello.World()", LineHello + 1);
-
 			AssertExecute ("continue");
+			AssertTargetOutput ("Hello World from TestAppDomain.exe!");
 
 			AssertHitBreakpoint (thread, bpt_main2, "X.Main()", LineMain2);
 

@@ -12,7 +12,7 @@ public class Hello : MarshalByRefObject, IHello
 
 class X
 {
-	static void Main ()
+	static int Main ()
 	{
 		AppDomain domain = AppDomain.CreateDomain ("Test");
 		Assembly ass = Assembly.GetExecutingAssembly ();
@@ -27,5 +27,6 @@ class X
 		bar.World ();
 
 		AppDomain.Unload (domain);
+		return 0;
 	}
 }

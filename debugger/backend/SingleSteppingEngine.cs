@@ -169,8 +169,8 @@ namespace Mono.Debugger.Backend
 
 			if (has_thread_lock) {
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} while being thread-locked ({2})",
-					      this, cevent, stop_event);
+					      "{0} received event {1} at {3} while being thread-locked ({2})",
+					      this, cevent, stop_event, inferior.CurrentFrame);
 				if (stop_event != null)
 					throw new InternalError ();
 				stop_event = cevent;
@@ -1462,11 +1462,18 @@ namespace Mono.Debugger.Backend
 
 		internal void ReleaseThreadLock (Inferior.ChildEvent cevent)
 		{
+			Report.Debug (DebugFlags.Threads,
+				      "{0} releasing thread lock #1: {1} {2} {3}",
+				      this, cevent, inferior.CurrentFrame,
+				      current_operation);
+
 			// The target stopped before we were able to send the SIGSTOP,
 			// but we haven't processed this event yet.
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 			    (cevent.Argument == 0)) {
-				do_continue ();
+				if (current_operation != null)
+					current_operation.ResumeOperation ();
+
 				return;
 			}
 
@@ -1474,15 +1481,6 @@ namespace Mono.Debugger.Backend
 				do_continue ();
 				return;
 			}
-
-#if FIXME
-			bool resume_target;
-			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
-				if (resume_target)
-					inferior.Continue ();
-				return;
-			}
-#endif
 
 			ProcessEvent (cevent);
 		}
@@ -2029,7 +2027,7 @@ namespace Mono.Debugger.Backend
 		{
 			StartFrame = inferior.GetCurrentFrame (true);
 			Report.Debug (DebugFlags.SSE, "{0} executing {1} at {2}",
-				      sse, this, StartFrame);
+				      sse, this, StartFrame.Address);
 			DoExecute ();
 		}
 
@@ -2040,7 +2038,7 @@ namespace Mono.Debugger.Backend
 			sse.Stop ();
 		}
 
-		protected virtual bool ResumeOperation ()
+		public virtual bool ResumeOperation ()
 		{
 			return false;
 		}
@@ -2081,6 +2079,12 @@ namespace Mono.Debugger.Backend
 		protected virtual EventResult ProcessEvent (Inferior.ChildEvent cevent,
 							    out TargetEventArgs args)
 		{
+			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
+				args = null;
+				if (ResumeOperation ())
+					return EventResult.Running;
+			}
+
 			if (child != null) {
 				EventResult result = child.ProcessEvent (cevent, out args);
 
@@ -2606,10 +2610,13 @@ namespace Mono.Debugger.Backend
 							       out TargetEventArgs args)
 		{
 			args = null;
-			if (DoProcessEvent ())
-				return EventResult.Completed;
+			bool completed;
+			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED)
+				completed = !ResumeOperation ();
 			else
-				return EventResult.Running;
+				completed = DoProcessEvent ();
+
+			return completed ? EventResult.Completed : EventResult.Running;
 		}
 
 		protected abstract bool DoProcessEvent ();
@@ -2692,7 +2699,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		protected override bool ResumeOperation ()
+		public override bool ResumeOperation ()
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
@@ -2894,7 +2901,7 @@ namespace Mono.Debugger.Backend
 				sse.do_continue ();
 		}
 
-		protected override bool ResumeOperation ()
+		public override bool ResumeOperation ()
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
@@ -2962,7 +2969,7 @@ namespace Mono.Debugger.Backend
 			sse.do_next_native ();
 		}
 
-		protected override bool ResumeOperation ()
+		public override bool ResumeOperation ()
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
