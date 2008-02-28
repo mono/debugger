@@ -2027,7 +2027,8 @@ namespace Mono.Debugger.Backend
 		{
 			StartFrame = inferior.GetCurrentFrame (true);
 			Report.Debug (DebugFlags.SSE, "{0} executing {1} at {2}",
-				      sse, this, StartFrame.Address);
+				      sse, this, StartFrame != null ?
+				      StartFrame.Address : TargetAddress.Null);
 			DoExecute ();
 		}
 
