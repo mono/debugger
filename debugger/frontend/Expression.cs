@@ -1395,8 +1395,6 @@ namespace Mono.Debugger.Frontend
 
 			for (int i = 0; i < types.Length; i++) {
 				TargetType param_type = sig.ParameterTypes [i];
-				Console.WriteLine ("IS APPLICABLE: {0} {1} {2} {3}", method,
-						   param_type, types [i], param_type == types [i]);
 
 				if (param_type == types [i])
 					continue;

@@ -338,11 +338,9 @@ namespace Mono.Debugger.Languages.Mono
 							       TargetAddress signature)
 		{
 			int count = memory.ReadInteger (signature + 4) & 0x0000ffff;
-			Console.WriteLine ("GET METHOD SIGNATURE: {0} {1}", signature, count);
 
 			int offset = memory.TargetAddressSize == 8 ? 16 : 12;
 			TargetAddress ret = memory.ReadAddress (signature + offset);
-			Console.WriteLine ("GET METHOD SIGNATURE #1: {0} {1}", signature, ret);
 
 			TargetType ret_type = mono.ReadType (memory, ret);
 			if (count == 0)
@@ -352,15 +350,9 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader reader = new TargetReader (
 				memory.ReadMemory (signature + offset, count * memory.TargetAddressSize));
 
-			Console.WriteLine ("GET METHOD SIGNATURE #3: {0}", reader.BinaryReader.HexDump ());
-
 			TargetType[] param_types = new TargetType [count];
-			for (int i = 0; i < count; i++) {
-				TargetAddress addr = reader.ReadAddress ();
-				Console.WriteLine ("GET METHOD SIGNATURE #4: {0}", addr);
-				param_types [i] = mono.ReadType (memory, addr);
-				Console.WriteLine ("GET METHOD SIGNATURE #5: {0}", param_types [i]);
-			}
+			for (int i = 0; i < count; i++)
+				param_types [i] = mono.ReadType (memory, reader.ReadAddress ());
 
 			return new MonoMethodSignature (ret_type, param_types);
 		}

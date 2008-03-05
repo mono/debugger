@@ -24,6 +24,11 @@ public class Foo<T>
 		Console.WriteLine (t);
 		return new T [] { t };
 	}
+
+	public void Generic<S> (S s)
+	{
+		Console.WriteLine (s);
+	}
 }
 
 public class Test
