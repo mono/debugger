@@ -1,3 +1,7 @@
+2008-03-04  Martin Baulig  <martin@ximian.com>
+
+	* debug-debugger.h (MonoDebuggerInfo): Added `get_method_signature.
+
 2008-01-31  Zoltan Varga  <vargaz@gmail.com>
 
 	* mini.c: Fix a couple more soft-float issues.
