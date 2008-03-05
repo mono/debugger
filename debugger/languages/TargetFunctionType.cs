@@ -75,5 +75,7 @@ namespace Mono.Debugger.Languages
 							 FunctionBreakpointHandle handle);
 
 		internal abstract void RemoveBreakpoint (Thread target);
+
+		public abstract TargetMethodSignature GetSignature (Thread target);
 	}
 }

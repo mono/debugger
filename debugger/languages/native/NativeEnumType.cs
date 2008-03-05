@@ -93,13 +93,15 @@ namespace Mono.Debugger.Languages.Native
 		int const_value;
 
 		public NativeEnumInfo (TargetType field_type, string name, int index, int value)
-			: base (field_type, name, index, false, 0, 0, true)
+			: base (field_type, name, index, false,
+				TargetMemberAccessibility.Public, 0, 0, true)
 		{
 			this.const_value = value;
 		}
 
 		public NativeEnumInfo (TargetType field_type, string name, int index)
-			: base (field_type, name, index, false, 0, 0, false)
+			: base (field_type, name, index, false,
+				TargetMemberAccessibility.Public, 0, 0, false)
 		{ }
 
 		public override object ConstValue {

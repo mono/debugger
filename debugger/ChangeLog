@@ -1,3 +1,22 @@
+2008-03-05  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetMethodSignature.cs: New file.
+	(TargetMethodSignature): New public abstract class.
+
+	* languages/TargetType.cs
+	(TargetType.ContainsGenericParameters): New public abstract
+	property.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.GetSignature): New public abstract method.
+
+	* languages/TargetMember.cs
+	(TargetMemberAccessibility): New public enum.
+	(TargetMemberInfo.Accessibility): New public readonly field.
+
+	* frontend/Style.cs
+	(Style.FormatStruct): Sort the members by their accessibility.
+
 2008-02-28  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ScriptingContext.cs

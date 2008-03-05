@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -433,59 +434,203 @@ namespace Mono.Debugger.Frontend
 			return retval;
 		}
 
+		protected void FormatAccessibility (StringBuilder sb, string prefix,
+						    TargetMemberAccessibility accessibility)
+		{
+			switch (accessibility) {
+			case TargetMemberAccessibility.Public:
+				sb.Append (prefix + "public:\n");
+				break;
+			case TargetMemberAccessibility.Protected:
+				sb.Append (prefix + "protected:\n");
+				break;
+			case TargetMemberAccessibility.Internal:
+				sb.Append (prefix + "internal:\n");
+				break;
+			default:
+				sb.Append (prefix + "private:\n");
+				break;
+			}
+		}
+
+		protected void FormatFields (TargetClassType type, bool is_static,
+					     TargetMemberAccessibility accessibility,
+					     List<string> members, string prefix, Hashtable hash)
+		{
+			List<TargetFieldInfo> list = new List<TargetFieldInfo> ();
+			foreach (TargetFieldInfo field in type.Fields) {
+				if (field.IsStatic != is_static)
+					continue;
+				if (field.Accessibility != accessibility)
+					continue;
+				list.Add (field);
+			}
+			if (list.Count == 0)
+				return;
+
+			foreach (TargetFieldInfo field in list)
+				members.Add (FormatMember (prefix, field, is_static, hash) + ";\n");
+		}
+
+		protected void FormatFields (TargetClassType type,
+					     TargetMemberAccessibility accessibility,
+					     List<String> members, string prefix, Hashtable hash)
+		{
+			FormatFields (type, false, accessibility, members, prefix, hash);
+			FormatFields (type, true, accessibility, members, prefix, hash);
+		}
+
+		protected void FormatProperties (TargetClassType type, bool is_static,
+						 TargetMemberAccessibility accessibility,
+						 List<string> members, string prefix, Hashtable hash)
+		{
+			List<TargetPropertyInfo> list = new List<TargetPropertyInfo> ();
+			foreach (TargetPropertyInfo property in type.Properties) {
+				if (property.IsStatic != is_static)
+					continue;
+				if (property.Accessibility != accessibility)
+					continue;
+				list.Add (property);
+			}
+			if (list.Count == 0)
+				return;
+
+			foreach (TargetPropertyInfo property in list)
+				members.Add (FormatProperty (prefix, property, is_static, hash));
+		}
+
+		protected void FormatProperties (TargetClassType type,
+						 TargetMemberAccessibility accessibility,
+						 List<string> members, string prefix, Hashtable hash)
+		{
+			FormatProperties (type, false, accessibility, members, prefix, hash);
+			FormatProperties (type, true, accessibility, members, prefix, hash);
+		}
+
+		protected void FormatEvents (TargetClassType type, bool is_static,
+					     TargetMemberAccessibility accessibility,
+					     List<string> members, string prefix, Hashtable hash)
+		{
+			List<TargetEventInfo> list = new List<TargetEventInfo> ();
+			foreach (TargetEventInfo einfo in type.Events) {
+				if (einfo.IsStatic != is_static)
+					continue;
+				if (einfo.Accessibility != accessibility)
+					continue;
+				list.Add (einfo);
+			}
+			if (list.Count == 0)
+				return;
+
+			foreach (TargetEventInfo einfo in list)
+				members.Add (FormatEvent (prefix, einfo, is_static, hash));
+		}
+
+		protected void FormatEvents (TargetClassType type,
+					     TargetMemberAccessibility accessibility,
+					     List<string> members, string prefix, Hashtable hash)
+		{
+			FormatEvents (type, false, accessibility, members, prefix, hash);
+			FormatEvents (type, true, accessibility, members, prefix, hash);
+		}
+
+		protected void FormatMethods (TargetClassType type, bool is_ctor, bool is_static,
+					      TargetMemberAccessibility accessibility,
+					      List<string> members, string prefix, Hashtable hash)
+		{
+			List<TargetMethodInfo> list = new List<TargetMethodInfo> ();
+			TargetMethodInfo[] methods = is_ctor ? type.Constructors : type.Methods;
+			foreach (TargetMethodInfo method in methods) {
+				if (method.IsStatic != is_static)
+					continue;
+				if (method.Accessibility != accessibility)
+					continue;
+				list.Add (method);
+			}
+			if (list.Count == 0)
+				return;
+
+			foreach (TargetMethodInfo method in list)
+				members.Add (FormatMethod (prefix, method, is_static, is_ctor, hash));
+		}
+
+		protected void FormatMethods (TargetClassType type,
+					      TargetMemberAccessibility accessibility,
+					      List<string> members, string prefix, Hashtable hash)
+		{
+			FormatMethods (type, false, false, accessibility, members, prefix, hash);
+			FormatMethods (type, true, false, accessibility, members, prefix, hash);
+			FormatMethods (type, false, true, accessibility, members, prefix, hash);
+			FormatMethods (type, true, true, accessibility, members, prefix, hash);
+		}
+
 		protected string FormatStruct (string prefix, TargetClassType type, Hashtable hash)
 		{
 			StringBuilder sb = new StringBuilder ();
 
-			foreach (TargetFieldInfo field in type.Fields) {
-				if (field.IsStatic)
-					continue;
-				sb.Append (FormatMember (prefix, field, false, hash) + ";\n");
+			List<string> public_members = new List<string> ();
+			List<string> protected_members = new List<string> ();
+			List<string> internal_members = new List<string> ();
+			List<string> private_members = new List<string> ();
+
+			FormatFields (type, TargetMemberAccessibility.Public,
+				      public_members, prefix, hash);
+			FormatFields (type, TargetMemberAccessibility.Protected,
+				      protected_members, prefix, hash);
+			FormatFields (type, TargetMemberAccessibility.Internal,
+				      internal_members, prefix, hash);
+			FormatFields (type, TargetMemberAccessibility.Private,
+				      private_members, prefix, hash);
+
+			FormatProperties (type, TargetMemberAccessibility.Public,
+					  public_members, prefix, hash);
+			FormatProperties (type, TargetMemberAccessibility.Protected,
+					  protected_members, prefix, hash);
+			FormatProperties (type, TargetMemberAccessibility.Internal,
+					  internal_members, prefix, hash);
+			FormatProperties (type, TargetMemberAccessibility.Private,
+					  private_members, prefix, hash);
+
+			FormatEvents (type, TargetMemberAccessibility.Public,
+					  public_members, prefix, hash);
+			FormatEvents (type, TargetMemberAccessibility.Protected,
+					  protected_members, prefix, hash);
+			FormatEvents (type, TargetMemberAccessibility.Internal,
+					  internal_members, prefix, hash);
+			FormatEvents (type, TargetMemberAccessibility.Private,
+					  private_members, prefix, hash);
+
+			FormatMethods (type, TargetMemberAccessibility.Public,
+				       public_members, prefix, hash);
+			FormatMethods (type, TargetMemberAccessibility.Protected,
+				       protected_members, prefix, hash);
+			FormatMethods (type, TargetMemberAccessibility.Internal,
+				       internal_members, prefix, hash);
+			FormatMethods (type, TargetMemberAccessibility.Private,
+				       private_members, prefix, hash);
+
+			if (public_members.Count > 0) {
+				sb.Append (prefix + "public:\n");
+				foreach (string text in public_members)
+					sb.Append (text);
 			}
-			foreach (TargetFieldInfo field in type.Fields) {
-				if (!field.IsStatic)
-					continue;
-				sb.Append (FormatMember (prefix, field, true, hash) + ";\n");
+
+			if (protected_members.Count > 0) {
+				sb.Append (prefix + "protected:\n");
+				foreach (string text in protected_members)
+					sb.Append (text);
 			}
-			foreach (TargetPropertyInfo property in type.Properties) {
-				if (property.IsStatic)
-					continue;
-				sb.Append (FormatProperty (prefix, property, false, hash));
+
+			if (internal_members.Count > 0) {
+				sb.Append (prefix + "internal:\n");
+				foreach (string text in internal_members)
+					sb.Append (text);
 			}
-			foreach (TargetPropertyInfo property in type.Properties) {
-				if (!property.IsStatic)
-					continue;
-				sb.Append (FormatProperty (prefix, property, true, hash));
-			}
-			foreach (TargetEventInfo ev in type.Events) {
-				if (ev.IsStatic)
-					continue;
-				sb.Append (FormatEvent (prefix, ev, false, hash));
-			}
-			foreach (TargetEventInfo ev in type.Events) {
-				if (!ev.IsStatic)
-					continue;
-				sb.Append (FormatEvent (prefix, ev, true, hash));
-			}
-			foreach (TargetMethodInfo method in type.Methods) {
-				if (method.IsStatic)
-					continue;
-				sb.Append (FormatMethod (prefix, method, false, false, hash));
-			}
-			foreach (TargetMethodInfo method in type.Methods) {
-				if (!method.IsStatic)
-					continue;
-				sb.Append (FormatMethod (prefix, method, true, false, hash));
-			}
-			foreach (TargetMethodInfo method in type.Constructors) {
-				if (method.IsStatic)
-					continue;
-				sb.Append (FormatMethod (prefix, method, false, true, hash));
-			}
-			foreach (TargetMethodInfo method in type.Constructors) {
-				if (!method.IsStatic)
-					continue;
-				sb.Append (FormatMethod (prefix, method, true, true, hash));
+
+			if (private_members.Count > 0) {
+				sb.Append (prefix + "private:\n");
+				foreach (string text in private_members)
+					sb.Append (text);
 			}
 
 			return sb.ToString ();

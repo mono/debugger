@@ -323,8 +323,8 @@ namespace Mono.Debugger.Backend
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 66;
-		public const int  MaxDynamicVersion = 66;
+		public const int  MinDynamicVersion = 67;
+		public const int  MaxDynamicVersion = 67;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly int MonoTrampolineNum;
@@ -357,6 +357,7 @@ namespace Mono.Debugger.Backend
 		public readonly TargetAddress BreakpointInfoIndex;
 		public readonly int ExecutableCodeBufferSize;
 		public readonly int BreakpointArraySize;
+		public readonly TargetAddress GetMethodSignature;
 
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
@@ -426,6 +427,8 @@ namespace Mono.Debugger.Backend
 
 			ExecutableCodeBufferSize  = reader.ReadInteger ();
 			BreakpointArraySize       = reader.ReadInteger ();
+
+			GetMethodSignature        = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}

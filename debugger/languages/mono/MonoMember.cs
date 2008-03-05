@@ -12,9 +12,26 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoFieldInfo (IMonoStructType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
-			: base (field_type, finfo.Name, pos, finfo.IsStatic, pos, 0, finfo.HasConstant)
+			: base (field_type, finfo.Name, pos, finfo.IsStatic,
+				GetAccessibility (finfo), pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
+		}
+
+		internal static TargetMemberAccessibility GetAccessibility (Cecil.FieldDefinition field)
+		{
+			switch (field.Attributes & Cecil.FieldAttributes.FieldAccessMask) {
+			case Cecil.FieldAttributes.Public:
+				return TargetMemberAccessibility.Public;
+			case Cecil.FieldAttributes.Family:
+			case Cecil.FieldAttributes.FamANDAssem:
+				return TargetMemberAccessibility.Protected;
+			case Cecil.FieldAttributes.Assembly:
+			case Cecil.FieldAttributes.FamORAssem:
+				return TargetMemberAccessibility.Internal;
+			default:
+				return TargetMemberAccessibility.Private;
+			}
 		}
 
 		public override object ConstValue {
@@ -36,7 +53,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		public MonoEnumInfo (MonoEnumType type, TargetType field_type, int index, int pos,
 				     Cecil.FieldDefinition finfo)
-			: base (field_type, finfo.Name, index, finfo.IsStatic, pos, 0, finfo.HasConstant)
+			: base (field_type, finfo.Name, index, finfo.IsStatic,
+				MonoFieldInfo.GetAccessibility (finfo),
+				pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
 			this.type = type;
@@ -60,7 +79,7 @@ namespace Mono.Debugger.Languages.Mono
 		private MonoMethodInfo (IMonoStructType klass, int index, Cecil.MethodDefinition minfo,
 					MonoFunctionType type)
 			: base (type, MonoFunctionType.GetMethodName (minfo), index,
-				minfo.IsStatic, type.FullName)
+				minfo.IsStatic, GetAccessibility (minfo), type.FullName)
 		{
 			FunctionType = type;
 		}
@@ -71,6 +90,22 @@ namespace Mono.Debugger.Languages.Mono
 			MonoFunctionType type = klass.LookupFunction (minfo);
 			return new MonoMethodInfo (klass, index, minfo, type);
 		}
+
+		internal static TargetMemberAccessibility GetAccessibility (Cecil.MethodDefinition method)
+		{
+			switch (method.Attributes & Cecil.MethodAttributes.MemberAccessMask) {
+			case Cecil.MethodAttributes.Public:
+				return TargetMemberAccessibility.Public;
+			case Cecil.MethodAttributes.Family:
+			case Cecil.MethodAttributes.FamANDAssem:
+				return TargetMemberAccessibility.Protected;
+			case Cecil.MethodAttributes.Assem:
+			case Cecil.MethodAttributes.FamORAssem:
+				return TargetMemberAccessibility.Internal;
+			default:
+				return TargetMemberAccessibility.Private;
+			}
+		}
 	}
 
 	[Serializable]
@@ -80,9 +115,10 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
 		private MonoEventInfo (MonoClassType klass, int index, Cecil.EventDefinition einfo,
-				       TargetType type, bool is_static,  MonoFunctionType add,
+				       TargetType type, bool is_static,
+				       TargetMemberAccessibility accessibility, MonoFunctionType add,
 				       MonoFunctionType remove, MonoFunctionType raise)
-			: base (type, einfo.Name, index, is_static, add, remove, raise)
+			: base (type, einfo.Name, index, is_static, accessibility, add, remove, raise)
 		{
 			this.Klass = klass;
 			this.AddType = add;
@@ -97,26 +133,31 @@ namespace Mono.Debugger.Languages.Mono
 
 			bool is_static = false;
 			MonoFunctionType add, remove, raise;
+
+			TargetMemberAccessibility accessibility = TargetMemberAccessibility.Private;
 			if (einfo.AddMethod != null) {
 				add = klass.LookupFunction (einfo.AddMethod);
 				is_static = einfo.AddMethod.IsStatic;
+				accessibility = MonoMethodInfo.GetAccessibility (einfo.AddMethod);
 			} else
 				add = null;
 
 			if (einfo.RemoveMethod != null) {
 				remove = klass.LookupFunction (einfo.RemoveMethod);
 				is_static = einfo.RemoveMethod.IsStatic;
+				accessibility = MonoMethodInfo.GetAccessibility (einfo.RemoveMethod);
 			} else
 				remove = null;
 
 			if (einfo.InvokeMethod != null) {
 				raise = klass.LookupFunction (einfo.InvokeMethod);
 				is_static = einfo.InvokeMethod.IsStatic;
+				accessibility = MonoMethodInfo.GetAccessibility (einfo.InvokeMethod);
 			} else
 				raise = null;
 
 			return new MonoEventInfo (
-				klass, index, einfo, type, is_static, add, remove, raise);
+				klass, index, einfo, type, is_static, accessibility, add, remove, raise);
 		}
 	}
 
@@ -128,8 +169,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		private MonoPropertyInfo (TargetType type, IMonoStructType klass, int index,
 					  bool is_static, Cecil.PropertyDefinition pinfo,
+					  TargetMemberAccessibility accessibility,
 					  MonoFunctionType getter, MonoFunctionType setter)
-			: base (type, pinfo.Name, index, is_static, getter, setter)
+			: base (type, pinfo.Name, index, is_static, accessibility, getter, setter)
 		{
 			this.Klass = klass;
 			this.GetterType = getter;
@@ -143,20 +185,23 @@ namespace Mono.Debugger.Languages.Mono
 
 			bool is_static = false;
 			MonoFunctionType getter, setter;
-			if (pinfo.GetMethod != null) {
-				getter = klass.LookupFunction (pinfo.GetMethod);
-				is_static = pinfo.GetMethod.IsStatic;
-			} else
-				getter = null;
-
+			TargetMemberAccessibility accessibility = TargetMemberAccessibility.Private;
 			if (pinfo.SetMethod != null) {
 				setter = klass.LookupFunction (pinfo.SetMethod);
 				is_static = pinfo.SetMethod.IsStatic;
+				accessibility = MonoMethodInfo.GetAccessibility (pinfo.SetMethod);
 			} else
 				setter = null;
 
+			if (pinfo.GetMethod != null) {
+				getter = klass.LookupFunction (pinfo.GetMethod);
+				is_static = pinfo.GetMethod.IsStatic;
+				accessibility = MonoMethodInfo.GetAccessibility (pinfo.GetMethod);
+			} else
+				getter = null;
+
 			return new MonoPropertyInfo (
-				type, klass, index, is_static, pinfo, getter, setter);
+				type, klass, index, is_static, pinfo, accessibility, getter, setter);
 		}
 	}
 }

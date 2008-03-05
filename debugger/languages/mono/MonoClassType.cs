@@ -123,6 +123,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.BaseType != null; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return type.GenericParameters.Count != 0; }
+		}
+
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)
 		{
 			if (parent_type != null)

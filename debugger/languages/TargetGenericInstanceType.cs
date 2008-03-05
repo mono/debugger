@@ -13,5 +13,9 @@ namespace Mono.Debugger.Languages
 		public abstract TargetType[] TypeArguments {
 			get;
 		}
+
+		public override bool ContainsGenericParameters {
+			get { return true; }
+		}
 	}
 }

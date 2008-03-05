@@ -5,5 +5,9 @@ namespace Mono.Debugger.Languages
 		protected TargetGenericParameterType (Language language)
 			: base (language, TargetObjectKind.GenericParameter)
 		{ }
+
+		public override bool ContainsGenericParameters {
+			get { return true; }
+		}
 	}
 }

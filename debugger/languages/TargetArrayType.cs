@@ -25,6 +25,10 @@ namespace Mono.Debugger.Languages
 			get { return element_type; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return ElementType.ContainsGenericParameters; }
+		}
+
 		public override bool IsByRef {
 			get { return true; }
 		}

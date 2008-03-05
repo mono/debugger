@@ -1391,8 +1391,12 @@ namespace Mono.Debugger.Frontend
 		public static bool IsApplicable (ScriptingContext context, TargetFunctionType method,
 						 TargetType[] types, out string error)
 		{
+			TargetMethodSignature sig = method.GetSignature (context.CurrentThread);
+
 			for (int i = 0; i < types.Length; i++) {
-				TargetType param_type = method.ParameterTypes [i];
+				TargetType param_type = sig.ParameterTypes [i];
+				Console.WriteLine ("IS APPLICABLE: {0} {1} {2} {3}", method,
+						   param_type, types [i], param_type == types [i]);
 
 				if (param_type == types [i])
 					continue;
@@ -1971,6 +1975,23 @@ namespace Mono.Debugger.Frontend
 			class_info.SetField (target, InstanceObject, field, obj);
 		}
 
+		protected void SetProperty (ScriptingContext context, TargetPropertyInfo prop,
+					    TargetObject obj)
+		{
+			ResolveClass (context.CurrentThread);
+			if (prop.Setter == null)
+				throw new ScriptingException ("Property `{0}' has no setter.", Name);
+
+			RuntimeInvokeResult result = context.Interpreter.RuntimeInvoke (
+				context.CurrentThread, prop.Setter, InstanceObject,
+				new TargetObject [] { obj }, true, false);
+
+			if (result.ExceptionMessage != null)
+				throw new ScriptingException (
+					"Invocation of `{0}' raised an exception: {1}",
+					Name, result.ExceptionMessage);
+		}
+
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			if (Member is TargetFieldInfo) {
@@ -1981,10 +2002,15 @@ namespace Mono.Debugger.Frontend
 						obj.TypeName, Name, Member.Type.Name);
 
 				SetField (context.CurrentThread, (TargetFieldInfo) Member, obj);
-			}
-			else if (Member is TargetPropertyInfo) 
-			  	throw new ScriptingException ("Can't set properties directly.");
-			else if (Member is TargetEventInfo)
+			} else if (Member is TargetPropertyInfo) {
+				if (Member.Type != obj.Type)
+					throw new ScriptingException (
+						"Type mismatch: cannot assign expression of type " +
+						"`{0}' to property `{1}', which is of type `{2}'.",
+						obj.TypeName, Name, Member.Type.Name);
+
+				SetProperty (context, (TargetPropertyInfo) Member, obj);
+			} else if (Member is TargetEventInfo)
 				throw new ScriptingException ("Can't set events directly.");
 			else if (Member is TargetMethodInfo)
 				throw new ScriptingException ("Can't set methods directly.");
@@ -3027,10 +3053,12 @@ namespace Mono.Debugger.Frontend
 			for (int i = 0; i < arguments.Length; i++)
 				args [i] = arguments [i].EvaluateObject (context);
 
+			TargetMethodSignature sig = method.GetSignature (context.CurrentThread);
+
 			TargetObject[] objs = new TargetObject [args.Length];
 			for (int i = 0; i < args.Length; i++) {
 				objs [i] = Convert.ImplicitConversionRequired (
-					context, args [i], method.ParameterTypes [i]);
+					context, args [i], sig.ParameterTypes [i]);
 			}
 
 			TargetStructObject instance = method_expr.InstanceObject;

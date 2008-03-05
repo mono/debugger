@@ -520,6 +520,8 @@ namespace Mono.Debugger.Languages.Mono
 				return BuiltinTypes.IntType;
 			case MonoTypeEnum.MONO_TYPE_U:
 				return BuiltinTypes.UIntType;
+			case MonoTypeEnum.MONO_TYPE_VOID:
+				return BuiltinTypes.VoidType;
 
 			case MonoTypeEnum.MONO_TYPE_PTR: {
 				TargetType target_type = ReadType (memory, data);

@@ -22,6 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 		int token;
 
 		int load_handler;
+		MonoMethodSignature signature;
 
 		internal MonoFunctionType (IMonoStructType klass, Cecil.MethodDefinition mdef)
 			: base (klass.File.MonoLanguage)
@@ -126,6 +127,19 @@ namespace Mono.Debugger.Languages.Mono
 			get { return klass.File.TargetMemoryInfo.TargetAddressSize; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get {
+				if (return_type.ContainsGenericParameters)
+					return true;
+
+				foreach (TargetType type in parameter_types)
+					if (type.ContainsGenericParameters)
+						return true;
+
+				return false;
+			}
+		}
+
 		public override bool HasSourceCode {
 			get { return file != null; }
 		}
@@ -186,6 +200,33 @@ namespace Mono.Debugger.Languages.Mono
 		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
 			return klass.ResolveClass (target, fail);
+		}
+
+		public override TargetMethodSignature GetSignature (Thread thread)
+		{
+			if (signature != null)
+				return signature;
+
+			if (!ContainsGenericParameters)
+				return new MonoMethodSignature (return_type, parameter_types);
+
+			TargetAddress addr = (TargetAddress) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					MonoClassInfo class_info = ResolveClass (target, true);
+					return class_info.GetMethodAddress (target, token);
+			});
+
+			MonoLanguageBackend mono = klass.File.MonoLanguage;
+
+			TargetAddress sig = thread.CallMethod (
+				mono.MonoDebuggerInfo.GetMethodSignature, addr, 0);
+
+			signature = (MonoMethodSignature) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return mono.MonoRuntime.GetMethodSignature (mono, target, sig);
+			});
+
+			return signature;
 		}
 	}
 }

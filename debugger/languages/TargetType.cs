@@ -39,6 +39,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract bool ContainsGenericParameters {
+			get;
+		}
+
 		public Language Language {
 			get { return language; }
 		}

@@ -27,7 +27,7 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Main()", GetLine ("main"));
 
 			AssertType (thread, "test",
-				    "class Test : Foo`1<Test>\n{\n   .ctor ();\n}");
+				    "class Test : Foo`1<Test>\n{\npublic:\n   .ctor ();\n}");
 
 			AssertExecute ("next");
 			AssertStopped (thread, "X.Main()", GetLine ("main") + 1);

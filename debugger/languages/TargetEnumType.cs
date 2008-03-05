@@ -12,6 +12,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public abstract TargetEnumInfo Value {
 			get;
 		}

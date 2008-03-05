@@ -20,6 +20,10 @@ namespace Mono.Debugger.Languages
 			get { return false; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public override TargetType StaticType {
 			get {
 				throw new InvalidOperationException ();
