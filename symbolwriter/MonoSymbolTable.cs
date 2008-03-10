@@ -310,15 +310,13 @@ namespace Mono.CompilerServices.SymbolWriter
 		#region This is actually written to the symbol file
 		public readonly int Index;
 		public readonly string Name;
-		public readonly byte[] Signature;
 		public readonly int BlockIndex;
 		#endregion
 
-		public LocalVariableEntry (int index, string name, byte[] sig, int block)
+		public LocalVariableEntry (int index, string name, int block)
 		{
 			this.Index = index;
 			this.Name = name;
-			this.Signature = sig;
 			this.BlockIndex = block;
 		}
 
@@ -326,8 +324,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			Index = reader.ReadLeb128 ();
 			Name = reader.ReadString ();
-			int sig_length = reader.ReadLeb128 ();
-			Signature = reader.ReadBytes (sig_length);
 			BlockIndex = reader.ReadLeb128 ();
 		}
 
@@ -335,8 +331,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			bw.WriteLeb128 (Index);
 			bw.Write (Name);
-			bw.WriteLeb128 ((int) Signature.Length);
-			bw.Write (Signature);
 			bw.WriteLeb128 (BlockIndex);
 		}
 

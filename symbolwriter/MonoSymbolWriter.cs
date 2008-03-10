@@ -96,12 +96,18 @@ namespace Mono.CompilerServices.SymbolWriter
 		public void CloseNamespace ()
 		{ }
 
+		[Obsolete("The signature argument is gone")]
 		public void DefineLocalVariable (int index, string name, byte[] signature)
+		{
+			DefineLocalVariable (index, name);
+		}
+
+		public void DefineLocalVariable (int index, string name)
 		{
 			if (current_method == null)
 				return;
 
-			current_method.AddLocal (index, name, signature);
+			current_method.AddLocal (index, name);
 		}
 
 		public void DefineCapturedLocal (int scope_id, string name, string captured_name)
@@ -347,12 +353,12 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
-			public void AddLocal (int index, string name, byte[] sig)
+			public void AddLocal (int index, string name)
 			{
 				if (_locals == null)
 					_locals = new ArrayList ();
 				int block_idx = CurrentBlock != null ? CurrentBlock.Index : 0;
-				_locals.Add (new LocalVariableEntry (index, name, sig, block_idx));
+				_locals.Add (new LocalVariableEntry (index, name, block_idx));
 			}
 
 			public ScopeVariable[] ScopeVariables {

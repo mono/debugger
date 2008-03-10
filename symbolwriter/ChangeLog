@@ -1,6 +1,16 @@
 2008-03-10  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs
+	(LocalVariableEntry): Removed the `Signature' field; we don't
+	write this into the symbol file anymore.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.DefineLocalVariable): The `byte[] signature'
+	argument is now obsolete.
+
+2008-03-10  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
 	(CodeBlockEntry): Write as leb128 to save space.
 
 2008-02-19  Martin Baulig  <martin@ximian.com>
