@@ -1,3 +1,11 @@
+2008-03-10  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(JitCodeBlockEntry): Removed.
+	(MonoSymbolFile.MonoCodeBlock): Read the code blocks directly from
+	the symbol file and compute their start and end addresses from the
+	line number table.
+
 2008-03-05  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetMethodSignature.cs: New file.

@@ -80,37 +80,6 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	// managed version of struct _MonoDebugCodeBlockEntry
-	internal struct JitCodeBlockEntry
-	{
-		public readonly Block.Type BlockType;
-		public readonly int Parent;
-		public readonly int StartOffset;
-		public readonly int StartAddress;
-		public readonly int EndOffset;
-		public readonly int EndAddress;
-
-		public JitCodeBlockEntry (int type, int parent,
-					  int start_offset, int start_address,
-					  int end_offset, int end_address)
-		{
-			BlockType = (Block.Type) type;
-			Parent = parent;
-			StartOffset = start_offset;
-			StartAddress = start_address;
-			EndOffset = end_offset;
-			EndAddress = end_address;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("[JitCodeBlockEntry {0}:{1} ({2:x}:{3:x}) - ({4:x}:{5:x})]",
-					      BlockType, Parent, StartOffset, StartAddress,
-					      EndOffset, EndAddress);
-		}
-	}
-
-
 	// managed version of struct _MonoDebugMethodAddress
 	internal class MethodAddress
 	{
@@ -121,7 +90,6 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress MethodEndAddress;
 		public readonly TargetAddress WrapperAddress;
 		public readonly List<JitLineNumberEntry> LineNumbers;
-		public readonly JitCodeBlockEntry[] CodeBlocks;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
@@ -165,23 +133,6 @@ namespace Mono.Debugger.Languages.Mono
 					continue;
 
 				LineNumbers.Add (new JitLineNumberEntry (il_offset, native_offset));
-			}
-
-			int num_code_blocks = reader.ReadLeb128 ();
-			CodeBlocks = new JitCodeBlockEntry [num_code_blocks];
-
-			for (int i = 0; i < num_code_blocks; i ++) {
-				int type = reader.ReadSLeb128 ();
-
-				int parent = reader.ReadLeb128 ();
-				int start_offset = reader.ReadSLeb128 ();
-				int start_address = reader.ReadSLeb128 ();
-				int end_offset = reader.ReadSLeb128 ();
-				int end_address = reader.ReadSLeb128 ();
-
-				CodeBlocks [i] = new JitCodeBlockEntry (
-					type, parent, start_offset, start_address,
-					end_offset, end_address);
 			}
 
 			HasThis = reader.ReadByte () != 0;
@@ -986,10 +937,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			List<MonoCodeBlock> children;
 
-			protected MonoCodeBlock (int index, JitCodeBlockEntry block)
-				: base (block.BlockType, index, block.StartAddress, block.EndAddress)
-			{
-			}
+			protected MonoCodeBlock (int index, Block.Type type, int start, int end)
+				: base (type, index, start, end)
+			{ }
 
 			protected void AddChildBlock (MonoCodeBlock child)
 			{
@@ -1007,26 +957,65 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			public static List<MonoCodeBlock> CreateBlocks (MonoMethod method,
-									JitCodeBlockEntry[] jit)
+			static int find_start_address (MethodAddress address, int il_offset)
 			{
-				MonoCodeBlock[] blocks = new MonoCodeBlock [jit.Length];
-				for (int i = 0; i < blocks.Length; i++)
-					blocks [i] = new MonoCodeBlock (i, jit [i]);
+				int num_line_numbers = address.LineNumbers.Count;
 
-				List<MonoCodeBlock> root_blocks = new List<MonoCodeBlock> ();
+				for (int i = num_line_numbers - 1; i >= 0; i--) {
+					JitLineNumberEntry lne = address.LineNumbers [i];
+
+					if (lne.Offset < 0)
+						continue;
+					if (lne.Offset <= il_offset)
+						return lne.Address;
+				}
+
+				return num_line_numbers > 0 ? address.LineNumbers [0].Address : 0;
+			}
+
+			static int find_end_address (MethodAddress address, int il_offset)
+			{
+				int num_line_numbers = address.LineNumbers.Count;
+
+				for (int i = 0; i < num_line_numbers; i++) {
+					JitLineNumberEntry lne = address.LineNumbers [i];
+
+					if (lne.Offset < 0)
+						continue;
+					if (lne.Offset >= il_offset)
+						return lne.Address;
+				}
+
+				return num_line_numbers > 0 ?
+					address.LineNumbers [num_line_numbers - 1].Address : 0;
+			}
+
+			public static MonoCodeBlock[] CreateBlocks (MonoMethod method,
+								    MethodAddress address,
+								    C.CodeBlockEntry[] the_blocks,
+								    out List<MonoCodeBlock> root_blocks)
+			{
+				MonoCodeBlock[] blocks = new MonoCodeBlock [the_blocks.Length];
+				for (int i = 0; i < blocks.Length; i++) {
+					Block.Type type = (Block.Type) the_blocks [i].BlockType;
+					int start = find_start_address (address, the_blocks [i].StartOffset);
+					int end = find_end_address (address, the_blocks [i].EndOffset);
+					blocks [i] = new MonoCodeBlock (i, type, start, end);
+				}
+
+				root_blocks = new List<MonoCodeBlock> ();
 
 				for (int i = 0; i < blocks.Length; i++) {
-					if (jit [i].Parent < 0)
+					if (the_blocks [i].Parent < 0)
 						root_blocks.Add (blocks [i]);
 					else {
-						MonoCodeBlock parent = blocks [jit [i].Parent - 1];
+						MonoCodeBlock parent = blocks [the_blocks [i].Parent - 1];
 						blocks [i].Parent = parent;
 						parent.AddChildBlock (blocks [i]);
 					}
 				}
 
-				return root_blocks;
+				return blocks;
 			}
 		}
 		
@@ -1038,6 +1027,7 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.MethodDefinition mdef;
 			TargetStructType decl_type;
 			TargetVariable this_var;
+			MonoCodeBlock[] code_blocks;
 			List<MonoCodeBlock> root_blocks;
 			List<TargetVariable> parameters;
 			List<TargetVariable> locals;
@@ -1113,10 +1103,11 @@ namespace Mono.Debugger.Languages.Mono
 				else
 					decl_type = (TargetStructType) decl;
 
-				root_blocks = MonoCodeBlock.CreateBlocks (this, address.CodeBlocks);
+				code_blocks = MonoCodeBlock.CreateBlocks (
+					this, address, method.CodeBlocks, out root_blocks);
 
-				foreach (JitCodeBlockEntry block in address.CodeBlocks)
-					if (block.BlockType == Block.Type.IteratorBody)
+				foreach (C.CodeBlockEntry block in method.CodeBlocks)
+					if (block.BlockType == C.CodeBlockEntry.Type.IteratorBody)
 						is_iterator = true;
 
 				locals = new List<TargetVariable> ();
@@ -1212,7 +1203,7 @@ namespace Mono.Debugger.Languages.Mono
 
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
-						JitCodeBlockEntry block = address.CodeBlocks [index];
+						MonoCodeBlock block = code_blocks [index];
 						locals.Add (new MonoVariable (
 							local.Name, type, true, type.IsByRef, this, var,
 							block.StartAddress, block.EndAddress));
