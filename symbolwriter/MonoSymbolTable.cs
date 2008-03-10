@@ -256,6 +256,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		public Type BlockType;
 		public int StartOffset;
 		public int EndOffset;
+		int DataOffset;
 		#endregion
 
 		public enum Type {
@@ -276,10 +277,11 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal CodeBlockEntry (int index, MyBinaryReader reader)
 		{
 			this.Index = index;
-			this.BlockType = (Type) reader.ReadInt32 ();
-			this.Parent = reader.ReadInt32 ();
-			this.StartOffset = reader.ReadInt32 ();
-			this.EndOffset = reader.ReadInt32 ();
+			this.BlockType = (Type) reader.ReadLeb128 ();
+			this.Parent = reader.ReadLeb128 ();
+			this.StartOffset = reader.ReadLeb128 ();
+			this.EndOffset = reader.ReadLeb128 ();
+			this.DataOffset = reader.ReadLeb128 ();
 		}
 
 		public void Close (int end_offset)
@@ -289,10 +291,11 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		internal void Write (MyBinaryWriter bw)
 		{
-			bw.Write ((int) BlockType);
-			bw.Write (Parent);
-			bw.Write (StartOffset);
-			bw.Write (EndOffset);
+			bw.WriteLeb128 ((int) BlockType);
+			bw.WriteLeb128 (Parent);
+			bw.WriteLeb128 (StartOffset);
+			bw.WriteLeb128 (EndOffset);
+			bw.WriteLeb128 (DataOffset);
 		}
 
 		public override string ToString ()
