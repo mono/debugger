@@ -1,3 +1,23 @@
+2008-03-10  Martin Baulig  <martin@ximian.com>
+
+	* debug-mono-symfile.h
+	(MonoSymbolFileLexicalBlockEntry): Removed.
+	(MonoSymbolFileCodeBlockEntry): Removed.
+	(MonoSymbolFileCodeBlockType): Removed.
+	(MonoSymbolFileCodeBlockEntry): Removed.
+	(MonoDebugMethodInfo): Removed `num_lexical_blocks',
+	`lexical_blocks', `num_code_blocks' and `code_blocks'.
+
+	* mono-debug.c
+	(mono_debug_add_methods): Removed lexical blocks and code blocks;
+	the debugger now computes their start and end addresses itself
+	from the line number table.
+
+	* mono-debug.h
+	(MonoDebugCodeBlockEntry): Removed.
+	(MonoDebugMethodJitInfo): Removed `num_code_blocks' and
+	`code_blocks'.
+
 2008-03-04  Martin Baulig  <martin@ximian.com>
 
 	* mono-debug.h (MONO_DEBUGGER_VERSION): Bump to 67.

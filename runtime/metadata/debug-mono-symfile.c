@@ -323,15 +323,6 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	minfo->num_il_offsets = read32(&(me->_num_line_numbers));
 	minfo->il_offsets = (MonoSymbolFileLineNumberEntry *)
 		(symfile->raw_contents + read32(&(me->_line_number_table_offset)));
-	minfo->num_lexical_blocks = read32(&(me->_num_lexical_blocks));
-	minfo->lexical_blocks = (MonoSymbolFileLexicalBlockEntry *)
-		(symfile->raw_contents + read32(&(me->_lexical_block_table_offset)));
-
-	if (symfile->version > MONO_SYMBOL_FILE_COMPATIBILITY_VERSION) {
-		minfo->num_code_blocks = read32(&(me->_num_code_blocks));
-		minfo->code_blocks = (MonoSymbolFileCodeBlockEntry *)
-			(symfile->raw_contents + read32(&(me->_code_block_table_offset)));
-	}
 
 	minfo->entry = me;
 

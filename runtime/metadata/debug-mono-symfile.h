@@ -18,8 +18,6 @@ typedef struct MonoSymbolFileMethodAddress	MonoSymbolFileMethodAddress;
 typedef struct MonoSymbolFileDynamicTable	MonoSymbolFileDynamicTable;
 typedef struct MonoSymbolFileSourceEntry	MonoSymbolFileSourceEntry;
 typedef struct MonoSymbolFileMethodIndexEntry	MonoSymbolFileMethodIndexEntry;
-typedef struct MonoSymbolFileLexicalBlockEntry	MonoSymbolFileLexicalBlockEntry;
-typedef struct MonoSymbolFileCodeBlockEntry	MonoSymbolFileCodeBlockEntry;
 
 /* Keep in sync with OffsetTable in mcs/class/Mono.CSharp.Debugger/MonoSymbolTable.cs */
 struct MonoSymbolFileOffsetTable {
@@ -94,18 +92,6 @@ struct MonoSymbolFileLexicalBlockEntry {
 	guint32 _end_offset;
 };
 
-typedef enum {
-	MONO_DEBUG_CODE_BLOCK_TYPE_LEXICAL		= 1,
-	MONO_DEBUG_CODE_BLOCK_TYPE_COMPILER_GENERATED	= 2
-} MonoSymbolFileCodeBlockType;
-
-struct MonoSymbolFileCodeBlockEntry {
-	guint32 _block_type;
-	gint32 _parent_idx;
-	guint32 _start_offset;
-	guint32 _end_offset;
-};
-
 struct MonoSymbolFileLineNumberEntry {
 	guint32 _row;
 	guint32 _offset;
@@ -117,23 +103,10 @@ struct _MonoDebugMethodInfo {
 	guint32 index;
 	guint32 num_il_offsets;
 	MonoSymbolFileLineNumberEntry *il_offsets;
-	guint32 num_lexical_blocks;
-	MonoSymbolFileLexicalBlockEntry *lexical_blocks;
-	guint32 num_code_blocks;
-	MonoSymbolFileCodeBlockEntry *code_blocks;
 	MonoSymbolFileMethodEntry *entry;
 };
 
 struct _MonoDebugLexicalBlockEntry {
-	guint32 il_start_offset;
-	guint32 native_start_offset;
-	guint32 il_end_offset;
-	guint32 native_end_offset;
-};
-
-struct _MonoDebugCodeBlockEntry {
-	guint32 block_type;
-	gint32 parent_block;
 	guint32 il_start_offset;
 	guint32 native_start_offset;
 	guint32 il_end_offset;
