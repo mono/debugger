@@ -57,14 +57,8 @@ namespace Mono.CSharp {
 
 		public void DefineLocalVariable (string name, LocalBuilder builder)
 		{
-			SignatureHelper sighelper = SignatureHelper.GetLocalVarSigHelper (
-				module_builder);
-			sighelper.AddArgument (builder.LocalType);
-			byte[] signature = sighelper.GetSignature ();
-
 			int index = MonoDebuggerSupport.GetLocalIndex (builder);
-
-			DefineLocalVariable (index, name, signature);
+			DefineLocalVariable (index, name);
 		}
 
 		public void DefineScopeVariable (int scope, LocalBuilder builder)
