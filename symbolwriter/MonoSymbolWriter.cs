@@ -135,6 +135,9 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public void DefineScopeVariable (int scope, int index)
 		{
+			if (current_method == null)
+				return;
+
 			current_method.AddScopeVariable (scope, index);
 		}
 
@@ -212,12 +215,18 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public void OpenCompilerGeneratedBlock (int start_offset)
 		{
+			if (current_method == null)
+				return;
+
 			current_method.StartBlock (CodeBlockEntry.Type.CompilerGenerated,
 						   start_offset);
 		}
 
 		public void CloseCompilerGeneratedBlock (int end_offset)
 		{
+			if (current_method == null)
+				return;
+
 			current_method.EndBlock (end_offset);
 		}
 
