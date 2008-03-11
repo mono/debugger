@@ -251,13 +251,13 @@ namespace Mono.CompilerServices.SymbolWriter
 	public class CodeBlockEntry
 	{
 		public int Index;
-		public int Parent;
 		#region This is actually written to the symbol file
+		public int Parent;
 		public Type BlockType;
 		public int StartOffset;
 		public int EndOffset;
-		int DataOffset;
 		#endregion
+		bool HasData;
 
 		public enum Type {
 			Lexical			= 1,
@@ -277,11 +277,17 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal CodeBlockEntry (int index, MyBinaryReader reader)
 		{
 			this.Index = index;
-			this.BlockType = (Type) reader.ReadLeb128 ();
+			int type_flag = reader.ReadLeb128 ();
+			BlockType = (Type) (type_flag & 0x3f);
 			this.Parent = reader.ReadLeb128 ();
 			this.StartOffset = reader.ReadLeb128 ();
 			this.EndOffset = reader.ReadLeb128 ();
-			this.DataOffset = reader.ReadLeb128 ();
+
+			/* Reserved for future extensions. */
+			if ((type_flag & 0x40) != 0) {
+				int data_size = reader.ReadInt16 ();
+				reader.BaseStream.Position += data_size;
+			}				
 		}
 
 		public void Close (int end_offset)
@@ -295,7 +301,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.WriteLeb128 (Parent);
 			bw.WriteLeb128 (StartOffset);
 			bw.WriteLeb128 (EndOffset);
-			bw.WriteLeb128 (DataOffset);
 		}
 
 		public override string ToString ()
@@ -789,7 +794,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly bool LocalNamesAmbiguous;
 
 		int NameOffset;
-		int TypeIndexTableOffset;
 		int LocalVariableTableOffset;
 		int LineNumberTableOffset;
 		int NumLexicalBlocks;
@@ -835,7 +839,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			NumLocals = reader.ReadInt32 ();
 			NumLineNumbers = reader.ReadInt32 ();
 			NameOffset = reader.ReadInt32 ();
-			TypeIndexTableOffset = reader.ReadInt32 ();
+			reader.ReadInt32 (); /* Compatibility with old file format */
 			LocalVariableTableOffset = reader.ReadInt32 ();
 			LineNumberTableOffset = reader.ReadInt32 ();
 			NumLexicalBlocks = reader.ReadInt32 ();
@@ -877,18 +881,6 @@ namespace Mono.CompilerServices.SymbolWriter
 
 				for (int i = 0; i < NumLocals; i++)
 					Locals [i] = new LocalVariableEntry (reader);
-
-				reader.BaseStream.Position = old_pos;
-			}
-
-			if (TypeIndexTableOffset != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = TypeIndexTableOffset;
-
-				LocalTypeIndices = new int [NumLocals];
-
-				for (int i = 0; i < NumLocals; i++)
-					LocalTypeIndices [i] = reader.ReadInt32 ();
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -983,10 +975,6 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
-			LocalTypeIndices = new int [NumLocals];
-			for (int i = 0; i < NumLocals; i++)
-				LocalTypeIndices [i] = file.GetNextTypeIndex ();
-
 			NumCodeBlocks = blocks != null ? blocks.Length : 0;
 			CodeBlocks = blocks;
 
@@ -1051,11 +1039,6 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			NameOffset = (int) bw.BaseStream.Position;
 
-			TypeIndexTableOffset = (int) bw.BaseStream.Position;
-
-			for (int i = 0; i < NumLocals; i++)
-				bw.Write (LocalTypeIndices [i]);
-
 			LocalVariableTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumLocals; i++)
 				Locals [i].Write (file, bw);
@@ -1092,7 +1075,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (NumLocals);
 			bw.Write (NumLineNumbers);
 			bw.Write (NameOffset);
-			bw.Write (TypeIndexTableOffset);
+			bw.Write (0); /* Compatibility with old file format. */
 			bw.Write (LocalVariableTableOffset);
 			bw.Write (LineNumberTableOffset);
 			bw.Write (NumLexicalBlocks);
