@@ -1,0 +1,9 @@
+Please ignore this directory, it contains unfinished experimental
+stuff which won't make it into the upcoming debugger release.
+
+The patches in this directory are based on r97838 in the terrania
+branch.  There is no runtime.diff.
+
+Btw. `Kahalo' is a planet from Perry Rhodan which was basically the
+gateway to Andromeda - the planet exploded on August 25th, 2405 and
+doesn't exist anymore.

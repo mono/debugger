@@ -1,0 +1,325 @@
+Index: ecore.cs
+===================================================================
+--- ecore.cs	(revision 97386)
++++ ecore.cs	(working copy)
+@@ -5509,6 +5509,10 @@
+ 		public Variable Variable {
+ 			get { return var != null ? var : li.Variable; }
+ 		}
++
++		public string LocalName {
++			get { return li.Name; }
++		}
+ 		
+ 		public override void Emit (EmitContext ec)
+ 		{
+@@ -5543,6 +5547,11 @@
+ 		{
+ 			EmitLoadAddress (ec);
+ 		}
++
++		public int EmitSymbolInfo (EmitContext ec)
++		{
++			return li.EmitSymbolInfo (ec, true);
++		}
+ 	}
+ 
+ 	/// 
+Index: anonymous.cs
+===================================================================
+--- anonymous.cs	(revision 97386)
++++ anonymous.cs	(working copy)
+@@ -549,6 +549,7 @@
+ 
+ 			public override void EmitSymbolInfo ()
+ 			{
++				Console.WriteLine ("CAPTURED LOCAL: {0} {1}", Local.Name, Field.Name);
+ 				if (CodeGen.SymbolWriter != null)
+ 					CodeGen.SymbolWriter.DefineCapturedLocal (
+ 						Scope.ID, Local.Name, Field.Name);
+@@ -1008,6 +1009,11 @@
+ 
+ 		public override void EmitType ()
+ 		{
++			if (IsIterator) {
++				if (CodeGen.SymbolWriter != null)
++					CodeGen.SymbolWriter.DefineType (TypeBuilder, true);
++			}
++
+ 			base.EmitType ();
+ 			if (THIS != null)
+ 				THIS.EmitSymbolInfo ();
+Index: symbolwriter.cs
+===================================================================
+--- symbolwriter.cs	(revision 97386)
++++ symbolwriter.cs	(working copy)
+@@ -55,16 +55,18 @@
+ 			return true;
+ 		}
+ 
+-		public void DefineLocalVariable (string name, LocalBuilder builder)
++		public int DefineLocalVariable (string name, LocalBuilder builder)
+ 		{
+-			SignatureHelper sighelper = SignatureHelper.GetLocalVarSigHelper (
+-				module_builder);
+-			sighelper.AddArgument (builder.LocalType);
+-			byte[] signature = sighelper.GetSignature ();
++			int index = MonoDebuggerSupport.GetLocalIndex (builder);
++			DefineLocalVariable (index, name);
++			return index;
++		}
+ 
++		public int DefineTemporaryVariable (string name, LocalBuilder builder)
++		{
+ 			int index = MonoDebuggerSupport.GetLocalIndex (builder);
+-
+-			DefineLocalVariable (index, name, signature);
++			DefineTemporaryVariable (index, name);
++			return index;
+ 		}
+ 
+ 		public void DefineScopeVariable (int scope, LocalBuilder builder)
+@@ -126,12 +128,49 @@
+ 			EndIteratorDispatcher (offset);
+ 		}
+ 
+-		public void MarkSequencePoint (ILGenerator ig, int row, int column)
++		public int StartCollectionForeach (ILGenerator ig, string var_name)
+ 		{
+ 			int offset = get_il_offset_func (ig);
+-			MarkSequencePoint (offset, row, column);
++			return StartCollectionForeach (offset, var_name);
+ 		}
+ 
++		public void EndCollectionForeach (ILGenerator ig)
++		{
++			int offset = get_il_offset_func (ig);
++			EndCollectionForeach (offset);
++		}
++
++		public void MarkCollectionForeachBegin (ILGenerator ig)
++		{
++			MarkCollectionForeachBegin (get_il_offset_func (ig));
++		}
++
++		public void MarkCollectionForeachStatementBegin (ILGenerator ig)
++		{
++			MarkCollectionForeachStatementBegin (get_il_offset_func (ig));
++		}
++
++		public void MarkCollectionForeachStatementEnd (ILGenerator ig)
++		{
++			MarkCollectionForeachStatementEnd (get_il_offset_func (ig));
++		}
++
++		public void MarkCollectionForeachLoopBegin (ILGenerator ig)
++		{
++			MarkCollectionForeachLoopBegin (get_il_offset_func (ig));
++		}
++
++		public void MarkCollectionForeachLoopEnd (ILGenerator ig)
++		{
++			MarkCollectionForeachLoopEnd (get_il_offset_func (ig));
++		}
++
++		public void MarkSequencePoint (ILGenerator ig, Location loc)
++		{
++			int offset = get_il_offset_func (ig);
++			MarkSequencePoint (offset, loc.Row, loc.Column);
++		}
++
+ 		public void WriteSymbolFile ()
+ 		{
+ 			Guid guid = get_guid_func (module_builder);
+Index: codegen.cs
+===================================================================
+--- codegen.cs	(revision 97386)
++++ codegen.cs	(working copy)
+@@ -869,15 +869,15 @@
+ 			if (check_file && (CurrentFile != loc.File))
+ 				return;
+ 
+-			CodeGen.SymbolWriter.MarkSequencePoint (ig, loc.Row, loc.Column);
++			CodeGen.SymbolWriter.MarkSequencePoint (ig, loc);
+ 		}
+ 
+-		public void DefineLocalVariable (string name, LocalBuilder builder)
++		public int DefineLocalVariable (string name, LocalBuilder builder)
+ 		{
+ 			if (CodeGen.SymbolWriter == null)
+-				return;
++				return -1;
+ 
+-			CodeGen.SymbolWriter.DefineLocalVariable (name, builder);
++			return CodeGen.SymbolWriter.DefineLocalVariable (name, builder);
+ 		}
+ 
+ 		public void DefineScopeVariable (int scope, LocalBuilder builder)
+Index: statement.cs
+===================================================================
+--- statement.cs	(revision 97386)
++++ statement.cs	(working copy)
+@@ -1265,10 +1265,15 @@
+ 			}
+ 		}
+ 
+-		public void EmitSymbolInfo (EmitContext ec, string name)
++		public int EmitSymbolInfo (EmitContext ec, bool is_temp)
+ 		{
+-			if (builder != null)
+-				ec.DefineLocalVariable (Name, builder);
++			if ((builder == null) || (CodeGen.SymbolWriter == null))
++				return -1;
++
++			if (is_temp)
++				return CodeGen.SymbolWriter.DefineTemporaryVariable (Name, builder);
++			else
++				return CodeGen.SymbolWriter.DefineLocalVariable (Name, builder);
+ 		}
+ 
+ 		public bool IsThisAssigned (EmitContext ec)
+@@ -2322,7 +2327,7 @@
+ 				ec.EndCompilerGeneratedBlock ();
+ 			}
+ 
+-			ec.Mark (StartLocation, true);
++			//ec.Mark (StartLocation, true);
+ 			DoEmit (ec);
+ 
+ 			if (emit_debug_info) {
+@@ -2342,7 +2347,7 @@
+ 					string name = (string) de.Key;
+ 					LocalInfo vi = (LocalInfo) de.Value;
+ 
+-					vi.EmitSymbolInfo (ec, name);
++					vi.EmitSymbolInfo (ec, false);
+ 				}
+ 			}
+ 		}
+@@ -4902,6 +4907,11 @@
+ 			ec.LoopEnd = old_end;
+ 		}
+ 
++		public override void Emit (EmitContext ec)
++		{
++			DoEmit (ec);
++		}
++
+ 		protected class ArrayCounter : TemporaryVariable
+ 		{
+ 			public ArrayCounter (Location loc)
+@@ -5257,6 +5267,7 @@
+ 				MethodGroupExpr mg = Expression.MemberLookup (
+ 					ec.ContainerType, t, "GetEnumerator", MemberTypes.Method,
+ 					Expression.AllBindingFlags, loc) as MethodGroupExpr;
++				Console.WriteLine ("TRY TYPE: {0} {1} {2}", t, t.GetType (), mg);
+ 				if (mg == null)
+ 					return false;
+ 
+@@ -5380,6 +5391,9 @@
+ 				var_type = var_type.ResolveAsTypeTerminal (ec, false);
+ 				if (var_type == null)
+ 					return false;
++
++				Console.WriteLine ("FOREACH: {0} {1} {2} {3}", expr.Type, var_type,
++						   move_next.DeclaringType, enumerator_type);
+ 								
+ 				enumerator = new TemporaryVariable (enumerator_type, loc);
+ 				enumerator.Resolve (ec);
+@@ -5403,7 +5417,8 @@
+ 				Statement block = new CollectionForeachStatement (
+ 					var_type.Type, variable, get_current, statement, loc);
+ 
+-				loop = new While (move_next_expr, block, loc);
++				loop = new While (
++					new CollectionForeachMoveNext (move_next_expr), block, loc);
+ 
+ 				bool ok = true;
+ 
+@@ -5427,8 +5442,17 @@
+ 			{
+ 				ILGenerator ig = ec.ig;
+ 
++				if (CodeGen.SymbolWriter != null) {
++					CodeGen.SymbolWriter.StartCollectionForeach (
++						ec.ig, enumerator.LocalName);
++					enumerator.EmitSymbolInfo (ec);
++				}
++
+ 				enumerator.Store (ec, init);
+ 
++				if (CodeGen.SymbolWriter != null)
++					CodeGen.SymbolWriter.MarkCollectionForeachBegin (ec.ig);
++
+ 				//
+ 				// Protect the code in a try/finalize block, so that
+ 				// if the beast implement IDisposable, we get rid of it
+@@ -5446,9 +5470,11 @@
+ 					if (emit_finally)
+ 						ig.EndExceptionBlock ();
+ 				}
++
++				if (CodeGen.SymbolWriter != null)
++					CodeGen.SymbolWriter.EndCollectionForeach (ec.ig);
+ 			}
+ 
+-
+ 			public override void EmitFinally (EmitContext ec)
+ 			{
+ 				ILGenerator ig = ec.ig;
+@@ -5482,6 +5508,40 @@
+ 			}
+ 		}
+ 
++		protected class CollectionForeachMoveNext : Expression
++		{
++			Expression move_next;
++
++			public CollectionForeachMoveNext (Expression move_next)
++			{
++				this.move_next = move_next;
++			}
++
++			public override Expression DoResolve (EmitContext ec)
++			{
++				// Don't resolve already resolved expression
++				if (eclass != ExprClass.Invalid)
++					return this;
++
++				move_next = move_next.Resolve (ec);
++				if (move_next == null)
++					return null;
++
++				type = move_next.Type;
++				eclass = ExprClass.Value;
++				return this;
++			}
++
++			public override void Emit (EmitContext ec)
++			{
++				if (CodeGen.SymbolWriter != null)
++					CodeGen.SymbolWriter.MarkCollectionForeachLoopBegin (ec.ig);
++				move_next.Emit (ec);
++				if (CodeGen.SymbolWriter != null)
++					CodeGen.SymbolWriter.MarkCollectionForeachLoopEnd (ec.ig);
++			}
++		}
++
+ 		protected class CollectionForeachStatement : Statement
+ 		{
+ 			Type type;
+@@ -5523,7 +5583,14 @@
+ 			protected override void DoEmit (EmitContext ec)
+ 			{
+ 				assign.EmitStatement (ec);
++				if (CodeGen.SymbolWriter != null) {
++					ec.ig.Emit (OpCodes.Nop);
++					ec.Mark (loc, true);
++					CodeGen.SymbolWriter.MarkCollectionForeachStatementBegin (ec.ig);
++				}
+ 				statement.Emit (ec);
++				if (CodeGen.SymbolWriter != null)
++					CodeGen.SymbolWriter.MarkCollectionForeachStatementEnd (ec.ig);
+ 			}
+ 		}
+ 

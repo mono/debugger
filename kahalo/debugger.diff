@@ -1,0 +1,565 @@
+Index: frontend/Command.cs
+===================================================================
+--- frontend/Command.cs	(revision 97838)
++++ frontend/Command.cs	(working copy)
+@@ -2233,8 +2233,15 @@
+ 					       "frame pointer at {2}.", CurrentFrame.Level,
+ 					       CurrentFrame.StackPointer,
+ 					       CurrentFrame.FrameAddress);
+-				if (CurrentFrame.SourceAddress != null)
++				if (CurrentFrame.SourceAddress != null) {
+ 					context.Print ("Source: {0}", CurrentFrame.SourceAddress);
++					SourceAddress source = CurrentFrame.SourceAddress;
++					TargetAddress address = CurrentFrame.TargetAddress;
++					TargetAddress start = address - source.SourceOffset;
++					TargetAddress end = start + source.SourceRange;
++					context.Print ("Current frame at: {0}, source range " +
++						       "from {1} to {2}", address, start, end);
++				}
+ 				return null;
+ 			}
+ 		}
+Index: frontend/Expression.cs
+===================================================================
+--- frontend/Expression.cs	(revision 97838)
++++ frontend/Expression.cs	(working copy)
+@@ -249,20 +249,25 @@
+ 				return null;
+ 
+ 			TargetStructObject cobj = obj as TargetStructObject;
++			Console.WriteLine ("EVALUATE OBJECT #0: {0} {1}", var, obj);
+ 			if (cobj != null) {
+ 				TargetObject current;
+ 				try {
+ 					current = cobj.GetCurrentObject (context.CurrentThread);
+-				} catch {
++				} catch (Exception ex) {
++					Console.WriteLine ("EVALUATE OBJECT EX: {0}", ex);
+ 					current = null;
+ 				}
+ 				if (current == null)
+ 					return obj;
+ 
+ 				TargetClassObject scurrent = current as TargetClassObject;
++				Console.WriteLine ("EVALUATE OBJECT: {0} {1}", obj, current);
++#if FIXME
+ 				if ((scurrent != null) && scurrent.Type.IsCompilerGenerated)
+ 					return obj;
+ 				else
++#endif
+ 					return current;
+ 			}
+ 
+Index: backend/SingleSteppingEngine.cs
+===================================================================
+--- backend/SingleSteppingEngine.cs	(revision 97838)
++++ backend/SingleSteppingEngine.cs	(working copy)
+@@ -1067,6 +1067,14 @@
+ 					if (block.BlockType == Block.Type.IteratorDispatcher)
+ 						return new OperationStepIterator (
+ 							this, current_method, operation.Result);
++					else if (block.BlockType == Block.Type.CompilerGenerated) {
++						Console.WriteLine ("CGB: {0}", block);
++
++						return new OperationStep (this, new StepFrame (
++							current_method.StartAddress + block.StartAddress,
++							current_method.StartAddress + block.EndAddress,
++							null, null, StepMode.Finish), operation.Result);
++					}
+ 				}
+ 
+ 				SourceAddress source = current_method.LineNumberTable.Lookup (address);
+@@ -2629,6 +2637,8 @@
+ 	{
+ 		public StepMode StepMode;
+ 		public StepFrame StepFrame;
++		public TargetAddress StartAddress;
++		public Block Block;
+ 
+ 		public OperationStep (SingleSteppingEngine sse, StepMode mode, CommandResult result)
+ 			: base (sse, result)
+@@ -2652,6 +2662,8 @@
+ 
+ 		protected override void DoExecute ()
+ 		{
++			StartAddress = inferior.CurrentFrame;
++
+ 			switch (StepMode) {
+ 			case StepMode.NativeInstruction:
+ 				sse.do_step_native ();
+@@ -2671,6 +2683,28 @@
+ 				break;
+ 
+ 			case StepMode.NextLine:
++				Console.WriteLine ("NEXT LINE: {0}", sse.CurrentFrame);
++				if (sse.CurrentMethod != null)
++					Block = sse.CurrentMethod.LookupBlock (
++						inferior, inferior.CurrentFrame);
++				Console.WriteLine ("NEXT LINE #1: {0}", Block);
++
++				if ((Block != null) && (Block.BlockType == Block.Type.CollectionForeach)) {
++					Block.CollectionForeachData cfe;
++					cfe = (Block.CollectionForeachData) Block.Data;
++
++					Console.WriteLine ("NEXT LINE #2: {0}", cfe);
++
++					TargetAddress cfe_begin = sse.CurrentMethod.StartAddress +
++						cfe.BeginAddress;
++
++					Console.WriteLine ("NEXT LINE #3: {0} {1}",
++							   inferior.CurrentFrame, cfe_begin);
++
++					StepCollectionForeach (true);
++					break;
++				}
++
+ 				// We cannot just set a breakpoint on the next line
+ 				// since we do not know which way the program's
+ 				// control flow will go; ie. there may be a jump
+@@ -2760,6 +2794,9 @@
+ 
+ 		protected bool Step (bool first)
+ 		{
++			if ((Block != null) && (Block.BlockType == Block.Type.CollectionForeach))
++				return StepCollectionForeach (first);
++
+ 			if (StepFrame == null)
+ 				return true;
+ 
+@@ -2850,6 +2887,77 @@
+ 			return false;
+ 		}
+ 
++		protected bool StepCollectionForeach (bool first)
++		{
++			Block.CollectionForeachData cfe = (Block.CollectionForeachData) Block.Data;
++			TargetAddress current_frame = inferior.CurrentFrame;
++
++			Console.WriteLine ("STEP CFE: {0} {1}", cfe, current_frame);
++
++			if (!first) {
++				TargetAddress start_address = sse.CurrentMethod.StartAddress;
++
++				if ((current_frame < start_address + Block.StartAddress) ||
++				    (current_frame >= start_address + Block.EndAddress)) {
++					Console.WriteLine ("STEP CFE - DONE!");
++					return true;
++				}
++
++				bool stop_in_stmt, stop_in_loop;
++				if (StartAddress < start_address + cfe.BeginAddress) {
++					stop_in_stmt = true;
++					stop_in_loop = false;
++				} else if ((StartAddress >= start_address + cfe.StatementBeginAddress) &&
++					   (StartAddress < start_address + cfe.StatementEndAddress)) {
++					stop_in_loop = true;
++					stop_in_stmt = false;
++				} else if ((StartAddress >= start_address + cfe.LoopBeginAddress) &&
++					   (StartAddress < start_address + cfe.LoopEndAddress)) {
++					stop_in_stmt = true;
++					stop_in_loop = false;
++				} else {
++					stop_in_stmt = stop_in_loop = true;
++				}
++
++				if ((current_frame >= start_address + cfe.StatementBeginAddress) &&
++				    (current_frame < start_address + cfe.StatementEndAddress)) {
++					Console.WriteLine ("STEP CFE - REACHED STATEMENT!");
++					if (stop_in_stmt)
++						return true;
++				}
++
++				if ((current_frame >= start_address + cfe.LoopBeginAddress) &&
++				    (current_frame < start_address + cfe.LoopEndAddress)) {
++					Console.WriteLine ("STEP CFE - REACHED LOOP!");
++					if (stop_in_loop)
++						return true;
++				}
++			}
++
++			Instruction instruction = inferior.Architecture.ReadInstruction (
++				inferior, current_frame);
++			Console.WriteLine ("STEP CFE #1: {0}", instruction);
++			if ((instruction == null) || !instruction.IsCall ||
++			    !instruction.HasInstructionSize) {
++				sse.do_step_native ();
++				return false;
++			}
++
++			TargetAddress call_target = instruction.GetEffectiveAddress (inferior);
++			if ((sse.current_method != null) && (sse.current_method.HasMethodBounds) &&
++			    !call_target.IsNull &&
++			    (call_target >= sse.current_method.MethodStartAddress) &&
++			    (call_target < sse.current_method.MethodEndAddress)) {
++				/* Intra-method call (we stay outside the prologue/epilogue code,
++				 * so this also can't be a recursive call). */
++				sse.do_step_native ();
++				return false;
++			}
++
++			sse.do_next_native ();
++			return false;
++		}
++
+ 		protected override bool DoProcessEvent ()
+ 		{
+ 			Report.Debug (DebugFlags.SSE, "{0} processing {1} event.",
+Index: test/I.cs
+===================================================================
+--- test/I.cs	(revision 97838)
++++ test/I.cs	(working copy)
+@@ -38,5 +38,6 @@
+ 		IEnumerable<Foo> enumerable = foo.Test (foo);
+ 		foreach (Foo bar in enumerable)
+ 			Console.WriteLine (bar);
++		Console.WriteLine (enumerable);
+ 	}
+ }
+Index: test/J.cs
+===================================================================
+--- test/J.cs	(revision 97838)
++++ test/J.cs	(working copy)
+@@ -1,21 +1,41 @@
+ using System;
++using System.Collections.Generic;
+ 
+-delegate void S ();
++struct Foo
++{
++	public int ID;
+ 
+-class X
+-{
+-	static int Main ()
++	public Foo (int id)
+ 	{
+-		int a = 1;
++		this.ID = id;
++	}
+ 
+-		S b = delegate {
+-			a = 2;
+-		};
++	public IEnumerable<Foo> Test (Foo foo)
++	{
++		foreach (Foo bar in InnerIterator (foo))
++			yield return bar;
++	}
+ 
+-		Console.WriteLine (a);
++	public IEnumerable<Foo> InnerIterator (Foo foo)
++	{
++		yield return this;
++		yield return foo;
++	}
+ 
+-		b ();
++	public override string ToString ()
++	{
++		return String.Format ("Foo ({0})", ID);
++	}
++}
+ 
+-		return 0;
++class X
++{
++	static void Main ()
++	{
++		Foo foo = new Foo (3);
++		IEnumerable<Foo> enumerable = foo.Test (foo);
++		foreach (Foo bar in enumerable)
++			Console.WriteLine (bar);
++		Console.WriteLine (enumerable);
+ 	}
+ }
+Index: classes/Block.cs
+===================================================================
+--- classes/Block.cs	(revision 97838)
++++ classes/Block.cs	(working copy)
+@@ -9,7 +9,8 @@
+ 			Lexical			= 1,
+ 			CompilerGenerated	= 2,
+ 			IteratorBody		= 3,
+-			IteratorDispatcher	= 4
++			IteratorDispatcher	= 4,
++			CollectionForeach	= 5
+ 		}
+ 
+ 		public int Index {
+@@ -41,6 +42,11 @@
+ 			private set;
+ 		}
+ 
++		public BlockData Data {
++			get;
++			protected set;
++		}
++
+ 		public bool IsIteratorBody {
+ 			get {
+ 				if (BlockType == Type.IteratorBody)
+@@ -60,10 +66,57 @@
+ 			this.EndAddress = end;
+ 		}
+ 
++		public abstract class BlockData
++		{
++			public override string ToString ()
++			{
++				return String.Format ("{0} ({1})", GetType (), MyToString ());
++			}
++
++			protected abstract string MyToString ();
++		}
++
++		public abstract class CollectionForeachData : BlockData
++		{
++			public int BeginAddress {
++				get;
++				protected set;
++			}
++
++			public int StatementBeginAddress {
++				get;
++				protected set;
++			}
++
++			public int StatementEndAddress {
++				get;
++				protected set;
++			}
++
++			public int LoopBeginAddress {
++				get;
++				protected set;
++			}
++
++			public int LoopEndAddress {
++				get;
++				protected set;
++			}
++
++			protected override string MyToString ()
++			{
++				return String.Format ("{0:x}:{1:x}:{2:x}:{3:x}:{4:x}",
++						      BeginAddress, StatementBeginAddress,
++						      StatementEndAddress, LoopBeginAddress,
++						      LoopEndAddress);
++			}
++		}
++
+ 		public override string ToString ()
+ 		{
+-			return String.Format ("{0} ({1}:{2}:{3:x}:{4:x})", GetType (),
+-					      Index, BlockType, StartAddress, EndAddress);
++			return String.Format ("{0} ({1}:{2}:{3:x}:{4:x}{5})", GetType (),
++					      Index, BlockType, StartAddress, EndAddress,
++					      Data != null ? ":" + Data.ToString () : "");
+ 		}
+ 	}
+ }
+Index: languages/native/NativeFunctionType.cs
+===================================================================
+--- languages/native/NativeFunctionType.cs	(revision 97838)
++++ languages/native/NativeFunctionType.cs	(working copy)
+@@ -130,5 +130,14 @@
+ 		{
+ 			throw new InvalidOperationException ();
+ 		}
++
++		public override bool IsGenericMethod {
++			get { return false; }
++		}
++
++		public override TargetFunctionType BindGenericParameters (TargetType[] args)
++		{
++			throw new InvalidOperationException ();
++		}
+ 	}
+ }
+Index: languages/TargetFunctionType.cs
+===================================================================
+--- languages/TargetFunctionType.cs	(revision 97838)
++++ languages/TargetFunctionType.cs	(working copy)
+@@ -51,6 +51,12 @@
+ 			get;
+ 		}
+ 
++		public abstract bool IsGenericMethod {
++			get;
++		}
++
++		public abstract TargetFunctionType BindGenericParameters (TargetType[] args);
++
+ 		// <summary>
+ 		//   The current programming language's native representation of
+ 		//   a method.
+Index: languages/mono/MonoFunctionType.cs
+===================================================================
+--- languages/mono/MonoFunctionType.cs	(revision 97838)
++++ languages/mono/MonoFunctionType.cs	(working copy)
+@@ -140,6 +140,10 @@
+ 			}
+ 		}
+ 
++		public override bool IsGenericMethod {
++			get { return method_info.GenericParameters.Count > 0; }
++		}
++
+ 		public override bool HasSourceCode {
+ 			get { return file != null; }
+ 		}
+@@ -228,5 +232,15 @@
+ 
+ 			return signature;
+ 		}
++
++		public override TargetFunctionType BindGenericParameters (TargetType[] args)
++		{
++			if (!IsGenericMethod)
++				throw new InvalidOperationException ();
++			if (args.Length != method_info.GenericParameters.Count)
++				throw new ArgumentException ();
++
++			return null;
++		}
+ 	}
+ }
+Index: languages/mono/MonoSymbolFile.cs
+===================================================================
+--- languages/mono/MonoSymbolFile.cs	(revision 97838)
++++ languages/mono/MonoSymbolFile.cs	(working copy)
+@@ -937,10 +937,21 @@
+ 		{
+ 			List<MonoCodeBlock> children;
+ 
+-			protected MonoCodeBlock (int index, Block.Type type, int start, int end)
++			protected MonoCodeBlock (int index, Block.Type type, int start, int end,
++						 C.CodeBlockEntry block, MethodAddress address)
+ 				: base (type, index, start, end)
+-			{ }
++			{
++				C.CodeBlockEntry.CollectionForeach cfe;
++				cfe = block as C.CodeBlockEntry.CollectionForeach;
++				if (cfe != null) {
++					Console.WriteLine ("CFE: {0:x} {1:x} {2:x} {3:x}",
++							   cfe.StatementBeginOffset, cfe.StatementEndOffset,
++							   cfe.LoopBeginOffset, cfe.LoopEndOffset);
+ 
++					Data = new MonoCollectionForeach (cfe, address);
++				}
++			}
++
+ 			protected void AddChildBlock (MonoCodeBlock child)
+ 			{
+ 				if (children == null)
+@@ -957,7 +968,7 @@
+ 				}
+ 			}
+ 
+-			static int find_start_address (MethodAddress address, int il_offset)
++			protected static int find_start_address (MethodAddress address, int il_offset)
+ 			{
+ 				int num_line_numbers = address.LineNumbers.Count;
+ 
+@@ -973,7 +984,7 @@
+ 				return num_line_numbers > 0 ? address.LineNumbers [0].Address : 0;
+ 			}
+ 
+-			static int find_end_address (MethodAddress address, int il_offset)
++			protected static int find_end_address (MethodAddress address, int il_offset)
+ 			{
+ 				int num_line_numbers = address.LineNumbers.Count;
+ 
+@@ -1000,7 +1011,9 @@
+ 					Block.Type type = (Block.Type) the_blocks [i].BlockType;
+ 					int start = find_start_address (address, the_blocks [i].StartOffset);
+ 					int end = find_end_address (address, the_blocks [i].EndOffset);
+-					blocks [i] = new MonoCodeBlock (i, type, start, end);
++					Console.WriteLine ("CREATE BLOCK: {0}", type);
++					blocks [i] = new MonoCodeBlock (
++						i, type, start, end, the_blocks [i], address);
+ 				}
+ 
+ 				root_blocks = new List<MonoCodeBlock> ();
+@@ -1017,6 +1030,26 @@
+ 
+ 				return blocks;
+ 			}
++
++			protected class MonoCollectionForeach : Block.CollectionForeachData
++			{
++				public MonoCollectionForeach (C.CodeBlockEntry.CollectionForeach cfe,
++							      MethodAddress address)
++				{
++					BeginAddress = MonoCodeBlock.find_start_address (
++						address, cfe.BeginOffset);
++					StatementBeginAddress = MonoCodeBlock.find_end_address (
++						address, cfe.StatementBeginOffset);
++					StatementEndAddress = MonoCodeBlock.find_end_address (
++						address, cfe.StatementEndOffset);
++					LoopBeginAddress = MonoCodeBlock.find_start_address (
++						address, cfe.LoopBeginOffset);
++					LoopEndAddress = MonoCodeBlock.find_end_address (
++						address, cfe.LoopEndOffset);
++
++					Console.WriteLine ("COLLECTION FOREACH: {0} - {1}", cfe, this);
++				}
++			}
+ 		}
+ 		
+ 		protected class MonoMethod : Method
+@@ -1193,6 +1226,10 @@
+ 				for (int i = 0; i < method.NumLocals; i++) {
+ 					C.LocalVariableEntry local = method.Locals [i];
+ 
++					Console.WriteLine ("READ LOCALS: {0}", local);
++
++					if (local.IsTemporary || (local.Name == null))
++						continue;
+ 					if (captured_vars.ContainsKey (local.Name))
+ 						continue;
+ 
+@@ -1201,6 +1238,9 @@
+ 					if (type == null)
+ 						type = mono.VoidType;
+ 
++					Console.WriteLine ("READ VARIABLE: {0} {1} {2}", local,
++							   local.BlockIndex, var);
++
+ 					if (local.BlockIndex > 0) {
+ 						int index = local.BlockIndex - 1;
+ 						MonoCodeBlock block = code_blocks [index];
+Index: languages/mono/MonoClassType.cs
+===================================================================
+--- languages/mono/MonoClassType.cs	(revision 97838)
++++ languages/mono/MonoClassType.cs	(working copy)
+@@ -48,6 +48,7 @@
+ 		int load_handler_id;
+ 
+ 		bool is_compiler_generated;
++		bool is_iterator;
+ 		string full_name;
+ 
+ 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
+@@ -69,6 +70,11 @@
+ 			} else
+ 				full_name = type.FullName;
+ 
++			C.TypeEntry entry = file.File.GetType (Token);
++			Console.WriteLine ("CLASS TYPE: {0} {1:x} {2}", type, Token, entry);
++			if (entry != null)
++				is_iterator = entry.IsIterator;
++
+ 			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
+ 				string cname = cattr.Constructor.DeclaringType.FullName;
+ 				if (cname == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+@@ -96,7 +102,7 @@
+ 		}
+ 
+ 		public override bool IsCompilerGenerated {
+-			get { return is_compiler_generated; }
++			get { return is_compiler_generated || is_iterator; }
+ 		}
+ 
+ 		public override string Name {

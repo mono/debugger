@@ -1,0 +1,802 @@
+Index: MonoSymbolWriter.cs
+===================================================================
+--- MonoSymbolWriter.cs	(revision 97838)
++++ MonoSymbolWriter.cs	(working copy)
+@@ -32,6 +32,7 @@
+ //
+ 
+ using System;
++using System.Reflection.Emit;
+ using System.Runtime.CompilerServices;
+ using System.Collections;
+ using System.IO;
+@@ -64,6 +65,7 @@
+ 	{
+ 		protected ArrayList locals = null;
+ 		protected ArrayList methods = null;
++		protected ArrayList types = null;
+ 		protected ArrayList sources = null;
+ 		protected readonly MonoSymbolFile file;
+ 		private string filename = null;
+@@ -84,6 +86,7 @@
+ 		public MonoSymbolWriter (string filename)
+ 		{
+ 			this.methods = new ArrayList ();
++			this.types = new ArrayList ();
+ 			this.sources = new ArrayList ();
+ 			this.locals = new ArrayList ();
+ 			this.file = new MonoSymbolFile ();
+@@ -96,14 +99,28 @@
+ 		public void CloseNamespace ()
+ 		{ }
+ 
+-		public void DefineLocalVariable (int index, string name, byte[] signature)
++		[Obsolete]
++		public void DefineLocalVariable (int index, string name, byte[] sig)
+ 		{
++			DefineLocalVariable (index, name);
++		}
++
++		public void DefineLocalVariable (int index, string name)
++		{
+ 			if (current_method == null)
+ 				return;
+ 
+-			current_method.AddLocal (index, name, signature);
++			current_method.AddLocal (index, name, false);
+ 		}
+ 
++		public void DefineTemporaryVariable (int index, string name)
++		{
++			if (current_method == null)
++				return;
++
++			current_method.AddLocal (index, name, true);
++		}
++
+ 		public void DefineCapturedLocal (int scope_id, string name, string captured_name)
+ 		{
+ 			file.DefineCapturedVariable (scope_id, name, captured_name,
+@@ -129,7 +146,8 @@
+ 
+ 		public void DefineScopeVariable (int scope, int index)
+ 		{
+-			current_method.AddScopeVariable (scope, index);
++			if (current_method != null)
++				current_method.AddScopeVariable (scope, index);
+ 		}
+ 
+ 		public void MarkSequencePoint (int offset, int line, int column)
+@@ -171,6 +189,13 @@
+ 			current_method = null;
+ 		}
+ 
++		public TypeEntry DefineType (TypeBuilder type, bool is_iterator)
++		{
++			TypeEntry entry = new TypeEntry (file, type);
++			types.Add (entry);
++			return entry;
++		}
++
+ 		public SourceFileEntry DefineDocument (string url)
+ 		{
+ 			SourceFileEntry entry = new SourceFileEntry (file, url);
+@@ -204,10 +229,9 @@
+ 			current_method.EndBlock (end_offset);
+ 		}
+ 
+-		public void OpenCompilerGeneratedBlock (int start_offset)
++		public void OpenCompilerGeneratedBlock (int offset)
+ 		{
+-			current_method.StartBlock (CodeBlockEntry.Type.CompilerGenerated,
+-						   start_offset);
++			current_method.StartBlock (CodeBlockEntry.Type.CompilerGenerated, offset);
+ 		}
+ 
+ 		public void CloseCompilerGeneratedBlock (int end_offset)
+@@ -215,10 +239,9 @@
+ 			current_method.EndBlock (end_offset);
+ 		}
+ 
+-		public void StartIteratorBody (int start_offset)
++		public void StartIteratorBody (int offset)
+ 		{
+-			current_method.StartBlock (CodeBlockEntry.Type.IteratorBody,
+-						   start_offset);
++			current_method.StartBlock (CodeBlockEntry.Type.IteratorBody, offset);
+ 		}
+ 
+ 		public void EndIteratorBody (int end_offset)
+@@ -226,10 +249,9 @@
+ 			current_method.EndBlock (end_offset);
+ 		}
+ 
+-		public void StartIteratorDispatcher (int start_offset)
++		public void StartIteratorDispatcher (int offset)
+ 		{
+-			current_method.StartBlock (CodeBlockEntry.Type.IteratorDispatcher,
+-						   start_offset);
++			current_method.StartBlock (CodeBlockEntry.Type.IteratorDispatcher, offset);
+ 		}
+ 
+ 		public void EndIteratorDispatcher (int end_offset)
+@@ -237,6 +259,51 @@
+ 			current_method.EndBlock (end_offset);
+ 		}
+ 
++		public int StartCollectionForeach (int start_offset, string var_name)
++		{
++			return current_method.StartCollectionForeach (start_offset, var_name);
++		}
++
++		public void MarkCollectionForeachBegin (int offset)
++		{
++			CodeBlockEntry.CollectionForeach cfe;
++			cfe = (CodeBlockEntry.CollectionForeach) current_method.CurrentBlock;
++			cfe.MarkBegin (offset);
++		}
++
++		public void MarkCollectionForeachStatementBegin (int offset)
++		{
++			CodeBlockEntry.CollectionForeach cfe;
++			cfe = (CodeBlockEntry.CollectionForeach) current_method.CurrentBlock;
++			cfe.MarkStatementBegin (offset);
++		}
++
++		public void MarkCollectionForeachStatementEnd (int offset)
++		{
++			CodeBlockEntry.CollectionForeach cfe;
++			cfe = (CodeBlockEntry.CollectionForeach) current_method.CurrentBlock;
++			cfe.MarkStatementEnd (offset);
++		}
++
++		public void MarkCollectionForeachLoopBegin (int offset)
++		{
++			CodeBlockEntry.CollectionForeach cfe;
++			cfe = (CodeBlockEntry.CollectionForeach) current_method.CurrentBlock;
++			cfe.MarkLoopBegin (offset);
++		}
++
++		public void MarkCollectionForeachLoopEnd (int offset)
++		{
++			CodeBlockEntry.CollectionForeach cfe;
++			cfe = (CodeBlockEntry.CollectionForeach) current_method.CurrentBlock;
++			cfe.MarkLoopEnd (offset);
++		}
++
++		public void EndCollectionForeach (int end_offset)
++		{
++			current_method.EndBlock (end_offset);
++		}
++
+ 		public void DefineAnonymousScope (int id)
+ 		{
+ 			file.DefineAnonymousScope (id);
+@@ -252,6 +319,9 @@
+ 					method.Method.NamespaceID);
+ 			}
+ 
++			foreach (TypeEntry type in types)
++				type.DefineType ();
++
+ 			try {
+ 				// We mmap the file, so unlink the previous version since it may be in use
+ 				File.Delete (filename);
+@@ -286,7 +356,7 @@
+ 				this._end = new LineNumberEntry (endLine, 0);
+ 			}
+ 
+-			public void StartBlock (CodeBlockEntry.Type type, int start_offset)
++			public int StartBlock (CodeBlockEntry.Type type, int start_offset)
+ 			{
+ 				if (_block_stack == null)
+ 					_block_stack = new Stack ();
+@@ -300,6 +370,7 @@
+ 
+ 				_block_stack.Push (block);
+ 				_blocks.Add (block);
++				return block.Index;
+ 			}
+ 
+ 			public void EndBlock (int end_offset)
+@@ -308,6 +379,23 @@
+ 				block.Close (end_offset);
+ 			}
+ 
++			public int StartCollectionForeach (int start_offset, string var_name)
++			{
++				if (_block_stack == null)
++					_block_stack = new Stack ();
++				if (_blocks == null)
++					_blocks = new ArrayList ();
++
++				int parent = CurrentBlock != null ? CurrentBlock.Index : -1;
++
++				CodeBlockEntry block = new CodeBlockEntry.CollectionForeach (
++					_blocks.Count + 1, parent, start_offset, var_name);
++
++				_block_stack.Push (block);
++				_blocks.Add (block);
++				return block.Index;
++			}
++
+ 			public CodeBlockEntry[] Blocks {
+ 				get {
+ 					if (_blocks == null)
+@@ -347,12 +435,12 @@
+ 				}
+ 			}
+ 
+-			public void AddLocal (int index, string name, byte[] sig)
++			public void AddLocal (int index, string name, bool is_temp)
+ 			{
+ 				if (_locals == null)
+ 					_locals = new ArrayList ();
+ 				int block_idx = CurrentBlock != null ? CurrentBlock.Index : 0;
+-				_locals.Add (new LocalVariableEntry (index, name, sig, block_idx));
++				_locals.Add (new LocalVariableEntry (index, name, block_idx, is_temp));
+ 			}
+ 
+ 			public ScopeVariable[] ScopeVariables {
+Index: MonoSymbolFile.cs
+===================================================================
+--- MonoSymbolFile.cs	(revision 97838)
++++ MonoSymbolFile.cs	(working copy)
+@@ -128,13 +128,13 @@
+ 	public class MonoSymbolFile : IDisposable
+ 	{
+ 		ArrayList methods = new ArrayList ();
++		ArrayList types = new ArrayList ();
+ 		ArrayList sources = new ArrayList ();
+ 		Hashtable method_source_hash = new Hashtable ();
+-		Hashtable type_hash = new Hashtable ();
++		Hashtable type_hash;
+ 		Hashtable anonymous_scopes;
+ 
+ 		OffsetTable ot;
+-		int last_type_index;
+ 		int last_method_index;
+ 		int last_source_index;
+ 		int last_namespace_index;
+@@ -153,19 +153,14 @@
+ 			return ++last_source_index;
+ 		}
+ 
+-		internal int DefineType (Type type)
++		internal void AddMethod (MethodEntry entry)
+ 		{
+-			if (type_hash.Contains (type))
+-				return (int) type_hash [type];
+-
+-			int index = ++last_type_index;
+-			type_hash.Add (type, index);
+-			return index;
++			methods.Add (entry);
+ 		}
+ 
+-		internal void AddMethod (MethodEntry entry)
++		internal void AddType (TypeEntry type)
+ 		{
+-			methods.Add (entry);
++			types.Add (type);
+ 		}
+ 
+ 		internal void DefineAnonymousScope (int id)
+@@ -189,11 +184,6 @@
+ 			scope.AddCapturedScope (id, captured_name);
+ 		}
+ 
+-		internal int GetNextTypeIndex ()
+-		{
+-			return ++last_type_index;
+-		}
+-
+ 		internal int GetNextMethodIndex ()
+ 		{
+ 			return ++last_method_index;
+@@ -277,9 +267,17 @@
+ 			ot.AnonymousScopeTableSize = (int) bw.BaseStream.Position - ot.AnonymousScopeTableOffset;
+ 
+ 			//
++			// Write type table
++			//
++			ot.TypeTableOffset = (int) bw.BaseStream.Position;
++			foreach (TypeEntry type in types)
++				type.Write (bw);
++			ot.TypeTableSize = (int) bw.BaseStream.Position - ot.TypeTableOffset;
++
++			//
+ 			// Fixup offset table.
+ 			//
+-			ot.TypeCount = last_type_index;
++			ot.TypeCount = types.Count;
+ 			ot.MethodCount = methods.Count;
+ 			ot.SourceCount = sources.Count;
+ 
+@@ -587,6 +585,22 @@
+ 			return (AnonymousScopeEntry) anonymous_scopes [id];
+ 		}
+ 
++		public TypeEntry GetType (int token)
++		{
++			if (type_hash != null)
++				return (TypeEntry) type_hash [token];
++
++			type_hash = new Hashtable ();
++			reader.BaseStream.Position = ot.TypeTableOffset;
++			for (int i = 0; i < ot.TypeCount; i++) {
++				TypeEntry entry = new TypeEntry (this, reader);
++				Console.WriteLine ("GET TYPE: {0:x} {1}", entry.Token, entry);
++				type_hash.Add (entry.Token, entry);
++			}
++
++			return (TypeEntry) type_hash [token];
++		}
++
+ 		internal MyBinaryReader BinaryReader {
+ 			get {
+ 				if (reader == null)
+Index: SymbolWriterImpl.cs
+===================================================================
+--- SymbolWriterImpl.cs	(revision 97838)
++++ SymbolWriterImpl.cs	(working copy)
+@@ -155,7 +155,7 @@
+ 			int startOffset,
+ 			int endOffset)
+ 		{
+-			msw.DefineLocalVariable (nextLocalIndex++, name, signature);
++			msw.DefineLocalVariable (nextLocalIndex++, name);
+ 		}
+ 		
+ 		public void DefineParameter (
+Index: MonoSymbolTable.cs
+===================================================================
+--- MonoSymbolTable.cs	(revision 97838)
++++ MonoSymbolTable.cs	(working copy)
+@@ -29,6 +29,7 @@
+ //
+ 
+ using System;
++using System.Reflection.Emit;
+ using System.Collections;
+ using System.Text;
+ using System.IO;
+@@ -86,6 +87,8 @@
+ 		public int MethodTableOffset;
+ 		public int MethodTableSize;
+ 		public int TypeCount;
++		public int TypeTableOffset;
++		public int TypeTableSize;
+ 		public int AnonymousScopeCount;
+ 		public int AnonymousScopeTableOffset;
+ 		public int AnonymousScopeTableSize;
+@@ -105,10 +108,14 @@
+ 			TypeCount = reader.ReadInt32 ();
+ 
+ 			if (version == CompatibilityVersion) {
++				TypeTableOffset = 0;
++				TypeTableSize = 0;
+ 				AnonymousScopeCount = 0;
+ 				AnonymousScopeTableOffset = 0;
+ 				AnonymousScopeTableSize = 0;
+ 			} else {
++				TypeTableOffset = reader.ReadInt32 ();
++				TypeTableSize = reader.ReadInt32 ();
+ 				AnonymousScopeCount = reader.ReadInt32 ();
+ 				AnonymousScopeTableOffset = reader.ReadInt32 ();
+ 				AnonymousScopeTableSize = reader.ReadInt32 ();
+@@ -127,6 +134,8 @@
+ 			bw.Write (MethodTableOffset);
+ 			bw.Write (MethodTableSize);
+ 			bw.Write (TypeCount);
++			bw.Write (TypeTableOffset);
++			bw.Write (TypeTableSize);
+ 			bw.Write (AnonymousScopeCount);
+ 			bw.Write (AnonymousScopeTableOffset);
+ 			bw.Write (AnonymousScopeTableSize);
+@@ -256,14 +265,18 @@
+ 		public Type BlockType;
+ 		public int StartOffset;
+ 		public int EndOffset;
+-		int DataOffset;
+ 		#endregion
+ 
++		internal virtual bool HasData {
++			get { return false; }
++		}
++
+ 		public enum Type {
+ 			Lexical			= 1,
+ 			CompilerGenerated	= 2,
+ 			IteratorBody		= 3,
+-			IteratorDispatcher	= 4
++			IteratorDispatcher	= 4,
++			CollectionForeach	= 5
+ 		}
+ 
+ 		public CodeBlockEntry (int index, int parent, Type type, int start_offset)
+@@ -274,16 +287,50 @@
+ 			this.StartOffset = start_offset;
+ 		}
+ 
+-		internal CodeBlockEntry (int index, MyBinaryReader reader)
++		protected CodeBlockEntry (int index, Type type, int parent, int start, int end)
+ 		{
+ 			this.Index = index;
+-			this.BlockType = (Type) reader.ReadLeb128 ();
+-			this.Parent = reader.ReadLeb128 ();
+-			this.StartOffset = reader.ReadLeb128 ();
+-			this.EndOffset = reader.ReadLeb128 ();
+-			this.DataOffset = reader.ReadLeb128 ();
++			this.BlockType = type;
++			this.Parent = parent;
++			this.StartOffset = start;
++			this.EndOffset = end;
+ 		}
+ 
++		internal static CodeBlockEntry Read (int index, MyBinaryReader reader)
++		{
++			int type_flag = reader.ReadLeb128 ();
++
++			int parent = reader.ReadLeb128 ();
++			int start = reader.ReadLeb128 ();
++			int end = reader.ReadLeb128 ();
++
++			CodeBlockEntry block;
++
++			Type type = (Type) (type_flag & 0x3f);
++			switch (type) {
++			case Type.CollectionForeach:
++				block = new CollectionForeach (index, parent, start, end);
++				break;
++
++			default:
++				block = new CodeBlockEntry (index, type, parent, start, end);
++				break;
++			}
++
++			if ((type_flag & 0x40) == 0)
++				return block;
++
++			long pos = reader.BaseStream.Position;
++			int data_size = reader.ReadInt16 ();
++			try {
++				block.ReadData (reader);
++			} finally {
++				reader.BaseStream.Position = pos + data_size;
++			}
++
++			return block;
++		}
++
+ 		public void Close (int end_offset)
+ 		{
+ 			this.EndOffset = end_offset;
+@@ -291,18 +338,144 @@
+ 
+ 		internal void Write (MyBinaryWriter bw)
+ 		{
+-			bw.WriteLeb128 ((int) BlockType);
++			int type_flag = (int) BlockType;
++			if (HasData)
++				type_flag |= 0x40;
++
++			bw.WriteLeb128 (type_flag);
+ 			bw.WriteLeb128 (Parent);
+ 			bw.WriteLeb128 (StartOffset);
+ 			bw.WriteLeb128 (EndOffset);
+-			bw.WriteLeb128 (DataOffset);
++
++			if (!HasData)
++				return;
++
++			long pos = bw.BaseStream.Position;
++			bw.BaseStream.Position += 2;
++			try {
++				WriteData (bw);
++			} finally {
++				short data_size = (short) (bw.BaseStream.Position - pos);
++				bw.BaseStream.Position = pos;
++				bw.Write (data_size);
++				bw.BaseStream.Position = pos + data_size;
++			}
+ 		}
+ 
++		internal virtual void ReadData (MyBinaryReader reader)
++		{
++			throw new InvalidOperationException ();
++		}
++
++		internal virtual void WriteData (MyBinaryWriter bw)
++		{
++			throw new InvalidOperationException ();
++		}
++
+ 		public override string ToString ()
+ 		{
+-			return String.Format ("[CodeBlock {0}:{1}:{2}:{3}:{4}]",
++			return String.Format ("[CodeBlock {0}:{1}:{2}:{3:x}:{4:x}]",
+ 					      Index, Parent, BlockType, StartOffset, EndOffset);
+ 		}
++
++		public class CollectionForeach : CodeBlockEntry
++		{
++			string var_name;
++			int begin;
++			int stmt_begin, stmt_end;
++			int loop_begin, loop_end;
++
++			public string VariableName {
++				get { return var_name; }
++			}
++
++			public int BeginOffset {
++				get { return begin; }
++			}
++
++			public int StatementBeginOffset {
++				get { return stmt_begin; }
++			}
++
++			public int StatementEndOffset {
++				get { return stmt_end; }
++			}
++
++			public int LoopBeginOffset {
++				get { return loop_begin; }
++			}
++
++			public int LoopEndOffset {
++				get { return loop_end; }
++			}
++
++			internal CollectionForeach (int index, int parent, int start_offset,
++						    string var_name)
++				: base (index, parent, Type.CollectionForeach, start_offset)
++			{
++				this.var_name = var_name;
++			}
++
++			internal CollectionForeach (int index, int parent, int start, int end)
++				: base (index, Type.CollectionForeach, parent, start, end)
++			{ }
++
++			internal override bool HasData {
++				get { return true; }
++			}
++
++			internal override void ReadData (MyBinaryReader reader)
++			{
++				var_name = reader.ReadString ();
++				begin = reader.ReadLeb128 ();
++				stmt_begin = reader.ReadLeb128 ();
++				stmt_end = reader.ReadLeb128 ();
++				loop_begin = reader.ReadLeb128 ();
++				loop_end = reader.ReadLeb128 ();
++			}
++
++			internal override void WriteData (MyBinaryWriter bw)
++			{
++				bw.Write (var_name);
++				bw.WriteLeb128 (begin);
++				bw.WriteLeb128 (stmt_begin);
++				bw.WriteLeb128 (stmt_end);
++				bw.WriteLeb128 (loop_begin);
++				bw.WriteLeb128 (loop_end);
++			}
++
++			internal void MarkBegin (int offset)
++			{
++				begin = offset;
++			}
++
++			internal void MarkStatementBegin (int offset)
++			{
++				stmt_begin = offset;
++			}
++
++			internal void MarkStatementEnd (int offset)
++			{
++				stmt_end = offset;
++			}
++
++			internal void MarkLoopBegin (int offset)
++			{
++				loop_begin = offset;
++			}
++
++			internal void MarkLoopEnd (int offset)
++			{
++				loop_end = offset;
++			}
++
++			public override string ToString ()
++			{
++				return String.Format (
++					"[CodeBlock.CollectionForeach {0}:{1:x}:{2:x}:{3:x}:{4:x}:{5:x}]",
++					var_name, begin, stmt_begin, stmt_end, loop_begin, loop_end);
++			}
++		}
+ 	}
+ 
+ 	public struct LocalVariableEntry
+@@ -310,40 +483,40 @@
+ 		#region This is actually written to the symbol file
+ 		public readonly int Index;
+ 		public readonly string Name;
+-		public readonly byte[] Signature;
++		public readonly bool IsTemporary;
+ 		public readonly int BlockIndex;
+ 		#endregion
+ 
+-		public LocalVariableEntry (int index, string name, byte[] sig, int block)
++		public LocalVariableEntry (int index, string name, int block, bool is_temp)
+ 		{
+ 			this.Index = index;
+ 			this.Name = name;
+-			this.Signature = sig;
+ 			this.BlockIndex = block;
++			this.IsTemporary = is_temp;
+ 		}
+ 
+ 		internal LocalVariableEntry (MyBinaryReader reader)
+ 		{
+ 			Index = reader.ReadLeb128 ();
+ 			Name = reader.ReadString ();
+-			int sig_length = reader.ReadLeb128 ();
+-			Signature = reader.ReadBytes (sig_length);
++			if (Name == "")
++				Name = null;
+ 			BlockIndex = reader.ReadLeb128 ();
++			IsTemporary = reader.ReadBoolean ();
+ 		}
+ 
+ 		internal void Write (MonoSymbolFile file, MyBinaryWriter bw)
+ 		{
+ 			bw.WriteLeb128 (Index);
+-			bw.Write (Name);
+-			bw.WriteLeb128 ((int) Signature.Length);
+-			bw.Write (Signature);
++			bw.Write (Name != null ? Name : "");
+ 			bw.WriteLeb128 (BlockIndex);
++			bw.Write (IsTemporary);
+ 		}
+ 
+ 		public override string ToString ()
+ 		{
+-			return String.Format ("[LocalVariable {0}:{1}:{2}]",
+-					      Name, Index, BlockIndex);
++			return String.Format ("[LocalVariable {0}:{1}:{2}:{3}]",
++					      Name, Index, BlockIndex, IsTemporary);
+ 		}
+ 	}
+ 
+@@ -527,6 +700,42 @@
+ 		}
+ 	}
+ 
++	public class TypeEntry
++	{
++		public readonly MonoSymbolFile File;
++		public readonly int Token;
++		public readonly bool IsIterator;
++
++		TypeBuilder builder;
++
++		internal TypeEntry (MonoSymbolFile file, TypeBuilder type)
++		{
++			this.File = file;
++			this.builder = type;
++		}
++
++		internal TypeEntry (MonoSymbolFile file, MyBinaryReader reader)
++		{
++			Token = reader.ReadInt32 ();
++			IsIterator = reader.ReadBoolean ();
++		}
++
++		internal void DefineType ()
++		{
++			if (builder == null)
++				throw new InvalidOperationException ();
++
++			File.AddType (this);
++		}
++
++		internal void Write (MyBinaryWriter bw)
++		{
++			Console.WriteLine ("WRITE TYPE ENTRY: {0:x}", builder.TypeToken.Token);
++			bw.Write (builder.TypeToken.Token);
++			bw.Write (IsIterator);
++		}
++	}
++
+ 	public class SourceFileEntry
+ 	{
+ 		#region This is actually written to the symbol file
+@@ -795,7 +1004,7 @@
+ 		public readonly bool LocalNamesAmbiguous;
+ 
+ 		int NameOffset;
+-		int TypeIndexTableOffset;
++		int Dummy0;
+ 		int LocalVariableTableOffset;
+ 		int LineNumberTableOffset;
+ 		int NumLexicalBlocks;
+@@ -815,7 +1024,6 @@
+ 
+ 		public readonly SourceFileEntry SourceFile;
+ 		public readonly LineNumberEntry[] LineNumbers;
+-		public readonly int[] LocalTypeIndices;
+ 		public readonly LocalVariableEntry[] Locals;
+ 		public readonly LexicalBlockEntry[] LexicalBlocks;
+ 		public readonly CodeBlockEntry[] CodeBlocks;
+@@ -841,7 +1049,7 @@
+ 			NumLocals = reader.ReadInt32 ();
+ 			NumLineNumbers = reader.ReadInt32 ();
+ 			NameOffset = reader.ReadInt32 ();
+-			TypeIndexTableOffset = reader.ReadInt32 ();
++			reader.ReadInt32 ();
+ 			LocalVariableTableOffset = reader.ReadInt32 ();
+ 			LineNumberTableOffset = reader.ReadInt32 ();
+ 			NumLexicalBlocks = reader.ReadInt32 ();
+@@ -887,18 +1095,6 @@
+ 				reader.BaseStream.Position = old_pos;
+ 			}
+ 
+-			if (TypeIndexTableOffset != 0) {
+-				long old_pos = reader.BaseStream.Position;
+-				reader.BaseStream.Position = TypeIndexTableOffset;
+-
+-				LocalTypeIndices = new int [NumLocals];
+-
+-				for (int i = 0; i < NumLocals; i++)
+-					LocalTypeIndices [i] = reader.ReadInt32 ();
+-
+-				reader.BaseStream.Position = old_pos;
+-			}
+-
+ 			if (LexicalBlockTableOffset != 0) {
+ 				long old_pos = reader.BaseStream.Position;
+ 				reader.BaseStream.Position = LexicalBlockTableOffset;
+@@ -916,7 +1112,7 @@
+ 
+ 				CodeBlocks = new CodeBlockEntry [NumCodeBlocks];
+ 				for (int i = 0; i < NumCodeBlocks; i++)
+-					CodeBlocks [i] = new CodeBlockEntry (i, reader);
++					CodeBlocks [i] = CodeBlockEntry.Read (i, reader);
+ 
+ 				reader.BaseStream.Position = old_pos;
+ 			}
+@@ -989,10 +1185,6 @@
+ 				}
+ 			}
+ 
+-			LocalTypeIndices = new int [NumLocals];
+-			for (int i = 0; i < NumLocals; i++)
+-				LocalTypeIndices [i] = file.GetNextTypeIndex ();
+-
+ 			NumCodeBlocks = blocks != null ? blocks.Length : 0;
+ 			CodeBlocks = blocks;
+ 
+@@ -1057,11 +1249,6 @@
+ 
+ 			NameOffset = (int) bw.BaseStream.Position;
+ 
+-			TypeIndexTableOffset = (int) bw.BaseStream.Position;
+-
+-			for (int i = 0; i < NumLocals; i++)
+-				bw.Write (LocalTypeIndices [i]);
+-
+ 			LocalVariableTableOffset = (int) bw.BaseStream.Position;
+ 			for (int i = 0; i < NumLocals; i++)
+ 				Locals [i].Write (file, bw);
+@@ -1098,7 +1285,7 @@
+ 			bw.Write (NumLocals);
+ 			bw.Write (NumLineNumbers);
+ 			bw.Write (NameOffset);
+-			bw.Write (TypeIndexTableOffset);
++			bw.Write (0);
+ 			bw.Write (LocalVariableTableOffset);
+ 			bw.Write (LineNumberTableOffset);
+ 			bw.Write (NumLexicalBlocks);
