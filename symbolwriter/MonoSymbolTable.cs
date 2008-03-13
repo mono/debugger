@@ -828,6 +828,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly CodeBlockEntry[] CodeBlocks;
 		public readonly ScopeVariable[] ScopeVariables;
 
+		[Obsolete]
+		public readonly LexicalBlockEntry[] LexicalBlocks;
+
 		public readonly string RealName;
 
 		public readonly MonoSymbolFile SymbolFile;
