@@ -270,16 +270,18 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 			ot.SourceTableSize = (int) bw.BaseStream.Position - ot.SourceTableOffset;
 
-			//
-			// Write anonymous scope table.
-			//
-			ot.AnonymousScopeCount = anonymous_scopes != null ? anonymous_scopes.Count : 0;
-			ot.AnonymousScopeTableOffset = (int) bw.BaseStream.Position;
-			if (anonymous_scopes != null) {
-				foreach (AnonymousScopeEntry scope in anonymous_scopes.Values)
-					scope.Write (bw);
+			if (!CompatibilityMode) {
+				//
+				// Write anonymous scope table.
+				//
+				ot.AnonymousScopeCount = anonymous_scopes != null ? anonymous_scopes.Count : 0;
+				ot.AnonymousScopeTableOffset = (int) bw.BaseStream.Position;
+				if (anonymous_scopes != null) {
+					foreach (AnonymousScopeEntry scope in anonymous_scopes.Values)
+						scope.Write (bw);
+				}
+				ot.AnonymousScopeTableSize = (int) bw.BaseStream.Position - ot.AnonymousScopeTableOffset;
 			}
-			ot.AnonymousScopeTableSize = (int) bw.BaseStream.Position - ot.AnonymousScopeTableOffset;
 
 			//
 			// Fixup offset table.
