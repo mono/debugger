@@ -1,3 +1,12 @@
+2008-03-13  Martin Baulig  <martin@ximian.com>
+
+	Fix #324557.
+
+	* backend/server/x86_64-arch.h: Don't #include <asm/user.h>; use
+	<sys/user.h> instead which defines `struct user_fpregs_struct'.
+
+	* backend/server/i386-arch.h: Likewise.
+
 2008-03-10  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

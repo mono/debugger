@@ -7,10 +7,10 @@ G_BEGIN_DECLS
 
 #if defined(__x86_64__)
 
-#include <asm/user.h>
+#include <sys/user.h>
 
 #define INFERIOR_REGS_TYPE	struct user_regs_struct
-#define INFERIOR_FPREGS_TYPE	struct user_i387_struct
+#define INFERIOR_FPREGS_TYPE	struct user_fpregs_struct
 
 #define INFERIOR_REG_R15(r)	r.r15
 #define INFERIOR_REG_R14(r)	r.r14
