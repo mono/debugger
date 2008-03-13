@@ -973,6 +973,8 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
+			LexicalBlocks = new LexicalBlockEntry [0];
+
 			NumCodeBlocks = blocks != null ? blocks.Length : 0;
 			CodeBlocks = blocks;
 
