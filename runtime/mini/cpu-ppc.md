@@ -61,20 +61,6 @@ bge.un: len:8
 bgt.un: len:8
 ble.un: len:8
 blt.un: len:8
-ldind.i1: dest:i len:8
-ldind.u1: dest:i len:8
-ldind.i2: dest:i len:8
-ldind.u2: dest:i len:8
-ldind.i4: dest:i len:8
-ldind.u4: dest:i len:8
-ldind.i: dest:i len:8
-ldind.ref: dest:i len:8
-stind.ref: src1:b src2:i
-stind.i1: src1:b src2:i
-stind.i2: src1:b src2:i
-stind.i4: src1:b src2:i
-stind.r4: src1:b src2:f
-stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:4
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
@@ -132,9 +118,6 @@ outarg: src1:i len:1
 outarg_imm: len:5
 setret: dest:a src1:i len:4
 setlret: src1:i src2:i len:12
-setreg: dest:i src1:i len:4 clob:r
-setregimm: dest:i len:8 clob:r
-setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
 voidcall: len:16 clob:c
 voidcall_reg: src1:i len:8 clob:c
@@ -225,7 +208,7 @@ float_bne_un: len:8
 float_blt: len:8
 float_blt_un: len:8
 float_bgt: len:8
-float_btg_un: len:8
+float_bgt_un: len:8
 float_bge: len:8
 float_bge_un: len:8
 float_ble: len:8

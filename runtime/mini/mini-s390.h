@@ -59,32 +59,31 @@
 	switch (size) {								\
 		case 0: 							\
 			MONO_EMIT_NEW_ICONST(cfg, reg, 0);			\
-			mono_call_inst_add_outarg_reg(s, call, reg, dr, FALSE);	\
+			mono_call_inst_add_outarg_reg(cfg, call, reg, dr, FALSE);	\
 		break;								\
 		case 1:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU1_MEMBASE,	\
 				reg, sr, so);					\
-			mono_call_inst_add_outarg_reg(s, call, reg, dr, FALSE);	\
+			mono_call_inst_add_outarg_reg(cfg, call, reg, dr, FALSE);	\
 		break;								\
 		case 2:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOADU2_MEMBASE,	\
 				reg, sr, so);					\
-			mono_call_inst_add_outarg_reg(s, call, reg, dr, FALSE);	\
+			mono_call_inst_add_outarg_reg(cfg, call, reg, dr, FALSE);	\
 		break;								\
 		case 4:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
 				reg, sr, so);					\
-			mono_call_inst_add_outarg_reg(s, call, reg, dr, FALSE);	\
+			mono_call_inst_add_outarg_reg(cfg, call, reg, dr, FALSE);	\
 		break;								\
 		case 8:								\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
 				reg, sr, so);					\
-			mono_call_inst_add_outarg_reg(s, call, reg, dr, FALSE);	\
-			dr++; so += sizeof(guint32);				\
+			mono_call_inst_add_outarg_reg(cfg, call, reg, dr, FALSE);	\
 			reg = mono_regstate_next_int (cfg->rs);			\
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP(cfg, OP_LOAD_MEMBASE,	\
-				reg, sr, so);					\
-			mono_call_inst_add_outarg_reg(s, call, reg, dr, FALSE);	\
+				reg, sr, so + sizeof (guint32));					\
+			mono_call_inst_add_outarg_reg(cfg, call, reg, dr + 1, FALSE);	\
 		break;								\
 	}									\
 } while (0)
@@ -157,6 +156,9 @@ typedef struct
 #define MONO_ARCH_EMULATE_LMUL 			1
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW  	1
 #define MONO_ARCH_NEED_DIV_CHECK		1
+#define MONO_ARCH_HAVE_ATOMIC_ADD 1
+#define MONO_ARCH_HAVE_ATOMIC_EXCHANGE 1
+#define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 // #define MONO_ARCH_SIGSEGV_ON_ALTSTACK		1
 // #define MONO_ARCH_SIGNAL_STACK_SIZE		65536
 // #define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION	1

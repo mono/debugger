@@ -103,7 +103,7 @@ stmt: CEE_BEQ (OP_COMPARE(reg, reg)) "0" {
 # 	guint32 sreg2 = mips_zero;
 # 
 # 	if (state->left->right->tree->inst_c0) {
-# 		MONO_EMIT_NEW_UNALU (s, OP_SETREGIMM, mips_at,
+# 		MONO_EMIT_NEW_UNALU (s, OP_ICONST, mips_at,
 # 					state->left->right->tree->inst_c0);
 # 		sreg2 = mips_at;
 # 	}
@@ -121,7 +121,7 @@ stmt: CEE_BEQ (OP_COMPARE(reg, reg)) "0" {
 # 	guint32 sreg2 = mips_zero;
 # 
 # 	if (state->left->right->tree->inst_c0) {
-# 		MONO_EMIT_NEW_UNALU (s, OP_SETREGIMM, mips_at, state->left->right->tree->inst_c0);
+# 		MONO_EMIT_NEW_UNALU (s, OP_ICONST, mips_at, state->left->right->tree->inst_c0);
 # 		sreg2 = mips_at;
 # 	}
 # 	tree->opcode = OP_MIPS_BEQ;
@@ -137,7 +137,7 @@ stmt: CEE_BEQ (OP_COMPARE(reg, reg)) "0" {
 # 	guint32 sreg2 = mips_zero;
 # 
 # 	if (state->left->right->tree->inst_c0) {
-# 		MONO_EMIT_NEW_UNALU (s, OP_SETREGIMM, mips_at, state->left->right->tree->inst_c0);
+# 		MONO_EMIT_NEW_UNALU (s, OP_ICONST, mips_at, state->left->right->tree->inst_c0);
 # 		sreg2 = mips_at;
 # 	}
 # 	tree->opcode = OP_MIPS_BEQ;
@@ -158,7 +158,7 @@ stmt: CEE_BNE_UN (OP_COMPARE(reg, reg)) "0" {
 # 	guint32 sreg2 = mips_zero;
 # 
 # 	if (state->left->right->tree->inst_c0) {
-# 		MONO_EMIT_NEW_UNALU (s, OP_SETREGIMM, mips_at,
+# 		MONO_EMIT_NEW_UNALU (s, OP_ICONST, mips_at,
 # 					state->left->right->tree->inst_c0);
 # 		sreg2 = mips_at;
 # 	}
@@ -280,7 +280,7 @@ stmt: OP_SWITCH (reg) {
 	if (mips_is_imm16 (n))
 		MONO_EMIT_NEW_BIALU_IMM (s, OP_MIPS_SLTIU, mips_at, state->left->reg1, n);
 	else {
-		MONO_EMIT_NEW_UNALU (s, OP_SETREGIMM, mips_at, n);
+		MONO_EMIT_NEW_UNALU (s, OP_ICONST, mips_at, n);
 		MONO_EMIT_NEW_BIALU (s, OP_MIPS_SLTU, mips_at, state->left->reg1, mips_at);
 	}
 	MONO_EMIT_NEW_BIALU_IMM (s, OP_MIPS_XORI, mips_at, mips_at, 1);
@@ -349,7 +349,11 @@ stmt: OP_SETRET (lreg) {
 }
 
 stmt: OP_SETRET (freg) {
-	tree->opcode = OP_FMOVE;
+	if (mono_method_signature (s->method)->ret->type == MONO_TYPE_R4) {
+		tree->opcode = OP_MIPS_CVTSD;
+	} else {
+		tree->opcode = OP_FMOVE;
+	}
 	tree->sreg1 = state->left->reg1;
 	tree->dreg = mips_f0;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -418,7 +422,7 @@ stmt: OP_OUTARG_MEMBASE (freg) {
 stmt: OP_OUTARG (reg) {
 	MonoCallInst *call = tree->inst_call;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -428,7 +432,7 @@ stmt: OP_OUTARG (reg) {
 stmt: OP_OUTARG (OP_REGVAR) {
 	MonoCallInst *call = tree->inst_call;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -439,9 +443,9 @@ stmt: OP_OUTARG (lreg) {
 	MonoCallInst *call = tree->inst_call;
 	int tdreg = mono_regstate_next_int (s->rs);
 
-	MONO_EMIT_NEW_UNALU (s, OP_SETREG, tdreg, state->left->reg2);
+	MONO_EMIT_NEW_UNALU (s, OP_MOVE, tdreg, state->left->reg2);
 	mono_call_inst_add_outarg_reg (s, call, tdreg, tree->backend.reg3, FALSE);
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -451,7 +455,7 @@ stmt: OP_OUTARG (lreg) {
 stmt: OP_OUTARG (OP_ICONST) {
 	MonoCallInst *call = tree->inst_call;
 
-	tree->opcode = OP_SETREGIMM;
+	tree->opcode = OP_ICONST;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->inst_c0 = state->left->tree->inst_c0;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -461,23 +465,12 @@ stmt: OP_OUTARG (OP_ICONST) {
 stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
 	MonoCallInst *call = tree->inst_call;
 
-	tree->opcode = OP_SETREG;
+	tree->opcode = OP_MOVE;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->left->tree->dreg;
 	mono_bblock_add_inst (s->cbb, tree);
 	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
 }
-
-stmt: OP_OUTARG (CEE_LDIND_REF (OP_REGVAR)) {
-	MonoCallInst *call = tree->inst_call;
-
-	tree->opcode = OP_SETREG;
-	tree->sreg1 = state->left->left->tree->dreg;
-	tree->dreg = mono_regstate_next_int (s->rs);
-	mono_bblock_add_inst (s->cbb, tree);
-	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, FALSE);
-}
-
 
 #
 # FP calculation being passed in GP registers
@@ -491,7 +484,7 @@ stmt: OP_OUTARG (freg) {
 	/* MONO_EMIT_NEW_UNALU (s, OP_FCONV_TO_R4, mips_ftemp, state->left->reg1); */
 	/* MONO_EMIT_NEW_UNALU (s, OP_MIPS_MFC1S, tree->unused & 0xff, mips_ftemp); */
 
-	tree->opcode = OP_SETFREG;
+	tree->opcode = OP_FMOVE;
 	tree->dreg = mono_regstate_next_float (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -508,7 +501,7 @@ stmt: OP_OUTARG_R8 (CEE_LDOBJ (base)) {
 	tmpr = mono_regstate_next_float (s->rs);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (s, OP_LOADR4_MEMBASE, tmpr, vt->inst_basereg, soffset);
 	dreg = mono_regstate_next_float (s->rs);
-	MONO_EMIT_NEW_UNALU (s, OP_SETFREG, dreg, tmpr);
+	MONO_EMIT_NEW_UNALU (s, OP_FMOVE, dreg, tmpr);
 	mono_call_inst_add_outarg_reg (s, call, dreg, tree->backend.reg3, TRUE);
 }
 
@@ -517,9 +510,9 @@ stmt: OP_OUTARG_R8 (CEE_LDOBJ (base)) {
 #
 stmt: OP_OUTARG_MEMBASE (CEE_LDIND_R4 (base)) {
 	MonoMIPSArgInfo *ai = tree->backend.data;
-	MonoCallInst *call = tree->inst_call;
-	int opcode = (tree->backend.arg_info & 0xff00) == 0x0400? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
+	int opcode = ai->size == 4? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
 
+	MONO_EMIT_NEW_LOAD_MEMBASE_OP(s, OP_LOADR4_MEMBASE, state->left->reg1, state->left->left->tree->inst_basereg, state->left->left->tree->inst_offset);
 	MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, mips_sp, ai->offset, state->left->reg1);
 }
 
@@ -577,13 +570,6 @@ stmt: OP_OUTARG_R4 (freg) {
 #	mono_call_inst_add_outarg_reg (s, call, tree->dreg, tree->backend.reg3, TRUE);
 #}
 
-stmt: OP_OUTARG_MEMBASE (CEE_LDIND_R4 (base)) {
-	MonoMIPSArgInfo *ai = tree->backend.data;
-	int opcode = (tree->backend.arg_info & 0xff00) == 0x0400? OP_STORER4_MEMBASE_REG: OP_STORER8_MEMBASE_REG;
-
-	MONO_EMIT_NEW_STORE_MEMBASE (s, opcode, mips_sp, ai->offset, state->left->reg1);
-}
-
 #
 # single-precision floating point constant in a gp register.
 #
@@ -624,11 +610,10 @@ stmt: OP_OUTARG_VT (CEE_LDOBJ (base)) {
 		MONO_EMIT_NEW_LOAD_MEMBASE (s, dreg, vt->inst_basereg, soffset);
 		mono_call_inst_add_outarg_reg (s, call, dreg, start_reg + i, FALSE);
 		soffset += sizeof (gpointer);
-		doffset += sizeof (gpointer);
 	}
 	//g_printf ("vt size: %d at R%d + %d\n", ai->offset, vt->inst_basereg, vt->inst_offset);
 	if (ovf_size != 0) {
-		mini_emit_memcpy (s, vt->inst_basereg, doffset, vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
+		mini_emit_memcpy (s, mips_sp, doffset, vt->inst_basereg, soffset, ovf_size * sizeof (gpointer), 0);
 	}
 }
 
@@ -640,7 +625,7 @@ stmt: OP_OUTARG_VT (OP_ICONST) {
 
 	//g_printf ("OP_OUTARG_VT: ICONST\n");
 	if (nregs) {
-		tree->opcode = OP_SETREGIMM;
+		tree->opcode = OP_ICONST;
 		tree->dreg = mono_regstate_next_int (s->rs);
 		tree->inst_c0 = state->left->tree->inst_c0;
 		mono_bblock_add_inst (s->cbb, tree);
@@ -658,7 +643,7 @@ stmt: OP_OUTARG_VT (reg) {
 
 	//g_printf ("OP_OUTARG_VT: reg\n");
 	if (nregs) {
-		tree->opcode = OP_SETREG;
+		tree->opcode = OP_MOVE;
 		tree->dreg = mono_regstate_next_int (s->rs);
 		tree->sreg1 = state->left->reg1;
 		mono_bblock_add_inst (s->cbb, tree);

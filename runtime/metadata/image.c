@@ -610,9 +610,7 @@ mono_image_init (MonoImage *image)
 
 	image->ldfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->ldflda_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->ldfld_remote_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->stfld_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	image->stfld_remote_wrapper_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->castclass_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 	image->proxy_isinst_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -840,10 +838,19 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		goto invalid_image;
 
 	/* modules don't have an assembly table row */
-	if (image->tables [MONO_TABLE_ASSEMBLY].rows)
+	if (image->tables [MONO_TABLE_ASSEMBLY].rows) {
 		image->assembly_name = mono_metadata_string_heap (image, 
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_ASSEMBLY],
 					0, MONO_ASSEMBLY_NAME));
+		/* we don't allow loading different mscorlibs */
+		if (strcmp (image->assembly_name, "mscorlib") == 0 && mono_defaults.corlib) {
+			if (status)
+				*status = MONO_IMAGE_OK;
+			mono_image_close (image);
+			mono_image_addref (mono_defaults.corlib);
+			return mono_defaults.corlib;
+		}
+	}
 
 	image->module_name = mono_metadata_string_heap (image, 
 			mono_metadata_decode_row_col (&image->tables [MONO_TABLE_MODULE],
@@ -1285,9 +1292,7 @@ mono_image_close (MonoImage *image)
 	g_hash_table_destroy (image->typespec_cache);
 	g_hash_table_destroy (image->ldfld_wrapper_cache);
 	g_hash_table_destroy (image->ldflda_wrapper_cache);
-	g_hash_table_destroy (image->ldfld_remote_wrapper_cache);
 	g_hash_table_destroy (image->stfld_wrapper_cache);
-	g_hash_table_destroy (image->stfld_remote_wrapper_cache);
 	g_hash_table_destroy (image->isinst_cache);
 	g_hash_table_destroy (image->castclass_cache);
 	g_hash_table_destroy (image->proxy_isinst_cache);
@@ -1301,6 +1306,12 @@ mono_image_close (MonoImage *image)
 
 	if (image->generic_class_cache)
 		g_hash_table_destroy (image->generic_class_cache);
+
+	if (image->rgctx_template_hash)
+		g_hash_table_destroy (image->rgctx_template_hash);
+
+	if (image->generic_class_open_instances_hash)
+		g_hash_table_destroy (image->generic_class_open_instances_hash);
 
 	if (image->interface_bitset) {
 		mono_unload_interface_ids (image->interface_bitset);

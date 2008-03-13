@@ -278,6 +278,13 @@ typedef union {
 		x86_membase_emit ((inst), ((reg)&0x7), ((basereg)&0x7), (disp));	\
 	} while (0)
 
+#define amd64_movsxd_reg_mem(inst,reg,mem) \
+    do {     \
+       amd64_emit_rex(inst,8,(reg),0,0); \
+       *(inst)++ = (unsigned char)0x63; \
+       x86_mem_emit ((inst), ((reg)&0x7), (mem)); \
+    } while (0)
+
 #define amd64_movsxd_reg_membase(inst,reg,basereg,disp) \
     do {     \
        amd64_emit_rex(inst,8,(reg),0,(basereg)); \
@@ -582,6 +589,7 @@ typedef union {
 //#define amd64_alu_reg_imm_size(inst,opc,reg,imm,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_reg_imm((inst),(opc),((reg)&0x7),(imm)); } while (0)
 #define amd64_alu_mem_imm_size(inst,opc,mem,imm,size) do { amd64_emit_rex ((inst),(size),0,0,0); x86_alu_mem_imm((inst),(opc),(mem),(imm)); } while (0)
 #define amd64_alu_membase_imm_size(inst,opc,basereg,disp,imm,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_alu_membase_imm((inst),(opc),((basereg)&0x7),(disp),(imm)); } while (0)
+#define amd64_alu_membase8_imm_size(inst,opc,basereg,disp,imm,size) do { amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_alu_membase8_imm((inst),(opc),((basereg)&0x7),(disp),(imm)); } while (0)	
 #define amd64_alu_mem_reg_size(inst,opc,mem,reg,size) do { amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_mem_reg((inst),(opc),(mem),((reg)&0x7)); } while (0)
 #define amd64_alu_membase_reg_size(inst,opc,basereg,disp,reg,size) do { amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_alu_membase_reg((inst),(opc),((basereg)&0x7),(disp),((reg)&0x7)); } while (0)
 //#define amd64_alu_reg_reg_size(inst,opc,dreg,reg,size) do { amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_alu_reg_reg((inst),(opc),((dreg)&0x7),((reg)&0x7)); } while (0)

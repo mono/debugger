@@ -25,8 +25,6 @@
 #include "mini.h"
 #include "mini-arm.h"
 
-static gboolean arch_handle_exception (MonoContext *ctx, gpointer obj, gboolean test_only);
-
 /*
 
 struct sigcontext {
@@ -82,6 +80,9 @@ typedef struct ucontext {
  * We define our own version here and use it instead.
  */
 
+#if __APPLE__
+#define my_ucontext ucontext_t
+#else
 typedef struct my_ucontext {
 	unsigned long       uc_flags;
 	struct my_ucontext *uc_link;
@@ -95,6 +96,7 @@ typedef struct my_ucontext {
 	 * we don't use them for now...
 	 */
 } my_ucontext;
+#endif
 
 #define restore_regs_from_context(ctx_reg,ip_reg,tmp_reg) do {	\
 		int reg;	\
@@ -219,11 +221,11 @@ throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, gulong *
  * Returns a function pointer which can be used to raise 
  * exceptions. The returned function has the following 
  * signature: void (*func) (MonoException *exc); or
- * void (*func) (char *exc_name);
+ * void (*func) (guint32 ex_token, guint8* ip);
  *
  */
 static gpointer 
-mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gboolean rethrow)
+mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_token, gboolean rethrow)
 {
 	guint8 *code;
 	int alloc_size, pos, i;
@@ -234,24 +236,26 @@ mono_arch_get_throw_exception_generic (guint8 *start, int size, int by_name, gbo
 	ARM_MOV_REG_REG (code, ARMREG_IP, ARMREG_SP);
 	ARM_PUSH (code, MONO_ARM_REGSAVE_MASK);
 
-	if (by_name) {
-		/* r0 has the name of the exception: get the object */
-		ARM_MOV_REG_REG (code, ARMREG_R2, ARMREG_R0);
+	if (by_token) {
+		/* r0 has the type token of the exception: get the object */
+		ARM_PUSH1 (code, ARMREG_R1);
+		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_R0);
 		code = mono_arm_emit_load_imm (code, ARMREG_R0, GPOINTER_TO_UINT (mono_defaults.corlib));
-		code = mono_arm_emit_load_imm (code, ARMREG_R1, GPOINTER_TO_UINT ("System"));
-		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (mono_exception_from_name));
+		code = mono_arm_emit_load_imm (code, ARMREG_IP, GPOINTER_TO_UINT (mono_exception_from_token));
 		ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);
 		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+		ARM_POP1 (code, ARMREG_R1);
 	}
 
 	/* call throw_exception (exc, ip, sp, int_regs, fp_regs) */
 	/* caller sp */
 	ARM_ADD_REG_IMM8 (code, ARMREG_R2, ARMREG_SP, 10 * 4); /* 10 saved regs */
 	/* exc is already in place in r0 */
-	if (by_name)
-		ARM_LDR_IMM (code, ARMREG_R1, ARMREG_SP, 9 * 4); /* pos on the stack were lr was saved */
-	else
+	if (by_token) {
+		/* The caller ip is already in R1 */
+	} else {
 		ARM_MOV_REG_REG (code, ARMREG_R1, ARMREG_LR); /* caller ip */
+	}
 	/* FIXME: pointer to the saved fp regs */
 	/*pos = alloc_size - sizeof (double) * MONO_SAVED_FREGS;
 	ppc_addi (code, ppc_r7, ppc_sp, pos);*/
@@ -315,20 +319,37 @@ mono_arch_get_throw_exception (void)
 	return start;
 }
 
+gpointer 
+mono_arch_get_throw_exception_by_name (void)
+{	
+	static guint8* start;
+	static gboolean inited = FALSE;
+	guint8 *code;
+
+	if (inited)
+		return start;
+
+	start = code = mono_global_codeman_reserve (64);
+
+	/* Not used on ARM */
+	ARM_DBRK (code);
+
+	return start;
+}
+
 /**
- * arch_get_throw_exception_by_name:
+ * mono_arch_get_throw_corlib_exception:
  *
  * Returns a function pointer which can be used to raise 
  * corlib exceptions. The returned function has the following 
- * signature: void (*func) (char *exc_name); 
- * For example to raise an arithmetic exception you can use:
- *
- * x86_push_imm (code, "ArithmeticException"); 
- * x86_call_code (code, arch_get_throw_exception_by_name ()); 
- *
+ * signature: void (*func) (guint32 ex_token, guint32 offset); 
+ * Here, offset is the offset which needs to be substracted from the caller IP 
+ * to get the IP of the throw. Passing the offset has the advantage that it 
+ * needs no relocations in the caller.
+ * On ARM, the ip is passed instead of an offset.
  */
 gpointer 
-mono_arch_get_throw_exception_by_name (void)
+mono_arch_get_throw_corlib_exception (void)
 {
 	static guint8 start [168];
 	static int inited = 0;
@@ -427,11 +448,10 @@ mono_arch_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInf
 		
 		*new_ctx = *ctx;
 
-		if (!(*lmf)->method)
-			return (gpointer)-1;
-
 		if ((ji = mono_jit_info_table_find (domain, (gpointer)(*lmf)->eip))) {
 		} else {
+			if (!(*lmf)->method)
+				return (gpointer)-1;
 			memset (res, 0, sizeof (MonoJitInfo));
 			res->method = (*lmf)->method;
 		}
@@ -462,9 +482,9 @@ mono_arch_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #else
 	my_ucontext *my_uc = sigctx;
 
-	mctx->eip = my_uc->sig_ctx.arm_pc;
-	mctx->ebp = my_uc->sig_ctx.arm_sp;
-	memcpy (&mctx->regs, &my_uc->sig_ctx.arm_r4, sizeof (gulong) * 8);
+	mctx->eip = UCONTEXT_REG_PC (my_uc);
+	mctx->ebp = UCONTEXT_REG_SP (my_uc);
+	memcpy (&mctx->regs, &UCONTEXT_REG_R4 (my_uc), sizeof (gulong) * 8);
 #endif
 }
 
@@ -481,9 +501,9 @@ mono_arch_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 #else
 	my_ucontext *my_uc = ctx;
 
-	my_uc->sig_ctx.arm_pc = mctx->eip;
-	my_uc->sig_ctx.arm_sp = mctx->ebp;
-	memcpy (&my_uc->sig_ctx.arm_r4, &mctx->regs, sizeof (gulong) * 8);
+	UCONTEXT_REG_PC (my_uc) = mctx->eip;
+	UCONTEXT_REG_SP (my_uc) = mctx->ebp;
+	memcpy (&UCONTEXT_REG_R4 (my_uc), &mctx->regs, sizeof (gulong) * 8);
 #endif
 }
 
@@ -514,7 +534,7 @@ mono_arch_ip_from_context (void *sigctx)
 	return (gpointer)uc->uc_mcontext.gregs [ARMREG_PC];
 #else
 	my_ucontext *my_uc = sigctx;
-	return (void*)my_uc->sig_ctx.arm_pc;
+	return (void*) UCONTEXT_REG_PC (my_uc);
 #endif
 }
 

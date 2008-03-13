@@ -1,3 +1,126 @@
+2008-03-12 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* strict_native_int_converts_to_unamanged_pointer.cs: Allow
+	conversion from native int to unmanaged pointer in non-strict mode.
+	This is required to allow the C# expression "(IntPtr)null" to be
+	verifiable.
+
+2008-03-12 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_ldftn_final_virtual_method.il:
+	* valid_ldftn_sealed_type_virtual_method.il: Tests the interaction
+	of sealed type and final method or ldftn verifiability.
+
+2008-03-11 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_delegate_compat_test.sh: Added. Generate tests for
+	compatibility between delegate signature and function
+	signature.
+
+	* make_tests.sh: Added tests using make_delegate_compat_test.sh.
+
+2008-03-10 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_invalid_ret_type.sh: Added. Generate return site tests
+	for invalid return types.
+
+	* make_tests.sh: Add tests using make_invalid_ret_type.sh. 
+
+2008-03-10 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* unverifiable_callvirt_static_method.il: Added. Test for callvirt and
+	static methods.
+
+2008-02-28 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* invalid_refanytype_null_stack_top.il: New test for refanytype opcode.
+
+	* invalid_refanytype_invalid_stack_top.il: Same.
+
+	* valid_refanytype.il: Same.
+
+2008-02-28 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_mkrefany.il: New test generator for mkrefany opcode.
+
+	* make_tests.sh: Added tests for mkrefany.
+
+2008-02-27 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_vararg.il: New test for calling vararg methods.
+
+2008-02-27 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_refanyval.il: New test for the refanyval opcode.
+
+	* invalid_refanyval_null_stack_top.il: Same.
+
+	* invalid_refanyval_invalid_stack_top.il: Same.
+
+2008-02-27 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_arglist.il: New test for the arglist opcode.
+
+	* invalid_arglist_method_not_vararg.il: Same.
+
+2008-02-18 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* unverifiable_locals_without_initlocals.il: Methods with locals
+	that are not .init are allways unverifiable.
+
+2008-02-08 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* unverifiable_void_ptr_store_2.cs: Tests for using unmanaged pointers.
+	This test looks for void pointers.
+
+	* unverifiable_void_ptr_store_3.cs: Same.
+
+	* unverifiable_void_ptr_store.cs: Same.
+
+	* valid_merge_boxed_type_3.cs: Test merging a reference type diferent than
+	System.Object and a boxed valuetype. This is hopefully the last issue of
+	merging stack frames.
+
+	* Makefile: compile .cs files with /unsafe switch.
+
+2008-02-06 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_boxed_enum_is_compatible_with_system_enum.cs: Added. 
+	Test if an enum is compatible with System.Enum.
+
+	* valid_merge_boxed_type.cs: Added. Test merging
+	a boxed int32 with a reference type.
+
+	* valid_merge_boxed_type_2.cs: Same.
+
+	* make_ldelem_test.sh: Added some enums to be used by the tests.
+
+	* make_tests.sh: New tests for ldelem compatibility between enums
+	and their base type. Marked some tests as strict.
+
+2008-02-06 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* valid_merge_base_type.cs
+	* valid_merge_first_value_is_base_type.cs:
+	* valid_merge_interface_type_3.cs: 
+	* valid_merge_interface_type_4.cs:
+	* valid_merge_interface_type.cs:
+	* valid_merge_second_value_is_base_type.cs: New tests for stack merging.
+	These tests verify the correctness of the merged value.
+
+2008-01-30 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_tests.sh: More tests for brtrue/brfalse with boxed values
+	and null literals.
+
+	* make_bool_branch_test.sh: New optional arg to allow for new tests.
+
+2008-01-30 Rodrigo Kumpera <rkumpera@novell.com>
+
+	* make_tests.sh: Removed some invalid tests for nesting access
+	as they where trying to call non final virtual methods without using
+	the 'this' pointer.
+
 2008-01-23 Rodrigo Kumpera <rkumpera@novell.com>
 
 	* make_call_test.sh: test generator for call and callvirt.

@@ -146,6 +146,20 @@ encode_public_tok (const guchar *token, gint32 len)
 	return res;
 }
 
+/**
+ * mono_public_tokens_are_equal:
+ * @pubt1: first public key token
+ * @pubt2: second public key token
+ *
+ * Compare two public key tokens and return #TRUE is they are equal and #FALSE
+ * otherwise.
+ */
+gboolean
+mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2)
+{
+	return g_strcasecmp ((char*)pubt1, (char*)pubt2) == 0;
+}
+
 static void
 check_path_env (void)
 {
@@ -224,7 +238,7 @@ assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *ana
 	if (info->culture && strcmp (info->culture, aname->culture))
 		return FALSE;
 	
-	if (strcmp ((const char *)info->public_key_token, (const char *)aname->public_key_token))
+	if (!mono_public_tokens_are_equal (info->public_key_token, aname->public_key_token))
 		return FALSE;
 
 	return TRUE;
@@ -366,7 +380,7 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 	if (!l->public_key_token [0] || !r->public_key_token [0])
 		return TRUE;
 
-	if (strcmp ((char*)l->public_key_token, (char*)r->public_key_token))
+	if (!mono_public_tokens_are_equal (l->public_key_token, r->public_key_token))
 		return FALSE;
 
 	return TRUE;
@@ -695,12 +709,12 @@ char*
 mono_stringify_assembly_name (MonoAssemblyName *aname)
 {
 	return g_strdup_printf (
-		"%s, Version=%d.%d.%d.%d, Culture=%s%s%s",
+		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
 		aname->name,
 		aname->major, aname->minor, aname->build, aname->revision,
 		aname->culture && *aname->culture? aname->culture: "neutral",
-		aname->public_key_token [0] ? ", PublicKeyToken=" : "",
-		aname->public_key_token [0] ? (char *)aname->public_key_token : "");
+		aname->public_key_token [0] ? (char *)aname->public_key_token : "null",
+		(aname->flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
 }
 
 static gchar*
@@ -1426,6 +1440,15 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 
 	mono_assembly_fill_assembly_name (image, &ass->aname);
 
+	if (refonly && strcmp (ass->aname.name, "mscorlib") == 0) {
+		// MS.NET doesn't support loading other mscorlibs
+		g_free (ass);
+		g_free (base_dir);
+		mono_image_close (image);
+		*status = MONO_IMAGE_OK;
+		return mono_defaults.corlib->assembly;
+	}
+
 	/* Add a non-temporary reference because of ass->image */
 	mono_image_addref (image);
 
@@ -1603,11 +1626,13 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	}
 	
 	if (token && strncmp (token, "null", 4) != 0) {
+		char *lower;
+
 		/* the constant includes the ending NULL, hence the -1 */
 		if (strlen (token) != (MONO_PUBLIC_KEY_TOKEN_LENGTH - 1)) {
 			return FALSE;
 		}
-		char *lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		lower = g_ascii_strdown (token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_strlcpy ((char*)aname->public_key_token, lower, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 		g_free (lower);
 	}
@@ -1802,7 +1827,7 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 			match = FALSE;
 			
 		if (match && strlen ((char*)aname->public_key_token) > 0 && 
-				strcmp ((char*)aname->public_key_token, (char*)gac_aname.public_key_token) != 0)
+				!mono_public_tokens_are_equal (aname->public_key_token, gac_aname.public_key_token))
 			match = FALSE;
 		
 		if (match) {
@@ -2074,6 +2099,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 	gchar *name, *version, *culture, *fullpath, *subpath;
 	gint32 len;
 	gchar **paths;
+	char *pubtok;
 
 	if (aname->public_key_token [0] == 0) {
 		return NULL;
@@ -2094,9 +2120,11 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 		culture = g_strdup ("");
 	}
 
+	pubtok = g_ascii_strdown ((char*)aname->public_key_token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
 	version = g_strdup_printf ("%d.%d.%d.%d_%s_%s", aname->major,
 			aname->minor, aname->build, aname->revision,
-			culture, aname->public_key_token);
+			culture, pubtok);
+	g_free (pubtok);
 	
 	subpath = g_build_path (G_DIR_SEPARATOR_S, name, version, filename, NULL);
 	g_free (name);
@@ -2165,10 +2193,11 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	return corlib;
 }
 
-MonoAssembly* mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
-						const char       *basedir, 
-						MonoImageOpenStatus *status,
-						gboolean refonly)
+MonoAssembly*
+mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 
+								  const char       *basedir, 
+								  MonoImageOpenStatus *status,
+								  gboolean refonly)
 {
 	MonoAssembly *result;
 	char *fullpath, *filename;

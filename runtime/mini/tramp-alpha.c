@@ -181,7 +181,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
       }
     
     // alpha_at points to start of this method !!!
-    alpha_ldq(code, alpha_r0, alpha_at, off);
+    alpha_ldq(code, alpha_pv, alpha_at, off);
     alpha_br(code, alpha_zero, 2);
     
     *code = (unsigned int)(((unsigned long)mono_get_lmf_addr) & 0xFFFFFFFF);
@@ -193,7 +193,7 @@ mono_arch_create_trampoline_code (MonoTrampolineType tramp_type)
      * The call might clobber argument registers, but they are already
      * saved to the stack/global regs.
      */
-    alpha_jsr(code, alpha_ra, alpha_r0, 0);
+    alpha_jsr(code, alpha_ra, alpha_pv, 0);
     
     // Save lmf_addr
     alpha_stq(code, alpha_r0, alpha_sp,
@@ -651,3 +651,18 @@ mono_debugger_create_notification_function (void)
   return code;
 }
 
+gpointer
+mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 encoded_offset)
+{
+	/* FIXME: implement! */
+	g_assert_not_reached ();
+	return NULL;
+}
+
+guint32
+mono_arch_get_rgctx_lazy_fetch_offset (gpointer *regs)
+{
+	/* FIXME: implement! */
+	g_assert_not_reached ();
+	return 0;
+}

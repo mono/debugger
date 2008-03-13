@@ -60,9 +60,11 @@
 #include <mono/metadata/number-formatter.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/security-core-clr.h>
+#include <mono/metadata/mono-perfcounters.h>
 #include <mono/io-layer/io-layer.h>
 #include <mono/utils/strtod.h>
 #include <mono/utils/monobitset.h>
+#include <mono/utils/mono-time.h>
 
 #if defined (PLATFORM_WIN32)
 #include <windows.h>
@@ -1049,6 +1051,14 @@ ves_icall_ModuleBuilder_build_metadata (MonoReflectionModuleBuilder *mb)
 	mono_image_build_metadata (mb);
 }
 
+static void
+ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilder *mb, MonoObject *obj, guint32 token)
+{
+	MONO_ARCH_SAVE_REGS;
+
+	mono_image_register_token (mb->dynamic_image, token, obj);
+}
+
 static gboolean
 get_caller (MonoMethod *m, gint32 no, gint32 ilo, gboolean managed, gpointer data)
 {
@@ -1932,9 +1942,13 @@ ves_icall_Type_GetPacking (MonoReflectionType *type, guint32 *packing, guint32 *
 {
 	MonoClass *klass = mono_class_from_mono_type (type->type);
 
-	g_assert (!klass->image->dynamic);
-
-	mono_metadata_packing_from_typedef (klass->image, klass->type_token, packing, size);
+	if (klass->image->dynamic) {
+		MonoReflectionTypeBuilder *tb = (MonoReflectionTypeBuilder*)type;
+		*packing = tb->packing_size;
+		*size = tb->class_size;
+	} else {
+		mono_metadata_packing_from_typedef (klass->image, klass->type_token, packing, size);
+	}
 }
 
 static MonoReflectionType*
@@ -2711,6 +2725,7 @@ static MonoReflectionMethod *
 ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 {
 	MonoMethodInflated *imethod;
+	MonoMethod *result;
 
 	MONO_ARCH_SAVE_REGS;
 
@@ -2721,12 +2736,19 @@ ves_icall_MonoMethod_GetGenericMethodDefinition (MonoReflectionMethod *method)
 		return NULL;
 
 	imethod = (MonoMethodInflated *) method->method;
-
 	if (imethod->reflection_info)
 		return imethod->reflection_info;
-	else
-		return mono_method_get_object (
-			mono_object_domain (method), imethod->declaring, NULL);
+
+	result = imethod->declaring;
+	/* Not a generic method.  */
+	if (!result->generic_container)
+		return NULL;
+	if (imethod->context.class_inst) {
+		MonoClass *klass = ((MonoMethod *) imethod)->klass;
+		result = mono_class_inflate_generic_method_full (result, klass, mono_class_get_context (klass));
+	}
+
+	return mono_method_get_object (mono_object_domain (method), result, NULL);
 }
 
 static gboolean
@@ -4560,43 +4582,27 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 	MonoImage **modules;
 	guint32 module_count, real_module_count;
 	MonoTableInfo *table;
+	guint32 cols [MONO_FILE_SIZE];
+	MonoImage *image = assembly->assembly->image;
 
-	g_assert (assembly->assembly->image != NULL);
+	g_assert (image != NULL);
+	g_assert (!assembly->assembly->dynamic);
 
-	if (assembly->assembly->dynamic) {
-		MonoReflectionAssemblyBuilder *assemblyb = (MonoReflectionAssemblyBuilder*)assembly;
+	table = &image->tables [MONO_TABLE_FILE];
+	file_count = table->rows;
 
-		if (assemblyb->modules)
-			module_count = mono_array_length (assemblyb->modules);
-		else
-			module_count = 0;
-		real_module_count = module_count;
+	modules = image->modules;
+	module_count = image->module_count;
 
-		modules = g_new0 (MonoImage*, module_count);
-		if (assemblyb->modules) {
-			for (i = 0; i < mono_array_length (assemblyb->modules); ++i) {
-				modules [i] = 
-					mono_array_get (assemblyb->modules, MonoReflectionModuleBuilder*, i)->module.image;
-			}
-		}
-	}
-	else {
-		table = &assembly->assembly->image->tables [MONO_TABLE_FILE];
-		file_count = table->rows;
-
-		modules = assembly->assembly->image->modules;
-		module_count = assembly->assembly->image->module_count;
-
-		real_module_count = 0;
-		for (i = 0; i < module_count; ++i)
-			if (modules [i])
-				real_module_count ++;
-	}
+	real_module_count = 0;
+	for (i = 0; i < module_count; ++i)
+		if (modules [i])
+			real_module_count ++;
 
 	klass = mono_class_from_name (mono_defaults.corlib, "System.Reflection", "Module");
 	res = mono_array_new (domain, klass, 1 + real_module_count + file_count);
 
-	mono_array_setref (res, 0, mono_module_get_object (domain, assembly->assembly->image));
+	mono_array_setref (res, 0, mono_module_get_object (domain, image));
 	j = 1;
 	for (i = 0; i < module_count; ++i)
 		if (modules [i]) {
@@ -4604,11 +4610,19 @@ ves_icall_System_Reflection_Assembly_GetModulesInternal (MonoReflectionAssembly 
 			++j;
 		}
 
-	for (i = 0; i < file_count; ++i, ++j)
-		mono_array_setref (res, j, mono_module_file_get_object (domain, assembly->assembly->image, i));
-
-	if (assembly->assembly->dynamic)
-		g_free (modules);
+	for (i = 0; i < file_count; ++i, ++j) {
+		mono_metadata_decode_row (table, i, cols, MONO_FILE_SIZE);
+		if (cols [MONO_FILE_FLAGS] && FILE_CONTAINS_NO_METADATA)
+			mono_array_setref (res, j, mono_module_file_get_object (domain, image, i));
+		else {
+			MonoImage *m = mono_image_load_file_for_image (image, i + 1);
+			if (!m) {
+				MonoString *fname = mono_string_new (mono_domain_get (), mono_metadata_string_heap (image, cols [MONO_FILE_NAME]));
+				mono_raise_exception (mono_get_exception_file_not_found2 (NULL, fname));
+			}
+			mono_array_setref (res, j, mono_module_get_object (domain, m));
+		}
+	}
 
 	return res;
 }
@@ -4790,6 +4804,28 @@ fill_reflection_assembly_name (MonoDomain *domain, MonoReflectionAssemblyName *a
 	}
 }
 
+static MonoString *
+ves_icall_System_Reflection_Assembly_get_fullName (MonoReflectionAssembly *assembly)
+{
+	MonoDomain *domain = mono_object_domain (assembly); 
+	MonoAssembly *mass = assembly->assembly;
+	MonoString *res;
+	gchar *name;
+
+	name = g_strdup_printf (
+		"%s, Version=%d.%d.%d.%d, Culture=%s, PublicKeyToken=%s%s",
+		mass->aname.name,
+		mass->aname.major, mass->aname.minor, mass->aname.build, mass->aname.revision,
+		mass->aname.culture && *mass->aname.culture? mass->aname.culture: "neutral",
+		mass->aname.public_key_token [0] ? (char *)mass->aname.public_key_token : "null",
+		(mass->aname.flags & ASSEMBLYREF_RETARGETABLE_FLAG) ? ", Retargetable=Yes" : "");
+
+	res = mono_string_new (domain, name);
+	g_free (name);
+
+	return res;
+}
+
 static void
 ves_icall_System_Reflection_Assembly_FillName (MonoReflectionAssembly *assembly, MonoReflectionAssemblyName *aname)
 {
@@ -4935,60 +4971,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssembly *assembly,
 
 	domain = mono_object_domain (assembly);
 
-	if (assembly->assembly->dynamic) {
-		MonoReflectionAssemblyBuilder *abuilder = (MonoReflectionAssemblyBuilder*)assembly;
-		if (abuilder->modules) {
-			for (i = 0; i < mono_array_length(abuilder->modules); i++) {
-				MonoReflectionModuleBuilder *mb = mono_array_get (abuilder->modules, MonoReflectionModuleBuilder*, i);
-				MonoArray *append = mb->types;
-				/* The types array might not be fully filled up */
-				if (append && mb->num_types > 0) {
-					guint32 len1, len2;
-					MonoArray *new;
-					len1 = res ? mono_array_length (res) : 0;
-					len2 = mb->num_types;
-					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
-					if (res)
-						mono_array_memcpy_refs (new, 0, res, 0, len1);
-					mono_array_memcpy_refs (new, len1, append, 0, len2);
-					res = new;
-				}
-			}
-
-			/*
-			 * Replace TypeBuilders with the created types to be compatible
-			 * with MS.NET.
-			 */
-			if (res) {
-				for (i = 0; i < mono_array_length (res); ++i) {
-					MonoReflectionTypeBuilder *tb = mono_array_get (res, MonoReflectionTypeBuilder*, i);
-					if (tb->created)
-						mono_array_setref (res, i, tb->created);
-				}
-			}
-		}
-
-		if (abuilder->loaded_modules)
-			for (i = 0; i < mono_array_length(abuilder->loaded_modules); i++) {
-				MonoReflectionModule *rm = mono_array_get (abuilder->loaded_modules, MonoReflectionModule*, i);
-				MonoArray *append = mono_module_get_types (domain, rm->image, exportedOnly);
-				if (append && mono_array_length (append) > 0) {
-					guint32 len1, len2;
-					MonoArray *new;
-					len1 = res ? mono_array_length (res) : 0;
-					len2 = mono_array_length (append);
-					new = mono_array_new (domain, mono_defaults.monotype_class, len1 + len2);
-					if (res)
-						mono_array_memcpy_refs (new, 0, res, 0, len1);
-					mono_array_memcpy_refs (new, len1, append, 0, len2);
-					res = new;
-				}
-			}
-		if (res)
-			return res;
-		else
-			return mono_array_new (domain, mono_defaults.monotype_class, 0);
-	}
+	g_assert (!assembly->assembly->dynamic);
 	image = assembly->assembly->image;
 	table = &image->tables [MONO_TABLE_FILE];
 	res = mono_module_get_types (domain, image, exportedOnly);
@@ -5204,6 +5187,9 @@ ves_icall_System_Reflection_Module_ResolveTypeToken (MonoImage *image, guint32 t
 	init_generic_context_from_args (&context, type_args, method_args);
 	klass = mono_class_get_full (image, token, &context);
 
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
+
 	if (klass)
 		return &klass->byval_arg;
 	else
@@ -5245,6 +5231,9 @@ ves_icall_System_Reflection_Module_ResolveMethodToken (MonoImage *image, guint32
 
 	init_generic_context_from_args (&context, type_args, method_args);
 	method = mono_get_method_full (image, token, NULL, &context);
+
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 
 	return method;
 }
@@ -5310,6 +5299,9 @@ ves_icall_System_Reflection_Module_ResolveFieldToken (MonoImage *image, guint32 
 
 	init_generic_context_from_args (&context, type_args, method_args);
 	field = mono_field_from_token (image, token, &klass, &context);
+
+	if (mono_loader_get_last_error ())
+		mono_raise_exception (mono_loader_error_prepare_exception (mono_loader_get_last_error ()));
 	
 	return field;
 }
@@ -5556,35 +5548,6 @@ ves_icall_System_Delegate_SetMulticastInvoke (MonoDelegate *this)
  * Magic number to convert FILETIME base Jan 1, 1601 to DateTime - base Jan, 1, 0001
  */
 #define FILETIME_ADJUST ((guint64)504911232000000000LL)
-
-/*
- * This returns Now in UTC
- */
-static gint64
-ves_icall_System_DateTime_GetNow (void)
-{
-#ifdef PLATFORM_WIN32
-	SYSTEMTIME st;
-	FILETIME ft;
-	
-	GetSystemTime (&st);
-	SystemTimeToFileTime (&st, &ft);
-	return (gint64) FILETIME_ADJUST + ((((gint64)ft.dwHighDateTime)<<32) | ft.dwLowDateTime);
-#else
-	/* FIXME: put this in io-layer and call it GetLocalTime */
-	struct timeval tv;
-	gint64 res;
-
-	MONO_ARCH_SAVE_REGS;
-
-	if (gettimeofday (&tv, NULL) == 0) {
-		res = (((gint64)tv.tv_sec + EPOCH_ADJUST)* 1000000 + tv.tv_usec)*10;
-		return res;
-	}
-	/* fixme: raise exception */
-	return 0;
-#endif
-}
 
 #ifdef PLATFORM_WIN32
 /* convert a SYSTEMTIME which is of the form "last thursday in october" to a real date */
@@ -6168,16 +6131,6 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, M
 	g_free (utf8_value);
 #endif
 }
-
-/*
- * Returns: the number of milliseconds elapsed since the system started.
- */
-static gint32
-ves_icall_System_Environment_get_TickCount (void)
-{
-	return GetTickCount ();
-}
-
 
 static void
 ves_icall_System_Environment_Exit (int result)
@@ -7423,7 +7376,7 @@ mono_lookup_internal_call (MonoMethod *method)
 	g_warning ("cant resolve internal call to \"%s\" (tested without signature also)", mname);
 	g_print ("\nYour mono runtime and class libraries are out of sync.\n");
 	g_print ("The out of sync library is: %s\n", method->klass->image->name);
-	g_print ("\nWhen you update one from cvs you need to update, compile and install\nthe other too.\n");
+	g_print ("\nWhen you update one from svn you need to update, compile and install\nthe other too.\n");
 	g_print ("Do not report this as a bug unless you're sure you have updated correctly:\nyou probably have a broken mono install.\n");
 	g_print ("If you see other errors or faults after this message they are probably related\n");
 	g_print ("and you need to fix your mono install first.\n");

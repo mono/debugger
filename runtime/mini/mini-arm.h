@@ -110,9 +110,12 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_USE_SIGACTION 1
 #define MONO_ARCH_NEED_DIV_CHECK 1
 
+#define MONO_ARCH_HAVE_THROW_CORLIB_EXCEPTION 1
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 #define MONO_ARCH_COMMON_VTABLE_TRAMPOLINE 1
+
+#define MONO_ARCH_ENABLE_NORMALIZE_OPCODES 1
 
 #define ARM_NUM_REG_ARGS (ARM_LAST_ARG_REG-ARM_FIRST_ARG_REG+1)
 #define ARM_NUM_REG_FPARGS 0
@@ -135,6 +138,16 @@ typedef struct MonoCompileArch {
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
 		MONO_CONTEXT_SET_IP ((ctx), (func));	\
 	} while (0)
+
+#if __APPLE__
+	#define UCONTEXT_REG_PC(ctx) ((ctx)->uc_mcontext->__ss.__pc)
+	#define UCONTEXT_REG_SP(ctx) ((ctx)->uc_mcontext->__ss.__sp)
+	#define UCONTEXT_REG_R4(ctx) ((ctx)->uc_mcontext->__ss.__r[4])
+#else
+	#define UCONTEXT_REG_PC(ctx) ((ctx)->sig_ctx.arm_pc)
+	#define UCONTEXT_REG_SP(ctx) ((ctx)->sig_ctx.arm_sp)
+	#define UCONTEXT_REG_R4(ctx) ((ctx)->sig_ctx.arm_r4)
+#endif
 
 #endif /* __MONO_MINI_ARM_H__ */
 
