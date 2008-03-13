@@ -581,48 +581,6 @@ ves_icall_System_Security_SecurityFrame_GetSecurityStack (gint32 skip)
 
 #ifndef CUSTOM_EXCEPTION_HANDLING
 
-static MonoClass*
-get_exception_catch_class (MonoJitExceptionInfo *ei, MonoJitInfo *ji, MonoContext *ctx)
-{
-	MonoClass *catch_class = ei->data.catch_class;
-
-	if (ji->has_generic_jit_info) {
-		MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (ji);
-		gpointer info;
-		MonoClass *class;
-		MonoType *inflated_type;
-
-		if (gi->this_in_reg)
-			info = mono_arch_context_get_int_reg (ctx, gi->this_reg);
-		else
-			info = *(gpointer*)((char*)mono_arch_context_get_int_reg (ctx, gi->this_reg) +
-					gi->this_offset);
-
-		if (ji->method->flags & METHOD_ATTRIBUTE_STATIC) {
-			MonoRuntimeGenericContext *rgctx = info;
-
-			class = rgctx->vtable->klass;
-		} else {
-			MonoObject *this = info;
-
-			class = this->vtable->klass;
-		}
-
-		/* FIXME: we shouldn't inflate but instead put the
-		   type in the rgctx and fetch it from there.  It
-		   might be a good idea to do this lazily, i.e. only
-		   when the exception is actually thrown, so as not to
-		   waste space for exception clauses which might never
-		   be encountered. */
-		inflated_type = mono_class_inflate_generic_type (&catch_class->byval_arg,
-				mini_class_get_context (class));
-		catch_class = mono_class_from_mono_type (inflated_type);
-		g_free (inflated_type);
-	}
-
-	return catch_class;
-}
-
 /**
  * mono_handle_exception_internal:
  * @ctx: saved processor state
@@ -691,8 +649,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 		if (!mono_handle_exception_internal (&ctx_cp, obj, original_ip, TRUE, &first_filter_idx)) {
 			if (mono_break_on_exc)
 				G_BREAKPOINT ();
-			// FIXME: This runs managed code so it might cause another stack overflow when
-			// we are handling a stack overflow
 			mono_unhandled_exception (obj);
 
 			if (mono_debugger_unhandled_exception (original_ip, MONO_CONTEXT_GET_SP (ctx), obj)) {
@@ -781,7 +737,6 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 #endif
 					    MONO_CONTEXT_GET_IP (ctx) <= ei->try_end) { 
 						/* catch block */
-						MonoClass *catch_class = get_exception_catch_class (ei, ji, ctx);
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE) || (ei->flags == MONO_EXCEPTION_CLAUSE_FILTER)) {
 							/* store the exception object in bp + ei->exvar_offset */
@@ -806,7 +761,7 @@ mono_handle_exception_internal (MonoContext *ctx, gpointer obj, gpointer origina
 						}
 
 						if ((ei->flags == MONO_EXCEPTION_CLAUSE_NONE && 
-						     mono_object_isinst (obj, catch_class)) || filtered) {
+						     mono_object_isinst (obj, ei->data.catch_class)) || filtered) {
 							if (test_only) {
 								if (mono_ex && !initial_trace_ips) {
 									trace_ips = g_list_reverse (trace_ips);

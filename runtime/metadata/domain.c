@@ -911,15 +911,6 @@ mono_jit_code_hash_init (MonoInternalHashTable *jit_code_hash)
 				       jit_info_next_value);
 }
 
-MonoGenericJitInfo*
-mono_jit_info_get_generic_jit_info (MonoJitInfo *ji)
-{
-	if (ji->has_generic_jit_info)
-		return (MonoGenericJitInfo*)&ji->clauses [ji->num_clauses];
-	else
-		return NULL;
-}
-
 /*
  * mono_jit_info_get_generic_sharing_context:
  * @ji: a jit info
@@ -930,10 +921,8 @@ mono_jit_info_get_generic_jit_info (MonoJitInfo *ji)
 MonoGenericSharingContext*
 mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji)
 {
-	MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (ji);
-
-	if (gi)
-		return gi->generic_sharing_context;
+	if (ji->has_generic_sharing_context)
+		return *((MonoGenericSharingContext**)&ji->clauses [ji->num_clauses]);
 	else
 		return NULL;
 }
@@ -949,11 +938,9 @@ mono_jit_info_get_generic_sharing_context (MonoJitInfo *ji)
 void
 mono_jit_info_set_generic_sharing_context (MonoJitInfo *ji, MonoGenericSharingContext *gsctx)
 {
-	MonoGenericJitInfo *gi = mono_jit_info_get_generic_jit_info (ji);
+	g_assert (ji->has_generic_sharing_context);
 
-	g_assert (gi);
-
-	gi->generic_sharing_context = gsctx;
+	*((MonoGenericSharingContext**)&ji->clauses [ji->num_clauses]) = gsctx;
 }
 
 /**
@@ -1159,8 +1146,6 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	if (domain)
 		g_assert_not_reached ();
-
-	mono_perfcounters_init ();
 
 	mono_counters_register ("Max native code in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_size);
 	mono_counters_register ("Max code space allocated in a domain", MONO_COUNTER_INT|MONO_COUNTER_JIT, &max_domain_code_alloc);
@@ -1815,8 +1800,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	total_domain_code_alloc += code_alloc;
 	max_domain_code_alloc = MAX (max_domain_code_alloc, code_alloc);
 	max_domain_code_size = MAX (max_domain_code_size, code_size);
-
-	mono_class_unregister_domain_generic_vtables (domain);
 
 #ifdef DEBUG_DOMAIN_UNLOAD
 	mono_mempool_invalidate (domain->mp);

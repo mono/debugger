@@ -3,12 +3,9 @@ using System.Threading;
 
 public class MultiThreadExceptionTest {
 	public static void MyThreadStart() {
-		try {
-			Console.WriteLine("{0} started", 
-							  Thread.CurrentThread.Name);
-			throw new Exception();
-		} catch (Exception) {
-		}
+		Console.WriteLine("{0} started", 
+				  Thread.CurrentThread.Name);
+		throw new Exception();
 	}
 	
 	public static void Main() {

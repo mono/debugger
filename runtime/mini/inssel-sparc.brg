@@ -74,17 +74,17 @@ reg: OP_LOCALLOC (reg) {
 	mono_bblock_add_inst (s->cbb, tree);
 }
 
-base: OP_VTARG_ADDR (base) {
+base: OP_SPARC_INARG_VT (base) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->tree->inst_basereg, 
 					state->left->tree->inst_offset);
 }
 
-reg: OP_LDADDR (OP_VTARG_ADDR (base)) {
+reg: OP_LDADDR (OP_SPARC_INARG_VT (base)) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
 					state->left->left->tree->inst_offset);
 }
 
-reg: CEE_LDOBJ (OP_VTARG_ADDR (base)) {
+reg: CEE_LDOBJ (OP_SPARC_INARG_VT (base)) {
 	MONO_EMIT_NEW_LOAD_MEMBASE (s, state->reg1, state->left->left->tree->inst_basereg, 
 					state->left->left->tree->inst_offset);
 }
@@ -325,7 +325,7 @@ stmt: OP_SPARC_OUTARG_FLOAT_REG (freg) {
 stmt: OP_SPARC_OUTARG_DOUBLE_REG (freg) {
 	MonoCallInst *call = (MonoCallInst*)tree->inst_right->inst_left;
 
-	tree->opcode = OP_FMOVE;
+	tree->opcode = OP_SETFREG;
 	tree->dreg = mono_regstate_next_int (s->rs);
 	tree->sreg1 = state->left->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
@@ -663,8 +663,8 @@ reg: CEE_DIV (reg, OP_ICONST) {
 }
 
 reg: OP_LOCALLOC (OP_ICONST) {
-	tree->opcode = OP_LOCALLOC_IMM;
-	tree->inst_imm = state->left->tree->inst_c0;
+	tree->opcode = OP_SPARC_LOCALLOC_IMM;
+	tree->inst_c0 = state->left->tree->inst_c0;
 	tree->dreg = state->reg1;
 	mono_bblock_add_inst (s->cbb, tree);
 }

@@ -1407,10 +1407,6 @@ do
 	./make_bool_branch_test.sh boolean_branch_${I}_18 unverifiable ${OP} float64
 	./make_bool_branch_test.sh boolean_branch_${I}_19 unverifiable ${OP} 'class MyValueType'
 	./make_bool_branch_test.sh boolean_branch_${I}_20 unverifiable ${OP} 'class ValueTypeTemplate`1<object>'
-
-	./make_bool_branch_test.sh boolean_branch_${I}_21 valid ${OP} object "pop\n\tldnull"
-	./make_bool_branch_test.sh boolean_branch_${I}_22 valid ${OP} MyValueType "pop\n\tldnull\n\tisinst MyValueType"
-
 	I=`expr $I + 1`
 done
 
@@ -1920,7 +1916,7 @@ function create_nesting_test_only_first_ok () {
 
 I=1
 
-for OP in "callvirt instance int32 class Root\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Root\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Root\/Nested::fld" "ldflda int32 Root\/Nested::fld"
+for OP in "callvirt instance int32 class Root\/Nested::Target()" "call instance int32 class Root\/Nested::Target()" "ldc.i4.0\n\t\tstfld int32 Root\/Nested::fld\n\t\tldc.i4.0" "ldfld int32 Root\/Nested::fld" "ldflda int32 Root\/Nested::fld"
 do
   create_nesting_test_same_result 1 valid public assembly assembly
 
@@ -2765,7 +2761,7 @@ done
 
 
 I=1
-for ARR in "int8" "bool" "unsigned int8" "ByteEnum"
+for ARR in "int8" "bool" "unsigned int8"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i1"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u1"
@@ -2780,7 +2776,7 @@ do
 done
 
 
-for ARR in "int16" "char" "unsigned int16" "ShortEnum"
+for ARR in "int16" "char" "unsigned int16"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i2"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u2"
@@ -2794,18 +2790,11 @@ do
 	I=`expr $I + 1`
 done
 
-for ARR in "int32" "unsigned int32" "IntEnum" 
+
+for ARR in "int32" "unsigned int32" "native int" "native unsigned int"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
-	./make_ldelem_test.sh ldelem_base_types_n_${I} strict "newarr ${ARR}" "ldc.i4.0" "ldelem.i"
-	I=`expr $I + 1`
-done
-
-for ARR in "native int" "native unsigned int" "NativeIntEnum"
-do
-	./make_ldelem_test.sh ldelem_base_types_i_${I} strict "newarr ${ARR}" "ldc.i4.0" "ldelem.i4"
-	./make_ldelem_test.sh ldelem_base_types_u_${I} strict "newarr ${ARR}" "ldc.i4.0" "ldelem.u4"
 	./make_ldelem_test.sh ldelem_base_types_n_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i"
 	I=`expr $I + 1`
 done
@@ -2819,7 +2808,7 @@ do
 done
 
 
-for ARR in "int64" "unsigned int64" "LongEnum"
+for ARR in "int64" "unsigned int64"
 do
 	./make_ldelem_test.sh ldelem_base_types_i_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.i8"
 	./make_ldelem_test.sh ldelem_base_types_u_${I} valid "newarr ${ARR}" "ldc.i4.0" "ldelem.u8"
@@ -4014,196 +4003,6 @@ done
 ./make_call_test.sh callvirt_valuetype_6 valid "callvirt instance int32 [mscorlib]System.ValueType::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
 ./make_call_test.sh callvirt_valuetype_7 valid "callvirt instance bool object::Equals(object)" "ldloc.0\n\t\tbox MyValueType\n\t\tldnull" "static" "pop"
 ./make_call_test.sh callvirt_valuetype_8 valid "callvirt instance int32 [mscorlib]System.Object::GetHashCode()"  "ldloc.0\n\t\tbox MyValueType" "static" "pop"
-
-
-#mkrefany
-./make_mkrefany.sh mkrefany_empty_stack invalid int32 int32 "pop"
-
-./make_mkrefany.sh mkrefany_good_type_1 valid int32 int32
-./make_mkrefany.sh mkrefany_good_type_2 valid int32 "unsigned int32"
-./make_mkrefany.sh mkrefany_good_type_3 valid int32 "native int"
-./make_mkrefany.sh mkrefany_good_type_4 valid object object
-
-./make_mkrefany.sh mkrefany_type_not_compat_1 unverifiable string object
-./make_mkrefany.sh mkrefany_type_not_compat_2 unverifiable int32 int8
-./make_mkrefany.sh mkrefany_type_not_compat_3 unverifiable object string
-
-./make_mkrefany.sh mkrefany_native_int unverifiable int32 int32 "conv.i"
-
-./make_mkrefany.sh mkrefany_bad_type_1 unverifiable int32 int32 "pop\n\t\tldc.i4.0"
-
-./make_mkrefany.sh mkrefany_bad_type_2 invalid int32 "int32\&"
-
-
-#method definition return type validation
-./make_invalid_ret_type.sh ret_type_byref unverifiable "int32\&"
-./make_invalid_ret_type.sh ret_type_typedref unverifiable "typedref"
-./make_invalid_ret_type.sh ret_type_arg_interator unverifiable "valuetype [mscorlib]System.ArgIterator"
-./make_invalid_ret_type.sh ret_type_arg_handle unverifiable "valuetype [mscorlib]System.RuntimeArgumentHandle"
-
-
-
-#delegate compat tests P. II 14.6
-#TODO generic related testss
-
-#for T in {}
-#./make_delegate_compat_test.sh valid
-
-
-#all types
-#int32 int64 "native int" float64 "valuetype MyValueType" "class ClassA" "int8\&" "int16\&" "int32\&" "int64\&" "native int\&" "float32\&" "float64\&" "valuetype MyValueType\&" "class ClassA\&" "int32*" "method int32 *(int32)" "method float32 *(int32)" "method int32 *(float64)" "method vararg int32 *(int32)"
-#verifiable
-#int32 int64 "native int" float64 "valuetype MyValueType" "class ClassA" "int8\&" "int16\&" "int32\&" "int64\&" "native int\&" "float32\&" "float64\&" "valuetype MyValueType\&" "class ClassA\&"
-
-I=1
-for TYPE1 in int32 int64 "native int" float64 "valuetype MyValueType" "class ClassA" "int8\&" "int16\&" "int32\&" "int64\&" "native int\&" "float32\&" "float64\&" "valuetype MyValueType\&" "class ClassA\&"
-do
-	./make_delegate_compat_test.sh delegate_compat_basic_types_${I} valid int32 int32 "$TYPE1" "$TYPE1"
-	I=`expr $I + 1`
-done
-
-for TYPE1 in "int32*" "method int32 *(int32)" "method float32 *(int32)" "method int32 *(float64)" "method vararg int32 *(int32)"
-do
-	./make_delegate_compat_test.sh delegate_compat_basic_types_${I} unverifiable int32 int32 "$TYPE1" "$TYPE1"
-	I=`expr $I + 1`
-done
-
-#D is delegate and T is target method
-#arguments
-#3. D:=T if T is a base type or an interface implemented by D. D is not valuetype (primitive, pointers, etc)
-
-./make_delegate_compat_test.sh delegate_super_type_arg_1 valid int32 int32 string object
-./make_delegate_compat_test.sh delegate_super_type_arg_2 valid int32 int32 ImplA InterfaceA
-
-./make_delegate_compat_test.sh delegate_super_type_arg_3 unverifiable int32 int32 object string
-./make_delegate_compat_test.sh delegate_super_type_arg_4 unverifiable int32 int32 InterfaceA ImplA
-
-./make_delegate_compat_test.sh delegate_super_type_arg_5 unverifiable int32 int32 object int32
-./make_delegate_compat_test.sh delegate_super_type_arg_6 unverifiable int32 int32 object "int32\&"
-./make_delegate_compat_test.sh delegate_super_type_arg_7 unverifiable int32 int32 object "object\&"
-
-
-#primitive type size based conversion - don't work with delegates
-./make_delegate_compat_test.sh delegate_primitive_arg_same_size_1 unverifiable int32 int32 "unsigned int32" int32
-./make_delegate_compat_test.sh delegate_primitive_arg_same_size_2 unverifiable int32 int32 "native int" int32
-
-./make_delegate_compat_test.sh delegate_primitive_arg_same_size_3 unverifiable int32 int32 int32 "unsigned int32"
-./make_delegate_compat_test.sh delegate_primitive_arg_same_size_4 unverifiable int32 int32 int32 "native int"
-
-#value types
-./make_delegate_compat_test.sh delegate_valuetype_arg_1 valid int32 int32 "valuetype MyValueType" "valuetype MyValueType"
-./make_delegate_compat_test.sh delegate_valuetype_arg_2 unverifiable int32 int32 "valuetype MyValueType" int32
-
-
-#4. D:=T if both are interfaces and implementation D requires implementation of T (D is a supertype of T)
-./make_delegate_compat_test.sh delegate_super_iface_arg_1 valid int32 int32 InterfaceB InterfaceA
-./make_delegate_compat_test.sh delegate_super_iface_arg_2 unverifiable int32 int32 InterfaceA InterfaceB
-
-
-#5. D[]:=T[] if D:=T and are both vector or both have the same rank
-./make_delegate_compat_test.sh delegate_array_arg_1 valid int32 int32 "int32[]" "int32[]"
-./make_delegate_compat_test.sh delegate_array_arg_2 valid int32 int32 "string[]" "object[]"
-
-./make_delegate_compat_test.sh delegate_array_arg_3 unverifiable int32 int32 "object[]" "object[,]"
-./make_delegate_compat_test.sh delegate_array_arg_4 unverifiable int32 int32 "object[,]" "object[]"
-./make_delegate_compat_test.sh delegate_array_arg_5 unverifiable int32 int32 "object[]" "string[]"
-
-#6. D:=T if both are method pointers and obey this rules for all args and params
-#TODO how can we cook a test that will be verifiable but use such types
-./make_delegate_compat_test.sh delegate_method_ptr_arg_1 unverifiable int32 int32 "method int32 *(float64)" "method int32 *(float64)"
-#no way do say this is invalid
-./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable int32 int32 "method int32 *(float64)" "method int32 *(int32)"
-#and that is is valid
-./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable int32 int32 "method int32 *(string)" "method int32 *(object)"
-
-
-#TODO we don't perform proper type load verification
-#./make_delegate_compat_test.sh delegate_void_args invalid int32 int32 void void
-
-./make_delegate_compat_test.sh delegate_enum_args_1 unverifiable int32 int32 Int32Enum int32
-./make_delegate_compat_test.sh delegate_enum_args_2 unverifiable int32 int32 int32 Int32Enum
-
-#TODO check using native method
-./make_delegate_compat_test.sh delegate_pointers_args_1 unverifiable int32 int32 "string*" "object*"
-./make_delegate_compat_test.sh delegate_pointers_args_2 unverifiable int32 int32 "ImplA*" "InterfaceA*"
-./make_delegate_compat_test.sh delegate_pointers_args_3 unverifiable int32 int32 "object*" "string*"
-./make_delegate_compat_test.sh delegate_pointers_args_4 unverifiable int32 int32 "int32*" "int32*"
-
-
-#TODO: 7,8,9 generic related.
-
-#call conv
-./make_delegate_compat_test.sh delegate_bad_cconv_1 unverifiable int32 int32 int32 int32 "default" "vararg"
-./make_delegate_compat_test.sh delegate_bad_cconv_2 unverifiable int32 int32 int32 int32 "vararg" "	"
-
-#return type
-
-#3. D:=T if D is a basetype or implemented interface of T and T is not a valuetype
-
-./make_delegate_compat_test.sh delegate_super_type_ret_1 valid object string int32 int32
-./make_delegate_compat_test.sh delegate_super_type_ret_2 valid InterfaceA ImplA int32 int32
-
-./make_delegate_compat_test.sh delegate_super_type_ret_3 unverifiable string object int32 int32
-./make_delegate_compat_test.sh delegate_super_type_ret_4 unverifiable ImplA InterfaceA int32 int32
-
-./make_delegate_compat_test.sh delegate_super_type_ret_5 unverifiable object int32 int32 int32
-./make_delegate_compat_test.sh delegate_super_type_ret_6 unverifiable object "int32\&" int32 int32
-./make_delegate_compat_test.sh delegate_super_type_ret_7 unverifiable object "object\&" int32 int32
-
-
-#primitive type size based conversion - don't work with delegates
-./make_delegate_compat_test.sh delegate_primitive_ret_same_size_1 unverifiable "unsigned int32" int32 int32 int32
-./make_delegate_compat_test.sh delegate_primitive_ret_same_size_2 unverifiable "native int" int32 int32 int32
-
-./make_delegate_compat_test.sh delegate_primitive_ret_same_size_3 unverifiable int32 "unsigned int32" int32 int32
-./make_delegate_compat_test.sh delegate_primitive_ret_same_size_4 unverifiable int32 "native int" int32 int32
-
-#value types
-./make_delegate_compat_test.sh delegate_valuetype_ret_1 valid "valuetype MyValueType" "valuetype MyValueType" int32 int32
-./make_delegate_compat_test.sh delegate_valuetype_ret_2 unverifiable "valuetype MyValueType" int32 int32 int32
-./make_delegate_compat_test.sh delegate_valuetype_ret_2 unverifiable int32 "valuetype MyValueType" int32 int32
-
-
-#4. D:=T if both are interfaces and implementation T requires implementation of D (T is a supertype of D)
-./make_delegate_compat_test.sh delegate_super_iface_arg_1 valid InterfaceA InterfaceB int32 int32
-./make_delegate_compat_test.sh delegate_super_iface_arg_2 valid InterfaceA InterfaceA int32 int32
-./make_delegate_compat_test.sh delegate_super_iface_arg_3 unverifiable InterfaceB InterfaceA int32 int32
-
-
-#5. D[]:=T[] if D:=T and are both vector or both have the same rank
-./make_delegate_compat_test.sh delegate_array_ret_1 valid "int32[]" "int32[]" int32 int32
-./make_delegate_compat_test.sh delegate_array_ret_2 valid "object[]" "string[]" int32 int32
-
-./make_delegate_compat_test.sh delegate_array_ret_3 unverifiable "object[]" "object[,]" int32 int32
-./make_delegate_compat_test.sh delegate_array_ret_4 unverifiable "object[,]" "object[]" int32 int32
-./make_delegate_compat_test.sh delegate_array_ret_5 unverifiable "string[]" "object[]" int32 int32
-
-#6. D:=T if both are method pointers and obey this rules for all args and params
-#TODO how can we cook a test that will be verifiable but use such types
-./make_delegate_compat_test.sh delegate_method_ptr_arg_1 unverifiable "method int32 *(float64)" "method int32 *(float64)" int32 int32
-#no way do say this is invalid
-./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable "method int32 *(float64)" "method int32 *(int32)" int32 int32
-#and that is is valid
-./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable "method int32 *(object)" "method int32 *(string)" int32 int32
-
-#TODO: 7,8,9 generic related.
-
-
-./make_delegate_compat_test.sh delegate_void_ret valid void void int32 int32
-
-./make_delegate_compat_test.sh delegate_enum_ret_1 unverifiable int32 int32 Int32Enum int32
-./make_delegate_compat_test.sh delegate_enum_ret_2 unverifiable int32 int32 int32 Int32Enum
-
-./make_delegate_compat_test.sh delegate_pointers_ret_1 unverifiable "object*" "string*" int32 int32
-./make_delegate_compat_test.sh delegate_pointers_ret_2 unverifiable "InterfaceA*" "ImplA*" int32 int32
-./make_delegate_compat_test.sh delegate_pointers_ret_3 unverifiable "string*" "object*" int32 int32 
-./make_delegate_compat_test.sh delegate_pointers_ret_4 unverifiable  "int32*" "int32*" int32 int32
-
-
-#pointer tests using native method and not invoking
-./make_delegate_compat_test.sh delegate_method_ptr_pinvoke_arg_1 valid int32 int32 "method int32 *(float64)" "method int32 *(float64)" "" "" "pinvoke"
-#no way do say this is invalid
-./make_delegate_compat_test.sh delegate_method_ptr_pinvoke_arg_2 unverifiable int32 int32 "method int32 *(float64)" "method int32 *(int32)" "" "" "pinvoke"
 
 
 

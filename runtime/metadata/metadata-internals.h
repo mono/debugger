@@ -194,18 +194,13 @@ struct _MonoImage {
 	 */
 	GHashTable *ldfld_wrapper_cache;
 	GHashTable *ldflda_wrapper_cache;
+	GHashTable *ldfld_remote_wrapper_cache;
 	GHashTable *stfld_wrapper_cache;
+	GHashTable *stfld_remote_wrapper_cache;
 	GHashTable *isinst_cache;
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;
-	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */
-	/* Maps from uninstantiated generic classes to GSList's of
-	 * instantiated open generic classes whose container class is the key
-	 * class.
-	 *
-	 * LOCKING: templates lock
-	 */
-	GHashTable *generic_class_open_instances_hash;
+	GHashTable *rgctx_template_hash;
 
 	/*
 	 * indexed by token and MonoGenericContext pointer
@@ -419,9 +414,7 @@ mono_metadata_inflate_generic_inst          (MonoGenericInst       *ginst,
 
 void mono_dynamic_stream_reset  (MonoDynamicStream* stream) MONO_INTERNAL;
 void mono_assembly_addref       (MonoAssembly *assembly) MONO_INTERNAL;
-void mono_assembly_load_friends (MonoAssembly* ass) MONO_INTERNAL;
-
-gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2) MONO_INTERNAL;
+void mono_assembly_load_friends (MonoAssembly* ass);
 
 void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info) MONO_INTERNAL;
 

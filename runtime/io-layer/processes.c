@@ -1693,26 +1693,6 @@ static GSList *load_modules (FILE *fp)
 	return(ret);
 }
 
-static gboolean match_procname_to_modulename (gchar *procname, gchar *modulename)
-{
-	char* lastsep = NULL;
-
-	if (procname == NULL || modulename == NULL)
-		return (FALSE);
-
-	lastsep = strrchr (modulename, '/');
-	if (lastsep) {
-		if (0 == strcmp (lastsep+1, procname))
-			return (TRUE);
-		return (FALSE);
-	}
-
-	if (0 == strcmp (procname, modulename))
-		return (TRUE);
-
-	return (FALSE);
-}
-
 gboolean EnumProcessModules (gpointer process, gpointer *modules,
 			     guint32 size, guint32 *needed)
 {
@@ -1763,20 +1743,15 @@ gboolean EnumProcessModules (gpointer process, gpointer *modules,
 
 		/* Use the NULL shortcut, as the first line in
 		 * /proc/<pid>/maps isn't the executable, and we need
-		 * that first in the returned list. Check the module name 
-		 * to see if it ends with the proc name and substitute 
-		 * the first entry with it.  FIXME if this turns out to 
-		 * be a problem.
+		 * that first in the returned list.  We'll probably
+		 * have a duplicate reference to the main module later
+		 * in the list too.  FIXME if this turns out to be a
+		 * problem.
 		 */
 		modules[0] = NULL;
 		for (i = 0; i < (avail - 1) && i < count; i++) {
 			module = (WapiProcModule *)g_slist_nth_data (mods, i);
-			if (modules[0] != NULL)
-				modules[i] = module->address_start;
-			else if (match_procname_to_modulename (process_handle->proc_name, module->filename))
-				modules[0] = module->address_start;
-			else
-				modules[i + 1] = module->address_start;
+			modules[i + 1] = module->address_start;
 		}
 		
 		for (i = 0; i < count; i++) {
@@ -1831,40 +1806,51 @@ static guint32 get_module_name (gpointer process, gpointer module,
 	}
 	pid = process_handle->id;
 
-	/* Look up the address in /proc/<pid>/maps */
-	filename = g_strdup_printf ("/proc/%d/maps", pid);
-	if ((fp = fopen (filename, "r")) == NULL) {
-		/* No /proc/<pid>/maps, so just return failure
-		 * for now
+	if (module == NULL) {
+		/* Shorthand for the main module, which has the
+		 * process name recorded in the handle data
 		 */
-		g_free (filename);
-		return(0);
-	} else {
-		mods = load_modules (fp);
-		fclose (fp);
-		count = g_slist_length (mods);
+		
+#ifdef DEBUG
+		g_message ("%s: Returning main module name", __func__);
+#endif
 
-		/* If module != NULL compare the address.
-		 * If module == NULL we are looking for the main module.
-		 * The best we can do for now check it the module name end with the process name.
-		 */
-		for (i = 0; i < count; i++) {
-			found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
-			if (procname_ext == NULL &&
-			    ((module == NULL && match_procname_to_modulename (process_handle->proc_name, found_module->filename)) ||	
-			     (module != NULL && found_module->address_start == module))) {
-				if (base) {
-					procname_ext = g_path_get_basename (found_module->filename);
-				} else {
-					procname_ext = g_strdup (found_module->filename);
+		if (base) {
+			procname_ext = g_path_get_basename (process_handle->proc_name);
+		} else {
+			procname_ext = g_strdup (process_handle->proc_name);
+		}
+	} else {
+		/* Look up the address in /proc/<pid>/maps */
+		filename = g_strdup_printf ("/proc/%d/maps", pid);
+		if ((fp = fopen (filename, "r")) == NULL) {
+			/* No /proc/<pid>/maps, so just return failure
+			 * for now
+			 */
+			g_free (filename);
+			return(0);
+		} else {
+			mods = load_modules (fp);
+			fclose (fp);
+			count = g_slist_length (mods);
+			
+			for (i = 0; i < count; i++) {
+				found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
+				if (procname_ext == NULL &&
+				    found_module->address_start == module) {
+					if (base) {
+						procname_ext = g_path_get_basename (found_module->filename);
+					} else {
+						procname_ext = g_strdup (found_module->filename);
+					}
 				}
+
+				free_procmodule (found_module);
 			}
 
-			free_procmodule (found_module);
+			g_slist_free (mods);
+			g_free (filename);
 		}
-
-		g_slist_free (mods);
-		g_free (filename);
 	}
 
 	if (procname_ext != NULL) {
@@ -1956,42 +1942,46 @@ gboolean GetModuleInformation (gpointer process, gpointer module,
 		return(FALSE);
 	}
 	pid = process_handle->id;
-
-	/* Look up the address in /proc/<pid>/maps */
-	filename = g_strdup_printf ("/proc/%d/maps", pid);
-	if ((fp = fopen (filename, "r")) == NULL) {
-		/* No /proc/<pid>/maps, so just return failure
-		 * for now
+	
+	if (module == NULL) {
+		/* Shorthand for the main module, which has the
+		 * process name recorded in the handle data
+		 *
+		 * FIXME: try and dig through the /proc/<pid>/maps
+		 * list matching filename?
 		 */
-		g_free (filename);
 		return(FALSE);
 	} else {
-		mods = load_modules (fp);
-		fclose (fp);
-		count = g_slist_length (mods);
-
-		/* If module != NULL compare the address.
-		 * If module == NULL we are looking for the main module.
-		 * The best we can do for now check it the module name end with the process name.
-		 */
-		for (i = 0; i < count; i++) {
-			found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
-			if ( ret == FALSE &&
-			     ((module == NULL && match_procname_to_modulename (process_handle->proc_name, found_module->filename)) ||
-			      (module != NULL && found_module->address_start == module))) {
-				modinfo->lpBaseOfDll = found_module->address_start;
-				modinfo->SizeOfImage = GPOINTER_TO_UINT(found_module->address_end) - GPOINTER_TO_UINT (found_module->address_start);
-				modinfo->EntryPoint = found_module->address_offset;
-				ret = TRUE;
+		/* Look up the address in /proc/<pid>/maps */
+		filename = g_strdup_printf ("/proc/%d/maps", pid);
+		if ((fp = fopen (filename, "r")) == NULL) {
+			/* No /proc/<pid>/maps, so just return failure
+			 * for now
+			 */
+			g_free (filename);
+			return(FALSE);
+		} else {
+			mods = load_modules (fp);
+			fclose (fp);
+			count = g_slist_length (mods);
+			
+			for (i = 0; i < count; i++) {
+				found_module = (WapiProcModule *)g_slist_nth_data (mods, i);
+				if (found_module->address_start == module) {
+					modinfo->lpBaseOfDll = found_module->address_start;
+					modinfo->SizeOfImage = GPOINTER_TO_UINT(found_module->address_end) - GPOINTER_TO_UINT (found_module->address_start);
+					modinfo->EntryPoint = found_module->address_offset;
+					ret = TRUE;
+				}
+				
+				free_procmodule (found_module);
 			}
-
-			free_procmodule (found_module);
-		}
-
+			
 			g_slist_free (mods);
 			g_free (filename);
+		}
 	}
-
+	
 	return(ret);
 }
 

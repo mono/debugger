@@ -17,7 +17,6 @@
 #include <mono/io-layer/io-layer.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/gc-internal.h>
-#include <mono/utils/mono-time.h>
 
 /*#define LOCK_DEBUG(a) do { a; } while (0)*/
 #define LOCK_DEBUG(a)
@@ -481,7 +480,7 @@ retry:
 	 * lock struct and therefore slowing down the fast path.
 	 */
 	if (ms != INFINITE) {
-		then = mono_msec_ticks ();
+		then = GetTickCount ();
 		if (ms < 100) {
 			waitms = ms;
 		} else {
@@ -502,7 +501,7 @@ retry:
 	InterlockedDecrement (&mon->entry_count);
 
 	if (ms != INFINITE) {
-		now = mono_msec_ticks ();
+		now = GetTickCount ();
 		
 		if (now < then) {
 			/* The counter must have wrapped around */

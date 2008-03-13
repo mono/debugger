@@ -18,6 +18,10 @@ typedef struct {
 	/* symbolic registers */
 	int next_vreg;
 
+	/* hard registers */
+	int num_iregs;
+	int num_fregs;
+
 	regmask_t ifree_mask;
 	regmask_t ffree_mask;
 
@@ -26,11 +30,13 @@ typedef struct {
 	 * If the register is spilled, then this contains -spill - 1, where 'spill'
 	 * is the index of the spill variable.
 	 */
-	gint16 *vassign;
+	int *vassign;
 
 	/* hard -> symbolic */
 	int isymbolic [MONO_MAX_IREGS];
 	int fsymbolic [MONO_MAX_FREGS];
+
+	int ispills;
 
 	int vassign_size;
 } MonoRegState;

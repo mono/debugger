@@ -62,6 +62,20 @@ bgt.un: len:64
 ble.un: len:64
 blt.un: len:64
 switch: src1:i len:40
+ldind.i1: src1:i dest:i len:4
+ldind.u1: src1:i dest:i len:4
+ldind.i2: src1:i dest:i len:4
+ldind.u2: src1:i dest:i len:4
+ldind.i4: src1:i dest:i len:4
+ldind.u4: src1:i dest:i len:4
+ldind.i: src1:i dest:i len:4
+ldind.ref: src1:i dest:i len:4
+stind.ref: src1:b src2:i
+stind.i1: src1:b src2:i
+stind.i2: src1:b src2:i
+stind.i4: src1:b src2:i
+stind.r4: src1:b src2:f
+stind.r8: src1:b src2:f
 add: dest:i src1:i src2:i len:64
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
@@ -115,6 +129,8 @@ outarg: src1:i len:1
 outarg_imm: len:5
 setret: dest:a src1:i len:4
 setlret: dest:a src1:i len:8
+setreg: dest:i src1:i len:4 clob:r
+setfreg: dest:f src1:f len:4 clob:r
 checkthis: src1:b len:4
 oparglist: src1:i len:64
 call: dest:a clob:c len:32
@@ -203,7 +219,7 @@ float_bne_un: src1:f src2:f len:32
 float_blt: src1:f src2:f len:32
 float_blt_un: src1:f src2:f len:32
 float_bgt: src1:f src2:f len:32
-float_bgt_un: src1:f src2:f len:32
+float_btg_un: src1:f src2:f len:32
 float_bge: src1:f src2:f len:32
 float_bge_un: src1:f src2:f len:32
 float_ble: src1:f src2:f len:32

@@ -129,6 +129,8 @@ struct MonoLMF
 //#define MONO_ARCH_INST_FIXED_REG(desc)	(-1)
 #define MONO_ARCH_INST_FIXED_REG(desc)  ((desc == 'o') ? alpha_at : ( (desc == 'a') ? alpha_r0 : -1) )
 
+#define MONO_ARCH_HAVE_CREATE_VARS 1
+
 #if 0
 
 /* r8..r11, r14..r29 */
@@ -304,10 +306,5 @@ unw_dyn_region_info_t* mono_ia64_create_unwind_region (Ia64CodegenState *code);
 #define MONO_ARCH_HAVE_CREATE_TRAMPOLINE_FROM_TOKEN 1
 #define MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE 1
 
-typedef struct {
-    guint8 *address;
-    guint8 *saved_byte;
-} MonoBreakpointInfo;
 
-extern MonoBreakpointInfo  mono_breakpoint_info[MONO_BREAKPOINT_ARRAY_SIZE];
 #endif /* __MONO_MINI_ALPHA_H__ */  

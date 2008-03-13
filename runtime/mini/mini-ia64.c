@@ -817,8 +817,8 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			cfg->ret->inst_c0 = cinfo->ret.reg;
 			break;
 		case ArgValuetypeAddrInIReg:
-			cfg->vret_addr->opcode = OP_REGVAR;
-			cfg->vret_addr->dreg = cfg->arch.reg_in0 + cinfo->ret.reg;
+			cfg->ret->opcode = OP_REGVAR;
+			cfg->ret->inst_c0 = cfg->arch.reg_in0 + cinfo->ret.reg;
 			break;
 		case ArgAggregate:
 			/* Allocate a local to hold the result, the epilog will copy it to the correct place */
@@ -949,13 +949,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 
 	if (cinfo->ret.storage == ArgAggregate)
 		cfg->ret_var_is_local = TRUE;
-	if (cinfo->ret.storage == ArgValuetypeAddrInIReg) {
-		cfg->vret_addr = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_ARG);
-		if (G_UNLIKELY (cfg->verbose_level > 1)) {
-			printf ("vret_addr = ");
-			mono_print_ins (cfg->vret_addr);
-		}
-	}
 }
 
 static void
@@ -1232,13 +1225,8 @@ mono_arch_call_opcode (MonoCompile *cfg, MonoBasicBlock* bb, MonoCallInst *call,
 	return call;
 }
 
-void
-mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-}
-
-void
-mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
+static void
+peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -1337,7 +1325,7 @@ opcode_to_ia64_cmp_imm (int opcode, int cmp_opcode)
  *  Converts complex opcodes into simpler ones so that each IR instruction
  * corresponds to one machine instruction.
  */
-void
+static void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n, *next, *temp, *temp2, *temp3;
@@ -1365,7 +1353,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, ins, temp2, OP_LADD);
+				NEW_INS (cfg, ins, temp2, CEE_ADD);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
@@ -1423,7 +1411,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, ins, temp2, OP_LADD);
+				NEW_INS (cfg, ins, temp2, CEE_ADD);
 				temp2->sreg1 = ins->inst_destbasereg;
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
@@ -1462,7 +1450,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				NEW_INS (cfg, ins, temp, OP_I8CONST);
 				temp->inst_c0 = ins->inst_offset;
 				temp->dreg = mono_regstate_next_int (cfg->rs);
-				NEW_INS (cfg, ins, temp2, OP_LADD);
+				NEW_INS (cfg, ins, temp2, CEE_ADD);
 				temp2->sreg1 = ins->inst_basereg;
 				temp2->sreg2 = temp->dreg;
 				temp2->dreg = mono_regstate_next_int (cfg->rs);
@@ -1473,16 +1461,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
-		case OP_LADD_IMM:
 		case OP_ISUB_IMM:
-		case OP_LSUB_IMM:
-		case OP_AND_IMM:
 		case OP_IAND_IMM:
-		case OP_LAND_IMM:
 		case OP_IOR_IMM:
-		case OP_LOR_IMM:
 		case OP_IXOR_IMM:
-		case OP_LXOR_IMM:
+		case OP_AND_IMM:
 		case OP_SHL_IMM:
 		case OP_SHR_IMM:
 		case OP_ISHL_IMM:
@@ -1502,12 +1485,10 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			switch (ins->opcode) {
 			case OP_ADD_IMM:
 			case OP_IADD_IMM:
-			case OP_LADD_IMM:
 				is_imm = ia64_is_imm14 (ins->inst_imm);
 				switched = TRUE;
 				break;
 			case OP_ISUB_IMM:
-			case OP_LSUB_IMM:
 				is_imm = ia64_is_imm14 (- (ins->inst_imm));
 				if (is_imm) {
 					/* A = B - IMM -> A = B + (-IMM) */
@@ -1520,9 +1501,6 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_IOR_IMM:
 			case OP_IXOR_IMM:
 			case OP_AND_IMM:
-			case OP_LAND_IMM:
-			case OP_LOR_IMM:
-			case OP_LXOR_IMM:
 				is_imm = ia64_is_imm8 (ins->inst_imm);
 				switched = TRUE;
 				break;
@@ -1546,7 +1524,55 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				break;
 			}
 
-			ins->opcode = mono_op_imm_to_op (ins->opcode);
+			switch (ins->opcode) {
+			case OP_ADD_IMM:					
+				ins->opcode = CEE_ADD;
+				break;
+			case OP_IADD_IMM:
+				ins->opcode = OP_IADD;
+				break;
+			case OP_ISUB_IMM:
+				ins->opcode = OP_ISUB;
+				break;
+			case OP_IAND_IMM:
+				ins->opcode = OP_IAND;
+				break;
+			case OP_IOR_IMM:
+				ins->opcode = OP_IOR;
+				break;
+			case OP_IXOR_IMM:
+				ins->opcode = OP_IXOR;
+				break;
+			case OP_ISHL_IMM:
+				ins->opcode = OP_ISHL;
+				break;
+			case OP_ISHR_IMM:
+				ins->opcode = OP_ISHR;
+				break;
+			case OP_ISHR_UN_IMM:
+				ins->opcode = OP_ISHR_UN;
+				break;
+			case OP_AND_IMM:
+				ins->opcode = CEE_AND;
+				break;
+			case OP_SHL_IMM:
+				ins->opcode = OP_LSHL;
+				break;
+			case OP_SHR_IMM:
+				ins->opcode = OP_LSHR;
+				break;
+			case OP_LSHL_IMM:
+				ins->opcode = OP_LSHL;
+				break;
+			case OP_LSHR_IMM:
+				ins->opcode = OP_LSHR;
+				break;
+			case OP_LSHR_UN_IMM:
+				ins->opcode = OP_LSHR_UN;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
 			if (ins->inst_imm == 0)
 				ins->sreg2 = IA64_R0;
@@ -1596,16 +1622,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 
 			switch (next->opcode) {
-			case OP_LBEQ:
-			case OP_LBNE_UN:
-			case OP_LBLE:
-			case OP_LBGT:
-			case OP_LBLE_UN:
-			case OP_LBGT_UN:
-			case OP_LBGE:
-			case OP_LBLT:
-			case OP_LBGE_UN:
-			case OP_LBLT_UN:
+			case CEE_BEQ:
+			case CEE_BNE_UN:
+			case CEE_BLE:
+			case CEE_BGT:
+			case CEE_BLE_UN:
+			case CEE_BGT_UN:
+			case CEE_BGE:
+			case CEE_BLT:
+			case CEE_BGE_UN:
+			case CEE_BLT_UN:
 			case OP_IBEQ:
 			case OP_IBNE_UN:
 			case OP_IBLE:
@@ -1659,16 +1685,16 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ins->opcode = opcode_to_ia64_cmp (next->opcode, ins->opcode);
 			switch (next->opcode) {
-			case OP_LBEQ:
-			case OP_LBNE_UN:
-			case OP_LBLE:
-			case OP_LBGE:
-			case OP_LBLT:
-			case OP_LBGT:
-			case OP_LBLE_UN:
-			case OP_LBGE_UN:
-			case OP_LBLT_UN:
-			case OP_LBGT_UN:
+			case CEE_BEQ:
+			case CEE_BNE_UN:
+			case CEE_BLE:
+			case CEE_BGE:
+			case CEE_BLT:
+			case CEE_BGT:
+			case CEE_BLE_UN:
+			case CEE_BGE_UN:
+			case CEE_BLT_UN:
+			case CEE_BGT_UN:
 			case OP_IBEQ:
 			case OP_IBNE_UN:
 			case OP_IBLE:
@@ -1755,7 +1781,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 						if (sum_reg == 0)
 							sum_reg = temp->dreg;
 						else {
-							NEW_INS (cfg, ins, temp2, OP_LADD);
+							NEW_INS (cfg, ins, temp2, CEE_ADD);
 							temp2->dreg = mono_regstate_next_int (cfg->rs);
 							temp2->sreg1 = sum_reg;
 							temp2->sreg2 = temp->dreg;
@@ -1768,7 +1794,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case OP_LCONV_TO_OVF_U4:
+		case CEE_CONV_OVF_U4:
 			NEW_INS (cfg, ins, temp, OP_IA64_CMP4_LT);
 			temp->sreg1 = ins->sreg1;
 			temp->sreg2 = IA64_R0;
@@ -1778,7 +1804,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			ins->opcode = OP_MOVE;
 			break;
-		case OP_LCONV_TO_OVF_I4_UN:
+		case CEE_CONV_OVF_I4_UN:
 			NEW_INS (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = 0x7fffffff;
 			temp->dreg = mono_regstate_next_int (cfg->rs);
@@ -1828,6 +1854,17 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 	}
 
 	bb->max_vreg = cfg->rs->next_vreg;
+}
+
+void
+mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
+		return;
+
+	mono_arch_lowering_pass (cfg, bb);
+
+	mono_local_regalloc (cfg, bb);
 }
 
 /*
@@ -1930,7 +1967,7 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, Ia64CodegenState code)
 	case OP_VOIDCALL_REG:
 	case OP_VOIDCALL_MEMBASE:
 		break;
-	case OP_CALL:
+	case CEE_CALL:
 	case OP_CALL_REG:
 	case OP_CALL_MEMBASE:
 	case OP_LCALL:
@@ -2036,6 +2073,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint last_offset = 0;
 	int max_len, cpos;
 
+	if (cfg->opt & MONO_OPT_PEEPHOLE)
+		peephole_pass (cfg, bb);
+
 	if (cfg->opt & MONO_OPT_LOOP) {
 		/* FIXME: */
 	}
@@ -2125,28 +2165,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_mov_to_br (code, IA64_B6, ins->sreg1);
 			ia64_br_cond_reg (code, IA64_B6);
 			break;
-		case OP_LADD:
+		case CEE_ADD:
 		case OP_IADD:
 			ia64_add (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case OP_LAND:
+		case CEE_AND:
 		case OP_IAND:
 			ia64_and (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IOR:
-		case OP_LOR:
+		case CEE_OR:
 			ia64_or (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IXOR:
-		case OP_LXOR:
+		case CEE_XOR:
 			ia64_xor (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_INEG:
-		case OP_LNEG:
+		case CEE_NEG:
 			ia64_sub (code, ins->dreg, IA64_R0, ins->sreg1);
 			break;
 		case OP_INOT:
-		case OP_LNOT:
+		case CEE_NOT:
 			ia64_andcm_imm (code, ins->dreg, -1, ins->sreg1);
 			break;
 		case OP_ISHL:
@@ -2160,13 +2200,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_zxt4 (code, GP_SCRATCH_REG, ins->sreg1);
 			ia64_shr_u (code, ins->dreg, GP_SCRATCH_REG, ins->sreg2);
 			break;
+		case CEE_SHL:
 		case OP_LSHL:
 			ia64_shl (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_LSHR_UN:
 			ia64_shr_u (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case OP_LSUB:
+		case CEE_SUB:
 		case OP_ISUB:
 			ia64_sub (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
@@ -2266,7 +2307,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LSHR_UN_IMM:
 			ia64_shr_u_imm (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
-		case OP_LMUL:
+		case CEE_MUL:
 			/* Based on gcc code */
 			ia64_setf_sig (code, FP_SCRATCH_REG, ins->sreg1);
 			ia64_setf_sig (code, FP_SCRATCH_REG2, ins->sreg2);
@@ -2531,36 +2572,36 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_no_stop (code);
 			ia64_add1_pred (code, 6, ins->dreg, IA64_R0, IA64_R0);
 			break;
-		case OP_LCONV_TO_I1:
+		case CEE_CONV_I1:
 			/* FIXME: Is this needed ? */
 			ia64_sxt1 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_I2:
+		case CEE_CONV_I2:
 			/* FIXME: Is this needed ? */
 			ia64_sxt2 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_I4:
+		case CEE_CONV_I4:
 			/* FIXME: Is this needed ? */
 			ia64_sxt4 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_U1:
+		case CEE_CONV_U1:
 			/* FIXME: Is this needed */
 			ia64_zxt1 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_U2:
+		case CEE_CONV_U2:
 			/* FIXME: Is this needed */
 			ia64_zxt2 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_U4:
+		case CEE_CONV_U4:
 			/* FIXME: Is this needed */
 			ia64_zxt4 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_I8:
-		case OP_LCONV_TO_I:
+		case CEE_CONV_I8:
+		case CEE_CONV_I:
 			ia64_sxt4 (code, ins->dreg, ins->sreg1);
 			break;
-		case OP_LCONV_TO_U8:
-		case OP_LCONV_TO_U:
+		case CEE_CONV_U8:
+		case CEE_CONV_U:
 			ia64_zxt4 (code, ins->dreg, ins->sreg1);
 			break;
 
@@ -2612,17 +2653,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ia64_ldfs (code, ins->dreg, ins->inst_basereg);
 			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
 			break;
-		case OP_LCONV_TO_R4:
-		case OP_ICONV_TO_R4:
+		case CEE_CONV_R4:
 			ia64_setf_sig (code, ins->dreg, ins->sreg1);
 			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
 			ia64_fnorm_s_sf (code, ins->dreg, ins->dreg, 0);
 			break;
-		case OP_LCONV_TO_R8:
-		case OP_ICONV_TO_R8:
+		case CEE_CONV_R8:
 			ia64_setf_sig (code, ins->dreg, ins->sreg1);
 			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
 			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_LCONV_TO_R8:
+			/* FIXME: Difference with CEE_CONV_R8 ? */
+			ia64_setf_sig (code, ins->dreg, ins->sreg1);
+			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
+			ia64_fnorm_d_sf (code, ins->dreg, ins->dreg, 0);
+			break;
+		case OP_LCONV_TO_R4:
+			/* FIXME: Difference with CEE_CONV_R4 ? */
+			ia64_setf_sig (code, ins->dreg, ins->sreg1);
+			ia64_fcvt_xf (code, ins->dreg, ins->dreg);
+			ia64_fnorm_s_sf (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_FCONV_TO_R4:
 			ia64_fnorm_s_sf (code, ins->dreg, ins->sreg1, 0);
@@ -2671,7 +2722,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
-		case OP_CALL:
+		case CEE_CALL:
 			call = (MonoCallInst*)ins;
 
 			if (ins->flags & MONO_INST_HAS_METHOD)
@@ -4637,7 +4688,7 @@ mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
 {
 	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
 }
@@ -4732,11 +4783,4 @@ MonoInst* mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 	MONO_INST_NEW (cfg, ins, OP_TLS_GET);
 	ins->inst_offset = thread_tls_offset;
 	return ins;
-}
-
-gpointer
-mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
-{
-	/* FIXME: implement */
-	g_assert_not_reached ();
 }

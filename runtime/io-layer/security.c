@@ -54,8 +54,6 @@ gboolean RevertToSelf (void)
 #ifdef HAVE_SETRESUID
 	if (setresuid (-1, suid, -1) < 0)
 		return FALSE;
-#else
-	return TRUE;
 #endif
 	return (geteuid () == suid);
 }

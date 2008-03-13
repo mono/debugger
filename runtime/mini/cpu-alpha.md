@@ -68,6 +68,20 @@ bgt.un: len:4
 ble.un: len:4
 blt.un: len:4
 label: len:0
+ldind.i1: dest:i len:8
+ldind.u1: dest:i len:8
+ldind.i2: dest:i len:8
+ldind.u2: dest:i len:8
+ldind.i4: dest:i len:9
+ldind.u4: dest:i len:8
+ldind.i: dest:i len:8
+ldind.ref: dest:i len:8
+stind.ref: src1:b src2:i
+stind.i1: src1:b src2:i
+stind.i2: src1:b src2:i
+stind.i4: src1:b src2:i
+stind.r4: dest:f src1:b
+stind.r8: dest:f src1:b
 add: dest:i src1:i src2:i len:4 
 sub: dest:i src1:i src2:i len:4
 mul: dest:i src1:i src2:i len:4
@@ -145,6 +159,7 @@ setret: dest:a src1:i len:4
 setlret: dest:i src1:i src2:i len:4
 checkthis: src1:b len:4
 call: dest:a clob:c len:64
+ret: len:4
 voidcall: clob:c len:64
 voidcall_reg: src1:i clob:c len:64
 voidcall_membase: src1:b clob:c len:64
@@ -244,7 +259,7 @@ float_bne_un: len:12
 float_blt: len:4
 float_blt_un: len:12
 float_bgt: len:4
-float_bgt_un: len:12
+float_btg_un: len:12
 float_bge: len:4
 float_bge_un: len:12
 float_ble: len:4

@@ -4307,20 +4307,9 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObject *obj, gboolean c
 		g_error ("requested token for %s\n", klass->name);
 	}
 
-	mono_image_register_token (assembly, token, obj);
+	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
 
 	return token;
-}
-
-/*
- * mono_image_register_token:
- *
- *   Register the TOKEN->OBJ mapping in the mapping table in ASSEMBLY.
- */
-void
-mono_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObject *obj)
-{
-	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), obj);
 }
 
 typedef struct {
@@ -6363,9 +6352,7 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 					break;
 				if (*p == ',')
 					rank++;
-				else if (*p == '*') /* '*' means unknown lower bound */
-					info->modifiers = g_list_append (info->modifiers, GUINT_TO_POINTER (-2));
-				else
+				else if (*p != '*') /* '*' means unknown lower bound */
 					return 0;
 				++p;
 			}
@@ -6450,7 +6437,6 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	MonoClass *klass;
 	GList *mod;
 	int modval;
-	gboolean bounded = FALSE;
 	
 	if (!image)
 		image = mono_defaults.corlib;
@@ -6520,10 +6506,8 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 			return &klass->this_arg;
 		} else if (modval == -1) {
 			klass = mono_ptr_class_get (&klass->byval_arg);
-		} else if (modval == -2) {
-			bounded = TRUE;
 		} else { /* array rank */
-			klass = mono_bounded_array_class_get (klass, modval, bounded);
+			klass = mono_array_class_get (klass, modval);
 		}
 		mono_class_init (klass);
 	}
@@ -7415,15 +7399,6 @@ mono_custom_attrs_from_method (MonoMethod *method)
 {
 	MonoCustomAttrInfo *cinfo;
 	guint32 idx;
-
-	/*
-	 * An instantiated method has the same cattrs as the generic method definition.
-	 *
-	 * LAMESPEC: The .NET SRE throws an exception for instantiations of generic method builders
-	 *           Note that this stanza is not necessary for non-SRE types, but it's a micro-optimization
-	 */
-	if (method->is_inflated)
-		method = ((MonoMethodInflated *) method)->declaring;
 	
 	if (dynamic_custom_attrs && (cinfo = lookup_custom_attr (method)))
 		return cinfo;
@@ -7528,15 +7503,6 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 	guint32 param_list, param_last, param_pos, found;
 	MonoImage *image;
 	MonoReflectionMethodAux *aux;
-
-	/*
-	 * An instantiated method has the same cattrs as the generic method definition.
-	 *
-	 * LAMESPEC: The .NET SRE throws an exception for instantiations of generic method builders
-	 *           Note that this stanza is not necessary for non-SRE types, but it's a micro-optimization
-	 */
-	if (method->is_inflated)
-		method = ((MonoMethodInflated *) method)->declaring;
 
 	if (method->klass->image->dynamic) {
 		MonoCustomAttrInfo *res, *ainfo;
@@ -9041,12 +9007,21 @@ static MonoMethod *
 inflate_mono_method (MonoReflectionGenericClass *type, MonoMethod *method, MonoObject *obj)
 {
 	MonoMethodInflated *imethod;
+	MonoGenericContext tmp_context;
 	MonoGenericContext *context;
 	MonoClass *klass;
 
 	klass = mono_class_from_mono_type (type->type.type);
 	g_assert (klass->generic_class);
 	context = mono_class_get_context (klass);
+
+	if (method->generic_container) {
+		g_assert (method->klass == klass->generic_class->container_class);
+
+		tmp_context.class_inst = klass->generic_class->context.class_inst;
+		tmp_context.method_inst = method->generic_container->context.method_inst;
+		context = &tmp_context;
+	}
 
 	imethod = (MonoMethodInflated *) mono_class_inflate_generic_method_full (method, klass, context);
 	if (method->generic_container) {
@@ -9751,19 +9726,6 @@ mono_reflection_destroy_dynamic_method (MonoReflectionDynamicMethod *mb)
 	if (mb->mhandle)
 		mono_runtime_free_method (
 			mono_object_get_domain ((MonoObject*)mb), mb->mhandle);
-}
-
-/**
- * 
- * mono_reflection_is_valid_dynamic_token:
- * 
- * Returns TRUE if token is valid.
- * 
- */
-gboolean
-mono_reflection_is_valid_dynamic_token (MonoDynamicImage *image, guint32 token)
-{
-	return mono_g_hash_table_lookup (image->tokens, GUINT_TO_POINTER (token)) != NULL;
 }
 
 /**
