@@ -131,7 +131,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		ArrayList sources = new ArrayList ();
 		Hashtable method_source_hash = new Hashtable ();
 		Hashtable type_hash = new Hashtable ();
+#if !DISABLE_TERRANIA_CHANGES
 		Hashtable anonymous_scopes;
+#endif
 
 		OffsetTable ot;
 		int last_type_index;
@@ -139,7 +141,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		int last_source_index;
 		int last_namespace_index;
 
-#if COMPATIBILITY_MODE
+#if DISABLE_TERRANIA_CHANGES
 		public readonly int Version = OffsetTable.CompatibilityVersion;
 		public readonly bool CompatibilityMode = true;
 #else
@@ -173,6 +175,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			methods.Add (entry);
 		}
 
+#if !DISABLE_TERRANIA_CHANGES
 		internal void DefineAnonymousScope (int id)
 		{
 			if (anonymous_scopes == null)
@@ -193,6 +196,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			AnonymousScopeEntry scope = (AnonymousScopeEntry) anonymous_scopes [scope_id];
 			scope.AddCapturedScope (id, captured_name);
 		}
+#endif
 
 		internal int GetNextTypeIndex ()
 		{
@@ -270,6 +274,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 			ot.SourceTableSize = (int) bw.BaseStream.Position - ot.SourceTableOffset;
 
+#if !DISABLE_TERRANIA_CHANGES
 			if (!CompatibilityMode) {
 				//
 				// Write anonymous scope table.
@@ -282,6 +287,7 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 				ot.AnonymousScopeTableSize = (int) bw.BaseStream.Position - ot.AnonymousScopeTableOffset;
 			}
+#endif
 
 			//
 			// Fixup offset table.
@@ -415,9 +421,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			get { return ot.TypeCount; }
 		}
 
+#if !DISABLE_TERRANIA_CHANGES
 		public int AnonymousScopeCount {
 			get { return ot.AnonymousScopeCount; }
 		}
+#endif
 
 		public int NamespaceCount {
 			get { return last_namespace_index; }
@@ -577,6 +585,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			return (int) value;
 		}
 
+#if !DISABLE_TERRANIA_CHANGES
 		public AnonymousScopeEntry GetAnonymousScope (int id)
 		{
 			if (anonymous_scopes != null)
@@ -593,6 +602,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			return (AnonymousScopeEntry) anonymous_scopes [id];
 		}
+#endif
 
 		internal MyBinaryReader BinaryReader {
 			get {

@@ -1,5 +1,11 @@
 2008-03-13  Martin Baulig  <martin@ximian.com>
 
+	* *.cs: Add `DISABLE_TERRANIA_CHANGES' conditionals everywhere
+	around the new code; they'll be removed when I'm back from my
+	vacations.
+
+2008-03-13  Martin Baulig  <martin@ximian.com>
+
 	* MonoSymbolTable.cs
 	(OffsetTable.Write): Add `version' argument; allow writing the old
 	file format.
