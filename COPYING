@@ -1,4 +1,12 @@
-Copyright (c) 2004, 2005, 2006, 2007 Novell, Inc.
+The Mono Debugger code is licensed under the MIT X11 license.   
+
+Currently the code bundles pieces of GPL code (BFD) and those files
+are licensed under the GNU GPL version 2 and are properly flagged
+as such.
+
+The MIT X11 license for all the code written by Novell is:
+
+Copyright (c) 2004, 2005, 2006, 2007, 2008 Novell, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
