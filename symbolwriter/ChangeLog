@@ -1,5 +1,9 @@
 2008-03-13  Martin Baulig  <martin@ximian.com>
 
+	**** Updated ChangeLog to prepare merging to trunk ****
+
+2008-03-13  Martin Baulig  <martin@ximian.com>
+
 	* *.cs: Add `DISABLE_TERRANIA_CHANGES' conditionals everywhere
 	around the new code; they'll be removed when I'm back from my
 	vacations.
@@ -7,18 +11,11 @@
 2008-03-13  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs
-	(OffsetTable.Write): Add `version' argument; allow writing the old
-	file format.
-	(LocalVariableEntry): Add compatibility for the old file format.
 	(LexicalBlockEntry): Mark this as obsolete.
-	(MethodEntry): Add compatibility for the old file format.
 
 2008-03-11  Martin Baulig  <martin@ximian.com>
 
-	* MonoSymbolTable.cs
-	(CodeBlockEntry): Add an optional data size to allow support
-	future extensions.
-	(MethodEntry): Removed `LocalTypeIndices'.
+	* MonoSymbolTable.cs (MethodEntry): Removed `LocalTypeIndices'.
 
 2008-03-10  Martin Baulig  <martin@ximian.com>
 
@@ -30,11 +27,6 @@
 	(MonoSymbolWriter.DefineLocalVariable): The `byte[] signature'
 	argument is now obsolete.
 
-2008-03-10  Martin Baulig  <martin@ximian.com>
-
-	* MonoSymbolTable.cs
-	(CodeBlockEntry): Write as leb128 to save space.
-
 2008-02-19  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolFile.cs
@@ -45,6 +37,8 @@
 	* MonoSymbolTable.cs
 	(OffsetTable.CompatibilityVersion): New public const; we keep
 	backwards compatibility with this version.
+	(OffsetTable.Write): Add `version' argument; allow writing the old
+	file format.
 	(MethodEntry): Check `file.CompatiblityMode'.
 
 2008-02-19  Martin Baulig  <martin@ximian.com>
@@ -55,17 +49,6 @@
 	* MonoSymbolTable.cs
 	(MethodEntry.RealName): New public field; this is only used for
 	anonymous methods and iterators.
-
-2008-02-18  Martin Baulig  <martin@ximian.com>
-
-	* MonoSymbolTable.cs
-	(CapturedVariable.CapturedKind): New public enum.
-	(CapturedVariable): Replaced `IsLocal' by `Kind'.
-
-	* MonoSymbolWriter.cs
-	(MonoSymbolWriter.DefineCapturedVariable): Split into
-	DefineCapturedLocal(), DefineCapturedParameter() and
-	DefineCapturedThis().	
 
 2008-02-15  Martin Baulig  <martin@ximian.com>
 
@@ -99,7 +82,9 @@
 
 	* MonoSymbolWriter.cs
 	(MonoSymbolWriter.DefineAnonymousScope): New public method.
-	(MonoSymbolWriter.DefineCapturedVariable): New public method.
+	(MonoSymbolWriter.DefineCapturedLocal): New public method.
+	(MonoSymbolWriter.DefineCapturedParameter): New public method.
+	(MonoSymbolWriter.DefineCapturedThis): New public method.
 	(MonoSymbolWriter.DefineCapturedScope): New public method.
 	(MonoSymbolWriter.DefineScopeVariable): New public method.
 
