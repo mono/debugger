@@ -1102,6 +1102,11 @@ mono_arch_allocate_vars (MonoCompile *m)
 
 }
 
+void
+mono_arch_create_vars (MonoCompile *cfg)
+{
+}
+
 /* Fixme: we need an alignment solution for enter_method and mono_arch_call_opcode,
  * currently alignment in mono_arch_call_opcode is computed without arch_get_argument_info 
  */
@@ -1421,8 +1426,13 @@ if (ins->flags & MONO_INST_BRLABEL) { \
 
 #define EMIT_COND_SYSTEM_EXCEPTION(cond,exc_name) EMIT_COND_SYSTEM_EXCEPTION_FLAGS(branch_b0_table [(cond)], branch_b1_table [(cond)], (exc_name))
 
-static void
-peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+}
+
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *n;
 
@@ -1529,7 +1539,6 @@ peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			ins->opcode = OP_MOVE;
 			/* 
 			 * OP_MOVE reg, reg 
@@ -1680,7 +1689,7 @@ map_to_reg_reg_op (int op)
  * represented with very simple instructions with no register
  * requirements.
  */
-static void
+void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
 	MonoInst *ins, *next, *temp;
@@ -1831,15 +1840,6 @@ loop_start:
 	}
 	bb->max_vreg = cfg->rs->next_vreg;
 	
-}
-
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-	if (MONO_INST_LIST_EMPTY (&bb->ins_list))
-		return;
-	mono_arch_lowering_pass (cfg, bb);
-	mono_local_regalloc (cfg, bb);
 }
 
 static guchar*
@@ -2107,9 +2107,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	guint last_offset = 0;
 	int max_len, cpos;
 
-	if (cfg->opt & MONO_OPT_PEEPHOLE)
-		peephole_pass (cfg, bb);
-
 	/* we don't align basic blocks of loops on ppc */
 
 	if (cfg->verbose_level > 2)
@@ -2190,12 +2187,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_STORE_MEMINDEX:
 		case OP_STOREI4_MEMINDEX:
 			ppc_stwx (code, ins->sreg1, ins->sreg2, ins->inst_destbasereg);
-			break;
-		case CEE_LDIND_I:
-		case CEE_LDIND_I4:
-		case CEE_LDIND_U4:
-			g_assert_not_reached ();
-			//x86_mov_reg_mem (code, ins->dreg, ins->inst_p0, 4);
 			break;
 		case OP_LOADU4_MEM:
 			g_assert_not_reached ();
@@ -2524,7 +2515,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_mullw (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_ICONST:
-		case OP_SETREGIMM:
 			ppc_load (code, ins->dreg, ins->inst_c0);
 			break;
 		case OP_AOTCONST:
@@ -2535,7 +2525,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_I4:
 		case CEE_CONV_U4:
 		case OP_MOVE:
-		case OP_SETREG:
 			ppc_mr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_SETLRET: {
@@ -2550,7 +2539,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_mr (code, ppc_r4, saved);
 			break;
 		}
-		case OP_SETFREG:
 		case OP_FMOVE:
 			ppc_fmr (code, ins->dreg, ins->sreg1);
 			break;
@@ -2621,7 +2609,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LCALL:
 		case OP_VCALL:
 		case OP_VOIDCALL:
-		case CEE_CALL:
+		case OP_CALL:
 			call = (MonoCallInst*)ins;
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
@@ -2695,9 +2683,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_addi (code, ins->dreg, ppc_sp, area_offset);
 			break;
 		}
-		case CEE_RET:
-			ppc_blr (code);
-			break;
 		case OP_THROW: {
 			//ppc_break (code);
 			ppc_mr (code, ppc_r3, ins->sreg1);
@@ -3885,7 +3870,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 	/* add the this argument */
 	if (this_reg != -1) {
 		MonoInst *this;
-		MONO_INST_NEW (cfg, this, OP_SETREG);
+		MONO_INST_NEW (cfg, this, OP_MOVE);
 		this->type = this_type;
 		this->sreg1 = this_reg;
 		this->dreg = mono_regstate_next_int (cfg->rs);
@@ -3895,7 +3880,7 @@ mono_arch_emit_this_vret_args (MonoCompile *cfg, MonoCallInst *inst, int this_re
 
 	if (vt_reg != -1) {
 		MonoInst *vtarg;
-		MONO_INST_NEW (cfg, vtarg, OP_SETREG);
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 		vtarg->type = STACK_MP;
 		vtarg->sreg1 = vt_reg;
 		vtarg->dreg = mono_regstate_next_int (cfg->rs);
@@ -4006,7 +3991,7 @@ mono_arch_find_imt_method (gpointer *regs, guint8 *code)
 }
 
 MonoObject*
-mono_arch_find_this_argument (gpointer *regs, MonoMethod *method)
+mono_arch_find_this_argument (gpointer *regs, MonoMethod *method, MonoGenericSharingContext *gsctx)
 {
 	return mono_arch_get_this_arg_from_call (mono_method_signature (method), (gssize*)regs, NULL);
 }
@@ -4017,10 +4002,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethod
 {
 	MonoInst *ins = NULL;
 
-	if (cmethod->klass == mono_defaults.thread_class &&
-			strcmp (cmethod->name, "MemoryBarrier") == 0) {
-		MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-	}
 	/*if (cmethod->klass == mono_defaults.math_class) {
 		if (strcmp (cmethod->name, "Sqrt") == 0) {
 			MONO_INST_NEW (cfg, ins, OP_SQRT);
@@ -4063,3 +4044,9 @@ mono_arch_get_thread_intrinsic (MonoCompile* cfg)
 	return ins;
 }
 
+gpointer
+mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	/* FIXME: implement */
+	g_assert_not_reached ();
+}

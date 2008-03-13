@@ -25,9 +25,9 @@
 #define ALPHA_PRINT if (mini_alpha_verbose_level)
 
 #define NEW_INS(cfg,ins,dest,op) do {					\
-   (dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));       \
-   (dest)->opcode = (op);  \
-   MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node);
+   (dest) = mono_mempool_alloc0 ((cfg)->mempool, sizeof (MonoInst));    \
+   (dest)->opcode = (op);                                               \
+   MONO_INST_LIST_ADD_TAIL (&(dest)->node, &(ins)->node);               \
 } while (0)
 
 #define NEW_ICONST(cfg,dest,val) do {					\
@@ -90,6 +90,9 @@ static int appdomain_tls_offset = -1,
 pthread_key_t lmf_addr_key;
 
 gboolean lmf_addr_key_inited = FALSE;
+
+MonoBreakpointInfo
+mono_breakpoint_info [MONO_BREAKPOINT_ARRAY_SIZE];
 
 /*====================== End of Global Variables ===================*/
 
@@ -191,7 +194,7 @@ add_float (guint32 *gr, guint32 *stack_size, ArgInfo *ainfo,
 }
 
 static void
-add_valuetype (MonoGenericSharingContext *ctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
+add_valuetype (MonoGenericSharingContext *gsctx, MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
                gboolean is_return,
                guint32 *gr, guint32 *fr, guint32 *stack_size)
 {
@@ -419,12 +422,21 @@ mono_arch_free_jit_tls_data (MonoJitTlsData *tls)
 
 /*========================= End of Function ========================*/
 
-static void
-  peephole_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+// This peephole function is called before "local_regalloc" method
+// TSV_TODO - Check what we need to move here
+void
+mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
+{
+  CFG_DEBUG(3) g_print ("ALPHA: PEEPHOLE_1 pass\n");
+}
+
+// This peephole function is called after "local_regalloc" method
+void
+mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 {
   MonoInst *ins, *n;
    
-  CFG_DEBUG(3) g_print ("ALPHA: PEEPHOLE pass\n");
+  CFG_DEBUG(3) g_print ("ALPHA: PEEPHOLE_2 pass\n");
 
   MONO_INST_LIST_FOR_EACH_ENTRY_SAFE (ins, n, &bb->ins_list, node) {
       MonoInst *last_ins = mono_inst_list_prev (&ins->node, &bb->ins_list);
@@ -432,7 +444,6 @@ static void
 	{	 
 	case OP_MOVE:
 	case OP_FMOVE:
-	case OP_SETREG:
 	  /*
 	   * Removes:
 	   *
@@ -574,8 +585,6 @@ static void
 	}
     }
 }
-
-
 
 // Convert to opposite branch opcode
 static guint16 cvt_branch_opcode(guint16 opcode)
@@ -908,8 +917,8 @@ static void cvt_cmp_branch(MonoInst *curr, MonoInst *next)
  * Converts complex opcodes into simpler ones so that each IR instruction
  * corresponds to one machine instruction.
  */
-static void
-  mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
+void
+mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {   
    MonoInst *ins, *n, *next, *temp;
    
@@ -981,7 +990,7 @@ static void
 	       ins->sreg2 = temp->dreg;
 				  
 	       // We should try to reevaluate new IR opcode
-	       continue;
+	       //continue;
 	     }
 	   
 	   next = mono_inst_list_next (&ins->node, &bb->ins_list);
@@ -1001,7 +1010,7 @@ static void
                ins->sreg2 = temp->dreg;
 
                // We should try to reevaluate new IR opcode
-               continue;
+               //continue;
              }
 
 	   next = mono_inst_list_next (&ins->node, &bb->ins_list);
@@ -1167,33 +1176,6 @@ static void
      }
    
    bb->max_vreg = cfg->rs->next_vreg;
-}
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name         - mono_arch_local_regalloc.                         */
-/*                                                                  */
-/* Function     - We first scan the list of instructions and we     */
-/*                save the liveness information of each register    */
-/*                (when the register is first used, when its value  */
-/*                is set etc.). We also reverse the list of instr-  */
-/*                uctions (in the InstList list) because assigning  */
-/*                registers backwards allows for more tricks to be  */
-/*                used.                                             */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
-{
-  CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_local_regalloc");
-   
-  if (MONO_INST_LIST_EMPTY (&bb->ins_list))
-    return;
-   
-  mono_arch_lowering_pass (cfg, bb);
-   
-  mono_local_regalloc(cfg, bb);
 }
 
 /*========================= End of Function ========================*/
@@ -2194,9 +2176,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
    
    CFG_DEBUG(2) ALPHA_DEBUG("mono_arch_output_basic_block");
    
-   if (cfg->opt & MONO_OPT_PEEPHOLE)
-     peephole_pass (cfg, bb);
-    
    CFG_DEBUG(2) g_print ("Basic block %d(%p) starting at offset 0x%x\n",
 			 bb->block_num, bb, bb->native_offset);
    
@@ -3677,7 +3656,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	 case OP_LCALL:
 	 case OP_VCALL:
 	 case OP_VOIDCALL:
-	 case CEE_CALL:
+	 case OP_CALL:
 	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [fcall/lcall/vcall/voidcall/call] Target: [");
 	   call = (MonoCallInst*)ins;
 	   
@@ -3822,12 +3801,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				  ins->inst_target_bb);
 	     alpha_bsr(code, alpha_ra, 0);
 	   }
-	   break;
-	   
-	 case CEE_RET:
-	   CFG_DEBUG(4) g_print("ALPHA_CHECK: [ret]\n");
-	   
-	   alpha_ret(code, alpha_ra, 1);
 	   break;
 
 	 case OP_THROW:
@@ -5211,11 +5184,6 @@ mono_arch_get_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod,
    
    CFG_DEBUG(3) g_print("mono_arch_get_inst_for_method: %s\n", cmethod->name);
    
-   if (cmethod->klass == mono_defaults.thread_class &&
-       strcmp (cmethod->name, "MemoryBarrier") == 0) {
-     MONO_INST_NEW (cfg, ins, OP_MEMORY_BARRIER);
-   }
-   
    return ins;
 }
 
@@ -5900,9 +5868,45 @@ mono_arch_get_vcall_slot_addr (guint8* code, gpointer *regs)
   return 0;
 }
 
+gpointer
+mono_arch_get_this_arg_from_call (MonoMethodSignature *sig, gssize *regs, guint8 *code)
+{
+  unsigned int *pc = (unsigned int *)code;
+
+  ALPHA_PRINT g_debug("ALPHA_CHECK: [mono_arch_get_this_arg_from_call] code: %p regs: %p",
+          pc, regs);
+
+        if (MONO_TYPE_ISSTRUCT (sig->ret))
+                return (gpointer)regs [alpha_a1];
+        else
+                return (gpointer)regs [alpha_a0];
+}
+
+gpointer
+mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_target)
+{
+	unsigned int *code, *start;
+        MonoDomain *domain = mono_domain_get ();
+        int i;
+
+  	ALPHA_PRINT g_debug("ALPHA_CHECK: [mono_arch_get_delegate_invoke_impl]");
+
+        /* FIXME: Support more cases */
+        if (MONO_TYPE_ISSTRUCT (sig->ret))
+                return NULL;
+
+	return NULL;
+}
 
 guint32
 mono_arch_get_patch_offset (guint8 *code)
 {
   return 3;
+}
+
+gpointer
+mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
+{
+	/* FIXME: implement */
+	g_assert_not_reached ();
 }

@@ -559,7 +559,7 @@ mono_ssa_remove (MonoCompile *cfg)
 
 	for (i = 0; i < cfg->num_varinfo; ++i) {
 		MONO_VARINFO (cfg, i)->reg = -1;
-		if (!is_live [i]) {
+		if (!is_live [i] && !(cfg->varinfo [i]->flags & MONO_INST_VOLATILE)) {
 			cfg->varinfo [i]->flags |= MONO_INST_IS_DEAD;
 		}
 	}
@@ -571,7 +571,7 @@ mono_ssa_remove (MonoCompile *cfg)
 }
 
 
-#define IS_CALL(op) (op == CEE_CALLI || op == CEE_CALL || op == CEE_CALLVIRT || (op >= OP_VOIDCALL && op <= OP_CALL_MEMBASE))
+#define IS_CALL(op) (op == CEE_CALLI || op == OP_CALL || op == OP_CALLVIRT || (op >= OP_VOIDCALL && op <= OP_CALL_MEMBASE))
 
 typedef struct {
 	MonoBasicBlock *bb;

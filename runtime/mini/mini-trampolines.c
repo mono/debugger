@@ -14,15 +14,26 @@
 #include "mini.h"
 #include "debug-mini.h"
 
+static MonoGenericSharingContext*
+get_generic_context (guint8 *code)
+{
+	MonoJitInfo *jit_info = mono_jit_info_table_find (mono_domain_get (), (char*)code);
+
+	g_assert (jit_info);
+
+	return mono_jit_info_get_generic_sharing_context (jit_info);
+}
+
 #ifdef MONO_ARCH_HAVE_IMT
 
 static gpointer*
 mono_convert_imt_slot_to_vtable_slot (gpointer* slot, gpointer *regs, guint8 *code, MonoMethod *method, MonoMethod **impl_method)
 {
-	MonoObject *this_argument = mono_arch_find_this_argument (regs, method);
+	MonoGenericSharingContext *gsctx = get_generic_context (code);
+	MonoObject *this_argument = mono_arch_find_this_argument (regs, method, gsctx);
 	MonoVTable *vt = this_argument->vtable;
 	int displacement = slot - ((gpointer*)vt);
-	
+
 	if (displacement > 0) {
 		/* slot is in the vtable, not in the IMT */
 #if DEBUG_IMT
@@ -78,6 +89,8 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 {
 	gpointer addr;
 	gpointer *vtable_slot;
+	gboolean generic_shared = FALSE;
+	MonoMethod *declaring = NULL;
 
 #if MONO_ARCH_COMMON_VTABLE_TRAMPOLINE
 	if (m == MONO_FAKE_VTABLE_METHOD) {
@@ -131,6 +144,66 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 	}
 #endif
 
+	if (mono_method_check_context_used (m)) {
+		MonoClass *klass = NULL;
+		MonoMethod *actual_method = NULL;
+		MonoVTable *vt = NULL;
+
+		vtable_slot = NULL;
+		generic_shared = TRUE;
+
+		g_assert (code);
+
+
+		if (m->flags & METHOD_ATTRIBUTE_STATIC) {
+			g_assert_not_reached ();
+		} else {
+			MonoObject *this_argument = mono_arch_find_this_argument ((gpointer*)regs, m,
+				get_generic_context (code));
+
+			vt = this_argument->vtable;
+			vtable_slot = mono_arch_get_vcall_slot_addr (code, (gpointer*)regs);
+
+			g_assert (this_argument->vtable->klass->inited);
+			//mono_class_init (this_argument->vtable->klass);
+
+			if (!vtable_slot)
+				klass = this_argument->vtable->klass->supertypes [m->klass->idepth - 1];
+		}
+
+		g_assert (vtable_slot || klass);
+
+		if (vtable_slot) {
+			int displacement = vtable_slot - ((gpointer*)vt);
+
+			g_assert_not_reached ();
+
+			g_assert (displacement > 0);
+
+			actual_method = vt->klass->vtable [displacement];
+		} else {
+			int i;
+
+			if (m->is_inflated)
+				declaring = mono_method_get_declaring_generic_method (m);
+			else
+				declaring = m;
+
+			for (i = 0; i < klass->method.count; ++i) {
+				actual_method = klass->methods [i];
+				if (actual_method->is_inflated) {
+					if (mono_method_get_declaring_generic_method (actual_method) == declaring)
+						break;
+				}
+			}
+
+			g_assert (mono_method_get_declaring_generic_method (actual_method) == declaring);
+		}
+
+		g_assert (actual_method);
+		m = actual_method;
+	}
+
 	addr = mono_compile_method (m);
 	g_assert (addr);
 
@@ -155,7 +228,7 @@ mono_magic_trampoline (gssize *regs, guint8 *code, MonoMethod *m, guint8* tramp)
 			*vtable_slot = mono_get_addr_from_ftnptr (addr);
 		}
 	}
-	else {
+	else if (!generic_shared || mono_domain_lookup_shared_generic (mono_domain_get (), declaring)) {
 		guint8 *plt_entry = mono_aot_get_plt_entry (code);
 
 		/* Patch calling code */
@@ -308,6 +381,32 @@ mono_generic_class_init_trampoline (gssize *regs, guint8 *code, MonoVTable *vtab
 	//g_print ("done initing generic\n");
 }
 
+static gpointer
+mono_rgctx_lazy_fetch_trampoline (gssize *regs, guint8 *code, MonoRuntimeGenericContext *rgctx, guint8 *tramp)
+{
+	guint32 encoded_offset = mono_arch_get_rgctx_lazy_fetch_offset ((gpointer*)regs);
+	gpointer result;
+
+	mono_class_fill_runtime_generic_context (rgctx);
+
+	if (MONO_RGCTX_OFFSET_IS_INDIRECT (encoded_offset)) {
+		int indirect_slot = MONO_RGCTX_OFFSET_INDIRECT_SLOT (encoded_offset);
+		int offset = MONO_RGCTX_OFFSET_INDIRECT_OFFSET (encoded_offset);
+
+		g_assert (indirect_slot == 0);
+		
+		result = *(gpointer*)((guint8*)rgctx->extra_other_infos + offset);
+	} else {
+		int offset = MONO_RGCTX_OFFSET_DIRECT_OFFSET (encoded_offset);
+
+		result = *(gpointer*)((guint8*)rgctx + offset);
+	}
+
+	g_assert (result);
+
+	return result;
+}
+
 #ifdef MONO_ARCH_HAVE_CREATE_DELEGATE_TRAMPOLINE
 
 /**
@@ -394,6 +493,8 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		return mono_class_init_trampoline;
 	case MONO_TRAMPOLINE_GENERIC_CLASS_INIT:
 		return mono_generic_class_init_trampoline;
+	case MONO_TRAMPOLINE_RGCTX_LAZY_FETCH:
+		return mono_rgctx_lazy_fetch_trampoline;
 #ifdef MONO_ARCH_AOT_SUPPORTED
 	case MONO_TRAMPOLINE_AOT:
 		return mono_aot_trampoline;

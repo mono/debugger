@@ -25,7 +25,8 @@
 #include "mono/metadata/gc-internal.h"
 #include "mono/metadata/threads-types.h"
 #include "mono/metadata/string-icalls.h"
-#include <mono/metadata/gc-internal.h>
+#include "mono/metadata/attrdefs.h"
+#include "mono/metadata/gc-internal.h"
 #include <string.h>
 #include <errno.h>
 
@@ -1095,7 +1096,7 @@ static SysStringLenFunc sys_string_len_ms = NULL;
 static SysFreeStringFunc sys_free_string_ms = NULL;
 
 static gboolean
-init_com_provider_ms ()
+init_com_provider_ms (void)
 {
 	static gboolean initialized = FALSE;
 	char *error_msg;
@@ -1159,7 +1160,6 @@ mono_string_to_bstr (MonoString *string_obj)
 		gpointer ret = NULL;
 		gunichar* str = NULL;
 		guint32 len;
-		gint32 written = 0;
 		len = mono_string_length (string_obj);
 		str = g_utf16_to_ucs4 (mono_string_chars (string_obj), len,
 			NULL, NULL, NULL);
@@ -4565,11 +4565,23 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 	MonoMethod *res = NULL;
 	static MonoString *string_dummy = NULL;
 	static MonoMethodSignature *delay_abort_sig = NULL;
+	static MonoMethodSignature *cctor_signature = NULL;
+	static MonoMethodSignature *finalize_signature = NULL;
 	int i, pos, posna;
 	char *name;
 	gboolean need_direct_wrapper = FALSE;
 
 	g_assert (method);
+
+	if (!cctor_signature) {
+		cctor_signature = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		cctor_signature->ret = &mono_defaults.void_class->byval_arg;
+	}
+	if (!finalize_signature) {
+		finalize_signature = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
+		finalize_signature->ret = &mono_defaults.void_class->byval_arg;
+		finalize_signature->hasthis = 1;
+	}
 
 	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
 		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
@@ -4599,37 +4611,39 @@ mono_marshal_get_runtime_invoke (MonoMethod *method)
 		}
 	}
 
-	/* See bug #80743 */
 	/*
-	 * FIXME: Sharing runtime invoke wrappers between different methods means that
-	 * calling a method of klass A might invoke the type initializer of class B.
-	 * Normally, the type initializer of type B was already executed when B's method
-	 * was called but in some complex cases this might not be true.
-	 * See #349621 for an example. We avoid that for mscorlib methods by putting every
-	 * wrapper into the object class, but the non-mscorlib case needs fixing.
+	 * We try to share runtime invoke wrappers between different methods but have to
+	 * be careful about methods whose klass has a type cctor, since putting the wrapper
+	 * into that klass would mean that calling a method of klass A might invoke the
+	 * type initializer of class B, or throw an exception if the type initializer 
+	 * was called before and failed. See #349621 for an example. 
+	 * We avoid that for mscorlib methods by putting every wrapper into the object class.
 	 */
 	if (method->klass->image == mono_defaults.corlib)
 		target_klass = mono_defaults.object_class;
 	else {
-		target_klass = method->klass;
-	}
-#if 0
-	target_klass = mono_defaults.object_class;
-	/* 
-	 * if types in the signature belong to non-mscorlib, we cache only
-	 * in the method image
-	 */
-	if (mono_class_from_mono_type (callsig->ret)->image != mono_defaults.corlib) {
-		target_klass = method->klass;
-	} else {
-		for (i = 0; i < callsig->param_count; i++) {
-			if (mono_class_from_mono_type (callsig->params [i])->image != mono_defaults.corlib) {
-				target_klass = method->klass;
-				break;
-			}
+		/* Try to share wrappers for non-corlib methods with simple signatures */
+		if (mono_metadata_signature_equal (callsig, cctor_signature)) {
+			callsig = cctor_signature;
+			target_klass = mono_defaults.object_class;
+		} else if (mono_metadata_signature_equal (callsig, finalize_signature)) {
+			callsig = finalize_signature;
+			target_klass = mono_defaults.object_class;
+		} else {
+			// FIXME: This breaks too many things
+			/*
+			if (mono_class_get_cctor (method->klass))
+				need_direct_wrapper = TRUE;
+			*/
+
+			/*
+			 * Can't put these wrappers into object, since they reference non-corlib
+			 * metadata (callsig).
+			 */
+			target_klass = method->klass;
 		}
 	}
-#endif
+
 	if (need_direct_wrapper) {
 		cache = target_klass->image->runtime_invoke_direct_cache;
 		res = mono_marshal_find_in_cache (cache, method);
@@ -4919,8 +4933,10 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
  * mono_marshal_get_ldfld_remote_wrapper:
  * @klass: The return type
  *
- * This method generates a wrapper for calling mono_load_remote_field_new with
- * the appropriate return type.
+ * This method generates a wrapper for calling mono_load_remote_field_new.
+ * The return type is ignored for now, as mono_load_remote_field_new () always
+ * returns an object. In the future, to optimize some codepaths, we might
+ * call a different function that takes a pointer to a valuetype, instead.
  */
 MonoMethod *
 mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
@@ -4928,20 +4944,16 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	GHashTable *cache;
-	char *name;
+	static MonoMethod* cached = NULL;
 
-	cache = klass->image->ldfld_remote_wrapper_cache;
-	if ((res = mono_marshal_find_in_cache (cache, klass)))
-		return res;
+	mono_marshal_lock ();
+	if (cached) {
+		mono_marshal_unlock ();
+		return cached;
+	}
+	mono_marshal_unlock ();
 
-	/* 
-	 * This wrapper is similar to an icall wrapper but all the wrappers
-	 * call the same C function, but with a different signature.
-	 */
-	name = g_strdup_printf ("__mono_load_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
-	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_LDFLD_REMOTE);
-	g_free (name);
+	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, "__mono_load_remote_field_new_wrapper", MONO_WRAPPER_LDFLD_REMOTE);
 
 	mb->method->save_lmf = 1;
 
@@ -4949,7 +4961,7 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
 	sig->params [2] = &mono_defaults.int_class->byval_arg;
-	sig->ret = &klass->this_arg;
+	sig->ret = &mono_defaults.object_class->byval_arg;
 
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldarg (mb, 1);
@@ -4959,18 +4971,33 @@ mono_marshal_get_ldfld_remote_wrapper (MonoClass *klass)
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->ret = &klass->this_arg;
+	csig->ret = &mono_defaults.object_class->byval_arg;
 	csig->pinvoke = 1;
 
 	mono_mb_emit_native_call (mb, csig, mono_load_remote_field_new);
 	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
-       
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+ 
+	mono_marshal_lock ();
+	res = cached;
+	mono_marshal_unlock ();
+	if (!res) {
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, sig, 4);
+		mono_marshal_lock ();
+		res = cached;
+		if (!res) {
+			res = newm;
+			cached = res;
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	}
 	mono_mb_free (mb);
-	
+
 	return res;
 }
 
@@ -5212,6 +5239,8 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
  *
  *  This function generates a wrapper for calling mono_store_remote_field_new
  * with the appropriate signature.
+ * Similarly to mono_marshal_get_ldfld_remote_wrapper () this doesn't depend on the
+ * klass argument anymore.
  */
 MonoMethod *
 mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
@@ -5219,16 +5248,16 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	MonoMethodSignature *sig, *csig;
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
-	GHashTable *cache;
-	char *name;
+	static MonoMethod *cached = NULL;
 
-	cache = klass->image->stfld_remote_wrapper_cache;
-	if ((res = mono_marshal_find_in_cache (cache, klass)))
-		return res;
+	mono_marshal_lock ();
+	if (cached) {
+		mono_marshal_unlock ();
+		return cached;
+	}
+	mono_marshal_unlock ();
 
-	name = g_strdup_printf ("__mono_store_remote_field_new_wrapper_%s.%s", klass->name_space, klass->name); 
-	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_STFLD_REMOTE);
-	g_free (name);
+	mb = mono_mb_new_no_dup_name (mono_defaults.object_class, "__mono_store_remote_field_new_wrapper", MONO_WRAPPER_STFLD_REMOTE);
 
 	mb->method->save_lmf = 1;
 
@@ -5236,7 +5265,7 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	sig->params [0] = &mono_defaults.object_class->byval_arg;
 	sig->params [1] = &mono_defaults.int_class->byval_arg;
 	sig->params [2] = &mono_defaults.int_class->byval_arg;
-	sig->params [3] = &klass->byval_arg;
+	sig->params [3] = &mono_defaults.object_class->byval_arg;
 	sig->ret = &mono_defaults.void_class->byval_arg;
 
 	mono_mb_emit_ldarg (mb, 0);
@@ -5244,14 +5273,11 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 3);
 
-	if (klass->valuetype)
-		mono_mb_emit_op (mb, CEE_BOX, klass);
-
 	csig = mono_metadata_signature_alloc (mono_defaults.corlib, 4);
 	csig->params [0] = &mono_defaults.object_class->byval_arg;
 	csig->params [1] = &mono_defaults.int_class->byval_arg;
 	csig->params [2] = &mono_defaults.int_class->byval_arg;
-	csig->params [3] = &klass->byval_arg;
+	csig->params [3] = &mono_defaults.object_class->byval_arg;
 	csig->ret = &mono_defaults.void_class->byval_arg;
 	csig->pinvoke = 1;
 
@@ -5259,9 +5285,24 @@ mono_marshal_get_stfld_remote_wrapper (MonoClass *klass)
 	emit_thread_interrupt_checkpoint (mb);
 
 	mono_mb_emit_byte (mb, CEE_RET);
-       
-	res = mono_mb_create_and_cache (cache, klass,
-									mb, sig, sig->param_count + 16);
+ 
+	mono_marshal_lock ();
+	res = cached;
+	mono_marshal_unlock ();
+	if (!res) {
+		MonoMethod *newm;
+		newm = mono_mb_create_method (mb, sig, 6);
+		mono_marshal_lock ();
+		res = cached;
+		if (!res) {
+			res = newm;
+			cached = res;
+			mono_marshal_unlock ();
+		} else {
+			mono_marshal_unlock ();
+			mono_free_method (newm);
+		}
+	}
 	mono_mb_free (mb);
 	
 	return res;
@@ -5334,6 +5375,8 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	mono_mb_emit_ldarg (mb, 1);
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldarg (mb, 4);
+	if (klass->valuetype)
+		mono_mb_emit_op (mb, CEE_BOX, klass);
 
 	mono_mb_emit_managed_call (mb, mono_marshal_get_stfld_remote_wrapper (klass), NULL);
 
@@ -8561,17 +8604,6 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
-	/* fixme: howto handle this ? */
-	if (sig->hasthis) {
-		if (this) {
-			/* FIXME: need a solution for the moving GC here */
-			mono_mb_emit_ptr (mb, this);
-		} else {
-			/* fixme: */
-			g_assert_not_reached ();
-		}
-	} 
-
 	/* we first do all conversions */
 	tmp_locals = alloca (sizeof (int) * sig->param_count);
 	for (i = 0; i < sig->param_count; i ++) {
@@ -8594,6 +8626,17 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	}
 
 	emit_thread_interrupt_checkpoint (mb);
+
+	/* fixme: howto handle this ? */
+	if (sig->hasthis) {
+		if (this) {
+			/* FIXME: need a solution for the moving GC here */
+			mono_mb_emit_ptr (mb, this);
+		} else {
+			/* fixme: */
+			g_assert_not_reached ();
+		}
+	} 
 
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
@@ -9136,7 +9179,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	res = mono_mb_create_method (mb, mono_method_signature (stoptr), 0);
+	res = mono_mb_create_method (mb, signature_no_pinvoke (stoptr), 0);
 	mono_mb_free (mb);
 
 	klass->marshal_info->str_to_ptr = res;
@@ -9163,11 +9206,18 @@ mono_marshal_get_ptr_to_struct (MonoClass *klass)
 	if (klass->marshal_info->ptr_to_str)
 		return klass->marshal_info->ptr_to_str;
 
-	if (!ptostr)
+	if (!ptostr) {
+		MonoMethodSignature *sig;
+
 		/* Create the signature corresponding to
 		 	  static void PtrToStructure (IntPtr ptr, object structure);
 		   defined in class/corlib/System.Runtime.InteropServices/Marshal.cs */
-		ptostr = mono_create_icall_signature ("void ptr object");
+		sig = mono_create_icall_signature ("void ptr object");
+		sig = signature_dup (mono_defaults.corlib, sig);
+		sig->pinvoke = 0;
+		mono_memory_barrier ();
+		ptostr = sig;
+	}
 
 	mb = mono_mb_new (klass, "PtrToStructure", MONO_WRAPPER_UNKNOWN);
 
@@ -9239,6 +9289,24 @@ mono_marshal_get_synchronized_wrapper (MonoMethod *method)
 	/* result */
 	if (!MONO_TYPE_IS_VOID (sig->ret))
 		ret_local = mono_mb_add_local (mb, sig->ret);
+
+	if (method->klass->valuetype && !(method->flags & MONO_METHOD_ATTR_STATIC)) {
+		mono_class_set_failure (method->klass, MONO_EXCEPTION_TYPE_LOAD, NULL);
+		/* This will throw the type load exception when the wrapper is compiled */
+		mono_mb_emit_byte (mb, CEE_LDNULL);
+		mono_mb_emit_op (mb, CEE_ISINST, method->klass);
+		mono_mb_emit_byte (mb, CEE_POP);
+
+		if (!MONO_TYPE_IS_VOID (sig->ret))
+			mono_mb_emit_ldloc (mb, ret_local);
+		mono_mb_emit_byte (mb, CEE_RET);
+
+		res = mono_mb_create_and_cache (cache, method,
+										mb, sig, sig->param_count + 16);
+		mono_mb_free (mb);
+
+		return res;
+	}
 
 	/* this */
 	this_local = mono_mb_add_local (mb, &mono_defaults.object_class->byval_arg);
@@ -11781,4 +11849,25 @@ cominterop_ccw_invoke (MonoCCWInterface* ccwe, guint32 dispIdMember,
 								   guint32 *puArgErr)
 {
 	return MONO_E_NOTIMPL;
+}
+
+void
+mono_marshal_find_nonzero_bit_offset (guint8 *buf, int len, int *byte_offset, guint8 *bitmask)
+{
+	int i;
+	guint8 byte;
+
+	for (i = 0; i < len; ++i)
+		if (buf [i])
+			break;
+
+	g_assert (i < len);
+
+	byte = buf [i];
+	while (byte && !(byte & 1))
+		byte >>= 1;
+	g_assert (byte == 1);
+
+	*byte_offset = i;
+	*bitmask = buf [i];
 }
