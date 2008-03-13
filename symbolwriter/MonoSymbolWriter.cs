@@ -262,7 +262,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			foreach (SourceMethod method in methods) {
 				method.SourceFile.Entry.DefineMethod (
 					method.Method.Token, method.ScopeVariables, method.Locals,
-					method.Lines, null, method.Blocks, method.RealMethodName,
+					method.Lines, method.Blocks, method.RealMethodName,
 					method.Start.Row, method.End.Row,
 					method.Method.NamespaceID);
 			}

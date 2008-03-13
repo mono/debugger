@@ -115,7 +115,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 		}
 
-		internal void Write (BinaryWriter bw)
+		internal void Write (BinaryWriter bw, int version)
 		{
 			bw.Write (TotalFileSize);
 			bw.Write (DataSectionOffset);
@@ -127,6 +127,10 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (MethodTableOffset);
 			bw.Write (MethodTableSize);
 			bw.Write (TypeCount);
+
+			if (version == CompatibilityVersion)
+				return;
+
 			bw.Write (AnonymousScopeCount);
 			bw.Write (AnonymousScopeTableOffset);
 			bw.Write (AnonymousScopeTableSize);
@@ -210,6 +214,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 	}
 
+	[Obsolete("LexicalBlockEntry has been replaced by CodeBlockEntry.")]
 	public class LexicalBlockEntry
 	{
 		public int Index;
@@ -325,10 +330,14 @@ namespace Mono.CompilerServices.SymbolWriter
 			this.BlockIndex = block;
 		}
 
-		internal LocalVariableEntry (MyBinaryReader reader)
+		internal LocalVariableEntry (MonoSymbolFile file, MyBinaryReader reader)
 		{
 			Index = reader.ReadLeb128 ();
 			Name = reader.ReadString ();
+			if (file.CompatibilityMode) {
+				int sig_length = reader.ReadLeb128 ();
+				reader.BaseStream.Position += sig_length;
+			}
 			BlockIndex = reader.ReadLeb128 ();
 		}
 
@@ -336,6 +345,8 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			bw.WriteLeb128 (Index);
 			bw.Write (Name);
+			if (file.CompatibilityMode)
+				bw.WriteLeb128 (0);
 			bw.WriteLeb128 (BlockIndex);
 		}
 
@@ -558,25 +569,26 @@ namespace Mono.CompilerServices.SymbolWriter
 			namespaces = new ArrayList ();
 		}
 
+		[Obsolete]
 		public void DefineMethod (string name, int token, LocalVariableEntry[] locals,
 					  LineNumberEntry[] lines, LexicalBlockEntry[] blocks,
 					  int start, int end, int namespace_id)
 		{
-			DefineMethod (token, null, locals, lines, blocks, null, null,
+			DefineMethod (token, null, locals, lines, null, null,
 				      start, end, namespace_id);
 		}
 
 		public void DefineMethod (int token, ScopeVariable[] scope_vars,
 					  LocalVariableEntry[] locals, LineNumberEntry[] lines,
-					  LexicalBlockEntry[] lexical, CodeBlockEntry[] blocks,
-					  string real_name, int start, int end, int namespace_id)
+					  CodeBlockEntry[] blocks, string real_name,
+					  int start, int end, int namespace_id)
 		{
 			if (!creating)
 				throw new InvalidOperationException ();
 
 			MethodEntry entry = new MethodEntry (
 				file, this, (int) token, scope_vars, locals, lines,
-				lexical, blocks, real_name, start, end, namespace_id);
+				blocks, real_name, start, end, namespace_id);
 
 			methods.Add (entry);
 			file.AddMethod (entry);
@@ -796,8 +808,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		int NameOffset;
 		int LocalVariableTableOffset;
 		int LineNumberTableOffset;
-		int NumLexicalBlocks;
-		int LexicalBlockTableOffset;
 
 		public readonly int NumCodeBlocks;
 		int CodeBlockTableOffset;
@@ -815,7 +825,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly LineNumberEntry[] LineNumbers;
 		public readonly int[] LocalTypeIndices;
 		public readonly LocalVariableEntry[] Locals;
-		public readonly LexicalBlockEntry[] LexicalBlocks;
 		public readonly CodeBlockEntry[] CodeBlocks;
 		public readonly ScopeVariable[] ScopeVariables;
 
@@ -842,8 +851,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			reader.ReadInt32 (); /* Compatibility with old file format */
 			LocalVariableTableOffset = reader.ReadInt32 ();
 			LineNumberTableOffset = reader.ReadInt32 ();
-			NumLexicalBlocks = reader.ReadInt32 ();
-			LexicalBlockTableOffset = reader.ReadInt32 ();
+			reader.ReadInt32 (); /* Compatibility with old file format */
+			reader.ReadInt32 (); /* Likewise. */
 			NamespaceID = reader.ReadInt32 ();
 			LocalNamesAmbiguous = reader.ReadInt32 () != 0;
 
@@ -880,18 +889,7 @@ namespace Mono.CompilerServices.SymbolWriter
 				Locals = new LocalVariableEntry [NumLocals];
 
 				for (int i = 0; i < NumLocals; i++)
-					Locals [i] = new LocalVariableEntry (reader);
-
-				reader.BaseStream.Position = old_pos;
-			}
-
-			if (LexicalBlockTableOffset != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = LexicalBlockTableOffset;
-
-				LexicalBlocks = new LexicalBlockEntry [NumLexicalBlocks];
-				for (int i = 0; i < NumLexicalBlocks; i++)
-					LexicalBlocks [i] = new LexicalBlockEntry (i, reader);
+					Locals [i] = new LocalVariableEntry (file, reader);
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -922,9 +920,8 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal MethodEntry (MonoSymbolFile file, SourceFileEntry source,
 				      int token, ScopeVariable[] scope_vars,
 				      LocalVariableEntry[] locals, LineNumberEntry[] lines,
-				      LexicalBlockEntry[] lexical, CodeBlockEntry[] blocks,
-				      string real_name, int start_row, int end_row,
-				      int namespace_id)
+				      CodeBlockEntry[] blocks, string real_name,
+				      int start_row, int end_row, int namespace_id)
 		{
 			this.SymbolFile = file;
 
@@ -936,8 +933,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			StartRow = start_row;
 			EndRow = end_row;
 			NamespaceID = namespace_id;
-			LexicalBlocks = lexical;
-			NumLexicalBlocks = LexicalBlocks != null ? LexicalBlocks.Length : 0;
 
 			LineNumbers = BuildLineNumberTable (lines);
 			NumLineNumbers = LineNumbers.Length;
@@ -1049,10 +1044,6 @@ namespace Mono.CompilerServices.SymbolWriter
 				LineNumbers [i].Write (bw);
 			file.LineNumberCount += NumLineNumbers;
 
-			LexicalBlockTableOffset = (int) bw.BaseStream.Position;
-			for (int i = 0; i < NumLexicalBlocks; i++)
-				LexicalBlocks [i].Write (bw);
-
 			CodeBlockTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumCodeBlocks; i++)
 				CodeBlocks [i].Write (bw);
@@ -1078,18 +1069,20 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (0); /* Compatibility with old file format. */
 			bw.Write (LocalVariableTableOffset);
 			bw.Write (LineNumberTableOffset);
-			bw.Write (NumLexicalBlocks);
-			bw.Write (LexicalBlockTableOffset);
+			bw.Write (0); /* Compatibility with old file format. */
+			bw.Write (0); /* Likewise. */
 			bw.Write (NamespaceID);
 			bw.Write (LocalNamesAmbiguous ? 1 : 0);
 
-			bw.Write (NumCodeBlocks);
-			bw.Write (CodeBlockTableOffset);
+			if (!file.CompatibilityMode) {
+				bw.Write (NumCodeBlocks);
+				bw.Write (CodeBlockTableOffset);
 
-			bw.Write (NumScopeVariables);
-			bw.Write (ScopeVariableTableOffset);
+				bw.Write (NumScopeVariables);
+				bw.Write (ScopeVariableTableOffset);
 
-			bw.Write (RealNameOffset);
+				bw.Write (RealNameOffset);
+			}
 
 			return new MethodSourceEntry (index, file_offset, StartRow, EndRow);
 		}

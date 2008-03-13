@@ -139,8 +139,13 @@ namespace Mono.CompilerServices.SymbolWriter
 		int last_source_index;
 		int last_namespace_index;
 
+#if COMPATIBILITY_MODE
+		public readonly int Version = OffsetTable.CompatibilityVersion;
+		public readonly bool CompatibilityMode = true;
+#else
 		public readonly int Version = OffsetTable.Version;
 		public readonly bool CompatibilityMode = false;
+#endif
 
 		public int NumLineNumbers;
 
@@ -219,7 +224,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			// Magic number and file version.
 			bw.Write (OffsetTable.Magic);
-			bw.Write (OffsetTable.Version);
+			bw.Write (Version);
 
 			bw.Write (guid.ToByteArray ());
 
@@ -228,7 +233,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			// writing the whole file, so we just reserve the space for it here.
 			//
 			long offset_table_offset = bw.BaseStream.Position;
-			ot.Write (bw);
+			ot.Write (bw, Version);
 
 			//
 			// Sort the methods according to their tokens and update their index.
@@ -288,7 +293,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			//
 			ot.TotalFileSize = (int) bw.BaseStream.Position;
 			bw.Seek ((int) offset_table_offset, SeekOrigin.Begin);
-			ot.Write (bw);
+			ot.Write (bw, Version);
 			bw.Seek (0, SeekOrigin.End);
 		}
 
