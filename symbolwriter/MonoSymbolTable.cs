@@ -859,6 +859,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			NamespaceID = reader.ReadInt32 ();
 			LocalNamesAmbiguous = reader.ReadInt32 () != 0;
 
+			LexicalBlocks = new LexicalBlockEntry [0];
+
 			if (!file.CompatibilityMode) {
 				NumCodeBlocks = reader.ReadInt32 ();
 				CodeBlockTableOffset = reader.ReadInt32 ();
@@ -972,8 +974,6 @@ namespace Mono.CompilerServices.SymbolWriter
 					local_names.Add (local.Name, local);
 				}
 			}
-
-			LexicalBlocks = new LexicalBlockEntry [0];
 
 			NumCodeBlocks = blocks != null ? blocks.Length : 0;
 			CodeBlocks = blocks;
