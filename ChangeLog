@@ -1,5 +1,9 @@
 2008-03-14  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Bump version number to 0.80.
+
+2008-03-14  Martin Baulig  <martin@ximian.com>
+
 	**** Merged the `terrania' branch of the Mono Debugger ****
 
 2008-03-13  Martin Baulig  <martin@ximian.com>
