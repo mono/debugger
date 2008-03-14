@@ -23,12 +23,12 @@ G_BEGIN_DECLS
 #define INFERIOR_REG_EDI(r)	r.edi
 #define INFERIOR_REG_EFLAGS(r)	r.eflags
 #define INFERIOR_REG_ESP(r)	r.esp
-#define INFERIOR_REG_FS(r)	r.fs
-#define INFERIOR_REG_ES(r)	r.es
-#define INFERIOR_REG_DS(r)	r.ds
-#define INFERIOR_REG_CS(r)	r.cs
-#define INFERIOR_REG_SS(r)	r.ss
-#define INFERIOR_REG_GS(r)	r.gs
+#define INFERIOR_REG_FS(r)	r.xfs
+#define INFERIOR_REG_ES(r)	r.xes
+#define INFERIOR_REG_DS(r)	r.xds
+#define INFERIOR_REG_CS(r)	r.xcs
+#define INFERIOR_REG_SS(r)	r.xss
+#define INFERIOR_REG_GS(r)	r.xgs
 
 G_END_DECLS
 
