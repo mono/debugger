@@ -1,5 +1,10 @@
 2008-03-14  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile): Make sure it's the correct file format.
+
+2008-03-14  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Bump version number to 0.80.
 
 2008-03-14  Martin Baulig  <martin@ximian.com>

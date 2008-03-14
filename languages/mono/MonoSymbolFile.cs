@@ -242,6 +242,10 @@ namespace Mono.Debugger.Languages.Mono
 				Report.Error ("Symbol file `{0}' does not match assembly `{1}'",
 					      mdb_file, ImageFile);
 				File = null;
+			} else if (File.CompatibilityMode) {
+				Report.Error ("Symbol file `{0}' has old pre-terrania file format",
+					      mdb_file);
+				File = null;
 			}
 
 			symtab = new MonoSymbolTable (this);
@@ -455,6 +459,9 @@ namespace Mono.Debugger.Languages.Mono
 			MonoMethodSource method = (MonoMethodSource) method_index_hash [index];
 			if (method != null)
 				return method;
+
+			if (File == null)
+				return null;
 
 			C.MethodEntry entry = File.GetMethod (index);
 			SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
@@ -687,6 +694,8 @@ namespace Mono.Debugger.Languages.Mono
 		protected MonoMethod GetMonoMethod (MethodHashEntry hash, int index, byte[] contents)
 		{
 			ensure_sources ();
+			if (File == null)
+				return null;
 			MonoMethod method = (MonoMethod) method_hash [hash];
 			if (method == null) {
 				MonoMethodSource source = GetMethodSource (index);
