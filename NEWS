@@ -1,3 +1,26 @@
+March 14th, 2007 - Martin Baulig
+--------------------------------
+
+Released version 0.80 "Terrania City" of the Mono Debugger :-)
+
+- This release adds support for C# 2.0 features such as generics,
+  anonymous methods and iterators.
+
+  * We can currently print fields in generic instances, print their
+    types and parent classes.
+
+  * Recursive generic types (see test/src/TestRecursiveGenerics.cs for
+    an example) are supported, but need more testing.
+
+  * There is some limited support for method invocations, but we can't
+    get their types yet.
+
+  * Support for anonymous methods and iterators should now be pretty
+    much complete; we can fully   debug them, access captured
+    variables etc.
+
+  * There are a few single-stepping improvements.
+
 December 16th, 2007 - Martin Baulig
 -----------------------------------
 
