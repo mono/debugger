@@ -1,5 +1,9 @@
 2008-03-14  Martin Baulig  <martin@ximian.com>
 
+	**** This branch is now dead, please use SVN HEAD ****
+
+2008-03-14  Martin Baulig  <martin@ximian.com>
+
 	* symbolwriter.cs
 	(SymbolWriter): Make this a public static class.
 
