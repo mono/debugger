@@ -216,7 +216,7 @@ namespace Mono.Debugger.Frontend
 	public abstract class DebuggerCommand : Command
 	{
 		protected bool Repeating;
-		private bool Error;
+		protected bool Error;
 		private ScriptingContext context;
 
 		public override object Execute (Engine e)

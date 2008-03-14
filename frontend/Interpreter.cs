@@ -70,7 +70,6 @@ namespace Mono.Debugger.Frontend
 		}
 
 		AppDomain debugger_domain;
-		static int domain_age = 0;
 
 		public void Exit ()
 		{

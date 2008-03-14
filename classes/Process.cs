@@ -19,8 +19,6 @@ namespace Mono.Debugger
 		int id = ++next_id;
 		static int next_id = 0;
 
-		static readonly string DirectorySeparatorStr = Path.DirectorySeparatorChar.ToString ();
-
 		internal Process (Debugger debugger, ProcessServant servant)
 		{
 			this.debugger = debugger;

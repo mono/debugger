@@ -1583,7 +1583,6 @@ namespace Mono.Debugger.Frontend
 	public class RegisterExpression : PointerExpression
 	{
 		string name;
-		int register = -1;
 
 		public RegisterExpression (string register)
 		{

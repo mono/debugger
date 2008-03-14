@@ -1527,7 +1527,6 @@ namespace Mono.Debugger.Languages.Mono
 			int start_row, end_row;
 			JitLineNumberEntry[] line_numbers;
 			C.MethodEntry entry;
-			MethodSource source;
 			Method method;
 			Hashtable namespaces;
 
@@ -1538,7 +1537,6 @@ namespace Mono.Debugger.Languages.Mono
 				this.method = method;
 				this.entry = entry;
 				this.line_numbers = jit_lnt;
-				this.source = source;
 				this.start_row = entry.StartRow;
 				this.end_row = entry.EndRow;
 			}
