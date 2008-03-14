@@ -35,7 +35,6 @@ namespace Mono.Debugger.Backend
 			command_mutex.DebugFlags = DebugFlags.Wait;
 
 			wait_event = new ST.AutoResetEvent (false);
-			idle_event = new ST.ManualResetEvent (false);
 			engine_event = new ST.ManualResetEvent (true);
 			ready_event = new ST.ManualResetEvent (false);
 
@@ -55,13 +54,11 @@ namespace Mono.Debugger.Backend
 			ready_event.WaitOne ();
 		}
 
-		ProcessStart start;
 		DebuggerServant backend;
 		DebuggerEventQueue event_queue;
 		ST.Thread inferior_thread;
 		ST.Thread wait_thread;
 		ST.ManualResetEvent ready_event;
-		ST.ManualResetEvent idle_event;
 		ST.ManualResetEvent engine_event;
 		ST.AutoResetEvent wait_event;
 		Hashtable thread_hash;
@@ -111,8 +108,6 @@ namespace Mono.Debugger.Backend
 
 		public ProcessServant OpenCoreFile (ProcessStart start, out Thread[] threads)
 		{
-			this.start = start;
-
 			CoreFile core = CoreFile.OpenCoreFile (this, start);
 			threads = core.GetThreads ();
 			return core;

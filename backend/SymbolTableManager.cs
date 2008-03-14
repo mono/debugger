@@ -12,12 +12,10 @@ namespace Mono.Debugger.Backend
 	// </summary>
 	internal class SymbolTableManager : DebuggerMarshalByRefObject, ISymbolTable, IDisposable
 	{
-		DebuggerSession session;
 		ArrayList symbol_files;
 
 		internal SymbolTableManager (DebuggerSession session)
 		{
-			this.session = session;
 			this.symbol_files = ArrayList.Synchronized (new ArrayList ());
 		}
 

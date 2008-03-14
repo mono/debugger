@@ -82,8 +82,6 @@ namespace Mono.Debugger.Backend
 						ProcessStart start)
 			: base (manager, process)
 		{
-			this.start = start;
-
 			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
 				      DebuggerWaitHandle.CurrentThread, this);
 
@@ -1942,7 +1940,6 @@ namespace Mono.Debugger.Backend
 
 		Inferior inferior;
 		Disassembler disassembler;
-		ProcessStart start;
 		Hashtable exception_handlers;
 		bool engine_stopped;
 		bool stop_requested;
@@ -2225,13 +2222,10 @@ namespace Mono.Debugger.Backend
 
 	protected class OperationActivateBreakpoints : Operation
 	{
-		MonoLanguageBackend language;
-
 		public OperationActivateBreakpoints (SingleSteppingEngine sse, Queue pending)
 			: base (sse, null)
 		{
 			this.pending_events = pending;
-			this.language = sse.process.MonoLanguage;
 		}
 
 		protected override void DoExecute ()
@@ -3481,7 +3475,6 @@ namespace Mono.Debugger.Backend
 		public readonly TargetAddress Trampoline;
 		public readonly TrampolineHandler TrampolineHandler;
 
-		TargetAddress address = TargetAddress.Null;
 		bool compiled;
 
 		public OperationMonoTrampoline (SingleSteppingEngine sse, Instruction call_site,

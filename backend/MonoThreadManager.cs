@@ -52,9 +52,7 @@ namespace Mono.Debugger.Backend
 
 	internal class MonoThreadManager
 	{
-		ThreadManager thread_manager;
 		MonoDebuggerInfo debugger_info;
-		Inferior inferior;
 
 		public static MonoThreadManager Initialize (ThreadManager thread_manager,
 							    Inferior inferior, bool attach)
@@ -73,9 +71,6 @@ namespace Mono.Debugger.Backend
 		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
 					     TargetAddress info, bool attach)
 		{
-			this.inferior = inferior;
-			this.thread_manager = thread_manager;
-
 			debugger_info = MonoDebuggerInfo.Create (inferior, info);
 
 			notification_bpt = new InitializeBreakpoint (this, debugger_info.Initialize);
