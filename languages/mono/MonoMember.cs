@@ -49,7 +49,6 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
-		MonoEnumType type;
 
 		public MonoEnumInfo (MonoEnumType type, TargetType field_type, int index, int pos,
 				     Cecil.FieldDefinition finfo)
@@ -58,7 +57,6 @@ namespace Mono.Debugger.Languages.Mono
 				pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
-			this.type = type;
 		}
 
 		public override object ConstValue {

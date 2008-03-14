@@ -7,14 +7,12 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoGenericInstanceObject : TargetGenericInstanceObject
 	{
 		new MonoGenericInstanceType type;
-		MonoClassInfo info;
 
 		public MonoGenericInstanceObject (MonoGenericInstanceType type,
 						  MonoClassInfo info, TargetLocation location)
 			: base (type, location)
 		{
 			this.type = type;
-			this.info = info;
 		}
 
 		internal override TargetStructObject GetParentObject (TargetMemoryAccess target)

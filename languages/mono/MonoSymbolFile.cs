@@ -184,7 +184,6 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable source_hash;
 		Hashtable source_file_hash;
 		Hashtable method_index_hash;
-		Hashtable function_hash;
 
 		internal MonoSymbolFile (MonoLanguageBackend language, ProcessServant process,
 					 TargetMemoryAccess memory, TargetAddress address)
@@ -203,7 +202,6 @@ namespace Mono.Debugger.Languages.Mono
 			range_hash = Hashtable.Synchronized (new Hashtable ());
 			type_hash = Hashtable.Synchronized (new Hashtable ());
 			class_entry_by_token = Hashtable.Synchronized (new Hashtable ());
-			function_hash = Hashtable.Synchronized (new Hashtable ());
 
 			Index = memory.ReadInteger (address);
 			address += int_size;
@@ -1362,7 +1360,6 @@ namespace Mono.Debugger.Languages.Mono
 			Method method;
 
 			TargetAddress start, end;
-			TargetAddress method_start, method_end;
 
 			protected MonoLineNumberTable (Method method)
 			{
@@ -1370,14 +1367,6 @@ namespace Mono.Debugger.Languages.Mono
 
 				this.start = method.StartAddress;
 				this.end = method.EndAddress;
-
-				if (method.HasMethodBounds) {
-					method_start = method.MethodStartAddress;
-					method_end = method.MethodEndAddress;
-				} else {
-					method_start = start;
-					method_end = end;
-				}
 			}
 
 			ObjectCache cache = null;

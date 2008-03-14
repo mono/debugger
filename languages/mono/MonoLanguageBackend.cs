@@ -218,13 +218,11 @@ namespace Mono.Debugger.Languages.Mono
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
 		bool initialized;
-		DebuggerMutex mutex;
 
 		public MonoLanguageBackend (ProcessServant process, MonoDebuggerInfo info)
 		{
 			this.process = process;
 			this.info = info;
-			mutex = new DebuggerMutex ("mono_mutex");
 			data_tables = new Hashtable ();
 		}
 
