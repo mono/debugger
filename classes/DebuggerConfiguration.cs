@@ -74,10 +74,12 @@ namespace Mono.Debugger
 
 		void LoadConfigurationFromStream (Stream stream)
 		{
-			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));
+			XmlReaderSettings settings = new XmlReaderSettings ();
 			Assembly ass = Assembly.GetExecutingAssembly ();
 			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
-				reader.Schemas.Add (null, new XmlTextReader (schema));
+				settings.Schemas.Add (null, new XmlTextReader (schema));
+
+			XmlReader reader = XmlReader.Create (stream, settings);
 
 			XPathDocument doc = new XPathDocument (reader);
 			XPathNavigator nav = doc.CreateNavigator ();

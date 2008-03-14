@@ -135,10 +135,12 @@ namespace Mono.Debugger
 					IExpressionParser parser)
 			: this (config, "main", parser)
 		{
-			XmlValidatingReader reader = new XmlValidatingReader (new XmlTextReader (stream));
+			XmlReaderSettings settings = new XmlReaderSettings ();
 			Assembly ass = Assembly.GetExecutingAssembly ();
 			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
-				reader.Schemas.Add (null, new XmlTextReader (schema));
+				settings.Schemas.Add (null, new XmlTextReader (schema));
+
+			XmlReader reader = XmlReader.Create (stream, settings);
 
 			saved_session = new XmlDocument ();
 			saved_session.Load (reader);
