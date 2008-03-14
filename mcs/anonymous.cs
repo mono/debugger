@@ -412,7 +412,7 @@ namespace Mono.CSharp {
 
 		public override void EmitType ()
 		{
-			EmitContext.DefineAnonymousScope (ID);
+			SymbolWriter.DefineAnonymousScope (ID);
 			foreach (CapturedLocal local in locals.Values)
 				local.EmitSymbolInfo ();
 
@@ -526,9 +526,8 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				if (CodeGen.SymbolWriter != null)
-					CodeGen.SymbolWriter.DefineCapturedParameter (
-						Scope.ID, Parameter.Name, Field.Name);
+				SymbolWriter.DefineCapturedParameter (
+					Scope.ID, Parameter.Name, Field.Name);
 			}
 
 			public override string ToString ()
@@ -549,9 +548,8 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				if (CodeGen.SymbolWriter != null)
-					CodeGen.SymbolWriter.DefineCapturedLocal (
-						Scope.ID, Local.Name, Field.Name);
+				SymbolWriter.DefineCapturedLocal (
+					Scope.ID, Local.Name, Field.Name);
 			}
 
 			public override string ToString ()
@@ -568,8 +566,7 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				if (CodeGen.SymbolWriter != null)
-					CodeGen.SymbolWriter.DefineCapturedThis (Scope.ID, Field.Name);
+				SymbolWriter.DefineCapturedThis (Scope.ID, Field.Name);
 			}
 		}
 
@@ -584,7 +581,7 @@ namespace Mono.CSharp {
 
 			public override void EmitSymbolInfo ()
 			{
-				EmitContext.DefineCapturedScope (Scope.ID, ChildScope.ID, Field.Name);
+				SymbolWriter.DefineCapturedScope (Scope.ID, ChildScope.ID, Field.Name);
 			}
 
 			public bool DefineMembers ()
@@ -691,7 +688,7 @@ namespace Mono.CSharp {
 				} else {
 					scope_instance = ec.ig.DeclareLocal (type);
 					if (!Scope.RootScope.IsIterator)
-						ec.DefineScopeVariable (Scope.ID, scope_instance);
+						SymbolWriter.DefineScopeVariable (Scope.ID, scope_instance);
 				}
 
 				foreach (CapturedLocal local in Scope.locals.Values) {
@@ -1731,8 +1728,7 @@ namespace Mono.CSharp {
 
 			public override void EmitExtraSymbolInfo ()
 			{
-				if (CodeGen.SymbolWriter != null)
-					CodeGen.SymbolWriter.SetRealMethodName (RealName);
+				SymbolWriter.SetRealMethodName (RealName);
 			}
 		}
 	}

@@ -2291,7 +2291,7 @@ namespace Mono.CSharp {
 
 			ec.CurrentBlock = this;
 
-			bool emit_debug_info = (CodeGen.SymbolWriter != null);
+			bool emit_debug_info = SymbolWriter.HasSymbolWriter;
 			bool is_lexical_block = (this == Explicit) && (Parent != null) &&
 				((flags & Flags.IsIterator) == 0);
 
@@ -2302,9 +2302,8 @@ namespace Mono.CSharp {
 					ec.BeginScope ();
 			}
 
-			if ((scope_init != null) || (scope_initializers != null)) {
-				ec.BeginCompilerGeneratedBlock ();
-			}
+			if ((scope_init != null) || (scope_initializers != null))
+				SymbolWriter.OpenCompilerGeneratedBlock (ec.ig);
 
 			if (scope_init != null) {
 				ec.OmitDebuggingInfo = true;
@@ -2318,9 +2317,8 @@ namespace Mono.CSharp {
 				ec.OmitDebuggingInfo = omit_debug_info;
 			}
 
-			if ((scope_init != null) || (scope_initializers != null)) {
-				ec.EndCompilerGeneratedBlock ();
-			}
+			if ((scope_init != null) || (scope_initializers != null))
+				SymbolWriter.CloseCompilerGeneratedBlock (ec.ig);
 
 			ec.Mark (StartLocation, true);
 			DoEmit (ec);
@@ -2835,7 +2833,7 @@ namespace Mono.CSharp {
 		protected override void EmitSymbolInfo (EmitContext ec)
 		{
 			if ((AnonymousContainer != null) && (AnonymousContainer.Scope != null))
-				EmitContext.DefineScopeVariable (AnonymousContainer.Scope.ID);
+				SymbolWriter.DefineScopeVariable (AnonymousContainer.Scope.ID);
 
 			base.EmitSymbolInfo (ec);
 		}

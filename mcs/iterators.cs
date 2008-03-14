@@ -663,18 +663,15 @@ namespace Mono.CSharp {
 			resume_points.Add (entry_point);
 			entry_point.Define (ig);
 
-			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.StartIteratorBody (ec.ig);
+			SymbolWriter.StartIteratorBody (ec.ig);
 
 			original_block.Emit (ec);
 
-			if (CodeGen.SymbolWriter != null) 
-				CodeGen.SymbolWriter.EndIteratorBody (ec.ig);
+			SymbolWriter.EndIteratorBody (ec.ig);
 
 			EmitYieldBreak (ig);
 
-			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.StartIteratorDispatcher (ec.ig);
+			SymbolWriter.StartIteratorDispatcher (ec.ig);
 
 			ig.MarkLabel (dispatcher);
 
@@ -686,13 +683,11 @@ namespace Mono.CSharp {
 			ig.Emit (OpCodes.Ldfld, IteratorHost.PC.FieldBuilder);
 			ig.Emit (OpCodes.Switch, labels);
 
-			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.EndIteratorDispatcher (ec.ig);
+			SymbolWriter.EndIteratorDispatcher (ec.ig);
 
 			Label end = ig.DefineLabel ();
 
-			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.StartIteratorDispatcher (ec.ig);
+			SymbolWriter.StartIteratorDispatcher (ec.ig);
 
 			ig.MarkLabel (move_next_error);
   			ig.Emit (OpCodes.Ldc_I4_0); 
@@ -704,8 +699,7 @@ namespace Mono.CSharp {
 			ig.Emit (OpCodes.Stloc, retval);
 			ig.Emit (OpCodes.Leave, end);
 
-			if (CodeGen.SymbolWriter != null)
-				CodeGen.SymbolWriter.EndIteratorDispatcher (ec.ig);
+			SymbolWriter.EndIteratorDispatcher (ec.ig);
 
 			ig.BeginFaultBlock ();
 
