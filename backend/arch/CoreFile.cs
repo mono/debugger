@@ -12,7 +12,6 @@ namespace Mono.Debugger.Backend
 		TargetMemoryInfo info;
 		Bfd bfd, core_bfd;
 		string core_file;
-		string application;
 		ArrayList threads;
 
 		MonoDebuggerInfo debugger_info;
@@ -34,7 +33,6 @@ namespace Mono.Debugger.Backend
 			BfdContainer.SetupInferior (info, bfd);
 
 			core_file = start.CoreFile;
-			application = bfd.FileName;
 
 			core_bfd = bfd.OpenCoreFile (core_file);
 
@@ -205,7 +203,7 @@ namespace Mono.Debugger.Backend
 			public readonly CoreFile CoreFile;
 			public readonly Thread Thread;
 			public readonly Registers Registers;
-			public readonly CoreFileTargetAccess TargetAccess;
+			public readonly TargetMemoryAccess TargetAccess;
 			
 			Backtrace current_backtrace;
 			StackFrame current_frame;
@@ -608,7 +606,7 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			public class CoreFileTargetAccess : TargetMemoryAccess
+			protected class CoreFileTargetAccess : TargetMemoryAccess
 			{
 				public readonly CoreFileThread Thread;
 

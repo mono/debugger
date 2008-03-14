@@ -1056,16 +1056,12 @@ namespace Mono.Debugger.Backend
 				public int start_file;
 				public int start_line, end_line;
 
-				bool creating;
-				DwarfBinaryReader reader;
 				int const_add_pc_range;
 
 				public StatementMachine (LineNumberEngine engine, long offset,
 							 long end_offset)
 				{
 					this.engine = engine;
-					this.reader = this.engine.reader;
-					this.creating = true;
 					this.start_offset = offset;
 					this.end_offset = end_offset;
 					this.st_address = 0;
@@ -2757,7 +2753,6 @@ namespace Mono.Debugger.Backend
 			DieSubprogram subprog;
 			byte[] location_block;
 			long loclist_offset;
-			bool has_loclist;
 			bool is_byref;
 
 			public DwarfLocation (DieSubprogram subprog, Attribute attribute, bool is_byref)
@@ -2777,7 +2772,6 @@ namespace Mono.Debugger.Backend
 				case DwarfForm.data4:
 				case DwarfForm.data8:
 					loclist_offset = (long) attribute.Data;
-					has_loclist = true;
 					break;
 				default:
 					throw new InternalError  ();
@@ -2883,15 +2877,12 @@ namespace Mono.Debugger.Backend
 
 		protected class DwarfTargetVariable : TargetVariable
 		{
-			readonly DieSubprogram subprog;
 			readonly string name;
 			readonly TargetType type;
 			readonly DwarfLocation location;
-			// int offset;
 
 			protected DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type)
 			{
-				this.subprog = subprog;
 				this.name = name;
 				this.type = type;
 			}
@@ -3815,7 +3806,6 @@ namespace Mono.Debugger.Backend
 						  bool is_local)
 				: base (reader, comp_unit, abbrev)
 			{
-				this.target_info = reader.TargetMemoryInfo;
 				this.subprog = subprog;
 
 				if (subprog != null) {
@@ -3841,7 +3831,6 @@ namespace Mono.Debugger.Backend
 
 			Attribute location_attr;
 			TargetVariable variable;
-			TargetMemoryInfo target_info;
 			DieSubprogram subprog;
 			bool resolved;
 
