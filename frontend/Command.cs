@@ -2233,6 +2233,8 @@ namespace Mono.Debugger.Frontend
 					       "frame pointer at {2}.", CurrentFrame.Level,
 					       CurrentFrame.StackPointer,
 					       CurrentFrame.FrameAddress);
+				if (CurrentFrame.SourceAddress != null)
+					context.Print ("Source: {0}", CurrentFrame.SourceAddress);
 				return null;
 			}
 		}
@@ -3115,22 +3117,6 @@ namespace Mono.Debugger.Frontend
 			set { group = value; }
 		}
 
-		bool IsSubclassOf (Thread target, TargetStructType type,
-				   TargetType parent)
-		{
-			while (type != null) {
-				if (type == parent)
-					return true;
-
-				if (!type.HasParent)
-					return false;
-
-				type = type.GetParentType (target);
-			}
-
-			return false;
-		}
-
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			Language language = CurrentFrame.Language;
@@ -3150,7 +3136,7 @@ namespace Mono.Debugger.Frontend
 				return false;
 
 			type = expr.EvaluateType (context) as TargetClassType;
-			if (!IsSubclassOf (context.CurrentThread, type, exception_type))
+			if (!language.IsExceptionType (type))
 				throw new ScriptingException ("Type `{0}' is not an exception type.", expr.Name);
 
 			if (tgroup == null)

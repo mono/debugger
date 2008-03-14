@@ -10,7 +10,8 @@ namespace Mono.Debugger.Languages.Native
 		int const_value;
 
 		public NativeFieldInfo (TargetType type, string name, int index, int offset)
-			: base (type, name, index, false, 0, offset, false)
+			: base (type, name, index, false, TargetMemberAccessibility.Public,
+				0, offset, false)
 		{ }
 
 		public NativeFieldInfo (TargetType type, string name, int index, int offset,
@@ -24,7 +25,8 @@ namespace Mono.Debugger.Languages.Native
 
 		public NativeFieldInfo (TargetType type, string name, int index,
 					bool has_const_value, int const_value)
-			: base (type, name, index, false, 0, 0, has_const_value)
+			: base (type, name, index, false, TargetMemberAccessibility.Public,
+				0, 0, has_const_value)
 		{
 			this.const_value = const_value;
 		}
@@ -62,7 +64,7 @@ namespace Mono.Debugger.Languages.Native
 		public new readonly NativeFunctionType FunctionType;
 
 		public NativeMethodInfo (NativeFunctionType type, string name, int index)
-			: base (type, name, index, false, name)
+			: base (type, name, index, false, TargetMemberAccessibility.Public, name)
 		{
 			this.FunctionType = type;
 		}
@@ -97,6 +99,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return this; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public override bool HasParent {
 			get { return false; }
 		}
@@ -113,6 +119,14 @@ namespace Mono.Debugger.Languages.Native
 		internal void SetFields (NativeFieldInfo[] fields)
 		{
 			this.fields = fields;
+		}
+
+		public override bool IsCompilerGenerated {
+			get { return false; }
+		}
+
+		public override string BaseName {
+			get { return name; }
 		}
 
 		public override string Name {

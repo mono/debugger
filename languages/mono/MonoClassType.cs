@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using System.Collections;
+using System.Collections.Generic;
 using C = Mono.CompilerServices.SymbolWriter;
 using Cecil = Mono.Cecil;
 
@@ -10,7 +11,26 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal delegate void ClassInitHandler (TargetMemoryAccess target, TargetAddress klass);
 
-	internal class MonoClassType : TargetClassType
+	internal interface IMonoStructType
+	{
+		MonoSymbolFile File {
+			get;
+		}
+
+		TargetStructType Type {
+			get;
+		}
+
+		MonoClassInfo ClassInfo {
+			get; set;
+		}
+
+		MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail);
+
+		MonoFunctionType LookupFunction (Cecil.MethodDefinition mdef);
+	}
+
+	internal class MonoClassType : TargetClassType, IMonoStructType
 	{
 		MonoFieldInfo[] fields;
 		MonoMethodInfo[] methods;
@@ -20,11 +40,15 @@ namespace Mono.Debugger.Languages.Mono
 
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
-		MonoClassType parent_type;
+		IMonoStructType parent_type;
 		MonoClassInfo class_info;
 
+		bool resolved;
 		Hashtable load_handlers;
 		int load_handler_id;
+
+		bool is_compiler_generated;
+		string full_name;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage, TargetObjectKind.Class)
@@ -32,10 +56,23 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 			this.file = file;
 
-			if (type.BaseType != null) {
-				TargetType parent = file.MonoLanguage.LookupMonoType (type.BaseType);
-				if (parent != null)
-					parent_type = (MonoClassType) parent.ClassType;
+			if (type.GenericParameters.Count > 0) {
+				StringBuilder sb = new StringBuilder (type.FullName);
+				sb.Append ('<');
+				for (int i = 0; i < type.GenericParameters.Count; i++) {
+					if (i > 0)
+						sb.Append (',');
+					sb.Append (type.GenericParameters [i].Name);
+				}
+				sb.Append ('>');
+				full_name = sb.ToString ();
+			} else
+				full_name = type.FullName;
+
+			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
+				string cname = cattr.Constructor.DeclaringType.FullName;
+				if (cname == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+					is_compiler_generated = true;
 			}
 		}
 
@@ -46,12 +83,24 @@ namespace Mono.Debugger.Languages.Mono
 			this.class_info = class_info;
 		}
 
+		public override string BaseName {
+			get { return type.FullName; }
+		}
+
+		TargetStructType IMonoStructType.Type {
+			get { return this; }
+		}
+
 		public Cecil.TypeDefinition Type {
 			get { return type; }
 		}
 
+		public override bool IsCompilerGenerated {
+			get { return is_compiler_generated; }
+		}
+
 		public override string Name {
-			get { return type.FullName; }
+			get { return full_name; }
 		}
 
 		public override bool IsByRef {
@@ -71,16 +120,20 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasParent {
-			get { return parent_type != null; }
+			get { return type.BaseType != null; }
+		}
+
+		public override bool ContainsGenericParameters {
+			get { return type.GenericParameters.Count != 0; }
 		}
 
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)
 		{
-			return parent_type;
-		}
+			if (parent_type != null)
+				return parent_type.Type;
 
-		internal MonoClassType MonoParentType {
-			get { return parent_type; }
+			ResolveClass (target, true);
+			return parent_type != null ? parent_type.Type : null;
 		}
 
 		public override Module Module {
@@ -224,31 +277,39 @@ namespace Mono.Debugger.Languages.Mono
 			return ResolveClass (target, false);
 		}
 
-		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
+		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
 		{
-			if (class_info != null)
+			if (resolved)
 				return class_info;
 
-			if (parent_type != null) {
+			if (class_info == null) {
+				int token = (int) type.MetadataToken.ToUInt ();
+				class_info = file.LookupClassInfo (target, token);
+			}
+
+			if (class_info == null) {
+				if (!fail)
+					return null;
+
+				throw new TargetException (TargetError.ClassNotInitialized,
+							   "Class `{0}' not initialized yet.", Name);
+			}
+
+			if (class_info.HasParent) {
+				MonoClassInfo parent_info = class_info.GetParent (target);
+				parent_type = (IMonoStructType) parent_info.Type;
+				parent_type.ClassInfo = parent_info;
 				if (parent_type.ResolveClass (target, fail) == null)
 					return null;
 			}
 
-			class_info = file.LookupClassInfo (target, (int) type.MetadataToken.ToUInt ());
-			if (class_info != null)
-				return class_info;
-
-			if (fail)
-				throw new TargetException (TargetError.ClassNotInitialized,
-							   "Class `{0}' not initialized yet.", Name);
-
-			return null;
+			resolved = true;
+			return class_info;
 		}
 
-		internal MonoClassInfo ClassResolved (TargetMemoryAccess target, TargetAddress klass)
-		{
-			class_info = File.MonoLanguage.ReadClassInfo (target, klass);
-			return class_info;
+		MonoClassInfo IMonoStructType.ClassInfo {
+			get { return class_info; }
+			set { class_info = value; }
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target,
@@ -258,8 +319,8 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (this, class_info, location);
 		}
 
-		internal MonoClassObject GetCurrentObject (TargetMemoryAccess target,
-							   TargetLocation location)
+		internal TargetStructObject GetCurrentObject (TargetMemoryAccess target,
+							      TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
 			// dereferencing it once gives us the vtable, dereferencing it
@@ -276,7 +337,23 @@ namespace Mono.Debugger.Languages.Mono
 				location = location.GetLocationAtOffset (
 					2 * target.TargetMemoryInfo.TargetAddressSize);
 
-			return (MonoClassObject) current.GetObject (target, location);
+			return (TargetStructObject) current.GetObject (target, location);
+		}
+
+		Dictionary<int,MonoFunctionType> function_hash;
+
+		public MonoFunctionType LookupFunction (Cecil.MethodDefinition mdef)
+		{
+			int token = MonoDebuggerSupport.GetMethodToken (mdef);
+			if (function_hash == null)
+				function_hash = new Dictionary<int,MonoFunctionType> ();
+			if (!function_hash.ContainsKey (token)) {
+				MonoFunctionType function = new MonoFunctionType (this, mdef);
+				function_hash.Add (token, function);
+				return function;
+			}
+
+			return function_hash [token];
 		}
 	}
 }

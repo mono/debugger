@@ -42,7 +42,6 @@ namespace Mono.Debugger.Frontend.CSharp
 %token STRING
 %token HASH
 %token AT
-%token DOLLAR
 %token DOT
 %token DOTDOT
 %token NOT
@@ -86,6 +85,8 @@ namespace Mono.Debugger.Frontend.CSharp
 %token LENGTH
 %token LOWER
 %token UPPER
+
+%token PARENT
 
 %token NEW
 %token THIS
@@ -230,9 +231,26 @@ expression
 	  {
 		$$ = new ConditionalExpression ((Expression)$1, (Expression)$3, (Expression)$5);
 	  }
+	| PARENT opt_parent_level OPAREN expression CPAREN
+	  {
+		$$ = new ParentExpression ((Expression) $4, (int) $2);
+	  }
 	| OPAREN expression CPAREN
 	  {
 		$$ = $2;
+	  }
+	;
+
+opt_parent_level
+	: /* empty */
+	  {
+		$$ = 0;
+	  }
+	| PLUS INT
+	  {
+		if ((int) $2 < 1)
+			throw new ScriptingException ("syntax error");
+		$$ = (int) $2;
 	  }
 	;
 
@@ -280,9 +298,14 @@ member_name
 	  {
 		$$ = (string) $1;
 	  }
-	| IDENTIFIER BACKTICK INT
+	| IDENTIFIER BACKTICK
 	  {
-		$$ = String.Format ("{0}`{1}", (string) $1, (int) $3);
+		lexer.ReadGenericArity = true;
+	  }
+	  INT
+	  {
+		lexer.ReadGenericArity = false;
+		$$ = String.Format ("{0}`{1}", (string) $1, (int) $4);
 	  }
 	;
 

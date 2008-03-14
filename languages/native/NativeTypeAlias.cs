@@ -54,6 +54,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public string TargetName {
 			get { return target_name; }
 		}

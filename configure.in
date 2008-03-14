@@ -173,7 +173,7 @@ if test x$server_only != xyes; then
    AC_SUBST(monodoc_prefix)
 
    AC_PATH_PROG(MONO, mono)
-   AC_PATH_PROG(MCS, mcs)
+   AC_PATH_PROG(MCS, gmcs)
    if test "x$MONO" = "x" ; then
       AC_MSG_ERROR([Can't find "mono" in your PATH])
    fi
@@ -181,9 +181,9 @@ if test x$server_only != xyes; then
       AC_MSG_ERROR([Can't find "mcs" in your PATH])
    fi
 
-   AC_PATH_PROG(NUNIT_CONSOLE, nunit-console)
+   AC_PATH_PROG(NUNIT_CONSOLE, nunit-console2)
    if test "x$NUNIT_CONSOLE" = "x" ; then
-     AC_MSG_ERROR([Can't find "nunit-console" in your PATH])
+     AC_MSG_ERROR([Can't find "nunit-console2" in your PATH])
    fi
 fi
 

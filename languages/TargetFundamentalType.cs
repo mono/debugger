@@ -42,6 +42,10 @@ namespace Mono.Debugger.Languages
 			get { return name; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public override bool IsByRef {
 			get {
 				switch (fundamental_kind) {

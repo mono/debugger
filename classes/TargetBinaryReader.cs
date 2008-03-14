@@ -32,6 +32,16 @@ namespace Mono.Debugger
 			return blob.Contents[pos++];
 		}
 
+		public sbyte PeekSByte ()
+		{
+			return (sbyte) blob.Contents[pos];
+		}
+
+		public sbyte ReadSByte ()
+		{
+			return (sbyte) blob.Contents[pos++];
+		}
+
 		public short PeekInt16 (long pos)
 		{
 			if (swap)

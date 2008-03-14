@@ -169,8 +169,8 @@ namespace Mono.Debugger.Backend
 
 			if (has_thread_lock) {
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} while being thread-locked ({2})",
-					      this, cevent, stop_event);
+					      "{0} received event {1} at {3} while being thread-locked ({2})",
+					      this, cevent, stop_event, inferior.CurrentFrame);
 				if (stop_event != null)
 					throw new InternalError ();
 				stop_event = cevent;
@@ -523,6 +523,11 @@ namespace Mono.Debugger.Backend
 		{
 			this.lmf_address = lmf_address;
 			this.extended_notifications_addr = extended_notifications_addr;
+		}
+
+		internal void SetMainReturnAddress (TargetAddress main_ret)
+		{
+			this.main_retaddr = main_ret + inferior.TargetAddressSize;
 		}
 
 		internal void OnManagedThreadExited ()
@@ -1052,8 +1057,18 @@ namespace Mono.Debugger.Backend
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			registers = inferior.GetRegisters ();
 
+			if (!main_retaddr.IsNull && (iframe.StackPointer >= main_retaddr))
+				return new OperationRun (this, false, operation.Result);
+
 			// Compute the current stack frame.
 			if ((current_method != null) && current_method.HasLineNumbers) {
+				Block block = current_method.LookupBlock (inferior, address);
+				if (block != null) {
+					if (block.BlockType == Block.Type.IteratorDispatcher)
+						return new OperationStepIterator (
+							this, current_method, operation.Result);
+				}
+
 				SourceAddress source = current_method.LineNumberTable.Lookup (address);
 
 				if (!same_method) {
@@ -1120,6 +1135,10 @@ namespace Mono.Debugger.Backend
 			if (method.WrapperType != WrapperType.None)
 				return new OperationWrapper (this, method, operation.Result);
 
+			Block block = method.LookupBlock (inferior, address);
+			if (method.IsIterator)
+				return new OperationStepIterator (this, method, operation.Result);
+
 			Language language = method.Module.Language;
 			if (source == null)
 				return null;
@@ -1132,6 +1151,13 @@ namespace Mono.Debugger.Backend
 				return new OperationStep (this, new StepFrame (
 					address - source.SourceOffset, address + source.SourceRange,
 					null, language, StepMode.SourceLine), operation.Result);
+			}
+
+			LineNumberTable lnt = method.LineNumberTable;
+			if (lnt.HasMethodBounds && (address < lnt.MethodStartAddress)) {
+				return new OperationStep (this, new StepFrame (
+					method.StartAddress, lnt.MethodStartAddress, null,
+					null, StepMode.Finish), operation.Result);
 			} else if (method.HasMethodBounds && (address < method.MethodStartAddress)) {
 				// Do not stop inside a method's prologue code, but stop
 				// immediately behind it (on the first instruction of the
@@ -1297,6 +1323,9 @@ namespace Mono.Debugger.Backend
 					return false;
 			}
 
+			if (!method.HasSource || method.IsWrapper)
+				return false;
+
 			LineNumberTable lnt = method.LineNumberTable;
 			if (lnt == null)
 				return false;
@@ -1433,11 +1462,18 @@ namespace Mono.Debugger.Backend
 
 		internal void ReleaseThreadLock (Inferior.ChildEvent cevent)
 		{
+			Report.Debug (DebugFlags.Threads,
+				      "{0} releasing thread lock #1: {1} {2} {3}",
+				      this, cevent, inferior.CurrentFrame,
+				      current_operation);
+
 			// The target stopped before we were able to send the SIGSTOP,
 			// but we haven't processed this event yet.
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 			    (cevent.Argument == 0)) {
-				do_continue ();
+				if (current_operation != null)
+					current_operation.ResumeOperation ();
+
 				return;
 			}
 
@@ -1445,15 +1481,6 @@ namespace Mono.Debugger.Backend
 				do_continue ();
 				return;
 			}
-
-#if FIXME
-			bool resume_target;
-			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
-				if (resume_target)
-					inferior.Continue ();
-				return;
-			}
-#endif
 
 			ProcessEvent (cevent);
 		}
@@ -1487,7 +1514,7 @@ namespace Mono.Debugger.Backend
 
 				MonoFunctionType main = mono.MainMethod;
 
-				MethodSource source = main.MonoClass.File.GetMethodByToken (main.Token);
+				MethodSource source = main.SymbolFile.GetMethodByToken (main.Token);
 				if (source != null) {
 					SourceLocation location = new SourceLocation (source);
 
@@ -1594,7 +1621,7 @@ namespace Mono.Debugger.Backend
 		}
 
 		public override void RuntimeInvoke (TargetFunctionType function,
-						    TargetClassObject object_argument,
+						    TargetStructObject object_argument,
 						    TargetObject[] param_objects,
 						    bool is_virtual, bool debug,
 						    RuntimeInvokeResult result)
@@ -1933,6 +1960,7 @@ namespace Mono.Debugger.Backend
 		TargetAddress lmf_address = TargetAddress.Null;
 		TargetAddress end_stack_address = TargetAddress.Null;
 		TargetAddress extended_notifications_addr = TargetAddress.Null;
+		TargetAddress main_retaddr = TargetAddress.Null;
 
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject
@@ -1999,7 +2027,8 @@ namespace Mono.Debugger.Backend
 		{
 			StartFrame = inferior.GetCurrentFrame (true);
 			Report.Debug (DebugFlags.SSE, "{0} executing {1} at {2}",
-				      sse, this, StartFrame);
+				      sse, this, StartFrame != null ?
+				      StartFrame.Address : TargetAddress.Null);
 			DoExecute ();
 		}
 
@@ -2010,7 +2039,7 @@ namespace Mono.Debugger.Backend
 			sse.Stop ();
 		}
 
-		protected virtual bool ResumeOperation ()
+		public virtual bool ResumeOperation ()
 		{
 			return false;
 		}
@@ -2051,6 +2080,12 @@ namespace Mono.Debugger.Backend
 		protected virtual EventResult ProcessEvent (Inferior.ChildEvent cevent,
 							    out TargetEventArgs args)
 		{
+			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
+				args = null;
+				if (ResumeOperation ())
+					return EventResult.Running;
+			}
+
 			if (child != null) {
 				EventResult result = child.ProcessEvent (cevent, out args);
 
@@ -2277,14 +2312,14 @@ namespace Mono.Debugger.Backend
 			MonoLanguageBackend mono = sse.process.MonoLanguage;
 
 			MonoFunctionType func = (MonoFunctionType) Handle.Function;
-			TargetAddress image = func.MonoClass.File.MonoImage;
+			TargetAddress image = func.SymbolFile.MonoImage;
 			int index = MonoLanguageBackend.GetUniqueID ();
 
 			mono.RegisterMethodLoadHandler (index, Handle.MethodLoaded);
 
 			inferior.CallMethod (
 				info.InsertSourceBreakpoint, image.Address,
-				func.Token, index, func.MonoClass.Name, ID);
+				func.Token, index, func.DeclaringType.BaseName, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -2576,10 +2611,13 @@ namespace Mono.Debugger.Backend
 							       out TargetEventArgs args)
 		{
 			args = null;
-			if (DoProcessEvent ())
-				return EventResult.Completed;
+			bool completed;
+			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED)
+				completed = !ResumeOperation ();
 			else
-				return EventResult.Running;
+				completed = DoProcessEvent ();
+
+			return completed ? EventResult.Completed : EventResult.Running;
 		}
 
 		protected abstract bool DoProcessEvent ();
@@ -2662,7 +2700,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		protected override bool ResumeOperation ()
+		public override bool ResumeOperation ()
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
@@ -2711,6 +2749,8 @@ namespace Mono.Debugger.Backend
 
 			if (method.WrapperType == WrapperType.DelegateInvoke)
 				return true;
+			else if (method.WrapperType == WrapperType.Alloc)
+				return false;
 
 			if (StepMode == StepMode.SourceLine)
 				return sse.MethodHasSource (method);
@@ -2862,7 +2902,7 @@ namespace Mono.Debugger.Backend
 				sse.do_continue ();
 		}
 
-		protected override bool ResumeOperation ()
+		public override bool ResumeOperation ()
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
@@ -2930,7 +2970,7 @@ namespace Mono.Debugger.Backend
 			sse.do_next_native ();
 		}
 
-		protected override bool ResumeOperation ()
+		public override bool ResumeOperation ()
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
@@ -2996,7 +3036,12 @@ namespace Mono.Debugger.Backend
 		public override void Execute ()
 		{
 			stack_data = sse.save_stack (ID);
-			base.Execute ();
+			try {
+				base.Execute ();
+			} catch {
+				RestoreStack ();
+				throw;
+			}
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3101,7 +3146,7 @@ namespace Mono.Debugger.Backend
 
 		public OperationRuntimeInvoke (SingleSteppingEngine sse,
 					       TargetFunctionType function,
-					       TargetClassObject instance,
+					       TargetStructObject instance,
 					       TargetObject[] param_objects,
 					       bool is_virtual, bool debug,
 					       RuntimeInvokeResult result)
@@ -3123,17 +3168,23 @@ namespace Mono.Debugger.Backend
 		{
 			language = sse.process.MonoLanguage;
 
-			class_info = Function.MonoClass.ResolveClass (inferior, false);
+			class_info = Function.ResolveClass (inferior, false);
 			if (class_info == null) {
-				TargetAddress image = Function.MonoClass.File.MonoImage;
-				int token = Function.MonoClass.Token;
+				MonoClassType klass = Function.DeclaringType as MonoClassType;
+				if (klass == null)
+					throw new TargetException (TargetError.ClassNotInitialized,
+								   "Class `{0}' not initialized yet.",
+								   Function.DeclaringType.Name);
+
+				TargetAddress image = Function.SymbolFile.MonoImage;
+				int token = klass.Token;
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
 
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.LookupClass, image.Address, 0, 0,
-					Function.MonoClass.Name, ID);
+					Function.DeclaringType.Name, ID);
 				return;
 			}
 
@@ -3228,7 +3279,9 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.SSE,
 					      "{0} rti resolved class: {1}", sse, klass);
 
-				class_info = Function.MonoClass.ClassResolved (inferior, klass);
+				class_info = language.ReadClassInfo (inferior, klass);
+				((IMonoStructType) Function.DeclaringType).ClassInfo = class_info;
+				((IMonoStructType) Function.DeclaringType).ResolveClass (inferior, false);
 				stage = Stage.ResolvedClass;
 				do_execute ();
 				return EventResult.Running;
@@ -3732,6 +3785,56 @@ namespace Mono.Debugger.Backend
 		protected override bool TrampolineHandler (Method method)
 		{
 			return false;
+		}
+	}
+
+	protected class OperationStepIterator : OperationStepBase
+	{
+		Method method;
+
+		public OperationStepIterator (SingleSteppingEngine sse,
+					      Method method, CommandResult result)
+			: base (sse, result)
+		{
+			this.method = method;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			sse.do_next_native ();
+		}
+
+		protected override bool DoProcessEvent ()
+		{
+			TargetAddress current_frame = inferior.CurrentFrame;
+
+			Report.Debug (DebugFlags.SSE, "{0} iterator stopped at {1} ({2}:{3})",
+				      sse, current_frame, method.StartAddress, method.EndAddress);
+			if ((current_frame < method.StartAddress) || (current_frame > method.EndAddress))
+				return true;
+
+			Block block = method.LookupBlock (inferior, current_frame);
+			Report.Debug (DebugFlags.SSE, "{0} iterator block: {1}", sse, block);
+			if ((block != null) && block.IsIteratorBody)
+				return true;
+
+			sse.do_next_native ();
+			return false;
+		}
+
+		protected override bool TrampolineHandler (Method method)
+		{
+			if (method == null)
+				return false;
+
+			if (method.WrapperType == WrapperType.DelegateInvoke)
+				return true;
+
+			return sse.MethodHasSource (method);
 		}
 	}
 

@@ -333,6 +333,30 @@ namespace Mono.Debugger.Languages.Mono
 						   MonoMetadataInfo.MonoDefaultsExceptionOffset);
 		}
 
+		public MonoMethodSignature GetMethodSignature (MonoLanguageBackend mono,
+							       TargetMemoryAccess memory,
+							       TargetAddress signature)
+		{
+			int count = memory.ReadInteger (signature + 4) & 0x0000ffff;
+
+			int offset = memory.TargetAddressSize == 8 ? 16 : 12;
+			TargetAddress ret = memory.ReadAddress (signature + offset);
+
+			TargetType ret_type = mono.ReadType (memory, ret);
+			if (count == 0)
+				return new MonoMethodSignature (ret_type, new TargetType [0]);
+
+			offset += memory.TargetAddressSize;
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (signature + offset, count * memory.TargetAddressSize));
+
+			TargetType[] param_types = new TargetType [count];
+			for (int i = 0; i < count; i++)
+				param_types [i] = mono.ReadType (memory, reader.ReadAddress ());
+
+			return new MonoMethodSignature (ret_type, param_types);
+		}
+
 		protected class MetadataInfo
 		{
 			public readonly int MonoDefaultsSize;
@@ -462,6 +486,97 @@ namespace Mono.Debugger.Languages.Mono
 
 				MonoVTableKlassOffset = reader.ReadInt32 ();
 				MonoVTableVTableOffset = reader.ReadInt32 ();
+			}
+		}
+
+		//
+		// The following API is new in `terrania'.
+		//
+
+		public GenericClassInfo GetGenericClass (TargetMemoryAccess memory,
+							 TargetAddress address)
+		{
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+
+			TargetReader reader = new TargetReader (memory.ReadMemory (address, 5 * addr_size));
+			TargetAddress container = reader.ReadAddress ();
+			TargetAddress class_inst = reader.ReadAddress ();
+			TargetAddress method_inst = reader.ReadAddress ();
+			reader.ReadAddress ();
+			TargetAddress cached_class = reader.ReadAddress ();
+
+			int inst_data = memory.ReadInteger (class_inst + 4);
+			TargetAddress inst_argv = memory.ReadAddress (class_inst + 8);
+
+			int type_argc = inst_data & 0x3fffff;
+
+			TargetReader argv_reader = new TargetReader (
+				memory.ReadMemory (inst_argv, type_argc * addr_size));
+
+			TargetAddress[] type_args = new TargetAddress [type_argc];
+			for (int i = 0; i < type_argc; i++)
+				type_args [i] = argv_reader.ReadAddress ();
+
+			TargetAddress cached_class_ptr = address + 4 * addr_size;
+
+			return new GenericClassInfo (container, type_args, cached_class_ptr,
+						     cached_class);
+		}
+
+		public class GenericClassInfo
+		{
+			/* `MonoClass *' of the container class. */
+			public readonly TargetAddress ContainerClass;
+
+			/* `MonoType *' array of the instantiation. */
+			public readonly TargetAddress[] TypeArguments;
+
+			/* `MonoClass *' of this instantiation, if present. */
+			public readonly TargetAddress KlassPtr;
+			public readonly TargetAddress Klass;
+
+			public GenericClassInfo (TargetAddress container, TargetAddress[] type_args,
+						 TargetAddress klass_ptr, TargetAddress klass)
+			{
+				this.ContainerClass = container;
+				this.TypeArguments = type_args;
+				this.KlassPtr = klass_ptr;
+				this.Klass = klass;
+			}
+		}
+
+		public GenericParamInfo GetGenericParameter (TargetMemoryAccess memory,
+							     TargetAddress address)
+		{
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address, 4 * addr_size + 4));
+			TargetAddress container = reader.ReadAddress ();
+			TargetAddress klass = reader.ReadAddress ();
+			TargetAddress name_addr = reader.ReadAddress ();
+			int flags = reader.BinaryReader.ReadInt16 ();
+			int pos = reader.BinaryReader.ReadInt16 ();
+
+			string name = memory.ReadString (name_addr);
+
+			return new GenericParamInfo (container, klass, name, pos);
+		}
+
+		public class GenericParamInfo
+		{
+			public readonly TargetAddress Container;
+			public readonly TargetAddress Klass;
+			public readonly string Name;
+			public readonly int Position;
+
+			public GenericParamInfo (TargetAddress container, TargetAddress klass,
+						 string name, int pos)
+			{
+				this.Container = container;
+				this.Klass = klass;
+				this.Name = name;
+				this.Position = pos;
 			}
 		}
 	}

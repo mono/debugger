@@ -13,7 +13,11 @@ namespace Mono.Debugger.Languages.Native
 			this.fields = fields != null ? fields : new NativeFieldInfo [0];
 		}
 
-		public override TargetClassType Type {
+		public override TargetType RealType {
+			get { return type; }
+		}
+
+		public override TargetStructType Type {
 			get { return type; }
 		}
 
@@ -76,6 +80,16 @@ namespace Mono.Debugger.Languages.Native
 
 			// field.Type.SetObject (field_loc, value);
 			throw new NotImplementedException ();
+		}
+
+		public override TargetPropertyInfo[] GetProperties (Thread thread)
+		{
+			return new TargetPropertyInfo [0];
+		}
+
+		public override TargetMethodInfo[] GetMethods (Thread target)
+		{
+			return new TargetMethodInfo [0];
 		}
 
 #if FIXME

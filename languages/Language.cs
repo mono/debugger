@@ -73,6 +73,7 @@ namespace Mono.Debugger.Languages
 		public abstract TargetObject CreateNullObject (Thread target, TargetType type);
 
 		public abstract TargetPointerType CreatePointerType (TargetType type);
+
+		public abstract bool IsExceptionType (TargetClassType type);
 	}
 }
-

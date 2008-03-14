@@ -37,6 +37,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return element_type; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return element_type.ContainsGenericParameters; }
+		}
+
 		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new MonoPointerObject (this, location);

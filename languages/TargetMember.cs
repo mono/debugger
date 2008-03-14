@@ -2,6 +2,14 @@ using System;
 
 namespace Mono.Debugger.Languages
 {
+	public enum TargetMemberAccessibility
+	{
+		Public,
+		Protected,
+		Internal,
+		Private
+	}
+
 	[Serializable]
 	public abstract class TargetMemberInfo : DebuggerMarshalByRefObject
 	{
@@ -10,12 +18,16 @@ namespace Mono.Debugger.Languages
 		public readonly int Index;
 		public readonly bool IsStatic;
 
-		protected TargetMemberInfo (TargetType type, string name, int index, bool is_static)
+		public readonly TargetMemberAccessibility Accessibility;
+
+		protected TargetMemberInfo (TargetType type, string name, int index, bool is_static,
+					    TargetMemberAccessibility accessibility)
 		{
 			this.Type = type;
 			this.Name = name;
 			this.Index = index;
 			this.IsStatic = is_static;
+			this.Accessibility = accessibility;
 		}
 
 		protected abstract string MyToString ();
@@ -33,8 +45,9 @@ namespace Mono.Debugger.Languages
 		public readonly bool HasConstValue;
 
 		protected TargetEnumInfo (TargetType type, string name, int index, bool is_static,
-					  int position, int offset, bool has_const_value)
-			: base (type, name, index, is_static)
+					  TargetMemberAccessibility accessibility, int position,
+					  int offset, bool has_const_value)
+			: base (type, name, index, is_static, accessibility)
 		{
 			this.HasConstValue = has_const_value;
 		}
@@ -57,8 +70,9 @@ namespace Mono.Debugger.Languages
 		public readonly bool HasConstValue;
 
 		protected TargetFieldInfo (TargetType type, string name, int index, bool is_static,
-					   int position, int offset, bool has_const_value)
-			: base (type, name, index, is_static)
+					   TargetMemberAccessibility accessibility, int position,
+					   int offset, bool has_const_value)
+			: base (type, name, index, is_static, accessibility)
 		{
 			this.Position = position;
 			this.Offset = offset;
@@ -82,9 +96,9 @@ namespace Mono.Debugger.Languages
 		public readonly TargetFunctionType Setter;
 
 		protected TargetPropertyInfo (TargetType type, string name, int index,
-					      bool is_static, TargetFunctionType getter,
-					      TargetFunctionType setter)
-			: base (type, name, index, is_static)
+					      bool is_static, TargetMemberAccessibility accessibility,
+					      TargetFunctionType getter, TargetFunctionType setter)
+			: base (type, name, index, is_static, accessibility)
 		{
 			this.Getter = getter;
 			this.Setter = setter;
@@ -112,9 +126,10 @@ namespace Mono.Debugger.Languages
 		public readonly TargetFunctionType Raise;
 
 		protected TargetEventInfo (TargetType type, string name, int index,
-					   bool is_static, TargetFunctionType add,
-					   TargetFunctionType remove, TargetFunctionType raise)
-			: base (type, name, index, is_static)
+					   bool is_static, TargetMemberAccessibility accessibility,
+					   TargetFunctionType add, TargetFunctionType remove,
+					   TargetFunctionType raise)
+			: base (type, name, index, is_static, accessibility)
 		{
 			this.Add = add;
 			this.Remove = remove;
@@ -134,8 +149,9 @@ namespace Mono.Debugger.Languages
 		public new readonly TargetFunctionType Type;
 
 		protected TargetMethodInfo (TargetFunctionType type, string name, int index,
-					    bool is_static, string full_name)
-			: base (type, name, index, is_static)
+					    bool is_static, TargetMemberAccessibility accessibility,
+					    string full_name)
+			: base (type, name, index, is_static, accessibility)
 		{
 			this.Type = type;
 			this.FullName = full_name;

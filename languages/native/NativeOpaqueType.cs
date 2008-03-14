@@ -40,6 +40,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new NativeOpaqueObject (this, location);

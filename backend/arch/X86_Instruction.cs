@@ -302,10 +302,10 @@ namespace Mono.Debugger.Architectures
 				DecodeModRM (reader);
 
 			if ((opcode >= 0x70) && (opcode <= 0x7f)) {
-				CallTarget = Address + reader.ReadByte () + 2;
+				CallTarget = Address + reader.BinaryReader.ReadSByte () + 2;
 				type = Type.ConditionalJump;
 			} else if ((opcode >= 0xe0) && (opcode <= 0xe3)) {
-				CallTarget = Address + reader.ReadByte () + 2;
+				CallTarget = Address + reader.BinaryReader.ReadSByte () + 2;
 				type = Type.ConditionalJump;
 			} else if ((opcode == 0xe8) || (opcode == 0xe9)) {
 				if ((RexPrefix & X86_REX_Prefix.REX_W) != 0) {
@@ -324,7 +324,7 @@ namespace Mono.Debugger.Architectures
 				}
 				type = (opcode == 0xe8) ? Type.Call : Type.Jump;
 			} else if (opcode == 0xeb) {
-				CallTarget = Address + reader.ReadByte () + 2;
+				CallTarget = Address + reader.BinaryReader.ReadSByte () + 2;
 				type = Type.Jump;
 			} else if (opcode == 0xc3) {
 				type = Type.Ret;
@@ -421,7 +421,7 @@ namespace Mono.Debugger.Architectures
 			if (ModRM.Mod == 0) {
 				dereference_addr = true;
 			} else if (ModRM.Mod == 1) {
-				displacement = reader.ReadByte ();
+				displacement = reader.BinaryReader.ReadSByte ();
 				dereference_addr = true;
 			} else if (ModRM.Mod == 2) {
 				displacement = reader.BinaryReader.ReadInt32 ();

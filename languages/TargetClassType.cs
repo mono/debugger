@@ -6,6 +6,10 @@ namespace Mono.Debugger.Languages
 			: base (language, kind)
 		{ }
 
+		public abstract bool IsCompilerGenerated {
+			get;
+		}
+
 		public abstract TargetFieldInfo[] Fields {
 			get;
 		}

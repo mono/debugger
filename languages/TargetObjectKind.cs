@@ -11,6 +11,8 @@ namespace Mono.Debugger.Languages
 		Pointer,
 		Object,
 		Function,
-		Alias
+		Alias,
+		GenericParameter,
+		GenericInstance
 	}
 }

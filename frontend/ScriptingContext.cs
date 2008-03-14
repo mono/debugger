@@ -171,15 +171,17 @@ namespace Mono.Debugger.Frontend
 			interpreter.Print (obj);
 		}
 
-		string MonoObjectToString (TargetClassObject obj)
+		string MonoObjectToString (TargetStructObject obj)
 		{
-			TargetClassObject cobj = obj;
+			TargetStructObject cobj = obj;
 
 		again:
-			TargetClassType ctype = cobj.Type;
+			TargetStructType ctype = cobj.Type;
 			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
 				return null;
-			TargetMethodInfo[] methods = ctype.Methods;
+
+			TargetClass klass = ctype.GetClass (CurrentThread);
+			TargetMethodInfo[] methods = klass.GetMethods (CurrentThread);
 			foreach (TargetMethodInfo minfo in methods) {
 				if (minfo.Name != "ToString")
 					continue;
@@ -202,7 +204,7 @@ namespace Mono.Debugger.Frontend
 				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
 			}
 
-			cobj = cobj.GetParentObject (CurrentThread);
+			cobj = cobj.GetParentObject (CurrentThread) as TargetStructObject;
 			if (cobj != null)
 				goto again;
 
@@ -212,7 +214,7 @@ namespace Mono.Debugger.Frontend
 		string DoFormatObject (TargetObject obj, DisplayFormat format)
 		{
 			if (format == DisplayFormat.Object) {
-				TargetClassObject cobj = obj as TargetClassObject;
+				TargetStructObject cobj = obj as TargetStructObject;
 				if (cobj != null) {
 					string formatted = MonoObjectToString (cobj);
 					if (formatted != null)

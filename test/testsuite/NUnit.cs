@@ -1,10 +1,12 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using SD = System.Diagnostics;
 using ST = System.Threading;
 using System.Text;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -196,6 +198,9 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
+		Dictionary<string,int> lines;
+		Dictionary<string,int> automatic_breakpoints;
+
 		static TestSuite ()
 		{
 			Report.Initialize ();
@@ -219,6 +224,54 @@ namespace Mono.Debugger.Tests
 
 			inferior_stdout = new LineReader ();
 			inferior_stderr = new LineReader ();
+		}
+
+		const string mdb_line_re = @"//\s+@MDB (LINE|BREAKPOINT):\s+(.*)$";
+
+		protected void ReadSourceFile ()
+		{
+			lines = new Dictionary<string,int> ();
+			automatic_breakpoints = new Dictionary<string,int> ();
+
+			using (StreamReader reader = new StreamReader (FileName)) {
+				string text;
+				int line = 0;
+				while ((text = reader.ReadLine ()) != null) {
+					line++;
+
+					Match match = Regex.Match (text, mdb_line_re);
+					if (!match.Success)
+						continue;
+
+					string name = match.Groups [2].Value;
+					lines.Add (name, line);
+					if (match.Groups [1].Value == "BREAKPOINT")
+						automatic_breakpoints [name] = AssertBreakpoint (line);
+				}
+			}
+		}
+
+		protected void AssertHitBreakpoint (Thread thread, string name, string function)
+		{
+			AssertHitBreakpoint (thread, automatic_breakpoints [name],
+					     function, GetLine (name));
+		}
+
+		protected void AssertStopped (Thread thread, string name, string function)
+		{
+			AssertStopped (thread, function, GetLine (name));
+		}
+
+		protected int GetBreakpoint (string text)
+		{
+			return automatic_breakpoints [text];
+		}
+
+		protected int GetLine (string text)
+		{
+			if (!lines.ContainsKey (text))
+				throw new InternalError ("No such line: {0}", text);
+			return lines [text];
 		}
 
 		public NUnitInterpreter Interpreter {
@@ -270,6 +323,8 @@ namespace Mono.Debugger.Tests
 
 			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
+
+			ReadSourceFile ();
 		}
 
 		[TestFixtureTearDown]
@@ -621,6 +676,28 @@ namespace Mono.Debugger.Tests
 			if (text != exp_result)
 				Assert.Fail ("Expression `{0}' evaluated to `{1}', but expected `{2}'.",
 					     expression, text, exp_result);
+		}
+
+		public void AssertPrintRegex (Thread thread, DisplayFormat format,
+					      string expression, string exp_re)
+		{
+			string text = null;
+			try {
+				ScriptingContext context = GetContext (thread);
+
+				object obj = EvaluateExpression (context, expression);
+				text = context.FormatObject (obj, format);
+			} catch (AssertionException) {
+				throw;
+			} catch (Exception ex) {
+				Assert.Fail ("Failed to print expression `{0}': {1}",
+					     expression, ex);
+			}
+
+			Match match = Regex.Match (text, exp_re);
+			if (!match.Success)
+				Assert.Fail ("Expression `{0}' evaluated to `{1}', but expected `{2}'.",
+					     expression, text, exp_re);
 		}
 
 		public void AssertPrintException (Thread thread, string expression, string exp_result)

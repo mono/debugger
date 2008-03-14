@@ -1,3 +1,7 @@
+2008-03-14  Martin Baulig  <martin@ximian.com>
+
+	**** Merged the `terrania' branch of the Mono Debugger ****
+
 2008-03-13  Martin Baulig  <martin@ximian.com>
 
 	Fix #324557.
@@ -6,6 +10,328 @@
 	<sys/user.h> instead which defines `struct user_fpregs_struct'.
 
 	* backend/server/i386-arch.h: Likewise.
+
+2008-03-10  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(JitCodeBlockEntry): Removed.
+	(MonoSymbolFile.MonoCodeBlock): Read the code blocks directly from
+	the symbol file and compute their start and end addresses from the
+	line number table.
+
+2008-03-05  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetMethodSignature.cs: New file.
+	(TargetMethodSignature): New public abstract class.
+
+	* languages/TargetType.cs
+	(TargetType.ContainsGenericParameters): New public abstract
+	property.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.GetSignature): New public abstract method.
+
+	* languages/TargetMember.cs
+	(TargetMemberAccessibility): New public enum.
+	(TargetMemberInfo.Accessibility): New public readonly field.
+
+	* frontend/Style.cs
+	(Style.FormatStruct): Sort the members by their accessibility.
+
+2008-02-28  Martin Baulig  <martin@ximian.com>
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.MonoObjectToString): Operate on
+	`TargetStructObject' so we can also print generic instances.
+
+2008-02-27  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Store the return stack
+	pointer in `NotificationType.ReachedMain'.
+
+2008-02-27  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClass.cs
+	(TargetClass.GetProperties): New public abstract method.
+
+2008-02-26  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassType.cs
+	(IMonoStructType.LookupFunction): New interface method.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.LookupFunction): Moved into `IMonoStructType'.
+	With generics, we can't just use the `token' as a key, so we need
+	a separate hash table per class.
+
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
+	* README.terrania: Updated.
+
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClassType.cs
+	(TargetClassType.IsCompilerGenerated): New public abstract property.
+
+	* frontend/Expression.cs
+	(Expression.DoEvaluateObject): Don't use the result of
+	TargetStructObject.GetCurrentObject() if it's a compiler generated
+	class; this should fix iterators and print the `IEnumerable<T>'
+	interface instead.
+
+2008-02-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.GetMethodName): Use a format which is compatible
+	with mcs's GetSignatureForError().
+
+2008-02-18  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoMethod.do_read_variables): Support a captured 'this'.
+
+2008-02-18  Martin Baulig  <martin@ximian.com>
+
+	Improved iterator support and added some tests.
+
+	* test/{src|testsuite}/TestIterator.cs: New tests.
+
+2008-02-18  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Instruction_I386.cs
+	(Instruction_I386.GetMonoTrampoline): Support short 0x6a `push' insns.
+
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* classes/Block.cs: New file.
+	(Block): New public abstract class.
+	(Method.IsIterator): New internal abstract property.
+	(Method.LookupBlock): New internal abstract method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.frame_changed): Use the new Method.LookupBlock() to check
+	which code block we're in and start an `OperationStepIterator' if
+	necessary.	
+	(SSE.OperationStepIterator): New operation.
+
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* test/{testsuite|src}/TestSSE.cs: New tests.
+
+	* test/{testsuite|src}/TestAnonymous.cs: Added new tests here.
+
+2008-02-15  Martin Baulig  <martin@ximian.com>
+
+	* classes/TargetBinaryReader.cs
+	(TargetBinaryReader): Added ReadSByte() and PeekSByte().
+
+	* backend/arch/X86_Instruction.cs: Use ReadSByte(), not ReadByte().
+
+2008-02-08  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetStructType.cs
+	(TargetStructType.BaseName): New public abstract property.  This
+	is the full name (including namespace and generic arity) without
+	the type arguments.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.RegisterMethodLoadHandler): Use
+	`TargetStructType.BaseName' to insert the breakpoint.
+
+	* test/{testsuite|src}/TestAnonymous.cs: Added new tests here.
+
+2008-02-06  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/NUnit.cs: Also scan for `// @MDB BREAKPOINT: name'
+	patterns and automatically insert breakpoints.
+
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
+	HEADS UP: We now require Mono 1.9 with some local changes; see
+	          README.terrania for details.
+
+	* README.terrania: New file.
+
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/CapturedVariable.cs: New file.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoMethod.do_read_variables): Support captured variables and
+	parameters.	
+
+2008-02-02  Martin Baulig  <martin@ximian.com>
+
+	* test/testuite/NUnit.cs: Read the source files and scan for
+	`// @MDB LINE: name' patterns; automatically compute the line
+	numbers.
+
+	* test/{testsuite|src}/TestAnonymous.cs: New test.
+
+2008-01-30  Martin Baulig  <martin@ximian.com>
+
+	* classes/Method.cs
+	(WrapperType): Updated.
+	(Method.IsWrapper): New public abstract property.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStep.TrampolineHandler): Improved; don't step into
+	compiler-generated .ctor's.
+
+2008-01-30  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClass.cs
+	(TargetClass.GetMethods): New public abstract method.
+	(TargetClass.FindMember): New public virtual method.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType.DeclaringType): Changed type from
+	`TargetClassType' into `TargetStructType'.
+
+	* languages/mono/MonoFunctionType.cs
+	(MonoFunctionType.MonoClass): Removed.
+	(MonoFunctionType.SymbolFile): New internal property.
+	(MonoFunctionType.ResolveClass): New internal method.
+
+	* languages/mono/MonoMember.cs
+	(MonoMethodInfo): Operate on `IMonoStructType'.
+
+	* frontend/Expression.cs
+	(StructAccessExpression.FindMember): Search both in the
+	`TargetClass' and in the `TargetClassType'.
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
+	* test/{testsuite|src}/TestRecursiveGenerics.cs: New test.
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
+	Fix the parent type madness.
+
+	* languages/TargetClass.cs
+	(TargetClass.Type): Changed type into `TargetStructType'.
+	(TargetClass.RealType): New public property.
+
+	* languages/Language.cs
+	(Language.IsExceptionType): New public method.
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.ReadClassInfo): Create `info.type' here.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.LookupMonoClass): Fix the madness; just call
+	ReadClassInfo() here and return its `RealType'.
+
+	* languages/mono/MonoClassType.cs
+	(IMonoStructType.ClassInfo): New property.
+	(IMonoStructType.ResolveClass): Removed the `MonoClassInfo' argument.
+	(MonoClassType.ResolveClass): Maintain a `resolved' flag instead
+	of checking whether `class_info' is not null; the `class_info' may
+	now be set via `IMonoStructType.ClassInfo' without actually
+	resolving the class.  This was necessary to support recursive
+	generic types like "class Test : Foo<Test>".
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
+	* classes/Thread.cs
+	(Thread.RuntimeInvoke): Changed type of `object_argument' from
+	`TargetClassObject' -> `TargetStructObject'.
+
+	* backend/ThreadServant.cs
+	(ThreadServant.RuntimeInvoke): Changed type of `object_argument'
+	from `TargetClassObject' -> `TargetStructObject'.
+
+	* frontend/Interpreter.cs
+	(Interpreter.RuntimeInvoke): Changed type of `object_argument' from
+	`TargetClassObject' -> `TargetStructObject'.
+
+2008-01-25  Martin Baulig  <martin@ximian.com>
+
+	* frontend/CSharpTokenizer.cs
+	(CSharpTokenizer.ReadGenericArity): New public property.
+	(CSharpTokenizer.ReadDigit): If `ReadGenericArity' is true, only
+	read an integer and stop on the first non-digit.  This is
+	necessary to properly tokenize "Foo`1.Data".
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
+	Added `$parent (expr)' and `$parent+N (expr)' syntax.
+
+	* frontend/CSharpExpressionParser.jay
+	(PARENT): New token.
+	(PARENT opt_parent_level OPAREN expression CPAREN): New rule.
+
+	* frontend/CSharpTokenizer.cs: Add `$parent' => `Token.PARENT'.
+
+	* frontend/Expression.cs
+	(ParentExpression): New expression.
+
+	* test/testsuite/TestSimpleGenerics.cs: Added tests.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.GetMethodName): Include type parameters.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetStructObject.cs
+	(TargetStructObject.GetParentObject): Provide the `Thread'
+	implementation here; made the `TargetMemoryAccess' version
+	abstract.
+	(TargetStructObject.GetCurrentObject): Moved here from
+	`TargetClassObject'; changed return type into
+	`TargetStructObject'; provide the `Thread' implementation here;
+	made the `TargetMemoryAccess' version abstract.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
+	* classes/Method.cs
+	(Method.GetDeclaringType): Return a `TargetStructType' instead of
+	a `TargetClassType'.
+
+2008-01-23  Martin Baulig  <martin@ximian.com>
+
+	* test/{testsuite|src}/TestSimpleGenerics.cs: New test.
+
+2008-01-19  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Use gmcs, not mcs.
+
+2008-01-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassType.cs
+	(IMonoStructType): New internal interface.
+	(MonoClassType): Make things work if our parent class is a
+	`MonoGenericInstanceType' and not a `MonoClassType'.
+
+2008-01-17  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetObjectKind.cs
+	(TargetObjectKind): Added `GenericParameter' and `GenericInstance'.
+
+	* languages/TargetGenericParameterType.cs: New file.
+	(TargetGenericParameterType): New type.
+
+	* languages/TargetGenericInstanceType.cs: New file.
+	(TargetGenericInstanceType): New type.
+
+	* languages/TargetGenericInstanceObject.cs: New file.
+	(TargetGenericInstanceObject): New file.
+
+	* languages/TargetStructObject.cs
+	(TargetStructObject.GetParentObject): Moved here from
+	`TargetClassObject' and changed return type into
+	`TargetStructType'.
+
+	* languages/TargetClassObject.cs
+	(TargetClassObject.GetParentObject): Moved into
+	`TargetStructObject' and changed return type into
+	`TargetStructType'.
+
+	* languages/mono/MonoGenericInstanceObject.cs: New file.
+	* languages/mono/MonoGenericParameterType.cs: New file.
 
 2007-12-18  Martin Baulig  <martin@ximian.com>
 

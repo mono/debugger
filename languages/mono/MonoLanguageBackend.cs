@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
 
@@ -203,8 +204,7 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable assembly_hash;
 		Hashtable assembly_by_name;
 		Hashtable class_hash;
-		Hashtable class_info_by_addr;
-		Hashtable class_info_by_type;
+		Dictionary<TargetAddress,MonoClassInfo> class_info_by_addr;
 		MonoSymbolFile corlib;
 		MonoBuiltinTypeInfo builtin_types;
 		MonoFunctionType main_method;
@@ -325,6 +325,27 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoPointerType (element_type);
 			}
 
+			Cecil.GenericParameter gen_param = type as Cecil.GenericParameter;
+			if (gen_param != null)
+				return new MonoGenericParameterType (this, gen_param.Name);
+
+			Cecil.GenericInstanceType gen_inst = type as Cecil.GenericInstanceType;
+			if (gen_inst != null) {
+				TargetType[] args = new TargetType [gen_inst.GenericArguments.Count];
+				for (int i = 0; i < args.Length; i++) {
+					args [i] = LookupMonoType (gen_inst.GenericArguments [i]);
+					if (args [i] == null)
+						return null;
+				}
+
+				MonoClassType container = LookupMonoType (gen_inst.ElementType)
+					as MonoClassType;
+				if (container == null)
+					return null;
+
+				return new MonoGenericInstanceType (container, args, TargetAddress.Null);
+			}
+
 			int rank = 0;
 
 			string full_name = type.FullName;
@@ -362,27 +383,26 @@ namespace Mono.Debugger.Languages.Mono
 
 		public TargetType LookupMonoClass (TargetMemoryAccess target, TargetAddress klass_address)
 		{
-			TargetType type = (TargetType) class_hash [klass_address];
-			if (type != null)
-				return type;
+			return ReadClassInfo (target, klass_address).RealType;
+		}
 
-			MonoClassInfo info;
+		public override bool IsExceptionType (TargetClassType ctype)
+		{
+			MonoClassType mono_type = ctype as MonoClassType;
+			if (mono_type == null)
+				return false;
 
-			try {
-				info = MonoClassInfo.ReadClassInfo (this, target, klass_address);
-				if (info == null)
-					return null;
+			Cecil.TypeDefinition exc_type = builtin_types.ExceptionType.Type;
+			Cecil.TypeDefinition type = mono_type.Type;
 
-				type = info.SymbolFile.LookupMonoType (info.CecilType);
-			} catch {
-				return null;
+			while (type != null) {
+				if (type == exc_type)
+					return true;
+
+				type = type.BaseType as Cecil.TypeDefinition;
 			}
 
-			if (type == null)
-				return null;
-
-			class_hash.Add (klass_address, type);
-			return type;
+			return false;
 		}
 
 		public MonoSymbolFile GetImage (TargetAddress address)
@@ -413,8 +433,7 @@ namespace Mono.Debugger.Languages.Mono
 			assembly_hash = new Hashtable ();
 			assembly_by_name = new Hashtable ();
 			class_hash = new Hashtable ();
-			class_info_by_addr = new Hashtable ();
-			class_info_by_type = new Hashtable ();
+			class_info_by_addr = new Dictionary<TargetAddress,MonoClassInfo> ();
 		}
 
 		void reached_main (TargetMemoryAccess target, TargetAddress method)
@@ -458,6 +477,14 @@ namespace Mono.Debugger.Languages.Mono
 			return target_type;
 		}
 
+		public TargetStructType ReadStructType (TargetMemoryAccess memory, TargetAddress address)
+		{
+			TargetAddress data = MonoRuntime.MonoTypeGetData (memory, address);
+			MonoTypeEnum type = MonoRuntime.MonoTypeGetType (memory, address);
+
+			return (TargetStructType) ReadType (memory, type, data);
+		}
+
 		TargetType ReadType (TargetMemoryAccess memory, MonoTypeEnum type, TargetAddress data)
 		{
 			switch (type) {
@@ -493,6 +520,8 @@ namespace Mono.Debugger.Languages.Mono
 				return BuiltinTypes.IntType;
 			case MonoTypeEnum.MONO_TYPE_U:
 				return BuiltinTypes.UIntType;
+			case MonoTypeEnum.MONO_TYPE_VOID:
+				return BuiltinTypes.VoidType;
 
 			case MonoTypeEnum.MONO_TYPE_PTR: {
 				TargetType target_type = ReadType (memory, data);
@@ -522,10 +551,44 @@ namespace Mono.Debugger.Languages.Mono
 				return new MonoArrayType (etype, rank);
 			}
 
+			case MonoTypeEnum.MONO_TYPE_GENERICINST:
+				return ReadGenericClass (memory, data);
+
+			case MonoTypeEnum.MONO_TYPE_VAR:
+			case MonoTypeEnum.MONO_TYPE_MVAR: {
+				MonoRuntime.GenericParamInfo info = MonoRuntime.GetGenericParameter (
+					memory, data);
+
+				return new MonoGenericParameterType (this, info.Name);
+			}
+
 			default:
 				Report.Error ("UNKNOWN TYPE: {0}", type);
 				return null;
 			}
+		}
+
+		public MonoGenericInstanceType ReadGenericClass (TargetMemoryAccess memory,
+								 TargetAddress address)
+		{
+			MonoRuntime.GenericClassInfo info = MonoRuntime.GetGenericClass (memory, address);
+			if (info == null)
+				return null;
+
+			TargetType[] args = new TargetType [info.TypeArguments.Length];
+
+			for (int i = 0; i < info.TypeArguments.Length; i++) {
+				args [i] = ReadType (memory, info.TypeArguments [i]);
+				if (args [i] == null)
+					return null;
+			}
+
+			MonoClassType container = LookupMonoClass (memory, info.ContainerClass)
+				as MonoClassType;
+			if (container == null)
+				return null;
+
+			return new MonoGenericInstanceType (container, args, info.KlassPtr);
 		}
 
 		internal MonoFunctionType MainMethod {
@@ -817,15 +880,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal MonoClassInfo ReadClassInfo (TargetMemoryAccess memory, TargetAddress klass)
 		{
-			MonoClassInfo info = (MonoClassInfo) class_info_by_addr [klass];
-			if (info == null) {
-				info = MonoClassInfo.ReadClassInfo (this, memory, klass);
+			if (class_info_by_addr.ContainsKey (klass))
+				return class_info_by_addr [klass];
 
-				class_info_by_addr.Add (klass, info);
-				if (!info.IsGenericClass)
-					class_info_by_type.Add (info.CecilType, info);
-			}
-
+			MonoClassInfo info = MonoClassInfo.ReadClassInfo (this, memory, klass);
+			class_info_by_addr.Add (klass, info);
 			return info;
 		}
 
@@ -833,10 +892,9 @@ namespace Mono.Debugger.Languages.Mono
 						       TargetMemoryAccess memory, TargetAddress klass)
 		{
 			MonoClassType type;
-			MonoClassInfo info = MonoClassInfo.ReadClassInfo (
+			MonoClassInfo info = MonoClassInfo.ReadCoreType (
 				file, typedef, memory, klass, out type);
 			class_info_by_addr.Add (klass, info);
-			class_info_by_type.Add (typedef, info);
 
 			return type;
 		}
@@ -905,8 +963,8 @@ namespace Mono.Debugger.Languages.Mono
 			int index = GetUniqueID ();
 
 			TargetAddress retval = thread.CallMethod (
-				info.InsertSourceBreakpoint, func.MonoClass.File.MonoImage,
-				func.Token, index, func.MonoClass.Name);
+				info.InsertSourceBreakpoint, func.SymbolFile.MonoImage,
+				func.Token, index, func.DeclaringType.BaseName);
 
 			MethodLoadedHandler handler = handle.MethodLoaded;
 
@@ -1196,11 +1254,6 @@ namespace Mono.Debugger.Languages.Mono
 				}
 				break;
 			}
-
-			case NotificationType.ReachedMain:
-				if (engine.OnModuleLoaded ())
-					return false;
-				break;
 
 			case NotificationType.UnloadModule:
 				Report.Debug (DebugFlags.JitSymtab,

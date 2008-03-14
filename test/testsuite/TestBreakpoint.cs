@@ -58,14 +58,8 @@ namespace Mono.Debugger.Tests
 					     line_porta_nigra);
 
 			AssertExecute ("next");
-			// Step over the breakpoint with "next"
-			AssertStopped (thread, "Europe.Germany.Trier.get_PortaNigra()",
-				       line_porta_nigra + 1);
-
-			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, bpt_world,
-					     "Martin.Baulig.Hello.World(Postcard.Picture)",
-					     line_world);
+			AssertStopped (thread, "Martin.Baulig.Hello.World(Postcard.Picture)",
+				       line_world);
 
 			AssertExecute ("disable " + bpt_world);
 			AssertExecute ("continue");

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using C = Mono.CompilerServices.SymbolWriter;
@@ -79,30 +80,6 @@ namespace Mono.Debugger.Languages.Mono
 		}
 	}
 
-	// managed version of struct _MonoDebugLexicalBlockEntry
-	internal struct JitLexicalBlockEntry
-	{
-		public readonly int StartOffset;
-		public readonly int StartAddress;
-		public readonly int EndOffset;
-		public readonly int EndAddress;
-
-		public JitLexicalBlockEntry (int start_offset, int start_address,
-					     int end_offset, int end_address)
-		{
-			StartOffset = start_offset;
-			StartAddress = start_address;
-			EndOffset = end_offset;
-			EndAddress = end_address;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("[JitLexicalBlockEntry {0:x}:{1:x}-{2:x}:{3:x}]", StartOffset, StartAddress, EndOffset, EndAddress);
-		}
-	}
-
-
 	// managed version of struct _MonoDebugMethodAddress
 	internal class MethodAddress
 	{
@@ -112,8 +89,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly TargetAddress MethodStartAddress;
 		public readonly TargetAddress MethodEndAddress;
 		public readonly TargetAddress WrapperAddress;
-		public readonly JitLineNumberEntry[] LineNumbers;
-		public readonly JitLexicalBlockEntry[] LexicalBlocks;
+		public readonly List<JitLineNumberEntry> LineNumbers;
 		public readonly VariableInfo ThisVariableInfo;
 		public readonly VariableInfo[] ParamVariableInfo;
 		public readonly VariableInfo[] LocalVariableInfo;
@@ -147,36 +123,16 @@ namespace Mono.Debugger.Languages.Mono
 			MethodEndAddress = StartAddress + reader.ReadLeb128 ();
 
 			int num_line_numbers = reader.ReadLeb128 ();
-			LineNumbers = new JitLineNumberEntry [num_line_numbers];
+			LineNumbers = new List<JitLineNumberEntry> ();
 
-			int il_offset = 0, native_offset = 0;
 			for (int i = 0; i < num_line_numbers; i++) {
-				il_offset += reader.ReadSLeb128 ();
-				native_offset += reader.ReadSLeb128 ();
+				int il_offset = reader.ReadSLeb128 ();
+				int native_offset = reader.ReadSLeb128 ();
 
-				LineNumbers [i] = new JitLineNumberEntry (il_offset, native_offset);
-			}
+				if (il_offset < 0)
+					continue;
 
-			int num_lexical_blocks = reader.ReadLeb128 ();
-			LexicalBlocks = new JitLexicalBlockEntry [num_lexical_blocks];
-
-			il_offset = 0;
-			native_offset = 0;
-			for (int i = 0; i < num_lexical_blocks; i ++) {
-				int start_offset, end_offset, start_address, end_address;
-
-				il_offset += reader.ReadSLeb128 ();
-				start_offset = il_offset;
-				native_offset += reader.ReadSLeb128 ();
-				start_address = native_offset;
-
-				il_offset += reader.ReadSLeb128 ();
-				end_offset = il_offset;
-				native_offset += reader.ReadSLeb128 ();
-				end_address = native_offset;
-
-				LexicalBlocks [i] = new JitLexicalBlockEntry (start_offset, start_address,
-									      end_offset, end_address);
+				LineNumbers.Add (new JitLineNumberEntry (il_offset, native_offset));
 			}
 
 			HasThis = reader.ReadByte () != 0;
@@ -197,7 +153,7 @@ namespace Mono.Debugger.Languages.Mono
 		public override string ToString ()
 		{
 			return String.Format ("[Address {0:x}:{1:x}:{3:x}:{4:x},{5:x},{2}]",
-					      StartAddress, EndAddress, LineNumbers.Length,
+					      StartAddress, EndAddress, LineNumbers.Count,
 					      MethodStartAddress, MethodEndAddress, WrapperAddress);
 		}
 	}
@@ -369,7 +325,7 @@ namespace Mono.Debugger.Languages.Mono
 			return range.GetMethod ();
 		}
 
-		public MonoClassType LookupMonoClass (Cecil.TypeReference typeref)
+		protected MonoClassType LookupMonoClass (Cecil.TypeReference typeref)
 		{
 			TargetType type = LookupMonoType (typeref);
 			if (type == null)
@@ -465,26 +421,19 @@ namespace Mono.Debugger.Languages.Mono
 			return retval;
 		}
 
-		public MonoFunctionType LookupFunction (MonoClassType klass, Cecil.MethodDefinition mdef)
+		internal SourceFile GetSourceFile (int token, out int start, out int end)
 		{
 			ensure_sources ();
-			int token = MonoDebuggerSupport.GetMethodToken (mdef);
-			MonoFunctionType function = (MonoFunctionType) function_hash [token];
-			if (function != null)
-				return function;
-
 			C.MethodEntry entry = File != null ? File.GetMethodByToken (token) : null;
-			if (entry != null) {
-				C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
-				SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
-				function = new MonoFunctionType (
-					klass, mdef, file, source.StartRow, source.EndRow);
-			} else {
-				function = new MonoFunctionType (klass, mdef);
+			if (entry == null) {
+				start = end = 0;
+				return null;
 			}
 
-			function_hash.Add (token, function);
-			return function;
+			C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
+			start = source.StartRow;
+			end = source.EndRow;
+			return (SourceFile) source_file_hash [entry.SourceFile];
 		}
 
 		public MonoFunctionType GetFunctionByToken (int token)
@@ -497,7 +446,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (klass == null)
 				throw new InternalError ();
 
-			return LookupFunction (klass, mdef);
+			return klass.LookupFunction (mdef);
 		}
 
 		MonoMethodSource GetMethodSource (int index)
@@ -535,7 +484,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (klass == null)
 				throw new InternalError ();
 
-			MonoFunctionType function = LookupFunction (klass, mdef);
+			MonoFunctionType function = klass.LookupFunction (mdef);
 
 			MonoMethodSource method = new MonoMethodSource (
 				this, file, entry, source, mdef, klass, function);
@@ -604,7 +553,7 @@ namespace Mono.Debugger.Languages.Mono
 			case "System.Double":	return "double";
 			case "System.String":	return "string";
 			case "System.Object":	return "object";
-			default:		return t.FullName;
+			default:		return RemoveGenericArity (t.FullName);
 			}
 		}
 
@@ -616,17 +565,72 @@ namespace Mono.Debugger.Languages.Mono
 				if (first)
 					first = false;
 				else
-					sb.Append (",");
+					sb.Append (", ");
 				sb.Append (GetTypeSignature (p.ParameterType).Replace ('+','/'));
 			}
 			sb.Append (")");
 			return sb.ToString ();
 		}
 
+		internal static string RemoveGenericArity (string name)
+		{
+			int start = 0;
+			StringBuilder sb = null;
+			do {
+				int pos = name.IndexOf ('`', start);
+				if (pos < 0) {
+					if (start == 0)
+						return name;
+
+					sb.Append (name.Substring (start));
+					break;
+				}
+
+				if (sb == null)
+					sb = new StringBuilder ();
+				sb.Append (name.Substring (start, pos-start));
+
+				pos++;
+				while ((pos < name.Length) && Char.IsNumber (name [pos]))
+					pos++;
+
+				start = pos;
+			} while (start < name.Length);
+
+			return sb.ToString ();
+		}
+
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)
 		{
-			return mdef.DeclaringType.FullName + '.' + mdef.Name +
-				GetMethodSignature (mdef);
+			StringBuilder sb = new StringBuilder (GetTypeSignature (mdef.DeclaringType));
+			if (mdef.DeclaringType.GenericParameters.Count > 0) {
+				sb.Append ('<');
+				bool first = true;
+				foreach (Cecil.GenericParameter p in mdef.DeclaringType.GenericParameters) {
+					if (first)
+						first = false;
+					else
+						sb.Append (',');
+					sb.Append (p.Name);
+				}
+				sb.Append ('>');
+			}
+			sb.Append ('.');
+			sb.Append (mdef.Name);
+			if (mdef.GenericParameters.Count > 0) {
+				sb.Append ('<');
+				bool first = true;
+				foreach (Cecil.GenericParameter p in mdef.GenericParameters) {
+					if (first)
+						first = false;
+					else
+						sb.Append (',');
+					sb.Append (p.Name);
+				}
+				sb.Append ('>');
+			}
+			sb.Append (GetMethodSignature (mdef));
+			return sb.ToString ();
 		}
 
 		Cecil.MethodDefinition FindCecilMethod (string full_name)
@@ -856,7 +860,10 @@ namespace Mono.Debugger.Languages.Mono
 				this.method = method;
 				this.source = source;
 				this.mdef = mdef;
-				this.full_name = MonoSymbolFile.GetMethodName (mdef);
+				if (method.RealName != null)
+					this.full_name = method.RealName;
+				else
+					this.full_name = MonoSymbolFile.GetMethodName (mdef);
 				this.function = function;
 				this.klass = klass;
 			}
@@ -925,6 +932,92 @@ namespace Mono.Debugger.Languages.Mono
 				get { throw new InvalidOperationException (); }
 			}
 		}
+
+		protected class MonoCodeBlock : Block
+		{
+			List<MonoCodeBlock> children;
+
+			protected MonoCodeBlock (int index, Block.Type type, int start, int end)
+				: base (type, index, start, end)
+			{ }
+
+			protected void AddChildBlock (MonoCodeBlock child)
+			{
+				if (children == null)
+					children = new List<MonoCodeBlock> ();
+				children.Add (child);
+			}
+
+			public override Block[] Children {
+				get {
+					if (children == null)
+						return null;
+
+					return children.ToArray ();
+				}
+			}
+
+			static int find_start_address (MethodAddress address, int il_offset)
+			{
+				int num_line_numbers = address.LineNumbers.Count;
+
+				for (int i = num_line_numbers - 1; i >= 0; i--) {
+					JitLineNumberEntry lne = address.LineNumbers [i];
+
+					if (lne.Offset < 0)
+						continue;
+					if (lne.Offset <= il_offset)
+						return lne.Address;
+				}
+
+				return num_line_numbers > 0 ? address.LineNumbers [0].Address : 0;
+			}
+
+			static int find_end_address (MethodAddress address, int il_offset)
+			{
+				int num_line_numbers = address.LineNumbers.Count;
+
+				for (int i = 0; i < num_line_numbers; i++) {
+					JitLineNumberEntry lne = address.LineNumbers [i];
+
+					if (lne.Offset < 0)
+						continue;
+					if (lne.Offset >= il_offset)
+						return lne.Address;
+				}
+
+				return num_line_numbers > 0 ?
+					address.LineNumbers [num_line_numbers - 1].Address : 0;
+			}
+
+			public static MonoCodeBlock[] CreateBlocks (MonoMethod method,
+								    MethodAddress address,
+								    C.CodeBlockEntry[] the_blocks,
+								    out List<MonoCodeBlock> root_blocks)
+			{
+				MonoCodeBlock[] blocks = new MonoCodeBlock [the_blocks.Length];
+				for (int i = 0; i < blocks.Length; i++) {
+					Block.Type type = (Block.Type) the_blocks [i].BlockType;
+					int start = find_start_address (address, the_blocks [i].StartOffset);
+					int end = find_end_address (address, the_blocks [i].EndOffset);
+					blocks [i] = new MonoCodeBlock (i, type, start, end);
+				}
+
+				root_blocks = new List<MonoCodeBlock> ();
+
+				for (int i = 0; i < blocks.Length; i++) {
+					if (the_blocks [i].Parent < 0)
+						root_blocks.Add (blocks [i]);
+					else {
+						MonoCodeBlock parent = blocks [the_blocks [i].Parent - 1];
+						blocks [i].Parent = parent;
+						parent.AddChildBlock (blocks [i]);
+					}
+				}
+
+				return blocks;
+			}
+		}
 		
 		protected class MonoMethod : Method
 		{
@@ -932,12 +1025,16 @@ namespace Mono.Debugger.Languages.Mono
 			MethodSource source;
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
-			TargetClassType decl_type;
+			TargetStructType decl_type;
 			TargetVariable this_var;
-			TargetVariable[] parameters;
-			TargetVariable[] locals;
+			MonoCodeBlock[] code_blocks;
+			List<MonoCodeBlock> root_blocks;
+			List<TargetVariable> parameters;
+			List<TargetVariable> locals;
+			Dictionary<int,ScopeInfo> scopes;
 			bool has_variables;
 			bool is_loaded;
+			bool is_iterator;
 			MethodAddress address;
 			int domain;
 
@@ -958,6 +1055,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override int Domain {
 				get { return domain; }
+			}
+
+			public override bool IsWrapper {
+				get { return false; }
 			}
 
 			public override bool HasSource {
@@ -982,33 +1083,118 @@ namespace Mono.Debugger.Languages.Mono
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
 				SetLineNumbers (new MonoMethodLineNumberTable (
-					this, source, method, address.LineNumbers));
+					this, source, method, address.LineNumbers.ToArray ()));
 			}
 
 			void do_read_variables (TargetMemoryAccess memory)
 			{
+				if (!is_loaded)
+					throw new TargetException (TargetError.MethodNotLoaded);
+				if (has_variables)
+					return;
+
 				MonoLanguageBackend mono = file.MonoLanguage;
 
 				TargetAddress decl_klass = mono.MonoRuntime.MonoMethodGetClass (
 					memory, address.MonoMethod);
-				decl_type = mono.ReadMonoClass (memory, decl_klass).ClassType;
+				TargetType decl = mono.ReadMonoClass (memory, decl_klass);
+				if (decl.HasClassType)
+					decl_type = decl.ClassType;
+				else
+					decl_type = (TargetStructType) decl;
+
+				code_blocks = MonoCodeBlock.CreateBlocks (
+					this, address, method.CodeBlocks, out root_blocks);
+
+				foreach (C.CodeBlockEntry block in method.CodeBlocks)
+					if (block.BlockType == C.CodeBlockEntry.Type.IteratorBody)
+						is_iterator = true;
+
+				locals = new List<TargetVariable> ();
+				parameters = new List<TargetVariable> ();
+				scopes = new Dictionary<int,ScopeInfo> ();
+
+				var captured_vars = new Dictionary<string,CapturedVariable> ();
+
+				if (address.HasThis)
+					this_var = new MonoVariable (
+						"this", decl_type, true, true, this,
+						address.ThisVariableInfo);
+
+				var scope_list = new List<ScopeInfo> ();
+
+				for (int i = 0; i < method.NumScopeVariables; i++) {
+					C.ScopeVariable sv = method.ScopeVariables [i];
+
+					VariableInfo var;
+					if (sv.Index < 0)
+						var = address.ThisVariableInfo;
+					else
+						var = address.LocalVariableInfo [sv.Index];
+
+					TargetStructType type = mono.ReadStructType (memory, var.MonoType);
+					MonoVariable scope_var = new MonoVariable (
+						"$__" + sv.Scope, type, true, type.IsByRef, this, var);
+
+					ScopeInfo info = new ScopeInfo (sv.Scope, scope_var, type);
+					scopes.Add (sv.Scope, info);
+					scope_list.Add (info);
+				}
+
+				foreach (ScopeInfo scope in scope_list) {
+					read_scope (scope);
+				}
+
+				foreach (ScopeInfo scope in scopes.Values) {
+					C.AnonymousScopeEntry entry = file.File.GetAnonymousScope (scope.ID);
+					foreach (C.CapturedVariable captured in entry.CapturedVariables) {
+						CapturedVariable cv = new CapturedVariable (
+							scope, this, captured.Name, captured.CapturedName);
+
+						switch (captured.Kind) {
+						case C.CapturedVariable.CapturedKind.Local:
+							locals.Add (cv);
+							break;
+						case C.CapturedVariable.CapturedKind.Parameter:
+							parameters.Add (cv);
+							break;
+						case C.CapturedVariable.CapturedKind.This:
+							if (!cv.Resolve (memory))
+								throw new InternalError ();
+							if (cv.Type.HasClassType)
+								decl_type = cv.Type.ClassType;
+							else
+								decl_type = (TargetStructType) cv.Type;
+							this_var = cv;
+							continue;
+						default:
+							throw new InternalError ();
+						}
+
+						captured_vars.Add (captured.Name, cv);
+					}
+				}
 
 				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
-				parameters = new TargetVariable [param_info.Count];
 				for (int i = 0; i < param_info.Count; i++) {
+					if (captured_vars.ContainsKey (param_info [i].Name))
+						continue;
+
 					VariableInfo var = address.ParamVariableInfo [i];
 					TargetType type = mono.ReadType (memory, var.MonoType);
 					if (type == null)
 						type = mono.VoidType;
 
-					parameters [i] = new MonoVariable (
-						file.process, param_info [i].Name, type,
-						false, type.IsByRef, this, var, 0, 0);
+					parameters.Add (new MonoVariable (
+						param_info [i].Name, type, false, type.IsByRef,
+						this, var, 0, 0));
 				}
 
-				locals = new TargetVariable [method.NumLocals];
 				for (int i = 0; i < method.NumLocals; i++) {
 					C.LocalVariableEntry local = method.Locals [i];
+
+					if (captured_vars.ContainsKey (local.Name))
+						continue;
 
 					VariableInfo var = address.LocalVariableInfo [local.Index];
 					TargetType type = mono.ReadType (memory, var.MonoType);
@@ -1017,22 +1203,15 @@ namespace Mono.Debugger.Languages.Mono
 
 					if (local.BlockIndex > 0) {
 						int index = local.BlockIndex - 1;
-						JitLexicalBlockEntry block = address.LexicalBlocks [index];
-						locals [i] = new MonoVariable (
-							file.process, local.Name, type, true,
-							type.IsByRef, this, var,
-							block.StartAddress, block.EndAddress);
+						MonoCodeBlock block = code_blocks [index];
+						locals.Add (new MonoVariable (
+							local.Name, type, true, type.IsByRef, this, var,
+							block.StartAddress, block.EndAddress));
 					} else {
-						locals [i] = new MonoVariable (
-							file.process, local.Name, type, true,
-							type.IsByRef, this, var);
+						locals.Add (new MonoVariable (
+							local.Name, type, true, type.IsByRef, this, var));
 					}
 				}
-
-				if (address.HasThis)
-					this_var = new MonoVariable (
-						file.process, "this", decl_type, true,
-						true, this, address.ThisVariableInfo);
 
 				has_variables = true;
 			}
@@ -1051,19 +1230,73 @@ namespace Mono.Debugger.Languages.Mono
 				});
 			}
 
+			void read_scope (ScopeInfo scope)
+			{
+				C.AnonymousScopeEntry entry = file.File.GetAnonymousScope (scope.ID);
+				foreach (C.CapturedScope captured in entry.CapturedScopes) {
+					if (scopes.ContainsKey (captured.Scope))
+						continue;
+
+					CapturedVariable pvar = new CapturedVariable (
+						scope, this, captured.CapturedName, captured.CapturedName);
+					ScopeInfo child = new ScopeInfo (captured.Scope, pvar);
+
+					scopes.Add (captured.Scope, child);
+					read_scope (child);
+				}
+			}
+
+			void dump_blocks (Block[] blocks, string ident)
+			{
+				foreach (MonoCodeBlock block in blocks) {
+					Console.WriteLine ("{0} {1}", ident, block);
+					if (block.Children != null)
+						dump_blocks (block.Children, ident + "  ");
+				}
+			}
+
+			Block lookup_block (TargetAddress address, Block[] blocks)
+			{
+				foreach (MonoCodeBlock block in blocks) {
+					if ((address < StartAddress + block.StartAddress) ||
+					    (address >= StartAddress + block.EndAddress))
+						continue;
+
+					if (block.Children != null) {
+						Block child = lookup_block (address, block.Children);
+						return child ?? block;
+					}
+
+					return block;
+				}
+
+				return null;
+			}
+
+			internal override Block LookupBlock (TargetMemoryAccess memory,
+							     TargetAddress address)
+			{
+				do_read_variables (memory);
+				return lookup_block (address, root_blocks.ToArray ());
+			}
+
+			internal override bool IsIterator {
+				get { return is_iterator; }
+			}
+
 			public override TargetVariable[] GetParameters (Thread target)
 			{
 				read_variables (target);
-				return parameters;
+				return parameters.ToArray ();
 			}
 
 			public override TargetVariable[] GetLocalVariables (Thread target)
 			{
 				read_variables (target);
-				return locals;
+				return locals.ToArray ();
 			}
 
-			public override TargetClassType GetDeclaringType (Thread target)
+			public override TargetStructType GetDeclaringType (Thread target)
 			{
 				read_variables (target);
 				return decl_type;
@@ -1156,6 +1389,31 @@ namespace Mono.Debugger.Languages.Mono
 
 			protected abstract LineNumberTableData ReadLineNumbers ();
 
+			public override bool HasMethodBounds {
+				get {
+					return Data.Addresses.Length > 0;
+				}
+			}
+
+			public override TargetAddress MethodStartAddress {
+				get {
+					if (!HasMethodBounds)
+						throw new InvalidOperationException ();
+
+					return Data.Addresses [0].Address;
+				}
+			}
+
+			public override TargetAddress MethodEndAddress {
+				get {
+					if (!HasMethodBounds)
+						throw new InvalidOperationException ();
+
+					return method.HasMethodBounds ?
+						method.MethodEndAddress : method.EndAddress;
+				}
+			}
+
 			private LineEntry[] Addresses {
 				get {
 					return Data.Addresses;
@@ -1201,10 +1459,8 @@ namespace Mono.Debugger.Languages.Mono
 				if (method.MethodSource.HasSourceBuffer)
 					buffer = method.MethodSource.SourceBuffer;
 
-				if (address < method_start)
-					return new SourceAddress (
-						file, buffer, StartRow, (int) (address - start),
-						(int) (method_start - address));
+				if (Addresses.Length < 1)
+					return null;
 
 				TargetAddress next_address = end;
 
@@ -1222,25 +1478,35 @@ namespace Mono.Debugger.Languages.Mono
 					return new SourceAddress (file, buffer, entry.Line, offset, range);
 				}
 
-				if (Addresses.Length > 0)
-					return new SourceAddress (
-						file, buffer, Addresses [0].Line, (int) (address - start),
-						(int) (end - address));
+				if (Addresses.Length < 1)
+					return null;
 
-				return null;
+				return new SourceAddress (
+					file, buffer, Addresses [0].Line, (int) (address - start),
+					(int) (Addresses [0].Address - address));
 			}
 
 			public override void DumpLineNumbers ()
 			{
-				Console.WriteLine ("--------");
-				Console.WriteLine ("DUMPING LINE NUMBER TABLE: {0}", method);
-				Console.WriteLine ("--------");
+				Console.WriteLine ();
+				Console.Write ("Dumping Line Number Table: {0} - {1} {2}",
+					       method.Name, method.StartAddress, method.EndAddress);
+				if (method.HasMethodBounds)
+					Console.Write (" - {0} {1}", method.MethodStartAddress,
+						       method.MethodEndAddress);
+				Console.WriteLine ();
+				Console.WriteLine ();
+
+				Console.WriteLine ("Generated Lines:");
+				Console.WriteLine ("----------------");
+
 				for (int i = 0; i < Addresses.Length; i++) {
 					LineEntry entry = (LineEntry) Addresses [i];
 					Console.WriteLine ("{0,4} {1,4}  {2}", i,
 							   entry.Line, entry.Address);
 				}
-				Console.WriteLine ("--------");
+
+				Console.WriteLine ("----------------");
 			}
 
 			protected class LineNumberTableData
@@ -1344,6 +1610,18 @@ namespace Mono.Debugger.Languages.Mono
 							   lne.Address, method.StartAddress + lne.Address);
 				}
 				Console.WriteLine ("-----------------");
+
+				Console.WriteLine ();
+				Console.WriteLine ("Generated Lines:");
+				Console.WriteLine ("----------------");
+				for (int i = 0; i < Data.Addresses.Length; i++) {
+					LineEntry entry = (LineEntry) Data.Addresses [i];
+
+					Console.WriteLine ("{0,4} {1,4} {2,4:x}", i, entry.Line,
+							   entry.Address);
+				}
+				Console.WriteLine ("----------------");
+
 			}
 		}
 
@@ -1559,6 +1837,10 @@ namespace Mono.Debugger.Languages.Mono
 				get { return domain; }
 			}
 
+			public override bool IsWrapper {
+				get { return true; }
+			}
+
 			public override bool HasSource {
 				get { return true; }
 			}
@@ -1567,7 +1849,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source; }
 			}
 
-			public override TargetClassType GetDeclaringType (Thread target)
+			public override TargetStructType GetDeclaringType (Thread target)
 			{
 				return null;
 			}
@@ -1653,7 +1935,7 @@ namespace Mono.Debugger.Languages.Mono
 				ArrayList lines = new ArrayList ();
 				int last_line = -1;
 
-				JitLineNumberEntry[] line_numbers = address.LineNumbers;
+				JitLineNumberEntry[] line_numbers = address.LineNumbers.ToArray ();
 
 				string[] cil_code = wrapper.MethodSource.SourceBuffer.Contents;
 

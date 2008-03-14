@@ -1407,6 +1407,18 @@ namespace Mono.Debugger.Backend
 				return do_lookup (address, 0, addresses.Length-1);
 			}
 
+			public override bool HasMethodBounds {
+				get { return false; }
+			}
+
+			public override TargetAddress MethodStartAddress {
+				get { throw new InvalidOperationException (); }
+			}
+
+			public override TargetAddress MethodEndAddress {
+				get { throw new InvalidOperationException (); }
+			}
+
 			public override void DumpLineNumbers ()
 			{
 				Console.WriteLine ("--------");
@@ -2519,7 +2531,7 @@ namespace Mono.Debugger.Backend
 				get { return -1; }
 			}
 
-			public override TargetClassType GetDeclaringType (Thread target)
+			public override TargetStructType GetDeclaringType (Thread target)
 			{
 				return null;
 			}
@@ -2541,6 +2553,10 @@ namespace Mono.Debugger.Backend
 			public override TargetVariable[] GetLocalVariables (Thread target)
 			{
 				return subprog.Locals;
+			}
+
+			public override bool IsWrapper {
+				get { return false; }
 			}
 
 			public override bool HasSource {
@@ -2612,17 +2628,6 @@ namespace Mono.Debugger.Backend
 				SetLineNumbers (engine);
 
 				read_line_numbers ();
-
-#if FIXME
-				if ((lines != null) && (lines.Length > 2)) {
-					LineNumber start = lines [1];
-					LineNumber end = lines [lines.Length - 1];
-
-					SetMethodBounds (
-						subprog.dwarf.GetAddress (start.Offset),
-						subprog.dwarf.GetAddress (end.Offset));
-				}
-#endif
 
 				return true;
 			}
@@ -2921,16 +2926,14 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
-			public override TargetObject GetObject (StackFrame frame)
+			internal override TargetObject GetObject (StackFrame frame,
+								  TargetMemoryAccess target)
 			{
-				return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
-					delegate (TargetMemoryAccess memory) {
-						TargetLocation loc = location.GetLocation (frame, memory);
-						if (loc == null)
-							return null;
+				TargetLocation loc = location.GetLocation (frame, target);
+				if (loc == null)
+					return null;
 
-						return type.GetObject (memory, loc);
-				});
+				return type.GetObject (target, loc);
 			}
 
 			public override string PrintLocation (StackFrame frame)

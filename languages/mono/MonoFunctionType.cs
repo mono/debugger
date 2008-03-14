@@ -11,7 +11,7 @@ namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoFunctionType : TargetFunctionType
 	{
-		MonoClassType klass;
+		IMonoStructType klass;
 		SourceFile file;
 		int start_row, end_row;
 		Cecil.MethodDefinition method_info;
@@ -22,8 +22,9 @@ namespace Mono.Debugger.Languages.Mono
 		int token;
 
 		int load_handler;
+		MonoMethodSignature signature;
 
-		internal MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef)
+		internal MonoFunctionType (IMonoStructType klass, Cecil.MethodDefinition mdef)
 			: base (klass.File.MonoLanguage)
 		{
 			this.klass = klass;
@@ -45,15 +46,8 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < mdef.Parameters.Count; i++)
 				parameter_types [i] = klass.File.MonoLanguage.LookupMonoType (
 					mdef.Parameters[i].ParameterType);
-		}
 
-		internal MonoFunctionType (MonoClassType klass, Cecil.MethodDefinition mdef,
-					   SourceFile file, int start_row, int end_row)
-			: this (klass, mdef)
-		{
-			this.file = file;
-			this.start_row = start_row;
-			this.end_row = end_row;
+			file = klass.File.GetSourceFile (token, out start_row, out end_row);
 		}
 
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)
@@ -78,7 +72,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override string FullName {
-			get { return klass.Name + '.' + name; }
+			get { return klass.Type.Name + '.' + name; }
 		}
 
 		public override bool IsByRef {
@@ -109,12 +103,12 @@ namespace Mono.Debugger.Languages.Mono
 			get { return token; }
 		}
 
-		public override TargetClassType DeclaringType {
-			get { return klass; }
+		public override TargetStructType DeclaringType {
+			get { return klass.Type; }
 		}
 
-		internal MonoClassType MonoClass {
-			get { return klass; }
+		internal MonoSymbolFile SymbolFile {
+			get { return klass.File; }
 		}
 
 		internal Cecil.MethodDefinition MethodInfo {
@@ -131,6 +125,19 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override int Size {
 			get { return klass.File.TargetMemoryInfo.TargetAddressSize; }
+		}
+
+		public override bool ContainsGenericParameters {
+			get {
+				if (return_type.ContainsGenericParameters)
+					return true;
+
+				foreach (TargetType type in parameter_types)
+					if (type.ContainsGenericParameters)
+						return true;
+
+				return false;
+			}
 		}
 
 		public override bool HasSourceCode {
@@ -188,6 +195,38 @@ namespace Mono.Debugger.Languages.Mono
 				klass.File.MonoLanguage.RemoveMethodLoadHandler (target, load_handler);
 				load_handler = -1;
 			}
+		}
+
+		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
+		{
+			return klass.ResolveClass (target, fail);
+		}
+
+		public override TargetMethodSignature GetSignature (Thread thread)
+		{
+			if (signature != null)
+				return signature;
+
+			if (!ContainsGenericParameters)
+				return new MonoMethodSignature (return_type, parameter_types);
+
+			TargetAddress addr = (TargetAddress) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					MonoClassInfo class_info = ResolveClass (target, true);
+					return class_info.GetMethodAddress (target, token);
+			});
+
+			MonoLanguageBackend mono = klass.File.MonoLanguage;
+
+			TargetAddress sig = thread.CallMethod (
+				mono.MonoDebuggerInfo.GetMethodSignature, addr, 0);
+
+			signature = (MonoMethodSignature) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return mono.MonoRuntime.GetMethodSignature (mono, target, sig);
+			});
+
+			return signature;
 		}
 	}
 }

@@ -16,6 +16,7 @@ namespace Mono.Debugger
 		RuntimeInvoke,
 		NativeToManaged,
 		ManagedToNative,
+		ManagedToManaged,
 		RemotingInvoke,
 		RemotingInvokeWithCheck,
 		XDomainInvoke,
@@ -27,11 +28,16 @@ namespace Mono.Debugger
 		Synchronized,
 		DynamicMethod,
 		IsInst,
-		CastClass,
+		CanCast,
 		ProxyIsInst,
 		StelemRef,
 		UnBox,
-		Unknown
+		LdFldA,
+		WriteBarrier,
+		Unknown,
+		ComInteropInvoke,
+		ComInterop,
+		Alloc
 	}
 
 	public struct LineEntry : IComparable {
@@ -170,6 +176,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract bool IsWrapper {
+			get;
+		}
+
 		public abstract bool HasSource {
 			get;
 		}
@@ -262,7 +272,7 @@ namespace Mono.Debugger
                         return true;
                 }
 
-		public abstract TargetClassType GetDeclaringType (Thread target);
+		public abstract TargetStructType GetDeclaringType (Thread target);
 
 		public abstract bool HasThis {
 			get;
@@ -278,6 +288,16 @@ namespace Mono.Debugger
 
 		internal abstract MethodSource GetTrampoline (TargetMemoryAccess memory,
 							      TargetAddress address);
+
+		internal virtual bool IsIterator {
+			get { return false; }
+		}
+
+		internal virtual Block LookupBlock (TargetMemoryAccess memory,
+						    TargetAddress address)
+		{
+			return null;
+		}
 
 		//
 		// ISourceLookup

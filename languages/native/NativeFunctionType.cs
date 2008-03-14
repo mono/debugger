@@ -72,6 +72,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public override bool HasReturnValue {
 			get {
 				return return_type != Language.VoidType;
@@ -96,7 +100,7 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		public override TargetClassType DeclaringType {
+		public override TargetStructType DeclaringType {
 			get {
 				return null;
 			}
@@ -118,6 +122,11 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		internal override void RemoveBreakpoint (Thread target)
+		{
+			throw new InvalidOperationException ();
+		}
+
+		public override TargetMethodSignature GetSignature (Thread target)
 		{
 			throw new InvalidOperationException ();
 		}

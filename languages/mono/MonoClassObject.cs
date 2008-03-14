@@ -16,31 +16,24 @@ namespace Mono.Debugger.Languages.Mono
 			this.info = info;
 		}
 
-		public override TargetClassObject GetParentObject (Thread target)
+		internal override TargetStructObject GetParentObject (TargetMemoryAccess target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
 
-			MonoClassInfo parent_info = (MonoClassInfo) info.GetParent (target);
-			if (parent_info == null)
+			TargetStructType sparent = type.GetParentType (target);
+			if (sparent == null)
 				return null;
 
-			MonoClassType parent_type = parent_info.ClassType;
-			if (!type.IsByRef && parent_type.IsByRef)
-				return null;
-
-			return new MonoClassObject (parent_type, parent_info, Location);
+			return (TargetStructObject) sparent.GetObject (target, Location);
 		}
 
-		public override TargetClassObject GetCurrentObject (Thread thread)
+		internal override TargetStructObject GetCurrentObject (TargetMemoryAccess target)
 		{
 			if (!type.IsByRef)
 				return null;
 
-			return (TargetClassObject) thread.ThreadServant.DoTargetAccess (
-				delegate (TargetMemoryAccess target) {
-					return type.GetCurrentObject (target, Location);
-			});
+			return type.GetCurrentObject (target, Location);
 		}
 
 		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
@@ -58,9 +51,11 @@ namespace Mono.Debugger.Languages.Mono
 		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Location.HasAddress)
-				return String.Format ("{0}", Location.GetAddress (target));
+				return String.Format ("({0}) {1}",
+						      Type.Name, Location.GetAddress (target));
 			else
-				return String.Format ("{0}", Location);
+				return String.Format ("({0}) {1}",
+						      Type.Name, Location);
 		}
 	}
 }

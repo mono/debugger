@@ -33,6 +33,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return target_type != null; }
 		}
 
+		public override bool ContainsGenericParameters {
+			get { return false; }
+		}
+
 		public override bool IsArray {
 			get { return true; }
 		}

@@ -39,7 +39,16 @@ namespace Mono.Debugger.Languages
 		//   bound to any particular target location.  This also means that it won't
 		//   get invalid after the target exited.
 		// </remarks>
-		public abstract TargetObject GetObject (StackFrame frame);
+		public TargetObject GetObject (StackFrame frame)
+		{
+			return (TargetObject) frame.Thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return GetObject (frame, target);
+			});
+		}
+
+		internal abstract TargetObject GetObject (StackFrame frame,
+							  TargetMemoryAccess target);
 
 		public abstract string PrintLocation (StackFrame frame);
 

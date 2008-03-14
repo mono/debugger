@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
@@ -13,14 +14,17 @@ namespace Mono.Debugger.Languages.Mono
 
 		public readonly Cecil.TypeDefinition CecilType;
 
-		MonoClassType type;
+		TargetType type;
+		IMonoStructType struct_type;
 
 		MonoClassInfo parent_info;
 		TargetAddress parent_klass = TargetAddress.Null;
 		TargetType[] field_types;
 		MonoFieldInfo[] fields;
 		int[] field_offsets;
-		Hashtable methods;
+		MonoMethodInfo[] methods;
+		MonoPropertyInfo[] properties;
+		Dictionary<int,TargetAddress> methods_by_token;
 
 		public static MonoClassInfo ReadClassInfo (MonoLanguageBackend mono,
 							   TargetMemoryAccess target,
@@ -42,18 +46,31 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InternalError ();
 
 			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
-			info.type = file.LookupMonoClass (typedef);
+			if (info.IsGenericClass) {
+				info.struct_type = file.MonoLanguage.ReadGenericClass (
+					target, info.GenericClass);
+				info.type = info.struct_type.Type;
+			} else {
+				info.type = file.LookupMonoType (typedef);
+				if (info.type is TargetStructType)
+					info.struct_type = (IMonoStructType) info.type;
+				else
+					info.struct_type = (IMonoStructType) info.type.ClassType;
+			}
+			info.struct_type.ClassInfo = info;
 			return info;
 		}
 
-		public static MonoClassInfo ReadClassInfo (MonoSymbolFile file,
-							   Cecil.TypeDefinition typedef,
-							   TargetMemoryAccess target,
-							   TargetAddress klass,
-							   out MonoClassType type)
+		public static MonoClassInfo ReadCoreType (MonoSymbolFile file,
+							  Cecil.TypeDefinition typedef,
+							  TargetMemoryAccess target,
+							  TargetAddress klass,
+							  out MonoClassType type)
 		{
 			MonoClassInfo info = new MonoClassInfo (file, typedef, target, klass);
 			type = new MonoClassType (file, typedef, info);
+			((IMonoStructType) type).ClassInfo = info;
+			info.struct_type = type;
 			info.type = type;
 			return info;
 		}
@@ -65,6 +82,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
+			parent_klass = MonoRuntime.MonoClassGetParent (target, klass);
 			GenericClass = MonoRuntime.MonoClassGetGenericClass (target, klass);
 			GenericContainer = MonoRuntime.MonoClassGetGenericContainer (target, klass);
 		}
@@ -73,22 +91,22 @@ namespace Mono.Debugger.Languages.Mono
 			get { return SymbolFile.MonoLanguage.MonoRuntime; }
 		}
 
-		public override TargetClassType Type {
+		public override TargetType RealType {
 			get { return type; }
 		}
 
-		public MonoClassType ClassType {
-			get { return type; }
+		public override TargetStructType Type {
+			get { return struct_type.Type; }
 		}
 
 		public bool IsGenericClass {
 			get { return !GenericClass.IsNull; }
 		}
 
-		void get_fields (TargetMemoryAccess target)
+		internal MonoFieldInfo[] GetFields (TargetMemoryAccess target)
 		{
 			if (fields != null)
-				return;
+				return fields;
 
 			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
 
@@ -106,8 +124,10 @@ namespace Mono.Debugger.Languages.Mono
 				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
 					target, KlassAddress, i);
 
-				fields [i] = new MonoFieldInfo (type, field_types [i], i, field);
+				fields [i] = new MonoFieldInfo (struct_type, field_types [i], i, field);
 			}
+
+			return fields;
 		}
 
 		public override TargetFieldInfo[] GetFields (Thread thread)
@@ -117,7 +137,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target)  {
-					get_fields (target);
+					GetFields (target);
 					return null;
 			});
 
@@ -148,12 +168,12 @@ namespace Mono.Debugger.Languages.Mono
 							TargetStructObject instance,
 							TargetFieldInfo field)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
 
-			if (!ClassType.IsByRef)
+			if (!Type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 
@@ -181,7 +201,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal TargetObject GetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
 						      TargetAddress data_address)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -219,12 +239,12 @@ namespace Mono.Debugger.Languages.Mono
 						TargetStructObject instance,
 						TargetFieldInfo field, TargetObject obj)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
 
-			if (!ClassType.IsByRef)
+			if (!Type.IsByRef)
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 
@@ -251,7 +271,7 @@ namespace Mono.Debugger.Languages.Mono
 		internal void SetStaticField (TargetMemoryAccess target, TargetFieldInfo field,
 					      TargetAddress data_address, TargetObject obj)
 		{
-			get_fields (target);
+			GetFields (target);
 
 			int offset = field_offsets [field.Position];
 			TargetType type = field_types [field.Position];
@@ -265,48 +285,103 @@ namespace Mono.Debugger.Languages.Mono
 			type.SetObject (target, field_loc, obj);
 		}
 
+		internal MonoPropertyInfo[] GetProperties (TargetMemoryAccess target)
+		{
+			if (properties != null)
+				return properties;
+
+			properties = new MonoPropertyInfo [CecilType.Properties.Count];
+
+			for (int i = 0; i < CecilType.Properties.Count; i++) {
+				Cecil.PropertyDefinition prop = CecilType.Properties [i];
+				properties [i] = MonoPropertyInfo.Create (struct_type, i, prop);
+			}
+
+			return properties;
+		}
+
+		public override TargetPropertyInfo[] GetProperties (Thread thread)
+		{
+			return (MonoPropertyInfo []) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					return GetProperties (target);
+			});
+		}
+
 		void get_methods (TargetMemoryAccess target)
 		{
-			if (methods != null)
+			if (methods_by_token != null)
 				return;
 
-			methods = new Hashtable ();
 			int method_count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
+
+			methods_by_token = new Dictionary<int,TargetAddress> ();
 
 			for (int i = 0; i < method_count; i++) {
 				TargetAddress address = MonoRuntime.MonoClassGetMethod (
 					target, KlassAddress, i);
-
 				int mtoken = MonoRuntime.MonoMethodGetToken (target, address);
-				if (mtoken == 0)
-					continue;
 
-				methods.Add (mtoken, address);
+				if (mtoken != 0)
+					methods_by_token.Add (mtoken, address);
+			}
+
+			methods = new MonoMethodInfo [CecilType.Methods.Count];
+			for (int i = 0; i < methods.Length; i ++) {
+				Cecil.MethodDefinition m = CecilType.Methods [i];
+				int token = (int) (m.MetadataToken.TokenType + m.MetadataToken.RID);
+				TargetAddress address = methods_by_token [token];
+				methods [i] = MonoMethodInfo.Create (struct_type, i, m);
 			}
 		}
 
 		public TargetAddress GetMethodAddress (TargetMemoryAccess target, int token)
 		{
 			get_methods (target);
-			if (!methods.Contains (token))
+			if (!methods_by_token.ContainsKey (token))
 				throw new InternalError ();
-			return (TargetAddress) methods [token];
+			return methods_by_token [token];
+		}
+
+		public override TargetMethodInfo[] GetMethods (Thread thread)
+		{
+			if (methods != null)
+				return methods;
+
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target)  {
+					get_methods (target);
+					return null;
+			});
+
+			return methods;
 		}
 
 		void get_parent (TargetMemoryAccess target)
 		{
 			parent_klass = MonoRuntime.MonoClassGetParent (target, KlassAddress);
+			if (parent_klass.IsNull)
+				return;
 
 			parent_info = ReadClassInfo (SymbolFile.MonoLanguage, target, parent_klass);
 		}
 
 		public override bool HasParent {
-			get { return type.HasParent; }
+			get { return !parent_klass.IsNull; }
+		}
+
+		internal MonoClassInfo GetParent (TargetMemoryAccess target)
+		{
+			if (parent_info != null)
+				return parent_info;
+
+			get_parent (target);
+			return parent_info;
 		}
 
 		public override TargetClass GetParent (Thread thread)
 		{
-			if (!parent_klass.IsNull)
+			if (parent_info != null)
 				return parent_info;
 
 			thread.ThreadServant.DoTargetAccess (
@@ -315,6 +390,13 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 			});
 			return parent_info;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("ClassInfo ({0}:{1}:{2}:{3})",
+					      SymbolFile.Assembly.Name.Name, KlassAddress,
+					      GenericContainer, GenericClass);
 		}
 	}
 }

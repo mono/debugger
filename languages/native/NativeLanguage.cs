@@ -122,6 +122,11 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerType (this, type.Name + "*", type, type.Size);
 		}
 
+		public override bool IsExceptionType (TargetClassType type)
+		{
+			return false;
+		}
+
 		internal TargetAddress LookupSymbol (string name)
 		{
 			return bfd_container.LookupSymbol (name);

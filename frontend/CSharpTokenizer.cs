@@ -45,7 +45,8 @@ namespace Mono.Debugger.Frontend.CSharp
 		// Details about the error encoutered by the tokenizer
 		//
 		string error_details;
-		
+
+		public bool ReadGenericArity { get; set; }
 
 		//
 		// Class initializer
@@ -71,6 +72,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			keywords.Add ("True", Token.TRUE);
 			keywords.Add ("False", Token.FALSE);
 			keywords.Add ("null", Token.NULL);
+			keywords.Add ("@parent", Token.PARENT);
 		}
 
 		public string error {
@@ -247,6 +249,26 @@ namespace Mono.Debugger.Frontend.CSharp
 			bool isfloat    = false;
 			bool isdouble   = false;
 			bool isdecimal  = false;
+
+			string digit;
+
+			if (ReadGenericArity) {
+				while (Char.IsDigit((char)PeekChar())) {
+					sb.Append((char)GetChar());
+					++col;
+				}
+
+				digit = sb.ToString ();
+
+				try {
+					val = Int32.Parse(digit, NumberStyles.Number);
+					return Token.INT;
+				} catch (Exception) {
+					error_details = String.Format("Can't parse int {0}", digit);
+					val = 0;
+					return Token.ERROR;
+				}
+			}
 			
 			if (ch == '0' && Char.ToUpper((char)PeekChar()) == 'X') {
 				const string hex = "0123456789ABCDEF";
@@ -332,7 +354,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				}
 			}
 			
-			string digit = sb.ToString();
+			digit = sb.ToString();
 			//string stringValue = String.Concat(prefix.ToString(), digit, suffix.ToString());
 			if (isfloat) {
 				try {
@@ -576,12 +598,26 @@ namespace Mono.Debugger.Frontend.CSharp
 					return ReadDigit ((char)c);
 				}
 
-				if (c == '#')
-					return Token.HASH;
-				else if (c == '@')
+				if (c == '$') {
+					id_builder.Length = 0;
+					
+					while ((c = PeekChar ()) != -1) {
+						if (Char.IsLetterOrDigit ((char)c) || c == '_') {
+							id_builder.Append ((char)GetChar ());
+							col++;
+						} else 
+							break;
+					}
+
+					string ids = id_builder.ToString ();
+					if (ids == "parent")
+						return Token.PARENT;
+					else
+						throw new ScriptingException ("Unknown #-expression");
+				} else if (c == '@')
 					return Token.AT;
-				else if (c == '$')
-					return Token.DOLLAR;
+				else if (c == '#')
+					return Token.HASH;
 				else if (c == '.') {
 					if (Char.IsDigit ((char)PeekChar())) {
 						putback(c);
@@ -629,13 +665,18 @@ namespace Mono.Debugger.Frontend.CSharp
 					return Token.PLUS;
 				}
 				else if (c == '-') { // FIXME: negative numbers...
-					if ((c = PeekChar ()) == '=') {
+					c = PeekChar ();
+					if (c == '=') {
 						GetChar ();
 						return Token.MINUSASSIGN;
 					}
-					if ((c = PeekChar ()) == '>') {
+					if (c == '>') {
 						GetChar ();
 						return Token.ARROW;
+					}
+
+					if (Char.IsDigit ((char) c)) {
+						return ReadDigit ('-');
 					}
 
 					return Token.MINUS;
