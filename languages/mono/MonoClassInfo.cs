@@ -329,8 +329,6 @@ namespace Mono.Debugger.Languages.Mono
 			methods = new MonoMethodInfo [CecilType.Methods.Count];
 			for (int i = 0; i < methods.Length; i ++) {
 				Cecil.MethodDefinition m = CecilType.Methods [i];
-				int token = (int) (m.MetadataToken.TokenType + m.MetadataToken.RID);
-				TargetAddress address = methods_by_token [token];
 				methods [i] = MonoMethodInfo.Create (struct_type, i, m);
 			}
 		}

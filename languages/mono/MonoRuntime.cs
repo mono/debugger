@@ -501,7 +501,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetReader reader = new TargetReader (memory.ReadMemory (address, 5 * addr_size));
 			TargetAddress container = reader.ReadAddress ();
 			TargetAddress class_inst = reader.ReadAddress ();
-			TargetAddress method_inst = reader.ReadAddress ();
+			reader.ReadAddress (); /* method_inst */
 			reader.ReadAddress ();
 			TargetAddress cached_class = reader.ReadAddress ();
 
@@ -555,7 +555,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress container = reader.ReadAddress ();
 			TargetAddress klass = reader.ReadAddress ();
 			TargetAddress name_addr = reader.ReadAddress ();
-			int flags = reader.BinaryReader.ReadInt16 ();
+			reader.BinaryReader.ReadInt16 (); /* flags */
 			int pos = reader.BinaryReader.ReadInt16 ();
 
 			string name = memory.ReadString (name_addr);

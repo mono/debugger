@@ -962,7 +962,7 @@ namespace Mono.Debugger.Backend
 		void enable_extended_notification (NotificationType type)
 		{
 			long notifications = inferior.ReadLongInteger (extended_notifications_addr);
-			notifications |= (long) type;
+			notifications |= (uint) type;
 			inferior.WriteLongInteger (extended_notifications_addr, notifications);
 		}
 
@@ -1135,7 +1135,6 @@ namespace Mono.Debugger.Backend
 			if (method.WrapperType != WrapperType.None)
 				return new OperationWrapper (this, method, operation.Result);
 
-			Block block = method.LookupBlock (inferior, address);
 			if (method.IsIterator)
 				return new OperationStepIterator (this, method, operation.Result);
 
@@ -2263,9 +2262,6 @@ namespace Mono.Debugger.Backend
 					      "{0} activate breakpoints done - continue", sse);
 
 				return EventResult.ResumeOperation;
-
-				sse.do_continue ();
-				return EventResult.Running;
 			}
 
 			Report.Debug (DebugFlags.SSE,
