@@ -4,6 +4,10 @@
 
 	* NEWS: Updated to 0.80.
 
+2008-03-15  Martin Baulig  <martin@ximian.com>
+
+	* build/Makefile.am: Install in $(prefix)/lib/mono/2.0.
+
 2008-03-14  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerConfiguration.cs: Don't use XmlValidatingReader.

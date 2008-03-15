@@ -1,8 +1,8 @@
-onedir = $(prefix)/lib/mono/1.0
+twodir = $(prefix)/lib/mono/2.0
 
 bin_SCRIPTS = mdb
 
-one_SCRIPTS = mdb.exe
+two_SCRIPTS = mdb.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
@@ -117,7 +117,7 @@ EXTRA_DIST = \
 	Mono.Debugger.Cecil.dll
 
 mdb: mdb.in Makefile
-	sed -e 's^\@onedir\@^$(onedir)^g' < $(srcdir)/mdb.in > mdb.tmp \
+	sed -e 's^\@twodir\@^$(twodir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
 install-data-local:

@@ -1,2 +1,2 @@
 #!/bin/sh
-exec mono --debug @onedir@/mdb.exe $*
+exec mono --debug @twodir@/mdb.exe $*
