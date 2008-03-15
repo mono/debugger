@@ -6,6 +6,11 @@
 
 2008-03-15  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs: Swap the behavior of `run' and `start':
+	`run' now stops in main again.
+
+2008-03-15  Martin Baulig  <martin@ximian.com>
+
 	* build/Makefile.am: Install in $(prefix)/lib/mono/2.0.
 
 2008-03-14  Martin Baulig  <martin@ximian.com>

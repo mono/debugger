@@ -1583,7 +1583,7 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			context.Interpreter.Options.StopInMain = false;
+			context.Interpreter.Options.StopInMain = true;
 			return base.DoResolve (context);
 		}
 	}
@@ -1592,7 +1592,7 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
-			context.Interpreter.Options.StopInMain = true;
+			context.Interpreter.Options.StopInMain = false;
 			return base.DoResolve (context);
 		}
 	}
