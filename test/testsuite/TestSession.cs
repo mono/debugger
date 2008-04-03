@@ -112,7 +112,7 @@ namespace Mono.Debugger.Tests
 		{
 			Compile ();
 
-			AssertExecute ("start");
+			AssertExecute ("run");
 			Process process = AssertMainProcessCreated ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
@@ -139,7 +139,7 @@ namespace Mono.Debugger.Tests
 			//
 			bpt_world = AssertBreakpoint ("hello.World ()");
 
-			AssertExecute ("start -yes");
+			AssertExecute ("run -yes");
 			AssertTargetExited (thread.Process);
 
 			process = AssertMainProcessCreated ();
@@ -169,7 +169,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("disable " + bpt_test);
 			AssertExecute ("disable " + bpt_bar);
 
-			AssertExecute ("start");
+			AssertExecute ("run");
 			Process process = AssertMainProcessCreated ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
