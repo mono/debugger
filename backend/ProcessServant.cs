@@ -292,6 +292,11 @@ namespace Mono.Debugger.Backend
 			manager.Debugger.OnThreadCreatedEvent (thread.Client);
 		}
 
+		internal void OnManagedThreadExitedEvent (ThreadServant thread)
+		{
+			thread_hash.Remove (thread.PID);
+		}
+
 		internal void OnThreadExitedEvent (ThreadServant thread)
 		{
 			thread_hash.Remove (thread.PID);

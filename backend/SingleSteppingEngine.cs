@@ -531,6 +531,7 @@ namespace Mono.Debugger.Backend
 		internal void OnManagedThreadExited ()
 		{
 			this.end_stack_address = TargetAddress.Null;
+			process.OnManagedThreadExitedEvent (this);
 		}
 
 		internal void OnThreadExited (Inferior.ChildEvent cevent)

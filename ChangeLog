@@ -1,3 +1,13 @@
+2008-04-03  Martin Baulig  <martin@ximian.com>
+
+	* backend/ProcessServant.cs
+	(ProcessServant.OnManagedThreadExitedEvent): New internal method;
+	remove the thread from the hash, but don't emit any events.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OnManagedThreadExited): Fix a race condition: call
+	`process.OnManagedThreadExitedEvent()'.
+
 2008-03-24  Wade Berrier  <wberrier@novell.com>
 
 	* Makefile.am:
