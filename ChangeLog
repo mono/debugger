@@ -1,5 +1,10 @@
 2008-04-03  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/TestException.cs: Disable; see
+	https://bugzilla.novell.com/show_bug.cgi?id=376841 for details.
+
+2008-04-03  Martin Baulig  <martin@ximian.com>
+
 	* backend/ProcessServant.cs
 	(ProcessServant.OnManagedThreadExitedEvent): New internal method;
 	remove the thread from the hash, but don't emit any events.
