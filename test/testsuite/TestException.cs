@@ -20,7 +20,7 @@ namespace Mono.Debugger.Tests
 		const int LineMain2 = 19;
 
 		[Test]
-		[Category("NotWorking")]
+		[Category("ManagedTypes")]
 		public void Main ()
 		{
 			Process process = Start ();
