@@ -50,7 +50,7 @@ simple (void)
 
 	const char *hello = "Hello World";
 
-	printf ("Simple: %d - %ld - %g - %s\n", a, b, f, hello);
+	printf ("Simple: %d - %ld - %g - %s\n", a, b, f, hello); // @MDB BREAKPOINT: simple
 }
 
 void
@@ -69,7 +69,7 @@ test_struct (void)
 	s.f = (float) s.b / (float) s.a;
 	s.hello = "Hello World";
 
-	print_test_struct (&s);
+	print_test_struct (&s); // @MDB BREAKPOINT: struct
 }
 
 void
@@ -82,7 +82,7 @@ test_struct_2 (void)
 	s.f = (float) s.b / (float) s.a;
 	s.hello = "Hello World";
 
-	print_test_struct (&s);
+	print_test_struct (&s); // @MDB BREAKPOINT: struct2
 }
 
 void
@@ -93,7 +93,7 @@ test_struct_3 (void)
 	s.a = 5;
 	s.foo.b = 800;
 	s.bar.b = 9000;
-	printf ("Test: %d - %ld,%ld\n", s.a, s.foo.b, s.bar.b);
+	printf ("Test: %d - %ld,%ld\n", s.a, s.foo.b, s.bar.b); // @MDB BREAKPOINT: struct3
 }
 
 void
@@ -107,7 +107,7 @@ test_function_struct (void)
 {
 	FunctionStruct test;
 
-	test.foo = test_func;
+	test.foo = test_func; // @MDB BREAKPOINT: function struct
 }
 
 void
@@ -122,7 +122,7 @@ test_bitfield (void)
 	bitfield.e = 15;
 	bitfield.f = 8;
 
-	printf ("Bitfield: %x\n", * ((int *) &bitfield));
+	printf ("Bitfield: %x\n", * ((int *) &bitfield)); // @MDB BREAKPOINT: bitfield
 }
 
 void
@@ -133,13 +133,13 @@ test_list (void)
 	list.a = 9;
 	list.next = &list;
 
-	printf ("%d\n", list.next->a);
+	printf ("%d\n", list.next->a); // @MDB BREAKPOINT: list
 }
 
 int
 main (void)
 {
-	setbuf (stdout, NULL);
+	setbuf (stdout, NULL);			// @MDB LINE: main
 	simple ();
 	test_struct ();
 	test_struct_2 ();
