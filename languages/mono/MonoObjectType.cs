@@ -17,6 +17,10 @@ namespace Mono.Debugger.Languages.Mono
 			this.typedef = typedef;
 		}
 
+		public override bool CanDereference {
+			get { return true; }
+		}
+
 		public static MonoObjectType Create (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			int object_size = 2 * memory.TargetMemoryInfo.TargetAddressSize;

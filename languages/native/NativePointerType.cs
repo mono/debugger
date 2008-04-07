@@ -8,6 +8,10 @@ namespace Mono.Debugger.Languages.Native
 			: base (language, name, size)
 		{ }
 
+		public NativePointerType (Language language, TargetType target)
+			: this (language, MakePointerName (target), target, target.Size)
+		{ }
+
 		public NativePointerType (Language language, string name,
 					  TargetType target_type, int size)
 			: this (language, name, size)
@@ -33,6 +37,10 @@ namespace Mono.Debugger.Languages.Native
 			get { return target_type != null; }
 		}
 
+		public override bool CanDereference {
+			get { return target_type != null; }
+		}
+
 		public override bool ContainsGenericParameters {
 			get { return false; }
 		}
@@ -50,7 +58,21 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
+		internal static string MakePointerName (TargetType type)
+		{
+			NativeFunctionType func_type = type as NativeFunctionType;
+			if (func_type != null)
+				return func_type.GetPointerName ();
+
+			NativeFunctionPointer func_ptr = type as NativeFunctionPointer;
+			if (func_ptr != null)
+				return ((NativeFunctionType) func_ptr.Type).GetPointerName ();
+
+			return type.Name + "*";
+		}
+
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
 			return new NativePointerObject (this, location);
 		}

@@ -1,3 +1,19 @@
+2008-04-07  Martin Baulig  <martin@ximian.com>
+
+	Implemented support for native function pointers.
+
+	* languages/native/NativeFunctionPointer.cs: New file.
+	* languages/native/NativeFunctionObject.cs: New file.
+
+	* frontend/Expression.cs
+	(PointerDereferenceExpression): Improved this.
+
+	* languages/TargetPointerType.cs
+	(TargetPointerType.CanDereference): New public abstract property.
+
+	* test/src/testnativetypes.c: Added tests.
+	* test/testsuite/testnativetypes.cs: Added tests.
+
 2008-04-03  Martin Baulig  <martin@ximian.com>
 
 	* backend/ProcessServant.cs

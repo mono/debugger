@@ -2,16 +2,11 @@ using System;
 
 namespace Mono.Debugger.Languages.Native
 {
-	internal class NativeTypeAlias : TargetType
+	internal class NativeTypeAlias : TargetTypeAlias
 	{
-		string name;
-
 		public NativeTypeAlias (Language language, string name, string target_name)
-			: base (language, TargetObjectKind.Alias)
-		{
-			this.target_name = target_name;
-			this.name = name;
-		}
+			: base (language, name, target_name)
+		{ }
 
 		public NativeTypeAlias (Language language, string name, string target_name,
 					TargetType target)
@@ -20,7 +15,6 @@ namespace Mono.Debugger.Languages.Native
 			this.target_type = target;
 		}
 
-		string target_name;
 		TargetType target_type;
 
 		public override bool HasClassType {
@@ -29,10 +23,6 @@ namespace Mono.Debugger.Languages.Native
 
 		public override TargetClassType ClassType {
 			get { throw new InvalidOperationException (); }
-		}
-
-		public override string Name {
-			get { return name; }
 		}
 
 		public override int Size {
@@ -50,6 +40,9 @@ namespace Mono.Debugger.Languages.Native
 
 		public override bool IsByRef {
 			get {
+				if (target_type != null)
+					return target_type.IsByRef;
+
 				return false;
 			}
 		}
@@ -58,20 +51,20 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		public string TargetName {
-			get { return target_name; }
+		public override TargetType TargetType {
+			get { return target_type; }
 		}
 
-		public TargetType TargetType {
-			get { return target_type; }
-			set { target_type = value; }
+		internal void SetTargetType (TargetType type)
+		{
+			this.target_type = type;
 		}
 
 		protected override TargetObject DoGetObject (TargetMemoryAccess target,
 							     TargetLocation location)
 		{
 			if (target_type == null)
-				target_type = language.LookupType (target_name);
+				target_type = language.LookupType (TargetName);
 
 			if (target_type == null)
 				return null;

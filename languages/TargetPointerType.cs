@@ -43,6 +43,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public abstract bool CanDereference {
+			get;
+		}
+
 		public abstract bool HasStaticType {
 			get;
 		}

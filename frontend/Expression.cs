@@ -484,7 +484,9 @@ namespace Mono.Debugger.Frontend
 			StackFrame frame = context.CurrentFrame;
 			if ((frame.Language == null) ||
 			    !frame.Language.CanCreateInstance (val.GetType ()))
-				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
+				throw new ScriptingException (
+					"Cannot instantiate value '{0}' in the current frame's " +
+					"language", Name);
 
 			return frame.Language.CreateInstance (frame.Thread, val);
 		}
@@ -599,7 +601,12 @@ namespace Mono.Debugger.Frontend
 
 		protected override object DoEvaluate (ScriptingContext context)
 		{
-			return null;
+			return IntPtr.Zero;
+		}
+
+		protected override TargetType DoEvaluateType (ScriptingContext context)
+		{
+			return context.CurrentLanguage.VoidType;
 		}
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
@@ -1630,14 +1637,22 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoAssign (ScriptingContext context, TargetObject tobj)
 		{
-			TargetFundamentalObject fobj = tobj as TargetFundamentalObject;
-			if (fobj == null)
-				throw new ScriptingException (
-					"Cannot store non-fundamental object `{0}' in " +
-					" a registers", tobj);
+			long value;
 
-			object obj = fobj.GetObject (context.CurrentThread);
-			long value = System.Convert.ToInt64 (obj);
+			TargetPointerObject pobj = tobj as TargetPointerObject;
+			if (pobj != null) {
+				TargetAddress addr = pobj.GetAddress (context.CurrentThread);
+				value = addr.Address;
+			} else {
+				TargetFundamentalObject fobj = tobj as TargetFundamentalObject;
+				if (fobj == null)
+					throw new ScriptingException (
+						"Cannot store non-fundamental object `{0}' in " +
+						"a register", tobj.Type.Name);
+
+				object obj = fobj.GetObject (context.CurrentThread);
+				value = System.Convert.ToInt64 (obj);
+			}
 
 			Register register = context.CurrentFrame.Registers [name];
 			if (register == null)
@@ -2050,7 +2065,7 @@ namespace Mono.Debugger.Frontend
 			TargetType type = expr.EvaluateType (context);
 
 			TargetPointerType ptype = type as TargetPointerType;
-			if (ptype != null)
+			if ((ptype != null) && ptype.CanDereference)
 				return ptype.StaticType;
 
 			throw new ScriptingException (
@@ -2062,21 +2077,18 @@ namespace Mono.Debugger.Frontend
 			TargetObject obj = expr.EvaluateObject (context);
 
 			TargetPointerObject pobj = obj as TargetPointerObject;
-			if (pobj != null) {
+			if ((pobj != null) && pobj.Type.CanDereference) {
 				TargetObject result;
 				try {
 					result = pobj.GetDereferencedObject (context.CurrentThread);
 				} catch {
-					result = null;
+					throw new ScriptingException ("Cannot dereference `{0}'.",
+								      expr.Name);
 				}
 
 				if (result != null)
 					return result;
 			}
-
-			TargetClassObject cobj = obj as TargetClassObject;
-			if (current_ok && (cobj != null))
-				return cobj;
 
 			PointerExpression pexpr = expr as PointerExpression;
 			if (pexpr != null) {
@@ -2092,6 +2104,10 @@ namespace Mono.Debugger.Frontend
 				}
 			}
 
+			TargetClassObject cobj = obj as TargetClassObject;
+			if (current_ok && (cobj != null))
+				return cobj;
+
 			throw new ScriptingException (
 				"Expression `{0}' is not a pointer.", expr.Name);
 		}
@@ -2103,8 +2119,12 @@ namespace Mono.Debugger.Frontend
 				obj = (long) (int) obj;
 			if (obj is long)
 				return new TargetAddress (context.AddressDomain, (long) obj);
+			else if (obj is PointerDereferenceExpression)
+				obj = ((Expression) obj).EvaluateObject (context);
 			else if (obj is PointerExpression)
 				return ((PointerExpression) obj).EvaluateAddress (context);
+			else if (obj is Expression)
+				obj = ((Expression) obj).EvaluateObject (context);
 
 			TargetPointerObject pobj = obj as TargetPointerObject;
 			if (pobj == null)

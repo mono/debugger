@@ -643,6 +643,8 @@ namespace Mono.Debugger.Tests
 					Assert.Fail ("Cannot resolve expression `{0}'.", expression);
 
 				return expr.EvaluateType (context);
+			} catch (ScriptingException) {
+				throw;
 			} catch (AssertionException) {
 				throw;
 			} catch (Exception ex) {
@@ -708,7 +710,7 @@ namespace Mono.Debugger.Tests
 
 				object obj = EvaluateExpression (context, expression);
 				text = context.FormatObject (obj, DisplayFormat.Object);
-				Assert.Fail ("Evaluation of exception `{0}' failed to throw " +
+				Assert.Fail ("Evaluation of expression `{0}' failed to throw " +
 					     "exception {1}.", expression, exp_result);
 			} catch (AssertionException) {
 				throw;
@@ -741,6 +743,30 @@ namespace Mono.Debugger.Tests
 
 			if (text != exp_result)
 				Assert.Fail ("Type of expression `{0}' is `{1}', but expected `{2}'.",
+					     expression, text, exp_result);
+		}
+
+		public void AssertTypeException (Thread thread, string expression, string exp_result)
+		{
+			string text = null;
+			try {
+				ScriptingContext context = GetContext (thread);
+
+				TargetType type = EvaluateExpressionType (context, expression);
+				text = context.FormatType (type);
+				Assert.Fail ("Evaluation of expression `{0}' failed to throw " +
+					     "exception {1}.", expression, exp_result);
+			} catch (AssertionException) {
+				throw;
+			} catch (ScriptingException ex) {
+				text = ex.Message;
+			} catch (Exception ex) {
+				Assert.Fail ("Failed to print expression `{0}': {1}",
+					     expression, ex);
+			}
+
+			if (text != exp_result)
+				Assert.Fail ("Expression `{0}' evaluated to `{1}', but expected `{2}'.",
 					     expression, text, exp_result);
 		}
 

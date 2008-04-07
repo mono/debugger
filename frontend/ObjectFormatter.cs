@@ -37,6 +37,12 @@ namespace Mono.Debugger.Frontend
 				Append (((TargetType) obj).Name);
 			} else if (obj is TargetObject) {
 				Format (target, (TargetObject) obj);
+			} else if (obj is IntPtr) {
+				IntPtr ptr = (IntPtr) obj;
+				if (ptr == IntPtr.Zero)
+					Append ("null");
+				else
+					Append (TargetAddress.FormatAddress (ptr.ToInt64 ()));
 			} else {
 				Append (obj.ToString ());
 			}

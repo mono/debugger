@@ -25,7 +25,6 @@ namespace Mono.Debugger.Languages.Native
 			pointer_type = new NativePointerType (this, "void *", info.TargetAddressSize);
 			void_type = new NativeOpaqueType (this, "void", 0);
 			string_type = new NativeStringType (this, info.TargetAddressSize);
-
 		}
 
 		public override string Name {
@@ -114,12 +113,14 @@ namespace Mono.Debugger.Languages.Native
 
 		public override TargetObject CreateNullObject (Thread target, TargetType type)
 		{
-			throw new NotSupportedException ();
+			TargetLocation location = new AbsoluteTargetLocation (TargetAddress.Null);
+			NativePointerType pointer = new NativePointerType (this, type);
+			return new NativePointerObject (pointer, location);
 		}
 
 		public override TargetPointerType CreatePointerType (TargetType type)
 		{
-			return new NativePointerType (this, type.Name + "*", type, type.Size);
+			return new NativePointerType (this, type);
 		}
 
 		public override bool IsExceptionType (TargetClassType type)

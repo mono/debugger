@@ -79,6 +79,28 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
 
+			AssertHitBreakpoint (thread, "funcptr", "test_function_ptr");
+
+			AssertType (thread, "func_ptr", "void (*) (int)");
+			AssertType (thread, "func_ptr2", "typedef test_func_ptr = void (*) (int)");
+			AssertPrintException (thread, "*func_ptr",
+					     "Expression `func_ptr' is not a pointer.");
+			AssertPrintException (thread, "*func_ptr2",
+					      "Expression `func_ptr2' is not a pointer.");
+			AssertTypeException (thread, "*func_ptr",
+					     "Expression `func_ptr' is not a pointer.");
+			AssertTypeException (thread, "*func_ptr2",
+					     "Expression `func_ptr2' is not a pointer.");
+			AssertType (thread, "func_ptr3", "test_func_ptr*");
+			AssertType (thread, "*func_ptr3", "typedef test_func_ptr = void (*) (int)");
+			AssertTypeException (thread, "**func_ptr3",
+					     "Expression `*func_ptr3' is not a pointer.");
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("Test: 3");
+			AssertTargetOutput ("Test: 9");
+			AssertTargetOutput ("Test: 11");
+
 			AssertTargetExited (thread.Process);
 		}
 	}

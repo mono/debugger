@@ -25,6 +25,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
+		public override bool CanDereference {
+			get { return true; }
+		}
+
 		public override bool HasStaticType {
 			get { return true; }
 		}

@@ -28,7 +28,7 @@ namespace Mono.Debugger.Languages
 
 		public override string Print ()
 		{
-			return String.Format ("*{0}", reference);
+			return String.Format ("*[{0}]", reference.Print ());
 		}
 
 		protected override string MyToString ()

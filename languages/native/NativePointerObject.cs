@@ -21,8 +21,11 @@ namespace Mono.Debugger.Languages.Native
 			if (!Type.HasStaticType)
 				throw new InvalidOperationException ();
 
-			TargetLocation new_location = Location.GetLocationAtOffset (0);
-			return Type.StaticType.GetObject (target, new_location);
+			TargetLocation new_loc = Location;
+			if (Type.StaticType.IsByRef)
+				new_loc = Location.GetDereferencedLocation ();
+
+			return Type.StaticType.GetObject (target, new_loc);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
@@ -67,7 +70,7 @@ namespace Mono.Debugger.Languages.Native
 			if (HasAddress) {
 				TargetAddress address = GetAddress (target);
 				if (address.IsNull)
-					return "0x0";
+					return "null";
 				else
 					return String.Format ("{0}", address);
 			} else {

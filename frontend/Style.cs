@@ -388,7 +388,6 @@ namespace Mono.Debugger.Frontend
 				break;
 			}
 
-#if FIXME
 			case TargetObjectKind.Alias: {
 				TargetTypeAlias alias = (TargetTypeAlias) type;
 				string name;
@@ -399,7 +398,6 @@ namespace Mono.Debugger.Frontend
 				retval = String.Format ("typedef {0} = {1}", alias.Name, name);
 				break;
 			}
-#endif
 
 			case TargetObjectKind.GenericInstance: {
 				TargetGenericInstanceType gtype = (TargetGenericInstanceType) type;

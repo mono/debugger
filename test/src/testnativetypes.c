@@ -136,6 +136,20 @@ test_list (void)
 	printf ("%d\n", list.next->a); // @MDB BREAKPOINT: list
 }
 
+typedef void (*test_func_ptr) (int);
+
+void
+test_function_ptr (void)
+{
+	void (*func_ptr) (int) = test_func;
+	test_func_ptr func_ptr2 = func_ptr;
+	test_func_ptr *func_ptr3 = &func_ptr;
+
+	(* func_ptr) (3); // @MDB BREAKPOINT: funcptr
+	(* func_ptr2) (9);
+	(** func_ptr3) (11);
+}
+
 int
 main (void)
 {
@@ -147,5 +161,6 @@ main (void)
 	test_function_struct ();
 	test_bitfield ();
 	test_list ();
+	test_function_ptr ();
 	return 0;
 }

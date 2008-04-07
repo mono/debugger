@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Native
@@ -17,6 +18,10 @@ namespace Mono.Debugger.Languages.Native
 			this.return_type = return_type;
 			this.parameter_types = parameter_types;
 		}
+
+		internal NativeFunctionType (Language language)
+			: base (language)
+		{ }
 
 		public override bool HasClassType {
 			get { return false; }
@@ -94,6 +99,41 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		internal void SetPrototype (TargetType ret_type, TargetType[] param_types)
+		{
+			this.return_type = ret_type;
+			this.parameter_types = param_types;
+
+			StringBuilder sb = new StringBuilder ();
+			sb.Append (ret_type.Name);
+			sb.Append (" (*) (");
+
+			for (int i = 0; i < param_types.Length; i++) {
+				if (i > 0)
+					sb.Append (",");
+				sb.Append (param_types [i].Name);
+			}
+
+			sb.Append (")");
+			name = sb.ToString ();
+		}
+
+		internal string GetPointerName ()
+		{
+			StringBuilder sb = new StringBuilder ();
+			sb.Append (return_type.Name);
+			sb.Append (" (**) (");
+
+			for (int i = 0; i < parameter_types.Length; i++) {
+				if (i > 0)
+					sb.Append (",");
+				sb.Append (parameter_types [i].Name);
+			}
+
+			sb.Append (")");
+			return sb.ToString ();
+		}
+
 		public override object MethodHandle {
 			get {
 				return null;
@@ -106,9 +146,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
-	        protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
+	        protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
-			throw new NotSupportedException ();
+			throw new InvalidOperationException ();
 		}
 
 		public override bool IsManaged {

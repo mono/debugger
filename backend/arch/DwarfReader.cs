@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -2819,6 +2820,14 @@ namespace Mono.Debugger.Backend
 					reg = locreader.ReadLeb128 () + 3;
 					off = locreader.ReadSLeb128 ();
 					is_regoffset = true;
+				} else if (opcode == 0x03) { // DW_OP_addr
+					TargetAddress addr = new TargetAddress (
+						memory.AddressDomain, locreader.ReadAddress ());
+					TargetLocation aloc = new AbsoluteTargetLocation (addr);
+					if (is_byref)
+						return new DereferencedTargetLocation (aloc);
+					else
+						return aloc;
 				} else {
 					Console.WriteLine ("UNKNOWN OPCODE: {0:x}", opcode);
 					return null;
@@ -3213,19 +3222,23 @@ namespace Mono.Debugger.Backend
 					}
 
 					ref_type = reference.ResolveType ();
+					if (ref_type == null)
+						return null;
 				}
-				if (ref_type == null)
-					return null;
 
 				TargetFundamentalType fundamental = ref_type as TargetFundamentalType;
 				if ((fundamental != null) && (fundamental.Name == "char"))
 					return new NativeStringType (language, byte_size);
 
+				TargetFunctionType func = ref_type as TargetFunctionType;
+				if (func != null)
+					return new NativeFunctionPointer (language, func);
+
 				string name;
 				if (Name != null)
 					name = Name;
 				else
-					name = String.Format ("{0}*", ref_type.Name);
+					name = NativePointerType.MakePointerName (ref_type);
 
 				return new NativePointerType (language, name, ref_type, byte_size);
 			}
@@ -3534,7 +3547,7 @@ namespace Mono.Debugger.Backend
 
 			protected override void PopulateType ()
 			{
-				type.TargetType = reference.ResolveType ();
+				type.SetTargetType (reference.ResolveType ());
 			}
 		}
 
@@ -3684,6 +3697,7 @@ namespace Mono.Debugger.Backend
 			long type_offset;
 			bool prototyped;
 			DieType return_type;
+			NativeFunctionType function_type;
 
 			public DieSubroutineType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 						  long offset, AbbrevEntry abbrev)
@@ -3730,32 +3744,34 @@ namespace Mono.Debugger.Backend
 						return null;
 				}
 
+				function_type = new NativeFunctionType (language);
+				return function_type;
+			}
+
+			protected override void PopulateType ()
+			{
 				TargetType ret_type = null;
 				if (return_type != null)
 					ret_type = return_type.ResolveType ();
 				if (ret_type == null)
 					ret_type = (TargetType) language.VoidType;
 
-				TargetType[] param_types = new TargetType [0];
-				NativeFunctionType func_type = new NativeFunctionType (
-					language, "test", ret_type, param_types);
-				return func_type;
-			}
+				List<TargetType> param_list = new List<TargetType> ();
 
-			protected override void PopulateType ()
-			{
-				if (!abbrev.HasChildren)
-					return;
+				if (abbrev.HasChildren) {
+					foreach (Die child in Children) {
+						DieFormalParameter formal = child as DieFormalParameter;
+						if (formal == null) {
+							Console.WriteLine ("UNKNOWN DIE IN PROTOTYPE: {0}",
+									   child);
+							continue;
+						}
 
-				ArrayList args = new ArrayList ();
-
-				foreach (Die child in Children) {
-					DieFormalParameter formal = child as DieFormalParameter;
-					if (formal == null)
-						continue;
-
-					args.Add (formal);
+						param_list.Add (formal.Type);
+					}
 				}
+
+				function_type.SetPrototype (ret_type, param_list.ToArray ());
 			}
 		}
 
@@ -3832,25 +3848,43 @@ namespace Mono.Debugger.Backend
 			Attribute location_attr;
 			TargetVariable variable;
 			DieSubprogram subprog;
+			TargetType type;
 			bool resolved;
 
-			protected bool DoResolve ()
+			protected bool DoResolveType ()
 			{
-				if ((TypeOffset == 0) || (Name == null) || (subprog == null) ||
-				    (location_attr == null))
-					return false;
+				if (type != null)
+					return true;
 
+				if (TypeOffset == 0)
+					return false;
 				DieType reference = comp_unit.GetType (TypeOffset);
 				if (reference == null)
 					return false;
 
-				TargetType type = reference.ResolveType ();
-				if (type == null)
+				type = reference.ResolveType ();
+				return type != null;
+			}
+
+			protected bool DoResolve ()
+			{
+				if (!DoResolveType ())
 					return false;
 
-				DwarfLocation location = new DwarfLocation (subprog, location_attr, type.IsByRef);
+				if ((Name == null) || (subprog == null) || (location_attr == null))
+					return false;
+
+				DwarfLocation location = new DwarfLocation (
+					subprog, location_attr, type.IsByRef);
 				variable = new DwarfTargetVariable (subprog, Name, type, location);
 				return true;
+			}
+
+			public TargetType Type {
+				get {
+					DoResolveType ();
+					return type;
+				}
 			}
 
 			public TargetVariable Variable {

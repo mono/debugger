@@ -30,9 +30,9 @@ namespace Mono.Debugger.Languages
 		public override string Print ()
 		{
 			if (offset > 0)
-				return String.Format ("{0}+{1}", relative_to, offset);
+				return String.Format ("[{0}]+0x{1:x}", relative_to.Print (), offset);
 			else
-				return String.Format ("{0}-{1}", relative_to, -offset);
+				return String.Format ("[{0}]-0x{1:x}", relative_to.Print (), -offset);
 		}
 
 		protected override string MyToString ()
