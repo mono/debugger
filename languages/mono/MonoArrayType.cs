@@ -11,6 +11,10 @@ namespace Mono.Debugger.Languages.Mono
 			: base (element_type, rank)
 		{ }
 
+		public override bool IsByRef {
+			get { return true; }
+		}
+
 		public override bool HasClassType {
 			get { return true; }
 		}

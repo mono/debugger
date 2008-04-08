@@ -321,12 +321,16 @@ namespace Mono.Debugger.Frontend
 
 		protected void FormatArray (Thread target, TargetArrayObject aobj)
 		{
-			int rank = aobj.Type.Rank;
-			FormatArray (target, aobj, 0, rank, new int [0]);
+			TargetArrayBounds bounds = aobj.GetArrayBounds (target);
+			if (bounds.IsUnbound)
+				Append ("[ ]");
+			else
+				FormatArray (target, aobj, bounds, 0, new int [0]);
 		}
 
 		protected void FormatArray (Thread target, TargetArrayObject aobj,
-					    int dimension, int rank, int[] indices)
+					    TargetArrayBounds bounds, int dimension,
+					    int[] indices)
 		{
 			Append ("[ ");
 			indent_level += 3;
@@ -336,10 +340,16 @@ namespace Mono.Debugger.Frontend
 			int[] new_indices = new int [dimension + 1];
 			indices.CopyTo (new_indices, 0);
 
-			int lower = aobj.GetLowerBound (target, dimension);
-			int upper = aobj.GetUpperBound (target, dimension);
+			int lower, upper;
+			if (!bounds.IsMultiDimensional) {
+				lower = 0;
+				upper = bounds.Length - 1;
+			} else {
+				lower = bounds.LowerBounds [dimension];
+				upper = bounds.UpperBounds [dimension];
+			}
 
-			for (int i = lower; i < upper; i++) {
+			for (int i = lower; i <= upper; i++) {
 				if (!first) {
 					Append (", ");
 					CheckLineWrap ();
@@ -347,8 +357,8 @@ namespace Mono.Debugger.Frontend
 				first = false;
 
 				new_indices [dimension] = i;
-				if (dimension + 1 < rank)
-					FormatArray (target, aobj, dimension + 1, rank, new_indices);
+				if (dimension + 1 < bounds.Rank)
+					FormatArray (target, aobj, bounds, dimension + 1, new_indices);
 				else {
 					TargetObject eobj = aobj.GetElement (target, new_indices);
 					FormatObjectRecursed (target, eobj, false);

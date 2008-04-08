@@ -101,6 +101,15 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Test: 9");
 			AssertTargetOutput ("Test: 11");
 
+			AssertHitBreakpoint (thread, "array", "test_array");
+			AssertPrint (thread, "array->simple_array", "(int []) [ 8192, 55, 71 ]");
+			AssertPrint (thread, "array->multi_array",
+				     "(long int []) [ [ 16, 32, 64 ], [ 24, 48, 96 ] ]");
+			AssertPrint (thread, "array->anonymous_array", "(float []) [ ]");
+			AssertPrint (thread, "array->anonymous_array [0]", "(float) 3.141593");
+			AssertPrint (thread, "array->anonymous_array [1]", "(float) 2.718282");
+			AssertExecute ("continue");
+
 			AssertTargetExited (thread.Process);
 		}
 	}

@@ -2247,6 +2247,8 @@ namespace Mono.Debugger.Frontend
 
 				if (idx is int)
 					return (int) idx;
+				else if (idx is long)
+					return (int) (long) idx;
 
 				TargetFundamentalObject obj = (TargetFundamentalObject) idx;
 				return (int) obj.GetObject (target);

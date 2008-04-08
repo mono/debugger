@@ -6,7 +6,7 @@ namespace Mono.Debugger.Languages
 	{
 		public new readonly TargetArrayType Type;
 		public readonly int Rank;
-		protected ArrayBounds[] bounds;
+		protected TargetArrayBounds bounds;
 
 		internal TargetArrayObject (TargetArrayType type, TargetLocation location)
 			: base (type, location)
@@ -32,35 +32,13 @@ namespace Mono.Debugger.Languages
 			}
 		}
 
-		protected bool GetArrayBounds (Thread thread)
+		public TargetArrayBounds GetArrayBounds (Thread thread)
 		{
-			thread.ThreadServant.DoTargetAccess (
+			return (TargetArrayBounds) thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target) {
-					return GetArrayBounds (target);
+					GetArrayBounds (target);
+					return bounds;
 			});
-			return bounds != null;
-		}
-
-		public int GetLowerBound (Thread target, int dimension)
-		{
-			if (!GetArrayBounds (target))
-				throw new LocationInvalidException ();
-
-			if ((dimension < 0) || (dimension >= Rank))
-				throw new ArgumentException ();
-
-			return bounds [dimension].Lower;
-		}
-
-		public int GetUpperBound (Thread target, int dimension)
-		{
-			if (!GetArrayBounds (target))
-				throw new LocationInvalidException ();
-
-			if ((dimension < 0) || (dimension >= Rank))
-				throw new ArgumentException ();
-
-			return bounds [dimension].Lower + bounds [dimension].Length;
 		}
 
 		protected int GetArrayOffset (TargetMemoryAccess target, int[] indices)
@@ -71,22 +49,23 @@ namespace Mono.Debugger.Languages
 			if (indices.Length != Rank)
 				throw new ArgumentException ();
 
-			if (Rank > 1) {
+			if (bounds.IsMultiDimensional) {
 				for (int i = 0; i < Rank; i++) {
-					if (indices [i] < bounds [i].Lower)
+					if (indices [i] < bounds.LowerBounds [i])
 						throw new ArgumentException ();
-
-					indices [i] -= bounds [i].Lower;
-
-					if (indices [i] >= bounds [i].Length)
+					if (indices [i] > bounds.UpperBounds [i])
 						throw new ArgumentException ();
 				}
-			} else if ((indices [0] < 0) || (indices [0] >= bounds [0].Length))
+			} else if (!bounds.IsUnbound &&
+				   ((indices [0] < 0) || (indices [0] >= bounds.Length))) {
 				throw new ArgumentException ();
+			}
 
 			int index = indices [0];
-			for (int i = 1; i < Rank; i++)
-				index = index * bounds [i].Length + indices [i];
+			for (int i = 1; i < Rank; i++) {
+				int length = bounds.UpperBounds [i] - bounds.LowerBounds [i] + 1;
+				index = index * length + indices [i];
+			}
 
 			if (Type.ElementType.IsByRef)
 				return index * target.TargetMemoryInfo.TargetAddressSize;
@@ -101,9 +80,12 @@ namespace Mono.Debugger.Languages
 			if (!GetArrayBounds (target))
 				throw new LocationInvalidException ();
 
-			int length = bounds [0].Length;
-			for (int i = 1; i < Rank; i++)
-				length *= bounds [i].Length;
+			if (!bounds.IsMultiDimensional)
+				return bounds.Length;
+
+			int length = 0;
+			for (int i = 0; i < Rank; i++)
+				length *= bounds.UpperBounds [i] - bounds.LowerBounds [i] + 1;
 			return length;
 		}
 
@@ -147,18 +129,6 @@ namespace Mono.Debugger.Languages
 		{
 			return String.Format ("{0} [{1}:{2}:{3}]", GetType (), Type,
 					      Type.ElementType, Rank);
-		}
-
-		protected struct ArrayBounds
-		{
-			public readonly int Lower;
-			public readonly int Length;
-
-			public ArrayBounds (int lower, int length)
-			{
-				this.Lower = lower;
-				this.Length = length;
-			}
 		}
 	}
 }

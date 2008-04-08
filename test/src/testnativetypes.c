@@ -150,6 +150,39 @@ test_function_ptr (void)
 	(** func_ptr3) (11);
 }
 
+typedef struct {
+	int simple_array [3];
+	long multi_array [2] [3];
+	float anonymous_array [];
+} TestArray;
+
+TestArray *
+allocate_array (void)
+{
+	TestArray *test = malloc (sizeof (TestArray) + 2 * sizeof (long));
+	int i, j;
+
+	test->simple_array [0] = 8192;
+	test->simple_array [1] = 55;
+	test->simple_array [2] = 71;
+
+	for (i = 0; i < 2; i++) {
+		for (j = 0; j < 3; j++)
+			test->multi_array [i][j] = (i + 2) << (j + 3);
+	}
+
+	test->anonymous_array [0] = 3.141593;
+	test->anonymous_array [1] = 2.718282;
+	return test;
+}
+
+void
+test_array (void)
+{
+	TestArray *array = allocate_array ();
+	free (array);				// @MDB BREAKPOINT: array
+}
+
 int
 main (void)
 {
@@ -162,5 +195,6 @@ main (void)
 	test_bitfield ();
 	test_list ();
 	test_function_ptr ();
+	test_array ();
 	return 0;
 }

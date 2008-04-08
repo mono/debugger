@@ -1,5 +1,24 @@
 2008-04-08  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetArrayType.cs
+	(TargetArrayBounds): New public class.
+	(TargetArrayType.IsByRef): Don't set this here; we need to set
+	this to `true' for managed arrays and `false' for native ones.
+
+	* languages/TargetArrayObject.cs
+	(TargetArrayObject.GetArrayBounds): New public method returning
+	the `TargetArrayBounds'; this was formerly a private method.
+	(TargetArrayObject): Removed GetLowerBound() and GetUpperBound().
+
+	* languages/native/NativeArrayType.cs
+	(NativeArrayType): Improved support for native arrays; we now
+	support multi-dimensional arrays and unbound arrays.
+
+	* test/src/testnativetypes.c: Added tests.
+	* test/testsuite/testnativetypes.cs: Added tests.
+
+2008-04-08  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs: Swap behavior of `-start' and `-run'
 	to make it consistent with the `start' and `run' commands.
 

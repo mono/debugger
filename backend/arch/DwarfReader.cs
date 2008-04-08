@@ -3246,8 +3246,15 @@ namespace Mono.Debugger.Backend
 
 		protected class DieSubrangeType : Die
 		{
-			int upper_bound;
-			int lower_bound;
+			public int? UpperBound {
+				get;
+				private set;
+			}
+
+			public int? LowerBound {
+				get;
+				private set;
+			}
 
 			public DieSubrangeType (DwarfBinaryReader reader, CompilationUnit comp_unit,
 						AbbrevEntry abbrev)
@@ -3258,29 +3265,17 @@ namespace Mono.Debugger.Backend
 			{
 				switch (attribute.DwarfAttribute) {
 				case DwarfAttribute.upper_bound:
-					upper_bound = (int) (long) attribute.Data;
+					UpperBound = (int) (long) attribute.Data;
 					break;
 
 				case DwarfAttribute.lower_bound:
-					lower_bound = (int) (long) attribute.Data;
+					LowerBound = (int) (long) attribute.Data;
 					break;
 
 				case DwarfAttribute.count:
-					lower_bound = 0;
-				  	upper_bound = ((int) (long) attribute.Data) - 1;
+					LowerBound = 0;
+				  	UpperBound = (int) (long) attribute.Data;
 					break;
-				}
-			}
-
-		  	public int UpperBound {
-				get {
-					return upper_bound;
-				}
-			}
-
-			public int LowerBound {
-				get {
-					return lower_bound;
 				}
 			}
 		}
@@ -3361,21 +3356,35 @@ namespace Mono.Debugger.Backend
 				else
 					name = String.Format ("{0} []", ref_type.Name);
 
-				/* XXX for now just find the first
-				 * Subrange child and use that for the
-				 * array dimensions.  This should
-				 * really support multidimensional
-				 * arrays */
-				DieSubrangeType subrange = null;
-				foreach (Die d in Children) {
-					subrange = d as DieSubrangeType;
-					if (subrange == null) continue;
-					break;
+				List<DieSubrangeType> list = new List<DieSubrangeType> ();
+
+				foreach (Die die in Children) {
+					DieSubrangeType subrange = die as DieSubrangeType;
+					if (subrange != null)
+						list.Add (subrange);
+				}
+
+				TargetArrayBounds bounds;
+				if (list.Count == 0)
+					bounds = TargetArrayBounds.MakeUnboundArray ();
+				else if ((list.Count == 1) && (list [0].UpperBound == null))
+					bounds = TargetArrayBounds.MakeUnboundArray ();
+				else if ((list.Count == 1) && ((list [0].LowerBound ?? 0) == 0))
+					bounds = TargetArrayBounds.MakeSimpleArray ((int) list [0].UpperBound + 1);
+				else {
+					int[] lower = new int [list.Count];
+					int[] upper = new int [list.Count];
+
+					for (int i = 0; i < list.Count; i++) {
+						lower [i] = list [i].LowerBound ?? 0;
+						upper [i] = (int) list [i].UpperBound;
+					}
+
+					bounds = TargetArrayBounds.MakeMultiArray (lower, upper);
 				}
 
 				return new NativeArrayType (
-					language, name, ref_type,
-					subrange.LowerBound, subrange.UpperBound, byte_size);
+					language, name, ref_type, bounds, byte_size);
 			}
 		}
 

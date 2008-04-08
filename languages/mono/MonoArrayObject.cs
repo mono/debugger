@@ -16,8 +16,7 @@ namespace Mono.Debugger.Languages.Mono
 			int length = reader.ReadInt32 ();
 
 			if (Rank == 1) {
-				bounds = new ArrayBounds [1];
-				bounds [0] = new ArrayBounds (0, length);
+				bounds = TargetArrayBounds.MakeSimpleArray (length);
 				return;
 			}
 
@@ -27,13 +26,18 @@ namespace Mono.Debugger.Languages.Mono
 			TargetBinaryReader breader = target.ReadMemory (
 				bounds_address, 8 * Rank).GetReader ();
 
-			bounds = new ArrayBounds [Rank];
+			int[] lower = new int [Rank];
+			int[] upper = new int [Rank];
 
 			for (int i = 0; i < Rank; i++) {
 				int b_length = breader.ReadInt32 ();
 				int b_lower = breader.ReadInt32 ();
-				bounds [i] = new ArrayBounds (b_lower, b_length);
+
+				lower [i] = b_lower;
+				upper [i] = b_lower + b_length - 1;
 			}
+
+			bounds = TargetArrayBounds.MakeMultiArray (lower, upper);
 		}
 
 		internal override TargetObject GetElement (TargetMemoryAccess target, int[] indices)

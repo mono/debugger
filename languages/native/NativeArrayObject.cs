@@ -5,11 +5,10 @@ namespace Mono.Debugger.Languages.Native
 	internal class NativeArrayObject : TargetArrayObject
 	{
 		public NativeArrayObject (NativeArrayType type, TargetLocation location,
-					  int lower_bound, int upper_bound)
+					  TargetArrayBounds bounds)
 			: base (type, location)
 		{
-			bounds = new ArrayBounds [1];
-			bounds [0] = new ArrayBounds (lower_bound, upper_bound - lower_bound);
+			this.bounds = bounds;
 		}
 
 		protected override void DoGetArrayBounds (TargetMemoryAccess target)
@@ -17,13 +16,9 @@ namespace Mono.Debugger.Languages.Native
 
 		internal override TargetObject GetElement (TargetMemoryAccess target, int[] indices)
 		{
-			if (indices.Length != 1)
-				throw new ArgumentException ();
+			int offset = GetArrayOffset (target, indices);
 
-			int index = indices [0];
-			int size = Type.ElementType.Size;
-
-			TargetLocation new_location = Location.GetLocationAtOffset (index * size);
+			TargetLocation new_location = Location.GetLocationAtOffset (offset);
 			if (Type.ElementType.IsByRef)
 				new_location = new_location.GetDereferencedLocation ();
 

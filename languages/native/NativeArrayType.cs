@@ -6,20 +6,20 @@ namespace Mono.Debugger.Languages.Native
 	{
 		string name;
 		int size;
+		TargetArrayBounds bounds;
 
 		public NativeArrayType (Language language, string name, TargetType element_type,
-					int lower_bound, int upper_bound, int size)
-			: base (element_type, 1)
+					TargetArrayBounds bounds, int size)
+			: base (element_type, bounds.Rank)
 		{
 			this.name = name;
 			this.size = size;
-
-			this.lower_bound = lower_bound;
-			this.upper_bound = upper_bound;
+			this.bounds = bounds;
 		}
 	  
-		int lower_bound;
-		int upper_bound;
+		public override bool IsByRef {
+			get { return false; }
+		}
 
 		public override bool HasClassType {
 			get { return false; }
@@ -38,12 +38,13 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override bool HasFixedSize {
-			get { return true; }
+			get { return !bounds.IsUnbound; }
 		}
 
-		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
+		protected override TargetObject DoGetObject (TargetMemoryAccess target,
+							     TargetLocation location)
 		{
-			return new NativeArrayObject (this, location, lower_bound, upper_bound);
+			return new NativeArrayObject (this, location, bounds);
 		}
 	}
 
