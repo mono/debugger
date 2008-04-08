@@ -1,3 +1,7 @@
+2008-04-09  Martin Baulig  <martin@ximian.com>
+
+	* test/{testsuite|src}/TestIterator.cs: Reflect latest gmcs changes.
+
 2008-04-08  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetArrayType.cs

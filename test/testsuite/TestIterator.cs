@@ -16,7 +16,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
-		[Category("Anonymous")]
+		[Category("Test")]
 		public void Main ()
 		{
 			Process process = Start ();
@@ -84,9 +84,6 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "test2 loop", "Test2.X.Run()");
 
 			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator start", "Test2.X.GetRange()");
-
-			AssertExecute ("step");
 			AssertStopped (thread, "test2 iterator loop", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
@@ -113,9 +110,6 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "total", "(int) 2");
 			AssertPrint (thread, "stop", "(bool) true");
 			AssertPrint (thread, "this", "(Test2.X) { total = 2, stop = true }");
-
-			AssertExecute ("step");
-			AssertStopped (thread, "test2 iterator break", "Test2.X.GetRange()");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "test2 return", "Test2.X.Run()");

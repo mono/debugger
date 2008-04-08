@@ -50,7 +50,7 @@ namespace Test2
 		bool stop;
 
 		IEnumerator<int> GetRange ()
-		{							// @MDB LINE: test2 iterator start
+		{
 			while (total < 100) {				// @MDB LINE: test2 iterator loop
 				if (stop)				// @MDB LINE: test2 iterator if
 					yield break;			// @MDB LINE: test2 iterator break
