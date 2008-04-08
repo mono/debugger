@@ -1,3 +1,8 @@
+2008-04-08  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerOptions.cs: Swap behavior of `-start' and `-run'
+	to make it consistent with the `start' and `run' commands.
+
 2008-04-07  Martin Baulig  <martin@ximian.com>
 
 	Implemented support for native function pointers.

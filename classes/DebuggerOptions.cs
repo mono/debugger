@@ -294,8 +294,8 @@ namespace Mono.Debugger
 				"   -jit-optimizations:PARAM  Set jit optimizations used on the inferior process\n" +
 				"   -mono:PATH                Override the inferior mono\n" +
 				"   -mono-prefix:PATH         Override the mono prefix\n" +
-				"   -run                      Start inferior without halting in Main()\n" +
-				"   -start                    Start inferior and stop in Main()\n" +
+				"   -start                    Start inferior without halting in Main()\n" +
+				"   -run                      Start inferior and stop in Main()\n" +
 				"   -script                  \n" +
 				"   -usage                   \n" +
 				"   -version                  Display version and licensing information (short -V)\n" +
@@ -506,7 +506,7 @@ namespace Mono.Debugger
 				Environment.Exit (1);
 				return true;
 
-			case "-run":
+			case "-start":
 				if (ms_value != null) {
 					Usage ();
 					Environment.Exit (1);
@@ -515,7 +515,7 @@ namespace Mono.Debugger
 				debug_options.StopInMain = false;
 				return true;
 
-			case "-start":
+			case "-run":
 				if (ms_value != null) {
 					Usage ();
 					Environment.Exit (1);
