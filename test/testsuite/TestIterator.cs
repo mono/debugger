@@ -16,7 +16,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
-		[Category("Test")]
+		[Category("Anonymous")]
 		public void Main ()
 		{
 			Process process = Start ();
