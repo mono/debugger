@@ -1,7 +1,7 @@
 2008-04-14  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Conditionally check for libgtop; it's only used in
-	the test suite.
+	the test suite to display some memory usage statistics.
 
 	* test/misc/: New directory; contains a simple managed wrapper
 	around libgtop to gather some statistics while running the tests.
