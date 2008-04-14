@@ -8,6 +8,7 @@ using ST = System.Threading;
 using System.Text;
 using System.Text.RegularExpressions;
 using NUnit.Framework;
+using NUnit.Core;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -198,11 +199,23 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
+		public static bool Verbose;
+
 		Dictionary<string,int> lines;
 		Dictionary<string,int> automatic_breakpoints;
 
+		protected static readonly StreamWriter stderr;
+
 		static TestSuite ()
 		{
+			stderr = new StreamWriter (Console.OpenStandardError ());
+			stderr.AutoFlush = true;
+
+#if HAVE_LIBGTOP
+			if (Verbose)
+				stderr.WriteLine ("PID IS {0}", LibGTop.GetPid ());
+#endif
+
 			Report.Initialize ();
 			Report.ReportWriter.PrintToConsole = false;
 		}
@@ -333,7 +346,25 @@ namespace Mono.Debugger.Tests
 			interpreter.Dispose ();
 			interpreter = null;
 			GC.Collect ();
+
+#if HAVE_LIBGTOP
+			if (Verbose)
+				stderr.WriteLine ("{0}: {1}", FileName, PrintMemoryInfo ());
+#endif
 		}
+
+#if HAVE_LIBGTOP
+		public string PrintMemoryInfo ()
+		{
+			int pid = LibGTop.GetPid ();
+			int files = LibGTop.GetOpenFiles (pid);
+			LibGTop.MemoryInfo info = LibGTop.GetMemoryInfo (pid);
+			return String.Format ("size = {0,5}  vsize = {1,7}  resident = {2,5}  " +
+					      "share = {3,5}  rss = {4,5}  files = {5,2}",
+					      info.Size, info.VirtualSize, info.Resident,
+					      info.Share, info.RSS, files);
+		}
+#endif
 
 		private static DebuggerOptions CreateOptions (string application, string[] args)
 		{

@@ -1,5 +1,22 @@
 2008-04-14  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Conditionally check for libgtop; it's only used in
+	the test suite.
+
+	* test/misc/: New directory; contains a simple managed wrapper
+	around libgtop to gather some statistics while running the tests.
+
+	* build/runtests: New script to run the tests; correctly sets
+	LD_LIBRARY_PATH so we can run the test suite without doing a `make
+	install' first.
+
+	* test/testsuite/NUnit.cs
+	(TestSuite.PrintMemoryInfo): New public method; uses libgtop to
+	print some memory statistics about the current process; only
+	available if compiled with libgtop support.
+
+2008-04-14  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-linux-ptrace.c
 	(_server_ptrace_finalize_inferior): New static function.
 

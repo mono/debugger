@@ -1,1 +1,1 @@
-SUBDIRS = src testsuite
+SUBDIRS = src misc testsuite

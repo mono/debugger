@@ -233,6 +233,11 @@ fi
 
 AM_CONDITIONAL(DISABLED, false)
 
+PKG_CHECK_MODULES(LIBGTOP, libgtop-2.0, [have_libgtop=true], [have_libgtop=false])
+AM_CONDITIONAL(HAVE_LIBGTOP, test x$have_libgtop = xtrue)
+AC_SUBST(LIBGTOP_CFLAGS)
+AC_SUBST(LIBGTOP_LIBS)
+
 AC_OUTPUT([
 Makefile
 mono-debugger.pc
@@ -261,6 +266,7 @@ frontend/jay/Makefile
 frontend/libedit/Makefile
 test/Makefile
 test/src/Makefile
+test/misc/Makefile
 test/testsuite/Makefile
 doc/Makefile
 ])

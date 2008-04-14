@@ -7,6 +7,7 @@ two_SCRIPTS = mdb.exe
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
 noinst_SCRIPTS = \
+	runtests					\
 	Mono.Debugger.dll				\
 	Mono.Debugger.Backend.dll			\
 	Mono.Debugger.Frontend.dll			\
@@ -49,6 +50,8 @@ BACKEND_SRCLIST = \
 
 TEST_SRCLIST = \
 	$(top_srcdir)/test/testsuite/*.cs		\
+	$(top_srcdir)/test/misc/*.cs			\
+	$(top_srcdir)/test/testsuite/temp/*.cs		\
 	AssemblyInfo.cs
 
 TEST_CASE_SRCLIST = \
@@ -75,7 +78,14 @@ TEST_DEPS = \
 	-r:./Mono.Debugger.dll				\
 	-r:./Mono.Debugger.Backend.dll			\
 	-r:./Mono.Debugger.Frontend.dll			\
-	-r:nunit.framework
+	-r:nunit.framework				\
+	-r:nunit.core
+
+if HAVE_LIBGTOP
+TEST_MCS_FLAGS = -define:HAVE_LIBGTOP
+else
+TEST_MCS_FLAGS =
+endif
 
 Mono.Debugger.Backend.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(BACKEND_SRCLIST) Mono.Debugger.dll
 	$(MCS) -target:library -out:Mono.Debugger.Backend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(BACKEND_DEPS) $(BACKEND_SRCLIST)
@@ -87,7 +97,7 @@ Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.Backend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
-	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) $(TEST_MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
 #	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/build/mono.snk)
@@ -120,6 +130,14 @@ mdb: mdb.in Makefile
 	sed -e 's^\@twodir\@^$(twodir)^g' < $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
+runtests: runtests.in Makefile
+	builddir=$(top_builddir) ; the_builddir=`cd $$builddir && pwd` ; \
+	sed -e 's^\@NUNIT_CONSOLE\@^$(NUNIT_CONSOLE)^g' \
+		-e 's^\@NUNIT_CONSOLE_FLAGS\@^$(NUNIT_CONSOLE_FLAGS)^g' \
+		-e "s^\@top_builddir\@^$$the_builddir^g" \
+		< $(srcdir)/runtests.in > runtests.tmp \
+	&& mv runtests.tmp runtests && chmod 755 runtests
+
 install-data-local:
 	$(GACUTIL) /i $(srcdir)/Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /i Mono.Debugger.Backend.dll /f $(GACUTIL_FLAGS) || exit 1;
@@ -132,7 +150,7 @@ uninstall-local:
 
 NUNIT_CONSOLE_FLAGS =
 
-check-local: Mono.Debugger.Test.dll $(TEST_CASE_SRCLIST)
-	LD_LIBRARY_PATH="$(top_builddir)/backend/server/.libs:$$LD_LIBRARY_PATH" $(NUNIT_CONSOLE) $(NUNIT_CONSOLE_FLAGS) /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml Mono.Debugger.Test.dll || ok=false; \
+check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST)
+	$(builddir)/runtests /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml || ok=false; \
 	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 	$$ok
