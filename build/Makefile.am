@@ -51,7 +51,6 @@ BACKEND_SRCLIST = \
 TEST_SRCLIST = \
 	$(top_srcdir)/test/testsuite/*.cs		\
 	$(top_srcdir)/test/misc/*.cs			\
-	$(top_srcdir)/test/testsuite/temp/*.cs		\
 	AssemblyInfo.cs
 
 TEST_CASE_SRCLIST = \
