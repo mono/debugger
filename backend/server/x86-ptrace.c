@@ -53,6 +53,7 @@ struct InferiorHandle
 	int mem_fd;
 #endif
 	int last_signal;
+	int redirect_fds;
 	int output_fd [2], error_fd [2];
 	int is_thread, is_initialized;
 };
@@ -101,6 +102,14 @@ static void
 server_ptrace_finalize (ServerHandle *handle)
 {
 	x86_arch_finalize (handle->arch);
+
+	_server_ptrace_finalize_inferior (handle);
+
+	if (handle->inferior->redirect_fds) {
+		close (handle->inferior->output_fd[0]);
+		close (handle->inferior->error_fd[0]);
+	}
+
 	g_free (handle->inferior);
 	g_free (handle);
 }
@@ -370,6 +379,8 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 
 	pipe (fd);
 
+	inferior->redirect_fds = TRUE;
+
 	pipe (inferior->output_fd);
 	pipe (inferior->error_fd);
 
@@ -402,6 +413,16 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		write (fd [1], &len, sizeof (len));
 		write (fd [1], error_message, len);
 		_exit (1);
+	} else if (*child_pid < 0) {
+		close (inferior->output_fd[0]);
+		close (inferior->output_fd[1]);
+		close (inferior->error_fd[0]);
+		close (inferior->error_fd[1]);
+		close (fd [0]);
+		close (fd [1]);
+
+		*error = g_strdup_printf ("fork() failed: %s", g_strerror (errno));
+		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
 	close (inferior->output_fd[1]);
@@ -421,11 +442,16 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
+	close (fd [0]);
+
 	inferior->pid = *child_pid;
 
 	result = _server_ptrace_setup_inferior (handle);
-	if (result != COMMAND_ERROR_NONE)
+	if (result != COMMAND_ERROR_NONE) {
+		close (inferior->output_fd[0]);
+		close (inferior->error_fd[0]);
 		return result;
+	}
 
 	mono_thread_create (mono_domain_get (), io_thread, io_data);
 

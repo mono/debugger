@@ -1,3 +1,15 @@
+2008-04-14  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_finalize_inferior): New static function.
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_finalize): Don't leak file descriptors.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.Dispose): Use the `symfile_hash', not the
+	`symfile_by_index' hash to finalize symbol files.
+
 2008-04-09  Martin Baulig  <martin@ximian.com>
 
 	* test/{testsuite|src}/TestIterator.cs: Reflect latest gmcs changes.

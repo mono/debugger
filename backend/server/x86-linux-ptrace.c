@@ -304,6 +304,13 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+_server_ptrace_finalize_inferior (ServerHandle *handle)
+{
+	close (handle->inferior->mem_fd);
+	handle->inferior->mem_fd = -1;
+}
+
 static ServerCommandError
 server_ptrace_initialize_process (ServerHandle *handle)
 {

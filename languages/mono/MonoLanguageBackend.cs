@@ -1297,11 +1297,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			if (disposing) {
-				if (symfile_by_index != null) {
-					foreach (MonoSymbolFile symfile in symfile_by_index.Values)
+				if (symfile_hash != null) {
+					foreach (MonoSymbolFile symfile in symfile_hash.Values)
 						symfile.Dispose();
 
-					symfile_by_index = null;
+					symfile_hash = null;
 				}
 			}
 		}
