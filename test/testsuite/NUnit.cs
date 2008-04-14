@@ -199,7 +199,7 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
-		public static bool Verbose;
+		public static bool Verbose = true;
 
 		Dictionary<string,int> lines;
 		Dictionary<string,int> automatic_breakpoints;
@@ -348,8 +348,10 @@ namespace Mono.Debugger.Tests
 			GC.Collect ();
 
 #if HAVE_LIBGTOP
-			if (Verbose)
-				stderr.WriteLine ("{0}: {1}", FileName, PrintMemoryInfo ());
+			if (Verbose) {
+				string name = Path.GetFileNameWithoutExtension (FileName);
+				stderr.WriteLine ("{0}: {1}", name, PrintMemoryInfo ());
+			}
 #endif
 		}
 
