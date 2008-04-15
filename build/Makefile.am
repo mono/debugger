@@ -131,7 +131,8 @@ mdb: mdb.in Makefile
 
 runtests: runtests.in Makefile
 	builddir=$(top_builddir) ; the_builddir=`cd $$builddir && pwd` ; \
-	sed -e 's^\@NUNIT_CONSOLE\@^$(NUNIT_CONSOLE)^g' \
+	sed -e 's^\@NUNIT_CONSOLE_EXE\@^$(twodir)/nunit-console.exe^g' \
+		-e 's^\@MONO\@^$(MONO)^g' \
 		-e 's^\@NUNIT_CONSOLE_FLAGS\@^$(NUNIT_CONSOLE_FLAGS)^g' \
 		-e "s^\@top_builddir\@^$$the_builddir^g" \
 		< $(srcdir)/runtests.in > runtests.tmp \
