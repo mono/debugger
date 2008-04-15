@@ -43,17 +43,22 @@ mono_debugger_server_get_current_thread (void)
 	return pthread_self ();
 }
 
+void
+mono_debugger_server_io_thread_main (IOThreadData *io_data, ChildOutputFunc func)
+{
+	(global_vtable->io_thread_main) (io_data, func);
+}
+
 ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
 			    const gchar **argv, const gchar **envp, gint *child_pid,
-			    ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
-			    gchar **error)
+			    IOThreadData **io_data, gchar **error)
 {
 	if (!global_vtable->spawn)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->spawn) (handle, working_directory, argv, envp,
-					 child_pid, stdout_handler, stderr_handler, error);
+					 child_pid, io_data, error);
 }
 
 ServerCommandError

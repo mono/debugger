@@ -1,3 +1,17 @@
+2008-04-15  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/server.h
+	(mono_debugger_server_spawn): Removed the two `ChildOutputHandler's;
+	return a `IOTheadData *' pointer instead.
+	(mono_debugger_server_io_thread_main): New public function; we now
+	start the io thread from managed code and then call this function
+	with the `IOThreadData *' returned by mono_debugger_server_spawn().
+
+	* backend/Inferior.cs
+	(Inferior.TargetOutput): Removed.
+	(Inferior.Run): Start the io thread here in managed land and
+	directly call `process.OnTargetOutput ()'.
+
 2008-04-14  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Conditionally check for libgtop; it's only used in

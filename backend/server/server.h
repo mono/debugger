@@ -86,8 +86,10 @@ typedef struct InferiorHandle InferiorHandle;
 typedef struct ServerHandle ServerHandle;
 typedef struct ArchInfo ArchInfo;
 
+typedef struct IOThreadData IOThreadData;
+
 /* C# delegates. */
-typedef void (*ChildOutputFunc) (const char *output);
+typedef void (*ChildOutputFunc) (gboolean is_stderr, const char *output);
 
 typedef struct {
 	int sigkill;
@@ -129,13 +131,15 @@ struct InferiorVTable {
 	void                  (* set_runtime_info)    (ServerHandle       *handle,
 						       MonoRuntimeInfo    *mono_runtime_info);
 
+	void                  (* io_thread_main)      (IOThreadData       *io_data,
+						       ChildOutputFunc     func);
+
 	ServerCommandError    (* spawn)               (ServerHandle       *handle,
 						       const gchar        *working_directory,
 						       const gchar       **argv,
 						       const gchar       **envp,
 						       gint               *child_pid,
-						       ChildOutputFunc     stdout_handler,
-						       ChildOutputFunc     stderr_handler,
+						       IOThreadData      **io_data,
 						       gchar             **error);
 
 	ServerCommandError    (* attach)              (ServerHandle       *handle,
@@ -394,14 +398,17 @@ ServerCommandError
 mono_debugger_server_initialize_thread    (ServerHandle       *handle,
 					   guint32             pid);
 
+void
+mono_debugger_server_io_thread_main       (IOThreadData       *io_data,
+					   ChildOutputFunc     func);
+
 ServerCommandError
 mono_debugger_server_spawn                (ServerHandle       *handle,
 					   const gchar        *working_directory,
 					   const gchar       **argv,
 					   const gchar       **envp,
 					   gint               *child_pid,
-					   ChildOutputFunc     stdout_handler,
-					   ChildOutputFunc     stderr_handler,
+					   IOThreadData      **io_data,
 					   gchar             **error);
 
 ServerCommandError

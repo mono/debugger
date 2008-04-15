@@ -44,7 +44,10 @@
 
 #include "x86-arch.h"
 
-static guint32 io_thread (gpointer data);
+struct IOThreadData
+{
+	int output_fd, error_fd;
+};
 
 struct InferiorHandle
 {
@@ -57,12 +60,6 @@ struct InferiorHandle
 	int output_fd [2], error_fd [2];
 	int is_thread, is_initialized;
 };
-
-typedef struct
-{
-	int output_fd, error_fd;
-	ChildOutputFunc stdout_handler, stderr_handler;
-} IOThreadData;
 
 MonoRuntimeInfo *
 mono_debugger_server_initialize_mono_runtime (guint32 address_size,
@@ -367,11 +364,9 @@ child_setup_func (InferiorHandle *inferior)
 static ServerCommandError
 server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		     const gchar **argv, const gchar **envp, gint *child_pid,
-		     ChildOutputFunc stdout_handler, ChildOutputFunc stderr_handler,
-		     gchar **error)
+		     IOThreadData **io_data, gchar **error)
 {	
 	InferiorHandle *inferior = handle->inferior;
-	IOThreadData *io_data = g_new0 (IOThreadData, 1);
 	int fd[2], open_max, ret, len, i;
 	ServerCommandError result;
 
@@ -384,11 +379,9 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	pipe (inferior->output_fd);
 	pipe (inferior->error_fd);
 
-	io_data->output_fd = inferior->output_fd[0];
-	io_data->error_fd = inferior->error_fd[0];
-
-	io_data->stdout_handler = stdout_handler;
-	io_data->stderr_handler = stderr_handler;
+	*io_data = g_new0 (IOThreadData, 1);
+	(*io_data)->output_fd = inferior->output_fd[0];
+	(*io_data)->error_fd = inferior->error_fd[0];
 
 	*child_pid = fork ();
 	if (*child_pid == 0) {
@@ -453,8 +446,6 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		return result;
 	}
 
-	mono_thread_create (mono_domain_get (), io_thread, io_data);
-
 	return COMMAND_ERROR_NONE;
 }
 
@@ -487,9 +478,9 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid)
 }
 
 static void
-process_output (int fd, ChildOutputFunc func)
+process_output (int fd, gboolean is_stderr, ChildOutputFunc func)
 {
-	char buffer [BUFSIZ + 1];
+	char buffer [BUFSIZ + 2];
 	int count;
 
 	count = read (fd, buffer, BUFSIZ);
@@ -497,13 +488,12 @@ process_output (int fd, ChildOutputFunc func)
 		return;
 
 	buffer [count] = 0;
-	func (buffer);
+	func (is_stderr, buffer);
 }
 
-static guint32
-io_thread (gpointer data)
+void
+server_ptrace_io_thread_main (IOThreadData *io_data, ChildOutputFunc func)
 {
-	IOThreadData *io_data = (IOThreadData*)data;
 	struct pollfd fds [2];
 	int ret;
 
@@ -521,9 +511,9 @@ io_thread (gpointer data)
 			break;
 
 		if (fds [0].revents & POLLIN)
-			process_output (io_data->output_fd, io_data->stdout_handler);
+			process_output (io_data->output_fd, FALSE, func);
 		if (fds [1].revents & POLLIN)
-			process_output (io_data->error_fd, io_data->stderr_handler);
+			process_output (io_data->error_fd, TRUE, func);
 
 		if ((fds [0].revents & (POLLHUP | POLLERR))
 		    || (fds [1].revents & (POLLHUP | POLLERR)))
@@ -531,7 +521,6 @@ io_thread (gpointer data)
 	}
 
 	g_free (io_data);
-	return 0;
 }
 
 static ServerCommandError
@@ -575,6 +564,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_initialize_process,
 	server_ptrace_initialize_thread,
 	server_ptrace_set_runtime_info,
+	server_ptrace_io_thread_main,
 	server_ptrace_spawn,
 	server_ptrace_attach,
 	server_ptrace_detach,

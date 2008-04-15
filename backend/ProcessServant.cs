@@ -308,6 +308,11 @@ namespace Mono.Debugger.Backend
 				OnProcessExitedEvent ();
 		}
 
+		internal void OnTargetOutput (bool is_stderr, string output)
+		{
+			manager.Debugger.OnInferiorOutput (is_stderr, output);
+		}
+
 		internal void WaitForApplication ()
 		{
 			initialized_event.WaitOne ();

@@ -93,14 +93,13 @@ namespace Mono.Debugger.Backend
 			: this (manager, process, start)
 		{
 			inferior = Inferior.CreateInferior (manager, process, start);
-			inferior.TargetOutput += new TargetOutputHandler (inferior_output_handler);
 
 			is_main = true;
 			if (start.PID != 0) {
 				this.pid = start.PID;
 				inferior.Attach (pid);
 			} else {
-				pid = inferior.Run (true);
+				pid = inferior.Run ();
 			}
 
 			result = new ThreadCommandResult (thread);
@@ -1494,11 +1493,6 @@ namespace Mono.Debugger.Backend
 			current_operation = pending_operation;
 			pending_operation = null;
 			ExecuteOperation (current_operation);
-		}
-
-		void inferior_output_handler (bool is_stderr, string line)
-		{
-			manager.Debugger.OnInferiorOutput (is_stderr, line);
 		}
 
 		internal bool OnModuleLoaded ()

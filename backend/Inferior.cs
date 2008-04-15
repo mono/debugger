@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
-using System.Threading;
+using ST = System.Threading;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
@@ -14,11 +14,12 @@ using Mono.Debugger.Languages;
 
 namespace Mono.Debugger.Backend
 {
-	internal delegate void ChildOutputHandler (string output);
+	internal delegate void ChildOutputHandler (bool is_stderr, string output);
 
 	internal class Inferior : TargetAccess, ITargetNotification, IDisposable
 	{
 		protected IntPtr server_handle;
+		protected IntPtr io_data;
 		protected Bfd bfd;
 		protected ThreadManager thread_manager;
 
@@ -31,9 +32,6 @@ namespace Mono.Debugger.Backend
 		protected readonly BreakpointManager breakpoint_manager;
 		protected readonly AddressDomain address_domain;
 		protected readonly bool native;
-
-		protected ChildOutputHandler stdout_handler;
-		protected ChildOutputHandler stderr_handler;
 
 		int child_pid;
 		bool initialized;
@@ -66,7 +64,9 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_initialize_thread (IntPtr handle, int child_pid);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, ChildOutputHandler stdout_handler, ChildOutputHandler stderr_handler, out IntPtr error);
+		static extern TargetError mono_debugger_server_io_thread_main (IntPtr io_data, ChildOutputHandler output_handler);
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, out IntPtr io_data, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid);
@@ -550,7 +550,12 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public int Run (bool redirect_fds)
+		void io_thread_main ()
+		{
+			mono_debugger_server_io_thread_main (io_data, process.OnTargetOutput);
+		}
+
+		public int Run ()
 		{
 			if (has_target)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
@@ -559,15 +564,9 @@ namespace Mono.Debugger.Backend
 
 			IntPtr error;
 
-			stdout_handler = new ChildOutputHandler (inferior_stdout_handler);
-			stderr_handler = new ChildOutputHandler (inferior_stderr_handler);
-
 			TargetError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
-				start.Environment, out child_pid,
-				stdout_handler,
-				stderr_handler,
-				out error);
+				start.Environment, out child_pid, out io_data, out error);
 			if (result != TargetError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
@@ -575,6 +574,10 @@ namespace Mono.Debugger.Backend
 				throw new TargetException (
 					TargetError.CannotStartTarget, message);
 			}
+
+			ST.Thread io_thread = new ST.Thread (new ST.ThreadStart (io_thread_main));
+			io_thread.IsBackground = true;
+			io_thread.Start ();
 
 			return child_pid;
 		}
@@ -781,18 +784,6 @@ namespace Mono.Debugger.Backend
 			get {
 				return bfd.EntryPoint;
 			}
-		}
-
-		void inferior_stdout_handler (string line)
-		{
-			if (TargetOutput != null)
-				TargetOutput (false, line);
-		}
-
-		void inferior_stderr_handler (string line)
-		{
-			if (TargetOutput != null)
-				TargetOutput (true, line);
 		}
 
 		public override int TargetIntegerSize {
@@ -1049,7 +1040,6 @@ namespace Mono.Debugger.Backend
 		// IInferior
 		//
 
-		public event TargetOutputHandler TargetOutput;
 		public event StateChangedHandler StateChanged;
 
 		TargetState target_state = TargetState.NoTarget;
