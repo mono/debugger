@@ -199,7 +199,7 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
-		public static bool Verbose = true;
+		public static bool Verbose = false;
 
 		Dictionary<string,int> lines;
 		Dictionary<string,int> automatic_breakpoints;
@@ -326,6 +326,11 @@ namespace Mono.Debugger.Tests
 			if (child.ExitCode != 0)
 				Assert.Fail ("Compilation of {0} exited with error: {1}\n{2}",
 					     FileName, child.ExitCode, child.StandardError.ReadToEnd ());
+		}
+
+		public static void Debug (string message, params object[] args)
+		{
+			stderr.WriteLine (message, args);
 		}
 
 		[TestFixtureSetUp]
@@ -479,7 +484,6 @@ namespace Mono.Debugger.Tests
 
 		public void AssertTargetOutput (string line)
 		{
-			inferior_stdout.Wait ();
 			string output = inferior_stdout.ReadLine ();
 			if (output == null)
 				Assert.Fail ("No target output.");
@@ -491,9 +495,10 @@ namespace Mono.Debugger.Tests
 
 		public void AssertNoTargetOutput ()
 		{
-			string output;
-			while ((output = inferior_stdout.ReadLine ()) != null)
+			if (inferior_stdout.HasEvent) {
+				string output = inferior_stdout.ReadLine ();
 				Assert.Fail ("Got unexpected target output `{0}'.", output);
+			}
 		}
 
 		public void AssertStopped (Thread exp_thread, string exp_func, int exp_line)
@@ -923,57 +928,51 @@ namespace Mono.Debugger.Tests
 		}
 	}
 
-	internal class LineReader
+	internal class LineReader : MarshalByRefObject
 	{
 		string current_line = "";
-		Queue lines = new Queue ();
+		Queue queue = Queue.Synchronized (new Queue ());
 
-		bool waiting;
 		ST.AutoResetEvent wait_event = new ST.AutoResetEvent (false);
 
 		public void Add (string text)
 		{
-			lock (this) {
+			lock (queue.SyncRoot) {
 			again:
 				int pos = text.IndexOf ('\n');
 				if (pos < 0)
 					current_line += text;
 				else {
 					current_line += text.Substring (0, pos);
-					lines.Enqueue (current_line);
+					queue.Enqueue (current_line);
 					current_line = "";
 					text = text.Substring (pos + 1);
 					if (text.Length > 0)
 						goto again;
 				}
 
-				if (!waiting)
-					return;
+				wait_event.Set ();
 			}
-
-			waiting = false;
-			wait_event.Set ();
 		}
 
-		public void Wait ()
-		{
-			lock (this) {
-				if (lines.Count > 0)
-					return;
-
-				waiting = true;
-			}
-			wait_event.WaitOne (2500, false);
+		public bool HasEvent {
+			get { return queue.Count > 0; }
 		}
 
 		public string ReadLine ()
 		{
-			lock (this) {
-				if (lines.Count < 1)
-					return null;
-				else
-					return (string) lines.Dequeue ();
+			for (int i = 0; i < 5; i++) {
+				lock (queue.SyncRoot) {
+					if (queue.Count > 0)
+						return (string) queue.Dequeue ();
+
+					wait_event.Reset ();
+				}
+
+				wait_event.WaitOne (3000, false);
 			}
+
+			return null;
 		}
 	}
 }
