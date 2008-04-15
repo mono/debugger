@@ -23,14 +23,10 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			const int line_main = 14;
-			const int line_main_2 = 21;
+			AssertStopped (thread, "main", "X.Main()");
 
-			AssertStopped (thread, "X.Main()", line_main);
-
-			int bpt_main_2 = AssertBreakpoint (line_main_2);
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", line_main_2);
+			AssertHitBreakpoint (thread, "main2", "X.Main()");
 
 			AssertPrint (thread, "x", "(X) null");
 			AssertPrint (thread, "hello", "(string) null");
