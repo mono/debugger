@@ -199,7 +199,7 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
-		public static bool Verbose = false;
+		public static bool Verbose = true;
 
 		Dictionary<string,int> lines;
 		Dictionary<string,int> automatic_breakpoints;
@@ -211,10 +211,8 @@ namespace Mono.Debugger.Tests
 			stderr = new StreamWriter (Console.OpenStandardError ());
 			stderr.AutoFlush = true;
 
-#if HAVE_LIBGTOP
 			if (Verbose)
 				stderr.WriteLine ("PID IS {0}", LibGTop.GetPid ());
-#endif
 
 			Report.Initialize ();
 			Report.ReportWriter.PrintToConsole = false;
@@ -352,15 +350,12 @@ namespace Mono.Debugger.Tests
 			interpreter = null;
 			GC.Collect ();
 
-#if HAVE_LIBGTOP
 			if (Verbose) {
 				string name = Path.GetFileNameWithoutExtension (FileName);
 				stderr.WriteLine ("{0}: {1}", name, PrintMemoryInfo ());
 			}
-#endif
 		}
 
-#if HAVE_LIBGTOP
 		public string PrintMemoryInfo ()
 		{
 			int pid = LibGTop.GetPid ();
@@ -371,7 +366,6 @@ namespace Mono.Debugger.Tests
 					      info.Size, info.VirtualSize, info.Resident,
 					      info.Share, info.RSS, files);
 		}
-#endif
 
 		private static DebuggerOptions CreateOptions (string application, string[] args)
 		{

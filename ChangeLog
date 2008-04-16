@@ -1,3 +1,10 @@
+2008-04-16  Martin Baulig  <martin@ximian.com>
+
+	* test/misc/libgtop-glue.c: Copy implementation from libgtop so we
+	can use this on the build machines.
+
+	* configure.in: Don't require libgtop anymore.
+
 2008-04-15  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/server.h

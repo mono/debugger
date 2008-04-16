@@ -80,12 +80,6 @@ TEST_DEPS = \
 	-r:nunit.framework				\
 	-r:nunit.core
 
-if HAVE_LIBGTOP
-TEST_MCS_FLAGS = -define:HAVE_LIBGTOP
-else
-TEST_MCS_FLAGS =
-endif
-
 Mono.Debugger.Backend.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(BACKEND_SRCLIST) Mono.Debugger.dll
 	$(MCS) -target:library -out:Mono.Debugger.Backend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(BACKEND_DEPS) $(BACKEND_SRCLIST)
 
@@ -96,7 +90,7 @@ Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.Backend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
-	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) $(TEST_MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
 #	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/build/mono.snk)
@@ -122,7 +116,7 @@ CLEANFILES = *.exe *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
 	Mono.Debugger.Test.dll
 
 EXTRA_DIST = \
-	mdb.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
+	mdb.in runtests.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
 	Mono.Debugger.Cecil.dll
 
 mdb: mdb.in Makefile
