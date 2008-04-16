@@ -604,5 +604,6 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_detach_after_fork,
 	server_ptrace_push_registers,
 	server_ptrace_pop_registers,
-	server_ptrace_get_callback_frame
+	server_ptrace_get_callback_frame,
+	server_ptrace_get_registers_from_core_file,
 };

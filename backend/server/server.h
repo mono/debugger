@@ -373,6 +373,9 @@ struct InferiorVTable {
 						       guint64            stack_pointer,
 						       gboolean           exact_match,
 						       guint64           *registers);
+
+	void         (* get_registers_from_core_file) (guint64           *values,
+						       const guint8      *buffer);
 };
 
 /*
@@ -612,6 +615,10 @@ mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 
 void
 mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime);
+
+void
+mono_debugger_server_get_registers_from_core_file (guint64 *values,
+						   const guint8 *buffer);
 
 /* POSIX semaphores */
 

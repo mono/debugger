@@ -28,7 +28,7 @@ namespace Mono.Debugger.Backend
 
 			bfd = BfdContainer.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,
-				start.LoadNativeSymbolTable, true);
+				true, true);
 
 			BfdContainer.SetupInferior (info, bfd);
 
@@ -83,7 +83,6 @@ namespace Mono.Debugger.Backend
 		void read_thread_table ()
 		{
 			TargetAddress ptr = main_thread.ReadAddress (debugger_info.ThreadTable);
-			Console.WriteLine ("READ THREAD TABLE: {0}", ptr);
 			while (!ptr.IsNull) {
 				int size = 56 + main_thread.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (main_thread.ReadMemory (ptr, size));
@@ -99,27 +98,17 @@ namespace Mono.Debugger.Backend
 				int stack_size = reader.ReadInteger ();
 				int signal_stack_size = reader.ReadInteger ();
 
-				Console.WriteLine ("READ THREAD TABLE #1: {0:x} {1} {2} {3} {4} {5} {6}",
-						   tid, lmf_addr, end_stack,
-						   stack_start, stack_start + stack_size,
-						   signal_stack_start,
-						   signal_stack_start + signal_stack_size);
-
 				bool found = false;
 				foreach (CoreFileThread thread in threads) {
 					TargetAddress sp = thread.CurrentFrame.StackPointer;
 
 					if ((sp >= stack_start) && (sp < stack_start + stack_size)) {
-						Console.WriteLine ("SET LMF: {0} {1:x} {2}",
-								   thread, tid, lmf_addr);
 						thread.SetLMFAddress (tid, lmf_addr);
 						found = true;
 						break;
 					} else if (!signal_stack_start.IsNull &&
 						   (sp >= signal_stack_start) &&
 						   (sp < signal_stack_start + signal_stack_size)) {
-						Console.WriteLine ("SET LMF: {0} {1:x} {2}",
-								   thread, tid, lmf_addr);
 						thread.SetLMFAddress (tid, lmf_addr);
 						found = true;
 						break;
@@ -141,7 +130,9 @@ namespace Mono.Debugger.Backend
 			if (bfd != null)
 				return bfd.GetReader (address, false);
 
-			return null;
+			throw new TargetException (
+				TargetError.MemoryAccess, "Memory region containing {0} not in " +
+				"core file.", address);
 		}
 
 		void read_note_section ()
@@ -213,6 +204,9 @@ namespace Mono.Debugger.Backend
 
 			TargetAddress lmf_address = TargetAddress.Null;
 
+			[DllImport("monodebuggerserver")]
+			static extern void mono_debugger_server_get_registers_from_core_file (IntPtr values, IntPtr data);
+
 			public CoreFileThread (CoreFile core, int pid)
 				: base (core.ThreadManager, core)
 			{
@@ -231,18 +225,28 @@ namespace Mono.Debugger.Backend
 				TargetReader reader = CoreFile.CoreBfd.GetSectionReader (sname);
 
 				Architecture arch = CoreFile.Architecture;
-				long[] values = new long [arch.CountRegisters];
-				for (int i = 0; i < values.Length; i++) {
-					int size = arch.RegisterSizes [i];
-					if (size == 4)
-						values [i] = reader.BinaryReader.ReadInt32 ();
-					else if (size == 8)
-						values [i] = reader.BinaryReader.ReadInt64 ();
-					else
-						throw new InternalError ();
-				}
 
-				return new Registers (arch, values);
+				IntPtr buffer = IntPtr.Zero;
+				IntPtr regs_buffer = IntPtr.Zero;
+				try {
+					buffer = Marshal.AllocHGlobal ((int) reader.Size);
+					Marshal.Copy (reader.Contents, 0, buffer, (int) reader.Size);
+
+					int count = arch.CountRegisters;
+					int regs_size = count * 8;
+					regs_buffer = Marshal.AllocHGlobal (regs_size);
+					mono_debugger_server_get_registers_from_core_file (
+						regs_buffer, buffer);
+					long[] retval = new long [count];
+					Marshal.Copy (regs_buffer, retval, 0, count);
+
+					return new Registers (arch, retval);
+				} finally {
+					if (buffer != IntPtr.Zero)
+						Marshal.FreeHGlobal (buffer);
+					if (regs_buffer != IntPtr.Zero)
+						Marshal.FreeHGlobal (regs_buffer);
+				}
 			}
 
 			internal void SetLMFAddress (long tid, TargetAddress lmf)

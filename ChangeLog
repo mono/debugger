@@ -1,5 +1,14 @@
 2008-04-16  Martin Baulig  <martin@ximian.com>
 
+	* library.c (mono_debugger_server_get_registers_from_core_file):
+	New public function.
+
+	* backend/arch/CoreFile.cs
+	(CoreFile.CoreFileThread.read_registers): Read it here to
+	correctly read the registers.
+
+2008-04-16  Martin Baulig  <martin@ximian.com>
+
 	* test/misc/libgtop-glue.c: Copy implementation from libgtop so we
 	can use this on the build machines.
 

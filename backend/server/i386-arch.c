@@ -670,6 +670,29 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+server_ptrace_get_registers_from_core_file (guint64 *values, const guint8 *buffer)
+{
+	INFERIOR_REGS_TYPE regs = * (INFERIOR_REGS_TYPE *) buffer;
+
+	values [DEBUGGER_REG_RBX] = (guint32) INFERIOR_REG_EBX (regs);
+	values [DEBUGGER_REG_RCX] = (guint32) INFERIOR_REG_ECX (regs);
+	values [DEBUGGER_REG_RDX] = (guint32) INFERIOR_REG_EDX (regs);
+	values [DEBUGGER_REG_RSI] = (guint32) INFERIOR_REG_ESI (regs);
+	values [DEBUGGER_REG_RDI] = (guint32) INFERIOR_REG_EDI (regs);
+	values [DEBUGGER_REG_RBP] = (guint32) INFERIOR_REG_EBP (regs);
+	values [DEBUGGER_REG_RAX] = (guint32) INFERIOR_REG_EAX (regs);
+	values [DEBUGGER_REG_DS] = (guint32) INFERIOR_REG_DS (regs);
+	values [DEBUGGER_REG_ES] = (guint32) INFERIOR_REG_ES (regs);
+	values [DEBUGGER_REG_FS] = (guint32) INFERIOR_REG_FS (regs);
+	values [DEBUGGER_REG_GS] = (guint32) INFERIOR_REG_GS (regs);
+	values [DEBUGGER_REG_RIP] = (guint32) INFERIOR_REG_EIP (regs);
+	values [DEBUGGER_REG_CS] = (guint32) INFERIOR_REG_CS (regs);
+	values [DEBUGGER_REG_EFLAGS] = (guint32) INFERIOR_REG_EFLAGS (regs);
+	values [DEBUGGER_REG_RSP] = (guint32) INFERIOR_REG_ESP (regs);
+	values [DEBUGGER_REG_SS] = (guint32) INFERIOR_REG_SS (regs);
+}
+
 static int
 find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
 {

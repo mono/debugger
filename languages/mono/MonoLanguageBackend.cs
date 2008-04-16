@@ -597,14 +597,16 @@ namespace Mono.Debugger.Languages.Mono
 		internal void Update (TargetMemoryAccess target)
 		{
 			Report.Debug (DebugFlags.JitSymtab, "Update requested");
-			DateTime start = DateTime.Now;
-			++data_table_count;
-			foreach (MonoDataTable table in data_tables.Values)
-				table.Read (target);
-			foreach (MonoSymbolFile symfile in symfile_by_index.Values)
-				symfile.TypeTable.Read (target);
-			global_data_table.Read (target);
-			data_table_time += DateTime.Now - start;
+			if (initialized) {
+				DateTime start = DateTime.Now;
+				++data_table_count;
+				foreach (MonoDataTable table in data_tables.Values)
+					table.Read (target);
+				foreach (MonoSymbolFile symfile in symfile_by_index.Values)
+					symfile.TypeTable.Read (target);
+				global_data_table.Read (target);
+				data_table_time += DateTime.Now - start;
+			}
 		}
 
 		void read_symbol_table (TargetMemoryAccess memory)
@@ -620,6 +622,10 @@ namespace Mono.Debugger.Languages.Mono
 				update_time += DateTime.Now - start;
 			} catch (ThreadAbortException) {
 				return;
+			} catch (SymbolTableException ex) {
+				Console.WriteLine ("Can't read symbol table: {0} {1}",
+						   memory, ex.Message);
+				return;
 			} catch (Exception e) {
 				Console.WriteLine ("Can't read symbol table: {0} {1} {2}",
 						   memory, e, Environment.StackTrace);
@@ -631,7 +637,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		void read_builtin_types (TargetMemoryAccess memory)
 		{
-			builtin_types = new MonoBuiltinTypeInfo (corlib, memory);
+			if (initialized)
+				builtin_types = new MonoBuiltinTypeInfo (corlib, memory);
 		}
 
 		MonoSymbolFile load_symfile (TargetMemoryAccess memory, TargetAddress address)

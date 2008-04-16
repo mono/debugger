@@ -444,6 +444,40 @@ server_ptrace_pop_registers (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
+static void
+server_ptrace_get_registers_from_core_file (guint64 *values, const guint8 *buffer)
+{
+	INFERIOR_REGS_TYPE regs = * (INFERIOR_REGS_TYPE *) buffer;
+
+	values [DEBUGGER_REG_R15] = (guint64) INFERIOR_REG_R15 (regs);
+	values [DEBUGGER_REG_R14] = (guint64) INFERIOR_REG_R14 (regs);
+	values [DEBUGGER_REG_R13] = (guint64) INFERIOR_REG_R13 (regs);
+	values [DEBUGGER_REG_R12] = (guint64) INFERIOR_REG_R12 (regs);
+	values [DEBUGGER_REG_RBP] = (guint64) INFERIOR_REG_RBP (regs);
+	values [DEBUGGER_REG_RBX] = (guint64) INFERIOR_REG_RBX (regs);
+	values [DEBUGGER_REG_R11] = (guint64) INFERIOR_REG_R11 (regs);
+	values [DEBUGGER_REG_R10] = (guint64) INFERIOR_REG_R10 (regs);
+	values [DEBUGGER_REG_R9] = (guint64) INFERIOR_REG_R9 (regs);
+	values [DEBUGGER_REG_R8] = (guint64) INFERIOR_REG_R8 (regs);
+	values [DEBUGGER_REG_RAX] = (guint64) INFERIOR_REG_RAX (regs);
+	values [DEBUGGER_REG_RCX] = (guint64) INFERIOR_REG_RCX (regs);
+	values [DEBUGGER_REG_RDX] = (guint64) INFERIOR_REG_RDX (regs);
+	values [DEBUGGER_REG_RSI] = (guint64) INFERIOR_REG_RSI (regs);
+	values [DEBUGGER_REG_RDI] = (guint64) INFERIOR_REG_RDI (regs);
+	values [DEBUGGER_REG_ORIG_RAX] = (guint64) INFERIOR_REG_ORIG_RAX (regs);
+	values [DEBUGGER_REG_RIP] = (guint64) INFERIOR_REG_RIP (regs);
+	values [DEBUGGER_REG_CS] = (guint64) INFERIOR_REG_CS (regs);
+	values [DEBUGGER_REG_EFLAGS] = (guint64) INFERIOR_REG_EFLAGS (regs);
+	values [DEBUGGER_REG_RSP] = (guint64) INFERIOR_REG_RSP (regs);
+	values [DEBUGGER_REG_SS] = (guint64) INFERIOR_REG_SS (regs);
+	values [DEBUGGER_REG_FS_BASE] = (guint64) INFERIOR_REG_FS_BASE (regs);
+	values [DEBUGGER_REG_GS_BASE] = (guint64) INFERIOR_REG_GS_BASE (regs);
+	values [DEBUGGER_REG_DS] = (guint64) INFERIOR_REG_DS (regs);
+	values [DEBUGGER_REG_ES] = (guint64) INFERIOR_REG_ES (regs);
+	values [DEBUGGER_REG_FS] = (guint64) INFERIOR_REG_FS (regs);
+	values [DEBUGGER_REG_GS] = (guint64) INFERIOR_REG_GS (regs);
+}
+
 static int
 find_breakpoint_table_slot (MonoRuntimeInfo *runtime)
 {

@@ -455,6 +455,13 @@ mono_debugger_server_get_callback_frame (ServerHandle *handle, guint64 stack_poi
 		handle, stack_pointer, exact_match, registers);
 }
 
+void
+mono_debugger_server_get_registers_from_core_file (guint64 *values, const guint8 *buffer)
+{
+	(* global_vtable->get_registers_from_core_file) (values, buffer);
+}
+
+
 static gboolean initialized = FALSE;
 static sem_t manager_semaphore;
 static int pending_sigint = 0;
