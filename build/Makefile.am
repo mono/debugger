@@ -148,3 +148,4 @@ check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST)
 	$(builddir)/runtests /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml || ok=false; \
 	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 	$$ok
+
