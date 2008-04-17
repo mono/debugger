@@ -280,9 +280,16 @@ namespace Mono.Debugger.Tests
 
 		protected int GetLine (string text)
 		{
+			int offset = 0;
+			int pos = text.IndexOf ('+');
+			if (pos > 0) {
+				offset = Int32.Parse (text.Substring (pos + 1));
+				text = text.Substring (0, pos);
+			}
+
 			if (!lines.ContainsKey (text))
 				throw new InternalError ("No such line: {0}", text);
-			return lines [text];
+			return lines [text] + offset;
 		}
 
 		public NUnitInterpreter Interpreter {
@@ -428,6 +435,15 @@ namespace Mono.Debugger.Tests
 			if (exception != exp_exception)
 				Assert.Fail ("Execution of command `{0}' threw exception `{1}', " +
 					     "but expected `{2}'.", command, exception, exp_exception);
+		}
+
+		public void AssertFrame (Thread thread, string line, string function)
+		{
+			try {
+				AssertFrame (thread.CurrentFrame, 0, function, GetLine (line));
+			} catch (TargetException ex) {
+				Assert.Fail ("Cannot get current frame: {0}.", ex.Message);
+			}
 		}
 
 		public void AssertFrame (Thread thread, string function, int line)

@@ -16,13 +16,6 @@ namespace Mono.Debugger.Tests
 
 		const int LineHelloWorld = 7;
 
-		const int LineMain = 9;
-		const int LineMain2 = 12;
-		const int LineUnload = 14;
-		const int LineEnd = 16;
-
-		int bpt_unload;
-		int bpt_end;
 		int bpt_world;
 
 		[Test]
@@ -34,19 +27,16 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 
 			Thread thread = process.MainThread;
-			AssertStopped (thread, "X.Main()", LineMain);
-
-			bpt_unload = AssertBreakpoint (LineUnload);
-			bpt_end = AssertBreakpoint (LineEnd);
+			AssertStopped (thread, "main", "X.Main()");
 
 			bpt_world = AssertBreakpoint (true, "Hello.World");
 
 			AssertExecute ("next");
-			AssertStopped (thread, "X.Main()", LineMain+1);
+			AssertStopped (thread, "main+1", "X.Main()");
 
 			AssertExecute ("next");
 			Thread child = AssertThreadCreated ();
-			AssertStopped (thread, "X.Main()", LineMain2);
+			AssertStopped (thread, "main2", "X.Main()");
 
 			AssertExecute ("continue");
 
@@ -55,7 +45,7 @@ namespace Mono.Debugger.Tests
 
 			AssertTargetOutput ("Hello World from Test!");
 
-			AssertHitBreakpoint (thread, bpt_unload, "X.Main()", LineUnload);
+			AssertHitBreakpoint (thread, "unload", "X.Main()");
 			AssertExecute ("next -wait");
 
 			bool child_exited = false, child_thread_exited = false;
@@ -104,7 +94,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}", e);
 			}
 
-			AssertFrame (thread, "X.Main()", LineEnd);
+			AssertFrame (thread, "end", "X.Main()");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("UNLOADED!");
