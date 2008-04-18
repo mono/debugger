@@ -1,3 +1,12 @@
+2008-04-19  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Bfd.cs
+	(Bfd.OnModuleChanged): Always try to load the CFA if available;
+	also when loading of native symtabs is disabled.
+
+	* backend/arch/DwarfFrameReader.cs
+	(DwarfFrameReader.UnwindStack): Small fix for `.eh_frame'.
+
 2008-04-16  Martin Baulig  <martin@ximian.com>
 
 	* library.c (mono_debugger_server_get_registers_from_core_file):

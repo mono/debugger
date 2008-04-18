@@ -43,6 +43,7 @@ namespace Mono.Debugger.Backend
 			DwarfBinaryReader reader = new DwarfBinaryReader (bfd, blob, false);
 
 			while (reader.Position < reader.Size) {
+				long original_pos = reader.Position;
 				long length = reader.ReadInitialLength ();
 				if (length == 0)
 					break;
@@ -66,11 +67,16 @@ namespace Mono.Debugger.Backend
 
 				CIE cie = find_cie (cie_pointer);
 
-				long initial = reader.ReadAddress ();
-				long range = reader.ReadAddress ();
+				long initial, range;
+				if (is_ehframe) {
+					initial = ReadEncodedValue (reader, cie.Encoding);
+					range = ReadEncodedValue (reader, cie.Encoding & 0x0f);
+				} else {
+					initial = reader.ReadAddress ();
+					range = reader.ReadAddress ();
+				}
 
-				TargetAddress start = new TargetAddress (
-					target.AddressDomain, initial);
+				TargetAddress start = new TargetAddress (target.AddressDomain, initial);
 
 				if ((address < start) || (address > start + range)) {
 					reader.Position = end_pos;
@@ -85,30 +91,37 @@ namespace Mono.Debugger.Backend
 			return null;
 		}
 
-		public long ReadEncodedValue (DwarfBinaryReader reader, int encoding)
+		private long ReadEncodedValue (DwarfBinaryReader reader, int encoding)
 		{
-			if ((encoding & 0x0f) == 0x00)
-				encoding |= (byte) DW_EH_PE.udata4;
-
-			long base_addr = 0;
+			long base_addr;
 			switch (encoding & 0x70) {
+			case 0:
+				base_addr = 0;
+				break;
 			case (byte) DW_EH_PE.pcrel:
 				base_addr = vma + reader.Position;
 				break;
-			}
-
-			switch (encoding & 0x0f) {
-			case (byte) DW_EH_PE.udata4:
-				return base_addr + reader.ReadUInt32 ();
-
-			case (byte) DW_EH_PE.sdata4:
-				return base_addr + reader.ReadInt32 ();
-
 			default:
 				throw new DwarfException (
 					reader.Bfd, "Unknown encoding `{0:x}' in CIE",
 					encoding);
 			}
+
+			long value;
+			switch (encoding & 0x0f) {
+			case (byte) DW_EH_PE.udata4:
+				value = reader.ReadUInt32 ();
+				break;
+			case (byte) DW_EH_PE.sdata4:
+				value = reader.ReadInt32 ();
+				break;
+			default:
+				throw new DwarfException (
+					reader.Bfd, "Unknown encoding `{0:x}' in CIE",
+					encoding);
+			}
+
+			return base_addr + value;
 		}
 
 		protected enum DW_CFA : byte

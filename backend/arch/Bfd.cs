@@ -31,6 +31,7 @@ namespace Mono.Debugger.Backend
 		DwarfReader dwarf;
 		DwarfFrameReader frame_reader, eh_frame_reader;
 		bool dwarf_loaded;
+		bool frames_loaded;
 		bool has_debugging_info;
 		string filename, target;
 		bool is_coredump;
@@ -616,9 +617,9 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		void load_dwarf ()
+		void load_frames ()
 		{
-			if (dwarf_loaded)
+			if (frames_loaded)
 				return;
 
 			try {
@@ -628,7 +629,12 @@ namespace Mono.Debugger.Backend
 						   "symbol file `{0}': {1}", FileName, ex);
 			}
 
-			if (!has_debugging_info)
+			frames_loaded = true;
+		}
+
+		void load_dwarf ()
+		{
+			if (dwarf_loaded || !has_debugging_info)
 				return;
 
 			try {
@@ -642,9 +648,8 @@ namespace Mono.Debugger.Backend
 
 			dwarf_loaded = true;
 
-			if (dwarf != null) {
+			if (dwarf != null)
 				has_debugging_info = true;
-			}
 		}
 
 		void unload_dwarf ()
@@ -652,15 +657,14 @@ namespace Mono.Debugger.Backend
 			if (!dwarf_loaded || !has_debugging_info)
 				return;
 
-			frame_reader = null;
-			eh_frame_reader = null;
-
 			dwarf_loaded = false;
 			dwarf = null;
 		}
 
 		internal override void OnModuleChanged ()
 		{
+			load_frames ();
+
 			if (module.LoadSymbols) {
 				load_dwarf ();
 			} else {
