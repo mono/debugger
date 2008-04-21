@@ -1,5 +1,18 @@
 2008-04-21  Martin Baulig  <martin@ximian.com>
 
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.InitializeAfterAttach): New internal method.
+	(MonoThreadManager.Detach): New internal method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStart): We don't need to call any methods in the
+	target anymore when attaching.
+	(SSE.OperationAttach): Removed.
+	(SSE.OperationDetach): Removed.
+	(SSE.OperationGetLMFAddr): Removed.
+
+2008-04-21  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.c
 	(mono_debugger_server_initialize_code_buffer): New public function.
 

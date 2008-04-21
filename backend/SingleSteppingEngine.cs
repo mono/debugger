@@ -805,9 +805,8 @@ namespace Mono.Debugger.Backend
 				process.BreakpointManager.RemoveAllBreakpoints (inferior);
 
 				if (process.MonoManager != null)
-					StartOperation (new OperationDetach (this));
-				else
-					DoDetach ();
+					process.MonoManager.Detach (inferior);
+				DoDetach ();
 				return null;
 			});
 		}
@@ -2161,7 +2160,6 @@ namespace Mono.Debugger.Backend
 		{ }
 
 		bool initialized;
-		bool has_lmf;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
@@ -2176,35 +2174,21 @@ namespace Mono.Debugger.Backend
 			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
 				return EventResult.Completed;
 
+			if (sse.ProcessServant.IsAttached) {
+				if (sse.ProcessServant.IsManaged)
+					sse.ProcessServant.MonoManager.InitializeAfterAttach (inferior);
+				return EventResult.Completed;
+			}
+
 			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
 				inferior.Step ();
 				return EventResult.Running;
 			}
 
-			if (sse.ProcessServant.MonoManager != null) {
-				if (sse.ProcessServant.IsAttached) {
-					sse.PushOperation (new OperationAttach (sse, null));
-					return EventResult.Running;
-				}
-
-				if (!initialized) {
-					initialized = true;
-					inferior.Continue ();
-					return EventResult.Running;
-				}
-
-				if (!has_lmf) {
-					has_lmf = true;
-					sse.PushOperation (new OperationGetLMFAddr (sse, null));
-					return EventResult.Running;
-				}
-			} else {
+			if (!sse.ProcessServant.IsManaged) {
 				if (sse.OnModuleLoaded ())
 					return EventResult.Running;
 			}
-
-			if (sse.ProcessServant.IsAttached)
-				return EventResult.Completed;
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} start #1: {1} {2} {3}", sse, cevent,
@@ -2342,35 +2326,6 @@ namespace Mono.Debugger.Backend
 		}
 	}
 
-	protected class OperationAttach : OperationCallback
-	{
-		public OperationAttach (SingleSteppingEngine sse, CommandResult result)
-			: base (sse, result)
-		{ }
-
-		public override bool IsSourceOperation {
-			get { return false; }
-		}
-
-		protected override void DoExecute ()
-		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			inferior.CallMethod (info.Attach, 0, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} attach done: {1:x} {2:x} {3}",
-				      sse, data1, data2, Result);
-
-			inferior.InitializeModules ();
-
-			sse.PushOperation (new OperationGetLMFAddr (sse, null));
-			return EventResult.Running;
-		}
-	}
-
 	protected class OperationInitAfterFork : Operation
 	{
 		public OperationInitAfterFork (SingleSteppingEngine sse)
@@ -2394,34 +2349,6 @@ namespace Mono.Debugger.Backend
 			sse.ProcessServant.BreakpointManager.InitializeAfterFork (inferior);
 
 			args = null;
-			return EventResult.AskParent;
-		}
-	}
-
-	protected class OperationGetLMFAddr : OperationCallback
-	{
-		public OperationGetLMFAddr (SingleSteppingEngine sse, CommandResult result)
-			: base (sse, result)
-		{ }
-
-		public override bool IsSourceOperation {
-			get { return true; }
-		}
-
-		protected override void DoExecute ()
-		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			inferior.CallMethod (info.GetLMFAddress, 0, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} get lmf: {1:x} {2:x} {3}",
-				      sse, data1, data2, Result);
-
-			RestoreStack ();
-			sse.lmf_address = new TargetAddress (inferior.AddressDomain, data1);
 			return EventResult.AskParent;
 		}
 	}
@@ -2453,32 +2380,6 @@ namespace Mono.Debugger.Backend
 
 			RestoreStack ();
 			return EventResult.AskParent;
-		}
-	}
-
-
-	protected class OperationDetach : OperationCallback
-	{
-		public OperationDetach (SingleSteppingEngine sse)
-			: base (sse)
-		{ }
-
-		public override bool IsSourceOperation {
-			get { return false; }
-		}
-
-		protected override void DoExecute ()
-		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			inferior.CallMethod (info.Detach, 0, 0, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE, "{0} detach done: {1}", sse, Result);
-
-			sse.DoDetach ();
-			return EventResult.CompletedCallback;
 		}
 	}
 

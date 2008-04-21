@@ -158,6 +158,26 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		internal void InitializeAfterAttach (Inferior inferior)
+		{
+			initialize_notifications (inferior);
+
+			inferior.WriteAddress (debugger_info.ThreadVTablePtr,
+					       debugger_info.ThreadVTable);
+			inferior.WriteAddress (debugger_info.EventHandlerPtr,
+					       debugger_info.EventHandler);
+
+			csharp_language = inferior.Process.CreateMonoLanguage (debugger_info);
+			csharp_language.InitializeAttach (inferior);
+			inferior.InitializeModules ();
+		}
+
+		internal void Detach (Inferior inferior)
+		{
+			inferior.WriteAddress (debugger_info.ThreadVTablePtr, TargetAddress.Null);
+			inferior.WriteAddress (debugger_info.EventHandler, TargetAddress.Null);
+		}
+
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		MonoLanguageBackend csharp_language;
@@ -374,6 +394,11 @@ namespace Mono.Debugger.Backend
 		public readonly TargetAddress GetMethodSignature;
 		public readonly TargetAddress InitCodeBuffer;
 
+		public readonly TargetAddress ThreadVTablePtr;
+		public readonly TargetAddress ThreadVTable;
+		public readonly TargetAddress EventHandlerPtr;
+		public readonly TargetAddress EventHandler;
+
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
 			TargetBinaryReader header = memory.ReadMemory (info, 16).GetReader ();
@@ -445,6 +470,11 @@ namespace Mono.Debugger.Backend
 
 			GetMethodSignature        = reader.ReadAddress ();
 			InitCodeBuffer            = reader.ReadAddress ();
+
+			ThreadVTablePtr           = reader.ReadAddress ();
+			ThreadVTable              = reader.ReadAddress ();
+			EventHandlerPtr           = reader.ReadAddress ();
+			EventHandler              = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}

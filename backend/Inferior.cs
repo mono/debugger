@@ -318,10 +318,19 @@ namespace Mono.Debugger.Backend
 			throw new TargetException (error);
 		}
 
+		void check_syscall_insn ()
+		{
+			if (arch.IsSyscallInstruction (this, CurrentFrame))
+				throw new TargetException (TargetError.InvocationException,
+							   "Current thread stopped on a system call; " +
+							   "cannot invoke any methods");
+		}
+
 		public void CallMethod (TargetAddress method, long data1, long data2,
 					long callback_arg)
 		{
 			check_disposed ();
+			check_syscall_insn ();
 
 			TargetState old_state = change_target_state (TargetState.Busy);
 			try {
@@ -338,6 +347,7 @@ namespace Mono.Debugger.Backend
 					string arg4, long callback_arg)
 		{
 			check_disposed ();
+			check_syscall_insn ();
 
 			TargetState old_state = change_target_state (TargetState.Running);
 			try {
@@ -353,6 +363,7 @@ namespace Mono.Debugger.Backend
 		public void CallMethod (TargetAddress method, byte[] data, long callback_arg)
 		{
 			check_disposed ();
+			check_syscall_insn ();
 
 			TargetState old_state = change_target_state (TargetState.Running);
 
@@ -384,6 +395,7 @@ namespace Mono.Debugger.Backend
 					   long callback_arg, bool debug)
 		{
 			check_disposed ();
+			check_syscall_insn ();
 
 			int length = param_objects.Length + 1;
 
