@@ -80,6 +80,11 @@ namespace Mono.Debugger.Backend
 		AddressBreakpoint notification_bpt;
 		IntPtr mono_runtime_info;
 
+		internal bool HasCodeBuffer {
+			get;
+			private set;
+		}
+
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_server_initialize_mono_runtime (
 			int address_size, long notification_address,
@@ -90,12 +95,18 @@ namespace Mono.Debugger.Backend
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_finalize_mono_runtime (IntPtr handle);
 
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_server_initialize_code_buffer (
+			IntPtr runtime, long executable_code_buffer,
+			int executable_code_buffer_size);
+
 		protected void initialize_notifications (Inferior inferior)
 		{
 			TargetAddress notification_address = inferior.ReadAddress (
 				debugger_info.NotificationAddress);
 			TargetAddress executable_code_buffer = inferior.ReadAddress (
 				debugger_info.ExecutableCodeBuffer);
+			HasCodeBuffer = !executable_code_buffer.IsNull;
 
 			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
 				inferior.TargetAddressSize,
@@ -113,6 +124,14 @@ namespace Mono.Debugger.Backend
 				notification_bpt.Remove (inferior);
 				notification_bpt = null;
 			}
+		}
+
+		internal void InitCodeBuffer (Inferior inferior, TargetAddress code_buffer)
+		{
+			HasCodeBuffer = true;
+			mono_debugger_server_initialize_code_buffer (
+				mono_runtime_info, code_buffer.Address,
+				debugger_info.ExecutableCodeBufferSize);
 		}
 
 		protected class InitializeBreakpoint : AddressBreakpoint
@@ -318,8 +337,8 @@ namespace Mono.Debugger.Backend
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 68;
-		public const int  MaxDynamicVersion = 68;
+		public const int  MinDynamicVersion = 69;
+		public const int  MaxDynamicVersion = 69;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly int MonoTrampolineNum;
@@ -353,6 +372,7 @@ namespace Mono.Debugger.Backend
 		public readonly int ExecutableCodeBufferSize;
 		public readonly int BreakpointArraySize;
 		public readonly TargetAddress GetMethodSignature;
+		public readonly TargetAddress InitCodeBuffer;
 
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
@@ -424,6 +444,7 @@ namespace Mono.Debugger.Backend
 			BreakpointArraySize       = reader.ReadInteger ();
 
 			GetMethodSignature        = reader.ReadAddress ();
+			InitCodeBuffer            = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}

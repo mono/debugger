@@ -944,7 +944,7 @@ namespace Mono.Debugger.Backend
 					return false;
 
 				byte[] nop_insn = Architecture.Opcodes.GenerateNopInstruction ();
-				inferior.ExecuteInstruction (nop_insn, false);
+				PushOperation (new OperationExecuteInstruction (this, nop_insn, false));
 				return true;
 			}
 
@@ -953,7 +953,7 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
-			PushOperation (new OperationExecuteInstruction (this, instruction));
+			PushOperation (new OperationExecuteInstruction (this, instruction.Code, true));
 			return true;
 		}
 
@@ -2426,6 +2426,37 @@ namespace Mono.Debugger.Backend
 		}
 	}
 
+	protected class OperationInitCodeBuffer : OperationCallback
+	{
+		public OperationInitCodeBuffer (SingleSteppingEngine sse)
+			: base (sse, null)
+		{ }
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected override void DoExecute ()
+		{
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			inferior.CallMethod (info.InitCodeBuffer, 0, 0, ID);
+		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2)
+		{
+			Report.Debug (DebugFlags.SSE,
+				      "{0} init code buffer: {1:x} {2:x} {3}",
+				      sse, data1, data2, Result);
+
+			TargetAddress buffer = new TargetAddress (inferior.AddressDomain, data1);
+			sse.process.MonoManager.InitCodeBuffer (inferior, buffer);
+
+			RestoreStack ();
+			return EventResult.AskParent;
+		}
+	}
+
+
 	protected class OperationDetach : OperationCallback
 	{
 		public OperationDetach (SingleSteppingEngine sse)
@@ -2554,12 +2585,17 @@ namespace Mono.Debugger.Backend
 
 	protected class OperationExecuteInstruction : Operation
 	{
-		public readonly Instruction Instruction;
+		public readonly byte[] Instruction;
+		public readonly bool UpdateIP;
 
-		public OperationExecuteInstruction (SingleSteppingEngine sse, Instruction insn)
+		bool pushed_code_buffer;
+
+		public OperationExecuteInstruction (SingleSteppingEngine sse, byte[] insn,
+						    bool update_ip)
 			: base (sse, null)
 		{
 			this.Instruction = insn;
+			this.UpdateIP = update_ip;
 		}
 
 		public override bool IsSourceOperation {
@@ -2569,9 +2605,16 @@ namespace Mono.Debugger.Backend
 		protected override void DoExecute ()
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} executing instruction: {1}", sse, Instruction);
+				      "{0} executing instruction: {1}", sse,
+				      TargetBinaryReader.HexDump (Instruction));
 
-			inferior.ExecuteInstruction (Instruction.Code, true);
+			if (!sse.ProcessServant.MonoManager.HasCodeBuffer) {
+				sse.PushOperation (new OperationInitCodeBuffer (sse));
+				pushed_code_buffer = true;
+				return;
+			}
+
+			inferior.ExecuteInstruction (Instruction, UpdateIP);
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -2582,6 +2625,12 @@ namespace Mono.Debugger.Backend
 				      sse, Instruction, inferior.CurrentFrame, cevent);
 
 			args = null;
+			if (pushed_code_buffer) {
+				pushed_code_buffer = false;
+				inferior.ExecuteInstruction (Instruction, UpdateIP);
+				return EventResult.Running;
+			}
+
 			return EventResult.ResumeOperation;
 		}
 	}

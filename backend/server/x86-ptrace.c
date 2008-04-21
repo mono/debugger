@@ -90,6 +90,17 @@ mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 }
 
 void
+mono_debugger_server_initialize_code_buffer (MonoRuntimeInfo *runtime,
+					     guint64 executable_code_buffer,
+					     guint32 executable_code_buffer_size)
+{
+	runtime->executable_code_buffer = executable_code_buffer;
+	runtime->executable_code_buffer_size = executable_code_buffer_size;
+	runtime->executable_code_chunk_size = EXECUTABLE_CODE_CHUNK_SIZE;
+	runtime->executable_code_total_chunks = executable_code_buffer_size / EXECUTABLE_CODE_CHUNK_SIZE;
+}
+
+void
 mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime)
 {
 	runtime->executable_code_buffer = 0;

@@ -617,6 +617,11 @@ void
 mono_debugger_server_finalize_mono_runtime (MonoRuntimeInfo *runtime);
 
 void
+mono_debugger_server_initialize_code_buffer (MonoRuntimeInfo *runtime,
+					     guint64 executable_code_buffer,
+					     guint32 executable_code_buffer_size);
+
+void
 mono_debugger_server_get_registers_from_core_file (guint64 *values,
 						   const guint8 *buffer);
 

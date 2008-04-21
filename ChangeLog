@@ -1,3 +1,21 @@
+2008-04-21  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-ptrace.c
+	(mono_debugger_server_initialize_code_buffer): New public function.
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.HasCodeBuffer): New internal property.
+	(MonoThreadManager.InitCodeBuffer): New internal method; allows
+	delayed initialization of the code buffer.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.step_over_breakpoint): Also use `OperationExecuteInstruction'
+	for the nop-case.
+	(SSE.OperationExecuteInstruction): Check whether the code buffer
+	has already been initialized and trigger an init if necessary.
+	(SSE.OperationInitCodeBuffer): New private callback; calls the new
+	`init_code_buffer' method.
+
 2008-04-19  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Bfd.cs
