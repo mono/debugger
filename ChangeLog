@@ -1,5 +1,9 @@
 2008-04-21  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Require runtime version 69.
+
+2008-04-21  Martin Baulig  <martin@ximian.com>
+
 	* backend/MonoThreadManager.cs
 	(MonoThreadManager.InitializeAfterAttach): New internal method.
 	(MonoThreadManager.Detach): New internal method.
