@@ -102,15 +102,13 @@ namespace Mono.Debugger.Backend
 
 		protected void initialize_notifications (Inferior inferior)
 		{
-			TargetAddress notification_address = inferior.ReadAddress (
-				debugger_info.NotificationAddress);
 			TargetAddress executable_code_buffer = inferior.ReadAddress (
 				debugger_info.ExecutableCodeBuffer);
 			HasCodeBuffer = !executable_code_buffer.IsNull;
 
 			mono_runtime_info = mono_debugger_server_initialize_mono_runtime (
 				inferior.TargetAddressSize,
-				notification_address.Address,
+				debugger_info.NotificationAddress.Address,
 				executable_code_buffer.Address,
 				debugger_info.ExecutableCodeBufferSize,
 				debugger_info.BreakpointInfo.Address,
@@ -381,10 +379,7 @@ namespace Mono.Debugger.Backend
 		public readonly TargetAddress RemoveBreakpoint;
 		public readonly TargetAddress RegisterClassInitCallback;
 		public readonly TargetAddress RemoveClassInitCallback;
-		public readonly TargetAddress Attach;
-		public readonly TargetAddress Detach;
 		public readonly TargetAddress Initialize;
-		public readonly TargetAddress GetLMFAddress;
 		public readonly TargetAddress ThreadTable;
 		public readonly TargetAddress ExecutableCodeBuffer;
 		public readonly TargetAddress BreakpointInfo;
@@ -444,10 +439,7 @@ namespace Mono.Debugger.Backend
 			RuntimeInvoke             = reader.ReadAddress ();
 			ClassGetStaticFieldData   = reader.ReadAddress ();
 			RunFinally                = reader.ReadAddress ();
-			Attach                    = reader.ReadAddress ();
-			Detach                    = reader.ReadAddress ();
 			Initialize                = reader.ReadAddress ();
-			GetLMFAddress             = reader.ReadAddress ();
 
 			CreateString              = reader.ReadAddress ();
 			LookupClass               = reader.ReadAddress ();
