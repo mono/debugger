@@ -7,16 +7,13 @@ namespace Mono.Debugger.Tests
 	{
 		static IntPtr handle;
 
-		[DllImport("monodebuggertest_support")]
+		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_libgtop_glue_get_pid ();
 
-		[DllImport("monodebuggertest_support")]
-		static extern bool mono_debugger_libgtop_glue_test ();
-
-		[DllImport("monodebuggertest_support")]
+		[DllImport("monodebuggerserver")]
 		static extern bool mono_debugger_libgtop_glue_get_memory (int pid, ref LibGTopGlueMemoryInfo info);
 
-		[DllImport("monodebuggertest_support")]
+		[DllImport("monodebuggerserver")]
 		static extern bool mono_debugger_libgtop_glue_get_open_files (int pid, out int files);
 
 		struct LibGTopGlueMemoryInfo {
@@ -73,11 +70,6 @@ namespace Mono.Debugger.Tests
 					pid);
 
 			return files;
-		}
-
-		public static bool Test ()
-		{
-			return mono_debugger_libgtop_glue_test ();
 		}
 	}
 }

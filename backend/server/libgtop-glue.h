@@ -23,9 +23,6 @@ mono_debugger_libgtop_glue_get_memory (int pid, LibGTopGlueMemoryInfo *info);
 gboolean
 mono_debugger_libgtop_glue_get_open_files (int pid, int *result);
 
-gboolean
-mono_debugger_libgtop_glue_test (void);
-
 G_END_DECLS
 
 #endif
