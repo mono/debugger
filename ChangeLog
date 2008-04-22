@@ -1,5 +1,10 @@
 2008-04-22  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Map SIGCONT => 0.
+
+2008-04-22  Martin Baulig  <martin@ximian.com>
+
 	* test/misc/libgtop-glue.[ch]: Moved to backend/server/.
 
 	* backend/server/Makefile.am
