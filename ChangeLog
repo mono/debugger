@@ -1,3 +1,10 @@
+2008-04-22  Martin Baulig  <martin@ximian.com>
+
+	* test/misc/libgtop-glue.[ch]: Moved to backend/server/.
+
+	* backend/server/Makefile.am
+	(libmonodebuggerserver_la_SOURCES): Added libgtop-glue.[ch].
+
 2008-04-21  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Require runtime version 69.

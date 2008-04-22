@@ -29,6 +29,8 @@ libmonodebuggerserver_la_SOURCES = \
 	mutex.h			\
 	thread-db.c		\
 	thread-db.h		\
+	libgtop-glue.c		\
+	libgtop-glue.h		\
 	linux-proc-service.h
 
 libmonodebuggerserver_la_LIBADD = \
