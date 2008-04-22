@@ -1,3 +1,3 @@
 #!/bin/sh
-export LD_LIBRARY_PATH=@top_builddir@/backend/server/.libs:@top_builddir@/test/misc/.libs:@top_builddir@/frontend/libedit/.libs:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=@top_builddir@/backend/server/.libs:@top_builddir@/frontend/libedit/.libs:$LD_LIBRARY_PATH
 cd @top_builddir@/build && exec @MONO@ --debug @NUNIT_CONSOLE_EXE@ @NUNIT_CONSOLE_FLAGS@ Mono.Debugger.Test.dll $*
