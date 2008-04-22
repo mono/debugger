@@ -1,5 +1,14 @@
 2008-04-22  Martin Baulig  <martin@ximian.com>
 
+	Fix a race condition causing problems when reading output from a
+	child process.
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_io_thread_main): Close the pipes here, not in
+	server_ptrace_finalize() since we may still be reading.
+
+2008-04-22  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.c
 	(server_ptrace_dispatch_event): Map SIGCONT => 0.
 

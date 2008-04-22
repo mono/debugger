@@ -113,11 +113,6 @@ server_ptrace_finalize (ServerHandle *handle)
 
 	_server_ptrace_finalize_inferior (handle);
 
-	if (handle->inferior->redirect_fds) {
-		close (handle->inferior->output_fd[0]);
-		close (handle->inferior->error_fd[0]);
-	}
-
 	g_free (handle->inferior);
 	g_free (handle);
 }
@@ -533,6 +528,8 @@ server_ptrace_io_thread_main (IOThreadData *io_data, ChildOutputFunc func)
 			break;
 	}
 
+	close (io_data->output_fd);
+	close (io_data->error_fd);
 	g_free (io_data);
 }
 
