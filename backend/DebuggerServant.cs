@@ -87,11 +87,6 @@ namespace Mono.Debugger.Backend
 			client.OnThreadExitedEvent (thread);
 		}
 
-		internal void OnInferiorOutput (bool is_stderr, string line)
-		{
-			client.OnInferiorOutput (is_stderr, line);
-		}
-
 		internal void SendTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
 		{
 			try {

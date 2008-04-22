@@ -310,7 +310,7 @@ namespace Mono.Debugger.Backend
 
 		internal void OnTargetOutput (bool is_stderr, string output)
 		{
-			manager.Debugger.OnInferiorOutput (is_stderr, output);
+			client.OnTargetOutput (is_stderr, output);
 		}
 
 		internal void WaitForApplication ()

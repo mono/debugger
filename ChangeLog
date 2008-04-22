@@ -1,5 +1,15 @@
 2008-04-22  Martin Baulig  <martin@ximian.com>
 
+	Fix an API bug: target output is always per process.
+
+	* classes/Debugger.cs
+	(Debugger.TargetOutputEvent): Moved to `Process'.
+
+	* classes/Process.cs
+	(Process.TargetOutputEvent): Moved here from `Debugger'.
+
+2008-04-22  Martin Baulig  <martin@ximian.com>
+
 	Fix a race condition causing problems when reading output from a
 	child process.
 

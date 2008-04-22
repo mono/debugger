@@ -131,6 +131,14 @@ namespace Mono.Debugger
 			return String.Format ("Process #{0}", ID);
 		}
 
+		public event TargetOutputHandler TargetOutputEvent;
+
+		internal void OnTargetOutput (bool is_stderr, string output)
+		{
+			if (TargetOutputEvent != null)
+				TargetOutputEvent (is_stderr, output);
+		}
+
 		//
 		// IDisposable
 		//

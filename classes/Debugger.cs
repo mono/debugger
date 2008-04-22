@@ -48,7 +48,6 @@ namespace Mono.Debugger
 #endif
 		}
 
-		public event TargetOutputHandler TargetOutputEvent;
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
 		public event ProcessEventHandler MainProcessCreatedEvent;
@@ -113,12 +112,6 @@ namespace Mono.Debugger
 		{
 			if (ThreadExitedEvent != null)
 				ThreadExitedEvent (this, thread);
-		}
-
-		internal void OnInferiorOutput (bool is_stderr, string line)
-		{
-			if (TargetOutputEvent != null)
-				TargetOutputEvent (is_stderr, line);
 		}
 
 		internal void OnTargetEvent (Thread thread, TargetEventArgs args)

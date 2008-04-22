@@ -623,10 +623,13 @@ namespace Mono.Debugger.Frontend
 		}
 
 		protected virtual void OnMainProcessCreated (Process process)
-		{ }
+		{
+			new ProcessEventSink (this, process);
+		}
 
 		protected virtual void OnProcessCreated (Process process)
 		{
+			new ProcessEventSink (this, process);
 			Print ("Created new process #{0}.", process.ID);
 			if (current_process == null) {
 				current_process = process;
@@ -1024,7 +1027,6 @@ namespace Mono.Debugger.Frontend
 				debugger.ProcessCreatedEvent += process_created;
 				debugger.ProcessExitedEvent += process_exited;
 				debugger.ProcessExecdEvent += process_execd;
-				debugger.TargetOutputEvent += target_output;
 			}
 
 			public void thread_created (Debugger debugger, Thread thread)
@@ -1062,6 +1064,17 @@ namespace Mono.Debugger.Frontend
 			public void target_exited (Debugger debugger)
 			{
 				interpreter.OnTargetExited ();
+			}
+		}
+
+		protected class ProcessEventSink : DebuggerMarshalByRefObject
+		{
+			Interpreter interpreter;
+
+			public ProcessEventSink (Interpreter interpreter, Process process)
+			{
+				this.interpreter = interpreter;				
+				process.TargetOutputEvent += target_output;
 			}
 
 			public void target_output (bool is_stderr, string line)
