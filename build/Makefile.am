@@ -46,11 +46,11 @@ BACKEND_SRCLIST = \
 	$(top_srcdir)/languages/mono/*.cs		\
 	$(top_srcdir)/languages/native/*.cs		\
 	$(top_srcdir)/classes/*.cs			\
+	$(top_srcdir)/test/misc/*.cs			\
 	AssemblyInfo.cs
 
 TEST_SRCLIST = \
 	$(top_srcdir)/test/testsuite/*.cs		\
-	$(top_srcdir)/test/misc/*.cs			\
 	AssemblyInfo.cs
 
 TEST_CASE_SRCLIST = \
