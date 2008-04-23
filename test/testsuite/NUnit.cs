@@ -199,7 +199,7 @@ namespace Mono.Debugger.Tests
 		public readonly string ExeFileName;
 		public readonly string FileName;
 
-		public static bool Verbose = true;
+		public static bool Verbose = false;
 
 		Dictionary<string,int> lines;
 		Dictionary<string,int> automatic_breakpoints;
