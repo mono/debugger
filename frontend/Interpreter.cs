@@ -1,10 +1,10 @@
 using System;
-using Math = System.Math;
 using System.Text;
 using System.IO;
 using System.Threading;
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
@@ -850,24 +850,24 @@ namespace Mono.Debugger.Frontend
 
 		public Module[] GetModules (int[] indices)
 		{
-			int pos = 0;
-			Module[] retval = new Module [indices.Length];
+			List<Module> retval = new List<Module> ();
 			Module[] modules = CurrentProcess.Modules;
 
 			foreach (int index in indices) {
-				if ((index < 0) || (index > modules.Length))
-					throw new ScriptingException ("No such module {0}.", index);
-
+				bool found = false;
 				for (int i = 0; i < modules.Length; i++) {
-					if (modules [i].ID != index)
-						continue;
-					retval [pos] = modules [i];
+					if (modules [i].ID == index) {
+						retval.Add (modules [i]);
+						found = true;
+						break;
+					}
 				}
 
-				pos ++;
+				if (!found)
+					throw new ScriptingException ("No such module {0}.", index);
 			}
 
-			return retval;
+			return retval.ToArray ();
 		}
 
 		public SourceFile[] GetSources (int[] indices)

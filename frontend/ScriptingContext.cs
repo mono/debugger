@@ -337,8 +337,10 @@ namespace Mono.Debugger.Frontend
 
 		public void ShowSources (Module module)
 		{
-			if (!module.SymbolsLoaded)
+			if (!module.SymbolsLoaded) {
+				Print ("Symbols from module {0} not loaded.", module.Name);
 				return;
+			}
 
 			Print ("Sources for module {0}:", module.Name);
 
