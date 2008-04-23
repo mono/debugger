@@ -117,7 +117,7 @@ public class X
 		string hello = "Hello World";
 
 		// Breakpoint 1
-		Console.WriteLine (a);
+		Console.WriteLine (a);			// @MDB BREAKPOINT: simple
 		Console.WriteLine (b);
 		Console.WriteLine (f);
 		Console.WriteLine (hello);
@@ -129,7 +129,7 @@ public class X
 		object boxed_a = a;
 
 		// Breakpoint 2
-		Console.WriteLine (a);
+		Console.WriteLine (a);			// @MDB BREAKPOINT: boxed valuetype
 		Console.WriteLine (boxed_a);
 	}
 
@@ -139,7 +139,7 @@ public class X
 		object boxed_hello = hello;
 
 		// Breakpoint 3
-		Console.WriteLine (hello);
+		Console.WriteLine (hello);		// @MDB BREAKPOINT: boxed reftype
 		Console.WriteLine (boxed_hello);
 	}
 
@@ -147,21 +147,21 @@ public class X
 	{
 		int[] a = { 3, 4, 5 };
 
-		Console.WriteLine (a [2]);
+		Console.WriteLine (a [2]);		// @MDB BREAKPOINT: simple array
 	}
 
 	public static void MultiValueTypeArray ()
 	{
 		int[,] a = { { 6, 7, 8 }, { 9, 10, 11 } };
 
-		Console.WriteLine (a [1,2]);
+		Console.WriteLine (a [1,2]);		// @MDB BREAKPOINT: multi valuetype array
 	}
 
 	public static void StringArray ()
 	{
 		string[] a = { "Hello", "World" };
 
-		Console.WriteLine (a);
+		Console.WriteLine (a);			// @MDB BREAKPOINT: string array
 	}
 
 	public static void MultiStringArray ()
@@ -169,21 +169,21 @@ public class X
 		string[,] a = { { "Hello", "World" }, { "New York", "Boston" },
 				{ "Ximian", "Monkeys" } };
 
-		Console.WriteLine (a);
+		Console.WriteLine (a);			// @MDB BREAKPOINT: multi string array
 	}
 
 	public static void StructType ()
 	{
 		A a = new A (5, 256, "New England Patriots");
 		a.Test ();
-		Console.WriteLine (a);
+		Console.WriteLine (a);			// @MDB BREAKPOINT: struct type
 	}
 
 	public static void ClassType ()
 	{
 		B b = new B (5, 256, "New England Patriots");
 		b.Foo ();
-		Console.WriteLine (b);
+		Console.WriteLine (b);			// @MDB BREAKPOINT: class type
 	}
 
 	public static void InheritedClassType ()
@@ -192,7 +192,7 @@ public class X
 		Console.WriteLine (c.a);
 
 		B b = c;
-		Console.WriteLine (b.a);
+		Console.WriteLine (b.a);		// @MDB BREAKPOINT: inherited class type
 	}
 
 	public static void ComplexStructType ()
@@ -202,7 +202,7 @@ public class X
 		C c = new C (5, 256, "New England Patriots", 3.14F, 8);
 
 		D d = new D (a, b, c, "Eintracht Trier");
-		Console.WriteLine (d.s [0]);
+		Console.WriteLine (d.s [0]);		// @MDB BREAKPOINT: complex struct type
 	}
 
 	public static void FunctionStructType ()
@@ -210,12 +210,12 @@ public class X
 		E e = new E (9);
 
 		e.Foo (10);
-		Console.WriteLine (e.a);
+		Console.WriteLine (e.a);		// @MDB BREAKPOINT: function struct type
 	}
 
 	public static void Main ()
 	{
-		Simple ();
+		Simple ();				// @MDB LINE: main
 		BoxedValueType ();
 		BoxedReferenceType ();
 		SimpleArray ();

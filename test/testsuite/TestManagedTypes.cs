@@ -14,19 +14,6 @@ namespace Mono.Debugger.Tests
 			: base ("TestManagedTypes")
 		{ }
 
-		const int LineSimple = 120;
-		const int LineBoxedValueType = 132;
-		const int LineBoxedReferenceType = 142;
-		const int LineSimpleArray = 150;
-		const int LineMultiValueArray = 157;
-		const int LineStringArray = 164;
-		const int LineMultiStringArray = 172;
-		const int LineStructType = 179;
-		const int LineClassType = 186;
-		const int LineInheritedClassType = 195;
-		const int LineComplexStructType = 205;
-		const int LineFunctionStructType = 213;
-
 		[Test]
 		[Category("ManagedTypes")]
 		public void Main ()
@@ -37,23 +24,10 @@ namespace Mono.Debugger.Tests
 
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main()", 218);
-
-			int bpt_simple = AssertBreakpoint (LineSimple);
-			int bpt_boxed_value = AssertBreakpoint (LineBoxedValueType);
-			int bpt_boxed_ref = AssertBreakpoint (LineBoxedReferenceType);
-			int bpt_simple_array = AssertBreakpoint (LineSimpleArray);
-			int bpt_multi_value_array = AssertBreakpoint (LineMultiValueArray);
-			int bpt_string_array = AssertBreakpoint (LineStringArray);
-			int bpt_multi_string_array = AssertBreakpoint (LineMultiStringArray);
-			int bpt_struct_type = AssertBreakpoint (LineStructType);
-			int bpt_class_type = AssertBreakpoint (LineClassType);
-			int bpt_inherited_class_type = AssertBreakpoint (LineInheritedClassType);
-			int bpt_complex_struct_type = AssertBreakpoint (LineComplexStructType);
-			int bpt_function_struct_type = AssertBreakpoint (LineFunctionStructType);
+			AssertStopped (thread, "main", "X.Main()");
 
 			AssertExecute ("continue");
-			AssertHitBreakpoint (thread, bpt_simple, "X.Simple()", LineSimple);
+			AssertHitBreakpoint (thread, "simple", "X.Simple()");
 
 			AssertType (thread, "a", "int");
 			AssertPrint (thread, "a", "(int) 5");
@@ -77,8 +51,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Monkey");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_boxed_value, "X.BoxedValueType()",
-					     LineBoxedValueType);
+			AssertHitBreakpoint (thread, "boxed valuetype", "X.BoxedValueType()");
 
 			AssertPrint (thread, "a", "(int) 5");
 			AssertPrint (thread, "boxed_a", "(object) &(int) 5");
@@ -89,8 +62,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("5");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_boxed_ref, "X.BoxedReferenceType()",
-					     LineBoxedReferenceType);
+			AssertHitBreakpoint (thread, "boxed reftype", "X.BoxedReferenceType()");
 
 			AssertPrint (thread, "hello", "(string) \"Hello World\"");
 			AssertPrint (thread, "boxed_hello", "(object) &(string) \"Hello World\"");
@@ -101,8 +73,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello World");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_simple_array, "X.SimpleArray()",
-					     LineSimpleArray);
+			AssertHitBreakpoint (thread, "simple array", "X.SimpleArray()");
 
 			AssertPrint (thread, "a", "(int[]) [ 3, 4, 5 ]");
 			AssertPrint (thread, "a[1]", "(int) 4");
@@ -115,8 +86,8 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("9");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_multi_value_array,
-					     "X.MultiValueTypeArray()", LineMultiValueArray);
+			AssertHitBreakpoint (thread, "multi valuetype array",
+					     "X.MultiValueTypeArray()");
 
 			AssertPrint (thread, "a", "(int[,]) [ [ 6, 7, 8 ], [ 9, 10, 11 ] ]");
 			AssertPrintException (thread, "a[1]",
@@ -132,8 +103,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("50");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_string_array, "X.StringArray()",
-					     LineStringArray);
+			AssertHitBreakpoint (thread, "string array", "X.StringArray()");
 
 			AssertPrint (thread, "a", "(string[]) [ \"Hello\", \"World\" ]");
 			AssertPrint (thread, "a[1]", "(string) \"World\"");
@@ -145,8 +115,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("System.String[]");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_multi_string_array, "X.MultiStringArray()",
-					     LineMultiStringArray);
+			AssertHitBreakpoint (thread, "multi string array", "X.MultiStringArray()");
 
 			AssertPrint (thread, "a",
 				     "(string[,]) [ [ \"Hello\", \"World\" ], " +
@@ -176,8 +145,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Hello World");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_struct_type, "X.StructType()",
-					     LineStructType);
+			AssertHitBreakpoint (thread, "struct type", "X.StructType()");
 
 			AssertPrint (thread, "a",
 				     "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
@@ -188,8 +156,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("3.14");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_class_type, "X.ClassType()",
-					     LineClassType);
+			AssertHitBreakpoint (thread, "class type", "X.ClassType()");
 
 			AssertPrint (thread, "b",
 				     "(B) { a = 5, b = 256, c = \"New England Patriots\" }");
@@ -199,8 +166,8 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("8");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_inherited_class_type,
-					     "X.InheritedClassType()", LineInheritedClassType);
+			AssertHitBreakpoint (thread, "inherited class type",
+					     "X.InheritedClassType()");
 
 			AssertPrint (thread, "c",
 				     "(C) { <B> = { a = 5, b = 256, c = \"New England Patriots\" }, " +
@@ -216,8 +183,8 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("5");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_complex_struct_type,
-					     "X.ComplexStructType()", LineComplexStructType);
+			AssertHitBreakpoint (thread, "complex struct type",
+					     "X.ComplexStructType()");
 
 			AssertPrint (thread, "d.a",
 				     "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
@@ -233,8 +200,8 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Eintracht Trier");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_function_struct_type,
-					     "X.FunctionStructType()", LineFunctionStructType);
+			AssertHitBreakpoint (thread, "function struct type",
+					     "X.FunctionStructType()");
 
 			AssertPrint (thread, "e", "(E) { a = 9 }");
 			AssertPrint (thread, "e.a", "(int) 9");

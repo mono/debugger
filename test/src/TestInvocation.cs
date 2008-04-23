@@ -28,7 +28,7 @@ public class X
 
 	public void Test (int a, string b)
 	{
-		Foo (a);
+		Foo (a);				// @MDB BREAKPOINT: test
 		Foo (b);
 		Hello (a);
 		StaticHello (a);
@@ -36,21 +36,21 @@ public class X
 
 	public static void TestStatic (X y, int a, string b)
 	{
-		y.Foo (a);
+		y.Foo (a);				// @MDB BREAKPOINT: test static
 		y.Foo (b);
 		y.Hello (a);
 		StaticHello (a);
 	}
 
 	public static void BreakpointTest ()
-	{ }
+	{ }						// @MDB LINE: breakpoint test
 
 	public static void Main ()
 	{
-		X x = new X ();
+		X x = new X ();				// @MDB LINE: main
 		x.Test (5, "Hello World");
 		TestStatic (x, 9, "Boston");
 		StaticHello (9);
-		BreakpointTest ();
+		BreakpointTest ();			// @MDB BREAKPOINT: main2
 	}
 }
