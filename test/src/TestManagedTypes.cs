@@ -225,9 +225,10 @@ public class X
 		ulong h = 8;
 		float i = 9.1f;
 		double j = 2.3;
+		decimal k = 123456789m;
 
-		string format = "{0} {1} {2} {3} {4} {5} {5} {6} {7} {8} {9}"; // @MDB BREAKPOINT: simple types
-		Console.WriteLine (format, a, b, c, d, e, f, g, h, i, j);
+		string format = "{0} {1} {2} {3} {4} {5} {5} {6} {7} {8} {9} {10}"; // @MDB BREAKPOINT: simple types
+		Console.WriteLine (format, a, b, c, d, e, f, g, h, i, j, k);
 	}
 
 	public static void Main ()
