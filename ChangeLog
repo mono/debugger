@@ -1,5 +1,11 @@
 2008-04-24  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(Convert.ExplicitFundamentalConversion): New public method.
+	(CastExpression): Implement explicit fundamental conversions.
+
+2008-04-24  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/TestManagedTypes.cs: Add some testcases to parse
 	all kinds of crazy numbers.
 

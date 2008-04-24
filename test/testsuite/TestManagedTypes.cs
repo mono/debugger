@@ -256,8 +256,20 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "i", "(float) -3.402823E+38");
 			AssertPrint (thread, "j", "(double) 2.71828182845905");
 
+			AssertExecute ("set c = (short) -32768");
+			AssertExecute ("set d = (ushort) 65535");
+
+			AssertExecute ("set a = (byte) 255");
+			AssertExecute ("set b = (sbyte) -128");
+
+			AssertPrint (thread, "a", "(byte) 255");
+			AssertPrint (thread, "b", "(sbyte) -128");
+			AssertPrint (thread, "c", "(short) -32768");
+			AssertPrint (thread, "d", "(ushort) 65535");
+
+
 			AssertExecute ("continue");
-			AssertTargetOutput ("1 -2 -3 4 4294967295 -2147483648 -2147483648 " +
+			AssertTargetOutput ("255 -128 -32768 65535 4294967295 -2147483648 -2147483648 " +
 					    "-9223372036854775808 18446744073709551615 " +
 					    "-3.402823E+38 2.71828182845905");
 

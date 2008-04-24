@@ -37,13 +37,13 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "a.Test ()", "(string) \"Hello World\"");
 			AssertPrint (thread, "a.ToString ()", "(string) \"5\"");
 			AssertPrint (thread, "(A) a", "(A) { \"5\" }");
-			AssertPrintException (thread, "(B) a", "Cannot cast from A to B.");
+			AssertPrintException (thread, "(B) a", "Cannot cast from `a' to `B'.");
 			AssertPrint (thread, "d", "(D) { <C> = { <B> = { a = 8, " +
 				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
 			AssertPrint (thread, "(C) d",
 				     "(C) { <B> = { a = 8, Hello = \"Hello World\" }, f = 3.14 }");
 			AssertPrint (thread, "(B) d", "(B) { a = 8, Hello = \"Hello World\" }");
-			AssertPrintException (thread, "(A) d", "Cannot cast from D to A.");
+			AssertPrintException (thread, "(A) d", "Cannot cast from `d' to `A'.");
 			AssertPrint (thread, "(D) d", "(D) { <C> = { <B> = { a = 8, " +
 				     "Hello = \"Hello World\" }, f = 3.14 }, e = 500 }");
 			AssertPrint (thread, "((D) d)", "(D) { <C> = { <B> = { a = 8, " +

@@ -2516,6 +2516,17 @@ namespace Mono.Debugger.Frontend
 		{
 			TargetType target_type = target.EvaluateType (context);
 
+			TargetObject obj = DoCast (context, expr, target_type);
+			if (obj == null)
+				throw new ScriptingException (
+					"Cannot cast from `{0}' to `{1}'.", expr.Name, target.Name);
+
+			return obj;
+		}
+
+		TargetObject DoCast (ScriptingContext context, Expression expr,
+				     TargetType target_type)
+		{
 			if (target_type is TargetPointerType) {
 				TargetAddress address;
 
@@ -2523,13 +2534,10 @@ namespace Mono.Debugger.Frontend
 				if (pexpr != null)
 					address = pexpr.EvaluateAddress (context);
 				else {
-					TargetType etype = expr.EvaluateType (context);
-					TargetPointerType ptype = etype as TargetPointerType;
-
+					TargetPointerType ptype = expr.EvaluateType (context)
+						as TargetPointerType;
 					if ((ptype == null) || ptype.IsTypesafe)
-						throw new ScriptingException (
-							"Cannot cast from {0} to {1}.",
-							etype.Name, target.Name);
+						return null;
 
 					pexpr = new AddressOfExpression (expr);
 					pexpr.Resolve (context);
@@ -2540,7 +2548,17 @@ namespace Mono.Debugger.Frontend
 				return ((TargetPointerType) target_type).GetObject (address);
 			}
 
-			TargetClassType type = Convert.ToClassType (target_type);
+			if (target_type is TargetFundamentalType) {
+				TargetFundamentalObject fobj = expr.EvaluateObject (context)
+					as TargetFundamentalObject;
+				if (fobj == null)
+					return null;
+
+				TargetFundamentalType ftype = target_type as TargetFundamentalType;
+				return Convert.ExplicitFundamentalConversion (context, fobj, ftype);
+			}
+
+			TargetClassType ctype = Convert.ToClassType (target_type);
 			TargetClassObject source = Convert.ToClassObject (
 				context.CurrentThread, expr.EvaluateObject (context));
 
@@ -2548,13 +2566,7 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
 
-			TargetObject obj = TryCast (context, source, type);
-			if (obj == null)
-				throw new ScriptingException (
-					"Cannot cast from {0} to {1}.", source.Type.Name,
-					type.Name);
-
-			return obj;
+			return TryCast (context, source, ctype);
 		}
 
 		protected override TargetType DoEvaluateType (ScriptingContext context)
@@ -2716,6 +2728,28 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			return type.Language.CreateInstance (context.CurrentThread, new_value);
+		}
+
+		public static TargetObject ExplicitFundamentalConversion (ScriptingContext context,
+									  TargetFundamentalObject obj,
+									  TargetFundamentalType type)
+		{
+			TargetObject retval = ImplicitFundamentalConversion (context, obj, type);
+			if (retval != null)
+				return retval;
+
+			FundamentalKind tkind = type.FundamentalKind;
+
+			try {
+				object value = obj.GetObject (context.CurrentThread);
+				object new_value = ImplicitFundamentalConversion (value, tkind);
+				if (new_value == null)
+					return null;
+
+				return type.Language.CreateInstance (context.CurrentThread, new_value);
+			} catch {
+				return null;
+			}
 		}
 
 		static bool ImplicitReferenceConversionExists (ScriptingContext context,
