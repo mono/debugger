@@ -213,6 +213,23 @@ public class X
 		Console.WriteLine (e.a);		// @MDB BREAKPOINT: function struct type
 	}
 
+	public static void SimpleTypes ()
+	{
+		byte a = 1;
+		sbyte b = -2;
+		short c = -3;
+		ushort d = 4;
+		uint e = 5;
+		int f = -6;
+		long g = -7;
+		ulong h = 8;
+		float i = 9.1f;
+		double j = 2.3;
+
+		string format = "{0} {1} {2} {3} {4} {5} {5} {6} {7} {8} {9}"; // @MDB BREAKPOINT: simple types
+		Console.WriteLine (format, a, b, c, d, e, f, g, h, i, j);
+	}
+
 	public static void Main ()
 	{
 		Simple ();				// @MDB LINE: main
@@ -227,5 +244,6 @@ public class X
 		InheritedClassType ();
 		ComplexStructType ();
 		FunctionStructType ();
+		SimpleTypes ();
 	}
 }

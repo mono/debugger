@@ -58,6 +58,8 @@ namespace Mono.Debugger.Languages.Mono
 				corlib, memory, FundamentalKind.Boolean);
 			CharType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.Char);
+			ByteType = MonoFundamentalType.Create (
+				corlib, memory, FundamentalKind.Byte);
 			SByteType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.SByte);
 			Int16Type = MonoFundamentalType.Create (

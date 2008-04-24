@@ -419,22 +419,6 @@ namespace Mono.Debugger.Frontend.CSharp
 				return Token.UINT;
 			}
 
-			double d = 0;
-			if (!Double.TryParse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Integer, null, out d)) {
-				error_details = String.Format("Can't parse integral constant {0}", digit);
-				val = 0;
-				return Token.ERROR;
-			}
-			if (d < long.MinValue || d > long.MaxValue) {
-				islong = true;
-				isunsigned = true;	
-			}
-			else if (d < uint.MinValue || d > uint.MaxValue) {
-				islong = true;	
-			}
-			else if (d < int.MinValue || d > int.MaxValue) {
-				isunsigned = true;	
-			}
 			if (islong) {
 				if (isunsigned) {
 					try {

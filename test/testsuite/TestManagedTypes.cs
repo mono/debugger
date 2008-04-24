@@ -209,6 +209,58 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
+
+			AssertHitBreakpoint (thread, "simple types", "X.SimpleTypes()");
+			AssertPrint (thread, "a", "(byte) 1");
+			AssertPrint (thread, "b", "(sbyte) -2");
+			AssertPrint (thread, "c", "(short) -3");
+			AssertPrint (thread, "d", "(ushort) 4");
+			AssertPrint (thread, "e", "(uint) 5");
+			AssertPrint (thread, "f", "(int) -6");
+			AssertPrint (thread, "g", "(long) -7");
+			AssertPrint (thread, "h", "(ulong) 8");
+			AssertPrint (thread, "i", "(float) 9.1");
+			AssertPrint (thread, "j", "(double) 2.3");
+
+			AssertType (thread, "3", "int");
+			AssertType (thread, "-3", "int");
+			AssertPrint (thread, "2147483647", "2147483647"); // Int32.MaxValue
+			AssertType (thread, "2147483647", "int");
+			AssertPrint (thread, "-2147483648", "-2147483648"); // Int32.MinValue
+			AssertType (thread, "-2147483648", "int");
+			AssertPrint (thread, "4294967295u", "4294967295"); // UInt32.MaxValue
+			AssertType (thread, "4294967295u", "uint");
+
+			AssertPrint (thread, "-9223372036854775808l", "-9223372036854775808");
+			AssertPrint (thread, "18446744073709551615lu", "18446744073709551615");
+
+			AssertExecute ("set e = 4294967295u");
+			AssertExecute ("set f = -2147483648");
+			AssertExecute ("set g = -9223372036854775808l");
+			AssertExecute ("set h = 18446744073709551615lu");
+
+			AssertPrint (thread, "2.7182818284590452354", "2.71828182845905");
+			AssertPrint (thread, "2.7182818284590452354f", "2.718282");
+			AssertPrint (thread, "2.7182818284590452354d", "2.71828182845905");
+			AssertPrint (thread, "3.40282346638528859e38f", "3.402823E+38");
+			AssertPrint (thread, "-3.40282346638528859e38f", "-3.402823E+38");
+			AssertType (thread, "2.7182818284590452354", "double");
+			AssertType (thread, "2.7182818284590452354f", "float");
+			AssertType (thread, "2.7182818284590452354d", "double");
+			AssertType (thread, "3.40282346638528859e38f", "float");
+			AssertType (thread, "-3.40282346638528859e38f", "float");
+
+			AssertExecute ("set i = -3.40282346638528859e38f");
+			AssertExecute ("set j = 2.7182818284590452354d");
+
+			AssertPrint (thread, "i", "(float) -3.402823E+38");
+			AssertPrint (thread, "j", "(double) 2.71828182845905");
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("1 -2 -3 4 4294967295 -2147483648 -2147483648 " +
+					    "-9223372036854775808 18446744073709551615 " +
+					    "-3.402823E+38 2.71828182845905");
+
 			AssertTargetExited (thread.Process);
 		}
 	}
