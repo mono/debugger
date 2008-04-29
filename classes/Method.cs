@@ -42,11 +42,13 @@ namespace Mono.Debugger
 
 	public struct LineEntry : IComparable {
 		public readonly TargetAddress Address;
+		public readonly int File;
 		public readonly int Line;
 
-		public LineEntry (TargetAddress address, int line)
+		public LineEntry (TargetAddress address, int file, int line)
 		{
 			this.Address = address;;
+			this.File = file;
 			this.Line = line;
 		}
 
@@ -64,7 +66,7 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("LineEntry ({0}:{1})", Line, Address);
+			return String.Format ("LineEntry ({0}:{1}:{2})", File, Line, Address);
 		}
 	}
 

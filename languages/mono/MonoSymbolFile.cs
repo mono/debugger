@@ -438,6 +438,15 @@ namespace Mono.Debugger.Languages.Mono
 			return (SourceFile) source_file_hash [entry.SourceFile];
 		}
 
+		internal SourceFile GetSourceFile (int index)
+		{
+			C.SourceFileEntry source = File != null ? File.GetSourceFile (index) : null;
+			if (source == null)
+				return null;
+
+			return (SourceFile) source_file_hash [source];
+		}
+
 		public MonoFunctionType GetFunctionByToken (int token)
 		{
 			ensure_sources ();
@@ -1090,7 +1099,7 @@ namespace Mono.Debugger.Languages.Mono
 				SetMethodBounds (address.MethodStartAddress, address.MethodEndAddress);
 
 				SetLineNumbers (new MonoMethodLineNumberTable (
-					this, source, method, address.LineNumbers.ToArray ()));
+					file, this, source, method, address.LineNumbers.ToArray ()));
 			}
 
 			void do_read_variables (TargetMemoryAccess memory)
@@ -1357,13 +1366,15 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected abstract class MonoLineNumberTable : LineNumberTable
 		{
-			Method method;
+			public readonly MonoSymbolFile File;
+			public readonly Method Method;
 
 			TargetAddress start, end;
 
-			protected MonoLineNumberTable (Method method)
+			protected MonoLineNumberTable (MonoSymbolFile file, Method method)
 			{
-				this.method = method;
+				this.File = file;
+				this.Method = method;
 
 				this.start = method.StartAddress;
 				this.end = method.EndAddress;
@@ -1407,8 +1418,8 @@ namespace Mono.Debugger.Languages.Mono
 					if (!HasMethodBounds)
 						throw new InvalidOperationException ();
 
-					return method.HasMethodBounds ?
-						method.MethodEndAddress : method.EndAddress;
+					return Method.HasMethodBounds ?
+						Method.MethodEndAddress : Method.EndAddress;
 				}
 			}
 
@@ -1450,13 +1461,6 @@ namespace Mono.Debugger.Languages.Mono
 				if (address.IsNull || (address < start) || (address >= end))
 					return null;
 
-				SourceFile file = null;
-				if (method.MethodSource.HasSourceFile)
-					file = method.MethodSource.SourceFile;
-				SourceBuffer buffer = null;
-				if (method.MethodSource.HasSourceBuffer)
-					buffer = method.MethodSource.SourceBuffer;
-
 				if (Addresses.Length < 1)
 					return null;
 
@@ -1472,26 +1476,45 @@ namespace Mono.Debugger.Languages.Mono
 						continue;
 
 					int offset = (int) (address - next_address);
-
-					return new SourceAddress (file, buffer, entry.Line, offset, range);
+					return create_address (entry, offset, range);
 				}
 
 				if (Addresses.Length < 1)
 					return null;
 
-				return new SourceAddress (
-					file, buffer, Addresses [0].Line, (int) (address - start),
-					(int) (Addresses [0].Address - address));
+				return create_address (Addresses [0], (int) (address - start),
+						       (int) (Addresses [0].Address - address));
+			}
+
+			SourceAddress create_address (LineEntry entry, int offset, int range)
+			{
+				SourceFile file = null;
+				SourceBuffer buffer = null;
+
+#if ENABLE_KAHALO
+				if (entry.File != 0) {
+					file = File.GetSourceFile (entry.File);
+				} else {
+#endif
+					if (Method.MethodSource.HasSourceFile)
+						file = Method.MethodSource.SourceFile;
+					if (Method.MethodSource.HasSourceBuffer)
+						buffer = Method.MethodSource.SourceBuffer;
+#if ENABLE_KAHALO
+				}
+#endif
+
+				return new SourceAddress (file, buffer, entry.Line, offset, range);
 			}
 
 			public override void DumpLineNumbers ()
 			{
 				Console.WriteLine ();
 				Console.Write ("Dumping Line Number Table: {0} - {1} {2}",
-					       method.Name, method.StartAddress, method.EndAddress);
-				if (method.HasMethodBounds)
-					Console.Write (" - {0} {1}", method.MethodStartAddress,
-						       method.MethodEndAddress);
+					       Method.Name, Method.StartAddress, Method.EndAddress);
+				if (Method.HasMethodBounds)
+					Console.Write (" - {0} {1}", Method.MethodStartAddress,
+						       Method.MethodEndAddress);
 				Console.WriteLine ();
 				Console.WriteLine ();
 
@@ -1500,8 +1523,8 @@ namespace Mono.Debugger.Languages.Mono
 
 				for (int i = 0; i < Addresses.Length; i++) {
 					LineEntry entry = (LineEntry) Addresses [i];
-					Console.WriteLine ("{0,4} {1,4}  {2}", i,
-							   entry.Line, entry.Address);
+					Console.WriteLine ("{0,4} {1,4} {2,4}  {3}", i,
+							   entry.File, entry.Line, entry.Address);
 				}
 
 				Console.WriteLine ("----------------");
@@ -1530,9 +1553,10 @@ namespace Mono.Debugger.Languages.Mono
 			Method method;
 			Hashtable namespaces;
 
-			public MonoMethodLineNumberTable (Method method, MethodSource source,
-							  C.MethodEntry entry, JitLineNumberEntry[] jit_lnt)
-				: base (method)
+			public MonoMethodLineNumberTable (MonoSymbolFile file, Method method,
+							  MethodSource source, C.MethodEntry entry,
+							  JitLineNumberEntry[] jit_lnt)
+				: base (file, method)
 			{
 				this.method = method;
 				this.entry = entry;
@@ -1544,14 +1568,16 @@ namespace Mono.Debugger.Languages.Mono
 			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
 						   ref int last_line)
 			{
-				for (int i = entry.NumLineNumbers - 1; i >= 0; i--) {
-					C.LineNumberEntry lne = entry.LineNumbers [i];
+				C.LineNumberTable lnt = entry.LineNumberTable;
+				for (int i = lnt.LineNumbers.Length - 1; i >= 0; i--) {
+					C.LineNumberEntry lne = lnt.LineNumbers [i];
 
 					if (lne.Offset > offset)
 						continue;
 
 					if (lne.Row != last_line) {
-						lines.Add (new LineEntry (address, lne.Row));
+						int file = lne.File != entry.SourceFileIndex ? lne.File : 0;
+						lines.Add (new LineEntry (address, lne.File, lne.Row));
 						last_line = lne.Row;
 					}
 
@@ -1587,11 +1613,12 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("Symfile Line Numbers:");
 				Console.WriteLine ("---------------------");
 
-				for (int i = 0; i < entry.NumLineNumbers; i++) {
-					C.LineNumberEntry lne = entry.LineNumbers [i];
+				C.LineNumberTable lnt = entry.LineNumberTable;
+				for (int i = 0; i < lnt.LineNumbers.Length; i++) {
+					C.LineNumberEntry lne = lnt.LineNumbers [i];
 
-					Console.WriteLine ("{0,4} {1,4} {2,4:x}", i,
-							   lne.Row, lne.Offset);
+					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}", i,
+							   lne.File, lne.Row, lne.Offset);
 				}
 
 				Console.WriteLine ("---------------------");
@@ -1611,10 +1638,10 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("Generated Lines:");
 				Console.WriteLine ("----------------");
 				for (int i = 0; i < Data.Addresses.Length; i++) {
-					LineEntry entry = (LineEntry) Data.Addresses [i];
+					LineEntry le = (LineEntry) Data.Addresses [i];
 
-					Console.WriteLine ("{0,4} {1,4} {2,4:x}", i, entry.Line,
-							   entry.Address);
+					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}", i,
+							   le.File, le.Line, le.Address);
 				}
 				Console.WriteLine ("----------------");
 
@@ -1902,7 +1929,7 @@ namespace Mono.Debugger.Languages.Mono
 			MethodAddress address;
 
 			public WrapperLineNumberTable (WrapperMethod wrapper, MethodAddress address)
-				: base (wrapper)
+				: base (wrapper.File, wrapper)
 			{
 				this.wrapper = wrapper;
 				this.address = address;
@@ -1918,7 +1945,7 @@ namespace Mono.Debugger.Languages.Mono
 						continue;
 
 					if (i + 1 != last_line) {
-						lines.Add (new LineEntry (address, i + 1));
+						lines.Add (new LineEntry (address, 0, i + 1));
 						last_line = i + 1;
 					}
 
@@ -1947,7 +1974,7 @@ namespace Mono.Debugger.Languages.Mono
 					cil_offsets [i] = last_cil_offset;
 				}
 
-				lines.Add (new LineEntry (wrapper.StartAddress, 1));
+				lines.Add (new LineEntry (wrapper.StartAddress, 0, 1));
 
 				for (int i = 0; i < line_numbers.Length; i++) {
 					JitLineNumberEntry lne = line_numbers [i];

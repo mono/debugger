@@ -1,5 +1,14 @@
 2008-04-29  Martin Baulig  <martin@ximian.com>
 
+	* classes/Method.cs
+	(LineEntry.File): New public field.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile): Add support for line numbers from other source
+	files if we're using the symbol writer from the kahalo branch.
+
+2008-04-29  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Enable building with a runtime / symbol writer
 	from both HEAD and the kahalo branch.
 

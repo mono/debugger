@@ -57,7 +57,7 @@ namespace Mono.Debugger
 					end_row++;
 				}
 
-				addresses.Add (new LineEntry (line.Address, ++end_row));
+				addresses.Add (new LineEntry (line.Address, 0, ++end_row));
 				contents.Add (String.Format ("  {0:x}   {1}", line.Address, line.Text));
 			}
 
