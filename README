@@ -1,0 +1,16 @@
+This is a private work branch based on r102118 to provide support for
+ASP.NET and debugging web pages in the debugger.  It was created on
+April 29th and will mostly contain potentially unstable symbol writer
+changes.
+
+NOTE:
+Kahalo is a planet from Perry Rhodan, it is located near the center of
+our galaxy and held the control station for the Milky Way - Andromeda
+transmitter.
+
+The planet exploded on August 25th, 2405.
+
+The next major debugger release containing full ASP.NET and web page /
+web service debugging support will be called "Andromeda".
+
+
