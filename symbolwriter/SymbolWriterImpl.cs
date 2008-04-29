@@ -180,7 +180,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			for (int n=0; n<offsets.Length; n++) {
 				if (n > 0 && offsets[n] == offsets[n-1] && lines[n] == lines[n-1] && columns[n] == columns[n-1])
 					continue;
-				msw.MarkSequencePoint (offsets[n], lines[n], columns[n]);
+				msw.MarkSequencePoint (offsets[n], 0, lines[n], columns[n]);
 			}
 		}
 		

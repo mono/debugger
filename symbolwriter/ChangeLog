@@ -1,5 +1,20 @@
 2008-04-29  Martin Baulig  <martin@ximian.com>
 
+	* MonoSymbolTable.cs
+	(OffsetTable.Version): Bump to 42.
+	(LineNumberTable): New public class.  Provides a new line number
+	table format which is based on Dwarf 2.
+	(MethodEntry): Replaced BuildLineNumberTable() by
+	CheckLineNumberTable(); we're now more strict than we were before
+	and disallow not monotonic increasing entries,  we don't check for
+	duplicates anymore since the new LineNumberTable takes care of that.
+	(LineEntry): Added public `File' field which is a file index.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.MarkSequencePoint): Added `int file' argument.
+
+2008-04-29  Martin Baulig  <martin@ximian.com>
+
 	**** Kahalo changes start here ****
 
 2008-04-02  Martin Baulig  <martin@ximian.com>

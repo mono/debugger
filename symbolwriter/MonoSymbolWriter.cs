@@ -141,7 +141,13 @@ namespace Mono.CompilerServices.SymbolWriter
 			current_method.AddScopeVariable (scope, index);
 		}
 
+		[Obsolete]
 		public void MarkSequencePoint (int offset, int line, int column)
+		{
+			MarkSequencePoint (offset, 0, line, column);
+		}
+
+		public void MarkSequencePoint (int offset, int file, int line, int column)
 		{
 			if (current_method == null)
 				return;
@@ -151,8 +157,8 @@ namespace Mono.CompilerServices.SymbolWriter
 				current_method_lines = new LineNumberEntry [current_method_lines.Length * 2];
 				Array.Copy (tmp, current_method_lines, current_method_lines_pos);
 			}
-			
-			current_method_lines [current_method_lines_pos++] = new LineNumberEntry (line, offset);
+
+			current_method_lines [current_method_lines_pos++] = new LineNumberEntry (file, line, offset);
 		}
 
 		public void OpenMethod (ISourceFile file, ISourceMethod method,
@@ -297,8 +303,8 @@ namespace Mono.CompilerServices.SymbolWriter
 				this._file = file;
 				this._method = method;
 
-				this._start = new LineNumberEntry (startLine, 0);
-				this._end = new LineNumberEntry (endLine, 0);
+				this._start = new LineNumberEntry (0, startLine, 0);
+				this._end = new LineNumberEntry (0, endLine, 0);
 			}
 
 			public void StartBlock (CodeBlockEntry.Type type, int start_offset)
@@ -410,36 +416,10 @@ namespace Mono.CompilerServices.SymbolWriter
 				get { return _end; }
 			}
 
-			//
-			// Passes on the lines from the MonoSymbolWriter. This method is
-			// free to mutate the lns array, and it does.
-			//
 			internal void SetLineNumbers (LineNumberEntry [] lns, int count)
 			{
-				int pos = 0;
-
-				int last_offset = -1;
-				int last_row = -1;
-				for (int i = 0; i < count; i++) {
-					LineNumberEntry line = lns [i];
-
-					if (line.Offset > last_offset) {
-						if (last_row >= 0)
-							lns [pos++] = new LineNumberEntry (
-								last_row, last_offset);
-
-						last_row = line.Row;
-						last_offset = line.Offset;
-					} else if (line.Row > last_row) {
-						last_row = line.Row;
-					}
-				}
-			
-				lines = new LineNumberEntry [count + ((last_row >= 0) ? 1 : 0)];
-				Array.Copy (lns, lines, pos);
-				if (last_row >= 0)
-					lines [pos] = new LineNumberEntry (
-						last_row, last_offset);
+				lines = new LineNumberEntry [count];
+				Array.Copy (lns, lines, count);
 			}
 		}
 	}

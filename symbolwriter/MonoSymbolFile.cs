@@ -292,6 +292,10 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Seek ((int) offset_table_offset, SeekOrigin.Begin);
 			ot.Write (bw, Version);
 			bw.Seek (0, SeekOrigin.End);
+
+			Console.WriteLine ("TOTAL: {0} line numbes, {1} bytes, extended {2} bytes, " +
+					   "{3} methods.", NumLineNumbers, LineNumberSize,
+					   ExtendedLineNumberSize, methods.Count);
 		}
 
 		public void CreateSymbolFile (Guid guid, FileStream fs)
@@ -425,6 +429,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal int LineNumberCount = 0;
 		internal int LocalCount = 0;
 		internal int StringSize = 0;
+
+		internal int LineNumberSize = 0;
+		internal int ExtendedLineNumberSize = 0;
 
 		public SourceFileEntry GetSourceFile (int index)
 		{
