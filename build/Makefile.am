@@ -6,6 +6,10 @@ two_SCRIPTS = mdb.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
+if KAHALO
+MCS_FLAGS += -define:HAVE_KAHALO
+endif
+
 noinst_SCRIPTS = \
 	runtests					\
 	Mono.Debugger.dll				\

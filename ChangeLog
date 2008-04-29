@@ -1,3 +1,8 @@
+2008-04-29  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Enable building with a runtime / symbol writer
+	from both HEAD and the kahalo branch.
+
 2008-04-24  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs
