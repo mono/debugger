@@ -1568,16 +1568,25 @@ namespace Mono.Debugger.Languages.Mono
 			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
 						   ref int last_line)
 			{
-				C.LineNumberTable lnt = entry.LineNumberTable;
-				for (int i = lnt.LineNumbers.Length - 1; i >= 0; i--) {
-					C.LineNumberEntry lne = lnt.LineNumbers [i];
+				C.LineNumberEntry[] line_numbers;
+#if ENABLE_KAHALO
+				line_numbers = entry.LineNumberTable.LineNumbers;
+#else
+				line_numbers = entry.LineNumbers;
+#endif
+				for (int i = line_numbers.Length - 1; i >= 0; i--) {
+					C.LineNumberEntry lne = line_numbers [i];
 
 					if (lne.Offset > offset)
 						continue;
 
 					if (lne.Row != last_line) {
+#if ENABLE_KAHALO
 						int file = lne.File != entry.SourceFileIndex ? lne.File : 0;
-						lines.Add (new LineEntry (address, lne.File, lne.Row));
+#else
+						int file = 0;
+#endif
+						lines.Add (new LineEntry (address, file, lne.Row));
 						last_line = lne.Row;
 					}
 
@@ -1613,12 +1622,23 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ("Symfile Line Numbers:");
 				Console.WriteLine ("---------------------");
 
-				C.LineNumberTable lnt = entry.LineNumberTable;
-				for (int i = 0; i < lnt.LineNumbers.Length; i++) {
-					C.LineNumberEntry lne = lnt.LineNumbers [i];
+				C.LineNumberEntry[] lnt;
+#if ENABLE_KAHALO
+				lnt = entry.LineNumberTable.LineNumbers;
+#else
+				lnt = entry.LineNumbers;
+#endif
+				for (int i = 0; i < lnt.Length; i++) {
+					C.LineNumberEntry lne = lnt [i];
+
+#if ENABLE_KAHALO
+					int file = lne.File;
+#else
+					int file = 0;
+#endif
 
 					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}", i,
-							   lne.File, lne.Row, lne.Offset);
+							   file, lne.Row, lne.Offset);
 				}
 
 				Console.WriteLine ("---------------------");
