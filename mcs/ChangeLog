@@ -1,5 +1,11 @@
 2008-04-29  Martin Baulig  <martin@ximian.com>
 
+	* symbolwriter.cs
+	(SymbolWriter.MarkSequencePoint): Take a `Location' and use the
+	new symbol writer API to also pass the file.
+
+2008-04-29  Martin Baulig  <martin@ximian.com>
+
 	**** Kahalo changes start here ****
 
 2008-04-29  Martin Baulig  <martin@ximian.com>

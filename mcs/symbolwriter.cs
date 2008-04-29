@@ -228,11 +228,11 @@ namespace Mono.CSharp {
 		}
 #endregion
 
-		public static void MarkSequencePoint (ILGenerator ig, int row, int column)
+		public static void MarkSequencePoint (ILGenerator ig, Location loc)
 		{
 			if (symwriter != null) {
 				int offset = symwriter.GetILOffset (ig);
-				symwriter.MarkSequencePoint (offset, row, column);
+				symwriter.MarkSequencePoint (offset, loc.File, loc.Row, loc.Column);
 			}
 		}
 
