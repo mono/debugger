@@ -241,7 +241,7 @@ namespace Mono.Debugger.Languages.Mono
 					      mdb_file, ImageFile);
 				File = null;
 			} else if (File.CompatibilityMode) {
-				Report.Error ("Symbol file `{0}' has old pre-terrania file format",
+				Report.Error ("Symbol file `{0}' has old debug file format",
 					      mdb_file);
 				File = null;
 			}
