@@ -139,12 +139,15 @@ namespace Mono.CompilerServices.SymbolWriter
 		int last_source_index;
 		int last_namespace_index;
 
+		public readonly string FileName = "<dynamic>";
 		public readonly int Version = OffsetTable.Version;
 
 		public int NumLineNumbers;
 
-		public MonoSymbolFile ()
-		{ }
+		internal MonoSymbolFile ()
+		{
+			ot = new OffsetTable ();
+		}
 
 		internal int AddSource (SourceFileEntry source)
 		{
@@ -314,6 +317,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		MonoSymbolFile (string filename)
 		{
+			this.FileName = filename;
 			FileStream stream = new FileStream (filename, FileMode.Open, FileAccess.Read);
 			reader = new MyBinaryReader (stream);
 
@@ -417,6 +421,10 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public Guid Guid {
 			get { return guid; }
+		}
+
+		public OffsetTable OffsetTable {
+			get { return ot; }
 		}
 
 		internal int LineNumberCount = 0;

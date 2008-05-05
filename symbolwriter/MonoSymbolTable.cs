@@ -69,7 +69,7 @@ using System.IO;
 
 namespace Mono.CompilerServices.SymbolWriter
 {
-	public struct OffsetTable
+	public class OffsetTable
 	{
 		public const int  Version = 42;
 		public const long Magic   = 0x45e82623fd7fa614;
@@ -88,7 +88,14 @@ namespace Mono.CompilerServices.SymbolWriter
 		public int AnonymousScopeCount;
 		public int AnonymousScopeTableOffset;
 		public int AnonymousScopeTableSize;
+
+		public int LineNumberTable_LineBase = LineNumberTable.Default_LineBase;
+		public int LineNumberTable_LineRange = LineNumberTable.Default_LineRange;
+		public int LineNumberTable_OpcodeBase = LineNumberTable.Default_OpcodeBase;
 		#endregion
+
+		internal OffsetTable ()
+		{ }
 
 		internal OffsetTable (BinaryReader reader, int version)
 		{
@@ -106,6 +113,10 @@ namespace Mono.CompilerServices.SymbolWriter
 			AnonymousScopeCount = reader.ReadInt32 ();
 			AnonymousScopeTableOffset = reader.ReadInt32 ();
 			AnonymousScopeTableSize = reader.ReadInt32 ();
+
+			LineNumberTable_LineBase = reader.ReadInt32 ();
+			LineNumberTable_LineRange = reader.ReadInt32 ();
+			LineNumberTable_OpcodeBase = reader.ReadInt32 ();
 		}
 
 		internal void Write (BinaryWriter bw, int version)
@@ -124,6 +135,10 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (AnonymousScopeCount);
 			bw.Write (AnonymousScopeTableOffset);
 			bw.Write (AnonymousScopeTableSize);
+
+			bw.Write (LineNumberTable_LineBase);
+			bw.Write (LineNumberTable_LineRange);
+			bw.Write (LineNumberTable_OpcodeBase);
 		}
 
 		public override string ToString ()
@@ -151,28 +166,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			this.Offset = offset;
 		}
 
-		[Obsolete]
-		public LineNumberEntry (int row, int offset)
-		{
-			this.File = 0;
-			this.Row = row;
-			this.Offset = offset;
-		}
-
 		public static LineNumberEntry Null = new LineNumberEntry (0, 0, 0);
-
-		internal LineNumberEntry (BinaryReader reader)
-		{
-			Row = reader.ReadInt32 ();
-			Offset = reader.ReadInt32 ();
-			File = 0;
-		}
-
-		internal void Write (BinaryWriter bw)
-		{
-			bw.Write (Row);
-			bw.Write (Offset);
-		}
 
 		private class OffsetComparerClass : IComparer
 		{
@@ -741,14 +735,23 @@ namespace Mono.CompilerServices.SymbolWriter
 
 	public class LineNumberTable
 	{
-		public readonly LineNumberEntry[] LineNumbers;
+		protected LineNumberEntry[] _line_numbers;
+		public LineNumberEntry[] LineNumbers {
+			get { return _line_numbers; }
+		}
+
 		public readonly int StartFile;
 		public readonly int StartRow;
 
+		public readonly int LineBase;
+		public readonly int LineRange;
+		public readonly byte OpcodeBase;
+		public readonly int MaxAddressIncrement;
+
 #region Configurable constants
-		public const int LineBase = -1;
-		public const int LineRange = 8;
-		public const byte OpcodeBase = 12;
+		public const int Default_LineBase = -1;
+		public const int Default_LineRange = 8;
+		public const byte Default_OpcodeBase = 12;
 
 		public const bool SuppressDuplicates = true;
 #endregion
@@ -761,20 +764,22 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public const byte DW_LNE_end_sequence = 1;
 
-		public const int MaxAddressIncrement = (255 - OpcodeBase) / LineRange;
-
-		internal LineNumberTable (LineNumberEntry[] lines, int start_file, int start_row)
+		protected LineNumberTable (MonoSymbolFile file, int start_file, int start_row)
 		{
-			this.LineNumbers = lines;
+			this.LineBase = file.OffsetTable.LineNumberTable_LineBase;
+			this.LineRange = file.OffsetTable.LineNumberTable_LineRange;
+			this.OpcodeBase = (byte) file.OffsetTable.LineNumberTable_OpcodeBase;
+			this.MaxAddressIncrement = (255 - OpcodeBase) / LineRange;
+
 			this.StartFile = start_file;
 			this.StartRow = start_row;
 		}
 
-		internal static void Write (MonoSymbolFile file, MyBinaryWriter bw,
-					    LineNumberEntry[] lines, int start_file, int start_row)
+		internal LineNumberTable (MonoSymbolFile file, LineNumberEntry[] lines,
+					  int start_file, int start_row)
+			: this (file, start_file, start_row)
 		{
-			LineNumberTable lnt = new LineNumberTable (lines, start_file, start_row);
-			lnt.Write (file, bw);
+			this._line_numbers = lines;
 		}
 
 		internal void Write (MonoSymbolFile file, MyBinaryWriter bw)
@@ -844,6 +849,13 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal static LineNumberTable Read (MonoSymbolFile file, MyBinaryReader br,
 						      int start_file, int start_row)
 		{
+			LineNumberTable lnt = new LineNumberTable (file, start_file, start_row);
+			lnt.Read (file, br);
+			return lnt;
+		}
+
+		void Read (MonoSymbolFile file, MyBinaryReader br)
+		{
 			/*
 			 * The Dwarf standard requires line = 1, offset = 0, file = 1
 			 * We use StartRow / StartFile here to avoid unnecessary
@@ -853,7 +865,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			ArrayList lines = new ArrayList ();
 
-			int stm_line = start_row, stm_offset = 0, stm_file = start_file;
+			int stm_line = StartRow, stm_offset = 0, stm_file = StartFile;
 			while (true) {
 				byte opcode = br.ReadByte ();
 
@@ -868,8 +880,8 @@ namespace Mono.CompilerServices.SymbolWriter
 						break;
 					} else
 						throw new MonoSymbolFileException (
-							"Unknown extended opcode {0:x} in LNT",
-							opcode);
+							"Unknown extended opcode {0:x} in LNT ({1})",
+							opcode, file.FileName);
 
 					br.BaseStream.Position = end_pos;
 				} else if (opcode < OpcodeBase) {
@@ -904,9 +916,8 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
-			LineNumberEntry[] array = new LineNumberEntry [lines.Count];
-			lines.CopyTo (array, 0);
-			return new LineNumberTable (array, start_file, start_row);
+			_line_numbers = new LineNumberEntry [lines.Count];
+			lines.CopyTo (_line_numbers, 0);
 		}
 	}
 
@@ -918,14 +929,12 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int StartRow;
 		public readonly int EndRow;
 		public readonly int NumLocals;
-		public readonly int NumLineNumbers;
 		public readonly int NamespaceID;
 		public readonly bool LocalNamesAmbiguous;
 
 		int NameOffset;
 		int LocalVariableTableOffset;
 		int LineNumberTableOffset;
-		int ExtendedLineNumberTableOffset;
 
 		public readonly int NumCodeBlocks;
 		int CodeBlockTableOffset;
@@ -940,13 +949,20 @@ namespace Mono.CompilerServices.SymbolWriter
 		int file_offset;
 
 		public readonly SourceFileEntry SourceFile;
-		public readonly LineNumberEntry[] LineNumbers;
 		public readonly int[] LocalTypeIndices;
 		public readonly LocalVariableEntry[] Locals;
 		public readonly CodeBlockEntry[] CodeBlocks;
 		public readonly ScopeVariable[] ScopeVariables;
 
 		public readonly LineNumberTable LineNumberTable;
+
+		public int NumLineNumbers {
+			get { return LineNumberTable.LineNumbers.Length; }
+		}
+
+		public LineNumberEntry[] LineNumbers {
+			get { return LineNumberTable.LineNumbers; }
+		}
 
 		public readonly string RealName;
 
@@ -961,30 +977,24 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			this.SymbolFile = file;
 			this.index = index;
-			SourceFileIndex = reader.ReadInt32 ();
-			Token = reader.ReadInt32 ();
-			StartRow = reader.ReadInt32 ();
-			EndRow = reader.ReadInt32 ();
-			NumLocals = reader.ReadInt32 ();
-			NumLineNumbers = reader.ReadInt32 ();
-			NameOffset = reader.ReadInt32 ();
-			reader.ReadInt32 (); /* Compatibility with old file format */
-			LocalVariableTableOffset = reader.ReadInt32 ();
-			LineNumberTableOffset = reader.ReadInt32 ();
-			reader.ReadInt32 (); /* Compatibility with old file format */
-			reader.ReadInt32 (); /* Likewise. */
-			NamespaceID = reader.ReadInt32 ();
-			LocalNamesAmbiguous = reader.ReadInt32 () != 0;
+			SourceFileIndex = reader.ReadLeb128 ();
+			LineNumberTableOffset = reader.ReadLeb128 ();
+			Token = reader.ReadLeb128 ();
+			StartRow = reader.ReadLeb128 ();
+			EndRow = reader.ReadLeb128 ();
+			NumLocals = reader.ReadLeb128 ();
+			NameOffset = reader.ReadLeb128 ();
+			LocalVariableTableOffset = reader.ReadLeb128 ();
+			NamespaceID = reader.ReadLeb128 ();
+			LocalNamesAmbiguous = reader.ReadByte () != 0;
 
-			ExtendedLineNumberTableOffset = reader.ReadInt32 ();
+			NumCodeBlocks = reader.ReadLeb128 ();
+			CodeBlockTableOffset = reader.ReadLeb128 ();
 
-			NumCodeBlocks = reader.ReadInt32 ();
-			CodeBlockTableOffset = reader.ReadInt32 ();
+			NumScopeVariables = reader.ReadLeb128 ();
+			ScopeVariableTableOffset = reader.ReadLeb128 ();
 
-			NumScopeVariables = reader.ReadInt32 ();
-			ScopeVariableTableOffset = reader.ReadInt32 ();
-
-			RealNameOffset = reader.ReadInt32 ();
+			RealNameOffset = reader.ReadLeb128 ();
 			if (RealNameOffset != 0)
 				RealName = file.ReadString (RealNameOffset);
 
@@ -994,10 +1004,8 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = LineNumberTableOffset;
 
-				LineNumbers = new LineNumberEntry [NumLineNumbers];
-
-				for (int i = 0; i < NumLineNumbers; i++)
-					LineNumbers [i] = new LineNumberEntry (reader);
+				LineNumberTable = LineNumberTable.Read (
+					file, reader, SourceFileIndex, StartRow);
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -1035,16 +1043,6 @@ namespace Mono.CompilerServices.SymbolWriter
 
 				reader.BaseStream.Position = old_pos;
 			}
-
-			if (ExtendedLineNumberTableOffset != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = ScopeVariableTableOffset;
-
-				LineNumberTable = LineNumberTable.Read (
-					file, reader, SourceFileIndex, StartRow);
-
-				reader.BaseStream.Position = old_pos;
-			}
 		}
 
 		internal MethodEntry (MonoSymbolFile file, SourceFileEntry source,
@@ -1065,11 +1063,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			NamespaceID = namespace_id;
 
 			CheckLineNumberTable (lines);
-
-			LineNumbers = lines;
-			NumLineNumbers = LineNumbers.Length;
-
-			file.NumLineNumbers += NumLineNumbers;
+			LineNumberTable = new LineNumberTable (file, lines, source.Index, start_row);
+			file.NumLineNumbers += lines.Length;
 
 			NumLocals = locals != null ? locals.Length : 0;
 			Locals = locals;
@@ -1113,7 +1108,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		
 		void CheckLineNumberTable (LineNumberEntry[] line_numbers)
 		{
-			int pos = 0;
 			int last_offset = -1;
 			int last_row = -1;
 
@@ -1150,12 +1144,6 @@ namespace Mono.CompilerServices.SymbolWriter
 				Locals [i].Write (file, bw);
 			file.LocalCount += NumLocals;
 
-			LineNumberTableOffset = (int) bw.BaseStream.Position;
-			for (int i = 0; i < NumLineNumbers; i++)
-				LineNumbers [i].Write (bw);
-			file.LineNumberCount += NumLineNumbers;
-			file.LineNumberSize += (int) bw.BaseStream.Position - LineNumberTableOffset;
-
 			CodeBlockTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumCodeBlocks; i++)
 				CodeBlocks [i].Write (bw);
@@ -1169,35 +1157,29 @@ namespace Mono.CompilerServices.SymbolWriter
 				bw.Write (RealName);
 			}
 
-			ExtendedLineNumberTableOffset = (int) bw.BaseStream.Position;
-			LineNumberTable.Write (file, bw, LineNumbers, SourceFileIndex, StartRow);
+			LineNumberTableOffset = (int) bw.BaseStream.Position;
+			LineNumberTable.Write (file, bw);
 
 			file_offset = (int) bw.BaseStream.Position;
 
-			bw.Write (SourceFileIndex);
-			bw.Write (Token);
-			bw.Write (StartRow);
-			bw.Write (EndRow);
-			bw.Write (NumLocals);
-			bw.Write (NumLineNumbers);
-			bw.Write (NameOffset);
-			bw.Write (0); /* Compatibility with old file format. */
-			bw.Write (LocalVariableTableOffset);
-			bw.Write (LineNumberTableOffset);
-			bw.Write (0); /* Compatibility with old file format. */
-			bw.Write (0); /* Likewise. */
-			bw.Write (NamespaceID);
-			bw.Write (LocalNamesAmbiguous ? 1 : 0);
+			bw.WriteLeb128 (SourceFileIndex);
+			bw.WriteLeb128 (LineNumberTableOffset);
+			bw.WriteLeb128 (Token);
+			bw.WriteLeb128 (StartRow);
+			bw.WriteLeb128 (EndRow);
+			bw.WriteLeb128 (NumLocals);
+			bw.WriteLeb128 (NameOffset);
+			bw.WriteLeb128 (LocalVariableTableOffset);
+			bw.WriteLeb128 (NamespaceID);
+			bw.Write ((byte) (LocalNamesAmbiguous ? 1 : 0));
 
-			bw.Write (ExtendedLineNumberTableOffset);
+			bw.WriteLeb128 (NumCodeBlocks);
+			bw.WriteLeb128 (CodeBlockTableOffset);
 
-			bw.Write (NumCodeBlocks);
-			bw.Write (CodeBlockTableOffset);
+			bw.WriteLeb128 (NumScopeVariables);
+			bw.WriteLeb128 (ScopeVariableTableOffset);
 
-			bw.Write (NumScopeVariables);
-			bw.Write (ScopeVariableTableOffset);
-
-			bw.Write (RealNameOffset);
+			bw.WriteLeb128 (RealNameOffset);
 
 			return new MethodSourceEntry (index, file_offset, StartRow, EndRow);
 		}

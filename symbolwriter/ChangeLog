@@ -1,3 +1,20 @@
+2008-05-05  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolFile.cs
+	(MonoSymbolFile.OffsetTable): New public property.
+	(MonoSymbolFile.FileName): New public readonly field.
+
+	* MonoSymbolTable.cs
+	(OffsetTable): Make this a class and not a struct.
+	(OffsetTable): Add `LineNumberTable_LineBase',
+	`LineNumberTable_LineRange' and `LineNumberTable_OpcodeBase'.
+	(LineNumberEntry): Removed the reading/writing functions.
+	(LineNumberTable): Get `LineBase', `LineRange' and `OpcodeBase'
+	from the `OffsetTable' rather than hardcoding it here.
+	(MethodEntry): Make `NumLineNumbers' and `LineNumbers' properties;
+	massive cleanup, use leb128 everywhere and removed all the
+	obsolete fields.
+
 2008-04-29  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs
