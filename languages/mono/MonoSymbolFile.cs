@@ -240,10 +240,6 @@ namespace Mono.Debugger.Languages.Mono
 				Report.Error ("Symbol file `{0}' does not match assembly `{1}'",
 					      mdb_file, ImageFile);
 				File = null;
-			} else if (File.CompatibilityMode) {
-				Report.Error ("Symbol file `{0}' has old debug file format",
-					      mdb_file);
-				File = null;
 			}
 
 			symtab = new MonoSymbolTable (this);
