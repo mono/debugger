@@ -286,35 +286,35 @@ namespace Mono.Debugger.Architectures
 
 					switch (opcode2) {
 					case 0x50: /* r8 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R8].SetValue (rbp, value);
 						break;
 					case 0x51: /* r9 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R9].SetValue (rbp, value);
 						break;
 					case 0x52: /* r10 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R10].SetValue (rbp, value);
 						break;
 					case 0x53: /* r11 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R11].SetValue (rbp, value);
 						break;
 					case 0x54: /* r12 */
-						value = (long) memory.ReadInteger (rbp);
+						value = (long) memory.ReadAddress (rbp).Address;
 						regs [(int) X86_Register.R12].SetValue (rbp, value);
 						break;
 					case 0x55: /* r13 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R13].SetValue (rbp, value);
 						break;
 					case 0x56: /* r14 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R14].SetValue (rbp, value);
 						break;
 					case 0x57: /* r15 */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.R15].SetValue (rbp, value);
 						break;
 					}
@@ -324,27 +324,27 @@ namespace Mono.Debugger.Architectures
 
 					switch (opcode) {
 					case 0x50: /* rax */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.RAX].SetValue (rbp, value);
 						break;
 					case 0x51: /* rcx */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.RCX].SetValue (rbp, value);
 						break;
 					case 0x52: /* rdx */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.RDX].SetValue (rbp, value);
 						break;
 					case 0x53: /* rbx */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.RBX].SetValue (rbp, value);
 						break;
 					case 0x56: /* rsi */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.RSI].SetValue (rbp, value);
 						break;
 					case 0x57: /* rdi */
-						value = (long) memory.ReadInteger (rbp);
+						value = memory.ReadLongInteger (rbp);
 						regs [(int) X86_Register.RDI].SetValue (rbp, value);
 						break;
 					}
