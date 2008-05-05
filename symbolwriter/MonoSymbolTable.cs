@@ -809,7 +809,7 @@ namespace Mono.CompilerServices.SymbolWriter
 					last_file = LineNumbers [i].File;
 				}
 
-				if (offset_inc > MaxAddressIncrement) {
+				if (offset_inc >= MaxAddressIncrement) {
 					if (offset_inc < 2 * MaxAddressIncrement) {
 						bw.Write (DW_LNS_const_add_pc);
 						offset_inc -= MaxAddressIncrement;
