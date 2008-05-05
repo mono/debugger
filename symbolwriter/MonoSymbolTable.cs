@@ -957,11 +957,11 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly LineNumberTable LineNumberTable;
 
 		public int NumLineNumbers {
-			get { return LineNumberTable.LineNumbers.Length; }
+			get { return LineNumberTable != null ? LineNumbers.Length : 0; }
 		}
 
 		public LineNumberEntry[] LineNumbers {
-			get { return LineNumberTable.LineNumbers; }
+			get { return LineNumberTable != null ? LineNumberTable.LineNumbers : null; }
 		}
 
 		public readonly string RealName;
