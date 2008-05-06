@@ -572,6 +572,11 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		public TargetAddress LookupSymbol (string name)
+		{
+			return bfd_container.LookupSymbol (name);
+		}
+
 		public Thread[] GetThreads ()
 		{
 			lock (thread_hash.SyncRoot) {

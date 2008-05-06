@@ -3065,15 +3065,20 @@ namespace Mono.Debugger.Frontend
 			try {
 				mexpr = expr.ResolveMethod (context, type);
 			} catch {
-				if (lazy)
-					return true;
-				throw new ScriptingException ("No such method: `{0}'.", Argument);
+				mexpr = null;
 			}
 
 			if (mexpr != null)
 				location = mexpr.EvaluateSource (context);
-			else
+			else {
 				location = context.FindMethod (Argument);
+				if (location != null)
+					return true;
+
+				address = context.CurrentProcess.LookupSymbol (Argument);
+				if (!address.IsNull)
+					return true;
+			}
 
 			if (lazy)
 				return true;

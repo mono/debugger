@@ -121,6 +121,11 @@ namespace Mono.Debugger
 			return null;
 		}
 
+		public TargetAddress LookupSymbol (string name)
+		{
+			return servant.LookupSymbol (name);
+		}
+
 		public Thread[] GetThreads ()
 		{
 			return servant.GetThreads ();

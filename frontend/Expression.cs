@@ -960,6 +960,10 @@ namespace Mono.Debugger.Frontend
 				Expression expr = Lookup (context, frame);
 				if (expr != null)
 					return expr;
+
+				TargetAddress address = context.CurrentProcess.LookupSymbol (name);
+				if (!address.IsNull)
+					return new NumberExpression (address.Address);
 			}
 
 			SourceLocation location = context.FindMethod (name);

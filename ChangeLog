@@ -1,5 +1,22 @@
 2008-05-06  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(SimpleNameExpression.DoResolve): Also call Process.LookupSymbol()
+	and return a NumberExpression containing the address on success.
+
+	* frontend/Command.cs
+	(BreakCommand.DoResolve): Also call Process.LookupSymbol() to
+	allow breakpoints on native methods.
+
+	* classes/Process.cs
+	(Process.LookupSymbol): New public method.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.LookupSymbol): New public method; does a native
+	symbol lookup via the BfdContainer.
+
+2008-05-06  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoSymbolFile.cs
 	(WrapperMethod): Make GetParameters() and GetLocalVariables()
 	return an empty array instead of null.
