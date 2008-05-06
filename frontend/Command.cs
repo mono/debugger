@@ -385,6 +385,9 @@ namespace Mono.Debugger.Frontend
 		{
 			if (Argument.StartsWith ("/")) {
 				int pos = Argument.IndexOfAny (new char[] { ' ', '\t' });
+				if (pos < 0)
+					throw new ScriptingException ("Syntax error.");
+
 				string fstring = Argument.Substring (1, pos-1);
 				string arg = Argument.Substring (pos + 1);
 
