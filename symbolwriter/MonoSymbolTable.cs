@@ -576,7 +576,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (NamespaceTableOffset);
 		}
 
-		internal SourceFileEntry (MonoSymbolFile file, BinaryReader reader)
+		internal SourceFileEntry (MonoSymbolFile file, MyBinaryReader reader)
 		{
 			this.file = file;
 
@@ -599,7 +599,7 @@ namespace Mono.CompilerServices.SymbolWriter
 				if (creating)
 					throw new InvalidOperationException ();
 
-				BinaryReader reader = file.BinaryReader;
+				MyBinaryReader reader = file.BinaryReader;
 				int old_pos = (int) reader.BaseStream.Position;
 
 				reader.BaseStream.Position = MethodOffset;
@@ -658,24 +658,24 @@ namespace Mono.CompilerServices.SymbolWriter
 			this.EndRow = end;
 		}
 
-		internal MethodSourceEntry (BinaryReader reader)
+		internal MethodSourceEntry (MyBinaryReader reader)
 		{
-			Index = reader.ReadInt32 ();
-			FileOffset = reader.ReadInt32 ();
-			StartRow = reader.ReadInt32 ();
-			EndRow = reader.ReadInt32 ();
+			Index = reader.ReadLeb128 ();
+			FileOffset = reader.ReadLeb128 ();
+			StartRow = reader.ReadLeb128 ();
+			EndRow = reader.ReadLeb128 ();
 		}
 
 		public static int Size {
 			get { return 16; }
 		}
 
-		internal void Write (BinaryWriter bw)
+		internal void Write (MyBinaryWriter bw)
 		{
-			bw.Write (Index);
-			bw.Write (FileOffset);
-			bw.Write (StartRow);
-			bw.Write (EndRow);
+			bw.WriteLeb128 (Index);
+			bw.WriteLeb128 (FileOffset);
+			bw.WriteLeb128 (StartRow);
+			bw.WriteLeb128 (EndRow);
 		}
 
 		public int CompareTo (object obj)
