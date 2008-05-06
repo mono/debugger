@@ -1904,12 +1904,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override TargetVariable[] GetParameters (Thread target)
 			{
-				return null;
+				return new TargetVariable [0];
 			}
 
 			public override TargetVariable[] GetLocalVariables (Thread target)
 			{
-				return null;
+				return new TargetVariable [0];
 			}
 
 			public override string[] GetNamespaces ()

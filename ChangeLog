@@ -1,5 +1,11 @@
 2008-05-06  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(WrapperMethod): Make GetParameters() and GetLocalVariables()
+	return an empty array instead of null.
+
+2008-05-06  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(ShowCommand.ShowParametersCommand): Don't crash if the current
 	method doesn't have any parameters.
