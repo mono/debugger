@@ -2047,16 +2047,19 @@ namespace Mono.Debugger.Frontend
 
 			protected override bool DoResolve (ScriptingContext context)
 			{
-				if (CurrentFrame.Method == null)
+				if ((CurrentFrame == null) || (CurrentFrame.Method == null))
 					throw new ScriptingException (
 						"Selected stack frame has no method.");
 
 				param_vars = CurrentFrame.Method.GetParameters (context.CurrentThread);
-				return true;
+				return param_vars != null;
 			}
 
 			protected override object DoExecute (ScriptingContext context)
 			{
+				if (param_vars == null)
+					return null;
+
 				foreach (TargetVariable var in param_vars) {
 					if (!var.IsInScope (CurrentFrame.TargetAddress))
 						continue;
@@ -2076,16 +2079,19 @@ namespace Mono.Debugger.Frontend
 
 			protected override bool DoResolve (ScriptingContext context)
 			{
-				if (CurrentFrame.Method == null)
+				if ((CurrentFrame == null) || (CurrentFrame.Method == null))
 					throw new ScriptingException (
 						"Selected stack frame has no method.");
 
 				locals = CurrentFrame.Method.GetLocalVariables (context.CurrentThread);
-				return true;
+				return locals != null;
 			}
 
 			protected override object DoExecute (ScriptingContext context)
 			{
+				if (locals == null)
+					return;
+
 				foreach (TargetVariable var in locals) {
 					if (!var.IsInScope (CurrentFrame.TargetAddress))
 						continue;
