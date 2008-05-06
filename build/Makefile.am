@@ -7,7 +7,7 @@ two_SCRIPTS = mdb.exe
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
 if KAHALO
-MCS_FLAGS += -define:HAVE_KAHALO
+MCS_FLAGS += -define:ENABLE_KAHALO
 endif
 
 noinst_SCRIPTS = \
