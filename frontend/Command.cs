@@ -2090,7 +2090,7 @@ namespace Mono.Debugger.Frontend
 			protected override object DoExecute (ScriptingContext context)
 			{
 				if (locals == null)
-					return;
+					return null;
 
 				foreach (TargetVariable var in locals) {
 					if (!var.IsInScope (CurrentFrame.TargetAddress))
