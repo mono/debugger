@@ -31,6 +31,7 @@ namespace Mono.Debugger.Backend
 		ThreadDB thread_db;
 
 		bool is_attached;
+		bool is_execed;
 		bool is_forked;
 		bool initialized;
 		ST.ManualResetEvent initialized_event;
@@ -187,7 +188,7 @@ namespace Mono.Debugger.Backend
 			if ((mono_manager != null) && !do_attach)
 				mono_manager.ThreadCreated (new_thread);
 
-			if (!do_attach)
+			if (!do_attach && !is_execed)
 				get_thread_info (inferior, new_thread);
 			OnThreadCreatedEvent (new_thread);
 		}
@@ -201,6 +202,7 @@ namespace Mono.Debugger.Backend
 			new_inferior.InitializeThread (pid);
 
 			if (!manager.Debugger.Configuration.FollowFork) {
+				Environment.SetEnvironmentVariable ("MONO_INSIDE_MDB", null);
 				new_inferior.DetachAfterFork ();
 				return;
 			}
@@ -223,6 +225,8 @@ namespace Mono.Debugger.Backend
 
 		internal void ChildExecd (Inferior inferior)
 		{
+			is_execed = true;
+
 			if (!is_forked) {
 				if (bfd_container != null)
 					bfd_container.Dispose ();
