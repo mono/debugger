@@ -1,5 +1,18 @@
 2008-05-07  Martin Baulig  <martin@ximian.com>
 
+	* classes/Debugger.cs
+	(Debugger.ProcessReachedMainEvent): New public event.
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): Emit the new
+	`ProcessReachedMainEvent' from  `NotificationType.ReachedMain'.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.Initialize): Emit the new
+	`ProcessReachedMainEvent' if we're a native process.
+
+2008-05-07  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs: Kill `-args'.
 
 2008-05-07  Martin Baulig  <martin@ximian.com>

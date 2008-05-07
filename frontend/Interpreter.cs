@@ -627,6 +627,9 @@ namespace Mono.Debugger.Frontend
 			new ProcessEventSink (this, process);
 		}
 
+		protected virtual void OnProcessReachedMain (Process process)
+		{ }
+
 		protected virtual void OnProcessCreated (Process process)
 		{
 			new ProcessEventSink (this, process);
@@ -1024,6 +1027,7 @@ namespace Mono.Debugger.Frontend
 				debugger.ThreadCreatedEvent += thread_created;
 				debugger.ThreadExitedEvent += thread_exited;
 				debugger.MainProcessCreatedEvent += main_process_created;
+				debugger.ProcessReachedMainEvent += process_reached_main;
 				debugger.ProcessCreatedEvent += process_created;
 				debugger.ProcessExitedEvent += process_exited;
 				debugger.ProcessExecdEvent += process_execd;
@@ -1044,6 +1048,11 @@ namespace Mono.Debugger.Frontend
 			public void main_process_created (Debugger debugger, Process process)
 			{
 				interpreter.OnMainProcessCreated (process);
+			}
+
+			public void process_reached_main (Debugger debugger, Process process)
+			{
+				interpreter.OnProcessReachedMain (process);
 			}
 
 			public void process_created (Debugger debugger, Process process)

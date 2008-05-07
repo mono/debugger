@@ -281,6 +281,7 @@ namespace Mono.Debugger.Backend
 				case NotificationType.ReachedMain: {
 					Inferior.StackFrame iframe = inferior.GetCurrentFrame (false);
 					engine.SetMainReturnAddress (iframe.StackPointer);
+					engine.ProcessServant.OnProcessReachedMainEvent ();
 					resume_target = !engine.OnModuleLoaded ();
 					return true;
 				}

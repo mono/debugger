@@ -301,6 +301,11 @@ namespace Mono.Debugger.Backend
 			thread_hash.Remove (thread.PID);
 		}
 
+		internal void OnProcessReachedMainEvent ()
+		{
+			manager.Debugger.Client.OnProcessReachedMainEvent (client);
+		}
+
 		internal void OnThreadExitedEvent (ThreadServant thread)
 		{
 			thread_hash.Remove (thread.PID);
@@ -369,6 +374,9 @@ namespace Mono.Debugger.Backend
 				if (mono_manager != null)
 					read_thread_table (inferior);
 			}
+
+			if (!IsManaged)
+				manager.Debugger.Client.OnProcessReachedMainEvent (client);
 
 			initialized_event.Set ();
 		}
