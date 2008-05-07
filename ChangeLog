@@ -1,5 +1,9 @@
 2008-05-07  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerOptions.cs: Kill `-args'.
+
+2008-05-07  Martin Baulig  <martin@ximian.com>
+
 	* backend/ProcessServant.cs
 	(ProcessServant.ChildForked): Unset `MONO_INSIDE_MDB' if we're not
 	following forks.

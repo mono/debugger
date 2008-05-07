@@ -285,9 +285,8 @@ namespace Mono.Debugger
 			Console.WriteLine (
 				"Mono Debugger, (C) 2003-2007 Novell, Inc.\n" +
 				"mdb [options] [exe-file]\n" +
-				"mdb [options] -args exe-file [inferior-arguments ...]\n\n" +
+				"mdb [options] exe-file [inferior-arguments ...]\n\n" +
 				
-				"   -args                     Arguments after exe-file are passed to inferior\n" +
 				"   -debug-flags:PARAM        Sets the debugging flags\n" +
 				"   -fullname                 Sets the debugging flags (short -f)\n" +
 				"   -jit-arg:PARAM	      Additional argument for the inferior mono\n" +
@@ -308,7 +307,6 @@ namespace Mono.Debugger
 			DebuggerOptions options = new DebuggerOptions ();
 			int i;
 			bool parsing_options = true;
-			bool args_follow = false;
 
 			for (i = 0; i < args.Length; i++) {
 				string arg = args[i];
@@ -320,14 +318,14 @@ namespace Mono.Debugger
 					break;
 
 				if (arg.StartsWith ("-")) {
-					if (ParseOption (options, arg, ref args, ref i, ref args_follow))
+					if (ParseOption (options, arg, ref args, ref i))
 						continue;
 					Usage ();
 					Console.WriteLine ("Unknown argument: {0}", arg);
 					Environment.Exit (1);
 				} else if (arg.StartsWith ("/")) {
 					string unix_opt = "-" + arg.Substring (1);
-					if (ParseOption (options, unix_opt, ref args, ref i, ref args_follow))
+					if (ParseOption (options, unix_opt, ref args, ref i))
 						continue;
 				}
 
@@ -335,13 +333,9 @@ namespace Mono.Debugger
 				break;
 			}
 
-			if (args_follow) {
-				string[] argv = new string [args.Length - i - 1];
-				Array.Copy (args, i + 1, argv, 0, args.Length - i - 1);
-				options.InferiorArgs = argv;
-			} else {
-				options.InferiorArgs = new string [0];
-			}
+			string[] argv = new string [args.Length - i - 1];
+			Array.Copy (args, i + 1, argv, 0, args.Length - i - 1);
+			options.InferiorArgs = argv;
 
 			return options;
 		}
@@ -383,8 +377,7 @@ namespace Mono.Debugger
 		static bool ParseOption (DebuggerOptions debug_options,
 					 string option,
 					 ref string [] args,
-					 ref int i,
-					 ref bool args_follow_exe)
+					 ref int i)
 		{
 			int idx = option.IndexOf (':');
 			string arg, value, ms_value = null;
@@ -397,14 +390,6 @@ namespace Mono.Debugger
 			}
 
 			switch (arg) {
-			case "-args":
-				if (ms_value != null) {
-					Usage ();
-					Environment.Exit (1);
-				}
-				args_follow_exe = true;
-				return true;
-
 			case "-working-directory":
 			case "-cd":
 				value = GetValue (ref args, ref i, ms_value);
