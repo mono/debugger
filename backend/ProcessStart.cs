@@ -69,6 +69,9 @@ namespace Mono.Debugger.Backend
 			this.session = session;
 			this.options = session.Options;
 
+			if (options.StartXSP)
+				options.File = BuildInfo.xsp;
+
 			if ((options.File == null) || (options.File == ""))
 				throw new ArgumentException ();
 			if (options.InferiorArgs == null)
@@ -79,10 +82,26 @@ namespace Mono.Debugger.Backend
 			cwd = options.WorkingDirectory;
 			if (cwd == null)
 				cwd = options.WorkingDirectory = System.Environment.CurrentDirectory;
-			string mono_path = options.MonoPath != null ?
-				options.MonoPath : MonoPath;
+			string mono_path = options.MonoPath ?? MonoPath;
 
-			if (IsMonoAssembly (options.File)) {
+			if (options.StartXSP) {
+				IsNative = false;
+
+				ArrayList start_argv = new ArrayList ();
+				start_argv.Add (mono_path);
+				start_argv.Add ("--inside-mdb");
+				if (options.JitOptimizations != null)
+					start_argv.Add ("--optimize=" + options.JitOptimizations);
+				if (options.JitArguments != null)
+					start_argv.AddRange (options.JitArguments);
+				start_argv.Add (BuildInfo.xsp);
+				start_argv.Add ("--nonstop");
+
+				this.argv = new string [options.InferiorArgs.Length + start_argv.Count];
+				start_argv.CopyTo (this.argv, 0);
+				if (options.InferiorArgs.Length > 0)
+					options.InferiorArgs.CopyTo (this.argv, start_argv.Count);
+			} else if (IsMonoAssembly (options.File)) {
 				IsNative = false;
 
 				ArrayList start_argv = new ArrayList ();

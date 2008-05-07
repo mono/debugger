@@ -19,16 +19,17 @@ using System.Runtime.CompilerServices;
 
 namespace Mono.Debugger
 {
-	public class AssemblyInfo
+	public static class AssemblyInfo
 	{
 		public static string prefix = "@prefix@";
 		public static string libdir = "@libdir@";
 	}
 
-	internal class BuildInfo
+	internal static class BuildInfo
 	{
 		public static string mono = "@mono@";
 		public static string mcs = "@mcs@";
+		public static string xsp = "@xsp@";
 		public static string srcdir = "@srcdir@";
 		public static string builddir = "@builddir@";
 	}

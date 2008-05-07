@@ -66,6 +66,14 @@ namespace Mono.Debugger
 			}
 		}
 
+		public void SetupXSP ()
+		{
+			stay_in_thread = false;
+			broken_threading = true;
+			load_native_symtabs = false;
+			follow_fork = false;
+		}
+
 		void LoadConfigurationFromStream (string filename)
 		{
 			using (FileStream stream = new FileStream (filename, FileMode.Open))

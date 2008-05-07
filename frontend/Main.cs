@@ -235,10 +235,13 @@ namespace Mono.Debugger.Frontend
 		{
 			bool is_terminal = GnuReadLine.IsTerminal (0);
 
-			DebuggerConfiguration config = new DebuggerConfiguration ();
-			config.LoadConfiguration ();
-
 			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
+
+			DebuggerConfiguration config = new DebuggerConfiguration ();
+			if (!options.StartXSP)
+				config.LoadConfiguration ();
+			else
+				config.SetupXSP ();
 
 			Console.WriteLine ("Mono Debugger");
 

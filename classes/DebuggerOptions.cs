@@ -21,16 +21,10 @@ namespace Mono.Debugger
 
 		string file;
 		string[] inferior_args;
-		string jit_optimizations;
 		string[] jit_arguments;
-		string working_directory;
-		bool is_script, start_target;
-		bool has_debug_flags;
-		DebugFlags debug_flags = DebugFlags.None;
-		string debug_output;
-		bool in_emacs;
-		bool stop_in_main = true;
-		string mono_prefix, mono_path;
+		DebugFlags? debug_flags;
+		bool? stop_in_main;
+		bool? start_target;
 
 		/* The executable file we're debugging */
 		public string File {
@@ -47,8 +41,7 @@ namespace Mono.Debugger
 		/* JIT optimization flags affecting the inferior
 		 * process */
 		public string JitOptimizations {
-			get { return jit_optimizations; }
-			set { jit_optimizations = value; }
+			get; set;
 		}
 
 		public string[] JitArguments {
@@ -58,62 +51,52 @@ namespace Mono.Debugger
 
 		/* The inferior process's working directory */
 		public string WorkingDirectory {
-			get { return working_directory; }
-			set { working_directory = value; }
+			get; set;
 		}
 
 		/* true if we're running in a script */
 		public bool IsScript {
-			get { return is_script; }
-			set { is_script = value; }
+			get; set;
 		}
 
 		/* true if we want to start the application immediately */
 		public bool StartTarget {
-			get { return start_target; }
+			get { return start_target ?? false; }
 			set { start_target = value; }
 		}
 	  
 		/* the value of the -debug-flags: command line argument */
 		public DebugFlags DebugFlags {
-			get { return debug_flags; }
-			set {
-				debug_flags = value;
-				has_debug_flags = true;
-			}
+			get { return debug_flags ?? DebugFlags.None; }
+			set { debug_flags = value; }
 		}
 
 		public bool HasDebugFlags {
-			get { return has_debug_flags; }
+			get { return debug_flags != null; }
 		}
 
 		public string DebugOutput {
-			get { return debug_output; }
-			set { debug_output = value; }
-		}
-
-		/* true if -f/-fullname is specified on the command line */
-		public bool InEmacs {
-			get { return in_emacs; }
-			set { in_emacs = value; }
+			get; set;
 		}
 
 		/* non-null if the user specified the -mono-prefix
 		 * command line argument */
 		public string MonoPrefix {
-			get { return mono_prefix; }
-			set { mono_prefix = value; }
+			get; set;
 		}
 
 		/* non-null if the user specified the -mono command line argument */
 		public string MonoPath {
-			get { return mono_path; }
-			set { mono_path = value; }
+			get; set;
 		}
 
 		public bool StopInMain {
-			get { return stop_in_main; }
+			get { return stop_in_main ?? true; }
 			set { stop_in_main = value; }
+		}
+
+		public bool StartXSP {
+			get; set;
 		}
 
 		Hashtable user_environment;
@@ -142,17 +125,15 @@ namespace Mono.Debugger
 			DebuggerOptions options = new DebuggerOptions ();
 			options.file = file;
 			options.inferior_args = clone (inferior_args);
-			options.jit_optimizations = jit_optimizations;
+			options.JitOptimizations = JitOptimizations;
 			options.jit_arguments = clone (jit_arguments);
-			options.working_directory = working_directory;
-			options.is_script = is_script;
+			options.WorkingDirectory = WorkingDirectory;
+			options.IsScript = IsScript;
 			options.start_target = start_target;
 			options.debug_flags = debug_flags;
-			options.has_debug_flags = has_debug_flags;
-			options.debug_output = debug_output;
-			options.in_emacs = in_emacs;
-			options.mono_prefix = mono_prefix;
-			options.mono_path = mono_path;
+			options.DebugOutput = DebugOutput;
+			options.MonoPrefix = MonoPrefix;
+			options.MonoPath = MonoPath;
 			options.user_environment = clone (user_environment);
 			return options;
 		}
@@ -249,13 +230,13 @@ namespace Mono.Debugger
 					append_array (ref jit_arguments, iter.Current.Value);
 					break;
 				case "WorkingDirectory":
-					working_directory = iter.Current.Value;
+					WorkingDirectory = iter.Current.Value;
 					break;
 				case "MonoPrefix":
-					mono_prefix = iter.Current.Value;
+					MonoPrefix = iter.Current.Value;
 					break;
 				case "MonoPath":
-					mono_path = iter.Current.Value;
+					MonoPath = iter.Current.Value;
 					break;
 				default:
 					throw new InternalError ();
@@ -288,7 +269,6 @@ namespace Mono.Debugger
 				"mdb [options] exe-file [inferior-arguments ...]\n\n" +
 				
 				"   -debug-flags:PARAM        Sets the debugging flags\n" +
-				"   -fullname                 Sets the debugging flags (short -f)\n" +
 				"   -jit-arg:PARAM	      Additional argument for the inferior mono\n" +
 				"   -jit-optimizations:PARAM  Set jit optimizations used on the inferior process\n" +
 				"   -mono:PATH                Override the inferior mono\n" +
@@ -314,28 +294,39 @@ namespace Mono.Debugger
 				if (arg == "")
 					continue;
 
-				if (!parsing_options)
+				if (!parsing_options) {
+					i--;
 					break;
+				}
 
 				if (arg.StartsWith ("-")) {
-					if (ParseOption (options, arg, ref args, ref i))
+					if (ParseOption (options, arg, ref args, ref i,
+							 ref parsing_options))
 						continue;
 					Usage ();
 					Console.WriteLine ("Unknown argument: {0}", arg);
 					Environment.Exit (1);
 				} else if (arg.StartsWith ("/")) {
 					string unix_opt = "-" + arg.Substring (1);
-					if (ParseOption (options, unix_opt, ref args, ref i))
+					if (ParseOption (options, unix_opt, ref args, ref i,
+							 ref parsing_options))
 						continue;
+					Usage ();
+					Console.WriteLine ("Unknown argument: {0}", arg);
+					Environment.Exit (1);
 				}
 
 				options.File = arg;
 				break;
 			}
 
-			string[] argv = new string [args.Length - i - 1];
-			Array.Copy (args, i + 1, argv, 0, args.Length - i - 1);
-			options.InferiorArgs = argv;
+			if (args.Length > i) {
+				string[] argv = new string [args.Length - i - 1];
+				Array.Copy (args, i + 1, argv, 0, args.Length - i - 1);
+				options.InferiorArgs = argv;
+			} else {
+				options.InferiorArgs = new string [0];
+			}
 
 			return options;
 		}
@@ -374,10 +365,20 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		void SetupXSP ()
+		{
+			file = BuildInfo.xsp;
+			if (start_target == null)
+				start_target = true;
+			if (stop_in_main == null)
+				stop_in_main = false;
+		}
+
 		static bool ParseOption (DebuggerOptions debug_options,
 					 string option,
 					 ref string [] args,
-					 ref int i)
+					 ref int i,
+					 ref bool parsing_options)
 		{
 			int idx = option.IndexOf (':');
 			string arg, value, ms_value = null;
@@ -432,15 +433,6 @@ namespace Mono.Debugger
 				} else {
 					debug_options.JitArguments = new string[] { value };
 				}
-				return true;
-
-			case "-fullname":
-			case "-f":
-				if (ms_value != null) {
-					Usage ();
-					Environment.Exit (1);
-				}
-				debug_options.InEmacs = true;
 				return true;
 
 			case "-mono-prefix":
@@ -508,6 +500,18 @@ namespace Mono.Debugger
 				debug_options.StartTarget = true;
 				debug_options.StopInMain = true;
 				return true;
+
+#if ENABLE_KAHALO
+			case "-xsp":
+				if (ms_value != null) {
+					Usage ();
+					Environment.Exit (1);
+				}
+				debug_options.StartXSP = true;
+				debug_options.SetupXSP ();
+				parsing_options = false;
+				return true;
+#endif
 			}
 
 			return false;
