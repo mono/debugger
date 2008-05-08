@@ -397,14 +397,6 @@ namespace Mono.Debugger.Backend
 		send_result:
 			// If `result' is not null, then the target stopped abnormally.
 			if (result != null) {
-				if (is_main && !reached_main &&
-				    (cevent.Type != Inferior.ChildEventType.CHILD_EXITED) &&
-				    (cevent.Type != Inferior.ChildEventType.CHILD_SIGNALED)) {
-					reached_main = true;
-
-					if (!process.IsManaged)
-						inferior.InitializeModules ();
-				}
 				// Ok, inform the user that we stopped.
 				OperationCompleted (result);
 				return;
@@ -525,6 +517,7 @@ namespace Mono.Debugger.Backend
 		internal void SetMainReturnAddress (TargetAddress main_ret)
 		{
 			this.main_retaddr = main_ret + inferior.TargetAddressSize;
+			this.reached_main = true;
 		}
 
 		internal void OnManagedThreadExited ()
@@ -2197,6 +2190,10 @@ namespace Mono.Debugger.Backend
 			return EventResult.Running;
 		}
 
+		public override bool HandleException (TargetAddress stack, TargetAddress exc)
+		{
+			return sse.reached_main ? false : true;
+		}
 	}
 
 	protected class OperationActivateBreakpoints : Operation

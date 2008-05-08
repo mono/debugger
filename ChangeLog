@@ -1,3 +1,9 @@
+2008-05-08  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStart.HandleException): Don't stop in exceptions
+	after reaching the managed Main().
+
 2008-05-07  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerOptions.cs: Add new `-xsp' option to start xsp
