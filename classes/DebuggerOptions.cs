@@ -311,9 +311,6 @@ namespace Mono.Debugger
 					if (ParseOption (options, unix_opt, ref args, ref i,
 							 ref parsing_options))
 						continue;
-					Usage ();
-					Console.WriteLine ("Unknown argument: {0}", arg);
-					Environment.Exit (1);
 				}
 
 				options.File = arg;
