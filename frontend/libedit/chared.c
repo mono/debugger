@@ -195,7 +195,7 @@ c_delbefore1(EditLine *el)
 protected int
 ce__isword(int p)
 {
-	return (isalnum(p) || strchr("*?_-.[]~=", p) != NULL);
+	return (isalnum(p) || strchr("*?_-[]~=", p) != NULL);
 }
 
 
