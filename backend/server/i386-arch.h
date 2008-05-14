@@ -21,6 +21,7 @@ G_BEGIN_DECLS
 #define INFERIOR_REG_EDX(r)	r.edx
 #define INFERIOR_REG_ESI(r)	r.esi
 #define INFERIOR_REG_EDI(r)	r.edi
+#define INFERIOR_REG_ORIG_EAX(r)	r.orig_eax
 #define INFERIOR_REG_EFLAGS(r)	r.eflags
 #define INFERIOR_REG_ESP(r)	r.esp
 #define INFERIOR_REG_FS(r)	r.xfs

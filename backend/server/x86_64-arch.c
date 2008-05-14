@@ -897,6 +897,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_RAX (arch->current_regs) = -1;
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument1;
 	INFERIOR_REG_RSI (arch->current_regs) = method_argument2;
@@ -956,6 +957,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_RAX (arch->current_regs) = -1;
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
 	INFERIOR_REG_RSI (arch->current_regs) = data_argument;
@@ -1026,6 +1028,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_RAX (arch->current_regs) = -1;
 	INFERIOR_REG_RIP (arch->current_regs) = method_address;
 	INFERIOR_REG_RDI (arch->current_regs) = new_rsp + 8;
 	INFERIOR_REG_RSI (arch->current_regs) = new_rsp + 112;
@@ -1096,6 +1099,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_RAX (arch->current_regs) = -1;
 	INFERIOR_REG_RIP (arch->current_regs) = invoke_method;
 	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
 	INFERIOR_REG_RSI (arch->current_regs) = ptr [0];
@@ -1168,6 +1172,7 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_RAX (handle->arch->current_regs) = -1;
 	INFERIOR_REG_RIP (handle->arch->current_regs) = code_address;
 
 	result = _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);

@@ -1,3 +1,22 @@
+2008-05-14  Martin Baulig  <martin@ximian.com>
+
+	Allow executing methods while being stopped at a system call.
+
+	* backend/server/x86_64-arch.c
+	(server_ptrace_call_method*): Set %orig_rax to -1 to prevent the
+	kernel from restarting a system call.
+	(server_ptrace_execute_instruction): Likewise.
+
+	* backend/server/i386-arch.c
+	(server_ptrace_call_method*): Set %orig_eax to -1 to prevent the
+	kernel from restarting a system call.
+	(server_ptrace_execute_instruction): Likewise.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationCallMethod): Fix method invocations while being
+	stopped at a system call.  This only works when debugging managed
+	applications.	
+
 2008-05-08  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs

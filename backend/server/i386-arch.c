@@ -165,6 +165,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
 	g_ptr_array_add (arch->callback_stack, cdata);
@@ -231,6 +232,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
 	g_ptr_array_add (arch->callback_stack, cdata);
@@ -293,6 +295,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_EIP (arch->current_regs) = method_address;
 	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
 
@@ -363,6 +366,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_EIP (arch->current_regs) = invoke_method;
 	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
 	INFERIOR_REG_EBP (arch->current_regs) = 0;
@@ -1126,6 +1130,7 @@ server_ptrace_execute_instruction (ServerHandle *handle, const guint8 *instructi
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	INFERIOR_REG_ORIG_EAX (handle->arch->current_regs) = -1;
 	INFERIOR_REG_EIP (handle->arch->current_regs) = code_address;
 
 	result = _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);

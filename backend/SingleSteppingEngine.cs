@@ -3379,8 +3379,33 @@ namespace Mono.Debugger.Backend
 			this.Argument2 = arg2;
 		}
 
+		bool interrupted_syscall;
+
 		protected override void DoExecute ()
 		{
+			if (!interrupted_syscall &&
+			    inferior.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
+				if (!sse.Process.CanExecuteCode)
+					throw new TargetException (TargetError.InvocationException,
+								   "Current thread stopped on a system " +
+								   "call; cannot invoke any methods");
+
+				/*
+				 * The backend automatically sets %orig_rax to -1 before modifying %rip
+				 * to prevent the kernel from restarting the system call.
+				 *
+				 * Unfortunately, the kernel clobbers %rcx, which may be used to pass
+				 * parameters to the method.  Because of this, we need to execute a
+				 * dummy instruction first.
+				 */
+				byte[] nop_insn = inferior.Architecture.Opcodes.GenerateNopInstruction ();
+				sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
+				interrupted_syscall = true;
+				return;
+			}
+
+			interrupted_syscall = false;
+
 			switch (Type) {
 			case CallMethodType.LongLong:
 				inferior.CallMethod (Method, Argument1, Argument2, ID);
@@ -3394,6 +3419,31 @@ namespace Mono.Debugger.Backend
 			default:
 				throw new InvalidOperationException ();
 			}
+		}
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			if (!interrupted_syscall)
+				return base.DoProcessEvent (cevent, out args);
+
+			Report.Debug (DebugFlags.EventLoop,
+				      "{0} received event {1} at {2} while waiting for " +
+				      "callback {4}:{3}", sse, cevent, inferior.CurrentFrame,
+				      ID, this);
+
+			args = null;
+			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument != 0)) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} aborting callback {1} ({2}) at {3}: {4}",
+					      sse, this, ID, inferior.CurrentFrame, cevent);
+				AbortOperation ();
+				return EventResult.Completed;
+			}
+
+			DoExecute ();
+			return EventResult.Running;
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
