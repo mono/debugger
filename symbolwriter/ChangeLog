@@ -1,3 +1,13 @@
+2008-05-16  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(LineNumberEntry.IsHidden): New public field.
+	(LineNumberTable): Add support for hidden line numbers.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.MarkSequencePoint): Add overloaded version
+	taking an additional `bool is_hidden' argument.
+
 2008-05-05  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolFile.cs

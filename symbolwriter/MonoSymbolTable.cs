@@ -157,13 +157,19 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int Row;
 		public readonly int File;
 		public readonly int Offset;
+		public readonly bool IsHidden;
 		#endregion
 
 		public LineNumberEntry (int file, int row, int offset)
+			: this (file, row, offset, false)
+		{ }
+
+		public LineNumberEntry (int file, int row, int offset, bool is_hidden)
 		{
 			this.File = file;
 			this.Row = row;
 			this.Offset = offset;
+			this.IsHidden = is_hidden;
 		}
 
 		public static LineNumberEntry Null = new LineNumberEntry (0, 0, 0);
@@ -751,7 +757,7 @@ namespace Mono.CompilerServices.SymbolWriter
 #region Configurable constants
 		public const int Default_LineBase = -1;
 		public const int Default_LineRange = 8;
-		public const byte Default_OpcodeBase = 12;
+		public const byte Default_OpcodeBase = 9;
 
 		public const bool SuppressDuplicates = true;
 #endregion
@@ -763,6 +769,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		public const byte DW_LNS_const_add_pc = 8;
 
 		public const byte DW_LNE_end_sequence = 1;
+
+		// MONO extensions.
+		public const byte DW_LNE_MONO_negate_is_hidden = 0x40;
 
 		protected LineNumberTable (MonoSymbolFile file, int start_file, int start_row)
 		{
@@ -793,6 +802,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			 * of every method.
 			*/
 
+			bool last_is_hidden = false;
 			int last_line = StartRow, last_offset = 0, last_file = StartFile;
 			for (int i = 0; i < LineNumbers.Length; i++) {
 				int line_inc = LineNumbers [i].Row - last_line;
@@ -807,6 +817,13 @@ namespace Mono.CompilerServices.SymbolWriter
 					bw.Write (DW_LNS_set_file);
 					bw.WriteLeb128 (LineNumbers [i].File);
 					last_file = LineNumbers [i].File;
+				}
+
+				if (LineNumbers [i].IsHidden != last_is_hidden) {
+					bw.Write ((byte) 0);
+					bw.Write ((byte) 1);
+					bw.Write (DW_LNE_MONO_negate_is_hidden);
+					last_is_hidden = LineNumbers [i].IsHidden;
 				}
 
 				if (offset_inc >= MaxAddressIncrement) {
@@ -865,6 +882,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			ArrayList lines = new ArrayList ();
 
+			bool is_hidden = false;
 			int stm_line = StartRow, stm_offset = 0, stm_file = StartFile;
 			while (true) {
 				byte opcode = br.ReadByte ();
@@ -876,19 +894,22 @@ namespace Mono.CompilerServices.SymbolWriter
 
 					if (opcode == DW_LNE_end_sequence) {
 						lines.Add (new LineNumberEntry (
-							stm_file, stm_line, stm_offset));
+							stm_file, stm_line, stm_offset, is_hidden));
 						break;
+					} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
+						is_hidden = !is_hidden;
 					} else
 						throw new MonoSymbolFileException (
 							"Unknown extended opcode {0:x} in LNT ({1})",
 							opcode, file.FileName);
 
 					br.BaseStream.Position = end_pos;
+					continue;
 				} else if (opcode < OpcodeBase) {
 					switch (opcode) {
 					case DW_LNS_copy:
 						lines.Add (new LineNumberEntry (
-							stm_file, stm_line, stm_offset));
+							stm_file, stm_line, stm_offset, is_hidden));
 						break;
 					case DW_LNS_advance_pc:
 						stm_offset += br.ReadLeb128 ();
@@ -912,7 +933,8 @@ namespace Mono.CompilerServices.SymbolWriter
 
 					stm_offset += opcode / LineRange;
 					stm_line += LineBase + (opcode % LineRange);
-					lines.Add (new LineNumberEntry (stm_file, stm_line, stm_offset));
+					lines.Add (new LineNumberEntry (
+						stm_file, stm_line, stm_offset, is_hidden));
 				}
 			}
 
