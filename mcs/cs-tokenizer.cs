@@ -30,6 +30,7 @@ namespace Mono.CSharp
 		SeekableStreamReader reader;
 		SourceFile ref_name;
 		SourceFile file_name;
+		bool hidden = false;
 		int ref_line = 1;
 		int line = 1;
 		int col = 0;
@@ -241,6 +242,7 @@ namespace Mono.CSharp
 			public int line;
 			public int ref_line;
 			public int col;
+			public bool hidden;
 			public int putback_char;
 			public int previous_col;
 			public Stack ifstack;
@@ -253,6 +255,7 @@ namespace Mono.CSharp
 				line = t.line;
 				ref_line = t.ref_line;
 				col = t.col;
+				hidden = t.hidden;
 				putback_char = t.putback_char;
 				previous_col = t.previous_col;
 				if (t.ifstack != null && t.ifstack.Count != 0)
@@ -275,6 +278,7 @@ namespace Mono.CSharp
 			ref_line = p.ref_line;
 			line = p.line;
 			col = p.col;
+			hidden = p.hidden;
 			putback_char = p.putback_char;
 			previous_col = p.previous_col;
 			ifstack = p.ifstack;
@@ -1612,12 +1616,11 @@ namespace Mono.CSharp
 			if (arg == "default"){
 				ref_line = line;
 				ref_name = file_name;
+				hidden = false;
 				Location.Push (ref_name);
 				return true;
 			} else if (arg == "hidden"){
-				//
-				// We ignore #line hidden
-				//
+				hidden = true;
 				return true;
 			}
 			
@@ -1632,9 +1635,11 @@ namespace Mono.CSharp
 					
 					string name = arg.Substring (pos). Trim (quotes);
 					ref_name = Location.LookupFile (name);
+					hidden = false;
 					Location.Push (ref_name);
 				} else {
 					ref_line = System.Int32.Parse (arg);
+					hidden = false;
 				}
 			} catch {
 				return false;
@@ -2251,7 +2256,7 @@ namespace Mono.CSharp
 			
 			id_builder [0] = (char) s;
 
-			current_location = new Location (ref_line, Col);
+			current_location = new Location (ref_line, hidden ? -1 : Col);
 
 			while ((c = get_char ()) != -1) {
 			loop:
@@ -2439,7 +2444,7 @@ namespace Mono.CSharp
 				}
 
 			is_punct_label:
-				current_location = new Location (ref_line, Col);
+				current_location = new Location (ref_line, hidden ? -1 : Col);
 				if ((t = is_punct ((char)c, ref doread)) != Token.ERROR){
 					tokens_seen = true;
 					if (doread){
@@ -2622,7 +2627,7 @@ namespace Mono.CSharp
 			if (current_comment_location.IsNull) {
 				// "-2" is for heading "//" or "/*"
 				current_comment_location =
-					new Location (ref_line, col - 2);
+					new Location (ref_line, hidden ? -1 : col - 2);
 			}
 		}
 
@@ -2674,7 +2679,7 @@ namespace Mono.CSharp
 		public void cleanup ()
 		{
 			if (ifstack != null && ifstack.Count >= 1) {
-				current_location = new Location (ref_line, Col);
+				current_location = new Location (ref_line, hidden ? -1 : Col);
 				int state = (int) ifstack.Pop ();
 				if ((state & REGION) != 0)
 					Report.Error (1038, Location, "#endregion directive expected");

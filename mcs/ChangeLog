@@ -1,3 +1,14 @@
+2008-05-16  Martin Baulig  <martin@ximian.com>
+
+	Add support for `#line hidden'.
+
+	* location.cs
+	(Location): Encode hidden line numbers by using `column == 255';
+	the .ctor now accepts `column == -1' to mark a hidden line number.
+	(Location.Hidden): New public property.
+
+	* cs-tokenizer.cs: Add support for `#line hidden'.
+
 2008-05-06  Martin Baulig  <martin@ximian.com>
 
 	* class.cs (Constructor.Emit): Fix the logic whether to emit

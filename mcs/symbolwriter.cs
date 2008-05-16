@@ -232,7 +232,8 @@ namespace Mono.CSharp {
 		{
 			if (symwriter != null) {
 				int offset = symwriter.GetILOffset (ig);
-				symwriter.MarkSequencePoint (offset, loc.File, loc.Row, loc.Column);
+				symwriter.MarkSequencePoint (
+					offset, loc.File, loc.Row, loc.Column, loc.Hidden);
 			}
 		}
 

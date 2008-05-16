@@ -179,7 +179,7 @@ namespace Mono.CSharp {
 
 		static public void Push (SourceFile file)
 		{
-			current_source = file.Index;
+			current_source = file != null ? file.Index : -1;
 			// File is always pushed before being changed.
 		}
 
@@ -205,7 +205,9 @@ namespace Mono.CSharp {
 			if (row <= 0)
 				token = 0;
 			else {
-				if (column > 255)
+				if (column > 254)
+					column = 254;
+				if (column < 0)
 					column = 255;
 				int target = -1;
 				int delta = 0;
@@ -286,7 +288,14 @@ namespace Mono.CSharp {
 			get {
 				if (token == 0)
 					return 1;
-				return (int) (token & column_mask);
+				int col = (int) (token & column_mask);
+				return col == 255 ? 1 : col;
+			}
+		}
+
+		public bool Hidden {
+			get {
+				return (int) (token & column_mask) == 255;
 			}
 		}
 
