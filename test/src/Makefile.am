@@ -13,7 +13,7 @@ TEST_SRC = \
 	TestRestart.cs TestExec.cs TestChild.cs TestAttach.cs \
 	TestMethodLookup.cs TestMultiThread.cs TestSession.cs \
 	TestCCtor.cs TestSimpleGenerics.cs TestRecursiveGenerics.cs \
-	TestAnonymous.cs TestSSE.cs TestIterator.cs
+	TestAnonymous.cs TestSSE.cs TestIterator.cs TestLineHidden.cs
 
 EXTRA_TEST_SRC = \
 	TestAppDomain.cs TestAppDomain-Module.cs TestAppDomain-Hello.cs \

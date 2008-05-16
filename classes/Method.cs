@@ -44,12 +44,18 @@ namespace Mono.Debugger
 		public readonly TargetAddress Address;
 		public readonly int File;
 		public readonly int Line;
+		public readonly bool IsHidden;
 
 		public LineEntry (TargetAddress address, int file, int line)
+			: this (address, file, line, false)
+		{ }
+
+		public LineEntry (TargetAddress address, int file, int line, bool is_hidden)
 		{
 			this.Address = address;;
 			this.File = file;
 			this.Line = line;
+			this.IsHidden = is_hidden;
 		}
 
 		public int CompareTo (object obj)

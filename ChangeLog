@@ -1,3 +1,15 @@
+2008-05-16  Martin Baulig  <martin@ximian.com>
+
+	Kahalo-only: Add support for `#line hidden'.
+
+	* classes/Method.cs
+	(LineEntry.IsHidden): New public property.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoLineNumberTable.Lookup): Support hidden lines.
+
+	* test/{src|testsuite}/TestLineHidden.cs: New testcase.
+
 2008-05-14  Martin Baulig  <martin@ximian.com>
 
 	Allow executing methods while being stopped at a system call.

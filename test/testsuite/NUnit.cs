@@ -273,6 +273,11 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, function, GetLine (name));
 		}
 
+		protected void AssertSegfault (Thread thread, string name, string function)
+		{
+			AssertSegfault (thread, function, GetLine (name));
+		}
+
 		protected int GetBreakpoint (string text)
 		{
 			return automatic_breakpoints [text];
@@ -517,6 +522,19 @@ namespace Mono.Debugger.Tests
 				exp_thread, TargetEventType.TargetStopped);
 
 			if ((int) args.Data != 0)
+				Assert.Fail ("Received event {0} while waiting for {1} to stop.",
+					     args, exp_thread);
+
+			if (exp_func != null)
+				AssertFrame (exp_thread, exp_func, exp_line);
+		}
+
+		public void AssertSegfault (Thread exp_thread, string exp_func, int exp_line)
+		{
+			TargetEventArgs args = AssertTargetEvent (
+				exp_thread, TargetEventType.TargetStopped);
+
+			if ((int) args.Data != 11)
 				Assert.Fail ("Received event {0} while waiting for {1} to stop.",
 					     args, exp_thread);
 

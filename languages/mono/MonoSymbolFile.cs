@@ -1461,12 +1461,16 @@ namespace Mono.Debugger.Languages.Mono
 					return null;
 
 				TargetAddress next_address = end;
+				TargetAddress next_not_hidden = end;
 
 				for (int i = Addresses.Length-1; i >= 0; i--) {
 					LineEntry entry = (LineEntry) Addresses [i];
 
-					int range = (int) (next_address - address);
+					int range = (int) (next_not_hidden - address);
+
 					next_address = entry.Address;
+					if (!entry.IsHidden)
+						next_not_hidden = entry.Address;
 
 					if (next_address > address)
 						continue;
@@ -1579,10 +1583,12 @@ namespace Mono.Debugger.Languages.Mono
 					if (lne.Row != last_line) {
 #if ENABLE_KAHALO
 						int file = lne.File != entry.SourceFileIndex ? lne.File : 0;
+						bool hidden = lne.IsHidden;
 #else
 						int file = 0;
+						bool hidden = false;
 #endif
-						lines.Add (new LineEntry (address, file, lne.Row));
+						lines.Add (new LineEntry (address, file, lne.Row, hidden));
 						last_line = lne.Row;
 					}
 
@@ -1628,13 +1634,16 @@ namespace Mono.Debugger.Languages.Mono
 					C.LineNumberEntry lne = lnt [i];
 
 #if ENABLE_KAHALO
+					bool hidden = lne.IsHidden;
 					int file = lne.File;
 #else
 					int file = 0;
+					bool hidden = false;
 #endif
 
-					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}", i,
-							   file, lne.Row, lne.Offset);
+					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}{4}", i,
+							   file, lne.Row, lne.Offset,
+							   hidden ? " (hidden)" : "");
 				}
 
 				Console.WriteLine ("---------------------");
@@ -1649,18 +1658,6 @@ namespace Mono.Debugger.Languages.Mono
 							   lne.Address, method.StartAddress + lne.Address);
 				}
 				Console.WriteLine ("-----------------");
-
-				Console.WriteLine ();
-				Console.WriteLine ("Generated Lines:");
-				Console.WriteLine ("----------------");
-				for (int i = 0; i < Data.Addresses.Length; i++) {
-					LineEntry le = (LineEntry) Data.Addresses [i];
-
-					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}", i,
-							   le.File, le.Line, le.Address);
-				}
-				Console.WriteLine ("----------------");
-
 			}
 		}
 
