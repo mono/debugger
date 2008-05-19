@@ -1,5 +1,14 @@
 2008-05-19  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.Start): Use WaitAll(), not Wait() - to make things
+	work correctly when using `-start' and a thread which is not the
+	main thread stops first.
+	(Interpreter.Attach): Likewise.
+	(Interpreter.LoadSession): Likewise.
+
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
 	Kill the `MONO_INSIDE_MDB' environment variable.
 
 	* backend/MonoThreadManager.cs

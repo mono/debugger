@@ -451,16 +451,14 @@ namespace Mono.Debugger
 		{
 			check_alive ();
 			servant.Stop ();
-			Wait ();
+			operation_completed_event.WaitOne ();
 			is_running = false;
 			flags |= Flags.AutoRun;
 		}
 
-		public void Wait ()
+		public ThreadCommandResult GetWaitHandle ()
 		{
-			Report.Debug (DebugFlags.Wait, "{0} waiting", this);
-			operation_completed_event.WaitOne ();
-			Report.Debug (DebugFlags.Wait, "{0} done waiting", this);
+			return new ThreadCommandResult (this);
 		}
 
 		// <summary>
