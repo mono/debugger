@@ -1,5 +1,13 @@
 2008-05-19  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Interpreter.cs
+	(Interpreter.WaitAll): Rescan the process/thread list when new
+	processes/threads have been created while we're waiting.
+
+	* test/{src|testsuite}/TestMultiThread2.cs: Add testcase.
+
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86_64-arch.c
 	(x86_arch_child_stopped): Only send `STOP_ACTION_NOTIFICATION' if
 	`stopsig == SIGTRAP' (we may stop a second time at the notification

@@ -39,6 +39,7 @@ namespace Mono.Debugger.Frontend
 
 		ExpressionParser parser;
 		ManualResetEvent interrupt_event;
+		ManualResetEvent process_event;
 		Thread current_thread;
 
 		internal static readonly string DirectorySeparatorStr;
@@ -62,6 +63,7 @@ namespace Mono.Debugger.Frontend
 			source_factory = new SourceFileFactory ();
 
 			interrupt_event = new ManualResetEvent (false);
+			process_event = new ManualResetEvent (false);
 
 			styles = new Hashtable ();
 			styles.Add ("cli", new StyleCLI (this));
@@ -446,13 +448,16 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			ClearInterrupt ();
+			process_event.Reset ();
 
 			Thread stopped;
 			Hashtable seen_threads = new Hashtable ();
 			Hashtable wait_list = new Hashtable ();
 
 			do {
-				foreach (Process process in Processes) {
+			again:
+				Process[] processes = HasTarget ? debugger.Processes : new Process [0];
+				foreach (Process process in processes) {
 					foreach (Thread t in process.GetThreads ()) {
 						if ((t == thread) || seen_threads.Contains (t))
 							continue;
@@ -467,15 +472,16 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				WaitHandle[] handles = new WaitHandle [wait_list.Count + 2];
+				WaitHandle[] handles = new WaitHandle [wait_list.Count + 3];
 				handles [0] = interrupt_event;
-				handles [1] = result.CompletedEvent;
+				handles [1] = process_event;
+				handles [2] = result.CompletedEvent;
 
 				Thread[] threads = new Thread [wait_list.Count];
 				wait_list.Keys.CopyTo (threads, 0);
 
 				for (int i = 0; i < wait_list.Count; i++)
-					handles [i + 2] = threads [i].WaitHandle;
+					handles [i + 3] = threads [i].WaitHandle;
 
 				int ret = WaitHandle.WaitAny (handles);
 
@@ -484,15 +490,18 @@ namespace Mono.Debugger.Frontend
 					result.Abort ();
 					result.CompletedEvent.WaitOne ();
 					break;
+				} else if (ret == 1) {
+					process_event.Reset ();
+					goto again;
 				}
 
 				if (result.Result is Exception)
 					throw (Exception) result.Result;
 
-				if (ret == 1)
+				if (ret == 2)
 					stopped = thread;
 				else
-					stopped = threads [ret - 2];
+					stopped = threads [ret - 3];
 
 				CheckLastEvent (stopped);
 				wait_list.Remove (stopped);
@@ -610,6 +619,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnThreadCreated (Thread thread)
 		{
+			process_event.Set ();
 			Print ("Process #{0} created new thread @{1}.",
 			       thread.Process.ID, thread.ID);
 		}
@@ -632,6 +642,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnProcessCreated (Process process)
 		{
+			process_event.Set ();
 			new ProcessEventSink (this, process);
 			Print ("Created new process #{0}.", process.ID);
 			if (current_process == null) {
