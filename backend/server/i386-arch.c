@@ -448,6 +448,9 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
 		guint64 data [3];
 
+		if (stopsig != SIGTRAP)
+			return STOP_ACTION_STOPPED;
+
 		if (server_ptrace_read_memory (handle, addr, 24, &data))
 			return STOP_ACTION_STOPPED;
 

@@ -1,3 +1,13 @@
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86_64-arch.c
+	(x86_arch_child_stopped): Only send `STOP_ACTION_NOTIFICATION' if
+	`stopsig == SIGTRAP' (we may stop a second time at the notification
+	address if we received a signal).
+
+	* backend/server/i386-arch.c
+	(x86_arch_child_stopped): Likewise.
+
 2008-05-16  Martin Baulig  <martin@ximian.com>
 
 	Kahalo-only: Add support for `#line hidden'.

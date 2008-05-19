@@ -188,6 +188,9 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 	if (handle->mono_runtime &&
 	    (INFERIOR_REG_RIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
+		if (stopsig != SIGTRAP)
+			return STOP_ACTION_STOPPED;
+
 		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
 		*retval = INFERIOR_REG_RSI (arch->current_regs);
 		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
