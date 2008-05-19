@@ -296,7 +296,7 @@ namespace Mono.Debugger.Frontend
 				current_process = main_process = debugger.Run (session);
 
 				current_thread = current_process.MainThread;
-				WaitAll (current_thread);
+				current_thread = WaitAll (current_thread);
 
 				return current_process;
 			} catch (TargetException) {
@@ -322,7 +322,7 @@ namespace Mono.Debugger.Frontend
 
 				current_process = main_process = debugger.Attach (session, pid);
 				current_thread = current_process.MainThread;
-				WaitAll (current_thread);
+				current_thread = WaitAll (current_thread);
 
 				return current_process;
 			} catch (TargetException) {
@@ -379,7 +379,7 @@ namespace Mono.Debugger.Frontend
 				current_process = main_process = debugger.Run (session);
 
 				current_thread = current_process.MainThread;
-				WaitAll (current_thread);
+				current_thread = WaitAll (current_thread);
 
 				return current_process;
 			} catch (TargetException ex) {
