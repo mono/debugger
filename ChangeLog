@@ -1,5 +1,10 @@
 2008-05-19  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration): Add `NotifyUser_ThreadCreation'.
+
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.Start): Use WaitAll(), not Wait() - to make things
 	work correctly when using `-start' and a thread which is not the

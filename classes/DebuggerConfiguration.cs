@@ -72,6 +72,7 @@ namespace Mono.Debugger
 			broken_threading = true;
 			load_native_symtabs = false;
 			follow_fork = false;
+			notify_thread_creation = false;
 		}
 
 		void LoadConfigurationFromStream (string filename)
@@ -153,6 +154,7 @@ namespace Mono.Debugger
 		bool broken_threading = true;
 		bool load_native_symtabs = false;
 		bool follow_fork = false;
+		bool notify_thread_creation = true;
 		Hashtable module_groups;
 
 		//
@@ -253,6 +255,15 @@ namespace Mono.Debugger
 		public bool FollowFork {
 			get { return follow_fork; }
 			set { follow_fork = value; }
+		}
+
+		/*
+		 * Whether or not to notify the user when new threads have
+		 * been created / threads exited.
+		 */
+		public bool NotifyUser_ThreadCreation {
+			get { return notify_thread_creation; }
+			set { notify_thread_creation = value; }
 		}
 
 		public string PrintConfiguration (bool expert_mode)

@@ -622,13 +622,15 @@ namespace Mono.Debugger.Frontend
 		protected virtual void OnThreadCreated (Thread thread)
 		{
 			process_event.Set ();
-			Print ("Process #{0} created new thread @{1}.",
-			       thread.Process.ID, thread.ID);
+			if (DebuggerConfiguration.NotifyUser_ThreadCreation)
+				Print ("Process #{0} created new thread @{1}.",
+				       thread.Process.ID, thread.ID);
 		}
 
 		protected virtual void OnThreadExited (Thread thread)
 		{
-			if (thread != thread.Process.MainThread)
+			if (DebuggerConfiguration.NotifyUser_ThreadCreation &&
+			    (thread != thread.Process.MainThread))
 				Print ("Thread @{0} exited.", thread.ID);
 			if (thread == current_thread)
 				current_thread = null;
