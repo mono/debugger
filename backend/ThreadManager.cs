@@ -181,8 +181,8 @@ namespace Mono.Debugger.Backend
 			    (cevent.Argument == inferior.SIGCHLD)) {
 				cevent = new Inferior.ChildEvent (
 					Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
-				resume_target = false;
-				return false;
+				resume_target = true;
+				return true;
 			}
 
 			bool retval = false;

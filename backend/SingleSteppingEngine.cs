@@ -216,6 +216,9 @@ namespace Mono.Debugger.Backend
 					OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
 					return;
 				}
+
+				if ((current_operation != null) && current_operation.ResumeOperation ())
+					return;
 				inferior.Continue ();
 				return;
 			}

@@ -1,5 +1,15 @@
 2008-05-19  Martin Baulig  <martin@ximian.com>
 
+	* backend/ThreadManager.cs
+	(ThreadManager.HandleChildEvent): Eat SIGCHLD.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ProcessEvent): if ThreadManager.HandleChildEvent() told us to
+	resume the target, try `current_operation.ResumeOperation()' first
+	before using `inferior.Continue ()'.
+
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Interpreter.cs
 	(Interpreter.WaitAll): Rescan the process/thread list when new
 	processes/threads have been created while we're waiting.
