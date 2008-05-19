@@ -96,6 +96,10 @@ namespace Mono.Debugger.Backend
 					start_argv.AddRange (options.JitArguments);
 				start_argv.Add (BuildInfo.xsp);
 				start_argv.Add ("--nonstop");
+				if (options.XSP_Root != null) {
+					start_argv.Add ("--root");
+					start_argv.Add (options.XSP_Root);
+				}
 
 				this.argv = new string [options.InferiorArgs.Length + start_argv.Count];
 				start_argv.CopyTo (this.argv, 0);

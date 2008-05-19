@@ -1,5 +1,12 @@
 2008-05-19  Martin Baulig  <martin@ximian.com>
 
+	Kahalo-only.
+	
+	* classes/DebuggerOptions.cs: -xsp now requires a directory as
+	argument which is passed to xsp via `--root'.
+
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerConfiguration.cs
 	(DebuggerConfiguration): Add `NotifyUser_ThreadCreation'.
 

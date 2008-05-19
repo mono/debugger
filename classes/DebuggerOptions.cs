@@ -99,6 +99,10 @@ namespace Mono.Debugger
 			get; set;
 		}
 
+		public string XSP_Root {
+			get; set;
+		}
+
 		Hashtable user_environment;
 
 		string[] clone (string[] array)
@@ -500,11 +504,13 @@ namespace Mono.Debugger
 
 #if ENABLE_KAHALO
 			case "-xsp":
-				if (ms_value != null) {
+				value = GetValue (ref args, ref i, ms_value);
+				if (value == null) {
 					Usage ();
 					Environment.Exit (1);
 				}
 				debug_options.StartXSP = true;
+				debug_options.XSP_Root = value;
 				debug_options.SetupXSP ();
 				parsing_options = false;
 				return true;

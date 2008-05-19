@@ -629,8 +629,7 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnThreadExited (Thread thread)
 		{
-			if (DebuggerConfiguration.NotifyUser_ThreadCreation &&
-			    (thread != thread.Process.MainThread))
+			if (DebuggerConfiguration.NotifyUser_ThreadCreation)
 				Print ("Thread @{0} exited.", thread.ID);
 			if (thread == current_thread)
 				current_thread = null;
