@@ -98,6 +98,10 @@ namespace Mono.Debugger.Backend
 			get { return is_attached; }
 		}
 
+		public bool IsExeced {
+			get { return is_execed; }
+		}
+
 		public Process Client {
 			get { return client; }
 		}
@@ -202,7 +206,6 @@ namespace Mono.Debugger.Backend
 			new_inferior.InitializeThread (pid);
 
 			if (!manager.Debugger.Configuration.FollowFork) {
-				Environment.SetEnvironmentVariable ("MONO_INSIDE_MDB", null);
 				new_inferior.DetachAfterFork ();
 				return;
 			}
@@ -340,6 +343,10 @@ namespace Mono.Debugger.Backend
 			if (!is_forked || is_exec) {
 				mono_manager = MonoThreadManager.Initialize (
 					manager, inferior, (start.PID != 0) && !is_exec);
+
+				if (is_exec && (mono_manager != null))
+					mono_manager.InitializeAfterExec (inferior);
+
 				if (!is_forked && !is_exec && !is_attached &&
 				    !start.IsNative && (mono_manager == null))
 					throw new TargetException (TargetError.CannotStartTarget,

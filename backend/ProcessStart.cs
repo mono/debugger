@@ -262,7 +262,6 @@ namespace Mono.Debugger.Backend
 			}
 
 			add_env_path (hash, "MONO_SHARED_HOSTNAME", "mdb");
-			add_env_path (hash, "MONO_INSIDE_MDB", "1");
 
 			ArrayList list = new ArrayList ();
 			foreach (DictionaryEntry entry in hash) {

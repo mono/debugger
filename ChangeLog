@@ -1,5 +1,18 @@
 2008-05-19  Martin Baulig  <martin@ximian.com>
 
+	Kill the `MONO_INSIDE_MDB' environment variable.
+
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo.UsingMonoDebugger): New public field.
+	(MonoThreadManager): Set `UsingMonoDebugger' when starting up and
+	after exec()'ing.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.Initialize): If we exec()'ed a managed process,
+	call MonoThreadManager.InitializeAfterExec().
+
+2008-05-19  Martin Baulig  <martin@ximian.com>
+
 	* backend/ThreadManager.cs
 	(ThreadManager.HandleChildEvent): Eat SIGCHLD.
 

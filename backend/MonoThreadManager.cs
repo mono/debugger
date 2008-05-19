@@ -73,6 +73,8 @@ namespace Mono.Debugger.Backend
 		{
 			debugger_info = MonoDebuggerInfo.Create (inferior, info);
 
+			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 1);
+
 			notification_bpt = new InitializeBreakpoint (this, debugger_info.Initialize);
 			notification_bpt.Insert (inferior);
 		}
@@ -164,16 +166,23 @@ namespace Mono.Debugger.Backend
 					       debugger_info.ThreadVTable);
 			inferior.WriteAddress (debugger_info.EventHandlerPtr,
 					       debugger_info.EventHandler);
+			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 1);
 
 			csharp_language = inferior.Process.CreateMonoLanguage (debugger_info);
 			csharp_language.InitializeAttach (inferior);
 			inferior.InitializeModules ();
 		}
 
+		internal void InitializeAfterExec (Inferior inferior)
+		{
+			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 1);
+		}
+
 		internal void Detach (Inferior inferior)
 		{
 			inferior.WriteAddress (debugger_info.ThreadVTablePtr, TargetAddress.Null);
 			inferior.WriteAddress (debugger_info.EventHandler, TargetAddress.Null);
+			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 0);
 		}
 
 		TargetAddress main_function;
@@ -356,8 +365,8 @@ namespace Mono.Debugger.Backend
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 69;
-		public const int  MaxDynamicVersion = 69;
+		public const int  MinDynamicVersion = 70;
+		public const int  MaxDynamicVersion = 70;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly int MonoTrampolineNum;
@@ -394,6 +403,8 @@ namespace Mono.Debugger.Backend
 		public readonly TargetAddress ThreadVTable;
 		public readonly TargetAddress EventHandlerPtr;
 		public readonly TargetAddress EventHandler;
+
+		public readonly TargetAddress UsingMonoDebugger;
 
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
@@ -468,6 +479,8 @@ namespace Mono.Debugger.Backend
 			ThreadVTable              = reader.ReadAddress ();
 			EventHandlerPtr           = reader.ReadAddress ();
 			EventHandler              = reader.ReadAddress ();
+
+			UsingMonoDebugger         = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
