@@ -187,8 +187,8 @@ if test x$server_only != xyes; then
    fi
 fi
 
-top_srcdir=`pwd`
-AC_SUBST(top_srcdir)
+real_top_srcdir=`pwd`
+AC_SUBST(real_top_srcdir)
 AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
 

@@ -2150,6 +2150,13 @@ namespace Mono.Debugger.Frontend
 			protected override bool DoResolve (ScriptingContext context)
 			{
 				if ((Args == null) || (Args.Count < 1)) {
+					Method method = CurrentThread.CurrentFrame.Method;
+					if (method != null) {
+						modules = new Module [1];
+						modules [0] = CurrentThread.CurrentFrame.Method.Module;
+						return true;
+					}
+
 					context.Print ("Invalid arguments: Need one or more module " +
 						       "ids to operate on");
 					return false;
