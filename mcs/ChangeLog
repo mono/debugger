@@ -1,3 +1,13 @@
+2008-05-26  Martin Baulig  <martin@ximian.com>
+
+	Add support for `#pragma checksum'.
+
+	* location.cs
+	(SourceFileEntry.DefineSymbolInfo): New public method.
+	(SourceFileEntry.SetChecksum): New public method.
+
+	* cs-tokenizer.cs: Add support for `#pragma checksum'.
+
 2008-05-16  Martin Baulig  <martin@ximian.com>
 
 	Add support for `#line hidden'.
