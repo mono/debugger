@@ -2676,9 +2676,10 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class SourceCommand : FrameCommand
 	{
-		LocationType type = LocationType.Method;
+		protected LocationType type = LocationType.Method;
 		protected SourceLocation location;
 		protected SourceAddress address;
+		protected MethodSource method;
 		int line;
 
 		public bool Ctor {
@@ -2796,9 +2797,19 @@ namespace Mono.Debugger.Frontend
 				mexpr = null;
 			}
 
-			if (mexpr != null)
+			if (mexpr != null) {
+				TargetFunctionType func;
+				try {
+					func = mexpr.EvaluateMethod (context, type, null);
+				} catch {
+					func = null;
+				}
+
+				if (func != null)
+					method = func.GetSourceCode ();
+
 				location = mexpr.EvaluateSource (context);
-			else
+			} else
 				location = context.FindMethod (Argument);
 			return location != null;
 		}
@@ -2816,6 +2827,8 @@ namespace Mono.Debugger.Frontend
 
 		protected override bool DoResolve (ScriptingContext context)
 		{
+			SourceBuffer buffer;
+
 			if (Argument == "-"){
 				reverse = true;
 				location = context.CurrentLocation;
@@ -2824,8 +2837,19 @@ namespace Mono.Debugger.Frontend
 			} else if (!base.DoResolve (context))
 				return false;
 
-			SourceBuffer buffer;
-			if (location != null) {
+			if (method != null) {
+				if (method.HasSourceFile) {
+					buffer = context.Interpreter.ReadFile (method.SourceFile.FileName);
+					if (buffer == null)
+						throw new ScriptingException (
+							"Cannot read source file `{0}'",
+							method.SourceFile.FileName);
+				} else
+					buffer = method.SourceBuffer;
+
+				source_code = buffer.Contents;
+				return true;
+			} else if (location != null) {
 				if (location.FileName == null) 
 					throw new ScriptingException (
 						"Current location doesn't have any source code.");
@@ -2854,8 +2878,24 @@ namespace Mono.Debugger.Frontend
 			return true;
 		}
 
+		string ListBuffer (ScriptingContext context, int start, int end)
+		{
+			StringBuilder sb = new StringBuilder ();
+			end = System.Math.Min (end, source_code.Length);
+			for (int line = start; line < end; line++) {
+				string text = String.Format ("{0,4} {1}", line+1, source_code [line]);
+				context.Print (text);
+				sb.Append (text);
+			}
+
+			return sb.ToString ();
+		}
+
 		protected override object DoExecute (ScriptingContext context)
 		{
+			if (method != null)
+				return ListBuffer (context, method.StartRow - 2, method.EndRow);
+
 			int count = Lines * (reverse ? -1 : 1);
 			if (!Repeating) {
 				if (count < 0)
@@ -2884,14 +2924,7 @@ namespace Mono.Debugger.Frontend
 				last_line = t;
 			}
 
-			StringBuilder sb = new StringBuilder ();
-			for (int line = start; line < last_line; line++) {
-				string text = String.Format ("{0,4} {1}", line+1, source_code [line]);
-				context.Print (text);
-				sb.Append (text);
-			}
-
-			return sb.ToString ();
+			return ListBuffer (context, start, last_line);
 		}
 
 		int last_line = -1;

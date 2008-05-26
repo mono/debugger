@@ -39,20 +39,9 @@ namespace Mono.Debugger.Languages.Native
 			get { return name; }
 		}
 
-		public override bool HasSourceCode {
-			get { return false; }
-		}
-
-		public override SourceFile SourceFile {
-			get { throw new InvalidOperationException (); }
-		}
-
-		public override int StartRow {
-			get { throw new InvalidOperationException (); }
-		}
-
-		public override int EndRow {
-			get { throw new InvalidOperationException (); }
+		public override MethodSource GetSourceCode ()
+		{
+			return null;
 		}
 
 		public override int Size {

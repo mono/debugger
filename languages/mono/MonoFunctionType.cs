@@ -12,8 +12,6 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoFunctionType : TargetFunctionType
 	{
 		IMonoStructType klass;
-		SourceFile file;
-		int start_row, end_row;
 		Cecil.MethodDefinition method_info;
 		TargetType return_type;
 		TargetType[] parameter_types;
@@ -46,8 +44,11 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < mdef.Parameters.Count; i++)
 				parameter_types [i] = klass.File.MonoLanguage.LookupMonoType (
 					mdef.Parameters[i].ParameterType);
+		}
 
-			file = klass.File.GetSourceFile (token, out start_row, out end_row);
+		public override MethodSource GetSourceCode ()
+		{
+			return klass.File.GetMethodByToken (token);
 		}
 
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)
@@ -137,37 +138,6 @@ namespace Mono.Debugger.Languages.Mono
 						return true;
 
 				return false;
-			}
-		}
-
-		public override bool HasSourceCode {
-			get { return file != null; }
-		}
-
-		public override SourceFile SourceFile {
-			get {
-				if (!HasSourceCode)
-					throw new InvalidOperationException ();
-
-				return file;
-			}
-		}
-
-		public override int StartRow {
-			get {
-				if (!HasSourceCode)
-					throw new InvalidOperationException ();
-
-				return start_row;
-			}
-		}
-
-		public override int EndRow {
-			get {
-				if (!HasSourceCode)
-					throw new InvalidOperationException ();
-
-				return end_row;
 			}
 		}
 

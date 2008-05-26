@@ -425,21 +425,6 @@ namespace Mono.Debugger.Languages.Mono
 			return retval;
 		}
 
-		internal SourceFile GetSourceFile (int token, out int start, out int end)
-		{
-			ensure_sources ();
-			C.MethodEntry entry = File != null ? File.GetMethodByToken (token) : null;
-			if (entry == null) {
-				start = end = 0;
-				return null;
-			}
-
-			C.MethodSourceEntry source = File.GetMethodSource (entry.Index);
-			start = source.StartRow;
-			end = source.EndRow;
-			return (SourceFile) source_file_hash [entry.SourceFile];
-		}
-
 		internal SourceFile GetSourceFile (int index)
 		{
 			C.SourceFileEntry source = File != null ? File.GetSourceFile (index) : null;

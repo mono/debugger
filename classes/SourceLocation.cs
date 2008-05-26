@@ -32,9 +32,10 @@ namespace Mono.Debugger
 			Method = function.FullName;
 			Name = function.FullName;
 
-			if (function.HasSourceCode) {
-				FileName = function.SourceFile.FileName;
-				Line = function.StartRow;
+			MethodSource source = function.GetSourceCode ();
+			if (source != null) {
+				FileName = source.SourceFile.FileName;
+				Line = source.StartRow;
 			}
 		}
 

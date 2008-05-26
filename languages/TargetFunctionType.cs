@@ -15,21 +15,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public abstract bool HasSourceCode {
-			get;
-		}
-
-		public abstract SourceFile SourceFile {
-			get;
-		}
-
-		public abstract int StartRow {
-			get;
-		}
-
-		public abstract int EndRow {
-			get;
-		}
+		public abstract MethodSource GetSourceCode ();
 
 		public abstract bool IsStatic {
 			get;
