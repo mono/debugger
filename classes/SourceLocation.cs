@@ -33,10 +33,8 @@ namespace Mono.Debugger
 			Name = function.FullName;
 
 			MethodSource source = function.GetSourceCode ();
-			if (source != null) {
+			if (source != null)
 				FileName = source.SourceFile.FileName;
-				Line = source.StartRow;
-			}
 		}
 
 		public SourceLocation (MethodSource source)

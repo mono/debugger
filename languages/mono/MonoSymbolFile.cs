@@ -1569,7 +1569,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		protected class MonoMethodLineNumberTable : MonoLineNumberTable
 		{
-			int start_row, end_row;
 			JitLineNumberEntry[] line_numbers;
 			C.MethodEntry entry;
 			Method method;
@@ -1583,12 +1582,10 @@ namespace Mono.Debugger.Languages.Mono
 				this.method = method;
 				this.entry = entry;
 				this.line_numbers = jit_lnt;
-				this.start_row = entry.StartRow;
-				this.end_row = entry.EndRow;
 			}
 
-			void generate_line_number (ArrayList lines, TargetAddress address, int offset,
-						   ref int last_line)
+			void generate_line_number (List<LineEntry> lines, TargetAddress address,
+						   int offset, ref int last_line)
 			{
 				C.LineNumberEntry[] line_numbers;
 #if ENABLE_KAHALO
@@ -1620,7 +1617,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			protected override LineNumberTableData ReadLineNumbers ()
 			{
-				ArrayList lines = new ArrayList ();
+				List<LineEntry> lines = new List<LineEntry> ();
 				int last_line = -1;
 
 				for (int i = 0; i < line_numbers.Length; i++) {
@@ -1632,10 +1629,23 @@ namespace Mono.Debugger.Languages.Mono
 
 				lines.Sort ();
 
-				LineEntry[] addresses = new LineEntry [lines.Count];
-				lines.CopyTo (addresses, 0);
+				int start_row = 0, end_row = 0;
+				if (lines.Count > 0) {
+					start_row = lines [0].Line;
+					end_row = lines [0].Line;
 
-				return new LineNumberTableData (start_row, end_row, addresses);
+					foreach (LineEntry line in lines) {
+						if (line.IsHidden || (line.File != 0))
+							continue;
+
+						if (line.Line < start_row)
+							start_row = line.Line;
+						if (line.Line > end_row)
+							end_row = line.Line;
+					}
+				}
+
+				return new LineNumberTableData (start_row, end_row, lines.ToArray ());
 			}
 
 			public override void DumpLineNumbers ()
