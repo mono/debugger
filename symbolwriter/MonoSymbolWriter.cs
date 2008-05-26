@@ -202,6 +202,13 @@ namespace Mono.CompilerServices.SymbolWriter
 			return entry;
 		}
 
+		public SourceFileEntry DefineDocument (string url, byte[] guid, byte[] checksum)
+		{
+			SourceFileEntry entry = new SourceFileEntry (file, url, guid, checksum);
+			sources.Add (entry);
+			return entry;
+		}
+
 		public int DefineNamespace (string name, SourceFileEntry source,
 					    string[] using_clauses, int parent)
 		{
