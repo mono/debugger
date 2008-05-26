@@ -2811,7 +2811,12 @@ namespace Mono.Debugger.Frontend
 				location = mexpr.EvaluateSource (context);
 			} else
 				location = context.FindMethod (Argument);
-			return location != null;
+
+			if (location == null)
+				throw new ScriptingException (
+					"Location doesn't have any source code.");
+
+			return true;
 		}
 	}
 
