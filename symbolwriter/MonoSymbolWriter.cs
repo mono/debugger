@@ -281,13 +281,8 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public void WriteSymbolFile (Guid guid)
 		{
-			foreach (SourceMethod method in methods) {
-				method.SourceFile.Entry.DefineMethod (
-					method.Method.Token, method.ScopeVariables, method.Locals,
-					method.Lines, method.Blocks, method.RealMethodName,
-					method.Start.Row, method.End.Row,
-					method.Method.NamespaceID);
-			}
+			foreach (SourceMethod method in methods)
+				method.DefineMethod (file);
 
 			try {
 				// We mmap the file, so unlink the previous version since it may be in use
@@ -436,6 +431,16 @@ namespace Mono.CompilerServices.SymbolWriter
 			{
 				lines = new LineNumberEntry [count];
 				Array.Copy (lns, lines, count);
+			}
+
+			public void DefineMethod (MonoSymbolFile file)
+			{
+				MethodEntry entry = new MethodEntry (
+					file, _file.Entry, _method.Token, ScopeVariables,
+					Locals, Lines, Blocks, RealMethodName, Start.Row, End.Row,
+					_method.NamespaceID);
+
+				file.AddMethod (entry);
 			}
 		}
 	}

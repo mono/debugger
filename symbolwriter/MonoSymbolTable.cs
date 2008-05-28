@@ -538,21 +538,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			this.hash = checksum;
 		}
 
-		public void DefineMethod (int token, ScopeVariable[] scope_vars,
-					  LocalVariableEntry[] locals, LineNumberEntry[] lines,
-					  CodeBlockEntry[] blocks, string real_name,
-					  int start, int end, int namespace_id)
-		{
-			if (!creating)
-				throw new InvalidOperationException ();
-
-			MethodEntry entry = new MethodEntry (
-				file, this, (int) token, scope_vars, locals, lines,
-				blocks, real_name, start, end, namespace_id);
-
-			file.AddMethod (entry);
-		}
-
 		public int DefineNamespace (string name, string[] using_clauses, int parent)
 		{
 			if (!creating)
