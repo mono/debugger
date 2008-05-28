@@ -991,15 +991,6 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 
-			if (LineNumberTableOffset != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = LineNumberTableOffset;
-
-				lnt = LineNumberTable.Read (file, reader, SourceFileIndex, StartRow);
-
-				reader.BaseStream.Position = old_pos;
-			}
-
 			if (LocalVariableTableOffset != 0) {
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = LocalVariableTableOffset;
@@ -1177,22 +1168,90 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public LineNumberTable GetLineNumberTable ()
 		{
-			return lnt;
+			lock (SymbolFile) {
+				if (lnt != null)
+					return lnt;
+
+				if (LineNumberTableOffset == 0)
+					return null;
+
+				MyBinaryReader reader = SymbolFile.BinaryReader;
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = LineNumberTableOffset;
+
+				lnt = LineNumberTable.Read (
+					SymbolFile, reader, SourceFileIndex, StartRow);
+
+				reader.BaseStream.Position = old_pos;
+				return lnt;
+			}
 		}
 
 		public LocalVariableEntry[] GetLocals ()
 		{
-			return locals;
+			lock (SymbolFile) {
+				if (locals != null)
+					return locals;
+
+				if (LocalVariableTableOffset == 0)
+					return null;
+
+				MyBinaryReader reader = SymbolFile.BinaryReader;
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = LocalVariableTableOffset;
+
+				locals = new LocalVariableEntry [NumLocals];
+
+				for (int i = 0; i < NumLocals; i++)
+					locals [i] = new LocalVariableEntry (SymbolFile, reader);
+
+				reader.BaseStream.Position = old_pos;
+				return locals;
+			}
 		}
 
 		public CodeBlockEntry[] GetCodeBlocks ()
 		{
-			return code_blocks;
+			lock (SymbolFile) {
+				if (code_blocks != null)
+					return code_blocks;
+
+				if (CodeBlockTableOffset == 0)
+					return null;
+
+				MyBinaryReader reader = SymbolFile.BinaryReader;
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = CodeBlockTableOffset;
+
+				code_blocks = new CodeBlockEntry [NumCodeBlocks];
+				for (int i = 0; i < NumCodeBlocks; i++)
+					code_blocks [i] = new CodeBlockEntry (i, reader);
+
+				reader.BaseStream.Position = old_pos;
+				return code_blocks;
+			}
 		}
 
 		public ScopeVariable[] GetScopeVariables ()
 		{
-			return scope_vars;
+			lock (SymbolFile) {
+				if (scope_vars != null)
+					return scope_vars;
+
+				if (NumScopeVariables == 0)
+					return null;
+
+				MyBinaryReader reader = SymbolFile.BinaryReader;
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = ScopeVariableTableOffset;
+
+				scope_vars = new ScopeVariable [NumScopeVariables];
+				for (int i = 0; i < NumScopeVariables; i++)
+					scope_vars [i] = new ScopeVariable (reader);
+
+				reader.BaseStream.Position = old_pos;
+				return scope_vars;
+			}
 		}
 
 		public string GetRealName ()
