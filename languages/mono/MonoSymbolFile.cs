@@ -476,7 +476,6 @@ namespace Mono.Debugger.Languages.Mono
 		MonoMethodSource CreateMethodSource (SourceFile file, int index)
 		{
 			C.MethodEntry entry = File.GetMethod (index);
-			C.MethodSourceEntry source = File.GetMethodSource (index);
 
 			Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
 				ModuleDefinition, entry.Token);
@@ -488,7 +487,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoFunctionType function = klass.LookupFunction (mdef);
 
 			MonoMethodSource method = new MonoMethodSource (
-				this, file, entry, source, mdef, klass, function);
+				this, file, entry, mdef, klass, function);
 			method_index_hash.Add (index, method);
 
 			return method;
@@ -878,21 +877,18 @@ namespace Mono.Debugger.Languages.Mono
 			protected readonly MonoSymbolFile file;
 			protected readonly SourceFile source_file;
 			protected readonly C.MethodEntry method;
-			protected readonly C.MethodSourceEntry source;
 			protected readonly Cecil.MethodDefinition mdef;
 			protected readonly MonoClassType klass;
 			public readonly MonoFunctionType function;
 			protected readonly string full_name;
 
 			public MonoMethodSource (MonoSymbolFile file, SourceFile source_file,
-						 C.MethodEntry method, C.MethodSourceEntry source,
-						 Cecil.MethodDefinition mdef, MonoClassType klass,
-						 MonoFunctionType function)
+						 C.MethodEntry method, Cecil.MethodDefinition mdef,
+						 MonoClassType klass, MonoFunctionType function)
 			{
 				this.file = file;
 				this.source_file = source_file;
 				this.method = method;
-				this.source = source;
 				this.mdef = mdef;
 				if (method.RealName != null)
 					this.full_name = method.RealName;
@@ -943,15 +939,15 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override int StartRow {
-				get { return source.StartRow; }
+				get { return method.StartRow; }
 			}
 
 			public override int EndRow {
-				get { return source.EndRow; }
+				get { return method.EndRow; }
 			}
 
 			internal int Index {
-				get { return source.Index; }
+				get { return method.Index; }
 			}
 
 			internal C.MethodEntry Entry {
