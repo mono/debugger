@@ -1,6 +1,15 @@
 2008-05-28  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs
+	(MethodIndexEntry): Removed.
+	(MethodEntry): Moved everything into the data section, so it can
+	be read dynamically on-the-fly.  The `MethodEntry' now has a fixed
+	size of 12 bytes in the symbol file containing only token, data
+	offset and line number table offset.
+
+2008-05-28  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
 	(MethodEntry.LocalTypeIndices): Removed.
 	(MethodEntry.GetLineNumberTable): New public method; replaces the
 	`LineNumbers' and `NumLineNumbers' fields.

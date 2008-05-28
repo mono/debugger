@@ -246,7 +246,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			foreach (SourceFileEntry source in sources)
 				source.WriteData (bw);
 			foreach (MethodEntry method in methods)
-				method.Write (this, bw);
+				method.WriteData (this, bw);
 			ot.DataSectionSize = (int) bw.BaseStream.Position - ot.DataSectionOffset;
 
 			//
@@ -255,7 +255,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			ot.MethodTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < methods.Count; i++) {
 				MethodEntry entry = (MethodEntry) methods [i];
-				entry.WriteIndex (bw);
+				entry.Write (bw);
 			}
 			ot.MethodTableSize = (int) bw.BaseStream.Position - ot.MethodTableOffset;
 
@@ -309,9 +309,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 
 		MyBinaryReader reader;
-		Hashtable method_hash;
 		Hashtable source_file_hash;
 
+		ArrayList method_list;
 		Hashtable method_token_hash;
 		Hashtable source_name_hash;
 
@@ -345,7 +345,6 @@ namespace Mono.CompilerServices.SymbolWriter
 					"Cannot read symbol file `{0}'", filename);
 			}
 
-			method_hash = new Hashtable ();
 			source_file_hash = new Hashtable ();
 		}
 
@@ -466,14 +465,26 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 		}
 
-		public MethodIndexEntry GetMethodIndexEntry (int index)
+		void read_methods ()
 		{
-			int old_pos = (int) reader.BaseStream.Position;
-			reader.BaseStream.Position = ot.MethodTableOffset +
-				MethodIndexEntry.Size * (index - 1);
-			MethodIndexEntry ie = new MethodIndexEntry (reader);
-			reader.BaseStream.Position = old_pos;
-			return ie;
+			lock (this) {
+				if (method_token_hash != null)
+					return;
+
+				method_token_hash = new Hashtable ();
+				method_list = new ArrayList ();
+
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = ot.MethodTableOffset;
+
+				for (int i = 0; i < MethodCount; i++) {
+					MethodEntry entry = new MethodEntry (this, reader, i + 1);
+					method_token_hash.Add (entry.Token, entry);
+					method_list.Add (entry);
+				}
+
+				reader.BaseStream.Position = old_pos;
+			}
 		}
 
 		public MethodEntry GetMethodByToken (int token)
@@ -481,33 +492,12 @@ namespace Mono.CompilerServices.SymbolWriter
 			if (reader == null)
 				throw new InvalidOperationException ();
 
-			if (method_token_hash == null) {
-				method_token_hash = new Hashtable ();
-
-				for (int i = 0; i < MethodCount; i++) {
-					MethodIndexEntry ie = GetMethodIndexEntry (i + 1);
-
-					method_token_hash.Add (ie.Token, i + 1);
-				}
+			lock (this) {
+				read_methods ();
+				return (MethodEntry) method_token_hash [token];
 			}
-
-			object value = method_token_hash [token];
-			if (value == null)
-				return null;
-
-			return GetMethod ((int) value);
 		}
 
-#if !CECIL
-		public MethodEntry GetMethod (MethodBase method)
-		{
-			if (reader == null)
-				throw new InvalidOperationException ();
-			int token = MonoDebuggerSupport.GetMethodToken (method);
-			return GetMethodByToken (token);
-		}
-#endif
-		
 		public MethodEntry GetMethod (int index)
 		{
 			if ((index < 1) || (index > ot.MethodCount))
@@ -515,16 +505,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			if (reader == null)
 				throw new InvalidOperationException ();
 
-			MethodEntry entry = (MethodEntry) method_hash [index];
-			if (entry != null)
-				return entry;
-
-			MethodIndexEntry ie = GetMethodIndexEntry (index);
-			reader.BaseStream.Position = ie.FileOffset;
-
-			entry = new MethodEntry (this, reader, index);
-			method_hash.Add (index, entry);
-			return entry;
+			lock (this) {
+				read_methods ();
+				MethodEntry entry = (MethodEntry) method_list [index - 1];
+				return (MethodEntry) method_list [index - 1];
+			}
 		}
 
 		public MethodEntry[] Methods {
@@ -532,10 +517,12 @@ namespace Mono.CompilerServices.SymbolWriter
 				if (reader == null)
 					throw new InvalidOperationException ();
 
-				MethodEntry[] retval = new MethodEntry [MethodCount];
-				for (int i = 0; i < MethodCount; i++)
-					retval [i] = GetMethod (i + 1);
-				return retval;
+				lock (this) {
+					read_methods ();
+					MethodEntry[] retval = new MethodEntry [MethodCount];
+					method_list.CopyTo (retval, 0);
+					return retval;
+				}
 			}
 		}
 

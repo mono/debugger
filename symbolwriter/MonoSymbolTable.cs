@@ -682,42 +682,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 	}
 
-	public struct MethodIndexEntry
-	{
-		#region This is actually written to the symbol file
-		public readonly int FileOffset;
-		public readonly int Token;
-		#endregion
-
-		public static int Size {
-			get { return 8; }
-		}
-
-		public MethodIndexEntry (int offset, int token)
-		{
-			this.FileOffset = offset;
-			this.Token = token;
-		}
-
-		internal MethodIndexEntry (BinaryReader reader)
-		{
-			FileOffset = reader.ReadInt32 ();
-			Token = reader.ReadInt32 ();
-		}
-
-		internal void Write (BinaryWriter bw)
-		{
-			bw.Write (FileOffset);
-			bw.Write (Token);
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("MethodIndexEntry ({0}:{1:x})",
-					      FileOffset, Token);
-		}
-	}
-
 	public class LineNumberTable
 	{
 		protected LineNumberEntry[] _line_numbers;
@@ -932,7 +896,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int NamespaceID;
 		public readonly bool LocalNamesAmbiguous;
 
-		int NameOffset;
+		int DataOffset;
 		int LocalVariableTableOffset;
 		int LineNumberTableOffset;
 		int CodeBlockTableOffset;
@@ -958,16 +922,25 @@ namespace Mono.CompilerServices.SymbolWriter
 			set { index = value; }
 		}
 
+		public const int Size = 12;
+
 		internal MethodEntry (MonoSymbolFile file, MyBinaryReader reader, int index)
 		{
 			this.SymbolFile = file;
 			this.index = index;
+
+			long start_pos = reader.BaseStream.Position;
+
+			Token = reader.ReadInt32 ();
+			DataOffset = reader.ReadInt32 ();
+			LineNumberTableOffset = reader.ReadInt32 ();
+
+			long old_pos = reader.BaseStream.Position;
+			reader.BaseStream.Position = DataOffset;
+
 			SourceFileIndex = reader.ReadLeb128 ();
-			LineNumberTableOffset = reader.ReadLeb128 ();
-			Token = reader.ReadLeb128 ();
 			StartRow = reader.ReadLeb128 ();
 			EndRow = reader.ReadLeb128 ();
-			NameOffset = reader.ReadLeb128 ();
 			LocalVariableTableOffset = reader.ReadLeb128 ();
 			NamespaceID = reader.ReadLeb128 ();
 			LocalNamesAmbiguous = reader.ReadByte () != 0;
@@ -976,8 +949,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			ScopeVariableTableOffset = reader.ReadLeb128 ();
 
 			RealNameOffset = reader.ReadLeb128 ();
-			if (RealNameOffset != 0)
-				real_name = reader.ReadString (RealNameOffset);
+
+			reader.BaseStream.Position = old_pos;
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 		}
@@ -1064,12 +1037,20 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 		}
 
-		internal void Write (MonoSymbolFile file, MyBinaryWriter bw)
+		internal void Write (MyBinaryWriter bw)
+		{
+			if ((index <= 0) || (DataOffset == 0))
+				throw new InvalidOperationException ();
+
+			bw.Write (Token);
+			bw.Write (DataOffset);
+			bw.Write (LineNumberTableOffset);
+		}
+
+		internal void WriteData (MonoSymbolFile file, MyBinaryWriter bw)
 		{
 			if (index <= 0)
 				throw new InvalidOperationException ();
-
-			NameOffset = (int) bw.BaseStream.Position;
 
 			LocalVariableTableOffset = (int) bw.BaseStream.Position;
 			int num_locals = locals != null ? locals.Length : 0;
@@ -1098,15 +1079,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			LineNumberTableOffset = (int) bw.BaseStream.Position;
 			lnt.Write (file, bw);
 
-			file_offset = (int) bw.BaseStream.Position;
+			DataOffset = (int) bw.BaseStream.Position;
 
 			bw.WriteLeb128 (SourceFileIndex);
-			bw.WriteLeb128 (LineNumberTableOffset);
-			bw.WriteLeb128 (Token);
 			bw.WriteLeb128 (StartRow);
 			bw.WriteLeb128 (EndRow);
-			bw.WriteLeb128 (num_locals);
-			bw.WriteLeb128 (NameOffset);
 			bw.WriteLeb128 (LocalVariableTableOffset);
 			bw.WriteLeb128 (NamespaceID);
 			bw.Write ((byte) (LocalNamesAmbiguous ? 1 : 0));
@@ -1115,11 +1092,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.WriteLeb128 (ScopeVariableTableOffset);
 
 			bw.WriteLeb128 (RealNameOffset);
-		}
-
-		internal void WriteIndex (BinaryWriter bw)
-		{
-			new MethodIndexEntry (file_offset, Token).Write (bw);
 		}
 
 		public LineNumberTable GetLineNumberTable ()
@@ -1217,7 +1189,16 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public string GetRealName ()
 		{
-			return real_name;
+			lock (SymbolFile) {
+				if (real_name != null)
+					return real_name;
+
+				if (RealNameOffset == 0)
+					return null;
+
+				real_name = SymbolFile.BinaryReader.ReadString (RealNameOffset);
+				return real_name;
+			}
 		}
 
 		public int CompareTo (object obj)
@@ -1234,7 +1215,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public override string ToString ()
 		{
-			return String.Format ("[Method {0}:{1}:{2}:{3}:{4}:{5}]",
+			return String.Format ("[Method {0}:{1:x}:{2}:{3}:{4}:{5}]",
 					      index, Token, SourceFileIndex, StartRow, EndRow,
 					      SourceFile);
 		}
