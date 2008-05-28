@@ -987,7 +987,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			RealNameOffset = reader.ReadLeb128 ();
 			if (RealNameOffset != 0)
-				real_name = file.ReadString (RealNameOffset);
+				real_name = reader.ReadString (RealNameOffset);
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 

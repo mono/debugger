@@ -71,6 +71,17 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			return base.Read7BitEncodedInt ();
 		}
+
+		public string ReadString (int offset)
+		{
+			long old_pos = BaseStream.Position;
+			BaseStream.Position = offset;
+
+			string text = ReadString ();
+
+			BaseStream.Position = old_pos;
+			return text;
+		}
 	}
 
 #if !CECIL
@@ -206,17 +217,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			return ++last_namespace_index;
 		}
 		
-		internal string ReadString (int offset)
-		{
-			int old_pos = (int) reader.BaseStream.Position;
-			reader.BaseStream.Position = offset;
-
-			string text = reader.ReadString ();
-
-			reader.BaseStream.Position = old_pos;
-			return text;
-		}
-
 		void Write (MyBinaryWriter bw, Guid guid)
 		{
 			// Magic number and file version.
