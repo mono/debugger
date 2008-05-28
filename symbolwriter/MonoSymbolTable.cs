@@ -937,10 +937,10 @@ namespace Mono.CompilerServices.SymbolWriter
 		int LocalVariableTableOffset;
 		int LineNumberTableOffset;
 
-		public readonly int NumCodeBlocks;
+		int NumCodeBlocks;
 		int CodeBlockTableOffset;
 
-		public readonly int NumScopeVariables;
+		int NumScopeVariables;
 		int ScopeVariableTableOffset;
 
 		int RealNameOffset;
@@ -950,22 +950,12 @@ namespace Mono.CompilerServices.SymbolWriter
 		int file_offset;
 
 		public readonly SourceFileEntry SourceFile;
-		public readonly int[] LocalTypeIndices;
-		public readonly LocalVariableEntry[] Locals;
-		public readonly CodeBlockEntry[] CodeBlocks;
-		public readonly ScopeVariable[] ScopeVariables;
 
-		public readonly LineNumberTable LineNumberTable;
-
-		public int NumLineNumbers {
-			get { return LineNumberTable != null ? LineNumbers.Length : 0; }
-		}
-
-		public LineNumberEntry[] LineNumbers {
-			get { return LineNumberTable != null ? LineNumberTable.LineNumbers : null; }
-		}
-
-		public readonly string RealName;
+		LocalVariableEntry[] locals;
+		CodeBlockEntry[] code_blocks;
+		ScopeVariable[] scope_vars;
+		LineNumberTable lnt;
+		string real_name;
 
 		public readonly MonoSymbolFile SymbolFile;
 
@@ -997,7 +987,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			RealNameOffset = reader.ReadLeb128 ();
 			if (RealNameOffset != 0)
-				RealName = file.ReadString (RealNameOffset);
+				real_name = file.ReadString (RealNameOffset);
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
 
@@ -1005,8 +995,7 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = LineNumberTableOffset;
 
-				LineNumberTable = LineNumberTable.Read (
-					file, reader, SourceFileIndex, StartRow);
+				lnt = LineNumberTable.Read (file, reader, SourceFileIndex, StartRow);
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -1015,10 +1004,10 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = LocalVariableTableOffset;
 
-				Locals = new LocalVariableEntry [NumLocals];
+				locals = new LocalVariableEntry [NumLocals];
 
 				for (int i = 0; i < NumLocals; i++)
-					Locals [i] = new LocalVariableEntry (file, reader);
+					locals [i] = new LocalVariableEntry (file, reader);
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -1027,9 +1016,9 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = CodeBlockTableOffset;
 
-				CodeBlocks = new CodeBlockEntry [NumCodeBlocks];
+				code_blocks = new CodeBlockEntry [NumCodeBlocks];
 				for (int i = 0; i < NumCodeBlocks; i++)
-					CodeBlocks [i] = new CodeBlockEntry (i, reader);
+					code_blocks [i] = new CodeBlockEntry (i, reader);
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -1038,9 +1027,9 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = ScopeVariableTableOffset;
 
-				ScopeVariables = new ScopeVariable [NumScopeVariables];
+				scope_vars = new ScopeVariable [NumScopeVariables];
 				for (int i = 0; i < NumScopeVariables; i++)
-					ScopeVariables [i] = new ScopeVariable (reader);
+					scope_vars [i] = new ScopeVariable (reader);
 
 				reader.BaseStream.Position = old_pos;
 			}
@@ -1049,10 +1038,14 @@ namespace Mono.CompilerServices.SymbolWriter
 		internal MethodEntry (MonoSymbolFile file, SourceFileEntry source,
 				      int token, ScopeVariable[] scope_vars,
 				      LocalVariableEntry[] locals, LineNumberEntry[] lines,
-				      CodeBlockEntry[] blocks, string real_name,
+				      CodeBlockEntry[] code_blocks, string real_name,
 				      int start_row, int end_row, int namespace_id)
 		{
 			this.SymbolFile = file;
+			this.real_name = real_name;
+			this.locals = locals;
+			this.code_blocks = code_blocks;
+			this.scope_vars = scope_vars;
 
 			index = -1;
 
@@ -1064,11 +1057,10 @@ namespace Mono.CompilerServices.SymbolWriter
 			NamespaceID = namespace_id;
 
 			CheckLineNumberTable (lines);
-			LineNumberTable = new LineNumberTable (file, lines, source.Index, start_row);
+			lnt = new LineNumberTable (file, lines, source.Index, start_row);
 			file.NumLineNumbers += lines.Length;
 
 			NumLocals = locals != null ? locals.Length : 0;
-			Locals = locals;
 
 			if (NumLocals <= 32) {
 				// Most of the time, the O(n^2) factor is actually
@@ -1098,13 +1090,8 @@ namespace Mono.CompilerServices.SymbolWriter
 				}
 			}
 
-			NumCodeBlocks = blocks != null ? blocks.Length : 0;
-			CodeBlocks = blocks;
-
+			NumCodeBlocks = code_blocks != null ? code_blocks.Length : 0;
 			NumScopeVariables = scope_vars != null ? scope_vars.Length : 0;
-			ScopeVariables = scope_vars;
-
-			RealName = real_name;
 		}
 		
 		void CheckLineNumberTable (LineNumberEntry[] line_numbers)
@@ -1142,24 +1129,24 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			LocalVariableTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumLocals; i++)
-				Locals [i].Write (file, bw);
+				locals [i].Write (file, bw);
 			file.LocalCount += NumLocals;
 
 			CodeBlockTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumCodeBlocks; i++)
-				CodeBlocks [i].Write (bw);
+				code_blocks [i].Write (bw);
 
 			ScopeVariableTableOffset = (int) bw.BaseStream.Position;
 			for (int i = 0; i < NumScopeVariables; i++)
-				ScopeVariables [i].Write (bw);
+				scope_vars [i].Write (bw);
 
-			if (RealName != null) {
+			if (real_name != null) {
 				RealNameOffset = (int) bw.BaseStream.Position;
-				bw.Write (RealName);
+				bw.Write (real_name);
 			}
 
 			LineNumberTableOffset = (int) bw.BaseStream.Position;
-			LineNumberTable.Write (file, bw);
+			lnt.Write (file, bw);
 
 			file_offset = (int) bw.BaseStream.Position;
 
@@ -1188,6 +1175,31 @@ namespace Mono.CompilerServices.SymbolWriter
 			new MethodIndexEntry (file_offset, Token).Write (bw);
 		}
 
+		public LineNumberTable GetLineNumberTable ()
+		{
+			return lnt;
+		}
+
+		public LocalVariableEntry[] GetLocals ()
+		{
+			return locals;
+		}
+
+		public CodeBlockEntry[] GetCodeBlocks ()
+		{
+			return code_blocks;
+		}
+
+		public ScopeVariable[] GetScopeVariables ()
+		{
+			return scope_vars;
+		}
+
+		public string GetRealName ()
+		{
+			return real_name;
+		}
+
 		public int CompareTo (object obj)
 		{
 			MethodEntry method = (MethodEntry) obj;
@@ -1202,9 +1214,9 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public override string ToString ()
 		{
-			return String.Format ("[Method {0}:{1}:{2}:{3}:{4} - {6}:{7} - {5}]",
+			return String.Format ("[Method {0}:{1}:{2}:{3}:{4}:{5}]",
 					      index, Token, SourceFileIndex, StartRow, EndRow,
-					      SourceFile, NumLocals, NumLineNumbers);
+					      SourceFile);
 		}
 	}
 
