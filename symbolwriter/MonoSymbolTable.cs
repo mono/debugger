@@ -929,20 +929,14 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int Token;
 		public readonly int StartRow;
 		public readonly int EndRow;
-		public readonly int NumLocals;
 		public readonly int NamespaceID;
 		public readonly bool LocalNamesAmbiguous;
 
 		int NameOffset;
 		int LocalVariableTableOffset;
 		int LineNumberTableOffset;
-
-		int NumCodeBlocks;
 		int CodeBlockTableOffset;
-
-		int NumScopeVariables;
 		int ScopeVariableTableOffset;
-
 		int RealNameOffset;
 		#endregion
 
@@ -973,16 +967,12 @@ namespace Mono.CompilerServices.SymbolWriter
 			Token = reader.ReadLeb128 ();
 			StartRow = reader.ReadLeb128 ();
 			EndRow = reader.ReadLeb128 ();
-			NumLocals = reader.ReadLeb128 ();
 			NameOffset = reader.ReadLeb128 ();
 			LocalVariableTableOffset = reader.ReadLeb128 ();
 			NamespaceID = reader.ReadLeb128 ();
 			LocalNamesAmbiguous = reader.ReadByte () != 0;
 
-			NumCodeBlocks = reader.ReadLeb128 ();
 			CodeBlockTableOffset = reader.ReadLeb128 ();
-
-			NumScopeVariables = reader.ReadLeb128 ();
 			ScopeVariableTableOffset = reader.ReadLeb128 ();
 
 			RealNameOffset = reader.ReadLeb128 ();
@@ -990,40 +980,6 @@ namespace Mono.CompilerServices.SymbolWriter
 				real_name = reader.ReadString (RealNameOffset);
 
 			SourceFile = file.GetSourceFile (SourceFileIndex);
-
-			if (LocalVariableTableOffset != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = LocalVariableTableOffset;
-
-				locals = new LocalVariableEntry [NumLocals];
-
-				for (int i = 0; i < NumLocals; i++)
-					locals [i] = new LocalVariableEntry (file, reader);
-
-				reader.BaseStream.Position = old_pos;
-			}
-
-			if (CodeBlockTableOffset != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = CodeBlockTableOffset;
-
-				code_blocks = new CodeBlockEntry [NumCodeBlocks];
-				for (int i = 0; i < NumCodeBlocks; i++)
-					code_blocks [i] = new CodeBlockEntry (i, reader);
-
-				reader.BaseStream.Position = old_pos;
-			}
-
-			if (NumScopeVariables != 0) {
-				long old_pos = reader.BaseStream.Position;
-				reader.BaseStream.Position = ScopeVariableTableOffset;
-
-				scope_vars = new ScopeVariable [NumScopeVariables];
-				for (int i = 0; i < NumScopeVariables; i++)
-					scope_vars [i] = new ScopeVariable (reader);
-
-				reader.BaseStream.Position = old_pos;
-			}
 		}
 
 		internal MethodEntry (MonoSymbolFile file, SourceFileEntry source,
@@ -1051,17 +1007,17 @@ namespace Mono.CompilerServices.SymbolWriter
 			lnt = new LineNumberTable (file, lines, source.Index, start_row);
 			file.NumLineNumbers += lines.Length;
 
-			NumLocals = locals != null ? locals.Length : 0;
+			int num_locals = locals != null ? locals.Length : 0;
 
-			if (NumLocals <= 32) {
+			if (num_locals <= 32) {
 				// Most of the time, the O(n^2) factor is actually
 				// less than the cost of allocating the hash table,
 				// 32 is a rough number obtained through some testing.
 				
-				for (int i = 0; i < NumLocals; i ++) {
+				for (int i = 0; i < num_locals; i ++) {
 					string nm = locals [i].Name;
 					
-					for (int j = i + 1; j < NumLocals; j ++) {
+					for (int j = i + 1; j < num_locals; j ++) {
 						if (locals [j].Name == nm) {
 							LocalNamesAmbiguous = true;
 							goto locals_check_done;
@@ -1080,9 +1036,6 @@ namespace Mono.CompilerServices.SymbolWriter
 					local_names.Add (local.Name, local);
 				}
 			}
-
-			NumCodeBlocks = code_blocks != null ? code_blocks.Length : 0;
-			NumScopeVariables = scope_vars != null ? scope_vars.Length : 0;
 		}
 		
 		void CheckLineNumberTable (LineNumberEntry[] line_numbers)
@@ -1119,16 +1072,22 @@ namespace Mono.CompilerServices.SymbolWriter
 			NameOffset = (int) bw.BaseStream.Position;
 
 			LocalVariableTableOffset = (int) bw.BaseStream.Position;
-			for (int i = 0; i < NumLocals; i++)
+			int num_locals = locals != null ? locals.Length : 0;
+			bw.WriteLeb128 (num_locals);
+			for (int i = 0; i < num_locals; i++)
 				locals [i].Write (file, bw);
-			file.LocalCount += NumLocals;
+			file.LocalCount += num_locals;
 
 			CodeBlockTableOffset = (int) bw.BaseStream.Position;
-			for (int i = 0; i < NumCodeBlocks; i++)
+			int num_code_blocks = code_blocks != null ? code_blocks.Length : 0;
+			bw.WriteLeb128 (num_code_blocks);
+			for (int i = 0; i < num_code_blocks; i++)
 				code_blocks [i].Write (bw);
 
 			ScopeVariableTableOffset = (int) bw.BaseStream.Position;
-			for (int i = 0; i < NumScopeVariables; i++)
+			int num_scope_vars = scope_vars != null ? scope_vars.Length : 0;
+			bw.WriteLeb128 (num_scope_vars);
+			for (int i = 0; i < num_scope_vars; i++)
 				scope_vars [i].Write (bw);
 
 			if (real_name != null) {
@@ -1146,16 +1105,13 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.WriteLeb128 (Token);
 			bw.WriteLeb128 (StartRow);
 			bw.WriteLeb128 (EndRow);
-			bw.WriteLeb128 (NumLocals);
+			bw.WriteLeb128 (num_locals);
 			bw.WriteLeb128 (NameOffset);
 			bw.WriteLeb128 (LocalVariableTableOffset);
 			bw.WriteLeb128 (NamespaceID);
 			bw.Write ((byte) (LocalNamesAmbiguous ? 1 : 0));
 
-			bw.WriteLeb128 (NumCodeBlocks);
 			bw.WriteLeb128 (CodeBlockTableOffset);
-
-			bw.WriteLeb128 (NumScopeVariables);
 			bw.WriteLeb128 (ScopeVariableTableOffset);
 
 			bw.WriteLeb128 (RealNameOffset);
@@ -1200,9 +1156,10 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = LocalVariableTableOffset;
 
-				locals = new LocalVariableEntry [NumLocals];
+				int num_locals = reader.ReadLeb128 ();
+				locals = new LocalVariableEntry [num_locals];
 
-				for (int i = 0; i < NumLocals; i++)
+				for (int i = 0; i < num_locals; i++)
 					locals [i] = new LocalVariableEntry (SymbolFile, reader);
 
 				reader.BaseStream.Position = old_pos;
@@ -1223,8 +1180,10 @@ namespace Mono.CompilerServices.SymbolWriter
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = CodeBlockTableOffset;
 
-				code_blocks = new CodeBlockEntry [NumCodeBlocks];
-				for (int i = 0; i < NumCodeBlocks; i++)
+				int num_code_blocks = reader.ReadLeb128 ();
+				code_blocks = new CodeBlockEntry [num_code_blocks];
+
+				for (int i = 0; i < num_code_blocks; i++)
 					code_blocks [i] = new CodeBlockEntry (i, reader);
 
 				reader.BaseStream.Position = old_pos;
@@ -1238,15 +1197,17 @@ namespace Mono.CompilerServices.SymbolWriter
 				if (scope_vars != null)
 					return scope_vars;
 
-				if (NumScopeVariables == 0)
+				if (ScopeVariableTableOffset == 0)
 					return null;
 
 				MyBinaryReader reader = SymbolFile.BinaryReader;
 				long old_pos = reader.BaseStream.Position;
 				reader.BaseStream.Position = ScopeVariableTableOffset;
 
-				scope_vars = new ScopeVariable [NumScopeVariables];
-				for (int i = 0; i < NumScopeVariables; i++)
+				int num_scope_vars = reader.ReadLeb128 ();
+				scope_vars = new ScopeVariable [num_scope_vars];
+
+				for (int i = 0; i < num_scope_vars; i++)
 					scope_vars [i] = new ScopeVariable (reader);
 
 				reader.BaseStream.Position = old_pos;
