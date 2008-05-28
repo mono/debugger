@@ -1,3 +1,8 @@
+2008-05-28  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs: Reflect latest symbol writer
+	changes; we now require the latest Mono from SVN HEAD.
+
 2008-05-26  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

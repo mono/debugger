@@ -890,12 +890,12 @@ namespace Mono.Debugger.Languages.Mono
 				this.source_file = source_file;
 				this.method = method;
 				this.mdef = mdef;
-				if (method.RealName != null)
-					this.full_name = method.RealName;
-				else
-					this.full_name = MonoSymbolFile.GetMethodName (mdef);
 				this.function = function;
 				this.klass = klass;
+
+				full_name = method.GetRealName ();
+				if (full_name == null)
+					full_name = MonoSymbolFile.GetMethodName (mdef);
 			}
 
 			public override Module Module {
@@ -1133,10 +1133,11 @@ namespace Mono.Debugger.Languages.Mono
 				else
 					decl_type = (TargetStructType) decl;
 
+				C.CodeBlockEntry[] symfile_blocks = method.GetCodeBlocks ();
 				code_blocks = MonoCodeBlock.CreateBlocks (
-					this, address, method.CodeBlocks, out root_blocks);
+					this, address, symfile_blocks, out root_blocks);
 
-				foreach (C.CodeBlockEntry block in method.CodeBlocks)
+				foreach (C.CodeBlockEntry block in symfile_blocks)
 					if (block.BlockType == C.CodeBlockEntry.Type.IteratorBody)
 						is_iterator = true;
 
@@ -1153,8 +1154,10 @@ namespace Mono.Debugger.Languages.Mono
 
 				var scope_list = new List<ScopeInfo> ();
 
-				for (int i = 0; i < method.NumScopeVariables; i++) {
-					C.ScopeVariable sv = method.ScopeVariables [i];
+				C.ScopeVariable[] scope_vars = method.GetScopeVariables ();
+				int num_scope_vars = scope_vars != null ? scope_vars.Length : 0;
+				for (int i = 0; i < num_scope_vars; i++) {
+					C.ScopeVariable sv = scope_vars [i];
 
 					VariableInfo var;
 					if (sv.Index < 0)
@@ -1220,8 +1223,9 @@ namespace Mono.Debugger.Languages.Mono
 						this, var, 0, 0));
 				}
 
-				for (int i = 0; i < method.NumLocals; i++) {
-					C.LocalVariableEntry local = method.Locals [i];
+				C.LocalVariableEntry[] symfile_locals = method.GetLocals ();
+				for (int i = 0; i < symfile_locals.Length; i++) {
+					C.LocalVariableEntry local = symfile_locals [i];
 
 					if (captured_vars.ContainsKey (local.Name))
 						continue;
@@ -1583,12 +1587,9 @@ namespace Mono.Debugger.Languages.Mono
 			void generate_line_number (List<LineEntry> lines, TargetAddress address,
 						   int offset, ref int last_line)
 			{
-				C.LineNumberEntry[] line_numbers;
-#if ENABLE_KAHALO
-				line_numbers = entry.LineNumberTable.LineNumbers;
-#else
-				line_numbers = entry.LineNumbers;
-#endif
+				C.LineNumberTable lnt = entry.GetLineNumberTable ();
+				C.LineNumberEntry[] line_numbers = lnt.LineNumbers;
+
 				for (int i = line_numbers.Length - 1; i >= 0; i--) {
 					C.LineNumberEntry lne = line_numbers [i];
 
@@ -1654,7 +1655,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				C.LineNumberEntry[] lnt;
 #if ENABLE_KAHALO
-				lnt = entry.LineNumberTable.LineNumbers;
+				lnt = entry.GetLineNumberTable ().LineNumbers;
 #else
 				lnt = entry.LineNumbers;
 #endif
