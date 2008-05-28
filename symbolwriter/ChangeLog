@@ -1,3 +1,9 @@
+2008-05-28  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(MethodSourceEntry): Removed.
+	(SourceFileEntry.Methods): Removed.
+
 2008-05-26  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolWriter.cs

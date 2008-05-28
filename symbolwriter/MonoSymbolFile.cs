@@ -245,6 +245,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			ot.DataSectionOffset = (int) bw.BaseStream.Position;
 			foreach (SourceFileEntry source in sources)
 				source.WriteData (bw);
+			foreach (MethodEntry method in methods)
+				method.Write (this, bw);
 			ot.DataSectionSize = (int) bw.BaseStream.Position - ot.DataSectionOffset;
 
 			//
@@ -535,28 +537,6 @@ namespace Mono.CompilerServices.SymbolWriter
 					retval [i] = GetMethod (i + 1);
 				return retval;
 			}
-		}
-
-		public MethodSourceEntry GetMethodSource (int index)
-		{
-			if ((index < 1) || (index > ot.MethodCount))
-				throw new ArgumentException ();
-			if (reader == null)
-				throw new InvalidOperationException ();
-
-			object entry = method_source_hash [index];
-			if (entry != null)
-				return (MethodSourceEntry) entry;
-
-			MethodEntry method = GetMethod (index);
-			foreach (MethodSourceEntry source in method.SourceFile.Methods) {
-				if (source.Index == index) {
-					method_source_hash.Add (index, source);
-					return source;
-				}
-			}
-
-			throw new MonoSymbolFileException ("Internal error.");
 		}
 
 		public int FindSource (string file_name)

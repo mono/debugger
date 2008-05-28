@@ -512,7 +512,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		string file_name;
 		byte[] guid;
 		byte[] hash;
-		ArrayList methods;
 		ArrayList namespaces;
 		bool creating;
 		bool auto_generated;
@@ -528,7 +527,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			this.Index = file.AddSource (this);
 
 			creating = true;
-			methods = new ArrayList ();
 			namespaces = new ArrayList ();
 		}
 
@@ -552,7 +550,6 @@ namespace Mono.CompilerServices.SymbolWriter
 				file, this, (int) token, scope_vars, locals, lines,
 				blocks, real_name, start, end, namespace_id);
 
-			methods.Add (entry);
 			file.AddMethod (entry);
 		}
 
@@ -569,11 +566,6 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		internal void WriteData (MyBinaryWriter bw)
 		{
-			ArrayList list = new ArrayList ();
-			foreach (MethodEntry entry in methods)
-				list.Add (entry.Write (file, bw));
-			list.Sort ();
-
 			DataOffset = (int) bw.BaseStream.Position;
 			bw.Write (file_name);
 
@@ -589,11 +581,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.Write (hash);
 			bw.Write ((byte) (auto_generated ? 1 : 0));
 
-			bw.WriteLeb128 (methods.Count);
 			bw.WriteLeb128 (namespaces.Count);
-
-			foreach (MethodSourceEntry method in list)
-				method.Write (bw);
 
 			foreach (NamespaceEntry ns in namespaces)
 				ns.Write (file, bw);
@@ -646,19 +634,14 @@ namespace Mono.CompilerServices.SymbolWriter
 			if (creating)
 				throw new InvalidOperationException ();
 
-			if (methods != null)
+			if (namespaces != null)
 				return;
 
 			MyBinaryReader reader = file.BinaryReader;
 			int old_pos = (int) reader.BaseStream.Position;
 
 			reader.BaseStream.Position = real_data_offset;
-			int count_methods = reader.ReadLeb128 ();
 			int count_ns = reader.ReadLeb128 ();
-
-			methods = new ArrayList ();
-			for (int i = 0; i < count_methods; i ++)
-				methods.Add (new MethodSourceEntry (reader));
 
 			namespaces = new ArrayList ();
 			for (int i = 0; i < count_ns; i ++)
@@ -684,15 +667,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 		}
 
-		public MethodSourceEntry[] Methods {
-			get {
-				ReadData ();
-				MethodSourceEntry[] retval = new MethodSourceEntry [methods.Count];
-				methods.CopyTo (retval, 0);
-				return retval;
-			}
-		}
-
 		public NamespaceEntry[] Namespaces {
 			get {
 				ReadData ();
@@ -705,62 +679,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		public override string ToString ()
 		{
 			return String.Format ("SourceFileEntry ({0}:{1})", Index, DataOffset);
-		}
-	}
-
-	public struct MethodSourceEntry : IComparable
-	{
-		#region This is actually written to the symbol file
-		public readonly int Index;
-		public readonly int FileOffset;
-		public readonly int StartRow;
-		public readonly int EndRow;
-		#endregion
-
-		public MethodSourceEntry (int index, int file_offset, int start, int end)
-		{
-			this.Index = index;
-			this.FileOffset = file_offset;
-			this.StartRow = start;
-			this.EndRow = end;
-		}
-
-		internal MethodSourceEntry (MyBinaryReader reader)
-		{
-			Index = reader.ReadLeb128 ();
-			FileOffset = reader.ReadLeb128 ();
-			StartRow = reader.ReadLeb128 ();
-			EndRow = reader.ReadLeb128 ();
-		}
-
-		public static int Size {
-			get { return 16; }
-		}
-
-		internal void Write (MyBinaryWriter bw)
-		{
-			bw.WriteLeb128 (Index);
-			bw.WriteLeb128 (FileOffset);
-			bw.WriteLeb128 (StartRow);
-			bw.WriteLeb128 (EndRow);
-		}
-
-		public int CompareTo (object obj)
-		{
-			MethodSourceEntry method = (MethodSourceEntry) obj;
-
-			if (method.StartRow < StartRow)
-				return -1;
-			else if (method.StartRow > StartRow)
-				return 1;
-			else
-				return 0;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("MethodSourceEntry ({0}:{1}:{2}:{3})",
-					      Index, FileOffset, StartRow, EndRow);
 		}
 	}
 
@@ -1215,7 +1133,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 		}
 
-		internal MethodSourceEntry Write (MonoSymbolFile file, MyBinaryWriter bw)
+		internal void Write (MonoSymbolFile file, MyBinaryWriter bw)
 		{
 			if (index <= 0)
 				throw new InvalidOperationException ();
@@ -1263,8 +1181,6 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.WriteLeb128 (ScopeVariableTableOffset);
 
 			bw.WriteLeb128 (RealNameOffset);
-
-			return new MethodSourceEntry (index, file_offset, StartRow, EndRow);
 		}
 
 		internal void WriteIndex (BinaryWriter bw)
