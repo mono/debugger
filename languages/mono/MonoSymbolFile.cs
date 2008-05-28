@@ -513,13 +513,16 @@ namespace Mono.Debugger.Languages.Mono
 			ensure_sources ();
 			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
 
-			C.MethodSourceEntry[] entries = source.Methods;
-			MethodSource[] methods = new MethodSource [entries.Length];
+			List<MethodSource> methods = new List<MethodSource> ();
 
-			for (int i = 0; i < entries.Length; i++)
-				methods [i] = GetMethodSource (file, entries [i].Index);
+			foreach (C.MethodEntry method in File.Methods) {
+				if (method.SourceFileIndex != source.Index)
+					continue;
 
-			return methods;
+				methods.Add (GetMethodSource (file, method.Index));
+			}
+
+			return methods.ToArray ();
 		}
 
 		// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
