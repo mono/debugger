@@ -2581,7 +2581,8 @@ namespace Mono.Debugger.Backend
 		public override bool IsSourceOperation {
 			get {
 				return (StepMode == StepMode.SourceLine) ||
-					(StepMode == StepMode.NextLine);
+					(StepMode == StepMode.NextLine) ||
+					(StepMode == StepMode.Finish);
 			}
 		}
 
@@ -2693,18 +2694,44 @@ namespace Mono.Debugger.Backend
 			return true;
 		}
 
+		bool check_method_operation (TargetAddress current_frame)
+		{
+			if ((StepMode != StepMode.SourceLine) && (StepMode != StepMode.NextLine))
+				return false;
+
+			Method method = sse.Lookup (current_frame);
+			if (method == null)
+				return false;
+
+			LineNumberTable lnt = method.LineNumberTable;
+			if (lnt.HasMethodBounds && (current_frame >= lnt.MethodEndAddress)) {
+				StepFrame = new StepFrame (
+					lnt.MethodEndAddress, method.EndAddress,
+					null, null, StepMode.Finish);
+				return true;
+			}
+
+			return false;
+		}
+
 		protected bool Step (bool first)
 		{
 			if (StepFrame == null)
 				return true;
 
 			TargetAddress current_frame = inferior.CurrentFrame;
+			again:
 			bool in_frame = sse.is_in_step_frame (StepFrame, current_frame);
 			Report.Debug (DebugFlags.SSE, "{0} stepping at {1} in {2} ({3}in frame)",
 				      sse, current_frame, StepFrame, !in_frame ? "not " : "");
 
-			if (!first && !in_frame)
-				return true;
+			if (!first && !in_frame) {
+				if (!check_method_operation (current_frame))
+					return true;
+
+				in_frame = sse.is_in_step_frame (StepFrame, current_frame);
+				goto again;
+			}
 
 			/*
 			 * If this is not a call instruction, continue stepping until we leave

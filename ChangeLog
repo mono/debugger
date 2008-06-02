@@ -1,3 +1,13 @@
+2008-06-02  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStep.IsSourceOperation): Add `StepMode.Finish'.
+	(SSE.OperationStep.check_method_operation): New protected method;
+	don't stop inside the method's epilogue code.
+	(SSE.OperationStep.Step): If we're done stepping, call
+	check_method_operation() to check whether we stopped inside a
+	method's epilogue code.
+
 2008-05-28  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs: Reflect latest symbol writer
