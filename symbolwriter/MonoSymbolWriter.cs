@@ -45,6 +45,13 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 	}
 
+	public interface ICompileUnit
+	{
+		CompileUnitEntry Entry {
+			get;
+		}
+	}
+
 	public interface ISourceMethod
 	{
 		string Name {
@@ -62,22 +69,14 @@ namespace Mono.CompilerServices.SymbolWriter
 
 	public class MonoSymbolWriter
 	{
-		protected ArrayList locals = null;
-		protected ArrayList methods = null;
-		protected ArrayList sources = null;
+		ArrayList methods = null;
+		ArrayList sources = null;
+		ArrayList comp_units = null;
 		protected readonly MonoSymbolFile file;
-		private string filename = null;
+		string filename = null;
 		
 		LineNumberEntry [] current_method_lines;
 		int current_method_lines_pos = 0;
-
-		internal ISourceFile[] Sources {
-			get {
-				ISourceFile[] retval = new ISourceFile [sources.Count];
-				sources.CopyTo (retval, 0);
-				return retval;
-			}
-		}
 
 		private SourceMethod current_method = null;
 
@@ -85,7 +84,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		{
 			this.methods = new ArrayList ();
 			this.sources = new ArrayList ();
-			this.locals = new ArrayList ();
+			this.comp_units = new ArrayList ();
 			this.file = new MonoSymbolFile ();
 
 			this.filename = filename + ".mdb";
@@ -170,12 +169,9 @@ namespace Mono.CompilerServices.SymbolWriter
 				file, line, offset, is_hidden);
 		}
 
-		public void OpenMethod (ISourceFile file, ISourceMethod method,
-					int startRow, int startColumn,
-					int endRow, int endColumn)
+		public void OpenMethod (ICompileUnit file, ISourceMethod method)
 		{
-			SourceMethod source = new SourceMethod (
-				file, method, startRow, startColumn, endRow, endColumn);
+			SourceMethod source = new SourceMethod (file, method);
 
 			current_method = source;
 			methods.Add (current_method);
@@ -209,13 +205,20 @@ namespace Mono.CompilerServices.SymbolWriter
 			return entry;
 		}
 
-		public int DefineNamespace (string name, SourceFileEntry source,
+		public CompileUnitEntry DefineCompilationUnit (SourceFileEntry source)
+		{
+			CompileUnitEntry entry = new CompileUnitEntry (file, source);
+			comp_units.Add (entry);
+			return entry;
+		}
+
+		public int DefineNamespace (string name, CompileUnitEntry unit,
 					    string[] using_clauses, int parent)
 		{
-			if ((source == null) || (using_clauses == null))
+			if ((unit == null) || (using_clauses == null))
 				throw new NullReferenceException ();
 
-			return source.DefineNamespace (name, using_clauses, parent);
+			return unit.DefineNamespace (name, using_clauses, parent);
 		}
 
 		public int OpenScope (int start_offset)
@@ -304,18 +307,12 @@ namespace Mono.CompilerServices.SymbolWriter
 			private Stack _block_stack;
 			private string _real_name;
 			private ISourceMethod _method;
-			private ISourceFile _file;
-			private LineNumberEntry _start, _end;
+			private ICompileUnit _comp_unit;
 
-			public SourceMethod (ISourceFile file, ISourceMethod method,
-					     int startLine, int startColumn,
-					     int endLine, int endColumn)
+			public SourceMethod (ICompileUnit comp_unit, ISourceMethod method)
 			{
-				this._file = file;
+				this._comp_unit = comp_unit;
 				this._method = method;
-
-				this._start = new LineNumberEntry (0, startLine, 0);
-				this._end = new LineNumberEntry (0, endLine, 0);
 			}
 
 			public void StartBlock (CodeBlockEntry.Type type, int start_offset)
@@ -411,20 +408,12 @@ namespace Mono.CompilerServices.SymbolWriter
 				set { _real_name = value; }
 			}
 
-			public ISourceFile SourceFile {
-				get { return _file; }
+			public ICompileUnit SourceFile {
+				get { return _comp_unit; }
 			}
 
 			public ISourceMethod Method {
 				get { return _method; }
-			}
-
-			public LineNumberEntry Start {
-				get { return _start; }
-			}
-
-			public LineNumberEntry End {
-				get { return _end; }
 			}
 
 			internal void SetLineNumbers (LineNumberEntry [] lns, int count)
@@ -436,9 +425,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			public void DefineMethod (MonoSymbolFile file)
 			{
 				MethodEntry entry = new MethodEntry (
-					file, _file.Entry, _method.Token, ScopeVariables,
-					Locals, Lines, Blocks, RealMethodName, Start.Row, End.Row,
-					_method.NamespaceID);
+					file, _comp_unit.Entry, _method.Token, ScopeVariables,
+					Locals, Lines, Blocks, RealMethodName, _method.NamespaceID);
 
 				file.AddMethod (entry);
 			}

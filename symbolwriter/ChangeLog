@@ -1,5 +1,26 @@
 2008-06-02  Martin Baulig  <martin@ximian.com>
 
+	* MonoSymbolWriter.cs
+	(ICompileUnit): New public interface.
+	(MonoSymbolWriter.Sources): Removed.
+	(MonoSymbolWriter.OpenMethod): Take an `ICompileUnit', removed
+	`startRow', `startColumn', `endRow' and `endColumn'.
+	(MonoSymbolWriter.DefineCompilationUnit): New public method.
+	(MonoSymbolWriter.DefineNamespace): Operate on `ICompileUnit'.
+
+	* MonoSymbolFile.cs
+	(MonoSymbolFile.CompileUnit): New public properties.
+
+	* MonoSymbolTable.cs
+	(OffsetTable): Replace `Version' by `MajorVersion' and
+	`MinorVersion'.  Add `CompileUnitCount', `CompileUnitTableOffset'
+	and `CompileUnitTableSize'.
+	(CompileUnitEntry): New public method.
+	(LineNumberTable): Removed `StartFile' and `StartRow'.
+	(MethodEntry): Removed `StartRow' and `EndRow'.
+
+2008-06-02  Martin Baulig  <martin@ximian.com>
+
 	* SymbolWriterImpl.cs: Removed.
 
 2008-05-28  Martin Baulig  <martin@ximian.com>
