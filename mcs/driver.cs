@@ -152,7 +152,7 @@ namespace Mono.CSharp
 				(int) span.TotalSeconds, span.Milliseconds, msg);
 		}	       
 	       
-		void tokenize_file (SourceFile file)
+		void tokenize_file (CompilationUnit file)
 		{
 			Stream input;
 
@@ -180,7 +180,7 @@ namespace Mono.CSharp
 		}
 
 		// MonoTODO("Change error code for aborted compilation to something reasonable")]		
-		void Parse (SourceFile file)
+		void Parse (CompilationUnit file)
 		{
 			CSharpParser parser;
 			Stream input;

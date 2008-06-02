@@ -29,7 +29,7 @@ namespace Mono.CSharp
 	{
 		SeekableStreamReader reader;
 		SourceFile ref_name;
-		SourceFile file_name;
+		CompilationUnit file_name;
 		bool hidden = false;
 		int ref_line = 1;
 		int line = 1;
@@ -516,7 +516,7 @@ namespace Mono.CSharp
 			defines [def] = true;
 		}
 		
-		public Tokenizer (SeekableStreamReader input, SourceFile file, ArrayList defs)
+		public Tokenizer (SeekableStreamReader input, CompilationUnit file, ArrayList defs)
 		{
 			this.ref_name = file;
 			this.file_name = file;
@@ -536,7 +536,7 @@ namespace Mono.CSharp
 			// FIXME: This could be `Location.Push' but we have to
 			// find out why the MS compiler allows this
 			//
-			Mono.CSharp.Location.Push (file);
+			Mono.CSharp.Location.Push (file, file);
 		}
 
 		static bool is_identifier_start_character (char c)
@@ -1617,7 +1617,7 @@ namespace Mono.CSharp
 				ref_line = line;
 				ref_name = file_name;
 				hidden = false;
-				Location.Push (ref_name);
+				Location.Push (file_name, ref_name);
 				return true;
 			} else if (arg == "hidden"){
 				hidden = true;
@@ -1635,8 +1635,9 @@ namespace Mono.CSharp
 					
 					string name = arg.Substring (pos). Trim (quotes);
 					ref_name = Location.LookupFile (name);
+					file_name.AddFile (ref_name);
 					hidden = false;
-					Location.Push (ref_name);
+					Location.Push (file_name, ref_name);
 				} else {
 					ref_line = System.Int32.Parse (arg);
 					hidden = false;

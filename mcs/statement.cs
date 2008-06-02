@@ -2846,6 +2846,12 @@ namespace Mono.CSharp {
 			base.EmitSymbolInfo (ec);
 		}
 
+		public override void Emit (EmitContext ec)
+		{
+			base.Emit (ec);
+			ec.Mark (EndLocation, true);
+		}
+
 		public void MakeIterator (Iterator iterator)
 		{
 			flags |= Flags.IsIterator;

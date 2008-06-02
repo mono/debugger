@@ -1,3 +1,28 @@
+2008-06-02  Martin Baulig  <martin@ximian.com>
+
+	* location.cs
+	(CompilationUnit): New public class; derives from `SourceFile'.
+	(Location.CheckPoint): Add `CompilationUnit'.
+	(Location.SourceFiles): Change return type to `CompilationUnit[]'.
+	(Location.Push): Add `CompilationUnit compile_unit' argument.
+	(Location.CompilationUnit): New public property.
+
+	* class.cs
+	(SourceMethod): Reflect latest symbol writer changes;
+	SymbolWriter.OpenMethod() now takes a `ICompileUnit' argument and
+	now `start_row' and `end_row'.
+
+	* statement.cs
+	(ToplevelBlock.Emit): Add `ec.Mark (EndLocation)'.
+
+	* cs-parser.jay: `SourceFile' -> `CompilationUnit'.
+
+	* driver.cs: `SourceFile' -> `CompilationUnit'.
+
+	* cs-tokenizer.cs: `SourceFile' -> `CompilationUnit'.
+
+	* namespace.cs: `SourceFile' -> `CompilationUnit'.
+
 2008-05-26  Martin Baulig  <martin@ximian.com>
 
 	Add support for `#pragma checksum'.

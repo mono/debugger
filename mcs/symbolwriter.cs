@@ -84,13 +84,10 @@ namespace Mono.CSharp {
 			}
 		}
 
-		public static void OpenMethod (ISourceFile file, ISourceMethod method,
-					       int start_row, int start_column,
-					       int end_row, int end_column)
+		public static void OpenMethod (ICompileUnit file, ISourceMethod method)
 		{
 			if (symwriter != null)
-				symwriter.OpenMethod (file, method, start_row, start_column,
-						      end_row, end_column);
+				symwriter.OpenMethod (file, method);
 		}
 
 		public static void CloseMethod ()
@@ -117,7 +114,7 @@ namespace Mono.CSharp {
 			}
 		}
 
-		public static int DefineNamespace (string name, SourceFileEntry source,
+		public static int DefineNamespace (string name, CompileUnitEntry source,
 						   string[] using_clauses, int parent)
 		{
 			if (symwriter != null)

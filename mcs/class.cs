@@ -4159,13 +4159,12 @@ namespace Mono.CSharp {
 		DeclSpace parent;
 		MethodBase builder;
 
-		protected SourceMethod (DeclSpace parent, MethodBase builder,
-					ISourceFile file, Location start, Location end)
+		protected SourceMethod (DeclSpace parent, MethodBase builder, ICompileUnit file)
 		{
 			this.parent = parent;
 			this.builder = builder;
 			
-			SymbolWriter.OpenMethod (file, this, start.Row, start.Column, end.Row, start.Column);
+			SymbolWriter.OpenMethod (file, this);
 		}
 
 		public string Name {
@@ -4203,16 +4202,11 @@ namespace Mono.CSharp {
 			if (start_loc.IsNull)
 				return null;
 
-			Location end_loc = block.EndLocation;
-			if (end_loc.IsNull)
+			ICompileUnit compile_unit = start_loc.CompilationUnit;
+			if (compile_unit == null)
 				return null;
 
-			ISourceFile file = start_loc.SourceFile;
-			if (file == null)
-				return null;
-
-			return new SourceMethod (
-				parent, builder, file, start_loc, end_loc);
+			return new SourceMethod (parent, builder, compile_unit);
 		}
 	}
 
