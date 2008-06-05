@@ -313,23 +313,31 @@ namespace Mono.Debugger.Languages.Mono
 			if (methods_by_token != null)
 				return;
 
-			int method_count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
+			try {
+				if (!MonoRuntime.MonoClassHasMethods (target, KlassAddress)) 
+					return;
 
-			methods_by_token = new Dictionary<int,TargetAddress> ();
+				int count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
 
-			for (int i = 0; i < method_count; i++) {
-				TargetAddress address = MonoRuntime.MonoClassGetMethod (
-					target, KlassAddress, i);
-				int mtoken = MonoRuntime.MonoMethodGetToken (target, address);
+				methods_by_token = new Dictionary<int,TargetAddress> ();
 
-				if (mtoken != 0)
-					methods_by_token.Add (mtoken, address);
-			}
+				for (int i = 0; i < count; i++) {
+					TargetAddress address = MonoRuntime.MonoClassGetMethod (
+						target, KlassAddress, i);
+					int mtoken = MonoRuntime.MonoMethodGetToken (target, address);
+					if (mtoken != 0)
+						methods_by_token.Add (mtoken, address);
+				}
 
-			methods = new MonoMethodInfo [CecilType.Methods.Count];
-			for (int i = 0; i < methods.Length; i ++) {
-				Cecil.MethodDefinition m = CecilType.Methods [i];
-				methods [i] = MonoMethodInfo.Create (struct_type, i, m);
+				methods = new MonoMethodInfo [CecilType.Methods.Count];
+				for (int i = 0; i < methods.Length; i ++) {
+					Cecil.MethodDefinition m = CecilType.Methods [i];
+					methods [i] = MonoMethodInfo.Create (struct_type, i, m);
+				}
+			} catch {
+				methods_by_token = null;
+				methods = null;
+				throw;
 			}
 		}
 

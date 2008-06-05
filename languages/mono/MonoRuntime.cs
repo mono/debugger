@@ -132,6 +132,13 @@ namespace Mono.Debugger.Languages.Mono
 			return memory.ReadInteger (fields + offset);
 		}
 
+		public bool MonoClassHasMethods (TargetMemoryAccess memory, TargetAddress klass)
+		{
+			TargetAddress methods = memory.ReadAddress (
+				klass + MonoMetadataInfo.KlassMethodsOffset);
+			return !methods.IsNull;
+		}
+
 		public int MonoClassGetMethodCount (TargetMemoryAccess memory, TargetAddress klass)
 		{
 			return memory.ReadInteger (klass + MonoMetadataInfo.KlassMethodCountOffset);
