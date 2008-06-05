@@ -1819,19 +1819,22 @@ namespace Mono.Debugger.Frontend
 				bool is_instance = false;
 				bool is_static = false;
 
-				foreach (TargetMethodInfo method in klass.GetMethods (target)) {
-					if (method.IsStatic && !search_static)
-						continue;
-					if (!method.IsStatic && !search_instance)
-						continue;
-					if (method.Name != name)
-						continue;
+				TargetMethodInfo[] klass_methods = klass.GetMethods (target);
+				if (klass_methods != null) {
+					foreach (TargetMethodInfo method in klass_methods) {
+						if (method.IsStatic && !search_static)
+							continue;
+						if (!method.IsStatic && !search_instance)
+							continue;
+						if (method.Name != name)
+							continue;
 
-					methods.Add (method.Type);
-					if (method.IsStatic)
-						is_static = true;
-					else
-						is_instance = true;
+						methods.Add (method.Type);
+						if (method.IsStatic)
+							is_static = true;
+						else
+							is_instance = true;
+					}
 				}
 
 				if (methods.Count > 0) {
@@ -1896,7 +1899,7 @@ namespace Mono.Debugger.Frontend
 			if (stype.HasParent) {
 				stype = stype.GetParentType (target);
 				if (instance != null) {
-					instance = instance.GetParentObject (target) as TargetClassObject;
+					instance = instance.GetParentObject (target);
 					if (instance == null)
 						return null;
 				}

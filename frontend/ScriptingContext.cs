@@ -182,6 +182,9 @@ namespace Mono.Debugger.Frontend
 
 			TargetClass klass = ctype.GetClass (CurrentThread);
 			TargetMethodInfo[] methods = klass.GetMethods (CurrentThread);
+			if (methods == null)
+				return null;
+
 			foreach (TargetMethodInfo minfo in methods) {
 				if (minfo.Name != "ToString")
 					continue;
