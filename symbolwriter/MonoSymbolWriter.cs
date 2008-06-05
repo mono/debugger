@@ -182,6 +182,11 @@ namespace Mono.CompilerServices.SymbolWriter
 			current_method.RealMethodName = name;
 		}
 
+		public void SetCompilerGenerated ()
+		{
+			current_method.SetCompilerGenerated ();
+		}
+
 		public void CloseMethod ()
 		{
 			current_method.SetLineNumbers (
@@ -308,6 +313,7 @@ namespace Mono.CompilerServices.SymbolWriter
 			private string _real_name;
 			private ISourceMethod _method;
 			private ICompileUnit _comp_unit;
+			private MethodEntry.Flags _method_flags;
 
 			public SourceMethod (ICompileUnit comp_unit, ISourceMethod method)
 			{
@@ -408,6 +414,11 @@ namespace Mono.CompilerServices.SymbolWriter
 				set { _real_name = value; }
 			}
 
+			public void SetCompilerGenerated ()
+			{
+				_method_flags |= MethodEntry.Flags.IsCompilerGenerated;
+			}
+
 			public ICompileUnit SourceFile {
 				get { return _comp_unit; }
 			}
@@ -426,7 +437,8 @@ namespace Mono.CompilerServices.SymbolWriter
 			{
 				MethodEntry entry = new MethodEntry (
 					file, _comp_unit.Entry, _method.Token, ScopeVariables,
-					Locals, Lines, Blocks, RealMethodName, _method.NamespaceID);
+					Locals, Lines, Blocks, RealMethodName, _method_flags,
+					_method.NamespaceID);
 
 				file.AddMethod (entry);
 			}

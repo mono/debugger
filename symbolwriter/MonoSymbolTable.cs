@@ -73,7 +73,7 @@ namespace Mono.CompilerServices.SymbolWriter
 	public class OffsetTable
 	{
 		public const int  MajorVersion = 42;
-		public const int  MinorVersion = 3;
+		public const int  MinorVersion = 4;
 		public const long Magic        = 0x45e82623fd7fa614;
 
 		#region This is actually written to the symbol file
@@ -970,7 +970,6 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int CompileUnitIndex;
 		public readonly int Token;
 		public readonly int NamespaceID;
-		public readonly bool LocalNamesAmbiguous;
 
 		int DataOffset;
 		int LocalVariableTableOffset;
@@ -978,9 +977,14 @@ namespace Mono.CompilerServices.SymbolWriter
 		int CodeBlockTableOffset;
 		int ScopeVariableTableOffset;
 		int RealNameOffset;
+		Flags flags;
 		#endregion
 
 		int index;
+
+		public Flags MethodFlags {
+			get { return flags; }
+		}
 
 		public readonly CompileUnitEntry CompileUnit;
 
@@ -995,6 +999,13 @@ namespace Mono.CompilerServices.SymbolWriter
 		public int Index {
 			get { return index; }
 			set { index = value; }
+		}
+
+		[Flags]
+		public enum Flags
+		{
+			LocalNamesAmbiguous	= 1,
+			IsCompilerGenerated	= 2
 		}
 
 		public const int Size = 12;
@@ -1016,12 +1027,13 @@ namespace Mono.CompilerServices.SymbolWriter
 			CompileUnitIndex = reader.ReadLeb128 ();
 			LocalVariableTableOffset = reader.ReadLeb128 ();
 			NamespaceID = reader.ReadLeb128 ();
-			LocalNamesAmbiguous = reader.ReadByte () != 0;
 
 			CodeBlockTableOffset = reader.ReadLeb128 ();
 			ScopeVariableTableOffset = reader.ReadLeb128 ();
 
 			RealNameOffset = reader.ReadLeb128 ();
+
+			flags = (Flags) reader.ReadLeb128 ();
 
 			reader.BaseStream.Position = old_pos;
 
@@ -1032,13 +1044,14 @@ namespace Mono.CompilerServices.SymbolWriter
 				      int token, ScopeVariable[] scope_vars,
 				      LocalVariableEntry[] locals, LineNumberEntry[] lines,
 				      CodeBlockEntry[] code_blocks, string real_name,
-				      int namespace_id)
+				      Flags flags, int namespace_id)
 		{
 			this.SymbolFile = file;
 			this.real_name = real_name;
 			this.locals = locals;
 			this.code_blocks = code_blocks;
 			this.scope_vars = scope_vars;
+			this.flags = flags;
 
 			index = -1;
 
@@ -1063,7 +1076,7 @@ namespace Mono.CompilerServices.SymbolWriter
 					
 					for (int j = i + 1; j < num_locals; j ++) {
 						if (locals [j].Name == nm) {
-							LocalNamesAmbiguous = true;
+							flags |= Flags.LocalNamesAmbiguous;
 							goto locals_check_done;
 						}
 					}
@@ -1074,7 +1087,7 @@ namespace Mono.CompilerServices.SymbolWriter
 				Hashtable local_names = new Hashtable ();
 				foreach (LocalVariableEntry local in locals) {
 					if (local_names.Contains (local.Name)) {
-						LocalNamesAmbiguous = true;
+						flags |= Flags.LocalNamesAmbiguous;
 						break;
 					}
 					local_names.Add (local.Name, local);
@@ -1155,12 +1168,12 @@ namespace Mono.CompilerServices.SymbolWriter
 			bw.WriteLeb128 (CompileUnitIndex);
 			bw.WriteLeb128 (LocalVariableTableOffset);
 			bw.WriteLeb128 (NamespaceID);
-			bw.Write ((byte) (LocalNamesAmbiguous ? 1 : 0));
 
 			bw.WriteLeb128 (CodeBlockTableOffset);
 			bw.WriteLeb128 (ScopeVariableTableOffset);
 
 			bw.WriteLeb128 (RealNameOffset);
+			bw.WriteLeb128 ((int) flags);
 		}
 
 		public LineNumberTable GetLineNumberTable ()
