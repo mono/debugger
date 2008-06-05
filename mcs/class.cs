@@ -5344,6 +5344,8 @@ namespace Mono.CSharp {
 
 			if (source != null) {
 				method.EmitExtraSymbolInfo ();
+				if (method.Iterator != null)
+					SymbolWriter.SetCompilerGenerated ();
 				source.CloseMethod ();
 			}
 		}

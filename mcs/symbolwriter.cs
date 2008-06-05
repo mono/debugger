@@ -176,6 +176,12 @@ namespace Mono.CSharp {
 				symwriter.SetRealMethodName (name);
 		}
 
+		public static void SetCompilerGenerated ()
+		{
+			if (symwriter != null)
+				symwriter.SetCompilerGenerated ();
+		}
+
 		public static void OpenCompilerGeneratedBlock (ILGenerator ig)
 		{
 			if (symwriter != null) {
