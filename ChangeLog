@@ -1,3 +1,9 @@
+2008-06-05  Lluis Sanchez  <lluis@novell.com>
+
+	* mono-debugger.pc.in: Add Mono.Debugger.Backend.dll to Libs
+	list. Needed until some types required by the MonoDevelop
+	add-in are moved to the public API.
+
 2008-06-05  Martin Baulig  <martin@ximian.com>
 
 	* classes/Method.cs
