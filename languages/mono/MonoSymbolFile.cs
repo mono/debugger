@@ -458,8 +458,11 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			C.MethodEntry entry = File.GetMethod (index);
+#if ENABLE_KAHALO
 			SourceFile file = (SourceFile) source_file_hash [entry.CompileUnit.SourceFile];
-
+#else
+			SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
+#endif
 			return CreateMethodSource (file, index);
 		}
 
@@ -516,8 +519,13 @@ namespace Mono.Debugger.Languages.Mono
 			List<MethodSource> methods = new List<MethodSource> ();
 
 			foreach (C.MethodEntry method in File.Methods) {
+#if ENABLE_KAHALO
 				if (method.CompileUnit.SourceFile.Index != source.Index)
 					continue;
+#else
+				if (method.SourceFileIndex != source.Index)
+					continue;
+#endif
 
 				methods.Add (GetMethodSource (file, method.Index));
 			}
@@ -904,8 +912,13 @@ namespace Mono.Debugger.Languages.Mono
 
 				C.LineNumberEntry start, end;
 				C.LineNumberTable lnt = method.GetLineNumberTable ();
+#if ENABLE_KAHALO
 				if (lnt.GetMethodBounds (out start, out end))
 					start_row = start.Row; end_row = end.Row;
+#else
+				start_row = method.StartRow;
+				end_row = method.EndRow;
+#endif
 			}
 
 			public override Module Module {
@@ -1102,7 +1115,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override bool IsCompilerGenerated {
+#if ENABLE_KAHALO
 				get { return (method.MethodFlags & C.MethodEntry.Flags.IsCompilerGenerated) != 0; }
+#else
+				get { return false; }
+#endif
 			}
 
 			public override bool HasSource {
@@ -1376,7 +1393,11 @@ namespace Mono.Debugger.Languages.Mono
 
 				Hashtable namespaces = new Hashtable ();
 
+#if FIXME
 				C.CompileUnitEntry source = method.CompileUnit;
+#else
+				C.SourceFileEntry source = method.SourceFile;
+#endif
 				foreach (C.NamespaceEntry nse in source.Namespaces)
 					namespaces.Add (nse.Index, nse);
 

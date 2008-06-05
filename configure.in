@@ -229,7 +229,7 @@ if test x$enable_kahalo = xyes; then
    AC_SUBST(XSP_CFLAGS)
    AC_SUBST(XSP_LIBS)
 else
-   min_mono_version=69
+   min_mono_version=71
    min_symfile_version=41
 fi
 
@@ -242,7 +242,7 @@ AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
 #if MONO_DEBUGGER_VERSION < $min_mono_version
 #error "Your mono is too old for this version of the debugger."
 #endif
-#if MONO_SYMBOL_FILE_MAJOR_VERSION != $min_symfile_version
+#if MONO_SYMBOL_FILE_VERSION != $min_symfile_version
 #error "Your mono is too old for this version of the debugger."
 #endif
 ], mono_working=yes, mono_working=no)
