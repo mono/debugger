@@ -33,7 +33,9 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "$parent (foo)", "(System.Object) { }");
 			AssertType (thread, "foo",
 				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
-				    "{\npublic:\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
+				    "{\npublic:\n   T Data;\n   void Hello ();\n" +
+				    "   T GetData ();\n   .ctor (T);\n}");
+			AssertPrint (thread, "foo.GetData ()", "(int) 5");
 
 			AssertExecute ("step");
 			AssertStopped (thread, "foo hello", "Foo<T>.Hello()");
@@ -41,7 +43,8 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "this", "(Foo`1<int>) { Data = 5 }");
 			AssertType (thread, "this",
 				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
-				    "{\npublic:\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
+				    "{\npublic:\n   T Data;\n   void Hello ();\n" +
+				    "   T GetData ();\n   .ctor (T);\n}");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("5");
@@ -53,7 +56,9 @@ namespace Mono.Debugger.Tests
 				    "class Bar`1<int> = Bar`1<U> : Foo`1<U>\n{\npublic:\n   .ctor (U);\n}");
 			AssertType (thread, "$parent (bar)",
 				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
-				    "{\npublic:\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
+				    "{\npublic:\n   T Data;\n   void Hello ();\n" +
+				    "   T GetData ();\n   .ctor (T);\n}");
+			AssertPrint (thread, "bar.GetData ()", "(int) 5");
 
 			AssertExecute ("step");
 
@@ -88,7 +93,8 @@ namespace Mono.Debugger.Tests
 				    "   static void Hello`1 (T);\n}");
 			AssertType (thread, "$parent (test)",
 				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
-				    "{\npublic:\n   T Data;\n   void Hello ();\n   .ctor (T);\n}");
+				    "{\npublic:\n   T Data;\n   void Hello ();\n" +
+				    "   T GetData ();\n   .ctor (T);\n}");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");

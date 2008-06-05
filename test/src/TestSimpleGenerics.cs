@@ -21,6 +21,11 @@ public class Foo<T>
 	{
 		Console.WriteLine (Data); // @MDB LINE: foo hello
 	}
+
+	public T GetData ()
+	{
+		return Data;
+	}
 }
 
 public class Bar<U> : Foo<U>
