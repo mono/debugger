@@ -188,6 +188,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract bool IsCompilerGenerated {
+			get;
+		}
+
 		public abstract bool HasSource {
 			get;
 		}

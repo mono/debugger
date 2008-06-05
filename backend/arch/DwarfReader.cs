@@ -2572,6 +2572,10 @@ namespace Mono.Debugger.Backend
 				get { return false; }
 			}
 
+			public override bool IsCompilerGenerated {
+				get { return false; }
+			}
+
 			public override bool HasSource {
 				get {
 					read_line_numbers ();

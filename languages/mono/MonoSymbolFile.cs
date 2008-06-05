@@ -458,7 +458,7 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			C.MethodEntry entry = File.GetMethod (index);
-			SourceFile file = (SourceFile) source_file_hash [entry.SourceFile];
+			SourceFile file = (SourceFile) source_file_hash [entry.CompileUnit.SourceFile];
 
 			return CreateMethodSource (file, index);
 		}
@@ -516,7 +516,7 @@ namespace Mono.Debugger.Languages.Mono
 			List<MethodSource> methods = new List<MethodSource> ();
 
 			foreach (C.MethodEntry method in File.Methods) {
-				if (method.SourceFileIndex != source.Index)
+				if (method.CompileUnit.SourceFile.Index != source.Index)
 					continue;
 
 				methods.Add (GetMethodSource (file, method.Index));
@@ -885,6 +885,8 @@ namespace Mono.Debugger.Languages.Mono
 			public readonly MonoFunctionType function;
 			protected readonly string full_name;
 
+			int start_row, end_row;
+
 			public MonoMethodSource (MonoSymbolFile file, SourceFile source_file,
 						 C.MethodEntry method, Cecil.MethodDefinition mdef,
 						 MonoClassType klass, MonoFunctionType function)
@@ -899,6 +901,11 @@ namespace Mono.Debugger.Languages.Mono
 				full_name = method.GetRealName ();
 				if (full_name == null)
 					full_name = MonoSymbolFile.GetMethodName (mdef);
+
+				C.LineNumberEntry start, end;
+				C.LineNumberTable lnt = method.GetLineNumberTable ();
+				if (lnt.GetMethodBounds (out start, out end))
+					start_row = start.Row; end_row = end.Row;
 			}
 
 			public override Module Module {
@@ -942,11 +949,11 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override int StartRow {
-				get { return method.StartRow; }
+				get { return start_row; }
 			}
 
 			public override int EndRow {
-				get { return method.EndRow; }
+				get { return end_row; }
 			}
 
 			internal int Index {
@@ -1092,6 +1099,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override bool IsWrapper {
 				get { return false; }
+			}
+
+			public override bool IsCompilerGenerated {
+				get { return (method.MethodFlags & C.MethodEntry.Flags.IsCompilerGenerated) != 0; }
 			}
 
 			public override bool HasSource {
@@ -1365,7 +1376,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				Hashtable namespaces = new Hashtable ();
 
-				C.SourceFileEntry source = method.SourceFile;
+				C.CompileUnitEntry source = method.CompileUnit;
 				foreach (C.NamespaceEntry nse in source.Namespaces)
 					namespaces.Add (nse.Index, nse);
 
@@ -1543,8 +1554,8 @@ namespace Mono.Debugger.Languages.Mono
 				Console.WriteLine ();
 				Console.WriteLine ();
 
-				Console.WriteLine ("Generated Lines:");
-				Console.WriteLine ("----------------");
+				Console.WriteLine ("Generated Lines (file / line / address):");
+				Console.WriteLine ("----------------------------------------");
 
 				for (int i = 0; i < Addresses.Length; i++) {
 					LineEntry entry = (LineEntry) Addresses [i];
@@ -1552,7 +1563,7 @@ namespace Mono.Debugger.Languages.Mono
 							   entry.File, entry.Line, entry.Address);
 				}
 
-				Console.WriteLine ("----------------");
+				Console.WriteLine ("----------------------------------------");
 			}
 
 			protected class LineNumberTableData
@@ -1601,12 +1612,13 @@ namespace Mono.Debugger.Languages.Mono
 
 					if (lne.Row != last_line) {
 #if ENABLE_KAHALO
-						int file = lne.File != entry.SourceFileIndex ? lne.File : 0;
+						int file = lne.File != entry.CompileUnit.SourceFile.Index ? lne.File : 0;
 						bool hidden = lne.IsHidden;
 #else
 						int file = 0;
 						bool hidden = false;
 #endif
+
 						lines.Add (new LineEntry (address, file, lne.Row, hidden));
 						last_line = lne.Row;
 					}
@@ -1653,8 +1665,8 @@ namespace Mono.Debugger.Languages.Mono
 				base.DumpLineNumbers ();
 
 				Console.WriteLine ();
-				Console.WriteLine ("Symfile Line Numbers:");
-				Console.WriteLine ("---------------------");
+				Console.WriteLine ("Symfile Line Numbers (file / row / offset):");
+				Console.WriteLine ("-------------------------------------------");
 
 				C.LineNumberEntry[] lnt;
 #if ENABLE_KAHALO
@@ -1678,18 +1690,18 @@ namespace Mono.Debugger.Languages.Mono
 							   hidden ? " (hidden)" : "");
 				}
 
-				Console.WriteLine ("---------------------");
+				Console.WriteLine ("-------------------------------------------");
 
 				Console.WriteLine ();
-				Console.WriteLine ("JIT Line Numbers:");
-				Console.WriteLine ("-----------------");
+				Console.WriteLine ("JIT Line Numbers (il / native / address):");
+				Console.WriteLine ("-----------------------------------------");
 				for (int i = 0; i < line_numbers.Length; i++) {
 					JitLineNumberEntry lne = line_numbers [i];
 
-					Console.WriteLine ("{0,4} {1,4:x} {2,4:x} {3,4:x}", i, lne.Offset,
+					Console.WriteLine ("{0,4} {1,4:x} {2,4:x}  {3,4:x}", i, lne.Offset,
 							   lne.Address, method.StartAddress + lne.Address);
 				}
-				Console.WriteLine ("-----------------");
+				Console.WriteLine ("-----------------------------------------");
 			}
 		}
 
@@ -1907,6 +1919,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override bool IsWrapper {
 				get { return true; }
+			}
+
+			public override bool IsCompilerGenerated {
+				get { return false; }
 			}
 
 			public override bool HasSource {

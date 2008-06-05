@@ -1315,7 +1315,7 @@ namespace Mono.Debugger.Backend
 					return false;
 			}
 
-			if (!method.HasSource || method.IsWrapper)
+			if (!method.HasSource || method.IsWrapper || method.IsCompilerGenerated)
 				return false;
 
 			LineNumberTable lnt = method.LineNumberTable;

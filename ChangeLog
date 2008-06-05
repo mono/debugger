@@ -1,3 +1,11 @@
+2008-06-05  Martin Baulig  <martin@ximian.com>
+
+	* classes/Method.cs
+	(Method.IsCompilerGenerated): New public abstract property.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.MethodHasSource): Also check `method.IsCompilerGenerated'.
+
 2008-06-02  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs

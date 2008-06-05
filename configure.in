@@ -242,7 +242,7 @@ AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
 #if MONO_DEBUGGER_VERSION < $min_mono_version
 #error "Your mono is too old for this version of the debugger."
 #endif
-#if MONO_SYMBOL_FILE_VERSION != $min_symfile_version
+#if MONO_SYMBOL_FILE_MAJOR_VERSION != $min_symfile_version
 #error "Your mono is too old for this version of the debugger."
 #endif
 ], mono_working=yes, mono_working=no)
