@@ -3558,7 +3558,7 @@ array_creation_expression
 	;
 
 anonymous_type_expression
-	: NEW OPEN_BRACE anonymous_type_parameters CLOSE_BRACE
+	: NEW OPEN_BRACE anonymous_type_parameters_opt_comma CLOSE_BRACE
 	  {
 	  	if (RootContext.Version <= LanguageVersion.ISO_2)
 	  		Report.FeatureIsNotAvailable (GetLocation ($1), "anonymous types");
@@ -3567,9 +3567,18 @@ anonymous_type_expression
 	  }
 	;
 
-anonymous_type_parameters
+anonymous_type_parameters_opt_comma
+	: anonymous_type_parameters_opt
+	| anonymous_type_parameters COMMA
+	;
+
+anonymous_type_parameters_opt
 	: { $$ = null; }
-	| anonymous_type_parameter
+	| anonymous_type_parameters
+	;
+
+anonymous_type_parameters
+	: anonymous_type_parameter
 	  {
 	  	ArrayList a = new ArrayList (4);
 	  	a.Add ($1);
@@ -5183,16 +5192,19 @@ catch_clause
 
 opt_catch_args
 	: /* empty */ { $$ = null; }
-        | catch_args
+	| catch_args
 	;	  
 
 catch_args 
-        : open_parens type opt_identifier CLOSE_PARENS 
-          {
+	: OPEN_PARENS type opt_identifier CLOSE_PARENS 
+	  {
 		$$ = new DictionaryEntry ($2, $3);
 	  }
-        ;
-
+	| OPEN_PARENS CLOSE_PARENS 
+	  {
+		Report.Error (1015, GetLocation ($1), "A type that derives from `System.Exception', `object', or `string' expected");
+	  }
+	;
 
 checked_statement
 	: CHECKED block

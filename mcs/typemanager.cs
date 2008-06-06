@@ -153,7 +153,6 @@ namespace Mono.CSharp {
 	static public MethodInfo void_monitor_enter_object;
 	static public MethodInfo void_monitor_exit_object;
 	static public MethodInfo void_initializearray_array_fieldhandle;
-	static public MethodInfo int_getlength_int;
 	static public MethodInfo delegate_combine_delegate_delegate;
 	static public MethodInfo delegate_remove_delegate_delegate;
 	static public MethodInfo int_get_offset_to_string_data;
@@ -306,7 +305,6 @@ namespace Mono.CSharp {
 		void_monitor_enter_object =
 		void_monitor_exit_object =
 		void_initializearray_array_fieldhandle =
-		int_getlength_int =
 		delegate_combine_delegate_delegate =
 		delegate_remove_delegate_delegate =
 		int_get_offset_to_string_data =
@@ -768,10 +766,10 @@ namespace Mono.CSharp {
 		int accessor_end = 0;
 
 		if (!mb.IsConstructor && TypeManager.IsSpecialMethod (mb)) {
-			Operator.OpType ot = Operator.GetOperatorType (mb.Name);
-			if (ot != Operator.OpType.TOP) {
+			string op_name = Operator.GetName (mb.Name);
+			if (op_name != null) {
 				sig.Append ("operator ");
-				sig.Append (Operator.GetName (ot));
+				sig.Append (op_name);
 				sig.Append (parameters);
 				return sig.ToString ();
 			}
@@ -1481,7 +1479,10 @@ namespace Mono.CSharp {
 
 		return retval;
 	}
-			
+
+	//
+	// Null is considered to be a reference type
+	//			
 	public static bool IsReferenceType (Type t)
 	{
 		if (TypeManager.IsGenericParameter (t)) {
@@ -1491,9 +1492,6 @@ namespace Mono.CSharp {
 
 			return constraints.IsReferenceType;
 		}
-
-		if (t == TypeManager.null_type)
-			return false;
 
 		return !t.IsValueType;
 	}			
@@ -2625,6 +2623,13 @@ namespace Mono.CSharp {
 			return false;
 
 		for (int i = 0; i < a.Length; ++i) {
+			if (a [i] == null || b [i] == null) {
+				if (a [i] == b [i])
+					continue;
+
+				return false;
+			}
+		
 			if (!IsEqual (a [i], b [i]))
 				return false;
 		}
@@ -3255,17 +3260,9 @@ namespace Mono.CSharp {
 			return true;
 
 		string name = mb.Name;
-		if (name.StartsWith ("op_")){
-			foreach (string oname in Unary.oper_names) {
-				if (oname == name)
-					return true;
-			}
+		if (name.StartsWith ("op_"))
+			return Operator.GetName (name) != null;
 
-			foreach (string oname in Binary.oper_names) {
-				if (oname == name)
-					return true;
-			}
-		}
 		return false;
 	}
 

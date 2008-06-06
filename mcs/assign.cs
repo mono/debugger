@@ -206,6 +206,13 @@ namespace Mono.CSharp {
 			builder = null;
 		}
 
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			ArrayList args = new ArrayList (1);
+			args.Add (new Argument (this));
+			return CreateExpressionFactoryCall ("Constant", args);
+		}
+
 		public override Expression DoResolve (EmitContext ec)
 		{
 			return this;
@@ -476,26 +483,23 @@ namespace Mono.CSharp {
 			this.loc = loc;
 		}
 
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			return new SimpleAssign (target, source).CreateExpressionTree (ec);
+		}
+
 		public override Expression DoResolve (EmitContext ec)
 		{
-			eclass = ExprClass.Value;
-			type = target.Type;
-
 			source = source.Resolve (ec);
 			if (source == null)
 				return null;
 
-			Type stype = source.Type;
-			if (source.eclass == ExprClass.MethodGroup || stype == TypeManager.anonymous_method_type) {
-				if (RootContext.Version != LanguageVersion.ISO_1) {
-					source = Convert.ImplicitConversionRequired (ec, source, type, loc);
-					if (source == null)
-						return null;
-					stype = source.Type;
-				}
-			} else if (!TypeManager.Equals (type, stype) && !(source is NullLiteral))
+			source = Convert.ImplicitConversionRequired (ec, source, target.Type, loc);
+			if (source == null)
 				return null;
 
+			eclass = ExprClass.Value;
+			type = TypeManager.void_type;
 			return this;
 		}
 
@@ -524,12 +528,18 @@ namespace Mono.CSharp {
 			this.op = op;
 		}
 
+		// !!! What a stupid name
 		public class Helper : Expression {
 			Expression child;
 			public Helper (Expression child)
 			{
 				this.child = child;
 				this.loc = child.Location;
+			}
+
+			public override Expression CreateExpressionTree (EmitContext ec)
+			{
+				throw new NotSupportedException ("ET");
 			}
 
 			public override Expression DoResolve (EmitContext ec)

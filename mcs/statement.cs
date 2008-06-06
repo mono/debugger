@@ -1503,8 +1503,7 @@ namespace Mono.CSharp {
 			HasRet = 8,
 			IsDestructor = 16,
 			Unsafe = 32,
-			HasVarargs = 64, // Used in ToplevelBlock
-			IsIterator = 128
+			IsIterator = 64
 		}
 		protected Flags flags;
 
@@ -1522,7 +1521,6 @@ namespace Mono.CSharp {
 		// The statements in this block
 		//
 		protected ArrayList statements;
-		int num_statements;
 
 		//
 		// An array of Blocks.  We keep track of children just
@@ -2234,15 +2232,13 @@ namespace Mono.CSharp {
 				if (unreachable && !(s is LabeledStatement) && !(s is Block))
 					statements [ix] = EmptyStatement.Value;
 
-				num_statements = ix + 1;
-
 				unreachable = ec.CurrentBranching.CurrentUsageVector.IsUnreachable;
 				if (unreachable && s is LabeledStatement)
 					throw new InternalErrorException ("should not happen");
 			}
 
 			Report.Debug (4, "RESOLVE BLOCK DONE", StartLocation,
-				      ec.CurrentBranching, statement_count, num_statements);
+				      ec.CurrentBranching, statement_count);
 
 			while (ec.CurrentBranching is FlowBranchingLabeled)
 				ec.EndFlowBranching ();
@@ -2288,7 +2284,7 @@ namespace Mono.CSharp {
 		
 		protected override void DoEmit (EmitContext ec)
 		{
-			for (int ix = 0; ix < num_statements; ix++){
+			for (int ix = 0; ix < statements.Count; ix++){
 				Statement s = (Statement) statements [ix];
 				s.Emit (ec);
 			}
@@ -2481,11 +2477,6 @@ namespace Mono.CSharp {
 		RootScopeInfo root_scope;
 		Parameters parameters;
 		ToplevelParameterInfo[] parameter_info;
-
-		public bool HasVarargs {
-			get { return (flags & Flags.HasVarargs) != 0; }
-			set { flags |= Flags.HasVarargs; }
-		}
 
 		//
 		// The parameters for the block.
@@ -4006,7 +3997,7 @@ namespace Mono.CSharp {
 		{
 			ILGenerator ig = ec.ig;
 
-			temp.Store (ec, expr);
+			temp.EmitAssign (ec, expr);
 			temp.Emit (ec);
 			ig.Emit (OpCodes.Call, TypeManager.void_monitor_enter_object);
 		}
@@ -4166,6 +4157,48 @@ namespace Mono.CSharp {
 		}
 
 		class StringEmitter : Emitter {
+			class StringPtr : Expression
+			{
+				LocalBuilder b;
+
+				public StringPtr (LocalBuilder b, Location l)
+				{
+					this.b = b;
+					eclass = ExprClass.Value;
+					type = TypeManager.char_ptr_type;
+					loc = l;
+				}
+
+				public override Expression CreateExpressionTree (EmitContext ec)
+				{
+					throw new NotSupportedException ("ET");
+				}
+
+				public override Expression DoResolve (EmitContext ec)
+				{
+					// This should never be invoked, we are born in fully
+					// initialized state.
+
+					return this;
+				}
+
+				public override void Emit (EmitContext ec)
+				{
+					if (TypeManager.int_get_offset_to_string_data == null) {
+						// TODO: Move to resolve !!
+						TypeManager.int_get_offset_to_string_data = TypeManager.GetPredefinedMethod (
+							TypeManager.runtime_helpers_type, "get_OffsetToStringData", loc, Type.EmptyTypes);
+					}
+
+					ILGenerator ig = ec.ig;
+
+					ig.Emit (OpCodes.Ldloc, b);
+					ig.Emit (OpCodes.Conv_I);
+					ig.Emit (OpCodes.Call, TypeManager.int_get_offset_to_string_data);
+					ig.Emit (OpCodes.Add);
+				}
+			}
+
 			LocalBuilder pinned_string;
 			Location loc;
 
@@ -4461,19 +4494,21 @@ namespace Mono.CSharp {
 				VarBlock.Emit (ec);
 
 			if (Name != null) {
-				LocalInfo vi = Block.GetLocalInfo (Name);
-				if (vi == null)
-					throw new Exception ("Variable does not exist in this block");
+				// TODO: Move to resolve
+				LocalVariableReference lvr = new LocalVariableReference (Block, Name, loc);
+				lvr.Resolve (ec);
 
-				if (vi.Variable.NeedsTemporary) {
-					LocalBuilder e = ig.DeclareLocal (vi.VariableType);
-					ig.Emit (OpCodes.Stloc, e);
+				Expression source;
+				if (lvr.local_info.IsCaptured) {
+					LocalTemporary lt = new LocalTemporary (lvr.Type);
+					lt.Store (ec);
+					source = lt;
+				} else {
+					// Variable is at the top of the stack
+					source = EmptyExpression.Null;
+				}
 
-					vi.Variable.EmitInstance (ec);
-					ig.Emit (OpCodes.Ldloc, e);
-					vi.Variable.EmitAssign (ec);
-				} else
-					vi.Variable.EmitAssign (ec);
+				lvr.EmitAssign (ec, source, false, false);
 			} else
 				ig.Emit (OpCodes.Pop);
 
@@ -4755,7 +4790,7 @@ namespace Mono.CSharp {
 
 		protected override void EmitPreTryBody (EmitContext ec)
 		{
-			local_copy.Store (ec, expr);
+			local_copy.EmitAssign (ec, expr);
 		}
 
 		protected override void EmitTryBody (EmitContext ec)
@@ -5031,24 +5066,22 @@ namespace Mono.CSharp {
 
 		protected class ArrayCounter : TemporaryVariable
 		{
+			StatementExpression increment;
+
 			public ArrayCounter (Location loc)
 				: base (TypeManager.int32_type, loc)
-			{ }
-
-			public void Initialize (EmitContext ec)
 			{
-				EmitThis (ec);
-				ec.ig.Emit (OpCodes.Ldc_I4_0);
-				EmitStore (ec);
 			}
 
-			public void Increment (EmitContext ec)
+			public void ResolveIncrement (EmitContext ec)
 			{
-				EmitThis (ec);
-				Emit (ec);
-				ec.ig.Emit (OpCodes.Ldc_I4_1);
-				ec.ig.Emit (OpCodes.Add);
-				EmitStore (ec);
+				increment = new StatementExpression (new UnaryMutator (UnaryMutator.Mode.PostIncrement, this, loc));
+				increment.Resolve (ec);
+			}
+
+			public void EmitIncrement (EmitContext ec)
+			{
+				increment.Emit (ec);
 			}
 		}
 
@@ -5064,6 +5097,7 @@ namespace Mono.CSharp {
 
 			TemporaryVariable copy;
 			Expression access;
+			Expression[] length_exprs;
 
 			public ArrayForeach (Expression var_type, Expression var,
 					     Expression expr, Statement stmt, Location l)
@@ -5085,14 +5119,23 @@ namespace Mono.CSharp {
 
 				counter = new ArrayCounter [rank];
 				lengths = new TemporaryVariable [rank];
+				length_exprs = new Expression [rank];
 
-				ArrayList list = new ArrayList ();
+				ArrayList list = new ArrayList (rank);
 				for (int i = 0; i < rank; i++) {
 					counter [i] = new ArrayCounter (loc);
-					counter [i].Resolve (ec);
+					counter [i].ResolveIncrement (ec);					
 
 					lengths [i] = new TemporaryVariable (TypeManager.int32_type, loc);
 					lengths [i].Resolve (ec);
+
+					if (rank == 1) {
+						length_exprs [i] = new MemberAccess (copy, "Length").Resolve (ec);
+					} else {
+						ArrayList args = new ArrayList (1);
+						args.Add (new Argument (new IntConstant (i, loc)));
+						length_exprs [i] = new Invocation (new MemberAccess (copy, "GetLength"), args).Resolve (ec);
+					}
 
 					list.Add (counter [i]);
 				}
@@ -5141,7 +5184,7 @@ namespace Mono.CSharp {
 			{
 				ILGenerator ig = ec.ig;
 
-				copy.Store (ec, expr);
+				copy.EmitAssign (ec, expr);
 
 				Label[] test = new Label [rank];
 				Label[] loop = new Label [rank];
@@ -5150,13 +5193,12 @@ namespace Mono.CSharp {
 					test [i] = ig.DefineLabel ();
 					loop [i] = ig.DefineLabel ();
 
-					lengths [i].EmitThis (ec);
-					((ArrayAccess) access).EmitGetLength (ec, i);
-					lengths [i].EmitStore (ec);
+					lengths [i].EmitAssign (ec, length_exprs [i]);
 				}
 
+				IntConstant zero = new IntConstant (0, loc);
 				for (int i = 0; i < rank; i++) {
-					counter [i].Initialize (ec);
+					counter [i].EmitAssign (ec, zero);
 
 					ig.Emit (OpCodes.Br, test [i]);
 					ig.MarkLabel (loop [i]);
@@ -5169,7 +5211,7 @@ namespace Mono.CSharp {
 				ig.MarkLabel (ec.LoopBegin);
 
 				for (int i = rank - 1; i >= 0; i--){
-					counter [i].Increment (ec);
+					counter [i].EmitIncrement (ec);
 
 					ig.MarkLabel (test [i]);
 					counter [i].Emit (ec);
@@ -5623,7 +5665,7 @@ namespace Mono.CSharp {
 
 			void EmitLoopInit (EmitContext ec)
 			{
-				enumerator.Store (ec, init);
+				enumerator.EmitAssign (ec, init);
 			}
 
 			void EmitLoopBody (EmitContext ec)
@@ -5638,7 +5680,7 @@ namespace Mono.CSharp {
 				if (enumerator_type.IsValueType) {
 					MethodInfo mi = FetchMethodDispose (enumerator_type);
 					if (mi != null) {
-						enumerator.EmitLoadAddress (ec);
+						enumerator.AddressOf (ec, AddressOp.Load);
 						ig.Emit (OpCodes.Call, mi);
 					} else {
 						enumerator.Emit (ec);

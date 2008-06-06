@@ -646,6 +646,11 @@ namespace Mono.CSharp {
 				get { return scope; }
 			}
 
+			public override Expression CreateExpressionTree (EmitContext ec)
+			{
+				throw new NotSupportedException ("ET");
+			}
+
 			public override Expression DoResolve (EmitContext ec)
 			{
 				if (scope_ctor != null)
@@ -1216,9 +1221,8 @@ namespace Mono.CSharp {
 		// Returns true if the body of lambda expression can be implicitly
 		// converted to the delegate of type `delegate_type'
 		//
-		public bool ImplicitStandardConversionExists (Type delegate_type)
+		public bool ImplicitStandardConversionExists (EmitContext ec, Type delegate_type)
 		{
-			EmitContext ec = EmitContext.TempEc;
 			using (ec.Set (EmitContext.Flags.ProbingMode)) {
 				return Compatible (ec, delegate_type) != null;
 			}
@@ -1423,6 +1427,11 @@ namespace Mono.CSharp {
 		}
 
 		protected virtual Expression CreateExpressionTree (EmitContext ec, Type delegate_type)
+		{
+			return CreateExpressionTree (ec);
+		}
+
+		public override Expression CreateExpressionTree (EmitContext ec)
 		{
 			Report.Error (1946, loc, "An anonymous method cannot be converted to an expression tree");
 			return null;
@@ -1643,6 +1652,9 @@ namespace Mono.CSharp {
 			
 			if (ec.IsInFieldInitializer)
 				flags |= EmitContext.Flags.InFieldInitializer;
+
+			if (ec.IsInUnsafeScope)
+				flags |= EmitContext.Flags.InUnsafe;
 			
 			// HACK: Flag with 0 cannot be set 
 			if (flags != 0)
@@ -1791,6 +1803,12 @@ namespace Mono.CSharp {
 			return TypeManager.CSharpName (DelegateType);
 		}
 
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			Report.Error (1945, loc, "An expression tree cannot contain an anonymous method expression");
+			return null;
+		}
+
 		//
 		// Creates the host for the anonymous method
 		//
@@ -1936,6 +1954,11 @@ namespace Mono.CSharp {
 			type = target_type;
 			loc = l;
 			this.am = am;
+		}
+
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			return am.CreateExpressionTree (ec);
 		}
 
 		public override Expression DoResolve (EmitContext ec)

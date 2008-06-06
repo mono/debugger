@@ -660,7 +660,7 @@ namespace Mono.CSharp {
 		protected MethodGroupExpr method_group;
 		protected Expression delegate_instance_expression;
 
-		ArrayList CreateDelegateMethodArguments (MethodInfo invoke_method)
+		public static ArrayList CreateDelegateMethodArguments (MethodInfo invoke_method, Location loc)
 		{
 			ParameterData pd = TypeManager.GetParameterData (invoke_method);
 			ArrayList delegate_arguments = new ArrayList (pd.Count);
@@ -715,7 +715,7 @@ namespace Mono.CSharp {
 			method_group.DelegateType = type;
 			method_group.CustomErrorHandler = this;
 
-			ArrayList arguments = CreateDelegateMethodArguments (invoke_method);
+			ArrayList arguments = CreateDelegateMethodArguments (invoke_method, loc);
 			method_group = method_group.OverloadResolve (ec, ref arguments, false, loc);
 			if (method_group == null)
 				return null;
@@ -934,6 +934,23 @@ namespace Mono.CSharp {
 			this.InstanceExpr = instance_expr;
 			this.Arguments = args;
 			this.loc = loc;
+		}
+		
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			ArrayList args;
+			if (Arguments == null)
+				args = new ArrayList (1);
+			else
+				args = new ArrayList (Arguments.Count + 1);
+
+			args.Add (new Argument (InstanceExpr.CreateExpressionTree (ec)));
+			if (Arguments != null) {
+				foreach (Argument a in Arguments)
+					args.Add (new Argument (a.Expr.CreateExpressionTree (ec)));
+			}
+
+			return CreateExpressionFactoryCall ("Invoke", args);
 		}
 
 		public override Expression DoResolve (EmitContext ec)

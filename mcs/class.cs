@@ -3556,7 +3556,7 @@ namespace Mono.CSharp {
 				MethodAttributes base_classp = base_method.Attributes & MethodAttributes.MemberAccessMask;
 
 				if (!CheckAccessModifiers (thisp, base_classp, base_method)) {
-					Error_CannotChangeAccessModifiers (base_method, base_classp, null);
+					Error_CannotChangeAccessModifiers (Location, base_method, base_classp, null);
 					ok = false;
 				}
 
@@ -3750,7 +3750,7 @@ namespace Mono.CSharp {
 			base.Emit ();
 		}
 
-		protected void Error_CannotChangeAccessModifiers (MemberInfo base_method, MethodAttributes ma, string suffix)
+		protected void Error_CannotChangeAccessModifiers (Location loc, MemberInfo base_method, MethodAttributes ma, string suffix)
 		{
 			Report.SymbolRelatedToPreviousError (base_method);
 			string base_name = TypeManager.GetFullNameSignature (base_method);
@@ -3760,7 +3760,7 @@ namespace Mono.CSharp {
 				this_name += suffix;
 			}
 
-			Report.Error (507, Location, "`{0}': cannot change access modifiers when overriding `{1}' inherited member `{2}'",
+			Report.Error (507, loc, "`{0}': cannot change access modifiers when overriding `{1}' inherited member `{2}'",
 				this_name, Modifiers.GetDescription (ma), base_name);
 		}
 
@@ -4041,9 +4041,6 @@ namespace Mono.CSharp {
 		public CallingConventions CallingConventions {
 			get {
 				CallingConventions cc = Parameters.CallingConvention;
-				if (Parameters.HasArglist && block != null)
-					block.HasVarargs = true;
-
 				if (!IsInterface)
 					if ((ModFlags & Modifiers.STATIC) == 0)
 						cc |= CallingConventions.HasThis;
@@ -4068,12 +4065,6 @@ namespace Mono.CSharp {
 
 		public Iterator Iterator {
 			get { return iterator; }
-		}
-
-		public new Location Location {
-			get {
-				return base.Location;
-			}
 		}
 
 		protected override bool CheckBase ()
@@ -4531,7 +4522,7 @@ namespace Mono.CSharp {
 		}
 	}
 
-	public abstract class ConstructorInitializer : Expression
+	public abstract class ConstructorInitializer : ExpressionStatement
 	{
 		ArrayList argument_list;
 		MethodGroupExpr base_constructor_group;
@@ -4546,6 +4537,11 @@ namespace Mono.CSharp {
 			get {
 				return argument_list;
 			}
+		}
+
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			throw new NotSupportedException ("ET");
 		}
 
 		public bool Resolve (ConstructorBuilder caller_builder, EmitContext ec)
@@ -4619,6 +4615,11 @@ namespace Mono.CSharp {
 				base_constructor_group.InstanceExpression = ec.GetThis (loc);
 			
 			base_constructor_group.EmitCall (ec, argument_list);
+		}
+
+		public override void EmitStatement (EmitContext ec)
+		{
+			Emit (ec);
 		}
 	}
 
@@ -4699,6 +4700,10 @@ namespace Mono.CSharp {
 			return Parameters.Empty &&
 					(Initializer is ConstructorBaseInitializer) &&
 					(Initializer.Arguments == null);
+		}
+
+		public bool IsCompilerGenerated {
+			get { return Initializer is GeneratedBaseInitializer; }
 		}
 
 		public override void ApplyAttributeBuilder (Attribute a, CustomAttributeBuilder cb)
@@ -4866,21 +4871,21 @@ namespace Mono.CSharp {
 
 				if (!block.ResolveMeta (ec, ParameterInfo))
 					block = null;
-			}
 
-			if ((ModFlags & Modifiers.STATIC) == 0){
-				if (Parent.PartialContainer.Kind == Kind.Class && Initializer == null)
-					Initializer = new GeneratedBaseInitializer (Location);
+				if (block != null && (ModFlags & Modifiers.STATIC) == 0){
+					if (Parent.PartialContainer.Kind == Kind.Class && Initializer == null)
+						Initializer = new GeneratedBaseInitializer (Location);
 
-				//
-				// Spec mandates that Initializers will not have
-				// `this' access
-				//
-				ec.IsStatic = true;
-				if ((Initializer != null) &&
-				    !Initializer.Resolve (ConstructorBuilder, ec))
-					return;
-				ec.IsStatic = false;
+					//
+					// Spec mandates that Initializers will not have `this' access
+					//
+					if (Initializer != null) {
+						ec.IsStatic = true;
+						Initializer.Resolve (ConstructorBuilder, ec);
+						ec.IsStatic = false;
+						block.AddScopeStatement (new StatementExpression (Initializer));
+					}
+				}
 			}
 
 			Parameters.ApplyAttributes (ConstructorBuilder);
@@ -4909,9 +4914,6 @@ namespace Mono.CSharp {
 					init.EmitStatement (ec);
 				}
 
-				if (Initializer != null)
-					Initializer.Emit (ec);
-			
 				ec.EmitResolvedTopBlock (block, unreachable);
 			}
 
@@ -4980,12 +4982,6 @@ namespace Mono.CSharp {
 				// FIXME: How is `ExplicitThis' used in C#?
 			
 				return cc;
-			}
-		}
-
-		public new Location Location {
-			get {
-				return base.Location;
 			}
 		}
 
@@ -6023,6 +6019,17 @@ namespace Mono.CSharp {
 			return true;
 		}
 
+		public override string GetSignatureForError ()
+		{
+			string s = base.GetSignatureForError ();
+			if ((ModFlags & Modifiers.BACKING_FIELD) == 0)
+				return s;
+
+			// Undecorate name mangling
+			int l = s.LastIndexOf ('>');
+			return s.Substring (0, l).Remove (s.LastIndexOf ('<'), 1);
+		}
+
 		protected override bool VerifyClsCompliance ()
 		{
 			if (!base.VerifyClsCompliance ())
@@ -6285,12 +6292,6 @@ namespace Mono.CSharp {
 					return false;
 
 				return base.IsUsed;
-			}
-		}
-
-		public new Location Location { 
-			get {
-				return base.Location;
 			}
 		}
 
@@ -6708,45 +6709,44 @@ namespace Mono.CSharp {
  			PropertyInfo base_property = ResolveBaseProperty ();
  			if (base_property == null)
  				return null;
-  
+
  			base_ret_type = base_property.PropertyType;
 			MethodInfo get_accessor = base_property.GetGetMethod (true);
 			MethodInfo set_accessor = base_property.GetSetMethod (true);
 			MethodAttributes get_accessor_access = 0, set_accessor_access = 0;
 
-			if ((ModFlags & Modifiers.OVERRIDE) != 0) {
-				if (Get != null && !Get.IsDummy && get_accessor == null) {
-					Report.SymbolRelatedToPreviousError (base_property);
-					Report.Error (545, Location, "`{0}.get': cannot override because `{1}' does not have an overridable get accessor", GetSignatureForError (), TypeManager.GetFullNameSignature (base_property));
+			//
+			// Check base property accessors conflict
+			//
+			if ((ModFlags & (Modifiers.OVERRIDE | Modifiers.NEW)) == Modifiers.OVERRIDE) {
+				if (get_accessor == null) {
+					if (Get != null && !Get.IsDummy) {
+						Report.SymbolRelatedToPreviousError (base_property);
+						Report.Error (545, Location,
+							"`{0}.get': cannot override because `{1}' does not have an overridable get accessor",
+							GetSignatureForError (), TypeManager.GetFullNameSignature (base_property));
+					}
+				} else {
+					get_accessor_access = get_accessor.Attributes & MethodAttributes.MemberAccessMask;
+
+					if (!Get.IsDummy && !CheckAccessModifiers (
+						Modifiers.MethodAttr (Get.ModFlags) & MethodAttributes.MemberAccessMask, get_accessor_access, get_accessor))
+						Error_CannotChangeAccessModifiers (Get.Location, get_accessor, get_accessor_access, ".get");
 				}
 
-				if (Set != null && !Set.IsDummy && set_accessor == null) {
-					Report.SymbolRelatedToPreviousError (base_property);
-					Report.Error (546, Location, "`{0}.set': cannot override because `{1}' does not have an overridable set accessor", GetSignatureForError (), TypeManager.GetFullNameSignature (base_property));
-				}
-
-				//
-				// Check base class accessors access
-				//
-
-				// TODO: rewrite to reuse Get|Set.CheckAccessModifiers and share code there
-				get_accessor_access = set_accessor_access = 0;
-				if ((ModFlags & Modifiers.NEW) == 0) {
-					if (get_accessor != null) {
-						MethodAttributes get_flags = Modifiers.MethodAttr (Get.ModFlags != 0 ? Get.ModFlags : ModFlags);
-						get_accessor_access = (get_accessor.Attributes & MethodAttributes.MemberAccessMask);
-
-						if (!Get.IsDummy && !CheckAccessModifiers (get_flags & MethodAttributes.MemberAccessMask, get_accessor_access, get_accessor))
-							Error_CannotChangeAccessModifiers (get_accessor, get_accessor_access, ".get");
+				if (set_accessor == null) {
+					if (Set != null && !Set.IsDummy) {
+						Report.SymbolRelatedToPreviousError (base_property);
+						Report.Error (546, Location,
+							"`{0}.set': cannot override because `{1}' does not have an overridable set accessor",
+							GetSignatureForError (), TypeManager.GetFullNameSignature (base_property));
 					}
+				} else {
+					set_accessor_access = set_accessor.Attributes & MethodAttributes.MemberAccessMask;
 
-					if (set_accessor != null) {
-						MethodAttributes set_flags = Modifiers.MethodAttr (Set.ModFlags != 0 ? Set.ModFlags : ModFlags);
-						set_accessor_access = (set_accessor.Attributes & MethodAttributes.MemberAccessMask);
-
-						if (!Set.IsDummy && !CheckAccessModifiers (set_flags & MethodAttributes.MemberAccessMask, set_accessor_access, set_accessor))
-							Error_CannotChangeAccessModifiers (set_accessor, set_accessor_access, ".set");
-					}
+					if (!Set.IsDummy && !CheckAccessModifiers (
+						Modifiers.MethodAttr (Set.ModFlags) & MethodAttributes.MemberAccessMask, set_accessor_access, set_accessor))
+						Error_CannotChangeAccessModifiers (Set.Location, set_accessor, set_accessor_access, ".set");
 				}
 			}
 
@@ -6844,7 +6844,7 @@ namespace Mono.CSharp {
 			// Make the field
 			Field field = new Field (
 				Parent, type_name,
-				Modifiers.COMPILER_GENERATED | Modifiers.PRIVATE | (ModFlags & (Modifiers.STATIC | Modifiers.UNSAFE)),
+				Modifiers.BACKING_FIELD | Modifiers.PRIVATE | (ModFlags & (Modifiers.STATIC | Modifiers.UNSAFE)),
 			    "<" + Name + ">k__BackingField", null, Location);
 			((TypeContainer)Parent).AddField (field);
 
@@ -6905,12 +6905,12 @@ namespace Mono.CSharp {
 			if (!base.Define ())
 				return false;
 
-			if (!CheckBase ())
-				return false;
-
 			flags |= MethodAttributes.HideBySig | MethodAttributes.SpecialName;
 
 			if (!DefineAccessors ())
+				return false;
+
+			if (!CheckBase ())
 				return false;
 
 			// FIXME - PropertyAttributes.HasDefault ?
@@ -7731,10 +7731,6 @@ namespace Mono.CSharp {
 				!Parent.PartialContainer.AddMember (Get) || !Parent.PartialContainer.AddMember (Set))
 				return false;
 
-			if (!CheckBase ())
-				return false;
-
-
 			if ((caching_flags & Flags.MethodOverloadsExist) != 0) {
 				if (!Parent.MemberCache.CheckExistingMembersOverloads (this, Name, parameters))
 					return false;
@@ -7743,6 +7739,9 @@ namespace Mono.CSharp {
 			flags |= MethodAttributes.HideBySig | MethodAttributes.SpecialName;
 			
 			if (!DefineAccessors ())
+				return false;
+
+			if (!CheckBase ())
 				return false;
 
 			if (!Get.IsDummy) {
@@ -7869,6 +7868,39 @@ namespace Mono.CSharp {
 		};
 
 		public readonly OpType OperatorType;
+
+		static readonly string [] [] names;
+
+		static Operator ()
+		{
+			names = new string[(int)OpType.TOP][];
+			names [(int) OpType.LogicalNot] = new string [] { "!", "op_LogicalNot" };
+			names [(int) OpType.OnesComplement] = new string [] { "~", "op_OnesComplement" };
+			names [(int) OpType.Increment] = new string [] { "++", "op_Increment" };
+			names [(int) OpType.Decrement] = new string [] { "--", "op_Decrement" };
+			names [(int) OpType.True] = new string [] { "true", "op_True" };
+			names [(int) OpType.False] = new string [] { "false", "op_False" };
+			names [(int) OpType.Addition] = new string [] { "+", "op_Addition" };
+			names [(int) OpType.Subtraction] = new string [] { "-", "op_Subtraction" };
+			names [(int) OpType.UnaryPlus] = new string [] { "+", "op_UnaryPlus" };
+			names [(int) OpType.UnaryNegation] = new string [] { "-", "op_UnaryNegation" };
+			names [(int) OpType.Multiply] = new string [] { "*", "op_Multiply" };
+			names [(int) OpType.Division] = new string [] { "/", "op_Division" };
+			names [(int) OpType.Modulus] = new string [] { "%", "op_Modulus" };
+			names [(int) OpType.BitwiseAnd] = new string [] { "&", "op_BitwiseAnd" };
+			names [(int) OpType.BitwiseOr] = new string [] { "|", "op_BitwiseOr" };
+			names [(int) OpType.ExclusiveOr] = new string [] { "^", "op_ExclusiveOr" };
+			names [(int) OpType.LeftShift] = new string [] { "<<", "op_LeftShift" };
+			names [(int) OpType.RightShift] = new string [] { ">>", "op_RightShift" };
+			names [(int) OpType.Equality] = new string [] { "==", "op_Equality" };
+			names [(int) OpType.Inequality] = new string [] { "!=", "op_Inequality" };
+			names [(int) OpType.GreaterThan] = new string [] { ">", "op_GreaterThan" };
+			names [(int) OpType.LessThan] = new string [] { "<", "op_LessThan" };
+			names [(int) OpType.GreaterThanOrEqual] = new string [] { ">=", "op_GreaterThanOrEqual" };
+			names [(int) OpType.LessThanOrEqual] = new string [] { "<=", "op_LessThanOrEqual" };
+			names [(int) OpType.Implicit] = new string [] { "implicit", "op_Implicit" };
+			names [(int) OpType.Explicit] = new string [] { "explicit", "op_Explicit" };
+		}
 		
 		public Operator (DeclSpace parent, OpType type, FullNamedExpression ret_type,
 				 int mod_flags, Parameters parameters,
@@ -7903,9 +7935,9 @@ namespace Mono.CSharp {
 
 			// imlicit and explicit operator of same types are not allowed
 			if (OperatorType == OpType.Explicit)
-				Parent.MemberCache.CheckExistingMembersOverloads (this, "op_Implicit", Parameters);
+				Parent.MemberCache.CheckExistingMembersOverloads (this, GetMetadataName (OpType.Implicit), Parameters);
 			else if (OperatorType == OpType.Implicit)
-				Parent.MemberCache.CheckExistingMembersOverloads (this, "op_Explicit", Parameters);
+				Parent.MemberCache.CheckExistingMembersOverloads (this, GetMetadataName (OpType.Explicit), Parameters);
 
 			if (MemberType == TypeManager.void_type) {
 				Report.Error (590, Location, "User-defined operators cannot return void");
@@ -7990,11 +8022,9 @@ namespace Mono.CSharp {
 					}
 				}
 				
-				if (first_arg_type != declaring_type){
-					Report.Error (
-						562, Location,
-						"The parameter of a unary operator must be the " +
-						"containing type");
+				if (!TypeManager.IsEqual (first_arg_type_unwrap, declaring_type)){
+					Report.Error (562, Location,
+						"The parameter type of a unary operator must be the containing type");
 					return false;
 				}
 				
@@ -8068,61 +8098,30 @@ namespace Mono.CSharp {
 
 		public static string GetName (OpType ot)
 		{
-			switch (ot){
-			case OpType.LogicalNot:
-				return "!";
-			case OpType.OnesComplement:
-				return "~";
-			case OpType.Increment:
-				return "++";
-			case OpType.Decrement:
-				return "--";
-			case OpType.True:
-				return "true";
-			case OpType.False:
-				return "false";
-			case OpType.Addition:
-				return "+";
-			case OpType.Subtraction:
-				return "-";
-			case OpType.UnaryPlus:
-				return "+";
-			case OpType.UnaryNegation:
-				return "-";
-			case OpType.Multiply:
-				return "*";
-			case OpType.Division:
-				return "/";
-			case OpType.Modulus:
-				return "%";
-			case OpType.BitwiseAnd:
-				return "&";
-			case OpType.BitwiseOr:
-				return "|";
-			case OpType.ExclusiveOr:
-				return "^";
-			case OpType.LeftShift:
-				return "<<";
-			case OpType.RightShift:
-				return ">>";
-			case OpType.Equality:
-				return "==";
-			case OpType.Inequality:
-				return "!=";
-			case OpType.GreaterThan:
-				return ">";
-			case OpType.LessThan:
-				return "<";
-			case OpType.GreaterThanOrEqual:
-				return ">=";
-			case OpType.LessThanOrEqual:
-				return "<=";
-			case OpType.Implicit:
-				return "implicit";
-			case OpType.Explicit:
-				return "explicit";
-			default: return "";
+			return names [(int) ot] [0];
+		}
+
+		public static string GetName (string metadata_name)
+		{
+			for (int i = 0; i < names.Length; ++i) {
+				if (names [i] [1] == metadata_name)
+					return names [i] [0];
 			}
+			return null;
+		}
+
+		public static string GetMetadataName (OpType ot)
+		{
+			return names [(int) ot] [1];
+		}
+
+		public static string GetMetadataName (string name)
+		{
+			for (int i = 0; i < names.Length; ++i) {
+				if (names [i] [0] == name)
+					return names [i] [1];
+			}
+			return null;
 		}
 
 		public OpType GetMatchingOperator ()
@@ -8147,22 +8146,6 @@ namespace Mono.CSharp {
 				default:
 					return OpType.TOP;
 			}
-		}
-
-		public static OpType GetOperatorType (string name)
-		{
-			if (name.StartsWith ("op_")){
-				for (int i = 0; i < Unary.oper_names.Length; ++i) {
-					if (Unary.oper_names [i] == name)
-						return (OpType)i;
-				}
-
-				for (int i = 0; i < Binary.oper_names.Length; ++i) {
-					if (Binary.oper_names [i] == name)
-						return (OpType)i;
-				}
-			}
-			return OpType.TOP;
 		}
 
 		public override string GetSignatureForError ()

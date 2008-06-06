@@ -97,15 +97,10 @@ namespace Mono.CSharp {
 		void AddressOf (EmitContext ec, AddressOp mode);
 	}
 
-	/// <summary>
-	///   This interface is implemented by variables
-	/// </summary>
+	// TODO: Rename to something meaningful, this is flow-analysis interface only
 	public interface IVariable {
-		VariableInfo VariableInfo {
-			get;
-		}
-
-		bool VerifyFixed ();
+		VariableInfo VariableInfo { get; }
+		bool IsFixed { get; }
 	}
 
 	/// <remarks>
@@ -390,12 +385,6 @@ namespace Mono.CSharp {
 				Report.Error (266, loc, "Cannot implicitly convert type `{0}' to `{1}'. " +
 					      "An explicit conversion exists (are you missing a cast?)",
 					TypeManager.CSharpName (Type), TypeManager.CSharpName (target));
-				return;
-			}
-
-			if (Type != TypeManager.string_type && this is Constant && !(this is EmptyConstantCast)) {
-				Report.Error (31, loc, "Constant value `{0}' cannot be converted to a `{1}'",
-					((Constant)(this)).GetValue ().ToString (), TypeManager.CSharpName (target));
 				return;
 			}
 
@@ -914,6 +903,11 @@ namespace Mono.CSharp {
 			throw new NotImplementedException ();
 		}
 
+		protected void Error_PointerInsideExpressionTree ()
+		{
+			Report.Error (1944, loc, "An expression tree cannot contain an unsafe pointer operation");
+		}
+
 		/// <summary>
 		///   Returns an expression that can be used to invoke operator true
 		///   on the expression if it exists.
@@ -935,7 +929,8 @@ namespace Mono.CSharp {
 		static Expression GetOperatorTrueOrFalse (EmitContext ec, Expression e, bool is_true, Location loc)
 		{
 			MethodGroupExpr operator_group;
-			operator_group = MethodLookup (ec.ContainerType, e.Type, is_true ? "op_True" : "op_False", loc) as MethodGroupExpr;
+			string mname = Operator.GetMetadataName (is_true ? Operator.OpType.True : Operator.OpType.False);
+			operator_group = MethodLookup (ec.ContainerType, e.Type, mname, loc) as MethodGroupExpr;
 			if (operator_group == null)
 				return null;
 
@@ -1251,11 +1246,10 @@ namespace Mono.CSharp {
 			return cloned;
 		}
 
-		public virtual Expression CreateExpressionTree (EmitContext ec)
-		{
-			throw new NotImplementedException (
-				"Expression tree conversion not implemented for " + GetType ());
-		}
+		//
+		// Implementation of expression to expression tree conversion
+		//
+		public abstract Expression CreateExpressionTree (EmitContext ec);
 
 		protected Expression CreateExpressionFactoryCall (string name, ArrayList args)
 		{
@@ -1352,6 +1346,10 @@ namespace Mono.CSharp {
 			ArrayList args = new ArrayList (2);
 			args.Add (new Argument (child.CreateExpressionTree (ec)));
 			args.Add (new Argument (new TypeOf (new TypeExpression (type, loc), loc)));
+
+			if (type.IsPointer || child.Type.IsPointer)
+				Error_PointerInsideExpressionTree ();
+
 			return CreateExpressionFactoryCall (ec.CheckState ? "ConvertChecked" : "Convert", args);
 		}
 
@@ -1381,9 +1379,7 @@ namespace Mono.CSharp {
 		}
 
 		public override bool IsNull {
-			get	{
-				return child.IsNull;
-			}
+			get { return child.IsNull; }
 		}
 	}
 
@@ -1399,6 +1395,10 @@ namespace Mono.CSharp {
 			if (c != null)
 				return new EmptyConstantCast (c, type);
 
+			EmptyCast e = child as EmptyCast;
+			if (e != null)
+				return new EmptyCast (e.child, type);
+
 			return new EmptyCast (child, type);
 		}
 
@@ -1411,7 +1411,6 @@ namespace Mono.CSharp {
 		{
 			child.EmitSideEffect (ec);
 		}
-
 	}
 
 	/// <summary>
@@ -1601,6 +1600,9 @@ namespace Mono.CSharp {
 			ArrayList args = new ArrayList (2);
 			args.Add (new Argument (child.CreateExpressionTree (ec)));
 			args.Add (new Argument (new TypeOf (new TypeExpression (type, loc), loc)));
+			if (type.IsPointer)
+				Error_PointerInsideExpressionTree ();
+
 			return CreateExpressionFactoryCall ("Convert", args);
 		}
 
@@ -2751,6 +2753,12 @@ namespace Mono.CSharp {
 	///   section 10.8.1 (Fully Qualified Names).
 	/// </summary>
 	public abstract class FullNamedExpression : Expression {
+
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			throw new NotSupportedException ("ET");
+		}
+
 		public override FullNamedExpression ResolveAsTypeStep (IResolveContext ec, bool silent)
 		{
 			return this;
@@ -3098,6 +3106,11 @@ namespace Mono.CSharp {
 				      "with an instance reference, qualify it with a type name instead", name);
 		}
 
+		public static void Error_BaseAccessInExpressionTree (Location loc)
+		{
+			Report.Error (831, loc, "An expression tree may not contain a base access");
+		}
+
 		// TODO: possible optimalization
 		// Cache resolved constant result in FieldBuilder <-> expression map
 		public virtual MemberExpr ResolveMemberAccess (EmitContext ec, Expression left, Location loc,
@@ -3389,8 +3402,11 @@ namespace Mono.CSharp {
 				//
 				if (TypeManager.DropGenericTypeArguments (p) == TypeManager.expression_type) {
 					p = TypeManager.GetTypeArguments (p) [0];
+				}
+				if (TypeManager.DropGenericTypeArguments (q) == TypeManager.expression_type) {
 					q = TypeManager.GetTypeArguments (q) [0];
 				}
+				
 				p = Delegate.GetInvokeMethod (null, p).ReturnType;
 				q = Delegate.GetInvokeMethod (null, q).ReturnType;
 			} else {
@@ -3616,8 +3632,18 @@ namespace Mono.CSharp {
 
 		public override Expression CreateExpressionTree (EmitContext ec)
 		{
+			if (best_candidate == null) {
+				Report.Error (1953, loc, "An expression tree cannot contain an expression with method group");
+				return null;
+			}
+
 			if (best_candidate.IsConstructor)
 				return new TypeOfConstructorInfo (best_candidate, loc);
+
+			IMethodData md = TypeManager.GetMethod (best_candidate);
+			if (md != null && md.IsExcluded ())
+				Report.Error (765, loc,
+					"Partial methods with only a defining declaration or removed conditional methods cannot be used in an expression tree");
 			
 			return new TypeOfMethodInfo (best_candidate, loc);
 		}
@@ -3837,21 +3863,13 @@ namespace Mono.CSharp {
 				return 0;
 			}
 
-			// FIXME: Kill this abomination (EmitContext.TempEc)
-			EmitContext prevec = EmitContext.TempEc;
-			EmitContext.TempEc = ec;
-			try {
-				if (delegate_type != null ?
-					!Delegate.IsTypeCovariant (argument.Expr, parameter) :
-					!Convert.ImplicitConversionExists (ec, argument.Expr, parameter))
-					return 2;
+			if (delegate_type != null ?
+				!Delegate.IsTypeCovariant (argument.Expr, parameter) :
+				!Convert.ImplicitConversionExists (ec, argument.Expr, parameter))
+				return 2;
 
-				if (arg_mod != param_mod)
-					return 1;
-
-			} finally {
-				EmitContext.TempEc = prevec;
-			}
+			if (arg_mod != param_mod)
+				return 1;
 
 			return 0;
 		}
@@ -4522,7 +4540,7 @@ namespace Mono.CSharp {
 
 		public override Expression CreateExpressionTree (EmitContext ec)
 		{
-			throw new NotSupportedException ();
+			throw new NotSupportedException ("ET");
 		}
 
 		public override Expression DoResolve (EmitContext ec)
@@ -4724,7 +4742,7 @@ namespace Mono.CSharp {
 
 			// If the instance expression is a local variable or parameter.
 			IVariable var = InstanceExpression as IVariable;
-			if ((var == null) || (var.VariableInfo == null))
+			if (var == null || var.VariableInfo == null)
 				return this;
 
 			VariableInfo vi = var.VariableInfo;
@@ -4775,7 +4793,7 @@ namespace Mono.CSharp {
 		override public Expression DoResolveLValue (EmitContext ec, Expression right_side)
 		{
 			IVariable var = InstanceExpression as IVariable;
-			if ((var != null) && (var.VariableInfo != null))
+			if (var != null && var.VariableInfo != null)
 				var.VariableInfo.SetFieldAssigned (ec, FieldInfo.Name);
 
 			bool lvalue_instance = !FieldInfo.IsStatic && FieldInfo.DeclaringType.IsValueType;
@@ -4837,19 +4855,20 @@ namespace Mono.CSharp {
 			}
 		}
 
-		public bool VerifyFixed ()
-		{
-			IVariable variable = InstanceExpression as IVariable;
-			// A variable of the form V.I is fixed when V is a fixed variable of a struct type.
-			// We defer the InstanceExpression check after the variable check to avoid a 
-			// separate null check on InstanceExpression.
-			return variable != null && InstanceExpression.Type.IsValueType && variable.VerifyFixed ();
-		}
-
 		public override int GetHashCode ()
 		{
 			return FieldInfo.GetHashCode ();
 		}
+		
+		public bool IsFixed {
+			get {
+				IVariable variable = InstanceExpression as IVariable;
+				// A variable of the form V.I is fixed when V is a fixed variable of a struct type.
+				// We defer the InstanceExpression check after the variable check to avoid a 
+				// separate null check on InstanceExpression.
+				return variable != null && InstanceExpression.Type.IsValueType && variable.IsFixed;
+			}
+		}		
 
 		public override bool Equals (object obj)
 		{
@@ -5070,18 +5089,25 @@ namespace Mono.CSharp {
 
 		public override Expression CreateExpressionTree (EmitContext ec)
 		{
+			ArrayList args;
 			if (IsSingleDimensionalArrayLength ()) {
-				ArrayList args = new ArrayList (1);
+				args = new ArrayList (1);
 				args.Add (new Argument (InstanceExpression.CreateExpressionTree (ec)));
 				return CreateExpressionFactoryCall ("ArrayLength", args);
 			}
 
-			// TODO: it's waiting for PropertyExpr refactoring
-			//ArrayList args = new ArrayList (2);
-			//args.Add (new Argument (InstanceExpression.CreateExpressionTree (ec)));
-			//args.Add (getter expression);
-			//return CreateExpressionFactoryCall ("Property", args);
-			return base.CreateExpressionTree (ec);
+			if (is_base) {
+				Error_BaseAccessInExpressionTree (loc);
+				return null;
+			}
+
+			args = new ArrayList (2);
+			if (InstanceExpression == null)
+				args.Add (new Argument (new NullLiteral (loc)));
+			else
+				args.Add (new Argument (InstanceExpression.CreateExpressionTree (ec)));
+			args.Add (new Argument (new TypeOfMethodInfo (getter, loc)));
+			return CreateExpressionFactoryCall ("Property", args);
 		}
 
 		public Expression CreateSetterTypeOfExpression ()
@@ -5231,7 +5257,7 @@ namespace Mono.CSharp {
 
 			string t_name = InstanceExpression.Type.Name;
 			int t_name_len = t_name.Length;
-			return t_name_len > 2 && t_name [t_name_len - 2] == '[' && t_name [t_name_len - 3] != ']';
+			return t_name_len > 2 && t_name [t_name_len - 2] == '[';
 		}
 
 		override public Expression DoResolve (EmitContext ec)
@@ -5566,7 +5592,7 @@ namespace Mono.CSharp {
 
 		public override Expression CreateExpressionTree (EmitContext ec)
 		{
-			throw new NotSupportedException ();
+			throw new NotSupportedException ("ET");
 		}
 
 		public override Expression DoResolveLValue (EmitContext ec, Expression right_side)
@@ -5622,23 +5648,28 @@ namespace Mono.CSharp {
 		}
 	}
 
-	public class TemporaryVariable : Expression, IMemoryLocation
+	public class TemporaryVariable : VariableReference
 	{
 		LocalInfo li;
 		Variable var;
-		
+
 		public TemporaryVariable (Type type, Location loc)
 		{
 			this.type = type;
 			this.loc = loc;
-			eclass = ExprClass.Value;
+			eclass = ExprClass.Variable;
 		}
-		
+
+		public override Expression CreateExpressionTree (EmitContext ec)
+		{
+			throw new NotSupportedException ("ET");
+		}
+
 		public override Expression DoResolve (EmitContext ec)
 		{
 			if (li != null)
 				return this;
-			
+
 			TypeExpr te = new TypeExpression (type, loc);
 			li = ec.CurrentBlock.AddTemporaryVariable (te, loc);
 			if (!li.Resolve (ec))
@@ -5649,46 +5680,34 @@ namespace Mono.CSharp {
 				var = scope.AddLocal (li);
 				type = var.Type;
 			}
-			
+
 			return this;
 		}
 
-		public Variable Variable {
-			get { return var != null ? var : li.Variable; }
-		}
-		
 		public override void Emit (EmitContext ec)
 		{
-			Variable.EmitInstance (ec);
-			Variable.Emit (ec);
+			Emit (ec, false);
 		}
-		
-		public void EmitLoadAddress (EmitContext ec)
+
+		public void EmitAssign (EmitContext ec, Expression source)
 		{
-			Variable.EmitInstance (ec);
-			Variable.EmitAddressOf (ec);
+			EmitAssign (ec, source, false, false);
 		}
-		
-		public void Store (EmitContext ec, Expression right_side)
-		{
-			Variable.EmitInstance (ec);
-			right_side.Emit (ec);
-			Variable.EmitAssign (ec);
+
+		public override bool IsFixed {
+			get { return true; }
 		}
-		
-		public void EmitThis (EmitContext ec)
-		{
-			Variable.EmitInstance (ec);
+
+		public override bool IsRef {
+			get { return false; }
 		}
-		
-		public void EmitStore (EmitContext ec)
-		{
-			Variable.EmitAssign (ec);
+
+		public override Variable Variable {
+			get { return var != null ? var : li.Variable; }
 		}
-		
-		public void AddressOf (EmitContext ec, AddressOp mode)
-		{
-			EmitLoadAddress (ec);
+
+		public override VariableInfo VariableInfo {
+			get { throw new NotImplementedException (); }
 		}
 	}
 

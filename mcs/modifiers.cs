@@ -34,10 +34,11 @@ namespace Mono.CSharp {
 		//
 		public const int METHOD_YIELDS			= 0x8000;
 		public const int METHOD_GENERIC			= 0x10000;
-		public const int PARTIAL					= 0x20000;
+		public const int PARTIAL				= 0x20000;
 		public const int DEFAULT_ACCESS_MODIFER	= 0x40000;
 		public const int METHOD_EXTENSION		= 0x80000;
 		public const int COMPILER_GENERATED		= 0x100000;
+		public const int BACKING_FIELD			= 0x200000 | COMPILER_GENERATED;
 
 		public const int Accessibility =
 			PUBLIC | PROTECTED | INTERNAL | PRIVATE;
@@ -84,19 +85,21 @@ namespace Mono.CSharp {
 
 		public static string GetDescription (MethodAttributes ma)
 		{
-			if ((ma & MethodAttributes.Assembly) != 0)
+			ma &= MethodAttributes.MemberAccessMask;
+
+			if (ma == MethodAttributes.Assembly)
 				return "internal";
 
-			if ((ma & MethodAttributes.Family) != 0)
+			if (ma == MethodAttributes.Family)
 				return "protected";
 
-			if ((ma & MethodAttributes.Public) != 0)
+			if (ma == MethodAttributes.Public)
 				return "public";
 
-			if ((ma & MethodAttributes.FamANDAssem) != 0)
+			if (ma == MethodAttributes.FamANDAssem)
 				return "protected internal";
 
-			if ((ma & MethodAttributes.Private) != 0)
+			if (ma == MethodAttributes.Private)
 				return "private";
 
 			throw new NotImplementedException (ma.ToString ());
@@ -164,9 +167,9 @@ namespace Mono.CSharp {
 
 			if ((mod_flags & PUBLIC) != 0)
 				ma |= MethodAttributes.Public;
-			if ((mod_flags & PRIVATE) != 0)
+			else if ((mod_flags & PRIVATE) != 0)
 				ma |= MethodAttributes.Private;
-			if ((mod_flags & PROTECTED) != 0){
+			else if ((mod_flags & PROTECTED) != 0){
 				if ((mod_flags & INTERNAL) != 0)
 					ma |= MethodAttributes.FamORAssem;
 				else 
