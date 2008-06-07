@@ -1365,11 +1365,7 @@ namespace Mono.Debugger.Languages.Mono
 
 				Hashtable namespaces = new Hashtable ();
 
-#if FIXME
 				C.CompileUnitEntry source = method.CompileUnit;
-#else
-				C.SourceFileEntry source = method.SourceFile;
-#endif
 				foreach (C.NamespaceEntry nse in source.Namespaces)
 					namespaces.Add (nse.Index, nse);
 
