@@ -335,6 +335,8 @@ namespace Mono.Debugger.Architectures
 				type = Type.Ret;
 			} else if (opcode == 0xff) {
 				DecodeGroup5 (reader);
+			} else if (opcode == 0x90) {
+				type = Type.Interpretable;
 			}
 		}
 
