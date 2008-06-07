@@ -216,22 +216,15 @@ AC_CHECK_FUNCS(strlcpy strlcat)
 
 CHECK_READLINE
 
-AC_ARG_ENABLE(kahalo, [], enable_kahalo=yes, enable_kahalo=no)
-AM_CONDITIONAL(KAHALO, test x$enable_kahalo = xyes)
+min_mono_version=72
+symfile_major_version=42
+min_symfile_minor_version=5
 
-if test x$enable_kahalo = xyes; then
-   min_mono_version=69
-   min_symfile_version=42
-
-   PKG_CHECK_MODULES(XSP, xsp-2 >= $XSP_REQUIRED_VERSION)
-   XSP_EXE="`$PKG_CONFIG --variable=Executable xsp-2`"
-   AC_SUBST(XSP_EXE)
-   AC_SUBST(XSP_CFLAGS)
-   AC_SUBST(XSP_LIBS)
-else
-   min_mono_version=71
-   min_symfile_version=41
-fi
+PKG_CHECK_MODULES(XSP, xsp-2 >= $XSP_REQUIRED_VERSION)
+XSP_EXE="`$PKG_CONFIG --variable=Executable xsp-2`"
+AC_SUBST(XSP_EXE)
+AC_SUBST(XSP_CFLAGS)
+AC_SUBST(XSP_LIBS)
 
 AC_MSG_CHECKING([Whether your Mono is working])
 old_CFLAGS=$cflags
@@ -242,7 +235,10 @@ AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
 #if MONO_DEBUGGER_VERSION < $min_mono_version
 #error "Your mono is too old for this version of the debugger."
 #endif
-#if MONO_SYMBOL_FILE_VERSION != $min_symfile_version
+#if MONO_SYMBOL_FILE_MAJOR_VERSION != $symfile_major_version
+#error "Your mono is too old for this version of the debugger."
+#endif
+#if MONO_SYMBOL_FILE_MINOR_VERSION < $min_symfile_minor_version
 #error "Your mono is too old for this version of the debugger."
 #endif
 ], mono_working=yes, mono_working=no)
