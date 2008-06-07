@@ -365,8 +365,8 @@ namespace Mono.Debugger.Backend
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 71;
-		public const int  MaxDynamicVersion = 71;
+		public const int  MinDynamicVersion = 72;
+		public const int  MaxDynamicVersion = 72;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly int MonoTrampolineNum;
