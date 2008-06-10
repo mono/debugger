@@ -1,3 +1,9 @@
+2008-06-10  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MethodAddress): Check whether prologue_end and epilogue_begin are
+	non-zero.
+
 2008-06-07  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Require the new symbol writer.

@@ -2705,6 +2705,8 @@ namespace Mono.Debugger.Backend
 
 			LineNumberTable lnt = method.LineNumberTable;
 			if (lnt.HasMethodBounds && (current_frame >= lnt.MethodEndAddress)) {
+				Report.Debug (DebugFlags.SSE, "{0} reached method epilogue: {1} {2} {3}",
+					      sse, current_frame, lnt.MethodEndAddress, method.EndAddress);
 				StepFrame = new StepFrame (
 					lnt.MethodEndAddress, method.EndAddress,
 					null, null, StepMode.Finish);

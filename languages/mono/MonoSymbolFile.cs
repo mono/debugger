@@ -119,8 +119,13 @@ namespace Mono.Debugger.Languages.Mono
 
 			EndAddress = StartAddress + code_size;
 
-			MethodStartAddress = StartAddress + reader.ReadLeb128 ();
-			MethodEndAddress = StartAddress + reader.ReadLeb128 ();
+			int prologue_end = reader.ReadLeb128 ();
+			int epilogue_begin = reader.ReadLeb128 ();
+
+			MethodStartAddress = prologue_end > 0 ?
+				StartAddress + prologue_end : StartAddress;
+			MethodEndAddress = epilogue_begin > 0 ?
+				StartAddress + epilogue_begin : EndAddress;
 
 			int num_line_numbers = reader.ReadLeb128 ();
 			LineNumbers = new List<JitLineNumberEntry> ();
