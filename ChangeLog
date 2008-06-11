@@ -1,3 +1,8 @@
+2008-06-11  Martin Baulig  <martin@ximian.com>
+
+	* build/Makefile.am: Merge Mono.Debugger.dll and
+	Mono.Debugger.Backend.dll into Mono.Debugger.dll.
+
 2008-06-10  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

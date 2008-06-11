@@ -9,7 +9,6 @@ MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 noinst_SCRIPTS = \
 	runtests					\
 	Mono.Debugger.dll				\
-	Mono.Debugger.Backend.dll			\
 	Mono.Debugger.Frontend.dll			\
 	Mono.Debugger.Test.dll
 
@@ -35,11 +34,8 @@ MDB_SRCLIST = \
 	$(LANGUAGE_SPECIFIC_FILES)			\
 	AssemblyInfo.cs
 
-INTERFACE_SRCLIST = \
+DEBUGGER_SRCLIST = \
 	$(top_srcdir)/interface/*.cs			\
-	AssemblyInfo.cs
-
-BACKEND_SRCLIST = \
 	$(top_srcdir)/backend/arch/*.cs			\
 	$(top_srcdir)/backend/*.cs			\
 	$(top_srcdir)/languages/*.cs			\
@@ -56,37 +52,28 @@ TEST_SRCLIST = \
 TEST_CASE_SRCLIST = \
 	$(top_srcdir)/test/src/*.cs
 
-INTERFACE_DEPS = \
-	-r:Mono.GetOptions
-
-BACKEND_DEPS = \
+DEBUGGER_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:$(srcdir)/Mono.Debugger.Cecil.dll		\
-	-r:./Mono.Debugger.dll
+	-r:$(srcdir)/Mono.Debugger.Cecil.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
-	-r:./Mono.Debugger.Backend.dll			\
 	-r:./Mono.Debugger.dll
 
 TEST_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll				\
-	-r:./Mono.Debugger.Backend.dll			\
 	-r:./Mono.Debugger.Frontend.dll			\
 	-r:nunit.framework				\
 	-r:nunit.core
 
-Mono.Debugger.Backend.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(BACKEND_SRCLIST) Mono.Debugger.dll
-	$(MCS) -target:library -out:Mono.Debugger.Backend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(BACKEND_DEPS) $(BACKEND_SRCLIST)
+Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(DEBUGGER_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(DEBUGGER_DEPS) $(DEBUGGER_SRCLIST)
 
-Mono.Debugger.dll: Makefile $(INTERFACE_SRCLIST)
-	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(INTERFACE_DEPS) $(INTERFACE_SRCLIST)
-
-Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.Backend.dll
+Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
@@ -95,7 +82,7 @@ Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger
 #Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
 #	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/build/mono.snk)
 
-mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.Backend.dll
+mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
@@ -109,11 +96,10 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
 
-noinst_DATA = Mono.Debugger.dll.config Mono.Debugger.Backend.dll.config
+noinst_DATA = Mono.Debugger.dll.config
 
 CLEANFILES = *.exe *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
-	Mono.Debugger.Backend.dll.config TestResult.* \
-	Mono.Debugger.Backend.dll Mono.Debugger.dll Mono.Debugger.Frontend.dll \
+	TestResult.* Mono.Debugger.dll Mono.Debugger.Frontend.dll \
 	Mono.Debugger.Test.dll
 
 EXTRA_DIST = \
@@ -135,12 +121,10 @@ runtests: runtests.in Makefile
 
 install-data-local:
 	$(GACUTIL) /i $(srcdir)/Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
-	$(GACUTIL) /i Mono.Debugger.Backend.dll /f $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
-	$(GACUTIL) /u Mono.Debugger.Backend $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /u Mono.Debugger.Cecil $(GACUTIL_FLAGS) || exit 1;
 
 NUNIT_CONSOLE_FLAGS =

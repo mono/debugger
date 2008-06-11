@@ -257,7 +257,6 @@ interface/Makefile
 classes/Makefile
 build/Makefile
 build/Mono.Debugger.dll.config
-build/Mono.Debugger.Backend.dll.config
 backend/Makefile
 backend/server/Makefile
 backend/arch/Makefile
