@@ -28,14 +28,38 @@ ps_pdwrite (ThreadDbHandle *handle, psaddr_t addr, const void *buffer, size_t si
 	return (* handle->write_memory) ((guint64) (gsize) addr, buffer, size);
 }
 
+ps_err_e
+ps_lgetregs (ThreadDbHandle *handle, lwpid_t lwp, prgregset_t regs)
+{
+	return PS_ERR;
+}
+
+ps_err_e
+ps_lsetregs (ThreadDbHandle *handle, lwpid_t lwp, const prgregset_t regs)
+{
+	return PS_ERR;
+}
+
+ps_err_e
+ps_lgetfpregs (ThreadDbHandle *handle, lwpid_t lwp, prfpregset_t *regs)
+{
+	return PS_ERR;
+}
+
+ps_err_e
+ps_lsetfpregs (ThreadDbHandle *handle, lwpid_t lwp, const prfpregset_t *regs)
+{
+	return PS_ERR;
+}
+
 pid_t
 ps_getpid (ThreadDbHandle *handle)
 {
-	return -1;
+	return handle->pid;
 }
 
 ThreadDbHandle *
-mono_debugger_thread_db_init (GlobalLookupFunc global_lookup,
+mono_debugger_thread_db_init (guint32 pid, GlobalLookupFunc global_lookup,
 			      ReadMemoryFunc read_memory, WriteMemoryFunc write_memory)
 {
 	ThreadDbHandle *handle;
@@ -46,6 +70,7 @@ mono_debugger_thread_db_init (GlobalLookupFunc global_lookup,
 		return NULL;
 
 	handle = g_new0 (ThreadDbHandle, 1);
+	handle->pid = pid;
 	handle->global_lookup = global_lookup;
 	handle->read_memory = read_memory;
 	handle->write_memory = write_memory;

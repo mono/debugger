@@ -1,3 +1,19 @@
+2008-06-15  Martin Baulig  <martin@ximian.com>
+
+	Fix thread-db for SuSE 11 - we need to return the correct PID in
+	ps_getpid().	
+
+	* backend/server/thread-db.h (ThreadDbHandle): Added `pid' field;
+	we need to store the PID here for ps_getpid().
+
+	* backend/server/thread-db.c
+	(mono_debugger_thread_db_init): Added `pid' argument.
+	(ps_getpid): Return the stored `pid'.
+
+	* backend/ThreadDB.cs
+	(ThreadDB.Create): Take an `Inferior' instead of a
+	`TargetMemoryAccess' since we need the target's pid.
+
 2008-06-11  Martin Baulig  <martin@ximian.com>
 
 	* build/Makefile.am: Merge Mono.Debugger.dll and

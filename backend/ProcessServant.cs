@@ -424,7 +424,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		internal void InitializeThreads (TargetMemoryAccess target)
+		internal void InitializeThreads (Inferior target)
 		{
 			thread_db = ThreadDB.Create (this, target);
 			if (thread_db == null) {

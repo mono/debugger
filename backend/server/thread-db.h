@@ -16,6 +16,7 @@ typedef ps_err_e (*WriteMemoryFunc) (guint64 address, const void *buffer, guint3
 typedef gboolean (*IterateOverThreadsFunc) (const td_thrhandle_t *th);
 
 typedef struct ps_prochandle {
+	pid_t pid;
 	td_thragent_t *thread_agent;
 	GlobalLookupFunc global_lookup;
 	ReadMemoryFunc read_memory;
@@ -23,7 +24,7 @@ typedef struct ps_prochandle {
 } ThreadDbHandle;
 
 ThreadDbHandle *
-mono_debugger_thread_db_init (GlobalLookupFunc global_lookup,
+mono_debugger_thread_db_init (guint32 pid, GlobalLookupFunc global_lookup,
 			      ReadMemoryFunc read_memory, WriteMemoryFunc write_memory);
 
 void

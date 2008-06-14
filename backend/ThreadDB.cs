@@ -28,7 +28,7 @@ namespace Mono.Debugger.Backend
 		delegate bool IterateOverThreadsFunc (IntPtr th);
 
 		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_thread_db_init (GlobalLookupFunc lookup_func, ReadMemoryFunc read_memory_func, WriteMemoryFunc write_memory_func);
+		static extern IntPtr mono_debugger_thread_db_init (int pid, GlobalLookupFunc lookup_func, ReadMemoryFunc read_memory_func, WriteMemoryFunc write_memory_func);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_thread_db_destroy (IntPtr handle);
@@ -54,14 +54,16 @@ namespace Mono.Debugger.Backend
 			write_memory_func = new WriteMemoryFunc (write_memory);
 		}
 
-		protected bool Initialize (TargetMemoryAccess target)
+		protected bool Initialize (Inferior target)
 		{
 			try {
 				mutex.Lock ();
 				this.target = target;
 
 				handle = mono_debugger_thread_db_init (
-					global_lookup_func, read_memory_func, write_memory_func);
+					target.PID, global_lookup_func, read_memory_func,
+					write_memory_func);
+
 				return handle != IntPtr.Zero;
 			} finally {
 				this.target = null;
@@ -69,7 +71,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public static ThreadDB Create (ProcessServant process, TargetMemoryAccess target)
+		public static ThreadDB Create (ProcessServant process, Inferior target)
 		{
 			ThreadDB db = new ThreadDB (process);
 			if (!db.Initialize (target))
