@@ -1,3 +1,9 @@
+2008-06-17  Jb Evain  <jbevain@novell.com>
+
+	* configure.in: detect the internal Cecil library that
+	comes with Mono.
+	* build/Makefile.am: use Mono's version of Cecil.
+
 2008-06-17  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

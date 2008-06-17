@@ -12,8 +12,6 @@ noinst_SCRIPTS = \
 	Mono.Debugger.Frontend.dll			\
 	Mono.Debugger.Test.dll
 
-EXTRA_DATA = Mono.Debugger.Cecil.dll
-
 LANGUAGE_SPECIFIC_FILES = \
 	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
 	$(top_srcdir)/frontend/CSharpTokenizer.cs
@@ -56,7 +54,7 @@ DEBUGGER_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:$(srcdir)/Mono.Debugger.Cecil.dll
+	-r:$(srcdir)/Mono.Cecil.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
@@ -70,7 +68,7 @@ TEST_DEPS = \
 	-r:nunit.framework				\
 	-r:nunit.core
 
-Mono.Debugger.dll: Makefile $(srcdir)/Mono.Debugger.Cecil.dll $(DEBUGGER_SRCLIST)
+Mono.Debugger.dll: Makefile $(srcdir)/Mono.Cecil.dll $(DEBUGGER_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(DEBUGGER_DEPS) $(DEBUGGER_SRCLIST)
 
 Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
@@ -79,8 +77,8 @@ Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
-#Mono.Debugger.Cecil.dll: Makefile $(top_srcdir)/cecil/lib/Mono.Cecil.dll.sources
-#	(dir=`pwd` && cd $(top_srcdir)/cecil/lib && $(MCS) -target:library -out:$$dir/Mono.Debugger.Cecil.dll $(MCS_FLAGS) @Mono.Cecil.dll.sources -keyfile:$(top_srcdir)/build/mono.snk)
+Mono.Cecil.dll:
+	cp $(CECIL_ASM) $(srcdir)
 
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
@@ -103,8 +101,7 @@ CLEANFILES = *.exe *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
 	Mono.Debugger.Test.dll
 
 EXTRA_DIST = \
-	mdb.in runtests.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in \
-	Mono.Debugger.Cecil.dll
+	mdb.in runtests.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@twodir\@^$(twodir)^g' < $(srcdir)/mdb.in > mdb.tmp \
@@ -120,12 +117,10 @@ runtests: runtests.in Makefile
 	&& mv runtests.tmp runtests && chmod 755 runtests
 
 install-data-local:
-	$(GACUTIL) /i $(srcdir)/Mono.Debugger.Cecil.dll /f $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
-	$(GACUTIL) /u Mono.Debugger.Cecil $(GACUTIL_FLAGS) || exit 1;
 
 NUNIT_CONSOLE_FLAGS =
 
