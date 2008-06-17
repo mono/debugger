@@ -1,3 +1,9 @@
+2008-06-17  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoMethod.IsCompilerGenerated): Check the `[DebuggerHidden]' and
+	`[CompilerGenerated]' custom attributes on the method.
+
 2008-06-15  Martin Baulig  <martin@ximian.com>
 
 	Fix thread-db for SuSE 11 - we need to return the correct PID in

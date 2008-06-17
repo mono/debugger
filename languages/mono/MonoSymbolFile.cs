@@ -1069,6 +1069,7 @@ namespace Mono.Debugger.Languages.Mono
 			bool has_variables;
 			bool is_loaded;
 			bool is_iterator;
+			bool is_compiler_generated;
 			MethodAddress address;
 			int domain;
 
@@ -1081,6 +1082,13 @@ namespace Mono.Debugger.Languages.Mono
 				this.domain = domain;
 				this.method = method;
 				this.mdef = mdef;
+
+				foreach (Cecil.CustomAttribute cattr in mdef.CustomAttributes) {
+					string cname = cattr.Constructor.DeclaringType.FullName;
+					if ((cname == "System.Diagnostics.DebuggerHiddenAttribute") ||
+					    (cname == "System.Runtime.CompilerServices.CompilerGeneratedAttribute"))
+						is_compiler_generated = true;
+				}						
 			}
 
 			public override object MethodHandle {
@@ -1088,6 +1096,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override int Domain {
+
 				get { return domain; }
 			}
 
@@ -1096,7 +1105,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override bool IsCompilerGenerated {
-				get { return (method.MethodFlags & C.MethodEntry.Flags.IsCompilerGenerated) != 0; }
+				get { return is_compiler_generated; }
 			}
 
 			public override bool HasSource {
