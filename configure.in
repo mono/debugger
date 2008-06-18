@@ -227,8 +227,8 @@ AC_CHECK_FUNCS(strlcpy strlcat)
 CHECK_READLINE
 
 min_mono_version=72
-symfile_major_version=42
-min_symfile_minor_version=5
+symfile_major_version=50
+min_symfile_minor_version=0
 
 PKG_CHECK_MODULES(XSP, xsp-2 >= $XSP_REQUIRED_VERSION)
 XSP_EXE="`$PKG_CONFIG --variable=Executable xsp-2`"

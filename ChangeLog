@@ -1,5 +1,9 @@
 2008-06-18  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: The stable symbol file version is 50.0.
+
+2008-06-18  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerConfiguration.xsd: Add <DirectoryMaps> section
 	containing `<Map from="c:/cygwin/home/ichotolot" to="/work/mordor"/>'
 	entries.
