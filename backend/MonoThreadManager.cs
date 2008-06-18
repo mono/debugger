@@ -118,7 +118,7 @@ namespace Mono.Debugger.Backend
 				debugger_info.BreakpointArraySize);
 			inferior.SetRuntimeInfo (mono_runtime_info);
 
-			inferior.WriteInteger (debugger_info.DebuggerVersion, 3);
+			inferior.WriteInteger (debugger_info.DebuggerVersion, 4);
 
 			if (notification_bpt != null) {
 				notification_bpt.Remove (inferior);
@@ -365,8 +365,8 @@ namespace Mono.Debugger.Backend
 	internal class MonoDebuggerInfo
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
-		public const int  MinDynamicVersion = 72;
-		public const int  MaxDynamicVersion = 72;
+		public const int  MinDynamicVersion = 80;
+		public const int  MaxDynamicVersion = 80;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
 		public readonly int MonoTrampolineNum;

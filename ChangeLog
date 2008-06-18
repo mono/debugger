@@ -1,5 +1,8 @@
 2008-06-18  Martin Baulig  <martin@ximian.com>
 
+	* backend/MonoThreadVersion.cs
+	(MonoDebuggerInfo): The stable version is 80.
+
 	* configure.in: The stable symbol file version is 50.0.
 
 2008-06-18  Martin Baulig  <martin@ximian.com>
