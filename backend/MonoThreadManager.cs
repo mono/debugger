@@ -408,7 +408,7 @@ namespace Mono.Debugger.Backend
 
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
-			TargetBinaryReader header = memory.ReadMemory (info, 16).GetReader ();
+			TargetBinaryReader header = memory.ReadMemory (info, 24).GetReader ();
 			long magic = header.ReadInt64 ();
 			if (magic != DynamicMagic)
 				throw new SymbolTableException (
@@ -426,6 +426,9 @@ namespace Mono.Debugger.Backend
 					"but expected at most {1}.", version,
 					MonoDebuggerInfo.MaxDynamicVersion);
 
+			int minor_version = header.ReadInt32 ();
+			header.ReadInt32 ();
+
 			int size = header.ReadInt32 ();
 
 			TargetReader reader = new TargetReader (memory.ReadMemory (info, size));
@@ -435,7 +438,7 @@ namespace Mono.Debugger.Backend
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
 		{
 			/* skip past magic, version, and total_size */
-			reader.Offset = 16;
+			reader.Offset = 24;
 
 			SymbolTableSize           = reader.ReadInteger ();
 			MonoTrampolineNum         = reader.ReadInteger ();

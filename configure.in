@@ -242,7 +242,7 @@ CFLAGS=$WRAPPER_CFLAGS
 AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-mono-symfile.h>
 ], [
-#if MONO_DEBUGGER_VERSION < $min_mono_version
+#if MONO_DEBUGGER_MAJOR_VERSION < $min_mono_version
 #error "Your mono is too old for this version of the debugger."
 #endif
 #if MONO_SYMBOL_FILE_MAJOR_VERSION != $symfile_major_version
