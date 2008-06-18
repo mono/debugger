@@ -258,9 +258,11 @@ namespace Mono.Debugger.Languages.Mono
 				module.LoadModule (this);
 			}
 
+#if FIXME
 			if ((File != null) && (File.OffsetTable.IsAspxSource)) {
 				Console.WriteLine ("ASPX SOURCE: {0} {1}", this, File);
 			}
+#endif
 
 			process.SymbolTableManager.AddSymbolFile (this);
 		}
@@ -393,8 +395,19 @@ namespace Mono.Debugger.Languages.Mono
 			if (File == null)
 				return;
 
+			bool need_conversion = false;
+			if ((Environment.OSVersion.Platform == PlatformID.Unix) &&
+			    ((File.OffsetTable.FileFlags & C.OffsetTable.Flags.WindowsFileNames) != 0)) {
+				need_conversion = true;
+			}			
+
 			foreach (C.SourceFileEntry source in File.Sources) {
-				SourceFile info = new MonoSourceFile (Module, source);
+				string file_name = source.FileName;
+				if (need_conversion)
+					file_name = process.Session.WindowsToUnix (file_name);
+
+				SourceFile info = new MonoSourceFile (
+					process.Session, Module, source, file_name);
 
 				sources.Add (info);
 				source_hash.Add (info, source);
@@ -770,8 +783,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			C.SourceFileEntry file;
 
-			public MonoSourceFile (Module module, C.SourceFileEntry file)
-				: base (module, file.FileName)
+			public MonoSourceFile (DebuggerSession session, Module module,
+					       C.SourceFileEntry file, string path)
+				: base (session, module, path)
 			{
 				this.file = file;
 			}

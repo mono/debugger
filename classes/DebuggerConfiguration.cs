@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
@@ -29,6 +30,7 @@ namespace Mono.Debugger
 			ConfigDirectory += Path.DirectorySeparatorChar;
 
 			module_groups = Hashtable.Synchronized (new Hashtable ());
+			directory_maps = new Dictionary<string,string> ();
 			CreateDefaultModuleGroups ();
 		}
 
@@ -46,7 +48,7 @@ namespace Mono.Debugger
 				if (!Directory.Exists (ConfigDirectory))
 					Directory.CreateDirectory (ConfigDirectory);
 
-				LoadConfigurationFromStream (ConfigDirectory + ConfigFileName);
+				LoadConfigurationFromStream (Path.Combine (ConfigDirectory, ConfigFileName));
 				return true;
 			} catch {
 				return false;
@@ -116,6 +118,13 @@ namespace Mono.Debugger
 
 				group.SetSessionData (iter);
 			}
+
+			iter = nav.Select ("/DebuggerConfiguration/DirectoryMap/Map");
+			while (iter.MoveNext ()) {
+				string from = iter.Current.GetAttribute ("from", "");
+				string to = iter.Current.GetAttribute ("to", "");
+				directory_maps.Add (from, to);
+			}
 		}
 
 		void SaveConfigurationToStream (string filename)
@@ -160,6 +169,7 @@ namespace Mono.Debugger
 		bool hide_auto_generated = false;
 		bool is_xsp = false;
 		Hashtable module_groups;
+		Dictionary<string,string> directory_maps;
 
 		//
 		// Module groups
@@ -276,6 +286,10 @@ namespace Mono.Debugger
 
 		public bool IsXSP {
 			get { return is_xsp; }
+		}
+
+		internal Dictionary<string,string> DirectoryMaps {
+			get { return directory_maps; }
 		}
 
 		public string PrintConfiguration (bool expert_mode)

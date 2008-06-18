@@ -17,7 +17,7 @@ namespace Mono.Debugger
 	{
 		public string Name {
 			get {
-				return Path.GetFileName (filename);
+				return filename;
 			}
 		}
 
@@ -26,7 +26,7 @@ namespace Mono.Debugger
 		// </summary>
 		public string FileName {
 			get {
-				return Path.GetFullPath (filename);
+				return path;
 			}
 		}
 
@@ -85,11 +85,25 @@ namespace Mono.Debugger
 			return new SourceLocation (this, line);
 		}
 
-		public SourceFile (Module module, string filename)
+		public SourceFile (DebuggerSession session, Module module, string name)
 		{
 			this.id = ++next_id;
 			this.module = module;
-			this.filename = filename;
+
+			if ((name == "") || (name == null)) {
+				this.path = this.filename = "";
+			} else {
+				if ((name.Length > 1) && (name [1] == ':'))
+					name = session.MapFileName (name);
+
+				if ((name.Length > 1) && (name [1] == ':'))
+					this.path = this.filename = name;
+				else {
+					name = session.MapFileName (name);
+					this.path = Path.GetFullPath (name);
+					this.filename = Path.GetFileName (name);
+				}
+			}
 		}
 
 		public override int GetHashCode ()
@@ -106,7 +120,9 @@ namespace Mono.Debugger
 			return (id == file.id) && (filename == file.filename) && (module == file.module);
 		}
 
+		string path;
 		string filename;
+
 		Module module;
 		int id;
 		static int next_id = 0;

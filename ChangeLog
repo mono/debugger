@@ -1,3 +1,12 @@
+2008-06-18  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.xsd: Add <DirectoryMaps> section
+	containing `<Map from="c:/cygwin/home/ichotolot" to="/work/mordor"/>'
+	entries.
+
+	* classes/SourceInfo.cs
+	(SourceFile.ctor): Added `DebuggerSession' argument; do directory maps.
+
 2008-06-17  Jb Evain  <jbevain@novell.com>
 
 	* configure.in: detect the internal Cecil library that

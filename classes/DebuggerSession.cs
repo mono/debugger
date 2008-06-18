@@ -3,6 +3,7 @@ using System.IO;
 using System.Reflection;
 using System.Configuration;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -47,6 +48,8 @@ namespace Mono.Debugger
 		protected readonly Hashtable thread_groups;
 		protected readonly ThreadGroup main_thread_group;
 
+		protected readonly Dictionary<string,string> directory_maps;
+
 		Process main_process;
 		IExpressionParser parser;
 		XmlDocument saved_session;
@@ -63,6 +66,7 @@ namespace Mono.Debugger
 			displays = Hashtable.Synchronized (new Hashtable ());
 			thread_groups = Hashtable.Synchronized (new Hashtable ());
 			main_thread_group = CreateThreadGroup ("main");
+			directory_maps = new Dictionary<string,string> ();
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
@@ -155,6 +159,13 @@ namespace Mono.Debugger
 
 			XPathNodeIterator options_iter = session_iter.Current.Select ("Options/*");
 			Options = new DebuggerOptions (options_iter);
+
+			XPathNodeIterator dir_map_iter = session_iter.Current.Select ("DirectoryMap/Map");
+			while (dir_map_iter.MoveNext ()) {
+				string from = dir_map_iter.Current.GetAttribute ("from", "");
+				string to = dir_map_iter.Current.GetAttribute ("to", "");
+				directory_maps.Add (from, to);
+			}
 
 			LoadSession (nav);
 		}
@@ -499,6 +510,40 @@ namespace Mono.Debugger
 		public void DeleteDisplay (Display d)
 		{
 			displays.Remove (d.Index);
+		}
+
+		//
+		// File names and Directories
+		//
+
+		public string WindowsToUnix (string path)
+		{
+			path = path.Replace ('\\', '/');
+			return path;
+		}
+
+		bool map_file_name (ref string path, string from, string to)
+		{
+			if (!path.StartsWith (from))
+				return false;
+
+			path = Path.Combine (to, path.Substring (from.Length + 1));
+			return true;
+		}
+
+		public string MapFileName (string path)
+		{
+			foreach (KeyValuePair<string,string> map in directory_maps) {
+				if (map_file_name (ref path, map.Key, map.Value))
+					return path;
+			}
+
+			foreach (KeyValuePair<string,string> map in Config.DirectoryMaps) {
+				if (map_file_name (ref path, map.Key, map.Value))
+					return path;
+			}
+
+			return path;
 		}
 	}
 }
