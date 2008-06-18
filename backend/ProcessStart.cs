@@ -64,7 +64,7 @@ namespace Mono.Debugger.Backend
 		internal ProcessStart (DebuggerSession session)
 		{
 			if (session == null)
-				throw new ArgumentException ();
+				throw new ArgumentNullException ();
 
 			this.session = session;
 			this.options = session.Options;
@@ -73,9 +73,9 @@ namespace Mono.Debugger.Backend
 				options.File = BuildInfo.xsp;
 
 			if ((options.File == null) || (options.File == ""))
-				throw new ArgumentException ();
+				throw new ArgumentException ("options.File null or empty", "options");
 			if (options.InferiorArgs == null)
-				throw new ArgumentException ();
+				throw new ArgumentException ("InferiorArgs null", "options");
 
 			stop_in_main = options.StopInMain;
 
