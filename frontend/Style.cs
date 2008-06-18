@@ -110,7 +110,7 @@ namespace Mono.Debugger.Frontend
 			} else
 				buffer = location.SourceBuffer;
 
-			if ((buffer == null) || (buffer.Contents == null))
+			if ((buffer == null) || (buffer.Contents == null) || (location.Row == 0))
 				return false;
 
 			string line = buffer.Contents [location.Row - 1];
