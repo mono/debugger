@@ -1584,6 +1584,11 @@ namespace Mono.Debugger.Frontend
 
 	public class RunCommand : RunCommandBase
 	{
+		public override void Repeat (Engine e)
+		{
+			// Do not repeat the run command.
+		}
+		
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			context.Interpreter.Options.StopInMain = true;
@@ -3165,6 +3170,11 @@ namespace Mono.Debugger.Frontend
 			return handle.Index;
 		}
 
+		public override void Repeat (Engine e)
+		{
+			// Do not repeat the break command.
+		}
+		
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
 		public string Description { get { return "Insert breakpoint."; } }
@@ -3218,6 +3228,11 @@ namespace Mono.Debugger.Frontend
 			return index;
 		}
 
+		public override void Repeat (Engine e)
+		{
+			// Do not repeat the catch command.
+		}
+		
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Catchpoints; } }
 		public string Description { get { return "Stop execution when an exception is raised."; } }
@@ -3265,6 +3280,11 @@ namespace Mono.Debugger.Frontend
 
 		}
 
+		public override void Repeat (Engine e)
+		{
+			// Do not repeat the watch command.
+		}
+		
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Catchpoints; } }
 		public string Description { get { return "Insert a hardware watchpoint."; } }
