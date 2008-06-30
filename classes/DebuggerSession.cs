@@ -527,6 +527,7 @@ namespace Mono.Debugger
 
 		public string MapFileName (string path)
 		{
+			path = DebuggerConfiguration.WindowsToUnix (path);
 			foreach (KeyValuePair<string,string> map in directory_maps) {
 				if (map_file_name (ref path, map.Key, map.Value))
 					return path;
