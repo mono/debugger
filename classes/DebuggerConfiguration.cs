@@ -288,8 +288,14 @@ namespace Mono.Debugger
 			get { return is_xsp; }
 		}
 
-		internal Dictionary<string,string> DirectoryMaps {
+		public Dictionary<string,string> DirectoryMaps {
 			get { return directory_maps; }
+		}
+
+		public static string WindowsToUnix (string path)
+		{
+			path = path.Replace ('\\', '/');
+			return path;
 		}
 
 		public string PrintConfiguration (bool expert_mode)

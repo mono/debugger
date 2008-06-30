@@ -404,7 +404,7 @@ namespace Mono.Debugger.Languages.Mono
 			foreach (C.SourceFileEntry source in File.Sources) {
 				string file_name = source.FileName;
 				if (need_conversion)
-					file_name = process.Session.WindowsToUnix (file_name);
+					file_name = DebuggerConfiguration.WindowsToUnix (file_name);
 
 				SourceFile info = new MonoSourceFile (
 					process.Session, Module, source, file_name);

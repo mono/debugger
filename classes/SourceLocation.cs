@@ -89,13 +89,7 @@ namespace Mono.Debugger
 			}
 
 			if (FileName != null) {
-				int pos = FileName.IndexOf (':');
-				if (pos < 0)
-					return false;
-
-				string filename = FileName.Substring (0, pos);
-
-				SourceFile file = session.FindFile (filename);
+				SourceFile file = session.FindFile (FileName);
 				if (file == null)
 					return false;
 
@@ -234,6 +228,9 @@ namespace Mono.Debugger
 				} else {
 					throw new TargetException (TargetError.LocationInvalid);
 				}
+
+				if ((source != null) && source.IsManaged)
+					function = source.Function;
 			}
 
 			if (function != null)

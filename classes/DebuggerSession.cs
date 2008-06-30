@@ -516,12 +516,6 @@ namespace Mono.Debugger
 		// File names and Directories
 		//
 
-		public string WindowsToUnix (string path)
-		{
-			path = path.Replace ('\\', '/');
-			return path;
-		}
-
 		bool map_file_name (ref string path, string from, string to)
 		{
 			if (!path.StartsWith (from))
