@@ -107,6 +107,8 @@ namespace Mono.Debugger
 					StayInThread = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "FollowFork")
 					FollowFork = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "OpaqueFileNames")
+					OpaqueFileNames = Boolean.Parse (iter.Current.Value);
 				else
 					throw new InvalidOperationException ();
 			}
@@ -151,6 +153,10 @@ namespace Mono.Debugger
 				follow_fork_e.InnerText = FollowFork ? "true" : "false";
 				element.AppendChild (follow_fork_e);
 
+				XmlElement opaque_file_names_e = doc.CreateElement ("OpaqueFileNames");
+				opaque_file_names_e.InnerText = OpaqueFileNames ? "true" : "false";
+				element.AppendChild (opaque_file_names_e);
+
 				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
 				doc.DocumentElement.AppendChild (module_groups);
 
@@ -167,6 +173,7 @@ namespace Mono.Debugger
 		bool follow_fork = false;
 		bool notify_thread_creation = true;
 		bool hide_auto_generated = false;
+		bool opaque_file_names = false;
 		bool is_xsp = false;
 		Hashtable module_groups;
 		Dictionary<string,string> directory_maps;
@@ -269,6 +276,11 @@ namespace Mono.Debugger
 		public bool FollowFork {
 			get { return follow_fork; }
 			set { follow_fork = value; }
+		}
+
+		public bool OpaqueFileNames {
+			get { return opaque_file_names; }
+			set { opaque_file_names = value; }
 		}
 
 		/*

@@ -1,3 +1,9 @@
+2008-06-30  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.OpaqueFileNames): New public property;
+	allows us to use Windows file names.
+
 2008-06-18  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadVersion.cs

@@ -92,6 +92,8 @@ namespace Mono.Debugger
 
 			if ((name == "") || (name == null)) {
 				this.path = this.filename = "";
+			} else if (session.Config.OpaqueFileNames) {
+				this.path = this.filename = name;
 			} else {
 				if ((name.Length > 1) && (name [1] == ':'))
 					name = session.MapFileName (name);

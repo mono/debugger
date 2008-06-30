@@ -94,7 +94,7 @@ namespace Mono.Debugger
 					return file;
 			}
 
-			if (Path.IsPathRooted (filename))
+			if (Session.Config.OpaqueFileNames || Path.IsPathRooted (filename))
 				return null;
 
 			filename = Path.GetFullPath (Path.Combine (

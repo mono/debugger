@@ -6,6 +6,7 @@
       <xs:element name="BrokenThreading" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="StayInThread" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="FollowFork" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="OpaqueFileNames" type="xs:boolean" minOccurs="0" maxOccurs="1" />
     </xs:choice>
   </xs:complexType>
   <xs:complexType name="Options">

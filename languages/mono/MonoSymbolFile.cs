@@ -397,7 +397,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			bool need_conversion = false;
 			if ((Environment.OSVersion.Platform == PlatformID.Unix) &&
-			    ((File.OffsetTable.FileFlags & C.OffsetTable.Flags.WindowsFileNames) != 0)) {
+			    ((File.OffsetTable.FileFlags & C.OffsetTable.Flags.WindowsFileNames) != 0) &&
+			    !process.Session.Config.OpaqueFileNames) {
 				need_conversion = true;
 			}			
 
