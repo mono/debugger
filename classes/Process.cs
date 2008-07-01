@@ -84,43 +84,6 @@ namespace Mono.Debugger
 			get { return servant.Modules; }
 		}
 
-		public SourceFile FindFile (string filename)
-		{
-			Module[] modules = servant.Modules;
-
-			foreach (Module module in modules) {
-				SourceFile file = module.FindFile (filename);
-				if (file != null)
-					return file;
-			}
-
-			if (Session.Config.OpaqueFileNames || Path.IsPathRooted (filename))
-				return null;
-
-			filename = Path.GetFullPath (Path.Combine (
-				servant.ProcessStart.Options.WorkingDirectory, filename));
-
-			foreach (Module module in modules) {
-				SourceFile file = module.FindFile (filename);
-				if (file != null)
-					return file;
-			}
-
-			return null;
-		}
-
-		public SourceLocation FindMethod (string name)
-		{
-			foreach (Module module in Modules) {
-				MethodSource method = module.FindMethod (name);
-				
-				if (method != null)
-					return new SourceLocation (method);
-			}
-
-			return null;
-		}
-
 		public TargetAddress LookupSymbol (string name)
 		{
 			return servant.LookupSymbol (name);

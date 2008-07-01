@@ -28,9 +28,10 @@ namespace Mono.Debugger.Frontend
 			return parser.Parse (expression);
 		}
 
-		protected static SourceLocation FindFile (Thread target, string filename, int line)
+		protected static SourceLocation FindFile (ScriptingContext context, string filename,
+							  int line)
 		{
-			SourceFile file = target.Process.FindFile (filename);
+			SourceFile file = context.Interpreter.Session.FindFile (filename);
 			if (file == null)
 				throw new ScriptingException ("Cannot find source file `{0}'.",
 							      filename);
@@ -44,13 +45,9 @@ namespace Mono.Debugger.Frontend
 			return new SourceLocation (source, file, line);
 		}
 
-		protected SourceLocation DoParseExpression (Thread target, StackFrame frame,
+		protected SourceLocation DoParseExpression (ScriptingContext context,
 							    LocationType type, string arg)
 		{
-			ScriptingContext context = new ScriptingContext (Interpreter);
-			context.CurrentThread = frame.Thread;
-			context.CurrentFrame = frame;
-
 			Expression expr = Interpreter.ExpressionParser.Parse (arg);
 			if (expr == null)
 				throw new ScriptingException ("Cannot resolve expression `{0}'.", arg);
@@ -63,8 +60,8 @@ namespace Mono.Debugger.Frontend
 				return context.FindMethod (arg);
 		}
 
-		public static bool ParseLocation (Thread target, StackFrame frame,
-						  string arg, out SourceLocation location)
+		public static bool ParseLocation (ScriptingContext context, string arg,
+						  out SourceLocation location)
 		{
 			int line;
 			int pos = arg.IndexOf (':');
@@ -76,7 +73,7 @@ namespace Mono.Debugger.Frontend
 					throw new ScriptingException ("Expected filename:line");
 				}
 
-				location = FindFile (frame.Thread, filename, line);
+				location = FindFile (context, filename, line);
 				return true;
 			}
 
@@ -87,33 +84,38 @@ namespace Mono.Debugger.Frontend
 				return false;
 			}
 
+			StackFrame frame = context.CurrentFrame;
 			if ((frame == null) || (frame.SourceLocation == null) ||
 			    (frame.SourceLocation.FileName == null))
 				throw new ScriptingException (
 					"Current stack frame doesn't have source code");
 
-			location = FindFile (frame.Thread, frame.SourceLocation.FileName, line);
+			location = FindFile (context, frame.SourceLocation.FileName, line);
 			return true;
 		}
 
-		protected SourceLocation DoParse (Thread target, StackFrame frame,
-						  LocationType type, string arg)
+		protected SourceLocation DoParse (ScriptingContext context, LocationType type,
+						  string arg)
 		{
 			if (type != LocationType.Default)
-				return DoParseExpression (target, frame, type, arg);
+				return DoParseExpression (context, type, arg);
 
 			SourceLocation location;
-			if (ParseLocation (target, frame, arg, out location))
+			if (ParseLocation (context, arg, out location))
 				return location;
 
-			return DoParseExpression (target, frame, type, arg);
+			return DoParseExpression (context, type, arg);
 		}
 
 		public SourceLocation Parse (Thread target, StackFrame frame,
 					     LocationType type, string arg)
 		{
+			ScriptingContext context = new ScriptingContext (Interpreter);
+			context.CurrentThread = target;
+			context.CurrentFrame = frame;
+
 			try {
-				return DoParse (target, frame, type, arg);
+				return DoParse (context, type, arg);
 			} catch (ScriptingException ex) {
 				throw new TargetException (TargetError.LocationInvalid, ex.Message);
 			}

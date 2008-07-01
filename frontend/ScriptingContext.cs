@@ -335,7 +335,14 @@ namespace Mono.Debugger.Frontend
 
 		public SourceLocation FindMethod (string name)
 		{
-			return CurrentProcess.FindMethod (name);
+			foreach (Module module in CurrentProcess.Modules) {
+				MethodSource method = module.FindMethod (name);
+				
+				if (method != null)
+					return new SourceLocation (method);
+			}
+
+			return null;
 		}
 
 		public void ShowSources (Module module)

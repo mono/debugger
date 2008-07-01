@@ -225,12 +225,32 @@ namespace Mono.Debugger
 			return parser.Parse (target, frame, type, name);
 		}
 
-		public SourceFile FindFile (string name)
+		public SourceFile FindFile (string filename)
 		{
 			if (main_process == null)
 				return null;
 
-			return main_process.FindFile (name);
+			Module[] modules = main_process.Modules;
+
+			foreach (Module module in modules) {
+				SourceFile file = module.FindFile (filename);
+				if (file != null)
+					return file;
+			}
+
+			if (Config.OpaqueFileNames || Path.IsPathRooted (filename))
+				return null;
+
+			filename = Path.GetFullPath (Path.Combine (
+				Options.WorkingDirectory, filename));
+
+			foreach (Module module in modules) {
+				SourceFile file = module.FindFile (filename);
+				if (file != null)
+					return file;
+			}
+
+			return null;
 		}
 
 		//
