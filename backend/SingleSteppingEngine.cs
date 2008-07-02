@@ -1547,9 +1547,13 @@ namespace Mono.Debugger.Backend
 				} catch (TargetException ex) {
 					Report.Error ("Cannot insert breakpoint {0}: {1}",
 						      e.Index, ex.Message);
+					breakpoint.OnBreakpointError (
+						"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);
 				} catch (Exception ex) {
 					Report.Error ("Cannot insert breakpoint {0}: {1}",
 						      e.Index, ex.Message);
+					breakpoint.OnBreakpointError (
+						"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);
 				}
 			}
 
@@ -2297,6 +2301,8 @@ namespace Mono.Debugger.Backend
 				      "{0} insert breakpoint done: {1:x} {2:x}",
 				      sse, data1, data2);
 
+
+			Handle.Breakpoint.OnBreakpointBound ();
 			return EventResult.AskParent;
 		}
 	}

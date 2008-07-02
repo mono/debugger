@@ -1,3 +1,9 @@
+2008-07-02  Martin Baulig  <martin@ximian.com>
+
+	* classes/Breakpoint.cs
+	(Breakpoint.OnBreakpointBound): New protected internal virtual method.
+	(Breakpoint.OnBreakpointError): Likewise.
+
 2008-06-30  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerConfiguration.cs

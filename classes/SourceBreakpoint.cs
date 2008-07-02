@@ -18,8 +18,8 @@ namespace Mono.Debugger
 			get { return location; }
 		}
 
-		internal SourceBreakpoint (DebuggerSession session, ThreadGroup group,
-					   SourceLocation location)
+		public SourceBreakpoint (DebuggerSession session, ThreadGroup group,
+					 SourceLocation location)
 			: base (EventType.Breakpoint, location.Name, group)
 		{
 			this.session = session;

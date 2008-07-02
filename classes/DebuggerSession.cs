@@ -491,7 +491,7 @@ namespace Mono.Debugger
 			return (Event) events [index];
 		}
 
-		internal void AddEvent (Event handle)
+		public void AddEvent (Event handle)
 		{
 			events.Add (handle.Index, handle);
 		}

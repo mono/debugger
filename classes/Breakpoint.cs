@@ -55,6 +55,17 @@ namespace Mono.Debugger
 			return true;
 		}
 
+		protected internal virtual void OnBreakpointBound ()
+		{ }
+
+		protected internal virtual void OnBreakpointError (string message)
+		{ }
+
+		internal void OnBreakpointError (string message, params object[] args)
+		{
+			OnBreakpointError (String.Format (message, args));
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} ({1}:{2})", GetType (), Index, Name);
