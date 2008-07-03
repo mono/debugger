@@ -786,6 +786,9 @@ namespace Mono.Debugger.Frontend
 			if (Repeating)
 				return true;
 
+			if (Args == null)
+				throw new ScriptingException ("Argument expected");
+
 			if (Args.Count > 1) {
 				string formatArgument = (string) Args [0];
 				Match match = formatRegex.Match (formatArgument);
