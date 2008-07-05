@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using ST = System.Threading;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -105,6 +106,30 @@ namespace Mono.Debugger
 		{
 			if (TargetOutputEvent != null)
 				TargetOutputEvent (is_stderr, output);
+		}
+
+		//
+		// Stopping / resuming all threads for the GUI
+		//
+
+		GUIManager manager;
+
+		public GUIManager StartGUIManager ()
+		{
+			if (manager != null)
+				throw new InvalidOperationException ();
+
+			manager = new GUIManager (this);
+			manager.StartGUIManager ();
+			return manager;
+		}
+
+		internal void OnTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			if (manager != null)
+				manager.OnTargetEvent (sse, args);
+
+			Debugger.OnTargetEvent (sse.Client, args);
 		}
 
 		//

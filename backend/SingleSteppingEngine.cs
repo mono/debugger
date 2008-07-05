@@ -490,7 +490,7 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}: {2}",
 					      this, current_operation, result);
 				if (result != null)
-					manager.Debugger.SendTargetEvent (this, result);
+					process.OnTargetEvent (this, result);
 				if (current_operation != null) {
 					Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
 						      this, current_operation.Result);
@@ -1665,7 +1665,7 @@ namespace Mono.Debugger.Backend
 					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.TargetStopped, 0, current_frame);
-					manager.Debugger.SendTargetEvent (this, args);
+					process.OnTargetEvent (this, args);
 					return null;
 				}
 

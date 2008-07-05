@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using ST = System.Threading;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -660,6 +661,15 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock #1: {0}", caller);
+		}
+
+		//
+		// Stopping / resuming all threads for the GUI
+		//
+
+		internal void OnTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			client.OnTargetEvent (sse, args);
 		}
 
 		//
