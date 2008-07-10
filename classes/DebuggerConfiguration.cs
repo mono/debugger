@@ -109,6 +109,8 @@ namespace Mono.Debugger
 					FollowFork = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "OpaqueFileNames")
 					OpaqueFileNames = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "Martin_Boston_07102008")
+					Private_Martin_Boston_07102008 = Boolean.Parse (iter.Current.Value);
 				else
 					throw new InvalidOperationException ();
 			}
@@ -281,6 +283,10 @@ namespace Mono.Debugger
 		public bool OpaqueFileNames {
 			get { return opaque_file_names; }
 			set { opaque_file_names = value; }
+		}
+
+		public bool Private_Martin_Boston_07102008 {
+			get; set;
 		}
 
 		/*

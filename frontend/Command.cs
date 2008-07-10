@@ -1612,6 +1612,9 @@ namespace Mono.Debugger.Frontend
 	{
 		protected override bool DoResolve (ScriptingContext context)
 		{
+			if (!context.Interpreter.DebuggerConfiguration.Private_Martin_Boston_07102008)
+				throw new ScriptingException (
+					"Attaching is not supported in this version of the Mono Debugger.");
 			if (!context.HasTarget)
 				return true;
 

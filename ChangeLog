@@ -1,3 +1,8 @@
+2008-07-10  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs (Attach): Effective immediately, attaching
+	is no longer supported and has been disabled.
+
 2008-07-04  Martin Baulig  <martin@ximian.com>
 
 	* classes/GUIManager.cs

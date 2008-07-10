@@ -68,6 +68,10 @@ TEST_DEPS = \
 	-r:nunit.framework				\
 	-r:nunit.core
 
+if MARTIN_PRIVATE
+MCS_FLAGS += -define:MARTIN_PRIVATE
+endif
+
 Mono.Debugger.dll: Makefile $(srcdir)/Mono.Cecil.dll $(DEBUGGER_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(DEBUGGER_DEPS) $(DEBUGGER_SRCLIST)
 
@@ -125,7 +129,7 @@ uninstall-local:
 NUNIT_CONSOLE_FLAGS =
 
 check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST)
-	$(builddir)/runtests /output:TestResult.log /exclude:NotWorking /xml:TestResult.xml || ok=false; \
+	$(builddir)/runtests /output:TestResult.log /exclude:Attach,NotWorking /xml:TestResult.xml || ok=false; \
 	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 	$$ok
 

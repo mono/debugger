@@ -258,6 +258,12 @@ if test x$mono_working != xyes; then
    AC_MSG_ERROR([*** Your Mono is too old for this version of the debugger.])
 fi
 
+martin_private=no
+if test x`hostname --fqdn` = x'gondor.trier.ximian.com'; then
+   martin_private=yes
+fi
+AM_CONDITIONAL(MARTIN_PRIVATE, test x$martin_private = xyes)
+
 AM_CONDITIONAL(DISABLED, false)
 
 AC_OUTPUT([

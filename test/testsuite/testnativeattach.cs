@@ -1,3 +1,4 @@
+#if MARTIN_PRIVATE
 using System;
 using SD = System.Diagnostics;
 using ST = System.Threading;
@@ -100,3 +101,4 @@ namespace Mono.Debugger.Tests
 		}
 	}
 }
+#endif
