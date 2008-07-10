@@ -267,6 +267,8 @@ namespace Mono.Debugger.Backend
 
 			add_env_path (hash, "MONO_SHARED_HOSTNAME", "mdb");
 
+			add_env_path (hash, "MONO_GENERIC_SHARING", "none");
+
 			ArrayList list = new ArrayList ();
 			foreach (DictionaryEntry entry in hash) {
 				string key = (string) entry.Key;

@@ -1,5 +1,8 @@
 2008-07-10  Martin Baulig  <martin@ximian.com>
 
+	* backend/ProcessStart.cs
+	(ProcessStart.SetupEnvironment): Set `MONO_GENERIC_SHARING = none'.
+
 	* frontend/Command.cs (Attach): Effective immediately, attaching
 	is no longer supported and has been disabled.
 
