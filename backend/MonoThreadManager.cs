@@ -344,12 +344,14 @@ namespace Mono.Debugger.Backend
 				case NotificationType.ClassInitialized:
 					break;
 
+#if MARTIN_PRIVATE
 				case NotificationType.InterruptionRequest:
 					inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 0);
 					engine.DoManagedCallback (managed_callbacks.ToArray ());
 					managed_callbacks = new Queue<ManagedCallbackFunction> ();
 					resume_target = false;
 					return true;
+#endif
 
 				default: {
 					TargetAddress data = new TargetAddress (
