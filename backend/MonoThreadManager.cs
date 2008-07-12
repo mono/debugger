@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 
@@ -46,9 +47,12 @@ namespace Mono.Debugger.Backend
 		DomainCreate,
 		DomainUnload,
 		ClassInitialized,
+		InterruptionRequest,
 
 		Trampoline	= 256
 	}
+
+	internal delegate object ManagedCallbackFunction (SingleSteppingEngine engine);
 
 	internal class MonoThreadManager
 	{
@@ -185,9 +189,16 @@ namespace Mono.Debugger.Backend
 			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 0);
 		}
 
+		internal void AddManagedCallback (Inferior inferior, ManagedCallbackFunction func)
+		{
+			inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 1);
+			managed_callbacks.Enqueue (func);
+		}
+
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		MonoLanguageBackend csharp_language;
+		Queue<ManagedCallbackFunction> managed_callbacks = new Queue<ManagedCallbackFunction> ();
 
 		internal bool CanExecuteCode {
 			get { return mono_runtime_info != IntPtr.Zero; }
@@ -333,6 +344,13 @@ namespace Mono.Debugger.Backend
 				case NotificationType.ClassInitialized:
 					break;
 
+				case NotificationType.InterruptionRequest:
+					inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 0);
+					engine.DoManagedCallback (managed_callbacks.ToArray ());
+					managed_callbacks = new Queue<ManagedCallbackFunction> ();
+					resume_target = false;
+					return true;
+
 				default: {
 					TargetAddress data = new TargetAddress (
 						inferior.AddressDomain, cevent.Data1);
@@ -405,6 +423,7 @@ namespace Mono.Debugger.Backend
 		public readonly TargetAddress EventHandler;
 
 		public readonly TargetAddress UsingMonoDebugger;
+		public readonly TargetAddress InterruptionRequest;
 
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
@@ -484,6 +503,7 @@ namespace Mono.Debugger.Backend
 			EventHandler              = reader.ReadAddress ();
 
 			UsingMonoDebugger         = reader.ReadAddress ();
+			InterruptionRequest       = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}

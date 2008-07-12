@@ -1,3 +1,16 @@
+2008-07-11  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ThreadLockData): New protected class; moved `stopped' and
+	`stop_event' here from the SSE.
+	(SSE): Replaced `has_thread_lock' with `ThreadLockData thread_lock'.
+	(SSE.EventResult): Add `ParentResumed' -> the child operation has
+	completed, but the target is running (ie. kill the child operation
+	and then return `EventResult.Running').
+	(SSE.ManagedCallback): New method; this is private for the moment,
+	but I'd like to have this in SVN before flying back to Germany.
+	(SSE.OperationManagedCallback): New operation.
+
 2008-07-10  Martin Baulig  <martin@ximian.com>
 
 	* backend/ProcessStart.cs

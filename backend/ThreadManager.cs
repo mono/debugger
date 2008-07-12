@@ -264,6 +264,7 @@ namespace Mono.Debugger.Backend
 
 		internal void AddPendingEvent (SingleSteppingEngine engine, Inferior.ChildEvent cevent)
 		{
+			Report.Debug (DebugFlags.Wait, "Add pending event: {0} {1}", engine, cevent);
 			pending_events.Add (engine, cevent);
 		}
 
@@ -342,6 +343,8 @@ namespace Mono.Debugger.Backend
 				} catch (Exception ex) {
 					command.Result = ex;
 				}
+
+				check_pending_events ();
 
 				engine_event.Set ();
 			} else if (command.Type == CommandType.CreateProcess) {

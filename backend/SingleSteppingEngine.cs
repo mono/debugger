@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Diagnostics;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -164,14 +165,11 @@ namespace Mono.Debugger.Backend
 				return;
 			}
 
-			if (has_thread_lock) {
+			if (HasThreadLock) {
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} received event {1} at {3} while being thread-locked ({2})",
-					      this, cevent, stop_event, inferior.CurrentFrame);
-				if (stop_event != null)
-					throw new InternalError ();
-				stop_event = cevent;
-				stopped = true;
+					      this, cevent, thread_lock, inferior.CurrentFrame);
+				thread_lock.SetStopEvent (cevent);
 				return;
 			}
 			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION)
@@ -207,7 +205,7 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.EventLoop,
 					      "{0} done handling event: {1} {2} {3} {4}",
 					      this, cevent, resume_target, stop_requested,
-					      has_thread_lock);
+					      HasThreadLock);
 				if (!resume_target)
 					return;
 				if (stop_requested) {
@@ -589,7 +587,7 @@ namespace Mono.Debugger.Backend
 		void StartOperation ()
 		{
 			lock (this) {
-				if (!engine_stopped || (has_thread_lock && (pending_operation != null))) {
+				if (!engine_stopped || (HasThreadLock && (pending_operation != null))) {
 					Report.Debug (DebugFlags.Wait,
 						      "{0} not stopped", this);
 					throw new TargetException (TargetError.NotStopped);
@@ -624,7 +622,7 @@ namespace Mono.Debugger.Backend
 		{
 			stop_requested = false;
 
-			if (has_thread_lock) {
+			if (HasThreadLock) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} starting {1} while being thread-locked",
 					      this, operation);
@@ -641,7 +639,10 @@ namespace Mono.Debugger.Backend
 
 		void PushOperation (Operation operation)
 		{
-			current_operation.PushOperation (operation);
+			if (current_operation != null)
+				current_operation.PushOperation (operation);
+			else
+				current_operation = operation;
 			ExecuteOperation (operation);
 		}
 
@@ -754,6 +755,10 @@ namespace Mono.Debugger.Backend
 			}
 		}
 #endregion
+
+		internal bool HasThreadLock {
+			get { return thread_lock != null; }
+		}
 
 		protected TargetAddress EndStackAddress {
 			get { return end_stack_address; }
@@ -1414,8 +1419,9 @@ namespace Mono.Debugger.Backend
 				      "{0} acquiring thread lock: {1} {2}",
 				      this, engine_stopped, current_operation);
 
-			has_thread_lock = true;
-			stopped = inferior.Stop (out stop_event);
+			Inferior.ChildEvent stop_event;
+			bool stopped = inferior.Stop (out stop_event);
+			thread_lock = new ThreadLockData (stopped, stop_event, true);
 
 			Report.Debug (DebugFlags.Threads,
 				      "{0} acquiring thread lock #1: {1} {2}",
@@ -1439,17 +1445,21 @@ namespace Mono.Debugger.Backend
 
 		internal override void ReleaseThreadLock ()
 		{
+			if (thread_lock == null) {
+				Report.Debug (DebugFlags.Threads,
+					      "{0} thread lock already released!", this);
+				return;
+			}
+
 			Report.Debug (DebugFlags.Threads,
-				      "{0} releasing thread lock: {1} {2} {3} {4}",
-				      this, stopped, stop_event, inferior.CurrentFrame,
-				      current_operation);
+				      "{0} releasing thread lock: {1} {2} {3}", this, thread_lock,
+				      inferior.CurrentFrame, current_operation);
 
-			if (stop_event != null)
-				manager.AddPendingEvent (this, stop_event);
+			thread_lock.PopRegisters (inferior);
+			if (thread_lock.StopEvent != null)
+				manager.AddPendingEvent (this, thread_lock.StopEvent);
 
-			has_thread_lock = false;
-
-			inferior.PopRegisters ();
+			thread_lock = null;
 		}
 
 		internal void ReleaseThreadLock (Inferior.ChildEvent cevent)
@@ -1910,6 +1920,61 @@ namespace Mono.Debugger.Backend
 		}
 #endregion
 
+#if MARTIN_PRIVATE
+		//
+		// Not yet finished.
+		//
+
+		public void ManagedCallback (ManagedCallbackFunction func)
+		{
+			SendCommand (delegate {
+				Report.Debug (DebugFlags.SSE, "{0} starting managed callback: {1}", this, func);
+
+				AcquireThreadLock ();
+
+				if (!do_managed_callback (func)) {
+					bool ok = false;
+					process.AcquireGlobalThreadLock (this);
+					foreach (SingleSteppingEngine engine in process.ThreadServants) {
+						if (engine.do_managed_callback (func)) {
+							ok = true;
+							break;
+						}
+					}
+
+					if (!ok) {
+						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback", this);
+						process.MonoManager.AddManagedCallback (inferior, func);
+					}
+					process.ReleaseGlobalThreadLock (this);
+				}
+
+				ReleaseThreadLock ();
+
+				Report.Debug (DebugFlags.SSE, "{0} managed callback done", this);
+				return null;
+			});
+		}
+
+		bool do_managed_callback (ManagedCallbackFunction func)
+		{
+			Method method = Lookup (inferior.CurrentFrame);
+			if ((method == null) || !method.Module.Language.IsManaged)
+				return false;
+
+			Report.Debug (DebugFlags.SSE, "{0} found managed frame: {1} {2}", this,
+				      inferior.CurrentFrame, method);
+
+			PushOperation (new OperationManagedCallback (this, new [] { func }));
+			return true;
+		}
+
+		internal void DoManagedCallback (ManagedCallbackFunction[] callbacks)
+		{
+			PushOperation (new OperationManagedCallback (this, callbacks));
+		}
+#endif
+
 #region IDisposable implementation
 		protected override void DoDispose ()
 		{
@@ -1927,8 +1992,6 @@ namespace Mono.Debugger.Backend
 		protected Backtrace current_backtrace;
 		protected Registers registers;
 
-		bool stopped;
-		Inferior.ChildEvent stop_event;
 		Operation current_operation;
 		Operation pending_operation;
 
@@ -1937,11 +2000,12 @@ namespace Mono.Debugger.Backend
 		Hashtable exception_handlers;
 		bool engine_stopped;
 		bool stop_requested;
-		bool has_thread_lock;
 		bool is_main, reached_main;
 		bool killed, dead;
 		long tid;
 		int pid;
+
+		ThreadLockData thread_lock;
 
 		int stepping_over_breakpoint;
 
@@ -1974,6 +2038,49 @@ namespace Mono.Debugger.Backend
 				this.Registers = registers;
 			}
 		}
+
+		protected sealed class ThreadLockData
+		{
+			public bool Stopped {
+				get; private set;
+			}
+
+			public Inferior.ChildEvent StopEvent {
+				get; private set;
+			}
+
+			public bool PushedRegisters {
+				get; private set;
+			}
+
+			public ThreadLockData (bool stopped, Inferior.ChildEvent stop_event, bool pushed_regs)
+			{
+				this.Stopped = stopped;
+				this.StopEvent = stop_event;
+				this.PushedRegisters = pushed_regs;
+			}
+
+			public void SetStopEvent (Inferior.ChildEvent stop_event)
+			{
+				if (StopEvent != null)
+					throw new InternalError ();
+
+				StopEvent = stop_event;
+				Stopped = true;
+			}
+
+			public void PopRegisters (Inferior inferior)
+			{
+				if (PushedRegisters)
+					inferior.PopRegisters ();
+				PushedRegisters = false;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("ThreadLock ({0}:{1}:{2})", Stopped, StopEvent, PushedRegisters);
+			}
+		}
 #endregion
 
 #region SSE Operations
@@ -1984,7 +2091,8 @@ namespace Mono.Debugger.Backend
 			Completed,
 			CompletedCallback,
 			AskParent,
-			ResumeOperation
+			ResumeOperation,
+			ParentResumed
 		}
 
 		public abstract bool IsSourceOperation {
@@ -2062,6 +2170,12 @@ namespace Mono.Debugger.Backend
 				send_result = false;
 				return true;
 
+			case EventResult.ResumeOperation:
+				if (ResumeOperation ())
+					goto case EventResult.Running;
+				else
+					goto case EventResult.Completed;
+
 			default:
 				throw new InternalError ("FUCK: {0} {1}", this, result);
 			}
@@ -2078,6 +2192,11 @@ namespace Mono.Debugger.Backend
 
 			if (child != null) {
 				EventResult result = child.ProcessEvent (cevent, out args);
+
+				if (result == EventResult.ParentResumed) {
+					child = null;
+					return EventResult.Running;
+				}
 
 				if ((result != EventResult.AskParent) &&
 				    (result != EventResult.ResumeOperation))
@@ -2438,15 +2557,14 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} done releasing thread lock at {1} - {2}",
-				      sse, inferior.CurrentFrame, sse.has_thread_lock);
+				      sse, inferior.CurrentFrame, sse.HasThreadLock);
 
 			has_thread_lock = false;
 
-			if (!sse.has_thread_lock)
+			if (sse.thread_lock == null)
 				return true;
 
-			sse.stopped = true;
-			sse.stop_event = cevent;
+			sse.thread_lock.SetStopEvent (cevent);
 			return false;
 		}
 
@@ -3078,6 +3196,63 @@ namespace Mono.Debugger.Backend
 		protected void DiscardStack ()
 		{
 			stack_data = null;
+		}
+	}
+
+	protected class OperationManagedCallback : Operation
+	{
+		ThreadLockData thread_lock;
+		Inferior.ChildEvent stop_event;
+
+		public ManagedCallbackFunction[] CallbackFunctions {
+			get; private set;
+		}
+
+		public OperationManagedCallback (SingleSteppingEngine sse, ManagedCallbackFunction[] list)
+			: base (sse, null)
+		{
+			this.CallbackFunctions = list;
+		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected override void DoExecute ()
+		{
+			Report.Debug (DebugFlags.SSE, "{0} managed callback execute: {1}",
+				      sse, sse.thread_lock);
+
+			if (sse.HasThreadLock) {
+				this.thread_lock = sse.thread_lock;
+				sse.thread_lock = null;
+
+				this.thread_lock.PopRegisters (inferior);
+			}
+
+			foreach (ManagedCallbackFunction func in CallbackFunctions)
+				func (sse);
+
+			byte[] nop_insn = sse.Architecture.Opcodes.GenerateNopInstruction ();
+			sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
+
+			Report.Debug (DebugFlags.SSE, "{0} managed callback execute done", this);
+		}
+
+		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+							       out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} managed callback process event: {1} {2}",
+				      sse, cevent, thread_lock);
+
+			args = null;
+			if ((thread_lock != null) && (thread_lock.StopEvent != null)) {
+				sse.ThreadManager.AddPendingEvent (sse, thread_lock.StopEvent);
+				return EventResult.ParentResumed;
+			}
+
+			args = null;
+			return EventResult.ResumeOperation;
 		}
 	}
 
