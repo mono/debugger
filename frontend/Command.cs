@@ -951,6 +951,7 @@ namespace Mono.Debugger.Frontend
 	public class DisassembleCommand : FrameCommand, IDocumentableCommand
 	{
 		bool do_method;
+		bool do_frame;
 		int count = -1;
 		TargetAddress address;
 		Method method;
@@ -959,6 +960,11 @@ namespace Mono.Debugger.Frontend
 		public bool Method {
 			get { return do_method; }
 			set { do_method = value; }
+		}
+
+		new public bool Frame {
+			get { return do_frame; }
+			set { do_frame = value; }
 		}
 
 		public int Count {
@@ -995,7 +1001,7 @@ namespace Mono.Debugger.Frontend
 		{
 			Thread thread = CurrentThread;
 
-			if (do_method) {
+			if (do_frame || do_method) {
 				Method method = CurrentFrame.Method;
 
 				if ((method == null) || !method.IsLoaded)
@@ -1003,8 +1009,23 @@ namespace Mono.Debugger.Frontend
 						"Selected stack frame has no method.");
 
 				AssemblerMethod asm = CurrentThread.DisassembleMethod (method);
-				foreach (AssemblerLine insn in asm.Lines)
+
+				TargetAddress start, end;
+				if (do_method) {
+					start = method.StartAddress; end = method.EndAddress;
+				} else {
+					SourceAddress source = CurrentFrame.SourceAddress;
+					start = CurrentFrame.TargetAddress - source.SourceOffset;
+					end = CurrentFrame.TargetAddress + source.SourceRange;
+				}
+
+				foreach (AssemblerLine insn in asm.Lines) {
+					if ((insn.Address < start) || (insn.Address >= end))
+						continue;
+
 					context.Interpreter.PrintInstruction (insn);
+				}
+
 				return null;
 			}
 

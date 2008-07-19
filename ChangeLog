@@ -1,5 +1,12 @@
 2008-07-19  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(DisassembleCommand): Add `-frame' option to show disassembly for
+	the current step frame, ie. all code which belongs to the current
+	source line.
+
+2008-07-19  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Require Mono and XSP from the 2.0 branch.
 
 2008-07-11  Martin Baulig  <martin@ximian.com>
