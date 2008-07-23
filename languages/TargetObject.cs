@@ -80,6 +80,11 @@ namespace Mono.Debugger.Languages
 			return ToString ();
 		}
 
+		public string PrintLocation ()
+		{
+			return Location.Print ();
+		}
+
 		public override string ToString ()
 		{
 			return String.Format ("{0} [{1}]", GetType (), Type);

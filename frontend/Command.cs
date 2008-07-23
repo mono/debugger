@@ -2341,6 +2341,21 @@ namespace Mono.Debugger.Frontend
 
 			protected override object DoExecute (ScriptingContext context)
 			{
+				StructAccessExpression sae = expression as StructAccessExpression;
+				if ((sae != null) && (sae.InstanceObject != null)) {
+					string loc = sae.InstanceObject.PrintLocation ();
+					if (loc != null)
+						context.Print ("{0} is a field of type {1} contained in a " +
+							       "structure of type {2} stored at {3}",
+							       expression.Name, sae.Member.Type.Name, sae.Type.Name,
+							       loc);
+					else
+						context.Print ("{0} is a field of type {1} contained in a " +
+							       "structure of type {2}.", expression.Name,
+							       sae.Member.Type.Name, sae.Type.Name);
+					return null;
+				}
+
 				TargetVariable var = expression.EvaluateVariable (context);
 
 				string location = var.PrintLocation (CurrentFrame);
