@@ -40,6 +40,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("step");
 			AssertStopped (thread, "foo hello", "Foo<T>.Hello()");
 
+			AssertPrint (thread, "Data", "(int) 5");
 			AssertPrint (thread, "this", "(Foo`1<int>) { Data = 5 }");
 			AssertType (thread, "this",
 				    "class Foo`1<int> = Foo`1<T> : System.Object\n" +
