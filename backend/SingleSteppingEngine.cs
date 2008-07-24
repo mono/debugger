@@ -1065,6 +1065,9 @@ namespace Mono.Debugger.Backend
 					if (block.BlockType == Block.Type.IteratorDispatcher)
 						return new OperationStepIterator (
 							this, current_method, operation.Result);
+					else if (block.BlockType == Block.Type.CompilerGenerated)
+						return new OperationStepCompilerGenerated (
+							this, current_method, block, operation.Result);
 				}
 
 				SourceAddress source = current_method.LineNumberTable.Lookup (address);
@@ -4018,6 +4021,54 @@ namespace Mono.Debugger.Backend
 			Block block = method.LookupBlock (inferior, current_frame);
 			Report.Debug (DebugFlags.SSE, "{0} iterator block: {1}", sse, block);
 			if ((block != null) && block.IsIteratorBody)
+				return true;
+
+			sse.do_next_native ();
+			return false;
+		}
+
+		protected override bool TrampolineHandler (Method method)
+		{
+			if (method == null)
+				return false;
+
+			if (method.WrapperType == WrapperType.DelegateInvoke)
+				return true;
+
+			return sse.MethodHasSource (method);
+		}
+	}
+
+	protected class OperationStepCompilerGenerated : OperationStepBase
+	{
+		Method method;
+		Block block;
+
+		public OperationStepCompilerGenerated (SingleSteppingEngine sse, Method method,
+						       Block block, CommandResult result)
+			: base (sse, result)
+		{
+			this.method = method;
+			this.block = block;
+		}
+
+		public override bool IsSourceOperation {
+			get { return true; }
+		}
+
+		protected override void DoExecute ()
+		{
+			sse.do_next_native ();
+		}
+
+		protected override bool DoProcessEvent ()
+		{
+			TargetAddress current_frame = inferior.CurrentFrame;
+
+			Report.Debug (DebugFlags.SSE, "{0} compiler generated stopped at {1} ({2}:{3})",
+				      sse, current_frame, block.StartAddress, block.EndAddress);
+			if ((current_frame < method.StartAddress + block.StartAddress) ||
+			    (current_frame > method.StartAddress + block.EndAddress))
 				return true;
 
 			sse.do_next_native ();

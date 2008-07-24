@@ -1148,6 +1148,20 @@ namespace Mono.Debugger.Languages.Mono
 					file, this, source, method, address.LineNumbers.ToArray ()));
 			}
 
+			void do_read_blocks ()
+			{
+				if (code_blocks != null)
+					return;
+
+				C.CodeBlockEntry[] symfile_blocks = method.GetCodeBlocks ();
+				code_blocks = MonoCodeBlock.CreateBlocks (
+					this, address, symfile_blocks, out root_blocks);
+
+				foreach (C.CodeBlockEntry block in symfile_blocks)
+					if (block.BlockType == C.CodeBlockEntry.Type.IteratorBody)
+						is_iterator = true;
+			}
+
 			void do_read_variables (TargetMemoryAccess memory)
 			{
 				if (!is_loaded)
@@ -1165,13 +1179,7 @@ namespace Mono.Debugger.Languages.Mono
 				else
 					decl_type = (TargetStructType) decl;
 
-				C.CodeBlockEntry[] symfile_blocks = method.GetCodeBlocks ();
-				code_blocks = MonoCodeBlock.CreateBlocks (
-					this, address, symfile_blocks, out root_blocks);
-
-				foreach (C.CodeBlockEntry block in symfile_blocks)
-					if (block.BlockType == C.CodeBlockEntry.Type.IteratorBody)
-						is_iterator = true;
+				do_read_blocks ();
 
 				locals = new List<TargetVariable> ();
 				parameters = new List<TargetVariable> ();
@@ -1347,7 +1355,10 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			internal override bool IsIterator {
-				get { return is_iterator; }
+				get {
+					do_read_blocks ();
+					return is_iterator;
+				}
 			}
 
 			public override TargetVariable[] GetParameters (Thread target)

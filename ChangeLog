@@ -1,5 +1,12 @@
 2008-07-23  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStepCompilerGenerated): New operation.
+	(SSE.frame_changed): Check whether we're in compiler-generated
+	code and keep stepping if necessary.
+
+2008-07-23  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs
 	(ShowLocationCommand): Improve `show location' a bit to support
 	struct fields.	
