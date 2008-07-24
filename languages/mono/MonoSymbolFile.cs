@@ -1006,23 +1006,7 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
-			static int find_start_address (MethodAddress address, int il_offset)
-			{
-				int num_line_numbers = address.LineNumbers.Count;
-
-				for (int i = num_line_numbers - 1; i >= 0; i--) {
-					JitLineNumberEntry lne = address.LineNumbers [i];
-
-					if (lne.Offset < 0)
-						continue;
-					if (lne.Offset <= il_offset)
-						return lne.Address;
-				}
-
-				return num_line_numbers > 0 ? address.LineNumbers [0].Address : 0;
-			}
-
-			static int find_end_address (MethodAddress address, int il_offset)
+			static int find_address (MethodAddress address, int il_offset)
 			{
 				int num_line_numbers = address.LineNumbers.Count;
 
@@ -1047,8 +1031,8 @@ namespace Mono.Debugger.Languages.Mono
 				MonoCodeBlock[] blocks = new MonoCodeBlock [the_blocks.Length];
 				for (int i = 0; i < blocks.Length; i++) {
 					Block.Type type = (Block.Type) the_blocks [i].BlockType;
-					int start = find_start_address (address, the_blocks [i].StartOffset);
-					int end = find_end_address (address, the_blocks [i].EndOffset);
+					int start = find_address (address, the_blocks [i].StartOffset);
+					int end = find_address (address, the_blocks [i].EndOffset);
 					blocks [i] = new MonoCodeBlock (i, type, start, end);
 				}
 
@@ -1157,9 +1141,10 @@ namespace Mono.Debugger.Languages.Mono
 				code_blocks = MonoCodeBlock.CreateBlocks (
 					this, address, symfile_blocks, out root_blocks);
 
-				foreach (C.CodeBlockEntry block in symfile_blocks)
+				foreach (C.CodeBlockEntry block in symfile_blocks) {
 					if (block.BlockType == C.CodeBlockEntry.Type.IteratorBody)
 						is_iterator = true;
+				}
 			}
 
 			void do_read_variables (TargetMemoryAccess memory)

@@ -1135,7 +1135,6 @@ namespace Mono.Debugger.Backend
 
 			if (method.WrapperType != WrapperType.None)
 				return new OperationWrapper (this, method, operation.Result);
-
 			if (method.IsIterator)
 				return new OperationStepIterator (this, method, operation.Result);
 
