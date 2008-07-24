@@ -314,7 +314,7 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			try {
-				if (!MonoRuntime.MonoClassHasMethods (target, KlassAddress)) 
+				if (!MonoRuntime.MonoClassHasMethods (target, KlassAddress))
 					return;
 
 				int count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
@@ -344,8 +344,8 @@ namespace Mono.Debugger.Languages.Mono
 		public TargetAddress GetMethodAddress (TargetMemoryAccess target, int token)
 		{
 			get_methods (target);
-			if (!methods_by_token.ContainsKey (token))
-				throw new InternalError ();
+			if ((methods_by_token == null) || !methods_by_token.ContainsKey (token))
+				return TargetAddress.Null;
 			return methods_by_token [token];
 		}
 

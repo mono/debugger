@@ -3342,7 +3342,9 @@ namespace Mono.Debugger.Backend
 			switch (stage) {
 			case Stage.ResolvedClass:
 				if (!get_method_address ())
-					return;
+					throw new TargetException (TargetError.ClassNotInitialized,
+								   "Class `{0}' not initialized yet.",
+								   Function.DeclaringType.Name);
 				goto case Stage.HasMethodAddress;
 
 			case Stage.HasMethodAddress:
@@ -3379,6 +3381,8 @@ namespace Mono.Debugger.Backend
 		bool get_method_address ()
 		{
 			method = class_info.GetMethodAddress (inferior, Function.Token);
+			if (method.IsNull)
+				return false;
 
 			if ((instance == null) || instance.Type.IsByRef)
 				return true;
