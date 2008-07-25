@@ -161,7 +161,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	*((guint32 *) (code+16)) = method_argument1 & 0xffffffff;
 	*((guint32 *) (code+21)) = call_disp - 25;
 
-	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
+	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -290,7 +290,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 		cdata->data_size = data_size;
 	}
 
-	server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
+	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -314,7 +314,61 @@ server_ptrace_call_method_3 (ServerHandle *handle, guint64 method_address,
 			     guint32 blob_size, gconstpointer blob_data,
 			     guint64 callback_argument)
 {
-	return COMMAND_ERROR_NOT_IMPLEMENTED;
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	CallbackData *cdata;
+	guint32 new_esp;
+	int i;
+
+	static guint8 static_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0xcc };
+	int static_size = sizeof (static_code);
+	int size = static_size + blob_size;
+	guint8 *code = g_malloc0 (size);
+	guint32 *ptr = (guint32 *) (code + static_size + blob_size);
+	guint32 effective_address;
+	guint32 blob_start;
+	memcpy (code, static_code, static_size);
+	memcpy (code + static_size, blob_data, blob_size);
+
+	new_esp = INFERIOR_REG_ESP (arch->current_regs) - size;
+
+	blob_start = new_esp + static_size;
+	effective_address = address_argument ? address_argument : blob_start;
+
+	*((guint32 *) code) = new_esp + static_size - 1;
+	*((guint32 *) (code+4)) = method_argument;
+	*((guint32 *) (code+12)) = effective_address;
+	*((guint32 *) (code+20)) = new_esp;
+
+	cdata = g_new0 (CallbackData, 1);
+	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
+	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
+	cdata->call_address = new_esp + static_size;
+	cdata->stack_pointer = new_esp + 4;
+	cdata->callback_argument = callback_argument;
+	cdata->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
+
+	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
+	g_free (code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
+	INFERIOR_REG_EIP (arch->current_regs) = method_address;
+	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
+	INFERIOR_REG_EBP (arch->current_regs) = 0;
+
+	g_ptr_array_add (arch->callback_stack, cdata);
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
 
 }
 
@@ -487,6 +541,8 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	}
 
 	cdata = get_callback_data (arch);
+	if (cdata)
+		g_message (G_STRLOC ": %x - %x", cdata->call_address, INFERIOR_REG_EIP (arch->current_regs));
 	if (cdata && (cdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
 		guint64 exc_object;
 
