@@ -1131,6 +1131,29 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoNullObject ((TargetType) type, location);
 		}
 
+		public override TargetObjectObject CreateBoxedObject (Thread thread, TargetObject value)
+		{
+			TargetAddress klass;
+
+			if ((value is MonoClassObject)  && !value.Type.IsByRef)
+				klass = ((MonoClassObject) cobj).KlassAddress;
+			else if (value is TargetFundamentalObject) {
+				MonoClassType ctype = ((MonoFundamentalType) fobj.Type).MonoClassType;
+				MonoClassInfo info = (MonoClassInfo) thread.ThreadServant.DoTargetAccess (
+					delegate (TargetMemoryAccess target) {
+						return ctype.ResolveClass (target, true);
+					});
+				klass = info.KlassAddress;
+			} else
+				throw new InvalidOperationException ();
+
+			TargetAddress boxed = thread.CallMethod (MonoDebuggerInfo.GetBoxedObjectMethod, klass, value);
+			if (boxed.IsNull)
+				return null;
+
+			return new MonoObjectObject (builtin_types.ObjectType, new AbsoluteTargetLocation (boxed));
+		}
+
 		public override TargetPointerType CreatePointerType (TargetType type)
 		{
 			return null;

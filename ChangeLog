@@ -1,3 +1,30 @@
+2008-07-25  Martin Baulig  <martin@ximian.com>
+
+	* languages/Language.cs
+	(Language.CreateBoxedObject): New public method.
+
+	* frontend/Expression.cs
+	(CastExpression.DoCast): Add support for valuetype -> object.
+
+	* backend/Inferior.cs
+	(Inferior.CallMethod): Added overloaded version taking a `long'
+	and a `TargetObject' argument; the object will be copied to the
+	stack if it's stored in a register.
+
+	* classes/Thread.cs
+	(Thread.CallMethod): Added overloaded version taking a
+	`TargetAddress' and a `TargetObject' argument; the object will be
+	copied to the stack if it's stored in a register.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationCallMethod): Add support for the new address /
+	object marshaller.
+
+	* backend/server/server.h
+	(mono_debugger_server_call_method_3): New public method; added
+	method-call marshaller for methods taking an address and a
+	`MonoObject * '.
+
 2008-07-23  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs

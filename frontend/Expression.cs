@@ -2536,6 +2536,19 @@ namespace Mono.Debugger.Frontend
 		TargetObject DoCast (ScriptingContext context, Expression expr,
 				     TargetType target_type)
 		{
+			TargetObject source = expr.EvaluateObject (context);
+			if (source == null)
+				return null;
+
+			if (target_type is TargetObjectType) {
+				if (((source is TargetClassObject) && !source.Type.IsByRef) ||
+				    (source is TargetFundamentalObject))
+					return target_type.Language.CreateBoxedObject (context.CurrentThread, source);
+
+				throw new ScriptingException (
+					"Cannot box object `{0}': not a value-type", expr.Name);
+			}
+
 			if (target_type is TargetPointerType) {
 				TargetAddress address;
 
@@ -2568,14 +2581,13 @@ namespace Mono.Debugger.Frontend
 			}
 
 			TargetClassType ctype = Convert.ToClassType (target_type);
-			TargetClassObject source = Convert.ToClassObject (
-				context.CurrentThread, expr.EvaluateObject (context));
+			TargetClassObject source_cobj = Convert.ToClassObject (context.CurrentThread, source);
 
-			if (source == null)
+			if (source_cobj == null)
 				throw new ScriptingException (
 					"Variable {0} is not a class type.", expr.Name);
 
-			return TryCast (context, source, ctype);
+			return TryCast (context, source_cobj, ctype);
 		}
 
 		protected override TargetType DoEvaluateType (ScriptingContext context)

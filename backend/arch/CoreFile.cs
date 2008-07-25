@@ -600,6 +600,12 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
+			public override CommandResult CallMethod (TargetAddress method, TargetAddress method_arg,
+								  TargetObject object_arg)
+			{
+				throw new InvalidOperationException ();
+			}
+
 			public override CommandResult Return (bool run_finally)
 			{
 				throw new InvalidOperationException ();

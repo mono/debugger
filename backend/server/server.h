@@ -250,6 +250,14 @@ struct InferiorVTable {
 						       gconstpointer     data_buffer,
 						       guint64           callback_argument);
 
+	ServerCommandError    (* call_method_3)       (ServerHandle     *handle,
+						       guint64           method_address,
+						       guint64           method_argument,
+						       guint64           address_argument,
+						       guint32           blob_size,
+						       gconstpointer     blob_data,
+						       guint64           callback_argument);
+
 	ServerCommandError    (* call_method_invoke)  (ServerHandle     *handle,
 						       guint64           invoke_method,
 						       guint64           method_argument,
@@ -494,6 +502,15 @@ mono_debugger_server_call_method_2        (ServerHandle       *handle,
 					   guint64             method_address,
 					   guint32             data_size,
 					   gconstpointer       data_buffer,
+					   guint64             callback_argument);
+
+ServerCommandError
+mono_debugger_server_call_method_3        (ServerHandle       *handle,
+					   guint64             method_address,
+					   guint64             method_argument,
+					   guint64             address_argument,
+					   guint32             blob_size,
+					   gconstpointer       blob_data,
 					   guint64             callback_argument);
 
 ServerCommandError

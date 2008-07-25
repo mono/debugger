@@ -118,6 +118,11 @@ namespace Mono.Debugger.Languages.Native
 			return new NativePointerObject (pointer, location);
 		}
 
+		public override TargetObjectObject CreateBoxedObject (Thread thread, TargetObject value)
+		{
+			throw new NotSupportedException ();
+		}
+
 		public override TargetPointerType CreatePointerType (TargetType type)
 		{
 			return new NativePointerType (this, type);

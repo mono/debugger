@@ -108,6 +108,9 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_call_method_2 (IntPtr handle, long method_address, int data_size, IntPtr data, long callback_argument);
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_call_method_3 (IntPtr handle, long method_address, long method_argument, long address_argument, int blob_size, IntPtr blob_data, long callback_argument);
+
+		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_mark_rti_frame (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
@@ -374,6 +377,35 @@ namespace Mono.Debugger.Backend
 			} finally {
 				if (data_ptr != IntPtr.Zero)
 					Marshal.FreeHGlobal (data_ptr);
+			}
+		}
+
+		public void CallMethod (TargetAddress method, long method_argument,
+					TargetObject obj, long callback_arg)
+		{
+			check_disposed ();
+
+			byte[] blob = null;
+			long address = 0;
+
+			if (obj.Location.HasAddress)
+				address = obj.Location.GetAddress (this).Address;
+			else
+				blob = obj.Location.ReadBuffer (this, obj.Type.Size);
+
+			IntPtr blob_data = IntPtr.Zero;
+			try {
+				if (blob != null) {
+					blob_data = Marshal.AllocHGlobal (blob.Length);
+					Marshal.Copy (blob, 0, blob_data, blob.Length);
+				}
+
+				check_error (mono_debugger_server_call_method_3 (
+					server_handle, method.Address, method_argument,
+					address, blob != null ? blob.Length : 0, blob_data, callback_arg));
+			} finally {
+				if (blob_data != IntPtr.Zero)
+					Marshal.FreeHGlobal (blob_data);
 			}
 		}
 

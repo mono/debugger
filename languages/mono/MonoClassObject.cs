@@ -36,9 +36,8 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetCurrentObject (target, Location);
 		}
 
-		internal TargetAddress GetKlassAddress (TargetMemoryAccess target)
-		{
-			return info.KlassAddress;
+		internal TargetAddress KlassAddress {
+			get { return info.KlassAddress; }
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,

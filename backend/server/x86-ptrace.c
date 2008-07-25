@@ -593,6 +593,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_call_method,
 	server_ptrace_call_method_1,
 	server_ptrace_call_method_2,
+	server_ptrace_call_method_3,
 	server_ptrace_call_method_invoke,
 	server_ptrace_execute_instruction,
 	server_ptrace_mark_rti_frame,

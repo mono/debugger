@@ -611,6 +611,25 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
+		public TargetAddress CallMethod (TargetAddress method, TargetAddress method_argument,
+						 TargetObject object_argument)
+		{
+			CommandResult result;
+
+			lock (this) {
+				check_alive ();
+				result = servant.CallMethod (
+					method, method_argument, object_argument);
+			}
+
+			result.Wait ();
+
+			if (result.Result == null)
+				throw new TargetException (TargetError.UnknownError);
+
+			return (TargetAddress) result.Result;
+		}
+
 		public void Return (bool run_finally)
 		{
 			CommandResult result;

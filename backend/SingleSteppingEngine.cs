@@ -1646,6 +1646,12 @@ namespace Mono.Debugger.Backend
 			return StartOperation (new OperationCallMethod (this, method, arg1, arg2));
 		}
 
+		public override CommandResult CallMethod (TargetAddress method, TargetAddress method_arg,
+							  TargetObject object_arg)
+		{
+			return StartOperation (new OperationCallMethod (this, method, method_arg, object_arg));
+		}
+
 		public override CommandResult Return (bool run_finally)
 		{
 			return (CommandResult) SendCommand (delegate {
@@ -3396,7 +3402,7 @@ namespace Mono.Debugger.Backend
 			TargetStructType parent_type = instance.Type.GetParentType (inferior);
 
 			if (!instance.Type.IsByRef && parent_type.IsByRef) {
-				TargetAddress klass = ((MonoClassObject) instance).GetKlassAddress (inferior);
+				TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
 				stage = Stage.BoxingInstance;
 				inferior.CallMethod (
 					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
@@ -3573,6 +3579,7 @@ namespace Mono.Debugger.Backend
 		public readonly long Argument1;
 		public readonly long Argument2;
 		public readonly long Argument3;
+		public readonly TargetObject ObjectArgument;
 		public readonly string StringArgument;
 
 		public OperationCallMethod (SingleSteppingEngine sse,
@@ -3596,6 +3603,16 @@ namespace Mono.Debugger.Backend
 			this.Method = method;
 			this.Argument1 = arg1;
 			this.Argument2 = arg2;
+		}
+
+		public OperationCallMethod (SingleSteppingEngine sse, TargetAddress method,
+					    TargetAddress method_arg, TargetObject object_arg)
+			: base (sse)
+		{
+			this.Type = CallMethodType.LongObject;
+			this.Method = method;
+			this.Argument1 = method_arg.Address;
+			this.ObjectArgument = object_arg;
 		}
 
 		bool interrupted_syscall;
@@ -3633,6 +3650,10 @@ namespace Mono.Debugger.Backend
 			case CallMethodType.LongLongLongString:
 				inferior.CallMethod (Method, Argument1, Argument2, Argument3,
 						     StringArgument, ID);
+				break;
+
+			case CallMethodType.LongObject:
+				inferior.CallMethod (Method, Argument1, ObjectArgument, ID);
 				break;
 
 			default:
@@ -4184,6 +4205,7 @@ namespace Mono.Debugger.Backend
 	internal enum CallMethodType
 	{
 		LongLong,
-		LongLongLongString
+		LongLongLongString,
+		LongObject
 	}
 }

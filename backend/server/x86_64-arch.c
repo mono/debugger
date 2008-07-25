@@ -1047,6 +1047,69 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 }
 
 static ServerCommandError
+server_ptrace_call_method_3 (ServerHandle *handle, guint64 method_address,
+			     guint64 method_argument, guint64 address_argument,
+			     guint32 blob_size, gconstpointer blob_data,
+			     guint64 callback_argument)
+{
+	ServerCommandError result = COMMAND_ERROR_NONE;
+	ArchInfo *arch = handle->arch;
+	CallbackData *cdata;
+	guint64 new_rsp;
+	int i;
+
+	static guint8 static_code[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+					0xcc, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	int static_size = sizeof (static_code);
+	int size = static_size + blob_size;
+	guint8 *code = g_malloc0 (size);
+	guint64 *ptr = (guint64 *) (code + static_size + blob_size);
+	guint64 effective_address;
+	guint64 blob_start;
+	memcpy (code, static_code, static_size);
+	memcpy (code + static_size, blob_data, blob_size);
+
+	new_rsp = INFERIOR_REG_RSP (arch->current_regs) - AMD64_RED_ZONE_SIZE - size - 16;
+	new_rsp &= 0xfffffffffffffff0L;
+
+	blob_start = new_rsp + static_size;
+
+	*((guint64 *) code) = new_rsp + static_size - 1;
+	*((guint64 *) (code+8)) = callback_argument;
+
+	effective_address = address_argument ? address_argument : blob_start;
+
+	cdata = g_new0 (CallbackData, 1);
+	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
+	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
+	cdata->call_address = new_rsp + static_size - 1;
+	cdata->stack_pointer = new_rsp + 8;
+	cdata->callback_argument = callback_argument;
+	cdata->saved_signal = handle->inferior->last_signal;
+	handle->inferior->last_signal = 0;
+
+	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	g_free (code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	INFERIOR_REG_ORIG_RAX (arch->current_regs) = -1;
+	INFERIOR_REG_RIP (arch->current_regs) = method_address;
+	INFERIOR_REG_RDI (arch->current_regs) = method_argument;
+	INFERIOR_REG_RSI (arch->current_regs) = effective_address;
+	INFERIOR_REG_RSP (arch->current_regs) = new_rsp;
+
+	g_ptr_array_add (arch->callback_stack, cdata);
+
+	result = _server_ptrace_set_registers (handle->inferior, &arch->current_regs);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	return server_ptrace_continue (handle);
+}
+
+static ServerCommandError
 server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 				  guint64 method_argument, guint32 num_params,
 				  guint32 blob_size, guint64 *param_data,
