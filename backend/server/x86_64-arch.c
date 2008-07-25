@@ -896,7 +896,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
-	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -956,7 +956,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
-	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -1026,7 +1026,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 		cdata->data_size = data_size;
 	}
 
-	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -1089,7 +1089,7 @@ server_ptrace_call_method_3 (ServerHandle *handle, guint64 method_address,
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
-	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
@@ -1160,7 +1160,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
-	server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
+	result = server_ptrace_write_memory (handle, (unsigned long) new_rsp, size, code);
 	g_free (code);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
