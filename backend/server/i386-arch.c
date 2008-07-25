@@ -541,8 +541,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	}
 
 	cdata = get_callback_data (arch);
-	if (cdata)
-		g_message (G_STRLOC ": %x - %x", cdata->call_address, INFERIOR_REG_EIP (arch->current_regs));
 	if (cdata && (cdata->call_address == INFERIOR_REG_EIP (arch->current_regs))) {
 		guint64 exc_object;
 
