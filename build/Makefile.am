@@ -6,6 +6,10 @@ two_SCRIPTS = mdb.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
+if HAVE_XSP
+MCS_FLAGS += -define:HAVE_XSP
+endif
+
 noinst_SCRIPTS = \
 	runtests					\
 	Mono.Debugger.dll				\

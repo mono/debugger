@@ -95,6 +95,7 @@ namespace Mono.Debugger
 			set { stop_in_main = value; }
 		}
 
+#if HAVE_XSP
 		public bool StartXSP {
 			get; set;
 		}
@@ -102,6 +103,7 @@ namespace Mono.Debugger
 		public string XSP_Root {
 			get; set;
 		}
+#endif
 
 		Hashtable user_environment;
 
@@ -366,6 +368,7 @@ namespace Mono.Debugger
 			return true;
 		}
 
+#if HAVE_XSP
 		void SetupXSP ()
 		{
 			file = BuildInfo.xsp;
@@ -374,6 +377,7 @@ namespace Mono.Debugger
 			if (stop_in_main == null)
 				stop_in_main = false;
 		}
+#endif
 
 		static bool ParseOption (DebuggerOptions debug_options,
 					 string option,
@@ -502,7 +506,7 @@ namespace Mono.Debugger
 				debug_options.StopInMain = true;
 				return true;
 
-#if ENABLE_KAHALO
+#if HAVE_XSP
 			case "-xsp":
 				value = GetValue (ref args, ref i, ms_value);
 				if (value == null) {

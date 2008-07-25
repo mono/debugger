@@ -1,5 +1,9 @@
 2008-07-25  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Disable XSP support by default.
+
+2008-07-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/Language.cs
 	(Language.CreateBoxedObject): New public method.
 

@@ -238,10 +238,14 @@ namespace Mono.Debugger.Frontend
 			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
 
 			DebuggerConfiguration config = new DebuggerConfiguration ();
-			if (!options.StartXSP)
-				config.LoadConfiguration ();
-			else
+#if HAVE_XSP
+			if (options.StartXSP)
 				config.SetupXSP ();
+			else
+				config.LoadConfiguration ();
+#else
+			config.LoadConfiguration ();
+#endif
 
 			Console.WriteLine ("Mono Debugger");
 

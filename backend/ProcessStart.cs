@@ -69,8 +69,10 @@ namespace Mono.Debugger.Backend
 			this.session = session;
 			this.options = session.Options;
 
+#if HAVE_XSP
 			if (options.StartXSP)
 				options.File = BuildInfo.xsp;
+#endif
 
 			if ((options.File == null) || (options.File == ""))
 				throw new ArgumentException ("options.File null or empty", "options");
@@ -84,6 +86,7 @@ namespace Mono.Debugger.Backend
 				cwd = options.WorkingDirectory = System.Environment.CurrentDirectory;
 			string mono_path = options.MonoPath ?? MonoPath;
 
+#if HAVE_XSP
 			if (options.StartXSP) {
 				IsNative = false;
 
@@ -105,7 +108,9 @@ namespace Mono.Debugger.Backend
 				start_argv.CopyTo (this.argv, 0);
 				if (options.InferiorArgs.Length > 0)
 					options.InferiorArgs.CopyTo (this.argv, start_argv.Count);
-			} else if (IsMonoAssembly (options.File)) {
+			} else 
+#endif
+			if (IsMonoAssembly (options.File)) {
 				IsNative = false;
 
 				ArrayList start_argv = new ArrayList ();
