@@ -34,8 +34,6 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, "test1", "Test1.X.Test1<R>(R, int)");
 
-			MainLoop ();
-
 			AssertPrint (thread, "a", "(int) 2");
 			AssertPrint (thread, "b", "(int) 2");
 			AssertPrint (thread, "s", "(long) 500");
