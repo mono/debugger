@@ -1136,9 +1136,9 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress klass;
 
 			if ((value is MonoClassObject)  && !value.Type.IsByRef)
-				klass = ((MonoClassObject) cobj).KlassAddress;
+				klass = ((MonoClassObject) value).KlassAddress;
 			else if (value is TargetFundamentalObject) {
-				MonoClassType ctype = ((MonoFundamentalType) fobj.Type).MonoClassType;
+				MonoClassType ctype = ((MonoFundamentalType) value.Type).MonoClassType;
 				MonoClassInfo info = (MonoClassInfo) thread.ThreadServant.DoTargetAccess (
 					delegate (TargetMemoryAccess target) {
 						return ctype.ResolveClass (target, true);
