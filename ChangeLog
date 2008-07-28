@@ -1,5 +1,12 @@
 2008-07-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoClassType.cs
+	(MonoClassType.HasFixedSize) Set to true: 
+
+	* test/testsuite/TestManagedTypes.cs: Added testcase.
+
+2008-07-28  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/TestManagedTypes.cs: Added testcases for boxing
 	valuetypes.	
 

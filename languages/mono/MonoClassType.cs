@@ -108,7 +108,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override bool HasFixedSize {
-			get { return false; }
+			get { return true; }
 		}
 
 		public override int Size {

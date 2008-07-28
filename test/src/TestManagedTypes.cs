@@ -172,6 +172,12 @@ public class X
 		Console.WriteLine (a);			// @MDB BREAKPOINT: multi string array
 	}
 
+	public static void StructArray ()
+	{
+		A[] array = new A [] { new A (5, 256, "New England Patriots") };
+		Console.WriteLine (array [0]);
+	}						// @MDB BREAKPOINT: struct array
+
 	public static void StructType ()
 	{
 		A a = new A (5, 256, "New England Patriots");
@@ -240,6 +246,7 @@ public class X
 		MultiValueTypeArray ();
 		StringArray ();
 		MultiStringArray ();
+		StructArray ();
 		StructType ();
 		ClassType ();
 		InheritedClassType ();

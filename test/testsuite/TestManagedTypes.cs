@@ -146,6 +146,14 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("System.String[,]");
+
+			AssertHitBreakpoint (thread, "struct array", "X.StructArray()");
+
+			AssertPrint (thread, "array [0]",
+				     "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("A");
 			AssertTargetOutput ("51.2");
 			AssertTargetOutput ("Hello World");
 			AssertNoTargetOutput ();
