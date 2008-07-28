@@ -38,6 +38,11 @@ namespace Mono.Debugger.Tests
 			AssertType (thread, "hello", "string");
 			AssertPrint (thread, "hello", "(string) \"Hello World\"");
 
+			AssertPrint (thread, "(object) a", "(object) &(int) 5");
+			AssertPrint (thread, "(object) b", "(object) &(long) 7");
+			AssertPrint (thread, "(object) f", "(object) &(float) 0.7142857");
+			AssertPrint (thread, "(object) hello", "(object) &(string) \"Hello World\"");
+
 			AssertExecute ("set a = 9");
 			AssertExecute ("set hello = \"Monkey\"");
 
@@ -149,6 +154,8 @@ namespace Mono.Debugger.Tests
 
 			AssertPrint (thread, "a",
 				     "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
+			AssertPrint (thread, "(object) a",
+				     "(object) &(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("A");
