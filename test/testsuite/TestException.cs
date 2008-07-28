@@ -14,11 +14,6 @@ namespace Mono.Debugger.Tests
 			: base ("TestException")
 		{ }
 
-		const int LineException = 7;
-		const int LineMain = 12;
-		const int LineTry = 14;
-		const int LineMain2 = 19;
-
 		[Test]
 		[Category("ManagedTypes")]
 		public void Main ()
@@ -28,12 +23,11 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
-			AssertStopped (thread, "X.Main()", LineMain);
+			AssertStopped (thread, "X.Main()", GetLine ("main"));
 			AssertCatchpoint ("InvalidOperationException");
-			int bpt_main_2 = AssertBreakpoint (LineMain2);
 			AssertExecute ("continue");
 
-			AssertCaughtException (thread, "X.Test()", LineException);
+			AssertCaughtException (thread, "X.Test()", GetLine ("exception"));
 			AssertNoTargetOutput ();
 
 			Backtrace bt = thread.GetBacktrace (-1);
@@ -41,23 +35,37 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Backtrace has {0} frames, but expected {1}.",
 					     bt.Count, 2);
 
-			AssertFrame (bt [0], 0, "X.Test()", LineException);
-			AssertFrame (bt [1], 1, "X.Main()", LineTry);
+			AssertFrame (bt [0], 0, "X.Test()", GetLine ("exception"));
+			AssertFrame (bt [1], 1, "X.Main()", GetLine ("try"));
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("EXCEPTION: System.InvalidOperationException");
 			AssertNoTargetOutput ();
 
-			AssertHitBreakpoint (thread, bpt_main_2, "X.Main()", LineMain2);
+			AssertHitBreakpoint (thread, "main2", "X.Main()");
 			AssertPrintException (thread, "x.Test()",
 					      "Invocation of `x.Test ()' raised an exception: " +
 					      "System.InvalidOperationException: Operation is not " +
 					      "valid due to the current state of the object\n" +
 					      "  at X.Test () [0x00000] in " + FileName + ":" +
-					      LineException + " ");
+					      GetLine ("exception") + " ");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Done");
+
+			AssertHitBreakpoint (thread, "try my", "X.TestMy()");
+
+			AssertCatchpoint ("MyException");
+
+			AssertExecute ("continue");
+
+			AssertCaughtException (thread, "X.ThrowMy()", GetLine ("throw my"));
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("MY EXCEPTION: MyException");
+			AssertNoTargetOutput ();
+
+
 			AssertTargetExited (thread.Process);
 		}
 	}

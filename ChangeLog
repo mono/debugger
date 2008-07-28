@@ -1,5 +1,14 @@
 2008-07-28  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.IsExceptionType): Correctly resolve
+	`type.BaseType'.
+
+	* test/testsuite/TestException.cs: Added testcase for user-defined
+	exception classes.	
+
+2008-07-28  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Expression.cs
 	(MemberAccessExpression.ResolveMemberAccess): When resolving an
 	invocation expression on a value-type, also check `System.Object'.

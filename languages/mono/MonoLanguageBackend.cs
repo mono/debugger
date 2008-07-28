@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
@@ -386,6 +387,39 @@ namespace Mono.Debugger.Languages.Mono
 			return ReadClassInfo (target, klass_address).RealType;
 		}
 
+		Cecil.AssemblyDefinition resolve_cecil_asm_name (Cecil.AssemblyNameReference name)
+		{
+			foreach (MonoSymbolFile symfile in symfile_hash.Values) {
+				if (name.FullName == symfile.Assembly.Name.FullName)
+					return symfile.Assembly;
+			}
+
+			return null;
+		}
+
+		Cecil.TypeDefinition resolve_cecil_type_ref (Cecil.TypeReference type)
+		{
+			type = type.GetOriginalType ();
+
+			if (type is Cecil.TypeDefinition)
+				return (Cecil.TypeDefinition) type;
+
+			Cecil.AssemblyNameReference reference = type.Scope as Cecil.AssemblyNameReference;
+			if (reference != null) {
+				Cecil.AssemblyDefinition assembly = resolve_cecil_asm_name (reference);
+				if (assembly == null)
+					return null;
+
+				return assembly.MainModule.Types [type.FullName];
+			}
+
+			Cecil.ModuleDefinition module = type.Scope as Cecil.ModuleDefinition;
+			if (module != null)
+				return module.Types [type.FullName];
+
+			throw new NotImplementedException ();
+		}
+
 		public override bool IsExceptionType (TargetClassType ctype)
 		{
 			MonoClassType mono_type = ctype as MonoClassType;
@@ -396,10 +430,10 @@ namespace Mono.Debugger.Languages.Mono
 			Cecil.TypeDefinition type = mono_type.Type;
 
 			while (type != null) {
-				if (type == exc_type)
+				if (exc_type == type)
 					return true;
 
-				type = type.BaseType as Cecil.TypeDefinition;
+				type = resolve_cecil_type_ref (type.BaseType);
 			}
 
 			return false;
