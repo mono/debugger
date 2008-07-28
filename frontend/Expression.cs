@@ -1108,7 +1108,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public MemberExpression ResolveMemberAccess (ScriptingContext context,
-							     bool allow_instance)
+							     bool allow_instance,
+							     bool for_invocation)
 		{
 			MemberExpression member;
 
@@ -1142,6 +1143,14 @@ namespace Mono.Debugger.Frontend
 
 				member = StructAccessExpression.FindMember (
 					target, sobj.Type, sobj, name, true, true);
+
+				if ((member == null) && !sobj.Type.IsByRef && for_invocation) {
+					TargetObjectObject boxed = sobj.Type.Language.CreateBoxedObject (target, sobj);
+					TargetClassObject sboxed = boxed.GetClassObject (target);
+					member = StructAccessExpression.FindMember (
+						target, sobj.Type.Language.ObjectType, sboxed, name, false, true);
+				}
+
 				if (member == null)
 					throw new ScriptingException (
 						"Type `{0}' has no member `{1}'",
@@ -1182,7 +1191,7 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolve (ScriptingContext context)
 		{
-			return ResolveMemberAccess (context, false);
+			return ResolveMemberAccess (context, false, false);
 		}
 
 		protected override MethodExpression DoResolveMethod (ScriptingContext context,
@@ -1201,7 +1210,7 @@ namespace Mono.Debugger.Frontend
 				member = StructAccessExpression.FindMember (
 					context.CurrentFrame.Thread, ctype, null, ".ctor", false, true);
 			} else {
-				member = ResolveMemberAccess (context, true);
+				member = ResolveMemberAccess (context, true, true);
 			}
 
 			if (member != null)

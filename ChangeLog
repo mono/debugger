@@ -1,5 +1,13 @@
 2008-07-28  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(MemberAccessExpression.ResolveMemberAccess): When resolving an
+	invocation expression on a value-type, also check `System.Object'.
+
+	* test/testsuite/TestManagedTypes.cs: Added testcase.
+
+2008-07-28  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoClassType.cs
 	(MonoClassType.HasFixedSize) Set to true: 
 

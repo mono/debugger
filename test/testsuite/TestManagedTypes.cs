@@ -165,6 +165,9 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "(object) a",
 				     "(object) &(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
 
+			AssertPrint (thread, "a.ToString ()", "(string) \"A\"");
+			AssertPrint (thread, "a.GetType ()", "(System.MonoType) { \"A\" }");
+
 			AssertExecute ("continue");
 			AssertTargetOutput ("A");
 			AssertTargetOutput ("5");
