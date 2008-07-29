@@ -65,10 +65,8 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("step");
 			AssertStopped (thread, "Foreach.get_Values()", GetLine ("foreach values"));
 
-// FIXME: broken
-#if MARTIN_PRIVATE
 			AssertExecute ("next");
-			AssertStopped (thread, "Foreach.Run()", GetLine ("foreach statement"));
+			AssertStopped (thread, "Foreach.Run()", GetLine ("foreach loop"));
 			AssertExecute ("step");
 			AssertStopped (thread, "Foreach.Run()", GetLine ("foreach loop"));
 			AssertExecute ("step");
@@ -76,8 +74,9 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("next");
 			AssertStopped (thread, "Foreach.Run()", GetLine ("foreach loop"));
 			AssertExecute ("next");
+			AssertStopped (thread, "Foreach.Run()", GetLine ("foreach loop"));
+			AssertExecute ("next");
 			AssertStopped (thread, "Foreach.Run()", GetLine ("foreach statement"));
-#endif
 
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "foreach return", "Foreach.Run()");

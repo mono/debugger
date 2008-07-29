@@ -21,9 +21,6 @@
 
 	* test/testsuite/testnative*.cs: Add "Native" category.
 
-	* test/testsuite/TestSSE.cs: `#if MARTIN_PRIVATE' the broken part
-	to make the rest of the tests pass.
-
 	* build/Makefile.am
 	(EXCLUDED_TESTS): New variable to select tests which ware excluded
 	from `make check';  exclude "NotWorking,Attach,Native,Threads,AppDomain"
