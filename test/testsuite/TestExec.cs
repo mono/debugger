@@ -108,6 +108,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(string[])", line_main);
+			if (bpt_main == 0)
+				bpt_main = AssertBreakpoint ("-local " + line_main_3);	
 			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
