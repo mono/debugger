@@ -1,5 +1,11 @@
 2008-07-29  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.read_variables): When inside an anonymous method,
+	only allow accessing `this' if it has been captured.
+
+2008-07-29  Martin Baulig  <martin@ximian.com>
+
 	* backend/Inferior.cs
 	(Inferior.HasSignals): New public property.
 	(Inferior.Kernel_SIGRTMIN): New public property.

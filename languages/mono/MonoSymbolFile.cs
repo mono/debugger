@@ -1068,6 +1068,7 @@ namespace Mono.Debugger.Languages.Mono
 			bool has_variables;
 			bool is_loaded;
 			bool is_iterator;
+			bool this_is_captured;
 			bool is_compiler_generated;
 			MethodAddress address;
 			int domain;
@@ -1185,9 +1186,11 @@ namespace Mono.Debugger.Languages.Mono
 					C.ScopeVariable sv = scope_vars [i];
 
 					VariableInfo var;
-					if (sv.Index < 0)
+					if (sv.Index < 0) {
 						var = address.ThisVariableInfo;
-					else
+						this_is_captured = true;
+						this_var = null;
+					} else
 						var = address.LocalVariableInfo [sv.Index];
 
 					TargetStructType type = mono.ReadStructType (memory, var.MonoType);
@@ -1365,7 +1368,12 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			public override bool HasThis {
-				get { return !mdef.IsStatic; }
+				get {
+					if (this_is_captured)
+						return this_var != null;
+					else
+						return !mdef.IsStatic;
+				}
 			}
 
 			public override TargetVariable GetThis (Thread target)
