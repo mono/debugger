@@ -15,6 +15,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("Native")]
 		[Category("NativeTypes")]
 		public void Main ()
 		{

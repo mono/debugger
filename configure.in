@@ -271,7 +271,12 @@ fi
 
 martin_private=no
 if test x`hostname --fqdn` = x'gondor.trier.ximian.com'; then
-   martin_private=yes
+  if test x"$prefix" == "x/work/gondor/INSTALL" ; then
+    echo "Experimental features are disabled in the Gondor tree."
+  else
+    echo "Enabling experimental features."
+    martin_private=yes
+  fi
 fi
 AM_CONDITIONAL(MARTIN_PRIVATE, test x$martin_private = xyes)
 

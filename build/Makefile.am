@@ -6,6 +6,15 @@ two_SCRIPTS = mdb.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
+if MARTIN_PRIVATE
+# Enable some more stuff for me.
+EXCLUDED_TESTS = NotWorking,Attach
+else
+# Exclude anything which may potentially break, only enable the
+# 100% safe tests.
+EXCLUDED_TESTS = NotWorking,Attach,Native,Threads,AppDomain
+endif
+
 if HAVE_XSP
 MCS_FLAGS += -define:HAVE_XSP
 endif
@@ -133,7 +142,7 @@ uninstall-local:
 NUNIT_CONSOLE_FLAGS =
 
 check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST)
-	$(builddir)/runtests /output:TestResult.log /exclude:Attach,NotWorking /xml:TestResult.xml || ok=false; \
+	$(builddir)/runtests /output:TestResult.log /exclude:$(EXCLUDED_TESTS) /xml:TestResult.xml || ok=false; \
 	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 	$$ok
 

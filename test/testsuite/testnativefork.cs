@@ -19,6 +19,7 @@ namespace Mono.Debugger.Tests
 		const int LineChild = 14;
 
 		[Test]
+		[Category("Native")]
 		[Category("Fork")]
 		public void Main ()
 		{
@@ -84,6 +85,7 @@ namespace Mono.Debugger.Tests
 
 
 		[Test]
+		[Category("Native")]
 		[Category("Fork")]
 		public void Continue ()
 		{
@@ -141,6 +143,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("Native")]
 		[Category("Fork")]
 		public void Breakpoint ()
 		{

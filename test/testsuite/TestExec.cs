@@ -21,6 +21,7 @@ namespace Mono.Debugger.Tests
 		int bpt_main;
 
 		[Test]
+		[Category("Native")]
 		[Category("Fork")]
 		public void NativeChild ()
 		{

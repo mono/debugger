@@ -42,6 +42,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("Native")]
 		[Category("Attach")]
 		public void Main ()
 		{
@@ -61,6 +62,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("Native")]
 		[Category("Attach")]
 		public void AttachAgain ()
 		{
@@ -80,6 +82,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("Native")]
 		[Category("Attach")]
 		public void Kill ()
 		{

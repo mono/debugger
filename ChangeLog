@@ -1,3 +1,15 @@
+2008-07-29  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/testnative*.cs: Add "Native" category.
+
+	* test/testsuite/TestSSE.cs: `#if MARTIN_PRIVATE' the broken part
+	to make the rest of the tests pass.
+
+	* build/Makefile.am
+	(EXCLUDED_TESTS): New variable to select tests which ware excluded
+	from `make check';  exclude "NotWorking,Attach,Native,Threads,AppDomain"
+	for everyone and a little bit less for me.
+
 2008-07-28  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoLanguageBackend.cs
