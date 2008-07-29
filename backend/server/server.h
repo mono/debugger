@@ -96,7 +96,7 @@ typedef struct {
 	int sigstop;
 	int sigint;
 	int sigchld;
-
+	int kernel_sigrtmin;
 	int mono_thread_abort;
 } SignalInfo;
 

@@ -177,12 +177,17 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
-			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
-			    (cevent.Argument == inferior.SIGCHLD)) {
-				cevent = new Inferior.ChildEvent (
-					Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
-				resume_target = true;
-				return true;
+			if (cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) {
+				if (cevent.Argument == inferior.SIGCHLD) {
+					cevent = new Inferior.ChildEvent (
+						Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
+					resume_target = true;
+					return true;
+				} else if (inferior.HasSignals && (cevent.Argument == inferior.Kernel_SIGRTMIN+1)) {
+					// __SIGRTMIN and __SIGRTMIN+1 are used internally by the threading library
+					resume_target = true;
+					return true;
+				}
 			}
 
 			bool retval = false;

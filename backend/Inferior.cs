@@ -256,12 +256,13 @@ namespace Mono.Debugger.Backend
 			public int SIGINT;
 			public int SIGCHLD;
 
+			public int Kernel_SIGRTMIN;
 			public int MonoThreadAbortSignal;
 
 			public override string ToString ()
 			{
-				return String.Format ("SignalInfo ({0}:{1}:{2}:{3} - {4})",
-						      SIGKILL, SIGSTOP, SIGINT, SIGCHLD,
+				return String.Format ("SignalInfo ({0}:{1}:{2}:{3}:{4} - {5})",
+						      SIGKILL, SIGSTOP, SIGINT, SIGCHLD, Kernel_SIGRTMIN,
 						      MonoThreadAbortSignal);
 			}
 		}
@@ -1495,6 +1496,10 @@ namespace Mono.Debugger.Backend
 			// child_event (ChildEventType.CHILD_MEMORY_CHANGED, 0);
 		}
 
+		public bool HasSignals {
+			get { return has_signals; }
+		}
+
 		public int SIGKILL {
 			get {
 				if (!has_signals || (signal_info.SIGKILL < 0))
@@ -1528,6 +1533,19 @@ namespace Mono.Debugger.Backend
 					throw new InvalidOperationException ();
 
 				return signal_info.SIGCHLD;
+			}
+		}
+
+		/*
+		 * CAUTION: This is the hard limit of the Linux kernel, not the first
+		 *          user-visible real-time signal !
+		 */
+		public int Kernel_SIGRTMIN {
+			get {
+				if (!has_signals || (signal_info.Kernel_SIGRTMIN < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.Kernel_SIGRTMIN;
 			}
 		}
 

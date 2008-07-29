@@ -1,5 +1,18 @@
 2008-07-29  Martin Baulig  <martin@ximian.com>
 
+	* backend/Inferior.cs
+	(Inferior.HasSignals): New public property.
+	(Inferior.Kernel_SIGRTMIN): New public property.
+
+	* backend/ThreadManager.cs
+	(ThreadManager.HandleChildEvent): `__SIGRTMIN' and `__SIGRTMIN+1'
+	are used internally by glibc -> ignore __SIGRTMIN+1.
+
+	* backend/server/server.h
+	(SignalInfo): Add `kernel_sigrtmin'.
+
+2008-07-29  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/testnative*.cs: Add "Native" category.
 
 	* test/testsuite/TestSSE.cs: `#if MARTIN_PRIVATE' the broken part
