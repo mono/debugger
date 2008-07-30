@@ -1,5 +1,12 @@
 2008-07-30  Martin Baulig  <martin@ximian.com>
 
+	* symbolwriter/MdbSymbolReader.cs: New file.  This is a symbol
+	file verifier which reads everything in a symbol file and checks
+	whether everything is ok.  You can run this inside mdb to debug
+	symbol file bugs.
+
+2008-07-30  Martin Baulig  <martin@ximian.com>
+
 	* symbolwriter/: Created private copy for the debugger.
 
 	* symbolwriter/MonoSymbolWriter.cs: Moved `ISourceFile',
