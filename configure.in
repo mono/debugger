@@ -322,6 +322,7 @@ backend/arch/bfd/include/aout/Makefile
 backend/arch/bfd/include/coff/Makefile
 backend/arch/bfd/include/elf/Makefile
 backend/arch/bfd/include/opcode/Makefile
+symbolwriter/Makefile
 languages/Makefile
 languages/mono/Makefile
 languages/native/Makefile

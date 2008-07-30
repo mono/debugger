@@ -1,4 +1,4 @@
-SUBDIRS = interface languages classes backend frontend test build
+SUBDIRS = interface languages classes backend symbolwriter frontend test build
 
 DIST_SUBDIRS= doc $(SUBDIRS)
 
