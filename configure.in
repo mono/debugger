@@ -197,6 +197,25 @@ if test x$server_only != xyes; then
    fi
 fi
 
+AC_ARG_WITH(target-mono,
+[  --with-target-mono      Manually override the Mono used for target applications],
+	if test "x$with_target_mono" != "x"; then
+	  target_mono_prefix=$with_target_mono
+	  AC_SUBST(target_mono_prefix)
+	fi
+)
+AM_CONDITIONAL(HAVE_TARGET_MONO, test "x$target_mono_prefix" != "x")
+
+if test "x$target_mono_prefix" != "x" ; then
+  TARGET_MCS="$target_mono_prefix/bin/gmcs"
+  TARGET_MONO="$target_mono_prefix/bin/mono"
+else
+  TARGET_MCS="$MCS"
+  TARGET_MONO="$MONO"
+fi
+AC_SUBST(TARGET_MCS)
+AC_SUBST(TARGET_MONO)
+
 real_top_srcdir=`pwd`
 AC_SUBST(real_top_srcdir)
 AC_SUBST(PATH)
@@ -270,12 +289,14 @@ if test x$mono_working != xyes; then
 fi
 
 martin_private=no
-if test x`hostname --fqdn` = x'gondor.trier.ximian.com'; then
-  if test x"$prefix" == "x/work/gondor/INSTALL" ; then
-    echo "Experimental features are disabled in the Gondor tree."
-  else
-    echo "Enabling experimental features."
-    martin_private=yes
+if test "x$from_cvs" = "xyes"; then
+  if test x`hostname --fqdn` = x'gondor.trier.ximian.com'; then
+    if test x"$prefix" == "x/work/gondor/INSTALL" ; then
+      echo "Experimental features are disabled in the Gondor tree."
+    else
+      echo "Enabling experimental features."
+      martin_private=yes
+    fi
   fi
 fi
 AM_CONDITIONAL(MARTIN_PRIVATE, test x$martin_private = xyes)

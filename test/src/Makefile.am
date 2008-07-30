@@ -34,18 +34,18 @@ noinst_PROGRAMS = \
 all: $(TEST_EXE)
 
 %.exe:%.cs
-	$(MCS) $(MCS_FLAGS) -out:$@ $<
+	$(TARGET_MCS) $(MCS_FLAGS) -out:$@ $<
 
 %.dll:%.cs
-	$(MCS) $(MCS_FLAGS) /target:library -out:$@ $<
+	$(TARGET_MCS) $(MCS_FLAGS) /target:library -out:$@ $<
 
 TestAppDomain-Hello.dll: TestAppDomain-Hello.cs IHelloInterface.dll
-	$(MCS) $(MCS_FLAGS) /target:library /r:IHelloInterface.dll -out:$@ $<
+	$(TARGET_MCS) $(MCS_FLAGS) /target:library /r:IHelloInterface.dll -out:$@ $<
 
 TestAppDomain.exe: TestAppDomain.cs IHelloInterface.dll
-	$(MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
+	$(TARGET_MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
 
 TestAppDomain-Module.exe: TestAppDomain-Module.cs IHelloInterface.dll
-	$(MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
+	$(TARGET_MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
 
 CLEANFILES = *.exe *.mdb *.dll *.so a.out *.log

@@ -2,7 +2,7 @@ twodir = $(prefix)/lib/mono/2.0
 
 bin_SCRIPTS = mdb
 
-two_SCRIPTS = mdb.exe
+two_SCRIPTS = mdb.exe mdb-symbolreader.exe
 
 MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
 
@@ -56,6 +56,17 @@ DEBUGGER_SRCLIST = \
 	$(top_srcdir)/test/misc/*.cs			\
 	AssemblyInfo.cs
 
+SYMBOL_WRITER_SRCLIST = \
+	$(top_srcdir)/symbolwriter/MonoSymbolFile.cs		\
+	$(top_srcdir)/symbolwriter/MonoSymbolTable.cs		\
+	AssemblyInfo.cs
+
+SYMBOL_READER_SRCLIST = \
+	$(top_srcdir)/symbolwriter/MonoSymbolFile.cs		\
+	$(top_srcdir)/symbolwriter/MonoSymbolTable.cs		\
+	$(top_srcdir)/symbolwriter/MdbSymbolReader.cs		\
+	AssemblyInfo.cs
+
 TEST_SRCLIST = \
 	$(top_srcdir)/test/testsuite/*.cs		\
 	AssemblyInfo.cs
@@ -63,15 +74,22 @@ TEST_SRCLIST = \
 TEST_CASE_SRCLIST = \
 	$(top_srcdir)/test/src/*.cs
 
+SYMBOL_WRITER_DEPS = \
+	-r:Mono.GetOptions				\
+	-r:Mono.Cecil
+
+SYMBOL_READER_DEPS = \
+	-r:Mono.GetOptions				\
+	-r:Mono.Cecil
+
 DEBUGGER_DEPS = \
 	-r:Mono.GetOptions				\
-	-r:Mono.CompilerServices.SymbolWriter		\
+	-r:Mono.Debugger.SymbolWriter			\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:$(srcdir)/Mono.Cecil.dll
+	-r:Mono.Cecil
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
-	-r:Mono.CompilerServices.SymbolWriter		\
 	-r:./Mono.Debugger.dll
 
 TEST_DEPS = \
@@ -85,7 +103,10 @@ if MARTIN_PRIVATE
 MCS_FLAGS += -define:MARTIN_PRIVATE
 endif
 
-Mono.Debugger.dll: Makefile $(srcdir)/Mono.Cecil.dll $(DEBUGGER_SRCLIST)
+Mono.Debugger.SymbolWriter.dll: Makefile $(SYMBOL_WRITER_SRCLIST)
+	$(MCS) -target:library -out:Mono.Debugger.SymbolWriter.dll -d:CECIL $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(SYMBOL_WRITER_DEPS) $(SYMBOL_WRITER_SRCLIST)
+
+Mono.Debugger.dll: Makefile Mono.Debugger.SymbolWriter.dll $(DEBUGGER_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk -resource:$(top_srcdir)/classes/DebuggerConfiguration.xsd,DebuggerConfiguration $(DEBUGGER_DEPS) $(DEBUGGER_SRCLIST)
 
 Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
@@ -94,19 +115,19 @@ Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
-Mono.Cecil.dll:
-	cp $(CECIL_ASM) $(srcdir)
-
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
+
+mdb-symbolreader.exe: Makefile $(SYMBOL_READER_SRCLIST) Mono.Debugger.SymbolWriter.dll
+	$(MCS) -out:mdb-symbolreader.exe $(SYMBOL_READER_DEPS) $(SYMBOL_READER_SRCLIST) $(MCS_FLAGS) -d:CECIL
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	sed -e 's^\@libdir\@^$(libdir)^g' \
 		-e 's^\@prefix\@^$(prefix)^g' \
 		-e 's^\@srcdir\@^$(srcdir)^g' \
 		-e 's^\@builddir\@^$(builddir)^g' \
-		-e 's^\@mono\@^$(MONO)^g' \
-		-e 's^\@mcs\@^$(MCS)^g' \
+		-e 's^\@mono\@^$(TARGET_MONO)^g' \
+		-e 's^\@mcs\@^$(TARGET_MCS)^g' \
 		-e 's^\@xsp\@^$(XSP_EXE)^g' \
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs
@@ -121,13 +142,15 @@ EXTRA_DIST = \
 	mdb.in runtests.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
 
 mdb: mdb.in Makefile
-	sed -e 's^\@twodir\@^$(twodir)^g' < $(srcdir)/mdb.in > mdb.tmp \
+	sed -e 's^\@twodir\@^$(twodir)^g' \
+	    -e 's^\@libdir\@^$(libdir)^g' \
+		< $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
 runtests: runtests.in Makefile
 	builddir=$(top_builddir) ; the_builddir=`cd $$builddir && pwd` ; \
 	sed -e 's^\@NUNIT_CONSOLE_EXE\@^$(twodir)/nunit-console.exe^g' \
-		-e 's^\@MONO\@^$(MONO)^g' \
+		-e 's^\@MONO\@^$(TARGET_MONO)^g' \
 		-e 's^\@NUNIT_CONSOLE_FLAGS\@^$(NUNIT_CONSOLE_FLAGS)^g' \
 		-e "s^\@top_builddir\@^$$the_builddir^g" \
 		< $(srcdir)/runtests.in > runtests.tmp \
@@ -135,9 +158,11 @@ runtests: runtests.in Makefile
 
 install-data-local:
 	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i Mono.Debugger.SymbolWriter.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /u Mono.Debugger.SymbolWriter $(GACUTIL_FLAGS) || exit 1;
 
 NUNIT_CONSOLE_FLAGS =
 

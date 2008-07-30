@@ -1,5 +1,16 @@
 2008-07-30  Martin Baulig  <martin@ximian.com>
 
+	* configure.in (--with-host-mono): New configure option to
+	override the mono used to run child applications.
+
+	* build/Makefile.am: Link against a private copy of the symbol
+	writer to make things more robust; you may now install the
+	debugger to run with an older /usr/bin/mono.  Create a new
+	command-line tool called `mdb-symbolreader.exe' which is the
+	new symbol file verifier.
+
+2008-07-30  Martin Baulig  <martin@ximian.com>
+
 	* symbolwriter/MdbSymbolReader.cs: New file.  This is a symbol
 	file verifier which reads everything in a symbol file and checks
 	whether everything is ok.  You can run this inside mdb to debug
