@@ -1,3 +1,13 @@
+2008-07-30  Martin Baulig  <martin@ximian.com>
+
+	* symbolwriter/: Created private copy for the debugger.
+
+	* symbolwriter/MonoSymbolWriter.cs: Moved `ISourceFile',
+	`ICompileUnit' and `IMethodDef' into MonoSymbolFile.cs.
+
+	* symbolwriter/MonoSymbolFile.cs
+	(MonoSymbolFile.AnonymousScopes): New public property.
+
 2008-07-29  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

@@ -84,6 +84,31 @@ namespace Mono.CompilerServices.SymbolWriter
 		}
 	}
 
+	public interface ISourceFile
+	{
+		SourceFileEntry Entry {
+			get;
+		}
+	}
+
+	public interface ICompileUnit
+	{
+		CompileUnitEntry Entry {
+			get;
+		}
+	}
+
+	public interface IMethodDef
+	{
+		string Name {
+			get;
+		}
+
+		int Token {
+			get;
+		}
+	}
+
 #if !CECIL
 	internal class MonoDebuggerSupport
 	{
@@ -651,23 +676,42 @@ namespace Mono.CompilerServices.SymbolWriter
 			}
 		}
 
+		void read_scopes ()
+		{
+			lock (this) {
+				if (anonymous_scopes != null)
+					return;
+
+				long old_pos = reader.BaseStream.Position;
+				reader.BaseStream.Position = ot.AnonymousScopeTableOffset;
+
+				anonymous_scopes = new Hashtable ();
+				for (int i = 0; i < ot.AnonymousScopeCount; i++) {
+					AnonymousScopeEntry scope = new AnonymousScopeEntry (reader);
+					anonymous_scopes.Add (scope.ID, scope);
+				}
+
+				reader.BaseStream.Position = old_pos;
+			}
+		}
+
 		public AnonymousScopeEntry GetAnonymousScope (int id)
 		{
 			if (reader == null)
 				throw new InvalidOperationException ();
 
 			lock (this) {
-				if (anonymous_scopes != null)
-					return (AnonymousScopeEntry) anonymous_scopes [id];
-
-				anonymous_scopes = new Hashtable ();
-				reader.BaseStream.Position = ot.AnonymousScopeTableOffset;
-				for (int i = 0; i < ot.AnonymousScopeCount; i++) {
-					AnonymousScopeEntry scope = new AnonymousScopeEntry (reader);
-					anonymous_scopes.Add (scope.ID, scope);
-				}
-
+				read_scopes ();
 				return (AnonymousScopeEntry) anonymous_scopes [id];
+			}
+		}
+
+		public AnonymousScopeEntry[] AnonymousScopes {
+			get {
+				read_scopes ();
+				AnonymousScopeEntry[] scopes = new AnonymousScopeEntry [anonymous_scopes.Count];
+				anonymous_scopes.Values.CopyTo (scopes, 0);
+				return scopes;
 			}
 		}
 
