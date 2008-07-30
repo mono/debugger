@@ -216,7 +216,7 @@ fi
 AC_SUBST(TARGET_MCS)
 AC_SUBST(TARGET_MONO)
 
-real_top_srcdir=`cd $srcdir && pwd`
+real_top_srcdir=`pwd`
 AC_SUBST(real_top_srcdir)
 AC_SUBST(PATH)
 AC_SUBST(LD_LIBRARY_PATH)
