@@ -76,17 +76,17 @@ TEST_CASE_SRCLIST = \
 
 SYMBOL_WRITER_DEPS = \
 	-r:Mono.GetOptions				\
-	-r:Mono.Cecil
+	-r:$(srcdir)/Mono.Cecil.dll
 
 SYMBOL_READER_DEPS = \
 	-r:Mono.GetOptions				\
-	-r:Mono.Cecil
+	-r:$(srcdir)/Mono.Cecil.dll
 
 DEBUGGER_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.Debugger.SymbolWriter			\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:Mono.Cecil
+	-r:$(srcdir)/Mono.Cecil.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
@@ -103,7 +103,7 @@ if MARTIN_PRIVATE
 MCS_FLAGS += -define:MARTIN_PRIVATE
 endif
 
-Mono.Debugger.SymbolWriter.dll: Makefile $(SYMBOL_WRITER_SRCLIST)
+Mono.Debugger.SymbolWriter.dll: Makefile Mono.Cecil.dll $(SYMBOL_WRITER_SRCLIST)
 	$(MCS) -target:library -out:Mono.Debugger.SymbolWriter.dll -d:CECIL $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(SYMBOL_WRITER_DEPS) $(SYMBOL_WRITER_SRCLIST)
 
 Mono.Debugger.dll: Makefile Mono.Debugger.SymbolWriter.dll $(DEBUGGER_SRCLIST)
@@ -114,6 +114,9 @@ Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
+
+Mono.Cecil.dll:
+	cp $(CECIL_ASM) $(srcdir)
 
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)

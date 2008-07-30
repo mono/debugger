@@ -224,7 +224,7 @@ namespace Mono.Debugger.Languages.Mono
 				Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
 			} catch (Exception ex) {
 				throw new SymbolTableException (
-					"Cannot load symbol file `{0}': {1}", ImageFile, ex.Message);
+					"Cannot load symbol file `{0}': {1}", ImageFile, ex);
 			}
 
 			ModuleDefinition = Assembly.MainModule;
@@ -234,9 +234,9 @@ namespace Mono.Debugger.Languages.Mono
 			string mdb_file = ImageFile + ".mdb";
 
 			try {
-				File = C.MonoSymbolFile.ReadSymbolFile (mdb_file);
+				File = C.MonoSymbolFile.ReadSymbolFile (Assembly, mdb_file);
 			} catch (Exception ex) {
-				Report.Error ("Cannot load symbol file `{0}': {1}", mdb_file, ex.Message);
+				Report.Error ("Cannot load symbol file `{0}': {1}", mdb_file, ex);
 			}
 
 			if (File == null)

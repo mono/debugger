@@ -451,9 +451,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public static MonoSymbolFile ReadSymbolFile (Mono.Cecil.AssemblyDefinition assembly, string filename)
 		{
-			string name = filename + ".mdb";
-
-			return new MonoSymbolFile (name, assembly);
+			return new MonoSymbolFile (filename, assembly);
 		}
 #else
 		protected MonoSymbolFile (string filename, Assembly assembly) : this (filename)
