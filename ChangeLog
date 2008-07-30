@@ -1,5 +1,9 @@
 2008-07-30  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Bump version number to 0.99; we're ready to branch.
+
+2008-07-30  Martin Baulig  <martin@ximian.com>
+
 	* configure.in (--with-host-mono): New configure option to
 	override the mono used to run child applications.
 
