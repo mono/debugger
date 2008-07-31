@@ -25,7 +25,7 @@ TEST_EXE = $(TEST_SRC:.cs=.exe) $(noinst_PROGRAMS) $(EXTRA_TEST_EXE)
 EXTRA_TEST_EXE = TestAppDomain.exe TestAppDomain-Module.exe TestAppDomain-Hello.dll \
 	IHelloInterface.dll
 
-EXTRA_DIST = *.cs
+EXTRA_DIST = $(srcdir)/*.cs
 
 noinst_PROGRAMS = \
 	testnativefork testnativeexec testnativechild testnativeattach \

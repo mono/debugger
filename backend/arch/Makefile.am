@@ -13,4 +13,4 @@ INCLUDES = -I$(srcdir)/bfd -I$(srcdir)/bfd/include -I$(srcdir)/opcodes @BASE_DEP
 
 CLEANFILES = lib*.a lib*.dll
 
-EXTRA_DIST = *.cs
+EXTRA_DIST = $(srcdir)/*.cs
