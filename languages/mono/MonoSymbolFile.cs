@@ -235,16 +235,17 @@ namespace Mono.Debugger.Languages.Mono
 
 			try {
 				File = C.MonoSymbolFile.ReadSymbolFile (Assembly, mdb_file);
+				if (File == null)
+					Report.Error ("Cannot load symbol file `{0}'", mdb_file);
+				else if (ModuleDefinition.Mvid != File.Guid) {
+					Report.Error ("Symbol file `{0}' does not match assembly `{1}'",
+						      mdb_file, ImageFile);
+					File = null;
+				}
+			} catch (C.MonoSymbolFileException ex) {
+				Report.Error (ex.Message);
 			} catch (Exception ex) {
 				Report.Error ("Cannot load symbol file `{0}': {1}", mdb_file, ex);
-			}
-
-			if (File == null)
-				Report.Error ("Cannot load symbol file `{0}'", mdb_file);
-			else if (ModuleDefinition.Mvid != File.Guid) {
-				Report.Error ("Symbol file `{0}' does not match assembly `{1}'",
-					      mdb_file, ImageFile);
-				File = null;
 			}
 
 			symtab = new MonoSymbolTable (this);

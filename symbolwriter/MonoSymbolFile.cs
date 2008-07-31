@@ -393,8 +393,15 @@ namespace Mono.CompilerServices.SymbolWriter
 		MonoSymbolFile (string filename)
 		{
 			this.FileName = filename;
-			FileStream stream = new FileStream (filename, FileMode.Open, FileAccess.Read);
-			reader = new MyBinaryReader (stream);
+
+			FileStream stream;
+			try {
+				stream = new FileStream (filename, FileMode.Open, FileAccess.Read);
+				reader = new MyBinaryReader (stream);
+			} catch (IOException ex) {
+				throw new MonoSymbolFileException (
+					"Cannot read symbol file `{0}': {1}", filename, ex.Message);
+			}
 
 			try {
 				long magic = reader.ReadInt64 ();
