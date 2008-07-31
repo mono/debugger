@@ -55,6 +55,8 @@ namespace Mono.Debugger
 		public event ProcessEventHandler ProcessCreatedEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
 		public event ProcessEventHandler ProcessExecdEvent;
+		public event ModuleEventHandler ModuleLoadedEvent;
+		public event ModuleEventHandler ModuleUnLoadedEvent;
 		public event DebuggerEventHandler TargetExitedEvent;
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
@@ -125,6 +127,18 @@ namespace Mono.Debugger
 		{
 			if (TargetEvent != null)
 				TargetEvent (thread, args);
+		}
+
+		internal void OnModuleLoadedEvent (Module module)
+		{
+			if (ModuleLoadedEvent != null)
+				ModuleLoadedEvent (module);
+		}
+
+		internal void OnModuleUnLoadedEvent (Module module)
+		{
+			if (ModuleUnLoadedEvent != null)
+				ModuleUnLoadedEvent (module);
 		}
 
 		public void Kill ()
