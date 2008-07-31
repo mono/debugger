@@ -1,3 +1,7 @@
+2008-07-31  Martin Baulig  <martin@ximian.com>
+
+	**** The Debugger has been branched for Mono 2.0 ****
+
 2008-07-31  Lluis Sanchez Gual  <lluis@novell.com>
 
 	* classes/GUIManager.cs: Make sure events from individual threads
