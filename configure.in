@@ -111,15 +111,15 @@ if test "x$PKG_CONFIG" = "xno"; then
 	AC_MSG_ERROR([You need to install pkg-config])
 fi
 
-AC_MSG_CHECKING([whether we're compiling from CVS])
-if test -f "$srcdir/.cvs_version" ; then
-	from_cvs=yes
+AC_MSG_CHECKING([whether we're compiling from SVN])
+if test -f "$srcdir/.svn_version" ; then
+	from_svn=yes
 else
-	from_cvs=no
+	from_svn=no
 fi
-AC_MSG_RESULT($from_cvs)
+AC_MSG_RESULT($from_svn)
 
-AM_CONDITIONAL(COMPILING_FROM_CVS, test x$from_cvs = xyes)
+AM_CONDITIONAL(COMPILING_FROM_SVN, test x$from_svn = xyes)
 
 pkg_config_path=
 AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir],
@@ -197,24 +197,37 @@ if test x$server_only != xyes; then
    fi
 fi
 
+target_mono_prefix="$prefix"
 AC_ARG_WITH(target-mono,
 [  --with-target-mono      Manually override the Mono used for target applications],
 	if test "x$with_target_mono" != "x"; then
 	  target_mono_prefix=$with_target_mono
-	  AC_SUBST(target_mono_prefix)
+	  have_target_mono=yes
 	fi
 )
-AM_CONDITIONAL(HAVE_TARGET_MONO, test "x$target_mono_prefix" != "x")
+AC_SUBST(target_mono_prefix)
+AM_CONDITIONAL(HAVE_TARGET_MONO, test "x$have_target_mono" = "xyes")
 
-if test "x$target_mono_prefix" != "x" ; then
+if test "x$have_target_mono" = "xyes" ; then
   TARGET_MCS="$target_mono_prefix/bin/gmcs"
   TARGET_MONO="$target_mono_prefix/bin/mono"
+  NUNIT_PREFIX="$target_mono_prefix"
 else
   TARGET_MCS="$MCS"
   TARGET_MONO="$MONO"
+
+  ## Check NUnit
+  if pkg-config --modversion mono-nunit>/dev/null; then
+    AC_MSG_RESULT("Found mono-nunit.pc")
+  else
+    AC_MSG_ERROR([Cannot find mono-nunit (mono-unit.pc for packageconfig)])
+  fi
+  NUNIT_PREFIX=`pkg-config --variable=prefix mono-nunit`
 fi
+NUNIT_PREFIX=`cd $NUNIT_PREFIX && pwd`
 AC_SUBST(TARGET_MCS)
 AC_SUBST(TARGET_MONO)
+AC_SUBST(NUNIT_PREFIX)
 
 real_top_srcdir=`pwd`
 AC_SUBST(real_top_srcdir)
@@ -289,7 +302,7 @@ if test x$mono_working != xyes; then
 fi
 
 martin_private=no
-if test "x$from_cvs" = "xyes"; then
+if test "x$from_svn" = "xyes"; then
   if test x`hostname --fqdn` = x'gondor.trier.ximian.com'; then
     if test x"$prefix" == "x/work/gondor/INSTALL" ; then
       echo "Experimental features are disabled in the Gondor tree."

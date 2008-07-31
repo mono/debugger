@@ -1,1 +1,1 @@
-EXTRA_DIST = *.cs DebuggerConfiguration.xsd
+EXTRA_DIST = $(srcdir)/*.cs DebuggerConfiguration.xsd

@@ -26,7 +26,7 @@ noinst_SCRIPTS = \
 	Mono.Debugger.Test.dll
 
 LANGUAGE_SPECIFIC_FILES = \
-	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
+	$(top_srcdir)/frontend/CSharpExpressionParser.cs	\
 	$(top_srcdir)/frontend/CSharpTokenizer.cs
 
 MDB_SRCLIST = \
@@ -76,17 +76,17 @@ TEST_CASE_SRCLIST = \
 
 SYMBOL_WRITER_DEPS = \
 	-r:Mono.GetOptions				\
-	-r:$(srcdir)/Mono.Cecil.dll
+	-r:./Mono.Cecil.dll
 
 SYMBOL_READER_DEPS = \
 	-r:Mono.GetOptions				\
-	-r:$(srcdir)/Mono.Cecil.dll
+	-r:./Mono.Cecil.dll
 
 DEBUGGER_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:Mono.Debugger.SymbolWriter			\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
-	-r:$(srcdir)/Mono.Cecil.dll
+	-r:./Mono.Cecil.dll
 
 MDB_DEPS = \
 	-r:Mono.GetOptions				\
@@ -116,7 +116,7 @@ Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
 Mono.Cecil.dll:
-	cp $(CECIL_ASM) $(srcdir)
+	cp $(CECIL_ASM) $(builddir)
 
 mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
@@ -139,7 +139,8 @@ noinst_DATA = Mono.Debugger.dll.config
 
 CLEANFILES = *.exe *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
 	TestResult.* Mono.Debugger.dll Mono.Debugger.Frontend.dll \
-	Mono.Debugger.Test.dll
+	Mono.Debugger.Test.dll Mono.Debugger.SymbolWriter.dll \
+	Mono.Cecil.dll runtests
 
 EXTRA_DIST = \
 	mdb.in runtests.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
@@ -150,9 +151,11 @@ mdb: mdb.in Makefile
 		< $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
+NUNIT_CONSOLE_EXE = $(NUNIT_PREFIX)/lib/mono/2.0/nunit-console.exe
+
 runtests: runtests.in Makefile
 	builddir=$(top_builddir) ; the_builddir=`cd $$builddir && pwd` ; \
-	sed -e 's^\@NUNIT_CONSOLE_EXE\@^$(twodir)/nunit-console.exe^g' \
+	sed -e 's^\@NUNIT_CONSOLE_EXE\@^$(NUNIT_CONSOLE_EXE)^g' \
 		-e 's^\@MONO\@^$(TARGET_MONO)^g' \
 		-e 's^\@NUNIT_CONSOLE_FLAGS\@^$(NUNIT_CONSOLE_FLAGS)^g' \
 		-e "s^\@top_builddir\@^$$the_builddir^g" \
