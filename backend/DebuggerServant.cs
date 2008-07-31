@@ -47,6 +47,16 @@ namespace Mono.Debugger.Backend
 			get { return thread_manager; }
 		}
 
+		internal void OnModuleLoaded (Module module)
+		{
+			client.OnModuleLoadedEvent (module);
+		}
+
+		internal void OnModuleUnLoaded (Module module)
+		{
+			client.OnModuleUnLoadedEvent (module);
+		}
+
 		internal void OnMainProcessCreatedEvent (ProcessServant process)
 		{
 			client.OnMainProcessCreatedEvent (process.Client);

@@ -709,12 +709,8 @@ namespace Mono.Debugger.Languages.Mono
 			return symfile;
 		}
 
-		void close_symfile (int index)
+		void close_symfile (MonoSymbolFile symfile)
 		{
-			MonoSymbolFile symfile = (MonoSymbolFile) symfile_by_index [index];
-			if (symfile == null)
-				throw new InternalError ();
-
 			symfile_by_image_addr.Remove (symfile.MonoImage);
 			assembly_hash.Remove (symfile.Assembly);
 			assembly_by_name.Remove (symfile.Assembly.Name.FullName);
@@ -1312,6 +1308,7 @@ namespace Mono.Debugger.Languages.Mono
 				MonoSymbolFile symfile = load_symfile (inferior, data);
 				Report.Debug (DebugFlags.JitSymtab,
 					      "Module load: {0} {1}", data, symfile);
+				engine.Process.Debugger.OnModuleLoaded (symfile.Module);
 				if ((builtin_types != null) && (symfile != null)) {
 					if (engine.OnModuleLoaded ())
 						return false;
@@ -1322,7 +1319,13 @@ namespace Mono.Debugger.Languages.Mono
 			case NotificationType.UnloadModule:
 				Report.Debug (DebugFlags.JitSymtab,
 					      "Module unload: {0} {1}", data, arg);
-				close_symfile ((int) arg);
+
+				MonoSymbolFile symfile = (MonoSymbolFile) symfile_by_index [(int) arg];
+				if (symfile == null)
+					throw new InternalError ();
+
+				engine.Process.Debugger.OnModuleUnLoaded (symfile.Module);
+				close_symfile (symfile);
 				break;
 
 			case NotificationType.JitBreakpoint:

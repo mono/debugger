@@ -1,5 +1,11 @@
 2008-07-31  Martin Baulig  <martin@ximian.com>
 
+	* classes/Debugger.cs
+	(Debugger.ModuleLoadedEvent): New public event.
+	(Debugger.ModuleUnLoadedEvent): New public event.
+
+2008-07-31  Martin Baulig  <martin@ximian.com>
+
 	**** The Debugger has been branched for Mono 2.0 ****
 
 2008-07-31  Lluis Sanchez Gual  <lluis@novell.com>
