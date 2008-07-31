@@ -13,6 +13,4 @@ DISTCLEANFILES = CSharpExpressionParser.cs y.output
 EXTRA_DIST = skeleton CSharpExpressionParser.jay $(srcdir)/*.cs
 
 dist-hook:
-	echo "DIST HOOK: $distdir"
-	pwd
 	rm -f CSharpExpressionParser.cs
