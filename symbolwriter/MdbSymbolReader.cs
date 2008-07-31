@@ -331,7 +331,7 @@ namespace Mono.Debugger.SymbolWriter
 
 			try {
 				asm = Mono.Cecil.AssemblyFactory.GetAssembly (filename);
-				file = MonoSymbolFile.ReadSymbolFile (asm, filename);
+				file = MonoSymbolFile.ReadSymbolFile (asm, filename + ".mdb");
 			} catch (Exception ex) {
 				Console.WriteLine ("Can't read {0}: {1}", filename, ex.Message);
 				return -1;
