@@ -1,3 +1,13 @@
+August 5th, 2008 - Martin Baulig
+--------------------------------
+
+Released version 1.0 "Cologne" of the Mono Debugger :-)
+
+- This is a stable release for Mono 2.0 and will be supported
+  for a long period of time.
+
+- Lots of bug fixes went in since 0.80.
+
 March 14th, 2008 - Martin Baulig
 --------------------------------
 
@@ -16,7 +26,7 @@ Released version 0.80 "Terrania City" of the Mono Debugger :-)
     get their types yet.
 
   * Support for anonymous methods and iterators should now be pretty
-    much complete; we can fully   debug them, access captured
+    much complete; we can fully debug them, access captured
     variables etc.
 
   * There are a few single-stepping improvements.

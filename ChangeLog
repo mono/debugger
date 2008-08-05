@@ -1,3 +1,11 @@
+2008-08-05  Martin Baulig  <martin@ximian.com>
+
+	Released version 1.0 "Cologne" of the Mono Debugger :-)
+
+	* NEWS: Updated to 1.0.
+
+	* configure.in: This is trunk, bump the version number here.
+
 2008-07-31  Martin Baulig  <martin@ximian.com>
 
 	* classes/Debugger.cs
