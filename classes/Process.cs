@@ -109,6 +109,15 @@ namespace Mono.Debugger
 		}
 
 		//
+		// Test
+		//
+
+		public void ActivatePendingBreakpoints ()
+		{
+			servant.ActivatePendingBreakpoints ();
+		}
+
+		//
 		// Stopping / resuming all threads for the GUI
 		//
 
