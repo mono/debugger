@@ -1,5 +1,11 @@
 2008-08-11  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Command.cs
+	(BreakCommand): Add `-gui' option to allow inserting breakpoints
+	while the target is running.
+
+2008-08-11  Martin Baulig  <martin@ximian.com>
+
 	* classes/Process.cs
 	(Process.ActivatePendingBreakpoints): New public method.
 

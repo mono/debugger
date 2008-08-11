@@ -3006,7 +3006,7 @@ namespace Mono.Debugger.Frontend
 		int p_index = -1, t_index = -1, f_index = -1;
 		string group;
 		bool global, local;
-		bool lazy;
+		bool lazy, gui;
 		int domain = 0;
 		ThreadGroup tgroup;
 
@@ -3028,6 +3028,11 @@ namespace Mono.Debugger.Frontend
 		public bool Lazy {
 			get { return lazy; }
 			set { lazy = true; }
+		}
+
+		public bool GUI {
+			get { return gui; }
+			set { gui = value; }
 		}
 
 		public int Domain {
@@ -3107,7 +3112,9 @@ namespace Mono.Debugger.Frontend
 			if (context.Interpreter.HasTarget) {
 				context.CurrentProcess = context.Interpreter.GetProcess (p_index);
 				context.CurrentThread = context.Interpreter.GetThread (t_index);
+			}
 
+			if (!gui && context.Interpreter.HasTarget) {
 				Thread thread = context.CurrentThread;
 				if (!thread.IsStopped)
 					throw new TargetException (TargetError.NotStopped);
@@ -3171,7 +3178,7 @@ namespace Mono.Debugger.Frontend
 					return true;
 			}
 
-			if (lazy)
+			if (lazy || gui)
 				return true;
 
 			if (location == null)
@@ -3196,6 +3203,11 @@ namespace Mono.Debugger.Frontend
 				handle = context.Interpreter.Session.InsertBreakpoint (
 					tgroup, type, Argument);
 				context.Print ("Breakpoint {0} at {1}", handle.Index, Argument);
+			}
+
+			if (gui) {
+				context.CurrentProcess.ActivatePendingBreakpoints ();
+				return handle.Index;
 			}
 
 			if (!context.Interpreter.HasTarget)
