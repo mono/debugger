@@ -1933,11 +1933,6 @@ namespace Mono.Debugger.Backend
 		}
 #endregion
 
-#if MARTIN_PRIVATE
-		//
-		// Not yet finished.
-		//
-
 		public void ManagedCallback (ManagedCallbackFunction func)
 		{
 			SendCommand (delegate {
@@ -1982,11 +1977,10 @@ namespace Mono.Debugger.Backend
 			return true;
 		}
 
-		internal void DoManagedCallback (ManagedCallbackFunction[] callbacks)
+		internal void OnManagedCallback (ManagedCallbackFunction[] callbacks)
 		{
 			PushOperation (new OperationManagedCallback (this, callbacks));
 		}
-#endif
 
 #region IDisposable implementation
 		protected override void DoDispose ()
