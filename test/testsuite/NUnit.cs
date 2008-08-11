@@ -301,6 +301,10 @@ namespace Mono.Debugger.Tests
 			get { return interpreter; }
 		}
 
+		public DebuggerConfiguration Config {
+			get { return config; }
+		}
+
 		public static string SourceDirectory {
 			get {
 				string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");

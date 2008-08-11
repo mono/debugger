@@ -1,3 +1,8 @@
+2008-08-11  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/testnativefork.cs: Override debugger config; this
+	test needs "broken-threading = false", "stay-in-thread = true".
+
 2008-08-05  Martin Baulig  <martin@ximian.com>
 
 	Released version 2.0 "Cologne" of the Mono Debugger :-)

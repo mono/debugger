@@ -12,7 +12,10 @@ namespace Mono.Debugger.Tests
 	{
 		public testnativefork ()
 			: base ("testnativefork", "testnativefork.c")
-		{ }
+		{
+			Config.BrokenThreading = false;
+			Config.StayInThread = true;
+		}
 
 		const int LineMain = 12;
 		const int LineWaitpid = 16;
