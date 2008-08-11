@@ -1504,6 +1504,11 @@ namespace Mono.Debugger.Backend
 
 		internal bool OnModuleLoaded ()
 		{
+			return ActivatePendingBreakpoints ();
+		}
+
+		internal bool ActivatePendingBreakpoints ()
+		{
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
 
@@ -2398,36 +2403,39 @@ namespace Mono.Debugger.Backend
 	protected class OperationInsertBreakpoint : OperationCallback
 	{
 		public readonly FunctionBreakpointHandle Handle;
+		public readonly int Index;
 
 		public OperationInsertBreakpoint (SingleSteppingEngine sse,
 						  FunctionBreakpointHandle handle)
 			: base (sse, null)
 		{
 			this.Handle = handle;
+			this.Index = MonoLanguageBackend.GetUniqueID ();
 		}
 
 		protected override void DoExecute ()
 		{
 			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
-			MonoLanguageBackend mono = sse.process.MonoLanguage;
 
 			MonoFunctionType func = (MonoFunctionType) Handle.Function;
 			TargetAddress image = func.SymbolFile.MonoImage;
-			int index = MonoLanguageBackend.GetUniqueID ();
 
-			mono.RegisterMethodLoadHandler (index, Handle.MethodLoaded);
+			Report.Debug (DebugFlags.SSE,
+				      "{0} insert breakpoint: {1} {2} {3:x}",
+				      sse, func, Index, func.Token);
 
 			inferior.CallMethod (
 				info.InsertSourceBreakpoint, image.Address,
-				func.Token, index, func.DeclaringType.BaseName, ID);
+				func.Token, Index, func.DeclaringType.BaseName, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
-			Report.Debug (DebugFlags.SSE,
-				      "{0} insert breakpoint done: {1:x} {2:x}",
-				      sse, data1, data2);
+			TargetAddress info = new TargetAddress (inferior.AddressDomain, data1);
 
+			Report.Debug (DebugFlags.SSE, "{0} insert breakpoint done: {1}", sse, info);
+
+			sse.Process.MonoLanguage.RegisterMethodLoadHandler (inferior, info, Index, Handle.MethodLoaded);
 
 			Handle.Breakpoint.OnBreakpointBound ();
 			return EventResult.AskParent;
@@ -3238,11 +3246,18 @@ namespace Mono.Debugger.Backend
 				this.thread_lock.PopRegisters (inferior);
 			}
 
-			foreach (ManagedCallbackFunction func in CallbackFunctions)
-				func (sse);
+			bool running = false;
+			foreach (ManagedCallbackFunction func in CallbackFunctions) {
+				running |= func (sse);
+			}
 
-			byte[] nop_insn = sse.Architecture.Opcodes.GenerateNopInstruction ();
-			sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
+			Report.Debug (DebugFlags.SSE, "{0} managed callback execute #1: {1}",
+				      sse, running);
+
+			if (!running) {
+				byte[] nop_insn = sse.Architecture.Opcodes.GenerateNopInstruction ();
+				sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
+			}
 
 			Report.Debug (DebugFlags.SSE, "{0} managed callback execute done", this);
 		}

@@ -1,5 +1,26 @@
 2008-08-11  Martin Baulig  <martin@ximian.com>
 
+	* classes/Process.cs
+	(Process.ActivatePendingBreakpoints): New public method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OnModuleLoaded): Moved functionality into
+	ActivatePendingBreakpoints().
+	(SSE.ActivatePendingBreakpoints): New internal method.
+	(SSE.OperationInsertBreakpoint): Check the return value from the
+	runtime and pass it to mono.RegisterMethodLoadHandler().
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.RegisterMethodLoadHandler): When called from
+	the SSE, we now take an additional `TargetAddress argument' which
+	is the return value from the runtime; call method_from_jit_info()
+	if necessary.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ActivatePendingBreakpoints): New method.
+
+2008-08-11  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/testnativefork.cs: Override debugger config; this
 	test needs "broken-threading = false", "stay-in-thread = true".
 

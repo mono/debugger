@@ -983,9 +983,13 @@ namespace Mono.Debugger.Languages.Mono
 			return file.ReadRangeEntry (target, reader, contents);
 		}
 
-		internal void RegisterMethodLoadHandler (int index, MethodLoadedHandler handler)
+		internal void RegisterMethodLoadHandler (TargetAccess target, TargetAddress info, int index,
+							 MethodLoadedHandler handler)
 		{
-			method_load_handlers.Add (index, handler);
+			if (!info.IsNull)
+				method_from_jit_info (target, info, handler);
+			else
+				method_load_handlers.Add (index, handler);
 		}
 
 		internal void RemoveMethodLoadHandler (Thread target, int index)

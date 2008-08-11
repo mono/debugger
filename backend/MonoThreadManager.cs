@@ -52,7 +52,7 @@ namespace Mono.Debugger.Backend
 		Trampoline	= 256
 	}
 
-	internal delegate object ManagedCallbackFunction (SingleSteppingEngine engine);
+	internal delegate bool ManagedCallbackFunction (SingleSteppingEngine engine);
 
 	internal class MonoThreadManager
 	{
