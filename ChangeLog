@@ -1,3 +1,7 @@
+2008-08-12  Martin Baulig  <martin@ximian.com>
+
+	* test/{src|testsuite}/TestActivateBreakpoints.cs: New test.
+
 2008-08-11  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Command.cs

@@ -12,7 +12,7 @@ EXCLUDED_TESTS = NotWorking,Attach
 else
 # Exclude anything which may potentially break, only enable the
 # 100% safe tests.
-EXCLUDED_TESTS = NotWorking,Attach,Native,Threads,AppDomain
+EXCLUDED_TESTS = NotWorking,Attach,Native,Threads,AppDomain,GUI
 endif
 
 if HAVE_XSP
