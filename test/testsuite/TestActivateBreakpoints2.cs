@@ -52,7 +52,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Blocking Done");
 
 			int status = 0;
-			while (status != 15) {
+			while (status != 63) {
 				DebuggerEvent e = AssertEvent ();
 				if (e.Type == DebuggerEventType.ThreadExited) {
 					if (e.Data == blocking) {
@@ -61,6 +61,9 @@ namespace Mono.Debugger.Tests
 					} else if (e.Data == executing) {
 						status |= 2;
 						continue;
+					} else if (e.Data == sleeping) {
+						status |= 4;
+						continue;
 					}
 				} else if (e.Type == DebuggerEventType.TargetEvent) {
 					Thread e_thread = (Thread) e.Data;
@@ -68,10 +71,13 @@ namespace Mono.Debugger.Tests
 
 					if (args.Type == TargetEventType.TargetExited) {
 						if (e_thread == blocking) {
-							status |= 4;
+							status |= 8;
 							continue;
 						} else if (e_thread == executing) {
-							status |= 8;
+							status |= 16;
+							continue;
+						} else if (e_thread == sleeping) {
+							status |= 32;
 							continue;
 						}
 					}
