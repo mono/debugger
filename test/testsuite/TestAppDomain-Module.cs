@@ -12,7 +12,10 @@ namespace Mono.Debugger.Tests
 	{
 		public TestAppDomainModule ()
 			: base ("TestAppDomain-Module")
-		{ }
+		{
+			Config.BrokenThreading = false;
+			Config.StayInThread = true;
+		}
 
 		const int LineHelloWorld = 7;
 

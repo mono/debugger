@@ -12,7 +12,9 @@ namespace Mono.Debugger.Tests
 	{
 		public TestMultiThread ()
 			: base ("TestMultiThread")
-		{ }
+		{
+			Config.BrokenThreading = true;
+		}
 
 		const int LineMain = 51;
 		const int LineLoop = 32;
