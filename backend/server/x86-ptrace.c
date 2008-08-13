@@ -55,6 +55,7 @@ struct InferiorHandle
 #ifdef __linux__
 	int mem_fd;
 #endif
+	int stepping;
 	int last_signal;
 	int redirect_fds;
 	int output_fd [2], error_fd [2];
@@ -123,6 +124,7 @@ server_ptrace_continue (ServerHandle *handle)
 	InferiorHandle *inferior = handle->inferior;
 
 	errno = 0;
+	inferior->stepping = FALSE;
 	if (ptrace (PT_CONTINUE, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
 		return _server_ptrace_check_errno (inferior);
 	}
@@ -136,10 +138,21 @@ server_ptrace_step (ServerHandle *handle)
 	InferiorHandle *inferior = handle->inferior;
 
 	errno = 0;
+	inferior->stepping = TRUE;
 	if (ptrace (PT_STEP, inferior->pid, (caddr_t) 1, inferior->last_signal))
 		return _server_ptrace_check_errno (inferior);
 
 	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_resume (ServerHandle *handle)
+{
+	InferiorHandle *inferior = handle->inferior;
+	if (inferior->stepping)
+		return server_ptrace_step (handle);
+	else
+		return server_ptrace_continue (handle);
 }
 
 static ServerCommandError
@@ -585,6 +598,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_get_target_info,
 	server_ptrace_continue,
 	server_ptrace_step,
+	server_ptrace_resume,
 	server_ptrace_get_frame,
 	server_ptrace_current_insn_is_bpt,
 	server_ptrace_peek_word,

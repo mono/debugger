@@ -1482,7 +1482,7 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
-				do_continue ();
+				inferior.Resume ();
 				return;
 			}
 
@@ -1941,6 +1941,8 @@ namespace Mono.Debugger.Backend
 				AcquireThreadLock ();
 
 				if (!do_managed_callback (func)) {
+					Report.Debug (DebugFlags.SSE, "{0} managed callback needs thread lock", this);
+
 					bool ok = false;
 					process.AcquireGlobalThreadLock (this);
 					foreach (SingleSteppingEngine engine in process.ThreadServants) {
@@ -1954,6 +1956,7 @@ namespace Mono.Debugger.Backend
 						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback", this);
 						process.MonoManager.AddManagedCallback (inferior, func);
 					}
+					Report.Debug (DebugFlags.SSE, "{0} managed callback releasing thread lock", this);
 					process.ReleaseGlobalThreadLock (this);
 				}
 
@@ -3253,7 +3256,7 @@ namespace Mono.Debugger.Backend
 				sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} managed callback execute done", this);
+			Report.Debug (DebugFlags.SSE, "{0} managed callback execute done", sse);
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,

@@ -1,3 +1,21 @@
+2008-08-14  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_resume): New method; use this after receiving a
+	`STOP_ACTION_INTERRUPTED' to resume the previously running
+	stepi/continue.
+
+	* backend/server/library.c
+	(mono_debugger_server_resume): New public method.
+
+	* backend/Inferior.cs
+	(Inferior.Resume): New public method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ReleaseThreadLock): Call `inferior.Resume()' if we received a
+	`ChildEventType.CHILD_INTERRUPTED'.  This fixes a race condition,
+	if we are executing a OperationExecuteInstruction, for instance.
+
 2008-08-13  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/TestAttach.cs

@@ -182,6 +182,8 @@ struct InferiorVTable {
 	 */
 	ServerCommandError    (* step)                (ServerHandle     *handle);
 
+	ServerCommandError    (* resume)              (ServerHandle     *handle);
+
 	/*
 	 * Get the current program counter.
 	 * Return COMMAND_ERROR_NOT_STOPPED if the target is currently running.
@@ -460,6 +462,9 @@ mono_debugger_server_step                 (ServerHandle       *handle);
 
 ServerCommandError
 mono_debugger_server_continue             (ServerHandle       *handle);
+
+ServerCommandError
+mono_debugger_server_resume               (ServerHandle       *handle);
 
 ServerCommandError
 mono_debugger_server_detach               (ServerHandle       *handle);

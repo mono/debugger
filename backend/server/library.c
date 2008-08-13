@@ -163,6 +163,15 @@ mono_debugger_server_continue (ServerHandle *handle)
 }
 
 ServerCommandError
+mono_debugger_server_resume (ServerHandle *handle)
+{
+	if (!global_vtable->resume)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->resume) (handle);
+}
+
+ServerCommandError
 mono_debugger_server_detach (ServerHandle *handle)
 {
 	if (!global_vtable->detach)

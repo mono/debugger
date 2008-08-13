@@ -84,6 +84,9 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_continue (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_resume (IntPtr handle);
+
+		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_detach (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
@@ -1121,6 +1124,19 @@ namespace Mono.Debugger.Backend
 			TargetState old_state = change_target_state (TargetState.Running);
 			try {
 				check_error (mono_debugger_server_continue (server_handle));
+			} catch {
+				change_target_state (old_state);
+				throw;
+			}
+		}
+
+		public void Resume ()
+		{
+			check_disposed ();
+
+			TargetState old_state = change_target_state (TargetState.Running);
+			try {
+				check_error (mono_debugger_server_resume (server_handle));
 			} catch {
 				change_target_state (old_state);
 				throw;
