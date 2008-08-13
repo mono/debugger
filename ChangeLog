@@ -1,3 +1,13 @@
+2008-08-13  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/TestAttach.cs
+	(TestAttach.TearDown): Call `child.WaitForExit()' here since
+	TestAttach.Kill() may not be run if the test is disabled.
+
+	* test/testsuite/testnativeattach.cs
+	(testnativeattach.TearDown): Call `child.WaitForExit()' here since
+	testnativeattach.Kill() may not be run if the test is disabled.
+
 2008-08-12  Martin Baulig  <martin@ximian.com>
 
 	* test/{src|testsuite}/TestActivateBreakpoints.cs: New test.

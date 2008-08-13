@@ -40,6 +40,7 @@ namespace Mono.Debugger.Tests
 
 			if (!child.HasExited)
 				child.Kill ();
+			child.WaitForExit ();
 		}
 
 		[Test]
@@ -109,7 +110,6 @@ namespace Mono.Debugger.Tests
 
 			process.Kill ();
 			AssertTargetExited (process);
-			child.WaitForExit ();
 		}
 	}
 }
