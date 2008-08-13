@@ -1,5 +1,9 @@
 2008-08-14  Martin Baulig  <martin@ximian.com>
 
+	* test/{src|testsuite}/TestActivateBreakpoints2.cs: New test.
+
+2008-08-14  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.c
 	(server_ptrace_resume): New method; use this after receiving a
 	`STOP_ACTION_INTERRUPTED' to resume the previously running
