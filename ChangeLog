@@ -1,3 +1,18 @@
+2008-08-13  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/TestAttach.cs
+	(TestAttach.TearDown): Call `child.WaitForExit()' here since
+	TestAttach.Kill() may not be run if the test is disabled.
+
+	* test/testsuite/testnativeattach.cs
+	(testnativeattach.TearDown): Call `child.WaitForExit()' here since
+	testnativeattach.Kill() may not be run if the test is disabled.
+
+2008-08-11  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/testnativefork.cs: Override debugger config; this
+	test needs "broken-threading = false", "stay-in-thread = true".
+
 2008-08-05  Martin Baulig  <martin@ximian.com>
 
 	Released version 2.0 "Cologne" of the Mono Debugger :-)

@@ -12,7 +12,10 @@ namespace Mono.Debugger.Tests
 	{
 		public TestAppDomain ()
 			: base ("TestAppDomain")
-		{ }
+		{
+			Config.BrokenThreading = false;
+			Config.StayInThread = true;
+		}
 
 		int bpt_hello;
 
