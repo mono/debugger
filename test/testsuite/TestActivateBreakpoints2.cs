@@ -18,6 +18,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("NotWorking")]
 		[Category("GUI")]
 		public void Main ()
 		{
