@@ -1,5 +1,10 @@
 2008-08-14  Martin Baulig  <martin@ximian.com>
 
+	* symbolwriter/MdbSymbolReader.cs: Add `-verbose' command line
+	argument and improve the scope variables check.
+
+2008-08-14  Martin Baulig  <martin@ximian.com>
+
 	* build/Makefile.am
 	(verify-local): New target.  Run the symfile verifier here.
 	(check-local): Run `verify-local'.

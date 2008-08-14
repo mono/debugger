@@ -11,7 +11,7 @@ namespace Mono.Debugger.SymbolWriter
 		public readonly Cecil.AssemblyDefinition Assembly;
 		public readonly MonoSymbolFile File;
 
-		public bool Verbose {
+		public static bool Verbose {
 			get; set;
 		}
 
@@ -299,25 +299,37 @@ namespace Mono.Debugger.SymbolWriter
 			ScopeVariable[] scope_vars = method.GetScopeVariables () ?? new ScopeVariable [0];
 			foreach (ScopeVariable var in scope_vars) {
 				Debug (" {0} scope var: {1}", method, var);
+				if ((mdef.IsStatic) && (var.Index < 0))
+					throw new MonoSymbolFileException (
+						"Method {0} has invalid scope variable {1} (referencing `this' in static method).",
+						name, var);
 				if ((var.Index >= 0) && (var.Index >= num_locals))
-					throw new MonoSymbolFileException ("Method {0} has invalid scope variable {1}.",
-									   name, var);
+					throw new MonoSymbolFileException (
+						"Method {0} has invalid scope variable {1} (index out of bounds: {2} / {3}).",
+						name, var, var.Index, num_locals);
 				if ((var.Scope > 0) && (File.GetAnonymousScope (var.Scope) == null))
-					throw new MonoSymbolFileException ("Method {0} has invalid scope variable {1}.",
-									   name, var);
+					throw new MonoSymbolFileException (
+						"Method {0} has invalid scope variable {1} (can't find scope {2}).",
+						name, var, var.Scope);
 			}
 		}
 
 		static int Main (string[] args)
 		{
 			if (args.Length < 1) {
-				Console.WriteLine ("USAGE: mdb-symbolwriter filename...filename");
+				Console.WriteLine ("USAGE: mdb-symbolwriter [-verbose] filename...filename");
 				return 1;
 			}
 
+			int i = 0;
+			if ((args [0] == "-verbose") || (args [0] == "--verbose")) {
+				Verbose = true;
+				i++;
+			}
+
 			bool fail = false;
-			foreach (string filename in args) {
-				int ret = Check (filename);
+			for (; i < args.Length; i++) {
+				int ret = Check (args [i]);
 				if (ret < 0)
 					fail = true;
 			}
@@ -338,7 +350,6 @@ namespace Mono.Debugger.SymbolWriter
 			}
 
 			MdbSymbolReader reader = new MdbSymbolReader (asm, file);
-			reader.Verbose = false;
 
 			try {
 				reader.Read ();
