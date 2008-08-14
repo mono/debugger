@@ -74,6 +74,10 @@ TEST_SRCLIST = \
 TEST_CASE_SRCLIST = \
 	$(top_srcdir)/test/src/*.cs
 
+TEST_CASE_EXELIST = \
+	$(top_builddir)/test/src/*.exe			\
+	$(top_builddir)/test/src/*.dll
+
 SYMBOL_WRITER_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:./Mono.Cecil.dll
@@ -172,7 +176,10 @@ uninstall-local:
 
 NUNIT_CONSOLE_FLAGS =
 
-check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST)
+verify-local: mdb-symbolreader.exe $(TEST_CASE_SRCLIST)
+	$(MONO) --debug mdb-symbolreader.exe $(TEST_CASE_EXELIST)
+
+check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST) verify-local
 #	$(builddir)/runtests /output:TestResult.log /exclude:$(EXCLUDED_TESTS) /xml:TestResult.xml || ok=false; \
 #	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 #	$$ok

@@ -1,5 +1,11 @@
 2008-08-14  Martin Baulig  <martin@ximian.com>
 
+	* build/Makefile.am
+	(verify-local): New target.  Run the symfile verifier here.
+	(check-local): Run `verify-local'.
+
+2008-08-14  Martin Baulig  <martin@ximian.com>
+
 	* test/{src|testsuite}/TestActivateBreakpoints2.cs: New test.
 
 2008-08-14  Martin Baulig  <martin@ximian.com>
