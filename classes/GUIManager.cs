@@ -25,19 +25,16 @@ namespace Mono.Debugger
 		ST.Thread manager_thread;
 		ST.AutoResetEvent manager_event;
 		Queue<Event> event_queue;
-		
-		object stopLock = new object ();
-		List<Thread> stoppedList;
+
+		object stop_lock = new object ();
+		List<Thread> stopped_list;
 
 		bool stopping;
 		
-		BreakpointHitHandler breakpointHitHandler;
-
 		public event TargetEventHandler TargetEvent;
 		
 		public BreakpointHitHandler BreakpointHitHandler {
-			get { return breakpointHitHandler; }
-			set { breakpointHitHandler = value; }
+			get; private set;
 		}
 
 		public void StartGUIManager ()
@@ -69,33 +66,33 @@ namespace Mono.Debugger
 
 		void handle_autostop_event (SingleSteppingEngine sse, TargetEventArgs args)
 		{
-			bool stopRequested = true;
+			bool stop_requested = true;
 			
 			// Always run the breakpoint handler for breakpoint hits,
 			// even when the debugger is already stopping
-			if ((args.Type == TargetEventType.TargetHitBreakpoint || args.Type == TargetEventType.Exception) && breakpointHitHandler != null)
-				stopRequested = breakpointHitHandler (args);
+			if ((args.Type == TargetEventType.TargetHitBreakpoint || args.Type == TargetEventType.Exception) && BreakpointHitHandler != null)
+				stop_requested = BreakpointHitHandler (args);
 			
-			lock (stopLock) {
+			lock (stop_lock) {
 				
 				// If the debugger is already being stopped, make sure this event doesn't
 				// reach the GUI.
 				if (stopping) {
-					if (!stoppedList.Contains (sse.Thread)) {
-						stoppedList.Add (sse.Thread);
-						ST.Monitor.Pulse (stopLock);
+					if (!stopped_list.Contains (sse.Thread)) {
+						stopped_list.Add (sse.Thread);
+						ST.Monitor.Pulse (stop_lock);
 					}
 					return;
 				}
 				
 				// If the thread doesn't need to be stopped, resume it here
-				if (!stopRequested) {
+				if (!stop_requested) {
 					Continue (sse.Thread);
 					return;
 				}
 				
 				stopping = true;
-				stoppedList = new List<Thread> ();
+				stopped_list = new List<Thread> ();
 			}
 
 			List<Thread> stopped = new List<Thread> ();
@@ -142,11 +139,11 @@ namespace Mono.Debugger
 			// events are fired asynchronously, so they might come
 			// after the wait handle is signaled
 
-			lock (stopLock) {
-				while (stoppedList.Count != e.Stopped.Count) {
-					ST.Monitor.Wait (stopLock);
+			lock (stop_lock) {
+				while (stopped_list.Count != e.Stopped.Count) {
+					ST.Monitor.Wait (stop_lock);
 				}
-				stoppedList = null;
+				stopped_list = null;
 				stopping = false;
 			}
 
