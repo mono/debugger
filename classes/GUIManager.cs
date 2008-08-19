@@ -26,16 +26,9 @@ namespace Mono.Debugger
 		ST.AutoResetEvent manager_event;
 		Queue<Event> event_queue;
 
-		object stop_lock = new object ();
-		List<Thread> stopped_list;
+		bool break_mode;
 
-		bool stopping;
-		
 		public event TargetEventHandler TargetEvent;
-		
-		public BreakpointHitHandler BreakpointHitHandler {
-			get; private set;
-		}
 
 		public void StartGUIManager ()
 		{
@@ -49,51 +42,19 @@ namespace Mono.Debugger
 		{
 			switch (args.Type){
 			case TargetEventType.TargetHitBreakpoint:
-			case TargetEventType.Exception:
 			case TargetEventType.TargetStopped:
-			case TargetEventType.TargetInterrupted:
-			case TargetEventType.TargetSignaled:
-			case TargetEventType.UnhandledException:
 				handle_autostop_event (sse, args);
 				break;
 
-			case TargetEventType.TargetExited:
-			case TargetEventType.FrameChanged:
-				// Ignore
+			default:
+				SendTargetEvent (sse.Thread, args);
 				break;
 			}
 		}
 
 		void handle_autostop_event (SingleSteppingEngine sse, TargetEventArgs args)
 		{
-			bool stop_requested = true;
-			
-			// Always run the breakpoint handler for breakpoint hits,
-			// even when the debugger is already stopping
-			if ((args.Type == TargetEventType.TargetHitBreakpoint || args.Type == TargetEventType.Exception) && BreakpointHitHandler != null)
-				stop_requested = BreakpointHitHandler (args);
-			
-			lock (stop_lock) {
-				
-				// If the debugger is already being stopped, make sure this event doesn't
-				// reach the GUI.
-				if (stopping) {
-					if (!stopped_list.Contains (sse.Thread)) {
-						stopped_list.Add (sse.Thread);
-						ST.Monitor.Pulse (stop_lock);
-					}
-					return;
-				}
-				
-				// If the thread doesn't need to be stopped, resume it here
-				if (!stop_requested) {
-					Continue (sse.Thread);
-					return;
-				}
-				
-				stopping = true;
-				stopped_list = new List<Thread> ();
-			}
+			break_mode = true;
 
 			List<Thread> stopped = new List<Thread> ();
 
@@ -115,12 +76,15 @@ namespace Mono.Debugger
 				stopped.Add (thread);
 			}
 
-			QueueEvent (new StopEvent {
-				Manager = this, Thread = sse.Client, Args = args,
-				Stopped = stopped
-			});
+			lock (event_queue) {
+				event_queue.Enqueue (new StopEvent {
+					Manager = this, Thread = sse.Client, Args = args,
+					Stopped = stopped
+				});
+				manager_event.Set ();
+			}
 		}
-			
+
 		internal void SendTargetEvent (Thread thread, TargetEventArgs args)
 		{
 			try {
@@ -134,53 +98,41 @@ namespace Mono.Debugger
 
 		protected void ProcessStopEvent (StopEvent e)
 		{
-			// Wait until all threads have reported a stop event.
-			// Waiting on the wait handle is not enough since
-			// events are fired asynchronously, so they might come
-			// after the wait handle is signaled
+			List<ST.WaitHandle> wait_list = new List<ST.WaitHandle> ();
+			foreach (Thread thread in e.Stopped)
+				wait_list.Add (thread.WaitHandle);
 
-			lock (stop_lock) {
-				while (stopped_list.Count != e.Stopped.Count) {
-					ST.Monitor.Wait (stop_lock);
-				}
-				stopped_list = null;
-				stopping = false;
-			}
+			ST.WaitHandle.WaitAll (wait_list.ToArray ());
 
 			SendTargetEvent (e.Thread, e.Args);
 		}
-		
-		protected void QueueEvent (Event e)
+
+		protected void ResumeTarget (RunEvent e)
 		{
 			lock (event_queue) {
 				event_queue.Enqueue (e);
 				manager_event.Set ();
 			}
 		}
-				
-		public void Break (Thread thread)
-		{
-			QueueEvent (new BreakEvent { Manager = this, Thread = thread });
-		}
 
 		public void Continue (Thread thread)
 		{
-			QueueEvent (new ContinueEvent { Manager = this, Thread = thread });
+			ResumeTarget (new ContinueEvent { Manager = this, Thread = thread });
 		}
 
 		public void StepInto (Thread thread)
 		{
-			QueueEvent (new StepIntoEvent { Manager = this, Thread = thread });
+			ResumeTarget (new StepIntoEvent { Manager = this, Thread = thread });
 		}
 
 		public void StepOver (Thread thread)
 		{
-			QueueEvent (new StepOverEvent { Manager = this, Thread = thread });
+			ResumeTarget (new StepOverEvent { Manager = this, Thread = thread });
 		}
 
 		public void StepOut (Thread thread)
 		{
-			QueueEvent (new StepOutEvent { Manager = this, Thread = thread });
+			ResumeTarget (new StepOutEvent { Manager = this, Thread = thread });
 		}
 
 		void ProcessRunEvent (RunEvent e)
@@ -241,6 +193,7 @@ namespace Mono.Debugger
 			}
 		}
 
+
 		protected abstract class RunEvent : Event
 		{
 			public Thread Thread {
@@ -288,14 +241,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected class BreakEvent : RunEvent
-		{
-			protected override void DoRun ()
-			{
-				Thread.ThreadServant.Stop ();
-			}
-		}
+
 	}
-			
-	public delegate bool BreakpointHitHandler (TargetEventArgs args);
 }
