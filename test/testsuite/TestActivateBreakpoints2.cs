@@ -37,6 +37,7 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, "thread start2", "X.StartThreads()");
 			AssertExecute ("continue");
 			Thread executing = AssertThreadCreated ();
+			AssertTargetOutput ("True");
 			AssertHitBreakpoint (thread, "thread start3", "X.StartThreads()");
 
 			AssertExecute ("bg");
@@ -47,8 +48,6 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("set loop = false");
 			AssertPrint (executing, "loop", "(bool) false");
 			AssertExecute ("bg");
-
-			AssertTargetOutput ("Blocking Done");
 
 			int status = 0;
 			while (status != 63) {
@@ -85,6 +84,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("Received unexpected event {0}.", e);
 			}
 
+			AssertTargetOutput ("Blocking Done");
 			AssertTargetExited (process);
 		}
 	}

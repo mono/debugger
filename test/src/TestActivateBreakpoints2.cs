@@ -45,6 +45,7 @@ class X
 		executing = new Thread (new ThreadStart (ExecutingThread));	// @MDB BREAKPOINT: thread start2
 		executing.Start ();
 
+		Console.WriteLine (loop);
 		executing.Join ();						// @MDB BREAKPOINT: thread start3
 	}
 
