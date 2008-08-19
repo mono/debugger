@@ -2654,8 +2654,9 @@ namespace Mono.Debugger.Backend
 							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} executed instruction {1} at {2}: {3}",
-				      sse, Instruction, inferior.CurrentFrame, cevent);
+				      "{0} executed instruction at {1}: {2}\n{3}",
+				      sse, inferior.CurrentFrame, cevent,
+				      TargetBinaryReader.HexDump (Instruction));
 
 			args = null;
 			if (pushed_code_buffer) {

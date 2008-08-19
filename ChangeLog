@@ -1,3 +1,7 @@
+2008-08-19  Martin Baulig  <martin@ximian.com>
+
+	* backend/ThreadManager.cs: Fixed a hard to find race condition.
+
 2008-08-14  Martin Baulig  <martin@ximian.com>
 
 	* symbolwriter/MdbSymbolReader.cs: Add `-verbose' command line

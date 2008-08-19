@@ -330,7 +330,8 @@ namespace Mono.Debugger.Backend
 
 				check_pending_events ();
 
-				engine_event.Set ();
+				if (command == null)
+					engine_event.Set ();
 				RequestWait ();
 			}
 
