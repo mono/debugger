@@ -1933,20 +1933,22 @@ namespace Mono.Debugger.Backend
 		}
 #endregion
 
-		public void ManagedCallback (ManagedCallbackFunction func)
+		public void ManagedCallback (ManagedCallbackFunction func, CommandResult result)
 		{
+			ManagedCallbackData data = new ManagedCallbackData (func, result);
+
 			SendCommand (delegate {
 				Report.Debug (DebugFlags.SSE, "{0} starting managed callback: {1}", this, func);
 
 				AcquireThreadLock ();
 
-				if (!do_managed_callback (func)) {
+				if (!do_managed_callback (data)) {
 					Report.Debug (DebugFlags.SSE, "{0} managed callback needs thread lock", this);
 
 					bool ok = false;
 					process.AcquireGlobalThreadLock (this);
 					foreach (SingleSteppingEngine engine in process.ThreadServants) {
-						if (engine.do_managed_callback (func)) {
+						if (engine.do_managed_callback (data)) {
 							ok = true;
 							break;
 						}
@@ -1954,7 +1956,7 @@ namespace Mono.Debugger.Backend
 
 					if (!ok) {
 						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback", this);
-						process.MonoManager.AddManagedCallback (inferior, func);
+						process.MonoManager.AddManagedCallback (inferior, data);
 					}
 					Report.Debug (DebugFlags.SSE, "{0} managed callback releasing thread lock", this);
 					process.ReleaseGlobalThreadLock (this);
@@ -1967,7 +1969,7 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
-		bool do_managed_callback (ManagedCallbackFunction func)
+		bool do_managed_callback (ManagedCallbackData data)
 		{
 			Method method = Lookup (inferior.CurrentFrame);
 			if ((method == null) || !method.Module.Language.IsManaged)
@@ -1976,11 +1978,11 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.SSE, "{0} found managed frame: {1} {2}", this,
 				      inferior.CurrentFrame, method);
 
-			PushOperation (new OperationManagedCallback (this, new [] { func }));
+			PushOperation (new OperationManagedCallback (this, data));
 			return true;
 		}
 
-		internal void OnManagedCallback (ManagedCallbackFunction[] callbacks)
+		internal void OnManagedCallback (Queue<ManagedCallbackData> callbacks)
 		{
 			PushOperation (new OperationManagedCallback (this, callbacks));
 		}
@@ -3218,11 +3220,18 @@ namespace Mono.Debugger.Backend
 		ThreadLockData thread_lock;
 		Inferior.ChildEvent stop_event;
 
-		public ManagedCallbackFunction[] CallbackFunctions {
+		public Queue<ManagedCallbackData> CallbackFunctions {
 			get; private set;
 		}
 
-		public OperationManagedCallback (SingleSteppingEngine sse, ManagedCallbackFunction[] list)
+		public OperationManagedCallback (SingleSteppingEngine sse, ManagedCallbackData data)
+			: base (sse, null)
+		{
+			CallbackFunctions = new Queue<ManagedCallbackData> ();
+			CallbackFunctions.Enqueue (data);
+		}
+
+		public OperationManagedCallback (SingleSteppingEngine sse, Queue<ManagedCallbackData> list)
 			: base (sse, null)
 		{
 			this.CallbackFunctions = list;
@@ -3231,6 +3240,8 @@ namespace Mono.Debugger.Backend
 		public override bool IsSourceOperation {
 			get { return false; }
 		}
+
+		ManagedCallbackData current_callback;
 
 		protected override void DoExecute ()
 		{
@@ -3244,20 +3255,30 @@ namespace Mono.Debugger.Backend
 				this.thread_lock.PopRegisters (inferior);
 			}
 
-			bool running = false;
-			foreach (ManagedCallbackFunction func in CallbackFunctions) {
-				running |= func (sse);
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} managed callback execute #1: {1}",
-				      sse, running);
-
-			if (!running) {
+			if (!do_execute ()) {
 				byte[] nop_insn = sse.Architecture.Opcodes.GenerateNopInstruction ();
 				sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
 			}
 
 			Report.Debug (DebugFlags.SSE, "{0} managed callback execute done", sse);
+		}
+
+		bool do_execute ()
+		{
+			while (CallbackFunctions.Count > 0) {
+				current_callback = CallbackFunctions.Dequeue ();
+				Report.Debug (DebugFlags.SSE, "{0} managed callback execute: {1}",
+					      sse, current_callback.Func);
+				bool running = current_callback.Func (sse);
+				Report.Debug (DebugFlags.SSE, "{0} managed callback execute done: {1} {2}",
+					      sse, current_callback.Func, running);
+				if (running)
+					return true;
+
+				current_callback.Result.Completed ();
+			}
+
+			return false;
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -3266,7 +3287,12 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.SSE, "{0} managed callback process event: {1} {2}",
 				      sse, cevent, thread_lock);
 
+			current_callback.Result.Completed ();
+
 			args = null;
+			if (do_execute ())
+				return EventResult.Running;
+
 			if ((thread_lock != null) && (thread_lock.StopEvent != null)) {
 				sse.ThreadManager.AddPendingEvent (sse, thread_lock.StopEvent);
 				return EventResult.ParentResumed;
@@ -4178,6 +4204,18 @@ namespace Mono.Debugger.Backend
 		}
 	}
 #endregion
+	}
+
+	internal class ManagedCallbackData
+	{
+		public readonly ManagedCallbackFunction Func;
+		public readonly CommandResult Result;
+
+		public ManagedCallbackData (ManagedCallbackFunction func, CommandResult result)
+		{
+			this.Func = func;
+			this.Result = result;
+		}
 	}
 
 	[Serializable]

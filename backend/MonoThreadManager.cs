@@ -189,16 +189,16 @@ namespace Mono.Debugger.Backend
 			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 0);
 		}
 
-		internal void AddManagedCallback (Inferior inferior, ManagedCallbackFunction func)
+		internal void AddManagedCallback (Inferior inferior, ManagedCallbackData data)
 		{
 			inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 1);
-			managed_callbacks.Enqueue (func);
+			managed_callbacks.Enqueue (data);
 		}
 
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		MonoLanguageBackend csharp_language;
-		Queue<ManagedCallbackFunction> managed_callbacks = new Queue<ManagedCallbackFunction> ();
+		Queue<ManagedCallbackData> managed_callbacks = new Queue<ManagedCallbackData> ();
 
 		internal bool CanExecuteCode {
 			get { return mono_runtime_info != IntPtr.Zero; }
@@ -346,8 +346,8 @@ namespace Mono.Debugger.Backend
 
 				case NotificationType.InterruptionRequest:
 					inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 0);
-					engine.OnManagedCallback (managed_callbacks.ToArray ());
-					managed_callbacks = new Queue<ManagedCallbackFunction> ();
+					engine.OnManagedCallback (managed_callbacks);
+					managed_callbacks = new Queue<ManagedCallbackData> ();
 					resume_target = false;
 					return true;
 

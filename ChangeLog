@@ -1,5 +1,24 @@
 2008-08-19  Martin Baulig  <martin@ximian.com>
 
+	Fix a race condition: correctly block until
+	`ActivatePendingBreakpoints' has actually been completed.
+
+	* classes/Process.cs
+	(Process.ActivatePendingBreakpoints): Wait until the command has
+	been completed.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ActivatePendingBreakpoints): Take a
+	`CommandResult' argument, so we can block on the operation.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ManagedCallback): Take an additional `CommandResult' argument.
+	(SSE.OperationManagedCallback): Correctly implement multiple
+	callbacks; each callback now also have a CommandResult which we need
+	to set to completed when done.
+
+2008-08-19  Martin Baulig  <martin@ximian.com>
+
 	* backend/ThreadManager.cs: Fixed a hard to find race condition.
 
 2008-08-14  Martin Baulig  <martin@ximian.com>

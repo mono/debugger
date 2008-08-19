@@ -114,7 +114,38 @@ namespace Mono.Debugger
 
 		public void ActivatePendingBreakpoints ()
 		{
-			servant.ActivatePendingBreakpoints ();
+			ProcessCommandResult result = new ProcessCommandResult (this);
+			servant.ActivatePendingBreakpoints (result);
+			result.Wait ();
+		}
+
+		public class ProcessCommandResult : CommandResult
+		{
+			Process process;
+			ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
+
+			internal ProcessCommandResult (Process process)
+			{
+				this.process = process;
+			}
+
+			public Process Process {
+				get { return process; }
+			}
+
+			public override ST.WaitHandle CompletedEvent {
+				get { return completed_event; }
+			}
+
+			public override void Completed ()
+			{
+				completed_event.Set ();
+			}
+
+			public override void Abort ()
+			{
+				throw new NotImplementedException ();
+			}
 		}
 
 		//

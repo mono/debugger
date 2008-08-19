@@ -663,12 +663,12 @@ namespace Mono.Debugger.Backend
 				      "Released global thread lock #1: {0}", caller);
 		}
 
-		public void ActivatePendingBreakpoints ()
+		public void ActivatePendingBreakpoints (CommandResult result)
 		{
 			((SingleSteppingEngine) main_thread).ManagedCallback (
 				delegate (SingleSteppingEngine sse) {
 					return sse.ActivatePendingBreakpoints ();
-				});
+				}, result);
 		}
 
 		//
