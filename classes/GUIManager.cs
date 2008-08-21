@@ -43,6 +43,8 @@ namespace Mono.Debugger
 			switch (args.Type){
 			case TargetEventType.TargetHitBreakpoint:
 			case TargetEventType.TargetStopped:
+			case TargetEventType.UnhandledException:
+			case TargetEventType.Exception:
 				handle_autostop_event (sse, args);
 				break;
 

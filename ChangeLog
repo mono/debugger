@@ -1,7 +1,9 @@
 2008-08-21  Martin Baulig  <martin@ximian.com>
 
 	* classes/GUIManager.cs
-	(GUIManager.OnTargetEvent): Ignore `TargetEventType.TargetInterrupted.
+	(GUIManager.OnTargetEvent): Ignore
+	`TargetInterrupted', auto-stop on `Exception' and
+	`UnhandledException'.	
 
 2008-08-19  Martin Baulig  <martin@ximian.com>
 
