@@ -46,6 +46,9 @@ namespace Mono.Debugger
 				handle_autostop_event (sse, args);
 				break;
 
+			case TargetEventType.TargetInterrupted:
+				break; // Ignore; these are send when we stop other threads.
+
 			default:
 				SendTargetEvent (sse.Thread, args);
 				break;
