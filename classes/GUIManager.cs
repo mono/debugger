@@ -82,7 +82,7 @@ namespace Mono.Debugger
 			}
 
 			lock (event_queue) {
-				event_queue.Enqueue (new StopEvent {
+				event_queue.Enqueue (new StoppingEvent {
 					Manager = this, Thread = sse.Client, Args = args,
 					Stopped = stopped
 				});
@@ -101,7 +101,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected void ProcessStopEvent (StopEvent e)
+		protected void ProcessStoppingEvent (StoppingEvent e)
 		{
 			List<ST.WaitHandle> wait_list = new List<ST.WaitHandle> ();
 			foreach (Thread thread in e.Stopped)
@@ -112,7 +112,7 @@ namespace Mono.Debugger
 			SendTargetEvent (e.Thread, e.Args);
 		}
 
-		protected void ResumeTarget (RunEvent e)
+		protected void QueueEvent (Event e)
 		{
 			lock (event_queue) {
 				event_queue.Enqueue (e);
@@ -120,24 +120,29 @@ namespace Mono.Debugger
 			}
 		}
 
+		public void Stop (Thread thread)
+		{
+			QueueEvent (new StopEvent { Manager = this, Thread = thread });
+		}
+
 		public void Continue (Thread thread)
 		{
-			ResumeTarget (new ContinueEvent { Manager = this, Thread = thread });
+			QueueEvent (new ContinueEvent { Manager = this, Thread = thread });
 		}
 
 		public void StepInto (Thread thread)
 		{
-			ResumeTarget (new StepIntoEvent { Manager = this, Thread = thread });
+			QueueEvent (new StepIntoEvent { Manager = this, Thread = thread });
 		}
 
 		public void StepOver (Thread thread)
 		{
-			ResumeTarget (new StepOverEvent { Manager = this, Thread = thread });
+			QueueEvent (new StepOverEvent { Manager = this, Thread = thread });
 		}
 
 		public void StepOut (Thread thread)
 		{
-			ResumeTarget (new StepOutEvent { Manager = this, Thread = thread });
+			QueueEvent (new StepOutEvent { Manager = this, Thread = thread });
 		}
 
 		void ProcessRunEvent (RunEvent e)
@@ -178,7 +183,7 @@ namespace Mono.Debugger
 			public abstract void ProcessEvent ();
 		}
 
-		protected class StopEvent : Event
+		protected class StoppingEvent : Event
 		{
 			public Thread Thread {
 				get; set;
@@ -194,7 +199,7 @@ namespace Mono.Debugger
 
 			public override void ProcessEvent ()
 			{
-				Manager.ProcessStopEvent (this);
+				Manager.ProcessStoppingEvent (this);
 			}
 		}
 
@@ -246,6 +251,12 @@ namespace Mono.Debugger
 			}
 		}
 
-
+		protected class StopEvent : RunEvent
+		{
+			protected override void DoRun ()
+			{
+				Thread.ThreadServant.Stop ();
+			}
+		}
 	}
 }

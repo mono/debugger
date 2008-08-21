@@ -1,6 +1,11 @@
 2008-08-21  Martin Baulig  <martin@ximian.com>
 
 	* classes/GUIManager.cs
+	(GUIManager.Stop): New public method to stop a thread.
+
+2008-08-21  Martin Baulig  <martin@ximian.com>
+
+	* classes/GUIManager.cs
 	(GUIManager.OnTargetEvent): Ignore
 	`TargetInterrupted', auto-stop on `Exception' and
 	`UnhandledException'.	
