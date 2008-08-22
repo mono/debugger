@@ -49,7 +49,11 @@ namespace Mono.Debugger
 				break;
 
 			case TargetEventType.TargetInterrupted:
-				break; // Ignore; these are send when we stop other threads.
+				if (!break_mode) {
+					args = new TargetEventArgs (TargetEventType.TargetStopped, 0);
+					handle_autostop_event (sse, args);
+				}
+				break;
 
 			default:
 				SendTargetEvent (sse.Thread, args);
@@ -147,6 +151,7 @@ namespace Mono.Debugger
 
 		void ProcessRunEvent (RunEvent e)
 		{
+			break_mode = false;
 			Thread[] threads = Process.GetThreads ();
 			foreach (Thread t in threads) {
 				if (t == e.Thread)
@@ -251,9 +256,13 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected class StopEvent : RunEvent
+		protected class StopEvent : Event
 		{
-			protected override void DoRun ()
+			public Thread Thread {
+				get; set;
+			}
+
+			public override void ProcessEvent ()
 			{
 				Thread.ThreadServant.Stop ();
 			}

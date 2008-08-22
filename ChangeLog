@@ -6,9 +6,9 @@
 2008-08-21  Martin Baulig  <martin@ximian.com>
 
 	* classes/GUIManager.cs
-	(GUIManager.OnTargetEvent): Ignore
-	`TargetInterrupted', auto-stop on `Exception' and
-	`UnhandledException'.	
+	(GUIManager.OnTargetEvent): Ignore `TargetInterrupted' if we are
+	already in break mode; auto-stop on `Exception' and
+	`UnhandledException'.
 
 2008-08-19  Martin Baulig  <martin@ximian.com>
 
