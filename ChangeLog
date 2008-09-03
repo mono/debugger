@@ -1,3 +1,7 @@
+2008-10-03  Lluis Sanchez Gual  <lluis@novell.com>
+
+	* classes/GUIManager.cs: Revert my changes.
+	
 2008-08-19  Martin Baulig  <martin@ximian.com>
 
 	* backend/ThreadManager.cs: Fixed a hard to find race condition.
