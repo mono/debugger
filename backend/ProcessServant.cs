@@ -290,6 +290,7 @@ namespace Mono.Debugger.Backend
 		{
 			if (!is_forked)
 				session.OnProcessExited (client);
+			client.OnProcessExited ();
 			session.MainThreadGroup.RemoveThread (main_thread.ID);
 			manager.Debugger.OnProcessExitedEvent (this);
 		}

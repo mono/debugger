@@ -29,6 +29,7 @@ namespace Mono.Debugger
 		bool break_mode;
 
 		public event TargetEventHandler TargetEvent;
+		public event ProcessEventHandler ProcessExitedEvent;
 
 		public void StartGUIManager ()
 		{
@@ -36,6 +37,17 @@ namespace Mono.Debugger
 			manager_event = new ST.AutoResetEvent (false);
 			manager_thread = new ST.Thread (new ST.ThreadStart (manager_thread_main));
 			manager_thread.Start ();
+		}
+
+		internal void OnProcessExited (Process process)
+		{
+			try {
+				if (ProcessExitedEvent != null)
+					ProcessExitedEvent (process.Debugger, process);
+			} catch (Exception ex) {
+				Report.Error ("Caught exception while sending process {0} exit:\n{1}",
+					       process, ex);
+			}
 		}
 
 		internal void OnTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)

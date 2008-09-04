@@ -85,6 +85,11 @@ namespace Mono.Debugger
 			get { return servant.Modules; }
 		}
 
+		public Method Lookup (TargetAddress address)
+		{
+			return servant.SymbolTableManager.Lookup (address);
+		}
+
 		public TargetAddress LookupSymbol (string name)
 		{
 			return servant.LookupSymbol (name);
@@ -170,6 +175,12 @@ namespace Mono.Debugger
 				manager.OnTargetEvent (sse, args);
 
 			Debugger.OnTargetEvent (sse.Client, args);
+		}
+
+		internal void OnProcessExited ()
+		{
+			if (manager != null)
+				manager.OnProcessExited (this);
 		}
 
 		//
