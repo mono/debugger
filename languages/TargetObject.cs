@@ -34,7 +34,7 @@ namespace Mono.Debugger.Languages
 			this.type_name = type_name;
 		}
 
-		public TargetObjectKind Kind {
+		public virtual TargetObjectKind Kind {
 			get {
 				return type.Kind;
 			}

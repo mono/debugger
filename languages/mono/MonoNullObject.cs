@@ -8,6 +8,10 @@ namespace Mono.Debugger.Languages.Mono
 			: base (type, location)
 		{ }
 
+		public override TargetObjectKind Kind {
+			get { return TargetObjectKind.Null; }
+		}
+
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)

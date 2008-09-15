@@ -1,5 +1,15 @@
 2008-09-15  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetObjectKind.cs (TargetObjectKind): Add `Null'.
+
+	* languages/TargetObject.cs
+	(TargetObject.Kind): Make this virtual.
+
+	* languages/mono/MonoNullObject.cs
+	(MonoNullObject.Kind): Override and return `TargetObjectKind.Null'.
+
+2008-09-15  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoRuntime.cs
 	(MonoRuntime.MonoArrayTypeGetBounds): New internal method; check
 	whether the lower bounds are all zero.

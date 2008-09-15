@@ -3,6 +3,7 @@ namespace Mono.Debugger.Languages
 	public enum TargetObjectKind
 	{
 		Unknown,
+		Null,
 		Fundamental,
 		Enum,
 		Array,
