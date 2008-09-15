@@ -216,6 +216,29 @@ namespace Mono.Debugger.Languages.Mono
 			return memory.ReadByte (atype + memory.TargetAddressSize + 2);
 		}
 
+		internal void MonoArrayTypeGetBounds (TargetMemoryAccess memory,
+						      TargetAddress data)
+		{
+			//
+			// FIXME: Only check whether the low bounds are all zero
+			//
+			int num_sizes = memory.ReadByte (data + memory.TargetAddressSize + 1);
+			if (num_sizes != 0)
+				throw new InternalError ();
+
+			int num_lobounds = memory.ReadByte (data + memory.TargetAddressSize + 2);
+			if (num_lobounds == 0)
+				return;
+
+			TargetAddress array = memory.ReadAddress (data + 3 * memory.TargetAddressSize);
+			TargetBinaryReader bounds = memory.ReadMemory (array, num_lobounds * 4).GetReader ();
+			for (int i = 0; i < num_lobounds; i++) {
+				int bound = bounds.ReadInt32 ();
+				if (bound != 0)
+					throw new InternalError ();
+			}
+		}
+
 		//
 		// Fundamental types
 		//

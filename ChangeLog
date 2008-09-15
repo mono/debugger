@@ -1,3 +1,14 @@
+2008-09-15  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime.MonoArrayTypeGetBounds): New internal method; check
+	whether the lower bounds are all zero.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.ReadType): Call it here, only throw an
+	exception if we have upper bounds or some of the lower bounds are
+	non-zero.
+
 2008-09-04  Martin Baulig  <martin@ximian.com>
 
 	* classes/GUIManager.cs

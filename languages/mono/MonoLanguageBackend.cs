@@ -575,11 +575,7 @@ namespace Mono.Debugger.Languages.Mono
 				TargetAddress klass = MonoRuntime.MonoArrayTypeGetClass (memory, data);
 				int rank = MonoRuntime.MonoArrayTypeGetRank (memory, data);
 
-				int numsizes = MonoRuntime.MonoArrayTypeGetNumSizes (memory, data);
-				int numlobounds = MonoRuntime.MonoArrayTypeGetNumLoBounds (memory, data);
-
-				if ((numsizes != 0) || (numlobounds != 0))
-					throw new InternalError ();
+				MonoRuntime.MonoArrayTypeGetBounds (memory, data);
 
 				TargetType etype = ReadMonoClass (memory, klass);
 				return new MonoArrayType (etype, rank);
