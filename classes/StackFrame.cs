@@ -124,10 +124,13 @@ namespace Mono.Debugger
 	public sealed class Registers
 	{
 		Register[] regs;
+		int[] important_indices;
 		bool from_current_frame;
 
 		internal Registers (Architecture arch)
 		{
+			important_indices = arch.RegisterIndices;
+
 			regs = new Register [arch.CountRegisters];
 			for (int i = 0; i < regs.Length; i++) {
 				if (arch.RegisterSizes [i] < 0)
@@ -140,6 +143,8 @@ namespace Mono.Debugger
 
 		internal Registers (Architecture arch, long[] values)
 		{
+			important_indices = arch.RegisterIndices;
+
 			regs = new Register [arch.CountRegisters];
 			if (regs.Length != values.Length)
 				throw new ArgumentException ();
@@ -155,6 +160,8 @@ namespace Mono.Debugger
 
 		internal Registers (Registers old_regs)
 		{
+			important_indices = old_regs.important_indices;
+
 			regs = new Register [old_regs.regs.Length];
 			for (int i = 0; i < regs.Length; i++) {
 				if (old_regs [i] == null)
@@ -162,6 +169,20 @@ namespace Mono.Debugger
 				regs [i] = new Register (
 					this, old_regs [i].Name, i, old_regs [i].Size,
 					false, old_regs [i].GetValue ());
+			}
+		}
+
+		protected Register[] GetRegisters (int[] indices)
+		{
+			Register[] retval = new Register [indices.Length];
+			for (int i = 0; i < indices.Length; i++)
+				retval [i] = regs [indices [i]];
+			return retval;
+		}
+
+		public Register[] ImportantRegisters {
+			get {
+				return GetRegisters (important_indices);
 			}
 		}
 

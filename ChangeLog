@@ -1,3 +1,8 @@
+2008-10-13  Martin Baulig  <martin@ximian.com>
+
+	* classes/StackFrame.cs
+	(Registers.ImportantRegisters): New public property.
+
 2008-09-15  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetObjectKind.cs (TargetObjectKind): Add `Null'.
