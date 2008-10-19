@@ -228,7 +228,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertTargetOutput ("9");
 
-			AssertHitBreakpoint (thread, "simple types", "X.SimpleTypes()");
+			AssertHitBreakpoint (thread, "simple types", "SimpleTypes.Test()");
 			AssertPrint (thread, "a", "(byte) 1");
 			AssertPrint (thread, "b", "(sbyte) -2");
 			AssertPrint (thread, "c", "(short) -3");

@@ -1,5 +1,11 @@
 2008-10-19  Martin Baulig  <martin@ximian.com>
 
+	* test/src/TestManagedTypes.cs
+	(SimpleTypes): Move this into a separate class and use static
+	variables, so the JIT can't optimize them away.
+
+2008-10-19  Martin Baulig  <martin@ximian.com>
+
 	* build/Makefile.am: Small fix from Ian Greenhoe; bug #431771.
 
 2008-10-13  Martin Baulig  <martin@ximian.com>
