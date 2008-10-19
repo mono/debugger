@@ -281,10 +281,18 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		handle->mono_runtime->executable_code_bitfield [cbuffer->slot] = 0;
 
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
+			char buffer [1024];
+
 			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
 				   cbuffer->code_address, cbuffer->insn_size,
 				   cbuffer->code_address + cbuffer->insn_size,
 				   INFERIOR_REG_RIP (arch->current_regs));
+
+			server_ptrace_read_memory (handle, cbuffer->code_address, 8, buffer);
+			g_warning (G_STRLOC ": %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx %02hhx",
+				   buffer [0], buffer [1], buffer [2], buffer [3], buffer [4],
+				   buffer [5], buffer [6], buffer [7]);
+
 			return STOP_ACTION_STOPPED;
 		}
 
