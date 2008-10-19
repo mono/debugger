@@ -81,11 +81,23 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("continue");
 			AssertHitBreakpoint (thread, "foreach return", "Foreach.Run()");
 
+			AssertExecute ("continue");
+
+			//
+			// MarshalByRef
+			//
+
+			AssertHitBreakpoint (thread, "MarshalByRef Run", "MarshalByRefTest.Run()");
+			AssertExecute ("step");
+			AssertStopped (thread, "MarshalByRef Test", "MarshalByRefTest.Bar()");
+			AssertExecute ("continue");
+
+			AssertTargetOutput ("MarshalByRefTest");
+
 			//
 			// Done
 			//
 
-			AssertExecute ("continue");
 			AssertTargetExited (thread.Process);
 		}
 	}

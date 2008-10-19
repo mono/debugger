@@ -1,5 +1,18 @@
 2008-10-20  Martin Baulig  <martin@ximian.com>
 
+	Applying a patch from Cedric Vivier <cedricv@neonux.com>
+
+	* classes/Method.cs
+	(Method.IsInvokeWrapper): New internal property.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStep): Enable stepping into method from objects
+	deriving from MarshalByRefObject.
+
+	* test/{testsuite|src}/TestSSE.cs: Added testcase.
+
+2008-10-20  Martin Baulig  <martin@ximian.com>
+
 	* interface/Report.cs: Include timestamps when writing to a file.
 
 2008-10-19  Martin Baulig  <martin@ximian.com>
@@ -11,6 +24,13 @@
 2008-10-19  Martin Baulig  <martin@ximian.com>
 
 	* build/Makefile.am: Small fix from Ian Greenhoe; bug #431771.
+
+2008-10-17  Cedric Vivier  <cedricv@neonux.com>
+
+	* backend/SingleSteppingEngine.cs
+	Enable StepInto for RemotingInvoke-wrapped methods.
+	* classes/Method.cs
+	(Method.IsInvokeWrapper): New public property.
 
 2008-10-13  Martin Baulig  <martin@ximian.com>
 

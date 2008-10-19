@@ -6,6 +6,7 @@ class RunTests
 	{
 		WhileLoop.Run ();				// @MDB LINE: main
 		Foreach.Run ();
+		MarshalByRefTest.Run ();
 	}
 }
 
@@ -47,5 +48,19 @@ public class Foreach
 		foreach (int value in Values)			// @MDB LINE: foreach loop
 			total += value;				// @MDB LINE: foreach statement
 		return total;					// @MDB BREAKPOINT: foreach return
+	}
+}
+
+public class MarshalByRefTest : MarshalByRefObject
+{
+	public void Bar ()
+	{
+		Console.WriteLine ("MarshalByRefTest");		// @MDB LINE: MarshalByRef Test
+	}
+
+	public static void Run ()
+	{
+		MarshalByRefTest test = new MarshalByRefTest ();
+		test.Bar ();					// @MDB BREAKPOINT: MarshalByRef Run
 	}
 }

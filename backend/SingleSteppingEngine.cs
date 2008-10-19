@@ -2823,7 +2823,7 @@ namespace Mono.Debugger.Backend
 			if (method == null)
 				return false;
 
-			if (method.WrapperType == WrapperType.DelegateInvoke)
+			if (method.IsInvokeWrapper)
 				return true;
 			else if (method.WrapperType == WrapperType.Alloc)
 				return false;
@@ -2932,11 +2932,11 @@ namespace Mono.Debugger.Backend
 			Method method = sse.Lookup (call_target);
 
 			/*
-			 * If this is a PInvoke/icall wrapper, check whether we want to step into
-			 * the wrapped function.
+			 * If this is a PInvoke/icall/remoting wrapper, check whether we want
+			 * to step into the wrapped function.
 			 */
 			if ((method != null) && (method.WrapperType != WrapperType.None)) {
-				if (method.WrapperType == WrapperType.DelegateInvoke) {
+				if (method.IsInvokeWrapper) {
 					sse.do_step_native ();
 					return false;
 				}
@@ -3986,7 +3986,7 @@ namespace Mono.Debugger.Backend
 			if (method == null)
 				return false;
 
-			if (method.WrapperType == WrapperType.DelegateInvoke)
+			if (method.IsInvokeWrapper)
 				return true;
 
 			return sse.MethodHasSource (method);
@@ -4091,7 +4091,7 @@ namespace Mono.Debugger.Backend
 			if (method == null)
 				return false;
 
-			if (method.WrapperType == WrapperType.DelegateInvoke)
+			if (method.IsInvokeWrapper)
 				return true;
 
 			return sse.MethodHasSource (method);
@@ -4139,7 +4139,7 @@ namespace Mono.Debugger.Backend
 			if (method == null)
 				return false;
 
-			if (method.WrapperType == WrapperType.DelegateInvoke)
+			if (method.IsInvokeWrapper)
 				return true;
 
 			return sse.MethodHasSource (method);

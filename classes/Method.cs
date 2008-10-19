@@ -188,6 +188,14 @@ namespace Mono.Debugger
 			get;
 		}
 
+		internal bool IsInvokeWrapper {
+			get {
+				return (WrapperType == WrapperType.DelegateInvoke ||
+				        WrapperType == WrapperType.RemotingInvoke ||
+				        WrapperType == WrapperType.RemotingInvokeWithCheck);
+			}
+		}
+
 		public abstract bool IsCompilerGenerated {
 			get;
 		}
