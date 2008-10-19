@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger
@@ -83,6 +84,7 @@ namespace Mono.Debugger
 	{
 		int flags;
 		string file;
+		DateTime start_time;
 		bool print_to_console = true;
 		StreamWriter writer;
 
@@ -94,6 +96,7 @@ namespace Mono.Debugger
 			else
 				writer = new StreamWriter (Console.OpenStandardError ());
 			writer.AutoFlush = true;
+			start_time = DateTime.Now;
 
 			string var = Environment.GetEnvironmentVariable ("MDB_DEBUG_FLAGS");
 			if (var != null) {
@@ -124,12 +127,22 @@ namespace Mono.Debugger
 			set { print_to_console = value; }
 		}
 
+		protected void DoWriteLine (string message)
+		{
+			if (file != null) {
+				TimeSpan diff = DateTime.Now - start_time;
+				string timestamp = new DateTime (diff.Ticks).ToString ("mm:ss:fffffff", CultureInfo.InvariantCulture);
+				writer.WriteLine ("[{0}] {1}", timestamp, message);
+			} else
+				writer.WriteLine ("{0}", message);
+		}
+
 		public void Debug (DebugFlags category, string message)
 		{
 			if (((int) category & (int) flags) == 0)
 				return;
 
-			writer.WriteLine (message);
+			DoWriteLine (message);
 		}
 
 		public void Print (string message)
@@ -141,7 +154,7 @@ namespace Mono.Debugger
 
 		public void Error (string message)
 		{
-			writer.WriteLine (message);
+			DoWriteLine (message);
 			if (print_to_console && (file != null))
 				Console.WriteLine (message);
 		}

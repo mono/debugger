@@ -487,8 +487,7 @@ namespace Mono.Debugger.Backend
 
 			SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
 			if (event_engine == null) {
-				Console.WriteLine ("WARNING: Got event {0:x} for unknown pid {1}",
-						   status, pid);
+				Report.Error ("WARNING: Got event {0:x} for unknown pid {1}", status, pid);
 				waiting = false;
 				RequestWait ();
 				return true;
