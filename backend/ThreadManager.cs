@@ -1,11 +1,13 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using ST = System.Threading;
 using System.Configuration;
 using System.Globalization;
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.Runtime.Remoting.Channels;
@@ -72,6 +74,8 @@ namespace Mono.Debugger.Backend
 		bool abort_requested;
 		bool waiting;
 
+		Queue<PendingEventInfo> pending_sigstop;
+
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_global_init ();
 
@@ -80,6 +84,9 @@ namespace Mono.Debugger.Backend
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_get_pending_sigint ();
+
+		[DllImport("monodebuggerserver")]
+		static extern Inferior.ChildEventType mono_debugger_server_dispatch_simple (int status, out int arg);
 
 		void start_inferior ()
 		{
@@ -446,7 +453,8 @@ namespace Mono.Debugger.Backend
 			wait_event.WaitOne ();
 			waiting = true;
 
-			int pid, status;
+		again:
+			int pid = 0, status = 0;
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait,
 					      "Wait thread abort requested");
@@ -465,17 +473,55 @@ namespace Mono.Debugger.Backend
 				return false;
 			}
 
-			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
+			bool has_pending_sigstop = false;
+		check_pending_sigstop:
+			if ((pending_sigstop != null) && (pending_sigstop.Count > 0)) {
+				PendingEventInfo pending = pending_sigstop.Peek ();
 
-			//
-			// Wait until we got an event from the target or a command from the user.
-			//
+				/*
+				 * There is a race condition in the Linux kernel which shows up on >= 2.6.27:
+				 *
+				 * When creating a new thread, the initial stopping event of that thread is sometimes
+				 * sent before sending the `PTRACE_EVENT_CLONE' for it.
+				 *
+				 * Here, we check whether we already received the thread creation event and process the
+				 * pending stopping event if necessary.
+				 *
+				 * Since we're just trying to catch a race condition, discard all pending events which
+				 * were received more than 200 seconds ago.
+				 *
+				 */
 
-			pid = mono_debugger_server_global_wait (out status);
+				if (thread_hash.Contains (pending.PID)) {
+					pid = pending.PID;
+					status = pending.Status;
 
-			Report.Debug (DebugFlags.Wait,
-				      "Wait thread received event: {0} {1:x}",
-				      pid, status);
+					has_pending_sigstop = true;
+					pending_sigstop.Dequeue ();
+				} else if ((DateTime.Now - pending.TimeStamp).TotalSeconds >= 200) {
+					Report.Error ("WARNING: Got stop event for unknown pid {0}; timed-out waiting for thread creation.",
+						      pending.PID);
+					pending_sigstop.Dequeue ();
+					goto check_pending_sigstop;
+				}
+			}
+
+			if (!has_pending_sigstop) {
+				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
+
+				//
+				// Wait until we got an event from the target or a command from the user.
+				//
+
+				pid = mono_debugger_server_global_wait (out status);
+
+				Report.Debug (DebugFlags.Wait,
+					      "Wait thread received event: {0} {1:x}",
+					      pid, status);
+			} else {
+				Report.Debug (DebugFlags.Wait,
+					      "Wait thread processing pending sigstop: {0} {1:x}", pid, status);
+			}
 
 			//
 			// Note: `pid' is basically just an unique number which identifies the
@@ -487,10 +533,33 @@ namespace Mono.Debugger.Backend
 
 			SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
 			if (event_engine == null) {
-				Report.Error ("WARNING: Got event {0:x} for unknown pid {1}", status, pid);
-				waiting = false;
-				RequestWait ();
-				return true;
+				int arg;
+				Inferior.ChildEventType etype = mono_debugger_server_dispatch_simple (status, out arg);
+
+				/*
+				 * There is a race condition in the Linux kernel which shows up on >= 2.6.27:
+				 *
+				 * When creating a new thread, the initial stopping event of that thread is sometimes
+				 * sent before sending the `PTRACE_EVENT_CLONE' for it.
+				 *
+				 * Whenever we get an event for an unknown thread, we check whether it's actually a
+				 * SIGSTOP and then queue it.				 *
+				 *
+				 */
+
+				if ((etype != Inferior.ChildEventType.CHILD_STOPPED) || (arg != 0)) {
+					Report.Error ("WARNING: Got event {0:x} for unknown pid {1}", status, pid);
+					waiting = false;
+					RequestWait ();
+					return true;
+				}
+
+				if (pending_sigstop == null)
+					pending_sigstop = new Queue<PendingEventInfo> ();
+
+				pending_sigstop.Enqueue (new PendingEventInfo (pid, status));
+				Report.Debug (DebugFlags.Wait, "Got SIGSTOP for unknown pid {0}, queueing event.", pid);
+				goto again;
 			}
 
 			engine_event.WaitOne ();
@@ -518,6 +587,20 @@ namespace Mono.Debugger.Backend
 			if (waiting)
 				throw new InternalError ();
 			wait_event.Set ();
+		}
+
+		protected struct PendingEventInfo
+		{
+			public readonly int PID;
+			public readonly int Status;
+			public readonly DateTime TimeStamp;
+
+			public PendingEventInfo (int pid, int status)
+			{
+				this.PID = pid;
+				this.Status = status;
+				this.TimeStamp = DateTime.Now;
+			}
 		}
 
 #region IDisposable implementation

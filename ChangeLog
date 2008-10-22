@@ -1,3 +1,20 @@
+2008-10-23  Martin Baulig  <martin@ximian.com>
+
+	Bug #423518.
+
+	There is a race condition in the Linux kernel which shows up on >= 2.6.27:
+
+	When creating a new thread, the initial stopping event of that thread is sometimes
+	sent before sending the `PTRACE_EVENT_CLONE' for it.
+
+	* backend/server/library.c
+	(mono_debugger_server_dispatch_simple): New public function.  This
+	function is safe to be called from any thread and only decodes the
+	event into the basic stopped / signaled / exited etc.
+
+	* backend/ThreadManager.cs: Queue stopping events from unknown
+	threads for 200 seconds to work around the race condition.
+
 2008-10-20  Martin Baulig  <martin@ximian.com>
 
 	Applying a patch from Cedric Vivier <cedricv@neonux.com>

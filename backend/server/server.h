@@ -162,6 +162,9 @@ struct InferiorVTable {
 						       guint32             *opt_data_size,
 						       gpointer            *opt_data);
 
+	ServerStatusMessageType (* dispatch_simple)   (guint32              status,
+						       guint32             *arg);
+
 	/* Get sizeof (int), sizeof (long) and sizeof (void *) from the target. */
 	ServerCommandError    (* get_target_info)     (guint32            *target_int_size,
 						       guint32            *target_long_size,

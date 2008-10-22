@@ -360,6 +360,37 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 	return MESSAGE_UNKNOWN_ERROR;
 }
 
+static ServerStatusMessageType
+server_ptrace_dispatch_simple (guint32 status, guint32 *arg)
+{
+	if (status >> 16)
+		return MESSAGE_UNKNOWN_ERROR;
+
+	if (WIFSTOPPED (status)) {
+		int stopsig = WSTOPSIG (status);
+
+		if ((stopsig == SIGSTOP) || (stopsig == SIGTRAP))
+			stopsig = 0;
+
+		*arg = stopsig;
+		return MESSAGE_CHILD_STOPPED;
+	} else if (WIFEXITED (status)) {
+		*arg = WEXITSTATUS (status);
+		return MESSAGE_CHILD_EXITED;
+	} else if (WIFSIGNALED (status)) {
+		if ((WTERMSIG (status) == SIGTRAP) || (WTERMSIG (status) == SIGKILL)) {
+			*arg = 0;
+			return MESSAGE_CHILD_EXITED;
+		} else {
+			*arg = WTERMSIG (status);
+			return MESSAGE_CHILD_SIGNALED;
+		}
+	}
+
+	return MESSAGE_UNKNOWN_ERROR;
+}
+
+
 static ServerHandle *
 server_ptrace_create_inferior (BreakpointManager *bpm)
 {
@@ -595,6 +626,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_global_wait,
 	server_ptrace_stop_and_wait,
 	server_ptrace_dispatch_event,
+	server_ptrace_dispatch_simple,
 	server_ptrace_get_target_info,
 	server_ptrace_continue,
 	server_ptrace_step,

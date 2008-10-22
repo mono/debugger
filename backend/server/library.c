@@ -115,6 +115,12 @@ mono_debugger_server_dispatch_event (ServerHandle *handle, guint32 status, guint
 		handle, status, arg, data1, data2, opt_data_size, opt_data);
 }
 
+ServerStatusMessageType
+mono_debugger_server_dispatch_simple (guint32 status, guint32 *arg)
+{
+	return (*global_vtable->dispatch_simple) (status, arg);
+}
+
 ServerCommandError
 mono_debugger_server_get_target_info (guint32 *target_int_size, guint32 *target_long_size,
 				      guint32 *target_address_size, guint32 *is_bigendian)
