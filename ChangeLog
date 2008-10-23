@@ -1,5 +1,16 @@
 2008-10-23  Martin Baulig  <martin@ximian.com>
 
+	* interface/Report.cs
+	(Report.ParseDebugFlags): New public static method; parse the
+	debug flags both as integers and as strings.
+
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.ParseDebugFlags): Call Report.ParseDebugFlags()
+	to parse the debug flags; we can now also specify debug flags as a
+	comma separated list of strings.
+
+2008-10-23  Martin Baulig  <martin@ximian.com>
+
 	Bug #423518.
 
 	There is a race condition in the Linux kernel which shows up on >= 2.6.27:

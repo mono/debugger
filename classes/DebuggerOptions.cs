@@ -360,11 +360,12 @@ namespace Mono.Debugger
 				
 				options.DebugOutput = filename;
 			}
-			try {
-				options.DebugFlags = (DebugFlags) Int32.Parse (value);
-			} catch {
+
+			DebugFlags flags;
+			if (!Report.ParseDebugFlags (value, out flags))
 				return false;
-			}
+
+			options.DebugFlags = flags;
 			return true;
 		}
 
