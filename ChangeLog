@@ -6,6 +6,8 @@
 	(server_ptrace_detach_after_fork): Use a non-blocking wait to make
 	things work in case we already received the SIGSTOP before.
 
+	* test/testsuite/TestDontFollowFork.cs: New test.
+
 2008-10-23  Martin Baulig  <martin@ximian.com>
 
 	* interface/Report.cs
