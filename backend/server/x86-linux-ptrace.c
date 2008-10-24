@@ -471,11 +471,24 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 static ServerCommandError
 server_ptrace_detach_after_fork (ServerHandle *handle)
 {
+	ServerCommandError result;
 	GPtrArray *breakpoints;
 	guint32 status;
-	int i;
+	int ret, i;
 
-	do_wait (handle->inferior->pid, &status);
+	ret = waitpid (handle->inferior->pid, &status, WUNTRACED | WNOHANG | __WALL | __WCLONE);
+	if (ret < 0)
+		g_warning (G_STRLOC ": Can't waitpid for %d: %s", handle->inferior->pid, g_strerror (errno));
+
+	/*
+	 * Make sure we're stopped.
+	 */
+	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE)
+		do_wait (handle->inferior->pid, &status);
+
+	result = x86_arch_get_registers (handle);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
 
 	mono_debugger_breakpoint_manager_lock ();
 
