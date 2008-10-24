@@ -266,7 +266,7 @@ AC_ARG_WITH(xsp,
 [  --with-xsp              Enable XSP support (experimental)],
 with_xsp=yes, with_xsp=no)
 
-if test "x$xsp" = "xyes" ; then
+if test "x$with_xsp" = "xyes" ; then
    PKG_CHECK_MODULES(XSP, xsp-2 >= $XSP_REQUIRED_VERSION)
    XSP_EXE="`$PKG_CONFIG --variable=Executable xsp-2`"
 else
@@ -277,7 +277,7 @@ fi
 AC_SUBST(XSP_EXE)
 AC_SUBST(XSP_CFLAGS)
 AC_SUBST(XSP_LIBS)
-AM_CONDITIONAL(HAVE_XSP, test "x$xsp" = "xyes")
+AM_CONDITIONAL(HAVE_XSP, test "x$with_xsp" = "xyes")
 
 AC_MSG_CHECKING([Whether your Mono is working])
 old_CFLAGS=$cflags
