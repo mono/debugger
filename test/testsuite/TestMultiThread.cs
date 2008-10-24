@@ -252,7 +252,6 @@ namespace Mono.Debugger.Tests
 					      "Invocation of `Parent.Test ()' aborted abnormally.");
 
 			AssertExecute ("kill");
-
 		}
 	}
 }
