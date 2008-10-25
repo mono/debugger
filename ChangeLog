@@ -1,5 +1,12 @@
 2008-10-25  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoPointerObject.cs
+	(MonoPointerObject.GetDereferencedObject): Dereference the
+	location if the static type is a TargetPointerType.  This fixes
+	pointer-to-pointer (`int** a', for instance).
+
+2008-10-25  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoSymbolFile.cs
 	(VariableInfo.AddressMode): Add `Dead'.	
 

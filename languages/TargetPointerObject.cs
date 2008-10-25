@@ -24,6 +24,11 @@ namespace Mono.Debugger.Languages
 
 		internal abstract TargetType GetCurrentType (TargetMemoryAccess target);
 
+		protected internal TargetLocation GetDereferencedLocation ()
+		{
+			return Location.GetDereferencedLocation ();
+		}
+
 		// <summary>
 		//   If HasDereferencedObject is true, return the dereferenced object.
 		// </summary>

@@ -19,7 +19,11 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override TargetObject GetDereferencedObject (TargetMemoryAccess target)
 		{
-			return Type.StaticType.GetObject (target, Location);
+			if (Type.StaticType is TargetPointerType) {
+				TargetLocation loc = GetDereferencedLocation ();
+				return Type.StaticType.GetObject (target, loc);
+			} else
+				return Type.StaticType.GetObject (target, Location);
 		}
 
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
