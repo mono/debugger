@@ -24,7 +24,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			Register	= 0,
 			RegOffset	= 0x10000000,
-			TwoRegisters	= 0x20000000
+			TwoRegisters	= 0x20000000,
+			Dead		= 0x30000000
 		}
 
 		const long AddressModeFlags = 0xf0000000;

@@ -1,3 +1,8 @@
+2008-10-25  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoSymbolFile.cs
+	(VariableInfo.AddressMode): Add `Dead'.	
+
 2008-10-24  Martin Baulig  <martin@ximian.com>
 
 	Fixes the XSP-issue in #423518.
