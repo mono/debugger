@@ -105,11 +105,15 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool IsInScope (TargetAddress address)
 		{
+			if (info.Mode == VariableInfo.AddressMode.Dead)
+				return false;
 			return (address >= start_scope) && (address <= end_scope);
 		}
 
 		public override bool IsAlive (TargetAddress address)
 		{
+			if (info.Mode == VariableInfo.AddressMode.Dead)
+				return false;
 			return (address >= start_liveness) && (address <= end_liveness);
 		}
 

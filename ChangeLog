@@ -1,3 +1,9 @@
+2008-10-28  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoVariable.cs
+	(MonoVariable.IsAlive): Check `AddressMode.Dead'.
+	(MonoVariable.IsInScope): Likewise.
+
 2008-10-25  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoPointerObject.cs
