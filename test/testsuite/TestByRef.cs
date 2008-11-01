@@ -45,7 +45,7 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, bpt_unsafe, "X.UnsafeTest(int)", line_unsafe);
 
-			AssertPrint (thread, "ptr", "(int&) &(int) 3");
+			AssertPrint (thread, "ptr", "(int*) &(int) 3");
 			AssertPrint (thread, "*ptr", "(int) 3");
 
 			AssertExecute ("continue");
