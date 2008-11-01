@@ -1,3 +1,7 @@
+2008-11-01  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoPointerType.cs: Use `*', not '&' (ie. `int*').
+
 2008-10-28  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoVariable.cs

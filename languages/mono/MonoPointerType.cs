@@ -8,7 +8,7 @@ namespace Mono.Debugger.Languages.Mono
 		TargetType element_type;
 
 		public MonoPointerType (TargetType element_type)
-			: base (element_type.Language, element_type.Name + "&", 0)
+			: base (element_type.Language, element_type.Name + "*", 0)
 		{
 			this.element_type = element_type;
 		}
