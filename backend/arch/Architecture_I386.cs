@@ -264,8 +264,7 @@ namespace Mono.Debugger.Architectures
 				ebp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
-					    new_ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_eip, new_esp, new_ebp, regs);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -298,8 +297,7 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_Register.RSP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, memory, new_eip, new_esp,
-						    new_ebp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_eip, new_esp, new_ebp, regs);
 			}
 
 			// push %ebp
@@ -321,8 +319,7 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_Register.RSP].SetValue (new_esp);
 
-				return CreateFrame (frame.Thread, memory, new_eip, new_esp,
-						    new_ebp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_eip, new_esp, new_ebp, regs);
 			}
 
 			// mov %ebp, %esp
@@ -406,7 +403,7 @@ namespace Mono.Debugger.Architectures
 			esp += 0x40;
 			regs [(int)X86_Register.RSP].SetValue (esp.Address);
 
-			return CreateFrame (frame.Thread, memory, eip, esp, ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, eip, esp, ebp, regs);
 		}
 
 		StackFrame try_syscall_trampoline (StackFrame frame, TargetMemoryAccess memory)
@@ -429,8 +426,7 @@ namespace Mono.Debugger.Architectures
 			regs [(int)X86_Register.RIP].SetValue (esp, new_eip);
 			regs [(int)X86_Register.RBP].SetValue (new_ebp);
 
-			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
-					    new_ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_eip, new_esp, new_ebp, regs);
 		}
 
 		StackFrame do_hacks (StackFrame frame, TargetMemoryAccess memory)
@@ -486,8 +482,7 @@ namespace Mono.Debugger.Architectures
 
 			ebp -= addr_size;
 
-			return CreateFrame (frame.Thread, memory, new_eip, new_esp,
-					    new_ebp, regs, true);
+			return CreateFrame (frame.Thread, memory, new_eip, new_esp, new_ebp, regs);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame last_frame,
@@ -511,33 +506,7 @@ namespace Mono.Debugger.Architectures
 			inferior.SetRegisters (regs);
 		}
 
-		protected override TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
-								      TargetAddress address)
-		{
-			TargetBinaryReader reader = target.ReadMemory (address-7, 7).GetReader ();
-
-			byte[] code = reader.ReadBuffer (7);
-			if (code [2] == 0xe8)
-				return address-5;
-
-			if ((code [1] == 0xff) &&
-			    ((code [2] & 0x38) == 0x10) && ((code [2] >> 6) == 2))
-				return address-6;
-			else if ((code [4] == 0xff) &&
-				 ((code [5] & 0x38) == 0x10) && ((code [5] >> 6) == 1))
-				return address-3;
-			else if ((code [5] == 0xff) &&
-				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 3))
-				return address-2;
-			else if ((code [5] == 0xff) &&
-				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 0))
-				return address-2;
-
-			return address;
-		}
-
-		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory,
-							  Registers regs, bool adjust_retaddr)
+		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
 				memory.AddressDomain, regs [(int) X86_Register.RIP].GetValue ());
@@ -546,8 +515,7 @@ namespace Mono.Debugger.Architectures
 			TargetAddress frame_pointer = new TargetAddress (
 				memory.AddressDomain, regs [(int) X86_Register.RBP].GetValue ());
 
-			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer,
-					    regs, adjust_retaddr);
+			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer, regs);
 		}
 
 		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory)
@@ -577,7 +545,7 @@ namespace Mono.Debugger.Architectures
 			TargetAddress new_esp = ebp + 8;
 			regs [(int) X86_Register.RSP].SetValue (ebp, new_esp);
 
-			return CreateFrame (thread.Client, memory, eip, new_esp, new_ebp, regs, true);
+			return CreateFrame (thread.Client, memory, eip, new_esp, new_ebp, regs);
 		}
 	}
 }

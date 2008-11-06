@@ -124,27 +124,14 @@ namespace Mono.Debugger.Backend
 							       TargetMemoryAccess memory);
 
 		internal abstract StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
-							  Registers regs, bool adjust_retaddr);
-
-		protected abstract TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
-								      TargetAddress address);
+							  Registers regs);
 
 		internal StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
 						 TargetAddress address, TargetAddress stack,
-						 TargetAddress frame_pointer, Registers regs,
-						 bool adjust_retaddr)
+						 TargetAddress frame_pointer, Registers regs)
 		{
 			if ((address.IsNull) || (address.Address == 0))
 				return null;
-
-			if (adjust_retaddr) {
-				TargetAddress old_address = address;
-				try {
-					address = AdjustReturnAddress (target, old_address);
-				} catch {
-					address = old_address;
-				}
-			}
 
 			Method method = process.SymbolTableManager.Lookup (address);
 			if (method != null)

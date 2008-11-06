@@ -353,8 +353,7 @@ namespace Mono.Debugger.Architectures
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
-					    regs, true);
+			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -386,8 +385,7 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
-						    regs, true);
+				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
 			}
 
 			// push %ebp
@@ -410,8 +408,7 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, memory, new_rip, new_rsp,
-						    new_rbp, regs, true);
+				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
 			}
 
 			if (code [pos++] != 0x48) {
@@ -456,8 +453,7 @@ namespace Mono.Debugger.Architectures
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp,
-					    regs, true);
+			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, TargetMemoryAccess memory)
@@ -540,49 +536,7 @@ namespace Mono.Debugger.Architectures
 			inferior.SetRegisters (regs);
 		}
 
-		protected override TargetAddress AdjustReturnAddress (TargetMemoryAccess target,
-								      TargetAddress address)
-		{
-			TargetBinaryReader reader = target.ReadMemory (address-7, 7).GetReader ();
-
-			byte[] code = reader.ReadBuffer (7);
-			if (code [2] == 0xe8)
-				return address-5;
-
-			/*
-			 * FIXME:
-			 * If the byte immediately preceeding the indirect call is between 0x40 and 0x4F,
-			 * there is no way of telling whether it's a prefix opcode or whether it belongs
-			 * to the preceeding instruction.
-			 *
-			 * Example:
-			 * 48 89 65 41     mov    %rsp,0x41(%rbp)
-			 * ff d0           callq  *%rax
-			 *
-			 * where does the call start here, this could also be
-			 *
-			 * 41 ff d0        callq  *%r8
-			 *
-			 */
-
-			if ((code [1] == 0xff) &&
-			    ((code [2] & 0x38) == 0x10) && ((code [2] >> 6) == 2))
-				return ((code [0] >= 0x40) && (code [0] <= 0x4F)) ? address : address - 6;
-			else if ((code [4] == 0xff) &&
-				 ((code [5] & 0x38) == 0x10) && ((code [5] >> 6) == 1))
-				return ((code [3] >= 0x40) && (code [3] <= 0x4F)) ? address : address-3;
-			else if ((code [5] == 0xff) &&
-				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 3))
-				return ((code [4] >= 0x40) && (code [4] <= 0x4F)) ? address : address-2;
-			else if ((code [5] == 0xff) &&
-				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 0))
-				return ((code [4] >= 0x40) && (code [4] <= 0x4F)) ? address : address-2;
-
-			return address;
-		}
-
-		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory,
-							  Registers regs, bool adjust_retaddr)
+		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
 				memory.AddressDomain, regs [(int) X86_Register.RIP].GetValue ());
@@ -591,10 +545,8 @@ namespace Mono.Debugger.Architectures
 			TargetAddress frame_pointer = new TargetAddress (
 				memory.AddressDomain, regs [(int) X86_Register.RBP].GetValue ());
 
-			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer,
-					    regs, adjust_retaddr);
+			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer, regs);
 		}
-
 
 		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory)
 		{
@@ -642,7 +594,7 @@ namespace Mono.Debugger.Architectures
 			regs [(int) X86_Register.R14].SetValue (lmf + 72, r14);
 			regs [(int) X86_Register.R15].SetValue (lmf + 80, r15);
 
-			return CreateFrame (thread.Client, memory, rip, rsp, rbp, regs, false);
+			return CreateFrame (thread.Client, memory, rip, rsp, rbp, regs);
 		}
 	}
 }

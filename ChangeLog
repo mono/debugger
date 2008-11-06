@@ -1,5 +1,13 @@
 2008-11-06  Martin Baulig  <martin@ximian.com>
 
+	* backend/arch/Architecture.cs
+	(Architecture.AdjustReturnAddress): Removed.  This was a big hack
+	and there was no guarantee that the "adjusted" return address was
+	actually correct.
+	(Architecture.CreateFrame): Removed the `adjust_retaddr' argument.
+
+2008-11-06  Martin Baulig  <martin@ximian.com>
+
 	* backend/arch/Architecture_X86_64.cs
 	(Architecture_X86_64.GetLMF): Fixed.
 

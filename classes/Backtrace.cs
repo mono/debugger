@@ -108,7 +108,7 @@ namespace Mono.Debugger
 					return false;
 
 				new_frame = thread.Architecture.CreateFrame (
-					thread.Client, memory, callback, false);
+					thread.Client, memory, callback);
 			} catch (TargetException) {
 				return false;
 			}

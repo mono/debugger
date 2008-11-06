@@ -326,7 +326,7 @@ namespace Mono.Debugger.Backend
 				get {
 					if (current_frame == null)
 						current_frame = CoreFile.Architecture.CreateFrame (
-							Thread, TargetAccess, Registers, true);
+							Thread, TargetAccess, Registers);
 
 					return current_frame;
 				}
