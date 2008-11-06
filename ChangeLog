@@ -1,3 +1,11 @@
+2008-11-06  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/Architecture_X86_64.cs
+	(Architecture_X86_64.GetLMF): Fixed.
+
+	* classes/Backtrace.cs
+	(Backtrace.TryUnwind): Only check the LMF once.
+
 2008-11-01  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoPointerType.cs: Use `*', not '&' (ie. `int*').

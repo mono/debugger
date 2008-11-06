@@ -19,6 +19,7 @@ namespace Mono.Debugger
 		StackFrame last_frame;
 		ArrayList frames;
 		int current_frame_idx;
+		bool tried_lmf;
 
 		public Backtrace (StackFrame first_frame)
 		{
@@ -149,8 +150,10 @@ namespace Mono.Debugger
 				if (TryCallback (thread, memory, last_frame, false))
 					return true;
 
-				new_frame = TryLMF (thread, memory);
-				if (new_frame == null)
+				if (!tried_lmf) {
+					new_frame = TryLMF (thread, memory);
+					tried_lmf = true;
+				} else
 					return false;
 			} else if (TryCallback (thread, memory, new_frame, true))
 				return true;

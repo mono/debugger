@@ -549,18 +549,34 @@ namespace Mono.Debugger.Architectures
 			if (code [2] == 0xe8)
 				return address-5;
 
+			/*
+			 * FIXME:
+			 * If the byte immediately preceeding the indirect call is between 0x40 and 0x4F,
+			 * there is no way of telling whether it's a prefix opcode or whether it belongs
+			 * to the preceeding instruction.
+			 *
+			 * Example:
+			 * 48 89 65 41     mov    %rsp,0x41(%rbp)
+			 * ff d0           callq  *%rax
+			 *
+			 * where does the call start here, this could also be
+			 *
+			 * 41 ff d0        callq  *%r8
+			 *
+			 */
+
 			if ((code [1] == 0xff) &&
 			    ((code [2] & 0x38) == 0x10) && ((code [2] >> 6) == 2))
-				return ((code [0] & 0x40) == 0x40) ? address-7 : address-6;
+				return ((code [0] >= 0x40) && (code [0] <= 0x4F)) ? address : address - 6;
 			else if ((code [4] == 0xff) &&
 				 ((code [5] & 0x38) == 0x10) && ((code [5] >> 6) == 1))
-				return ((code [3] & 0x40) == 0x40) ? address-4 : address-3;
+				return ((code [3] >= 0x40) && (code [3] <= 0x4F)) ? address : address-3;
 			else if ((code [5] == 0xff) &&
 				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 3))
-				return ((code [4] & 0x40) == 0x40) ? address-3 : address-2;
+				return ((code [4] >= 0x40) && (code [4] <= 0x4F)) ? address : address-2;
 			else if ((code [5] == 0xff) &&
 				 ((code [6] & 0x38) == 0x10) && ((code [6] >> 6) == 0))
-				return ((code [4] & 0x40) == 0x40) ? address-3 : address-2;
+				return ((code [4] >= 0x40) && (code [4] <= 0x4F)) ? address : address-2;
 
 			return address;
 		}
@@ -590,12 +606,12 @@ namespace Mono.Debugger.Architectures
 		{
 			TargetBinaryReader reader = memory.ReadMemory (lmf, 88).GetReader ();
 
-			reader.ReadTargetAddress (); // prev
+			TargetAddress prev_lmf = reader.ReadTargetAddress (); // prev
 			TargetAddress lmf_addr = reader.ReadTargetAddress ();
-			reader.ReadTargetAddress (); // method
+			TargetAddress method = reader.ReadTargetAddress (); // method
 			TargetAddress rip = reader.ReadTargetAddress ();
 
-			if (lmf_addr.IsNull)
+			if (prev_lmf.IsNull)
 				return null;
 
 			TargetAddress rbx = reader.ReadTargetAddress ();
@@ -607,19 +623,26 @@ namespace Mono.Debugger.Architectures
 			TargetAddress r15 = reader.ReadTargetAddress ();
 
 			Registers regs = new Registers (this);
-			regs [(int) X86_Register.RBX].SetValue (lmf + 24, rip);
+
+			if ((prev_lmf.Address & 1) == 0) {
+				rip = memory.ReadAddress (rsp - 8);
+				regs [(int) X86_Register.RIP].SetValue (rsp - 8, rip);
+				regs [(int) X86_Register.RBP].SetValue (lmf + 40, rbp);
+			} else {
+				TargetAddress new_rbp = memory.ReadAddress (rbp);
+				regs [(int) X86_Register.RIP].SetValue (lmf + 24, rip);
+				regs [(int) X86_Register.RBP].SetValue (rbp, new_rbp);
+				rbp = new_rbp;
+			}
+				
 			regs [(int) X86_Register.RBX].SetValue (lmf + 32, rbx);
-			regs [(int) X86_Register.RBP].SetValue (lmf + 40, rbp);
 			regs [(int) X86_Register.RSP].SetValue (lmf + 48, rsp);
 			regs [(int) X86_Register.R12].SetValue (lmf + 56, r12);
 			regs [(int) X86_Register.R13].SetValue (lmf + 64, r13);
 			regs [(int) X86_Register.R14].SetValue (lmf + 72, r14);
 			regs [(int) X86_Register.R15].SetValue (lmf + 80, r15);
 
-			TargetAddress new_rbp = memory.ReadAddress (rbp);
-			regs [(int) X86_Register.RBP].SetValue (rbp, new_rbp);
-
-			return CreateFrame (thread.Client, memory, rip, rsp, new_rbp, regs, true);
+			return CreateFrame (thread.Client, memory, rip, rsp, rbp, regs, false);
 		}
 	}
 }
