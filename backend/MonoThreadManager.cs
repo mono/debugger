@@ -195,6 +195,14 @@ namespace Mono.Debugger.Backend
 			managed_callbacks.Enqueue (data);
 		}
 
+		internal Queue<ManagedCallbackData> ClearManagedCallbacks (Inferior inferior)
+		{
+			inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 0);
+			Queue<ManagedCallbackData> retval = managed_callbacks;
+			managed_callbacks = new Queue<ManagedCallbackData> ();
+			return retval;
+		}
+
 		TargetAddress main_function;
 		TargetAddress main_thread;
 		MonoLanguageBackend csharp_language;

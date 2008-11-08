@@ -265,7 +265,7 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.SSE,
 					      "{0} {1}stopping at exception ({2}:{3}:{4}) - {5} - {6}",
 					      this, stop_on_exc ? "" : "not ", stack, exc, ip,
-					      current_operation, temp_breakpoint_id);
+					      current_operation, temp_breakpoint);
 
 				if (stop_on_exc) {
 					inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
@@ -275,6 +275,26 @@ namespace Mono.Debugger.Backend
 
 				do_continue ();
 				return;
+			}
+
+			if (lmf_breakpoint != null) {
+				if ((message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) &&
+				    (arg == lmf_breakpoint.Breakpoint.ID)) {
+					remove_lmf_breakpoint ();
+
+					Report.Debug (DebugFlags.SSE, "{0} back in managed land: {1}",
+						      this, inferior.CurrentFrame);
+
+					Inferior.StackFrame sframe = inferior.GetCurrentFrame ();
+					Method method = Lookup (inferior.CurrentFrame);
+
+					bool is_managed = (method != null) && method.Module.Language.IsManaged;
+					Report.Debug (DebugFlags.SSE, "{0} back in managed land #1: {1}", this, is_managed);
+
+					Queue<ManagedCallbackData> queue = process.MonoManager.ClearManagedCallbacks (inferior);
+					OnManagedCallback (queue);
+					return;
+				}
 			}
 
 			// To step over a method call, the sse inserts a temporary
@@ -292,21 +312,20 @@ namespace Mono.Debugger.Backend
 			// the target is to remain stopped.  Note that this piece of code
 			// here only deals with the temporary breakpoint, the handling of
 			// a signal or another breakpoint is done later.
-			if (temp_breakpoint_id != 0) {
+			if (temp_breakpoint != null) {
 				if ((message == Inferior.ChildEventType.CHILD_EXITED) ||
 				    (message == Inferior.ChildEventType.CHILD_SIGNALED))
 					// we can't remove the breakpoint anymore after
 					// the target exited, but we need to clear this id.
-					temp_breakpoint_id = 0;
+					temp_breakpoint = null;
 				else if ((message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) &&
-					 (arg == temp_breakpoint_id)) {
+					 (arg == temp_breakpoint.ID)) {
 					// we hit the temporary breakpoint; this'll always
 					// happen in the `correct' thread since the
 					// `temp_breakpoint_id' is only set in this
 					// SingleSteppingEngine and not in any other thread's.
 
-					inferior.RemoveBreakpoint (temp_breakpoint_id);
-					temp_breakpoint_id = 0;
+					remove_temporary_breakpoint ();
 
 					Breakpoint bpt = lookup_breakpoint (arg);
 					Report.Debug (DebugFlags.SSE,
@@ -537,7 +556,7 @@ namespace Mono.Debugger.Backend
 				result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
 			else
 				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
-			temp_breakpoint_id = 0;
+			temp_breakpoint = null;
 			OperationCompleted (result);
 
 			process.OnThreadExitedEvent (this);
@@ -1181,20 +1200,32 @@ namespace Mono.Debugger.Backend
 			current_frame = new_frame;
 		}
 
-		int temp_breakpoint_id = 0;
+		TemporaryBreakpointData temp_breakpoint = null;
+
 		void insert_temporary_breakpoint (TargetAddress address)
 		{
 			check_inferior ();
-			int dr_index;
 
-			if (temp_breakpoint_id != 0)
+			if (temp_breakpoint != null)
 				throw new InternalError ("FUCK");
 
-			temp_breakpoint_id = inferior.InsertHardwareBreakpoint (
-				address, true, out dr_index);
+			int dr_index;
+			int id = inferior.InsertHardwareBreakpoint (address, true, out dr_index);
+			temp_breakpoint = new TemporaryBreakpointData (id, address);
 
 			Report.Debug (DebugFlags.SSE, "{0} inserted temp breakpoint {1}:{2} at {3}",
-				      this, temp_breakpoint_id, dr_index, address);
+				      this, id, dr_index, address);
+		}
+
+		void remove_temporary_breakpoint ()
+		{
+			Report.Debug (DebugFlags.SSE, "{0} remove temp breakpoint {1}",
+				      this, temp_breakpoint);
+
+			if (temp_breakpoint != null) {
+				inferior.RemoveBreakpoint (temp_breakpoint.ID);
+				temp_breakpoint = null;
+			}
 		}
 
 		// <summary>
@@ -1247,17 +1278,6 @@ namespace Mono.Debugger.Backend
 			if (!until.IsNull)
 				insert_temporary_breakpoint (until);
 			inferior.Continue ();
-		}
-
-		void remove_temporary_breakpoint ()
-		{
-			Report.Debug (DebugFlags.SSE, "{0} remove temp breakpoint {1}",
-				      this, temp_breakpoint_id);
-
-			if (temp_breakpoint_id != 0) {
-				inferior.RemoveBreakpoint (temp_breakpoint_id);
-				temp_breakpoint_id = 0;
-			}
 		}
 
 		void do_step_native ()
@@ -1955,23 +1975,131 @@ namespace Mono.Debugger.Backend
 					}
 
 					if (!ok) {
-						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback", this);
+						StackFrame lmf_frame = Architecture.GetLMF (this, inferior);
+
+						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback: {1}", this, lmf_frame);
 						process.MonoManager.AddManagedCallback (inferior, data);
+
+						/*
+						 * Prevent a race condition:
+						 * If we stopped just before returning from native code,
+						 * mono_thread_interruption_checkpoint_request() may not be called again
+						 * before returning back to managed code; it's called next time we're entering
+						 * native code again.
+						 *
+						 * This could lead to problems if the managed code does some CPU-intensive
+						 * before going unmanaged next time - or even loops forever.
+						 *
+						 * I have a test case where an icall contains a sleep() and the managed code
+						 * contains an infinite loop (`for (;;) ;) immediately after returning from
+						 * this icall.
+						 *
+						 * To prevent this from happening, we insert a breakpoint on the last managed
+						 * frame.
+						 */
+
+						if (lmf_frame != null)
+							insert_lmf_breakpoint (lmf_frame.TargetAddress);
+						else {
+							Report.Error ("{0} unable to compute LMF for managed callback: {1}",
+								      this, inferior.CurrentFrame);
+						}
 					}
+
 					Report.Debug (DebugFlags.SSE, "{0} managed callback releasing thread lock", this);
 					process.ReleaseGlobalThreadLock (this);
 				}
 
 				ReleaseThreadLock ();
 
-				Report.Debug (DebugFlags.SSE, "{0} managed callback done", this);
+				Report.Debug (DebugFlags.SSE, "{0} managed callback done: {1} {2}", this, data.Running, data.Completed);
 				return null;
 			});
 		}
 
+		void insert_lmf_breakpoint (TargetAddress lmf_address)
+		{
+			lmf_breakpoint = new LMFBreakpointData (lmf_address);
+
+			/*
+			 * Insert a breakpoint on the last managed frame (LMF).  We use a hardware breakpoint for this
+			 * since the JIT might inspect / modify the callsite and we don't know whether we're at a safe
+			 * spot right now.
+			 *
+			 * If we already have a single-stepping breakpoint, we "steal" it here, so we only use one single
+			 * hardware register internally in the SSE.
+			 *
+			 */
+
+			if (temp_breakpoint != null) {
+				Report.Debug (DebugFlags.SSE, "{0} stealing temporary breakpoint {1} at {2} -> lmf breakpoint at {2}.",
+					      temp_breakpoint.ID, temp_breakpoint.Address, lmf_address);
+
+				lmf_breakpoint.StolenBreakpoint = temp_breakpoint;
+				temp_breakpoint = null;
+
+				/*
+				 * The breakpoint is already at the requested location -> keep and reuse it.
+				 */
+
+				if (lmf_address == temp_breakpoint.Address) {
+					lmf_breakpoint.Breakpoint = lmf_breakpoint.StolenBreakpoint;
+					return;
+				}
+
+				inferior.RemoveBreakpoint (lmf_breakpoint.StolenBreakpoint.ID);
+			}
+
+			/*
+			 * The SSE's internal hardware breakpoint register is now free.
+			 */
+
+			int dr_index;
+			int id = inferior.InsertHardwareBreakpoint (lmf_address, true, out dr_index);
+
+			Report.Debug (DebugFlags.SSE, "{0} inserted lmf breakpoint: {1} {2} {3}", this, lmf_address, id, dr_index);
+
+			lmf_breakpoint.Breakpoint = new TemporaryBreakpointData (id, lmf_address);
+		}
+
+		void remove_lmf_breakpoint ()
+		{
+			if (lmf_breakpoint == null)
+				return;
+
+			/*
+			 * We reused an already existing single-stepping breakpoint at the requested location.
+			 */
+			if (lmf_breakpoint.Breakpoint == lmf_breakpoint.StolenBreakpoint)
+				return;
+
+			inferior.RemoveBreakpoint (lmf_breakpoint.Breakpoint.ID);
+
+			/*
+			 * We stole the single-stepping breakpoint -> restore it here.
+			 */
+
+			if (lmf_breakpoint.StolenBreakpoint != null) {
+				int dr_index;
+				TargetAddress address = lmf_breakpoint.StolenBreakpoint.Address;
+				int id = inferior.InsertHardwareBreakpoint (address, true, out dr_index);
+
+				temp_breakpoint = new TemporaryBreakpointData (id, address);
+
+				Report.Debug (DebugFlags.SSE, "{0} restored stolen breakpoint: {1}", this, temp_breakpoint);
+			}
+
+			lmf_breakpoint = null;
+		}
+
 		bool do_managed_callback (ManagedCallbackData data)
 		{
+			Inferior.StackFrame sframe = inferior.GetCurrentFrame ();
 			Method method = Lookup (inferior.CurrentFrame);
+
+			Report.Debug (DebugFlags.SSE, "{0} managed callback checking frame: {1} ({2:x} - {3:x} - {4:x}) {5} {6}",
+				      this, inferior.CurrentFrame, sframe.Address, sframe.StackPointer, sframe.FrameAddress,
+				      method, method != null);
 			if ((method == null) || !method.Module.Language.IsManaged)
 				return false;
 
@@ -1982,8 +2110,11 @@ namespace Mono.Debugger.Backend
 			return true;
 		}
 
+		LMFBreakpointData lmf_breakpoint = null;
+
 		internal void OnManagedCallback (Queue<ManagedCallbackData> callbacks)
 		{
+			Report.Debug (DebugFlags.SSE, "{0} on managed callback", this);
 			PushOperation (new OperationManagedCallback (this, callbacks));
 		}
 
@@ -2048,6 +2179,35 @@ namespace Mono.Debugger.Backend
 				this.Frame = frame;
 				this.Backtrace = backtrace;
 				this.Registers = registers;
+			}
+		}
+
+		protected sealed class TemporaryBreakpointData
+		{
+			public readonly int ID;
+			public readonly TargetAddress Address;
+
+			public TemporaryBreakpointData (int id, TargetAddress address)
+			{
+				this.ID = id;
+				this.Address = address;
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("TemporaryBreakpoint ({0}:{1})", ID, Address);
+			}
+		}
+
+		protected sealed class LMFBreakpointData
+		{
+			public readonly TargetAddress Address;
+			public TemporaryBreakpointData Breakpoint;
+			public TemporaryBreakpointData StolenBreakpoint;
+
+			public LMFBreakpointData (TargetAddress address)
+			{
+				this.Address = address;
 			}
 		}
 
@@ -2780,7 +2940,7 @@ namespace Mono.Debugger.Backend
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
-			if (sse.temp_breakpoint_id != 0) {
+			if (sse.temp_breakpoint != null) {
 				inferior.Continue ();
 				return true;
 			}
@@ -3068,7 +3228,7 @@ namespace Mono.Debugger.Backend
 
 				Report.Debug (DebugFlags.SSE,
 					      "{0} starting finish native until {1} {2}",
-					      sse, until, sse.temp_breakpoint_id);
+					      sse, until, sse.temp_breakpoint);
 			}
 
 			sse.do_next_native ();
@@ -3078,7 +3238,7 @@ namespace Mono.Debugger.Backend
 		{
 			Report.Debug (DebugFlags.SSE, "{0} resuming operation {1}", sse, this);
 
-			if (sse.temp_breakpoint_id != 0) {
+			if (sse.temp_breakpoint != null) {
 				inferior.Continue ();
 				return true;
 			}
@@ -3265,15 +3425,20 @@ namespace Mono.Debugger.Backend
 
 		bool do_execute ()
 		{
+			Report.Debug (DebugFlags.SSE, "{0} managed callback execute start: {1}", sse, CallbackFunctions.Count);
+
 			while (CallbackFunctions.Count > 0) {
 				current_callback = CallbackFunctions.Dequeue ();
 				Report.Debug (DebugFlags.SSE, "{0} managed callback execute: {1}",
 					      sse, current_callback.Func);
+				current_callback.Running = true;
 				bool running = current_callback.Func (sse);
 				Report.Debug (DebugFlags.SSE, "{0} managed callback execute done: {1} {2}",
 					      sse, current_callback.Func, running);
 				if (running)
 					return true;
+
+				current_callback.Completed = true;
 
 				current_callback.Result.Completed ();
 			}
@@ -3284,8 +3449,8 @@ namespace Mono.Debugger.Backend
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
-			Report.Debug (DebugFlags.SSE, "{0} managed callback process event: {1} {2}",
-				      sse, cevent, thread_lock);
+			Report.Debug (DebugFlags.SSE, "{0} managed callback process event: {1} {2} {3}",
+				      sse, cevent, thread_lock, current_callback);
 
 			current_callback.Result.Completed ();
 
@@ -4210,6 +4375,9 @@ namespace Mono.Debugger.Backend
 	{
 		public readonly ManagedCallbackFunction Func;
 		public readonly CommandResult Result;
+
+		public bool Running;
+		public bool Completed;
 
 		public ManagedCallbackData (ManagedCallbackFunction func, CommandResult result)
 		{

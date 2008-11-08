@@ -1,3 +1,9 @@
+2008-11-08  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ManagedCallback): Insert a breakpoint on the last managed
+	frame to fix a race condition - see the comments in the source code.
+
 2008-11-06  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Architecture.cs
