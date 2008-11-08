@@ -36,7 +36,7 @@ namespace Mono.Debugger.Tests
 					     bt.Count, 2);
 
 			AssertFrame (bt [0], 0, "X.Test()", GetLine ("exception"));
-			AssertFrame (bt [1], 1, "X.Main()", GetLine ("try"));
+			AssertFrame (bt [1], 1, "X.Main()", GetLine ("try") + 1);
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("EXCEPTION: System.InvalidOperationException");

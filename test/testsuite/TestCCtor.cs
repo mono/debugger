@@ -80,7 +80,7 @@ namespace Mono.Debugger.Tests
 			Backtrace bt_bar_cctor = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
 			Assert.IsTrue (bt_bar_cctor.Count == 2);
 			AssertFrame (bt_bar_cctor [0], 0, "Bar..cctor()", LineBarCCtor);
-			AssertFrame (bt_bar_cctor [1], 1, "X.Main()", LineMain + 1);
+			AssertFrame (bt_bar_cctor [1], 1, "X.Main()", LineMain + 2);
 
 			//
 			// Dublin Milestone III (completed on i386): "recursive-callbacks"
@@ -106,7 +106,7 @@ namespace Mono.Debugger.Tests
 
 			bt_main = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
 			Assert.IsTrue (bt_main.Count == 2);
-			AssertFrame (bt_main [1], 1, "X.Main()", LineMain + 1);
+			AssertFrame (bt_main [1], 1, "X.Main()", LineMain + 2);
 
 			AssertExecute ("continue");
 
