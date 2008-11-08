@@ -151,19 +151,24 @@ namespace Mono.Debugger
 
 		public ReportWriter ()
 		{
-			file = Environment.GetEnvironmentVariable ("MDB_DEBUG_OUTPUT");
+			string var = Environment.GetEnvironmentVariable ("MDB_DEBUG_FLAGS");
+			if (var != null) {
+				int pos = var.IndexOf (':');
+				if (pos > 0) {
+					file = var.Substring (0, pos);
+					var = var.Substring (pos + 1);
+				}
+
+				if (!Report.ParseDebugFlags (var, out flags))
+					Console.WriteLine ("Invalid `MDB_DEBUG_FLAGS' environment variable.");
+			}
+
 			if (file != null)
 				writer = new StreamWriter (file, true);
 			else
 				writer = new StreamWriter (Console.OpenStandardError ());
 			writer.AutoFlush = true;
 			start_time = DateTime.Now;
-
-			string var = Environment.GetEnvironmentVariable ("MDB_DEBUG_FLAGS");
-			if (var != null) {
-				if (!Report.ParseDebugFlags (var, out flags))
-					Console.WriteLine ("Invalid `MDB_DEBUG_FLAGS' environment variable.");
-			}
 		}
 
 		public ReportWriter (string file, DebugFlags flags)
