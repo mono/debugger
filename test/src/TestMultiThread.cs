@@ -17,7 +17,7 @@ public class X
 
 	void Loop ()
 	{
-		Thread.Sleep (Seconds * 50);
+		Thread.Sleep (Seconds * 150);
 	}
 
 	public int Test ()
