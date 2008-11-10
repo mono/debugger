@@ -19,7 +19,9 @@ namespace Mono.Debugger
 		StackFrame last_frame;
 		ArrayList frames;
 		int current_frame_idx;
+
 		bool tried_lmf;
+		TargetAddress lmf_address;
 
 		public Backtrace (StackFrame first_frame)
 		{
@@ -80,10 +82,10 @@ namespace Mono.Debugger
 		private StackFrame TryLMF (ThreadServant thread, TargetMemoryAccess memory)
 		{
 			try {
-				if (thread.LMFAddress.IsNull)
+				if (lmf_address.IsNull)
 					return null;
 
-				StackFrame new_frame = thread.Architecture.GetLMF (thread, memory);
+				StackFrame new_frame = thread.Architecture.GetLMF (thread, memory, ref lmf_address);
 				if (new_frame == null)
 					return null;
 
@@ -151,9 +153,13 @@ namespace Mono.Debugger
 					return true;
 
 				if (!tried_lmf) {
-					new_frame = TryLMF (thread, memory);
+					lmf_address = memory.ReadAddress (thread.LMFAddress);
 					tried_lmf = true;
-				} else
+				}
+
+				if (!lmf_address.IsNull)
+					new_frame = TryLMF (thread, memory);
+				else
 					return false;
 			} else if (TryCallback (thread, memory, new_frame, true))
 				return true;

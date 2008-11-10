@@ -548,22 +548,17 @@ namespace Mono.Debugger.Architectures
 			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer, regs);
 		}
 
-		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory)
+		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory, ref TargetAddress lmf_address)
 		{
-			TargetAddress lmf = memory.ReadAddress (thread.LMFAddress);
-			return GetLMF (thread, memory, lmf);
-		}
+			TargetAddress lmf = lmf_address;
+			TargetBinaryReader reader = memory.ReadMemory (lmf_address, 88).GetReader ();
 
-		StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory, TargetAddress lmf)
-		{
-			TargetBinaryReader reader = memory.ReadMemory (lmf, 88).GetReader ();
-
-			TargetAddress prev_lmf = reader.ReadTargetAddress (); // prev
-			TargetAddress lmf_addr = reader.ReadTargetAddress ();
+			lmf_address = reader.ReadTargetAddress (); // prev
+			reader.ReadTargetAddress ();
 			TargetAddress method = reader.ReadTargetAddress (); // method
 			TargetAddress rip = reader.ReadTargetAddress ();
 
-			if (prev_lmf.IsNull)
+			if (lmf_address.IsNull)
 				return null;
 
 			TargetAddress rbx = reader.ReadTargetAddress ();
@@ -576,7 +571,7 @@ namespace Mono.Debugger.Architectures
 
 			Registers regs = new Registers (this);
 
-			if ((prev_lmf.Address & 1) == 0) {
+			if ((lmf_address.Address & 1) == 0) {
 				rip = memory.ReadAddress (rsp - 8);
 				regs [(int) X86_Register.RIP].SetValue (rsp - 8, rip);
 				regs [(int) X86_Register.RBP].SetValue (lmf + 40, rbp);

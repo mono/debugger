@@ -114,7 +114,8 @@ namespace Mono.Debugger.Backend
 
 		internal abstract Registers CopyRegisters (Registers regs);
 
-		internal abstract StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess target);
+		internal abstract StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess target,
+						     ref TargetAddress lmf_address);
 
 		internal abstract StackFrame UnwindStack (StackFrame last_frame,
 							  TargetMemoryAccess memory,

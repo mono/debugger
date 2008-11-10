@@ -518,11 +518,13 @@ namespace Mono.Debugger.Architectures
 			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer, regs);
 		}
 
-		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory)
+		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory,
+						     ref TargetAddress lmf_address)
 		{
-			TargetAddress lmf = memory.ReadAddress (thread.LMFAddress);
+			TargetAddress lmf = lmf_address;
 
 			TargetBinaryReader reader = memory.ReadMemory (lmf, 36).GetReader ();
+			lmf_address = reader.ReadTargetAddress (); // prev
 
 			reader.Position = 16;
 
