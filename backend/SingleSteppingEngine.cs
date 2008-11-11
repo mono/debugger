@@ -1975,7 +1975,7 @@ namespace Mono.Debugger.Backend
 					}
 
 					if (!ok) {
-						TargetAddress lmf_address = LMFAddress;
+						TargetAddress lmf_address = inferior.ReadAddress (LMFAddress);
 						StackFrame lmf_frame = Architecture.GetLMF (this, inferior, ref lmf_address);
 
 						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback: {1}", this, lmf_frame);
