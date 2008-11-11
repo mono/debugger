@@ -153,8 +153,10 @@ namespace Mono.Debugger
 					return true;
 
 				if (!tried_lmf) {
-					lmf_address = memory.ReadAddress (thread.LMFAddress);
 					tried_lmf = true;
+					if (thread.LMFAddress.IsNull)
+						return false;
+					lmf_address = memory.ReadAddress (thread.LMFAddress);
 				}
 
 				if (!lmf_address.IsNull)

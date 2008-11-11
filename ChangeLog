@@ -1,3 +1,14 @@
+2008-11-11  Martin Baulig  <martin@ximian.com>
+
+	* test/testsuite/NUnit.cs
+	(TestSuite.EvaluateExpression): New public method.
+
+	* frontend/Expression.cs
+	(ExpressionParser.EvaluationResult): New public enum.
+	(ExpressionParser.MonoObjectToString): New public method.
+
+	* test/{src|testsuite}/TestToString2.cs: New tests.
+
 2008-11-10  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/Architecture.cs
