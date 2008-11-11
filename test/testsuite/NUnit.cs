@@ -840,6 +840,24 @@ namespace Mono.Debugger.Tests
 					     expression, text, exp_result);
 		}
 
+		public object EvaluateExpression (Thread thread, string expression)
+		{
+			string text = null;
+			try {
+				ScriptingContext context = GetContext (thread);
+				object obj = EvaluateExpression (context, expression);
+				if (obj == null)
+					Assert.Fail ("Failed to evaluate expression `{0}'", expression);
+				return obj;
+			} catch (AssertionException) {
+				throw;
+			} catch (Exception ex) {
+				Assert.Fail ("Failed to print expression `{0}': {1}",
+					     expression, ex);
+				return null;
+			}
+		}
+
 		public DebuggerEvent AssertEvent ()
 		{
 			DebuggerEvent e = Interpreter.Wait ();
