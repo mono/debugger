@@ -1,3 +1,11 @@
+November 17th, 2008 - Martin Baulig
+-----------------------------------
+
+Released version 2.2 "Sidney" of the Mono Debugger :-)
+
+- This is basically a bug-fixing release over 2.0 and contains some
+  important stability improvements.
+
 August 5th, 2008 - Martin Baulig
 --------------------------------
 
@@ -7,7 +15,7 @@ Released version 2.0 "Cologne" of the Mono Debugger :-)
   for a long period of time.
 
 - As requested by the Mono Release Team, the version number was
-  changed to 2.0.  There is now 1.0.
+  changed to 2.0.  There is no 1.0.
 
 - Lots of bug fixes went in since 0.80.
 
