@@ -193,7 +193,7 @@ namespace Mono.Debugger.Frontend
 				try {
 					rti = thread.RuntimeInvoke (ftype, obj, new TargetObject [0], true, false);
 
-					if (!rti.CompletedEvent.WaitOne (timeout)) {
+					if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 						rti.Abort ();
 						rti.CompletedEvent.WaitOne ();
 						thread.AbortInvocation ();
