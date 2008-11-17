@@ -1,5 +1,13 @@
 2008-11-17  Martin Baulig  <martin@ximian.com>
 
+	Released version 2.2 "Sidney" of the Mono Debugger.
+
+	* NEWS: Update to 2.2.
+
+	* configure.in: Bump version number to 2.2.
+
+2008-11-17  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Add -fno-strict-aliasing to CFLAGS.
 
 2008-11-11  Martin Baulig  <martin@ximian.com>
