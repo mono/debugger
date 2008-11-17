@@ -174,9 +174,9 @@ namespace Mono.Debugger.Frontend
 		string MonoObjectToString (TargetStructObject obj)
 		{
 			string text;
-			ExpressionParser.EvaluationResult result;
-			result = ExpressionParser.MonoObjectToString (CurrentThread, obj, -1, out text);
-			if (result == ExpressionParser.EvaluationResult.Ok)
+			ExpressionEvaluator.EvaluationResult result;
+			result = ExpressionEvaluator.MonoObjectToString (CurrentThread, obj, -1, out text);
+			if (result == ExpressionEvaluator.EvaluationResult.Ok)
 				return text;
 			return null;
 		}

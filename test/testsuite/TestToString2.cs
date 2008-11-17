@@ -35,18 +35,18 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (b != null);
 
 			string text;
-			ExpressionParser.EvaluationResult result;
+			ExpressionEvaluator.EvaluationResult result;
 
-			result = ExpressionParser.MonoObjectToString (thread, a, 1000, out text);
+			result = ExpressionEvaluator.MonoObjectToString (thread, a, 1000, out text);
 
-			if (result != ExpressionParser.EvaluationResult.Ok)
+			if (result != ExpressionEvaluator.EvaluationResult.Ok)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
 			if (text != "(Foo) { \"Foo (5)\" }")
 				Assert.Fail ("Failed to print `a': got result {0}", text);
 
 
-			result = ExpressionParser.MonoObjectToString (thread, b, 1000, out text);
-			if (result != ExpressionParser.EvaluationResult.Timeout)
+			result = ExpressionEvaluator.MonoObjectToString (thread, b, 1000, out text);
+			if (result != ExpressionEvaluator.EvaluationResult.Timeout)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
 
 			AssertExecute ("continue");

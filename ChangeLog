@@ -1,5 +1,16 @@
 2008-11-17  Martin Baulig  <martin@ximian.com>
 
+	* classes/ExpressionEvaluator.cs: New file.
+	(ExpressionEvaluator): New public static class.
+	(ExpressionEvaluator.MonoObjectToString): Moved here from
+	../frontend/Expression.cs.
+
+	* frontend/Expression.cs
+	(ExpressionParser.MonoObjectToString): Moved to
+	../classes/ExpressionEvaluator.cs	
+
+2008-11-17  Martin Baulig  <martin@ximian.com>
+
 	Released version 2.2 "Sidney" of the Mono Debugger.
 
 	* NEWS: Update to 2.2.
