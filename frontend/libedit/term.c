@@ -52,6 +52,14 @@
 # include <ncurses.h>
 #endif
 
+#ifdef HAVE_TERMCAP_H
+# include <termcap.h>
+#elif HAVE_TERMCAP_TERMCAP_H
+# include <termcap/termcap.h>
+#else
+# include <ncurses/termcap.h>
+#endif
+
 /* Solaris's term.h does horrid things. */
 #if (defined(HAVE_TERM_H) && !defined(_SUNOS))
 # include <term.h>
