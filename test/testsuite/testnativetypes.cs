@@ -71,7 +71,7 @@ namespace Mono.Debugger.Tests
 				     "(BitField) { a = 1, b = 3, c = 4, d = 9, e = 15, f = 8 }");
 
 			AssertExecute ("continue");
-			AssertTargetOutput ("Bitfield: 1");
+			AssertTargetOutput ("Bitfield: 3");
 			AssertHitBreakpoint (thread, "list", "test_list");
 
 			AssertPrint (thread, "list.a", "(int) 9");
