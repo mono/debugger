@@ -58,6 +58,10 @@ static int lowzero;
 static int high;
 extern int csharp;
 
+void save_column (int symbol, int default_state);
+void output_trailing_text (void);
+void output_semantic_actions (void);
+
 output () {
   int lno = 0;
   char buf [128];
@@ -359,7 +363,7 @@ int symbol;
 }
 
 
-
+void
 save_column(symbol, default_state)
 int symbol;
 int default_state;
@@ -1050,7 +1054,8 @@ output_debug()
       FREE(symnam);
 }
 
-output_trailing_text()
+void
+output_trailing_text (void)
 {
     register int c, last;
     register FILE *in;
@@ -1098,7 +1103,7 @@ output_trailing_text()
     printf(default_line_format, ++outline + 1);
 }
 
-
+void
 output_semantic_actions()
 {
     register int c, last;

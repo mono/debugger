@@ -146,6 +146,7 @@ print_skel_dir(void)
     exit (0);
 }
 
+void
 getargs(argc, argv)
 int argc;
 char *argv[];

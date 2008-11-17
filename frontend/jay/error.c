@@ -73,7 +73,7 @@ unexpected_EOF()
     done(1);
 }
 
-
+void
 print_pos(st_line, st_cptr)
 char *st_line;
 char *st_cptr;
