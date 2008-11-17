@@ -39,7 +39,7 @@ namespace Mono.Debugger.Backend
 
 	internal class DebuggerMutex : DebuggerWaitHandle
 	{
-		protected new IntPtr handle;
+		protected IntPtr handle;
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_mutex_new ();

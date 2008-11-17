@@ -43,7 +43,6 @@ namespace Mono.Debugger.Backend
 			DwarfBinaryReader reader = new DwarfBinaryReader (bfd, blob, false);
 
 			while (reader.Position < reader.Size) {
-				long original_pos = reader.Position;
 				long length = reader.ReadInitialLength ();
 				if (length == 0)
 					break;

@@ -61,7 +61,7 @@ namespace Mono.Debugger.Languages.Native
 
 	internal class NativeMethodInfo  : TargetMethodInfo
 	{
-		public new readonly NativeFunctionType FunctionType;
+		public readonly NativeFunctionType FunctionType;
 
 		public NativeMethodInfo (NativeFunctionType type, string name, int index)
 			: base (type, name, index, false, TargetMemberAccessibility.Public, name)

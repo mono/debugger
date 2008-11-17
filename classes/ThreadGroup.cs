@@ -19,7 +19,7 @@ namespace Mono.Debugger
 		static ThreadGroup global = new ThreadGroup ("global");
 		static ThreadGroup system = new ThreadGroup ("system");
 
-		protected ThreadGroup (string name)
+		private ThreadGroup (string name)
 		{
 			this.name = name;
 			this.threads = Hashtable.Synchronized (new Hashtable ());

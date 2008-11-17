@@ -116,7 +116,7 @@ namespace Mono.Debugger.Backend
 		DwarfSymbolTable symtab;
 		ArrayList aranges;
 		Hashtable pubnames;
-		Hashtable pubtypes;
+		// Hashtable pubtypes;
 		TargetMemoryInfo target_info;
 
 		public DwarfReader (Bfd bfd, Module module)
@@ -160,7 +160,7 @@ namespace Mono.Debugger.Backend
 				aranges = ArrayList.Synchronized (read_aranges ());
 				symtab = new DwarfSymbolTable (this, aranges);
 				pubnames = read_pubnames ();
-				pubtypes = read_pubtypes ();
+				// pubtypes = read_pubtypes ();
 			}
 
 			long offset = 0;
@@ -180,7 +180,7 @@ namespace Mono.Debugger.Backend
 			symtab = new DwarfSymbolTable (this, aranges);
 
 			pubnames = read_pubnames ();
-			pubtypes = read_pubtypes ();
+			// pubtypes = read_pubtypes ();
 		}
 
 		public static bool IsSupported (Bfd bfd)
@@ -1073,9 +1073,9 @@ namespace Mono.Debugger.Backend
 				public long end_offset;
 
 				public int start_file;
-				public int start_line, end_line;
+				public int end_line;
 
-				int const_add_pc_range;
+				public readonly int const_add_pc_range;
 
 				public StatementMachine (LineNumberEngine engine, long offset,
 							 long end_offset)
@@ -2996,7 +2996,7 @@ namespace Mono.Debugger.Backend
 		{
 			string name;
 			protected long offset;
-			bool resolved, ok, type_created;
+			bool resolved, type_created;
 			protected readonly Language language;
 			TargetType type;
 
@@ -3058,7 +3058,7 @@ namespace Mono.Debugger.Backend
 
 			public bool HasType {
 				get {
-					if (!resolved || !ok)
+					if (!resolved)
 						throw new InvalidOperationException ();
 					return type != null;
 				}
@@ -3542,7 +3542,7 @@ namespace Mono.Debugger.Backend
 		{
 			long type_offset;
 			DieType reference;
-			new NativeTypeAlias type;
+			NativeTypeAlias type;
 
 			public DieTypedef (DwarfBinaryReader reader, CompilationUnit comp_unit,
 					   long offset, AbbrevEntry abbrev)
@@ -3672,7 +3672,7 @@ namespace Mono.Debugger.Backend
 
 			ArrayList members;
 			NativeFieldInfo[] fields;
-			new NativeStructType type;
+			NativeStructType type;
 
 			public override bool IsComplete {
 				get { return abbrev.HasChildren; }

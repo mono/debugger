@@ -2176,7 +2176,6 @@ namespace Mono.Debugger.Frontend
 
 		private class ShowSourcesCommand : ThreadCommand
 		{
-			protected string name;
 			protected Module[] modules;
 
 			protected override bool DoResolve (ScriptingContext context)
@@ -2220,7 +2219,6 @@ namespace Mono.Debugger.Frontend
 
 		private class ShowMethodsCommand : ThreadCommand
 		{
-			protected string name;
 			protected SourceFile[] sources;
 
 			protected override bool DoResolve (ScriptingContext context)

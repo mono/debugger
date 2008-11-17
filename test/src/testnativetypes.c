@@ -122,7 +122,7 @@ test_bitfield (void)
 	bitfield.e = 15;
 	bitfield.f = 8;
 
-	printf ("Bitfield: %x\n", * ((int *) &bitfield)); // @MDB BREAKPOINT: bitfield
+	printf ("Bitfield: %d\n", bitfield.b); // @MDB BREAKPOINT: bitfield
 }
 
 void

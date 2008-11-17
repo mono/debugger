@@ -842,7 +842,6 @@ namespace Mono.Debugger.Tests
 
 		public object EvaluateExpression (Thread thread, string expression)
 		{
-			string text = null;
 			try {
 				ScriptingContext context = GetContext (thread);
 				object obj = EvaluateExpression (context, expression);

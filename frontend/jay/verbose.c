@@ -42,6 +42,7 @@ static char sccsid[] = "@(#)verbose.c	5.3 (Berkeley) 1/20/91";
 
 static short *null_rules;
 
+void
 verbose()
 {
     register int i;

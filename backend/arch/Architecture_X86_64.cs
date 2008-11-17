@@ -555,7 +555,7 @@ namespace Mono.Debugger.Architectures
 
 			lmf_address = reader.ReadTargetAddress (); // prev
 			reader.ReadTargetAddress ();
-			TargetAddress method = reader.ReadTargetAddress (); // method
+			reader.ReadTargetAddress (); // method
 			TargetAddress rip = reader.ReadTargetAddress ();
 
 			if (lmf_address.IsNull)
@@ -580,6 +580,7 @@ namespace Mono.Debugger.Architectures
 				regs [(int) X86_Register.RIP].SetValue (lmf + 24, rip);
 				regs [(int) X86_Register.RBP].SetValue (rbp, new_rbp);
 				rbp = new_rbp;
+				lmf_address--;
 			}
 				
 			regs [(int) X86_Register.RBX].SetValue (lmf + 32, rbx);

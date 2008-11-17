@@ -30,7 +30,7 @@ namespace Mono.Debugger.Backend
 			MonoPath = Path.Combine (Path.Combine (prefix, "bin"), "mono");
 		}
 
-		protected static bool IsMonoAssembly (string filename)
+		static bool IsMonoAssembly (string filename)
 		{
 			try {
 				using (FileStream stream = new FileStream (filename, FileMode.Open, FileAccess.Read)) {
@@ -246,7 +246,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		protected void SetupEnvironment ()
+		void SetupEnvironment ()
 		{
 			Hashtable hash = new Hashtable ();
 			AddUserEnvironment (hash);
@@ -287,7 +287,7 @@ namespace Mono.Debugger.Backend
 		}
 
 
-		protected string GetFullPath (string path)
+		string GetFullPath (string path)
 		{
 			string full_path;
 			if (path.StartsWith ("./"))
@@ -302,7 +302,7 @@ namespace Mono.Debugger.Backend
 			return full_path;
 		}
 
-		protected string print_argv (string[] argv)
+		string print_argv (string[] argv)
 		{
 			if (argv == null)
 				return "null";

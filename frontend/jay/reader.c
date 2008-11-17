@@ -89,7 +89,7 @@ int c;
     ++cinc;
 }
 
-
+void
 get_line()
 {
     register FILE *f = input_file;
@@ -153,7 +153,7 @@ dup_line()
     return (p);
 }
 
-
+void
 skip_comment()
 {
     register char *s;
@@ -304,7 +304,7 @@ keyword()
     /*NOTREACHED*/
 }
 
-
+void
 copy_text(f)
 FILE *f;
 {
@@ -685,7 +685,7 @@ get_tag(int emptyOk)
     return (s);
 }
 
-
+void
 declare_tokens(assoc)
 int assoc;
 {
@@ -747,7 +747,7 @@ int assoc;
     }
 }
 
-
+void
 declare_types()
 {
     register int c;
@@ -793,7 +793,7 @@ declare_start()
     goal = bp;
 }
 
-
+void
 read_declarations()
 {
     register int c, k;
@@ -998,7 +998,7 @@ insert_empty_rule()
     rassoc[nrules-1] = TOKEN;
 }
 
-
+void
 add_symbol()
 {
     register int c;
@@ -1029,7 +1029,7 @@ add_symbol()
     pitem[nitems-1] = bp;
 }
 
-
+void
 copy_action()
 {
     register int c;
@@ -1334,7 +1334,7 @@ read_grammar()
     end_rule();
 }
 
-
+void
 free_tags()
 {
     register int i;
@@ -1575,7 +1575,7 @@ pack_grammar()
     FREE(pitem);
 }
 
-
+void
 print_grammar()
 {
     register int i, j, k;

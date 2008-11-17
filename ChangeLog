@@ -1,3 +1,7 @@
+2008-11-17  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Add -fno-strict-aliasing to CFLAGS.
+
 2008-11-11  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/NUnit.cs

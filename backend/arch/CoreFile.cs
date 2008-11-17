@@ -89,7 +89,7 @@ namespace Mono.Debugger.Backend
 
 				long tid = reader.ReadLongInteger ();
 				TargetAddress lmf_addr = reader.ReadAddress ();
-				TargetAddress end_stack = reader.ReadAddress ();
+				reader.ReadAddress (); // end stack
 
 				ptr = reader.ReadAddress ();
 
