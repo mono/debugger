@@ -178,7 +178,6 @@ namespace Mono.Debugger
 		SourceFile file;
 		MethodSource source;
 		TargetFunctionType function;
-		string method;
 		int line;
 
 		public DynamicSourceLocation (MethodSource source)
@@ -221,9 +220,7 @@ namespace Mono.Debugger
 				return null;
 
 			if ((function == null) && (source == null)) {
-				if (method != null) {
-					source = module.FindMethod (method);
-				} else if (file != null) {
+				if (file != null) {
 					source = file.FindMethod (line);
 				} else {
 					throw new TargetException (TargetError.LocationInvalid);

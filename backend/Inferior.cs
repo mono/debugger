@@ -26,7 +26,6 @@ namespace Mono.Debugger.Backend
 		protected readonly ProcessStart start;
 
 		protected readonly BfdContainer bfd_container;
-		protected readonly SymbolTableCollection symtab_collection;
 		protected readonly ProcessServant process;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;

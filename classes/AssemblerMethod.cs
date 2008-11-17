@@ -34,14 +34,15 @@ namespace Mono.Debugger
 
 	public sealed class AssemblerMethod : MethodSource
 	{
-		protected readonly Method method;
-		protected readonly SourceBuffer buffer;
-		protected readonly int start_row, end_row;
-		protected readonly AssemblerLine[] lines;
+		readonly SourceBuffer buffer;
+		readonly int start_row, end_row;
+		readonly AssemblerLine[] lines;
+		readonly Method method;
 		ArrayList addresses;
 
 		public AssemblerMethod (Method method, AssemblerLine[] lines)
 		{
+			this.method = method;
 			this.lines = lines;
 			addresses = new ArrayList ();
 

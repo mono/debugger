@@ -453,7 +453,7 @@ namespace Mono.Debugger.Backend
 					"but expected at most {1}.", version,
 					MonoDebuggerInfo.MaxDynamicVersion);
 
-			int minor_version = header.ReadInt32 ();
+			header.ReadInt32 (); // minor version
 			header.ReadInt32 ();
 
 			int size = header.ReadInt32 ();

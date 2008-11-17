@@ -95,7 +95,6 @@ namespace Mono.Debugger.Backend
 		{
 			inferior = Inferior.CreateInferior (manager, process, start);
 
-			is_main = true;
 			if (start.PID != 0) {
 				this.pid = start.PID;
 				inferior.Attach (pid);
@@ -285,7 +284,6 @@ namespace Mono.Debugger.Backend
 					Report.Debug (DebugFlags.SSE, "{0} back in managed land: {1}",
 						      this, inferior.CurrentFrame);
 
-					Inferior.StackFrame sframe = inferior.GetCurrentFrame ();
 					Method method = Lookup (inferior.CurrentFrame);
 
 					bool is_managed = (method != null) && method.Module.Language.IsManaged;
@@ -2144,7 +2142,7 @@ namespace Mono.Debugger.Backend
 		Hashtable exception_handlers;
 		bool engine_stopped;
 		bool stop_requested;
-		bool is_main, reached_main;
+		bool reached_main;
 		bool killed, dead;
 		long tid;
 		int pid;
@@ -2451,13 +2449,11 @@ namespace Mono.Debugger.Backend
 		protected override void DoExecute ()
 		{ }
 
-		bool initialized;
-
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} start: {1} {2} {3} {4}", sse, initialized,
+				      "{0} start: {1} {2} {3}", sse,
 				      cevent, sse.ProcessServant.IsAttached,
 				      inferior.CurrentFrame);
 

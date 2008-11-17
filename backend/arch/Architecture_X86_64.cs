@@ -555,7 +555,7 @@ namespace Mono.Debugger.Architectures
 
 			lmf_address = reader.ReadTargetAddress (); // prev
 			reader.ReadTargetAddress ();
-			TargetAddress method = reader.ReadTargetAddress (); // method
+			reader.ReadTargetAddress (); // method
 			TargetAddress rip = reader.ReadTargetAddress ();
 
 			if (lmf_address.IsNull)

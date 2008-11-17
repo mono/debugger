@@ -17,8 +17,8 @@ namespace Mono.Debugger.Languages.Mono
 
 		TargetAddress address;
 
-		protected MonoVariableLocation (bool is_regoffset, Register register,
-						long regoffset, bool is_byref)
+		MonoVariableLocation (bool is_regoffset, Register register,
+				      long regoffset, bool is_byref)
 		{
 			this.is_regoffset = is_regoffset;
 			this.register = register;

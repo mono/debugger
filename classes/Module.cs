@@ -395,7 +395,7 @@ namespace Mono.Debugger
 			get { return SymbolFile.HasDebuggingInfo; }
 		}
 
-		protected void OnModuleChanged ()
+		void OnModuleChanged ()
 		{
 			if (symfile != null)
 				symfile.OnModuleChanged ();

@@ -172,7 +172,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected Register[] GetRegisters (int[] indices)
+		Register[] GetRegisters (int[] indices)
 		{
 			Register[] retval = new Register [indices.Length];
 			for (int i = 0; i < indices.Length; i++)
@@ -228,10 +228,10 @@ namespace Mono.Debugger
 	[Serializable]
 	public sealed class StackFrame : DebuggerMarshalByRefObject
 	{
-		protected readonly TargetAddress address;
-		protected readonly TargetAddress stack_pointer;
-		protected readonly TargetAddress frame_address;
-		protected readonly Registers registers;
+		readonly TargetAddress address;
+		readonly TargetAddress stack_pointer;
+		readonly TargetAddress frame_address;
+		readonly Registers registers;
 
 		int level;
 		Method method;
