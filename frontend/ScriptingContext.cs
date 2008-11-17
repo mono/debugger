@@ -173,44 +173,11 @@ namespace Mono.Debugger.Frontend
 
 		string MonoObjectToString (TargetStructObject obj)
 		{
-			TargetStructObject cobj = obj;
-
-		again:
-			TargetStructType ctype = cobj.Type;
-			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
-				return null;
-
-			TargetClass klass = ctype.GetClass (CurrentThread);
-			TargetMethodInfo[] methods = klass.GetMethods (CurrentThread);
-			if (methods == null)
-				return null;
-
-			foreach (TargetMethodInfo minfo in methods) {
-				if (minfo.Name != "ToString")
-					continue;
-
-				TargetFunctionType ftype = minfo.Type;
-				if (ftype.ParameterTypes.Length != 0)
-					continue;
-				if (ftype.ReturnType != ftype.Language.StringType)
-					continue;
-
-				RuntimeInvokeResult result = CurrentThread.RuntimeInvoke (
-					ftype, obj, new TargetObject [0], true, false);
-
-				Interpreter.Wait (result);
-				if ((result.ExceptionMessage != null) || (result.ReturnObject == null))
-					return null;
-
-				TargetObject retval = (TargetObject) result.ReturnObject;
-				object value = ((TargetFundamentalObject) retval).GetObject (CurrentThread);
-				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
-			}
-
-			cobj = cobj.GetParentObject (CurrentThread) as TargetStructObject;
-			if (cobj != null)
-				goto again;
-
+			string text;
+			ExpressionParser.EvaluationResult result;
+			result = ExpressionParser.MonoObjectToString (CurrentThread, obj, -1, out text);
+			if (result == ExpressionParser.EvaluationResult.Ok)
+				return text;
 			return null;
 		}
 
