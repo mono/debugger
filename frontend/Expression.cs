@@ -164,6 +164,7 @@ namespace Mono.Debugger.Frontend
 			Timeout
 		}
 
+		[Obsolete("This is not an official API in 2.2, it has already been replaced in trunk.")]
 		public static EvaluationResult MonoObjectToString (Thread thread, TargetStructObject obj,
 								   int timeout, out string result)
 		{
