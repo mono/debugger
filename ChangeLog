@@ -1,3 +1,17 @@
+2008-11-19  Martin Baulig  <martin@ximian.com>
+
+	* interface/Report.cs
+	(DebugFlags.GUI): Add new debug flags.
+
+	* classes/ExpressionEvaluator.cs
+	(ExpressionEvaluator.MonoObjectToString): Abort the invocation if
+	we stop unexpectedly.
+
+	* classes/GUIManager.cs
+	(GUIManager.MonoObjectToString): New public method; call
+	ExpressionEvaluator.MonoObjectToString() and suppress sending any
+	events if we stop unexpectedly.
+
 2008-11-17  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionEvaluator.cs: New file.

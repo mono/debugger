@@ -53,8 +53,10 @@ namespace Mono.Debugger
 					if (rti.ExceptionMessage != null) {
 						result = rti.ExceptionMessage;
 						return EvaluationResult.Exception;
-					} else if (rti.ReturnObject == null)
+					} else if (rti.ReturnObject == null) {
+						thread.AbortInvocation ();
 						return EvaluationResult.UnknownError;
+					}
 				} catch (TargetException ex) {
 					result = ex.ToString ();
 					return EvaluationResult.UnknownError;

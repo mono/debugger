@@ -11,6 +11,8 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
+	using EE = ExpressionEvaluator;
+
 	public class GUIManager : DebuggerMarshalByRefObject
 	{
 		public Process Process {
@@ -27,6 +29,7 @@ namespace Mono.Debugger
 		Queue<Event> event_queue;
 
 		bool break_mode;
+		bool suppress_events;
 
 		public event TargetEventHandler TargetEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
@@ -57,11 +60,12 @@ namespace Mono.Debugger
 			case TargetEventType.TargetStopped:
 			case TargetEventType.UnhandledException:
 			case TargetEventType.Exception:
-				handle_autostop_event (sse, args);
+				if (!suppress_events)
+					handle_autostop_event (sse, args);
 				break;
 
 			case TargetEventType.TargetInterrupted:
-				if (!break_mode) {
+				if (!break_mode && !suppress_events) {
 					args = new TargetEventArgs (TargetEventType.TargetStopped, 0);
 					handle_autostop_event (sse, args);
 				}
@@ -159,6 +163,24 @@ namespace Mono.Debugger
 		public void StepOut (Thread thread)
 		{
 			QueueEvent (new StepOutEvent { Manager = this, Thread = thread });
+		}
+
+		public EE.EvaluationResult MonoObjectToString (Thread thread, TargetStructObject obj,
+							       int timeout, out string text)
+		{
+			if (!break_mode)
+				throw new InvalidOperationException ();
+
+			EE.EvaluationResult result;
+
+			try {
+				suppress_events = true;
+				result = EE.MonoObjectToString (thread, obj, timeout, out text);
+			} finally {
+				suppress_events = false;
+			}
+
+			return result;
 		}
 
 		void ProcessRunEvent (RunEvent e)

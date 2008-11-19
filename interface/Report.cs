@@ -23,7 +23,8 @@ namespace Mono.Debugger
 		SourceFiles		= 1024,
 		DwarfReader             = 2048,
 		Remoting		= 4096,
-		NUnit			= 8192
+		NUnit			= 8192,
+		GUI			= 16384
 	}
 
 	public static class Report
@@ -101,6 +102,9 @@ namespace Mono.Debugger
 					break;
 				case "nunit":
 					flags |= DebugFlags.NUnit;
+					break;
+				case "gui":
+					flags |= DebugFlags.GUI;
 					break;
 				default:
 					return false;
@@ -181,6 +185,14 @@ namespace Mono.Debugger
 			else
 				writer = new StreamWriter (Console.OpenStandardError ());
 			writer.AutoFlush = true;
+		}
+
+		public DebugFlags DebugFlags {
+			get { return flags; }
+		}
+
+		public string FileName {
+			get { return file; }
 		}
 
 		public bool PrintToConsole {
