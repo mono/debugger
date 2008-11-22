@@ -36,6 +36,8 @@ namespace Mono.Debugger
 
 		public void StartGUIManager ()
 		{
+			Process.Session.Config.StopOnManagedSignals = false;
+
 			event_queue = new Queue<Event> ();
 			manager_event = new ST.AutoResetEvent (false);
 			manager_thread = new ST.Thread (new ST.ThreadStart (manager_thread_main));

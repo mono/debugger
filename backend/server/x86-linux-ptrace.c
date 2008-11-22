@@ -336,6 +336,13 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 	sinfo->sigint = SIGINT;
 	sinfo->sigchld = SIGCHLD;
 
+	sinfo->sigfpe = SIGFPE;
+	sinfo->sigquit = SIGQUIT;
+	sinfo->sigabrt = SIGABRT;
+	sinfo->sigsegv = SIGSEGV;
+	sinfo->sigill = SIGILL;
+	sinfo->sigbus = SIGBUS;
+
 	/* __SIGRTMIN is the hard limit from the kernel, SIGRTMIN is the first
 	 * user-visible real-time signal.  __SIGRTMIN and __SIGRTMIN+1 are used
 	 * internally by glibc. */

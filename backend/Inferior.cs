@@ -258,6 +258,13 @@ namespace Mono.Debugger.Backend
 			public int SIGINT;
 			public int SIGCHLD;
 
+			public int SIGFPE;
+			public int SIGQUIT;
+			public int SIGABRT;
+			public int SIGSEGV;
+			public int SIGILL;
+			public int SIGBUS;
+
 			public int Kernel_SIGRTMIN;
 			public int MonoThreadAbortSignal;
 
@@ -1549,6 +1556,19 @@ namespace Mono.Debugger.Backend
 
 				return signal_info.SIGCHLD;
 			}
+		}
+
+		public bool IsManagedSignal (int signal)
+		{
+			if (!has_signals)
+				throw new InvalidOperationException ();
+
+			if ((signal == signal_info.SIGFPE) || (signal == signal_info.SIGQUIT) ||
+			    (signal == signal_info.SIGABRT) || (signal == signal_info.SIGSEGV) ||
+			    (signal == signal_info.SIGILL) || (signal == signal_info.SIGBUS))
+				return true;
+
+			return false;
 		}
 
 		/*

@@ -109,6 +109,8 @@ namespace Mono.Debugger
 					FollowFork = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "OpaqueFileNames")
 					OpaqueFileNames = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "StopOnManagedSignals")
+					StopOnManagedSignals = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "Martin_Boston_07102008")
 					Private_Martin_Boston_07102008 = Boolean.Parse (iter.Current.Value);
 				else
@@ -159,6 +161,10 @@ namespace Mono.Debugger
 				opaque_file_names_e.InnerText = OpaqueFileNames ? "true" : "false";
 				element.AppendChild (opaque_file_names_e);
 
+				XmlElement stop_on_signals_e = doc.CreateElement ("StopOnManagedSignals");
+				stop_on_signals_e.InnerText = StopOnManagedSignals ? "true" : "false";
+				element.AppendChild (stop_on_signals_e);
+
 				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
 				doc.DocumentElement.AppendChild (module_groups);
 
@@ -176,6 +182,7 @@ namespace Mono.Debugger
 		bool notify_thread_creation = true;
 		bool hide_auto_generated = false;
 		bool opaque_file_names = false;
+		bool stop_on_managed_signals = true;
 		bool is_xsp = false;
 		Hashtable module_groups;
 		Dictionary<string,string> directory_maps;
@@ -285,6 +292,11 @@ namespace Mono.Debugger
 			set { opaque_file_names = value; }
 		}
 
+		public bool StopOnManagedSignals {
+			get { return stop_on_managed_signals; }
+			set { stop_on_managed_signals = value; }
+		}
+
 		public bool Private_Martin_Boston_07102008 {
 			get; set;
 		}
@@ -319,10 +331,13 @@ namespace Mono.Debugger
 		public string PrintConfiguration (bool expert_mode)
 		{
 			StringBuilder sb = new StringBuilder ("Debugger Configuration:\n");
-			sb.Append (String.Format ("  Load native symtabs (native-symtabs):  {0}\n",
+			sb.Append (String.Format ("  Load native symtabs (native-symtabs):               {0}\n",
 						  LoadNativeSymtabs ? "yes" : "no"));
-			sb.Append (String.Format ("  Follow fork (follow-fork):             {0}\n",
+			sb.Append (String.Format ("  Follow fork (follow-fork):                          {0}\n",
 						  FollowFork ? "yes" : "no"));
+			sb.Append (String.Format ("  Stop on managed signals (stop-on-managed-signals):  {0}\n",
+						  StopOnManagedSignals ? "yes" : "no"));
+						  
 			if (expert_mode) {
 				sb.Append ("\nExpert Settings:\n");
 				sb.Append (String.Format ("  Broken threading (broken-threading):   {0}\n",

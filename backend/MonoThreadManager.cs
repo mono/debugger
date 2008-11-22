@@ -379,6 +379,14 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) && (cevent.Argument != 0) && !
+			    engine.Process.Session.Config.StopOnManagedSignals) {
+				if (inferior.IsManagedSignal ((int) cevent.Argument)) {
+					resume_target = true;
+					return true;
+				}
+			}
+
 			resume_target = false;
 			return false;
 		}

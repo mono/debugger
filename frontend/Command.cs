@@ -3714,6 +3714,10 @@ namespace Mono.Debugger.Frontend
 					config.FollowFork = enable;
 					break;
 
+				case "stop-on-managed-signals":
+					config.StopOnManagedSignals = enable;
+					break;
+
 				case "broken-threading":
 					if (!expert_mode)
 						throw new ScriptingException (

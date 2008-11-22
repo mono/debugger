@@ -96,6 +96,12 @@ typedef struct {
 	int sigstop;
 	int sigint;
 	int sigchld;
+	int sigfpe;
+	int sigquit;
+	int sigabrt;
+	int sigsegv;
+	int sigill;
+	int sigbus;
 	int kernel_sigrtmin;
 	int mono_thread_abort;
 } SignalInfo;
