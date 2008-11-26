@@ -63,8 +63,7 @@ namespace Mono.Debugger
 				}
 
 				TargetObject retval = (TargetObject) rti.ReturnObject;
-				object value = ((TargetFundamentalObject) retval).GetObject (thread);
-				result = String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, value);
+				result = (string) ((TargetFundamentalObject) retval).GetObject (thread);
 				return EvaluationResult.Ok;
 			}
 
@@ -73,6 +72,43 @@ namespace Mono.Debugger
 				goto again;
 
 			return EvaluationResult.MethodNotFound;
+		}
+
+		public static EvaluationResult GetProperty (Thread thread, TargetPropertyInfo property,
+							    TargetStructObject instance, int timeout,
+							    out string error, out TargetObject result)
+		{
+			error = null;
+
+			RuntimeInvokeResult rti;
+			try {
+				rti = thread.RuntimeInvoke (
+					property.Getter, instance, new TargetObject [0], true, false);
+
+				if (!rti.CompletedEvent.WaitOne (timeout, false)) {
+					rti.Abort ();
+					rti.CompletedEvent.WaitOne ();
+					thread.AbortInvocation ();
+					result = null;
+					return EvaluationResult.Timeout;
+				}
+
+				result = (TargetObject) rti.ReturnObject;
+
+				if (rti.ExceptionMessage != null) {
+					error = rti.ExceptionMessage;
+					return EvaluationResult.Exception;
+				} else if (rti.ReturnObject == null) {
+					thread.AbortInvocation ();
+					return EvaluationResult.UnknownError;
+				}
+
+				return EvaluationResult.Ok;
+			} catch (TargetException ex) {
+				result = null;
+				error = ex.ToString ();
+				return EvaluationResult.UnknownError;
+			}
 		}
 	}
 }

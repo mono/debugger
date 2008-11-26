@@ -1,3 +1,20 @@
+2008-11-26  Martin Baulig  <martin@ximian.com>
+
+	* classes/ExpressionEvaluator.cs
+	(ExpressionEvaluator.MonoObjectToString): Return the `raw'
+	returned string rather than pretty formatting it.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.MonoObjectToString): Do that here.
+
+2008-11-26  Martin Baulig  <martin@ximian.com>
+
+	* classes/ExpressionEvaluator.cs
+	(ExpressionEvaluator.GetProperty): New public method.
+
+	* classes/GUIManager.cs
+	(GUIManager.GetProperty): New public method.
+
 2008-11-22  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/server.h

@@ -185,6 +185,26 @@ namespace Mono.Debugger
 			return result;
 		}
 
+		public EE.EvaluationResult GetProperty (Thread thread, TargetPropertyInfo property,
+							TargetStructObject instance, int timeout,
+							out string error, out TargetObject value)
+		{
+			if (!break_mode)
+				throw new InvalidOperationException ();
+
+			EE.EvaluationResult result;
+
+			try {
+				suppress_events = true;
+				result = EE.GetProperty (thread, property, instance, timeout,
+							 out error, out value);
+			} finally {
+				suppress_events = false;
+			}
+
+			return result;
+		}
+
 		void ProcessRunEvent (RunEvent e)
 		{
 			break_mode = false;

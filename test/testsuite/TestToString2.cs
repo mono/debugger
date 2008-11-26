@@ -41,9 +41,8 @@ namespace Mono.Debugger.Tests
 
 			if (result != ExpressionEvaluator.EvaluationResult.Ok)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
-			if (text != "(Foo) { \"Foo (5)\" }")
+			if (text != "Foo (5)")
 				Assert.Fail ("Failed to print `a': got result {0}", text);
-
 
 			result = ExpressionEvaluator.MonoObjectToString (thread, b, 1000, out text);
 			if (result != ExpressionEvaluator.EvaluationResult.Timeout)

@@ -177,7 +177,7 @@ namespace Mono.Debugger.Frontend
 			ExpressionEvaluator.EvaluationResult result;
 			result = ExpressionEvaluator.MonoObjectToString (CurrentThread, obj, -1, out text);
 			if (result == ExpressionEvaluator.EvaluationResult.Ok)
-				return text;
+				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, text);
 			return null;
 		}
 
