@@ -1,5 +1,14 @@
 2008-11-26  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetMember.cs
+	(TargetFieldInfo.IsCompilerGenerated): New public property.
+
+	* frontend/ObjectFormatter.cs
+	(ObjectFormatter.FormatClassObject): Skip compiler-generated
+	fields.	
+
+2008-11-26  Martin Baulig  <martin@ximian.com>
+
 	* classes/ExpressionEvaluator.cs
 	(ExpressionEvaluator.MonoObjectToString): Return the `raw'
 	returned string rather than pretty formatting it.

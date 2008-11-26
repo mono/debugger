@@ -31,6 +31,10 @@ namespace Mono.Debugger.Languages.Native
 			this.const_value = const_value;
 		}
 
+		public override bool IsCompilerGenerated {
+			get { return false; }
+		}
+
 		public override object ConstValue {
 			get {
 				if (!HasConstValue)

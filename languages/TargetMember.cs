@@ -79,6 +79,10 @@ namespace Mono.Debugger.Languages
 			this.HasConstValue = has_const_value;
 		}
 
+		public abstract bool IsCompilerGenerated {
+			get;
+		}
+
 		public abstract object ConstValue {
 			get;
 		}

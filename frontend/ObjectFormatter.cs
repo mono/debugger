@@ -237,6 +237,8 @@ namespace Mono.Debugger.Frontend
 			for (int i = 0; i < fields.Length; i++) {
 				if (fields [i].IsStatic || fields [i].HasConstValue)
 					continue;
+				if (fields [i].IsCompilerGenerated)
+					continue;
 
 				if (!first) {
 					Append (", ");

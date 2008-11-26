@@ -9,6 +9,9 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
+		bool is_compiler_generated;
+
+		const string cgen_attr = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
 
 		public MonoFieldInfo (IMonoStructType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
@@ -16,6 +19,12 @@ namespace Mono.Debugger.Languages.Mono
 				GetAccessibility (finfo), pos, 0, finfo.HasConstant)
 		{
 			FieldInfo = finfo;
+
+			foreach (Cecil.CustomAttribute cattr in finfo.CustomAttributes) {
+				string cname = cattr.Constructor.DeclaringType.FullName;
+				if (cname == cgen_attr)
+					is_compiler_generated = true;
+			}
 		}
 
 		internal static TargetMemberAccessibility GetAccessibility (Cecil.FieldDefinition field)
@@ -32,6 +41,10 @@ namespace Mono.Debugger.Languages.Mono
 			default:
 				return TargetMemberAccessibility.Private;
 			}
+		}
+
+		public override bool IsCompilerGenerated {
+			get { return is_compiler_generated; }
 		}
 
 		public override object ConstValue {
