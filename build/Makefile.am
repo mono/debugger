@@ -174,7 +174,13 @@ uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /u Mono.Debugger.SymbolWriter $(GACUTIL_FLAGS) || exit 1;
 
+if HAVE_NUNIT_2_3
+STANDARD_NUNIT_CONSOLE_FLAGS = -noshadow -labels -exclude:$(EXCLUDED_TESTS)
+NUNIT_CONSOLE_FLAGS = -noshadow
+else
+STANDARD_NUNIT_CONSOLE_FLAGS = /labels /exclude:$(EXCLUDED_TESTS)
 NUNIT_CONSOLE_FLAGS =
+endif
 
 verify-local: mdb-symbolreader.exe $(TEST_CASE_SRCLIST)
 	$(MONO) --debug mdb-symbolreader.exe $(TEST_CASE_EXELIST)
@@ -183,6 +189,6 @@ check-local: Mono.Debugger.Test.dll runtests $(TEST_CASE_SRCLIST) verify-local
 #	$(builddir)/runtests /output:TestResult.log /exclude:$(EXCLUDED_TESTS) /xml:TestResult.xml || ok=false; \
 #	(echo ''; cat TestResult.log) | sed '1,/^Tests run: /d'; \
 #	$$ok
-	$(builddir)/runtests /labels /exclude:$(EXCLUDED_TESTS) || ok=false; \
+	$(builddir)/runtests $(STANDARD_NUNIT_CONSOLE_FLAGS) || ok=false; \
 	$$ok
 

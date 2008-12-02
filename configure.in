@@ -212,6 +212,7 @@ if test "x$have_target_mono" = "xyes" ; then
   TARGET_MCS="$target_mono_prefix/bin/gmcs"
   TARGET_MONO="$target_mono_prefix/bin/mono"
   NUNIT_PREFIX="$target_mono_prefix"
+  NUNIT_VERSION=2.3
 else
   TARGET_MCS="$MCS"
   TARGET_MONO="$MONO"
@@ -223,11 +224,14 @@ else
     AC_MSG_ERROR([Cannot find mono-nunit (mono-unit.pc for packageconfig)])
   fi
   NUNIT_PREFIX=`pkg-config --variable=prefix mono-nunit`
+  NUNIT_VERSION=`pkg-config --modversion mono-nunit`
 fi
 NUNIT_PREFIX=`cd $NUNIT_PREFIX && pwd`
 AC_SUBST(TARGET_MCS)
 AC_SUBST(TARGET_MONO)
 AC_SUBST(NUNIT_PREFIX)
+
+AM_CONDITIONAL(HAVE_NUNIT_2_3, test "x$NUNIT_VERSION" = "x2.3")
 
 real_top_srcdir=`pwd`
 AC_SUBST(real_top_srcdir)
