@@ -107,6 +107,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("Test")]
 		[Category("Session")]
 		public void TestBreakpoint ()
 		{
