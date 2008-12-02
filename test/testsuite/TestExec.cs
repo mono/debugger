@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using NUnit.Framework;
 
 using Mono.Debugger;
@@ -20,18 +21,30 @@ namespace Mono.Debugger.Tests
 
 		int bpt_main;
 
+		public override void SetUp ()
+		{
+			base.SetUp ();
+
+			bpt_main = AssertBreakpoint ("-local " + line_main_3);
+		}
+
 		[Test]
 		[Category("Native")]
 		[Category("Fork")]
 		public void NativeChild ()
 		{
+			Interpreter.Options.File = Path.Combine (BuildDirectory, "TestExec.exe");
+			Interpreter.Options.InferiorArgs = new string [] {
+				Path.Combine (BuildDirectory, "testnativechild")
+			};
+
+
 			Process process = Start ();
 			Assert.IsTrue (process.IsManaged);
 			Assert.IsTrue (process.MainThread.IsStopped);
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(string[])", line_main);
-			bpt_main = AssertBreakpoint ("-local " + line_main_3);
 			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -97,9 +110,9 @@ namespace Mono.Debugger.Tests
 		[Category("Fork")]
 		public void ManagedChild ()
 		{
-			Interpreter.Options.File = BuildDirectory + "/TestExec.exe";
+			Interpreter.Options.File = Path.Combine (BuildDirectory, "TestExec.exe");
 			Interpreter.Options.InferiorArgs = new string [] {
-				MonoExecutable, BuildDirectory + "/TestChild.exe"
+				MonoExecutable, Path.Combine (BuildDirectory, "TestChild.exe")
 			};
 
 			Process process = Start ();
@@ -108,8 +121,6 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(string[])", line_main);
-			if (bpt_main == 0)
-				bpt_main = AssertBreakpoint ("-local " + line_main_3);	
 			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();

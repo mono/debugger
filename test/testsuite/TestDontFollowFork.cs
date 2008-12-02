@@ -24,6 +24,8 @@ namespace Mono.Debugger.Tests
 		{
 			base.SetUp ();
 			Config.FollowFork = false;
+
+			bpt_main = AssertBreakpoint ("-local " + line_main_3);
 		}
 
 		[Test]
@@ -40,7 +42,6 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(string[])", line_main);
-			bpt_main = AssertBreakpoint ("-local " + line_main_3);
 			AssertExecute ("continue -wait");
 
 			AssertHitBreakpoint (thread, bpt_main,"X.Main(string[])", line_main_3);
@@ -66,8 +67,6 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main(string[])", line_main);
-			if (bpt_main == 0)
-				bpt_main = AssertBreakpoint ("-local " + line_main_3);
 			AssertExecute ("continue -wait");
 
 			AssertHitBreakpoint (thread, bpt_main,"X.Main(string[])", line_main_3)

@@ -1,5 +1,14 @@
 2008-12-02  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/*.cs: If there is more than one test in one file,
+	NUnit 2.3 may run them in any random order.
+
+	* backend/BreakpointManager.cs
+	(BreakpointManager.InitializeAfterFork): Remove all non-global
+	breakpoint, but don't force them to be `SourceBreakpoint's.
+
+2008-12-02  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Check which NUnit version we're using.
 
 	* build/Makefile.am: Add support for NUnit 2.3.

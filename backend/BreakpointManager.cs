@@ -197,16 +197,13 @@ namespace Mono.Debugger.Backend
 					BreakpointEntry entry = (BreakpointEntry) index_hash [idx];
 					SourceBreakpoint bpt = entry.Handle.Breakpoint as SourceBreakpoint;
 
-					if ((bpt == null) || !bpt.ThreadGroup.IsSystem) {
+					if (!entry.Handle.Breakpoint.ThreadGroup.IsGlobal) {
 						try {
 							inferior.RemoveBreakpoint (idx);
 						} catch (Exception ex) {
 							Report.Error ("Removing breakpoint {0} failed: {1}",
 								      idx, ex);
 						}
-					} else if (bpt.ThreadGroup.IsGlobal) {
-						Breakpoint new_bpt = bpt.Clone (idx);
-						inferior.Process.Session.AddEvent (new_bpt);
 					}
 				}
 			} finally {
