@@ -50,6 +50,11 @@ namespace Mono.Debugger
 						return EvaluationResult.Timeout;
 					}
 
+					if (rti.Result is Exception) {
+						result = ((Exception) rti.Result).Message;
+						return EvaluationResult.UnknownError;
+					}
+
 					if (rti.ExceptionMessage != null) {
 						result = rti.ExceptionMessage;
 						return EvaluationResult.Exception;
@@ -91,6 +96,12 @@ namespace Mono.Debugger
 					thread.AbortInvocation ();
 					result = null;
 					return EvaluationResult.Timeout;
+				}
+
+				if (rti.Result is Exception) {
+					result = null;
+					error = ((Exception) rti.Result).Message;
+					return EvaluationResult.UnknownError;
 				}
 
 				result = (TargetObject) rti.ReturnObject;
