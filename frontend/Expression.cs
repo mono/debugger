@@ -1524,6 +1524,7 @@ namespace Mono.Debugger.Frontend
 		private long GetValue (ScriptingContext context, Expression expr)
 		{
 			object val = expr.Evaluate (context);
+		again:
 			if (val is int)
 				return (long) (int) val;
 			else if (val is uint)
@@ -1535,8 +1536,14 @@ namespace Mono.Debugger.Frontend
 			else if (val is TargetPointerObject) {
 				TargetPointerObject pobj = (TargetPointerObject) val;
 				return pobj.GetAddress (context.CurrentThread).Address;
-			} else
-				throw new ScriptingException ("Cannot evaluate expression `{0}'", expr);
+			} else if (val is TargetFundamentalObject) {
+				TargetFundamentalObject fobj = (TargetFundamentalObject) val;
+				val = fobj.GetObject (context.CurrentThread);
+				if (!(val is TargetFundamentalObject))
+					goto again;
+			}
+
+			throw new ScriptingException ("Cannot evaluate expression `{0}'", expr.Name);
 		}
 
 		protected override object DoEvaluate (ScriptingContext context)
@@ -1547,6 +1554,8 @@ namespace Mono.Debugger.Frontend
 			try {
 				long retval = DoEvaluate (context, lvalue, rvalue);
 				return new NumberExpression (retval);
+			} catch (DivideByZeroException) {
+				throw new ScriptingException ("DivisionByZero");
 			} catch {
 				throw new ScriptingException ("Cannot evaluate expression `{0}'", Name);
 			}
