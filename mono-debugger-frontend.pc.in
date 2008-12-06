@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+
+
+Name: Mono.Debugger.Frontend
+Description: PRIVATE - Use only for VisualStudio
+Version: @VERSION@
+Libs: -r:${prefix}/lib/mono/mono-debugger/Mono.Debugger.Frontend.dll

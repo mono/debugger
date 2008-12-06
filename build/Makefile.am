@@ -168,10 +168,12 @@ runtests: runtests.in Makefile
 
 install-data-local:
 	$(GACUTIL) /i Mono.Debugger.dll /f $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /i Mono.Debugger.Frontend.dll /f $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /i Mono.Debugger.SymbolWriter.dll /f $(GACUTIL_FLAGS) || exit 1;
 
 uninstall-local:
 	$(GACUTIL) /u Mono.Debugger $(GACUTIL_FLAGS) || exit 1;
+	$(GACUTIL) /u Mono.Debugger.Frontend $(GACUTIL_FLAGS) || exit 1;
 	$(GACUTIL) /u Mono.Debugger.SymbolWriter $(GACUTIL_FLAGS) || exit 1;
 
 if HAVE_NUNIT_2_3

@@ -1,3 +1,9 @@
+2008-12-06  Martin Baulig  <martin@ximian.com>
+
+	* mono-debugger-frontend.pc.in: New file.
+
+	* configure.in: Create `mono-debugger-frontend.pc' for Visual Studio.
+
 2008-12-03  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionEvaluator.cs: Add some more error checking.
