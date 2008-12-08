@@ -1,3 +1,11 @@
+2008-12-08  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/i386-arch.c (x86_arch_child_stopped): Send
+	`STOP_ACTION_STOPPED' without checking for breakpoint if we didn't
+	receive a SIGTRAP.
+
+	* backend/server/x86_64-arch.c (x86_arch_child_stopped): Likewise.
+
 2008-12-06  Martin Baulig  <martin@ximian.com>
 
 	* mono-debugger-frontend.pc.in: New file.
