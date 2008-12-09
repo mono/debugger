@@ -1,3 +1,8 @@
+2008-12-09  Martin Baulig  <martin@ximian.com>
+
+	* languages/native/NativeLanguage.cs
+	(NativeLanguage.CreateInstance): Add support for some very basic types.
+
 2008-12-08  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/i386-arch.c (x86_arch_child_stopped): Send

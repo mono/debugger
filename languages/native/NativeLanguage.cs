@@ -8,8 +8,10 @@ namespace Mono.Debugger.Languages.Native
 	internal class NativeLanguage : Language
 	{
 		BfdContainer bfd_container;
+		TargetFundamentalType unsigned_type;
 		TargetFundamentalType integer_type;
 		TargetFundamentalType long_type;
+		TargetFundamentalType ulong_type;
 		NativePointerType pointer_type;
 		NativeOpaqueType void_type;
 		NativeStringType string_type;
@@ -21,7 +23,9 @@ namespace Mono.Debugger.Languages.Native
 			this.info = info;
 
 			integer_type = new NativeFundamentalType (this, "int", FundamentalKind.Int32, 4);
+			unsigned_type = new NativeFundamentalType (this, "unsigned int", FundamentalKind.UInt32, 4);
 			long_type = new NativeFundamentalType (this, "long", FundamentalKind.Int64, 8);
+			ulong_type = new NativeFundamentalType (this, "unsigned long", FundamentalKind.UInt64, 8);
 			pointer_type = new NativePointerType (this, "void *", info.TargetAddressSize);
 			void_type = new NativeOpaqueType (this, "void", 0);
 			string_type = new NativeStringType (this, info.TargetAddressSize);
@@ -89,14 +93,32 @@ namespace Mono.Debugger.Languages.Native
 			return bfd_container.LookupType (name);
 		}
 
-		public override bool CanCreateInstance (Type type)
+		TargetFundamentalType GetFundamentalType (Type type)
 		{
-			return false;
+			if (type == typeof (int))
+				return integer_type;
+			else if (type == typeof (uint))
+				return unsigned_type;
+			else if (type == typeof (long))
+				return long_type;
+			else if (type == typeof (ulong))
+				return ulong_type;
+			else
+				return null;
 		}
 
-		public override TargetFundamentalObject CreateInstance (Thread target, object value)
+		public override bool CanCreateInstance (Type type)
 		{
-			throw new InvalidOperationException ();
+			return GetFundamentalType (type) != null;
+		}
+
+		public override TargetFundamentalObject CreateInstance (Thread thread, object obj)
+		{
+			TargetFundamentalType type = GetFundamentalType (obj.GetType ());
+			if (type == null)
+				return null;
+
+			return type.CreateInstance (thread, obj);
 		}
 
 		public override TargetPointerObject CreatePointer (StackFrame frame,
