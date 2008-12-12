@@ -185,6 +185,11 @@ namespace Mono.Debugger.Backend
 					handle = IntPtr.Zero;
 				}
 
+				if (mutex != null) {
+					mutex.Dispose ();
+					mutex = null;
+				}
+
 				disposed = true;
 			}
 		}
