@@ -568,7 +568,7 @@ namespace Mono.Debugger.Backend
 			engine_event.Reset ();
 
 			if (current_event != null) {
-				Console.WriteLine ("FUCK: {0}", Environment.StackTrace);
+				Console.WriteLine ("Current_event is not null: {0}", Environment.StackTrace);
 				throw new InternalError ();
 			}
 

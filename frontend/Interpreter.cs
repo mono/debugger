@@ -382,12 +382,12 @@ namespace Mono.Debugger.Frontend
 
 				return current_process;
 			} catch (TargetException ex) {
-				Console.WriteLine ("FUCK: {0}", ex);
+				Console.WriteLine ("Got a TargetException during LoadSession: {0}", ex);
 				debugger.Dispose ();
 				debugger = null;
 				throw;
 			} catch (Exception ex) {
-				Console.WriteLine ("FUCK: {0}", ex);
+				Console.WriteLine ("Got an Exception during LoadSession: {0}", ex);
 				debugger.Dispose ();
 				debugger = null;
 				throw;

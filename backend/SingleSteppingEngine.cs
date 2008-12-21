@@ -1205,7 +1205,7 @@ namespace Mono.Debugger.Backend
 			check_inferior ();
 
 			if (temp_breakpoint != null)
-				throw new InternalError ("FUCK");
+				throw new InternalError ("temp_breakpoint_id != 0");
 
 			int dr_index;
 			int id = inferior.InsertHardwareBreakpoint (address, true, out dr_index);
@@ -2351,7 +2351,7 @@ namespace Mono.Debugger.Backend
 					goto case EventResult.Completed;
 
 			default:
-				throw new InternalError ("FUCK: {0} {1}", this, result);
+				throw new InternalError ("EventResult is none of Runing, Completed or CompletedCallback: {0} {1}", this, result);
 			}
 		}
 

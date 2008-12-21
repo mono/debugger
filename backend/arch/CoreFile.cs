@@ -116,7 +116,7 @@ namespace Mono.Debugger.Backend
 				}
 
 				if (!found)
-					Console.WriteLine ("FUCK!");
+					Console.WriteLine ("InternalError: did not find the address for the thread");
 			}
 		}
 
