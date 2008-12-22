@@ -2351,7 +2351,7 @@ namespace Mono.Debugger.Backend
 					goto case EventResult.Completed;
 
 			default:
-				throw new InternalError ("EventResult is none of Runing, Completed or CompletedCallback: {0} {1}", this, result);
+				throw new InternalError ("EventResult is none of Running, Completed or CompletedCallback: {0} {1}", this, result);
 			}
 		}
 
