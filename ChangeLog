@@ -1,3 +1,9 @@
+2009-01-07  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(BreakCommand.DoResolve): Don't allow any line-only breakpoints
+	before target has been started.
+
 2008-12-12  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Interpreter.cs (Interpreter.WaitAll): Reset

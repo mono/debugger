@@ -3139,10 +3139,11 @@ namespace Mono.Debugger.Frontend
 			if (Argument.IndexOf (':') > 0)
 				return true;
 
-			try {
-				UInt32.Parse (Argument);
+			uint line;
+			if (UInt32.TryParse (Argument, out line)) {
+				if (!context.Interpreter.HasTarget)
+					throw new ScriptingException ("Cannot insert breakpoint by line: no current source file.");
 				return true;
-			} catch {
 			}
 
 			Expression expr = context.Interpreter.ExpressionParser.Parse (Argument);
@@ -3200,6 +3201,7 @@ namespace Mono.Debugger.Frontend
 			} else {
 				handle = context.Interpreter.Session.InsertBreakpoint (
 					tgroup, type, Argument);
+				Console.WriteLine ("BREAK #1: {0}", Argument);
 				context.Print ("Breakpoint {0} at {1}", handle.Index, Argument);
 			}
 
