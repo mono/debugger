@@ -410,7 +410,7 @@ namespace Mono.Debugger
 			case "-debug-flags":
 				value = GetValue (ref args, ref i, ms_value);
 				if (!ParseDebugFlags (debug_options, value)) {
-					Usage ();
+					Console.WriteLine ("Unknown -debug-flags argument: {0}", ms_value);
 					Environment.Exit (1);
 				}
 				return true;

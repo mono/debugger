@@ -1,6 +1,8 @@
 2009-01-15  Martin Baulig  <martin@ximian.com>
 
-	* 
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.ParseOption): Provide more meaningful error
+	message if unknown `-debug-flags' arguments were given.
 
 2009-01-08  Martin Baulig  <martin@ximian.com>
 
