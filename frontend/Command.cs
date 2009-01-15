@@ -3136,10 +3136,17 @@ namespace Mono.Debugger.Frontend
 					return true;
 			}
 
-			if (Argument.IndexOf (':') > 0)
-				return true;
-
 			uint line;
+			int pos = Argument.IndexOf (':');
+			if (pos == 0)
+				throw new ScriptingException ("Invalid breakpoint expression");
+			else if (pos > 0) {
+				string tmp = Argument.Substring (pos+1);
+				if (!UInt32.TryParse (tmp, out line))
+					throw new ScriptingException ("Invalid breakpoint expression");
+				return true;
+			}
+
 			if (UInt32.TryParse (Argument, out line)) {
 				if (!context.Interpreter.HasTarget)
 					throw new ScriptingException ("Cannot insert breakpoint by line: no current source file.");
