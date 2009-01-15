@@ -1,5 +1,12 @@
 2009-01-15  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86_64-arch.c
+	(x86_arch_child_stopped): Fix the regression from r120992 (Dec 8th):
+	Check for callbacks first because we expect to receive a SIGSEGV
+	on the non-executable stack.
+
+2009-01-15  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerOptions.cs
 	(DebuggerOptions.ParseOption): Provide more meaningful error
 	message if unknown `-debug-flags' arguments were given.
