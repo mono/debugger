@@ -3208,7 +3208,6 @@ namespace Mono.Debugger.Frontend
 			} else {
 				handle = context.Interpreter.Session.InsertBreakpoint (
 					tgroup, type, Argument);
-				Console.WriteLine ("BREAK #1: {0}", Argument);
 				context.Print ("Breakpoint {0} at {1}", handle.Index, Argument);
 			}
 
