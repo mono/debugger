@@ -25,7 +25,8 @@ namespace Mono.Debugger.Tests
 			base.SetUp ();
 			Config.FollowFork = false;
 
-			bpt_main = AssertBreakpoint ("-local " + line_main_3);
+			bpt_main = AssertBreakpoint (
+				String.Format ("-local {0}:{1}", FileName, line_main_3));
 		}
 
 		[Test]

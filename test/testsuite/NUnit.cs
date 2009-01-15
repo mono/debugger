@@ -568,7 +568,7 @@ namespace Mono.Debugger.Tests
 
 		public int AssertBreakpoint (int location)
 		{
-			return AssertBreakpoint (location.ToString ());
+			return AssertBreakpoint (String.Format ("{0}:{1}", FileName, location));
 		}
 
 		public int AssertBreakpoint (string location)
