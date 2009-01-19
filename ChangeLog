@@ -1,3 +1,17 @@
+2009-01-19  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoVariable.cs
+	(MonoVariable.IsInScope): Don't check for `AddressMode.Dead' here.
+	(MonoVariable.IsAlive): Also check for IsInScope() here.
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.GetField): Return a `MonoNullObject' instead of `null'
+	when the location is invalid.
+
+	* frontend/ObjectFormatter.cs
+	(ObjectFormatter.FormatVariable): Properly handle variables which
+	have been optimized out.
+
 2009-01-15  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/x86_64-arch.c

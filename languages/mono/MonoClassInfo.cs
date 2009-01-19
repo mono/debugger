@@ -177,11 +177,15 @@ namespace Mono.Debugger.Languages.Mono
 				offset -= 2 * target.TargetMemoryInfo.TargetAddressSize;
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (offset);
 
+			TargetAddress orig_addr = field_loc.GetAddress (target);
+
 			if (type.IsByRef)
 				field_loc = field_loc.GetDereferencedLocation ();
 
+			TargetAddress addr = field_loc.GetAddress (target);
+
 			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
-				return null;
+				return new MonoNullObject (type, field_loc);
 
 			return type.GetObject (target, field_loc);
 		}

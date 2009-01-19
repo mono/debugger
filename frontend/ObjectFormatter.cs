@@ -60,6 +60,11 @@ namespace Mono.Debugger.Frontend
 
 			Append ("{0} = ", variable.Name);
 
+			if (!variable.IsAlive (frame.TargetAddress)) {
+				Append ("<optimized out>");
+				return;
+			}
+
 			try {
 				obj = variable.GetObject (frame);
 				if (obj != null)

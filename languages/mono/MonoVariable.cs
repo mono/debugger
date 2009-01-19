@@ -105,8 +105,6 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool IsInScope (TargetAddress address)
 		{
-			if (info.Mode == VariableInfo.AddressMode.Dead)
-				return false;
 			return (address >= start_scope) && (address <= end_scope);
 		}
 
@@ -114,7 +112,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			if (info.Mode == VariableInfo.AddressMode.Dead)
 				return false;
-			return (address >= start_liveness) && (address <= end_liveness);
+			return (address >= start_liveness) && (address <= end_liveness) &&
+				(address >= start_scope) && (address <= end_scope);
 		}
 
 		public override string PrintLocation (StackFrame frame)
