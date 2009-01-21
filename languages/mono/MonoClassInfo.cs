@@ -50,6 +50,18 @@ namespace Mono.Debugger.Languages.Mono
 				info.struct_type = file.MonoLanguage.ReadGenericClass (
 					target, info.GenericClass);
 				info.type = info.struct_type.Type;
+			} else if ((file == mono.BuiltinTypes.Corlib) &&
+				   (typedef.FullName == "System.Decimal")) {
+				MonoFundamentalType ftype = mono.BuiltinTypes.DecimalType;
+
+				if (ftype.ClassType == null) {
+					MonoClassType ctype = new MonoClassType (file, typedef, info);
+					((IMonoStructType) ctype).ClassInfo = info;
+					ftype.SetClass (ctype);
+				}
+
+				info.struct_type = (IMonoStructType) ftype.ClassType;
+				info.type = ftype;
 			} else {
 				info.type = file.LookupMonoType (typedef);
 				if (info.type is TargetStructType)

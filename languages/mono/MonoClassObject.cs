@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
