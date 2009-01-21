@@ -1,5 +1,27 @@
 2009-01-21  Martin Baulig  <martin@ximian.com>
 
+	Add support for nullable types.
+
+	* languages/TargetNullableType.cs: New file.
+	(TargetNullableType): New public abstract class.
+
+	* languages/TargetNullableObject.cs: New file.
+	(TargetNullableObject): New public abstract class.
+
+	* languages/mono/MonoNullableType.cs: New file.
+	* languages/mono/MonoNullableObject.cs: New file.
+
+	* languages/TargetObjectKind.cs
+	(TargetObjectKind): Added `Decimal'.
+
+	* frontend/Expression.cs
+	(Convert.ImplicitConversion): Add nullable conversions.
+	(StructAccessExpression.DoAssign): Use
+	Convert.ImplicitConversionRequired() rather than requiring the
+	types to be identical.
+
+2009-01-21  Martin Baulig  <martin@ximian.com>
+
 	Add support for decimal.
 
 	* languages/TargetFundamentalType.cs

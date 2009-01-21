@@ -574,6 +574,7 @@ namespace Mono.Debugger.Languages.Mono
 			case "System.Double":	return "double";
 			case "System.String":	return "string";
 			case "System.Object":	return "object";
+			case "System.Decimal":  return "decimal";
 			default:		return RemoveGenericArity (t.FullName);
 			}
 		}

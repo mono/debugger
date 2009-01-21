@@ -127,7 +127,7 @@ namespace Mono.Debugger.Languages.Mono
 			case FundamentalKind.Decimal:
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Decimal"],
-					"System.Decimal", kind, Marshal.SizeOf (typeof (Decimal)));
+					"decimal", kind, Marshal.SizeOf (typeof (Decimal)));
 				return fundamental;
 
 			default:
