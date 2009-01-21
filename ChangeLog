@@ -1,5 +1,13 @@
 2009-01-21  Martin Baulig  <martin@ximian.com>
 
+	Add support for the [DebuggerBrowsable] attribute.
+
+	* languages/TargetMember.cs
+	(TargetFieldInfo.DebuggerBrowsable): New public property.
+	(TargetPropertyInfo.DebuggerBrowsable): Likewise.
+
+2009-01-21  Martin Baulig  <martin@ximian.com>
+
 	Add support for nullable types.
 
 	* languages/TargetNullableType.cs: New file.

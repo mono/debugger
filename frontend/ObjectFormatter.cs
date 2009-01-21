@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Diagnostics;
 using System.Collections;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
@@ -263,6 +264,8 @@ namespace Mono.Debugger.Frontend
 				if (fields [i].IsStatic || fields [i].HasConstValue)
 					continue;
 				if (fields [i].IsCompilerGenerated)
+					continue;
+				if (fields [i].DebuggerBrowsable == DebuggerBrowsableState.Never)
 					continue;
 
 				if (!first) {

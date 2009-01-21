@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace Mono.Debugger.Languages
 {
@@ -83,6 +84,10 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
+		public virtual DebuggerBrowsableState DebuggerBrowsable {
+			get { return DebuggerBrowsableState.Collapsed; }
+		}
+
 		public abstract object ConstValue {
 			get;
 		}
@@ -114,6 +119,10 @@ namespace Mono.Debugger.Languages
 
 		public bool CanWrite {
 			get { return Setter != null; }
+		}
+
+		public virtual DebuggerBrowsableState DebuggerBrowsable {
+			get { return DebuggerBrowsableState.Collapsed; }
 		}
 
 		protected override string MyToString ()
