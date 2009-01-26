@@ -51,6 +51,7 @@ namespace Mono.Debugger.Languages.Mono
 		string full_name;
 
 		DebuggerDisplayAttribute debugger_display;
+		DebuggerTypeProxyAttribute type_proxy;
 		bool is_compiler_generated;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
@@ -76,6 +77,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoSymbolFile.CheckCustomAttributes (type,
 							      out browsable_state,
 							      out debugger_display,
+							      out type_proxy,
 							      out is_compiler_generated);
 		}
 
@@ -120,6 +122,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
 			get { return debugger_display; }
+		}
+
+		public override DebuggerTypeProxyAttribute DebuggerTypeProxyAttribute {
+			get { return type_proxy; }
 		}
 
 		public MonoSymbolFile File {

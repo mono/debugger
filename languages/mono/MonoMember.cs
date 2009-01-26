@@ -22,9 +22,11 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			FieldInfo = finfo;
 
+			DebuggerTypeProxyAttribute type_proxy;
 			MonoSymbolFile.CheckCustomAttributes (finfo,
 							      out browsable_state,
 							      out debugger_display,
+							      out type_proxy,
 							      out is_compiler_generated);
 		}
 
@@ -200,9 +202,11 @@ namespace Mono.Debugger.Languages.Mono
 			this.SetterType = setter;
 
 			bool is_compiler_generated;
+			DebuggerTypeProxyAttribute type_proxy;
 			MonoSymbolFile.CheckCustomAttributes (pinfo,
 							      out browsable_state,
 							      out debugger_display,
+							      out type_proxy,
 							      out is_compiler_generated);
 		}
 

@@ -3371,4 +3371,49 @@ namespace Mono.Debugger.Frontend
 			return sobj;
 		}
 	}
+
+	internal class TypeProxyExpression : Expression
+	{
+		string proxy_type;
+		TargetStructObject instance;
+
+		public TypeProxyExpression (string proxy_type, TargetStructObject instance)
+		{
+			this.proxy_type = proxy_type;
+			this.instance = instance;
+		}
+
+		public override string Name {
+			get { return String.Format ("[DebuggerTypeProxy(typeof({0}))]", proxy_type); }
+		}
+
+		TargetType LookupType (ScriptingContext context)
+		{
+			TargetType type = context.CurrentLanguage.LookupType (proxy_type);
+			if (type != null)
+				return type;
+
+			string[] namespaces = context.GetNamespaces () ?? new string [0];
+			foreach (string ns in namespaces) {
+				string full_name = SimpleNameExpression.MakeFQN (ns, proxy_type);
+				type = context.CurrentLanguage.LookupType (full_name);
+				if (type != null)
+					return type;
+			}
+
+			return null;
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			TargetType type = LookupType (context);
+			if (type == null)
+				return null;
+
+			Expression[] args = { new ArgumentExpression (instance) };
+			NewExpression expr = new NewExpression (new TypeExpression (type), args);
+
+			return expr.Resolve (context);
+		}
+	} 
 }

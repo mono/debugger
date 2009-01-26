@@ -1,5 +1,20 @@
 2009-01-26  Martin Baulig  <martin@ximian.com>
 
+	Add support for the [DebuggerTypeProxy] attribute.
+
+	* languages/TargetStructType.cs
+	(TargetStructType.DebuggerTypeProxyAttribute): New public
+	property.
+
+	* frontend/Expression.cs
+	(TypeProxyExpression): New internal class.  This is used to
+	evaluate a [DebuggerTypeProxy] attribute.
+
+	* classes/ScriptingContext.cs
+	(ScriptingContext.DoFormatObject): Check for [DebuggerTypeProxy].	
+
+2009-01-26  Martin Baulig  <martin@ximian.com>
+
 	Add support for the [DebuggerDisplay] attribute.
 
 	* languages/TargetMember.cs

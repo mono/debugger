@@ -25,6 +25,10 @@ namespace Mono.Debugger.Languages
 			get { return null; }
 		}
 
+		public virtual DebuggerTypeProxyAttribute DebuggerTypeProxyAttribute {
+			get { return null; }
+		}
+
 		internal abstract TargetStructType GetParentType (TargetMemoryAccess target);
 
 		public TargetStructType GetParentType (Thread thread)

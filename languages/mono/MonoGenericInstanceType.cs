@@ -11,6 +11,7 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly MonoClassType Container;
 		DebuggerDisplayAttribute debugger_display;
+		DebuggerTypeProxyAttribute type_proxy;
 		TargetType[] type_args;
 		TargetAddress class_ptr;
 		MonoClassInfo class_info;
@@ -41,6 +42,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoSymbolFile.CheckCustomAttributes (container.Type,
 							      out browsable_state,
 							      out debugger_display,
+							      out type_proxy,
 							      out is_compiler_generated);
 		}
 
@@ -98,6 +100,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
 			get { return debugger_display; }
+		}
+
+		public override DebuggerTypeProxyAttribute DebuggerTypeProxyAttribute {
+			get { return type_proxy; }
 		}
 
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)

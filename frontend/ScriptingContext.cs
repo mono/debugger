@@ -336,6 +336,28 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
+		TargetObject CheckTypeProxy (TargetStructObject obj)
+		{
+			if (obj.Type.DebuggerTypeProxyAttribute == null)
+				return null;
+
+			string proxy_name = obj.Type.DebuggerTypeProxyAttribute.ProxyTypeName;
+			proxy_name = proxy_name.Replace ('+', '/');
+
+			Expression expression;
+			try {
+				expression = new TypeProxyExpression (proxy_name, obj);
+				expression = expression.Resolve (this);
+
+				if (expression == null)
+					return null;
+
+				return expression.EvaluateObject (this);
+			} catch {
+				return null;
+			}
+		}
+
 		string DoFormatObject (TargetObject obj, DisplayFormat format)
 		{
 			if (format == DisplayFormat.Object) {
@@ -344,6 +366,10 @@ namespace Mono.Debugger.Frontend
 					string formatted = MonoObjectToString (cobj);
 					if (formatted != null)
 						return formatted;
+
+					TargetObject proxy = CheckTypeProxy (cobj);
+					if (proxy != null)
+						obj = proxy;
 				}
 			}
 

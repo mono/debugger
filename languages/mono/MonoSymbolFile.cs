@@ -779,15 +779,18 @@ namespace Mono.Debugger.Languages.Mono
 
 		const string cgen_attr = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
 		const string debugger_display_attr = "System.Diagnostics.DebuggerDisplayAttribute";
+		const string type_proxy_attr = "System.Diagnostics.DebuggerTypeProxyAttribute";
 		const string browsable_attr = "System.Diagnostics.DebuggerBrowsableAttribute";
 
 		internal static void CheckCustomAttributes (Cecil.ICustomAttributeProvider type,
 							    out DebuggerBrowsableState? browsable_state,
 							    out DebuggerDisplayAttribute debugger_display,
+							    out DebuggerTypeProxyAttribute type_proxy,
 							    out bool is_compiler_generated)
 		{
 			browsable_state = null;
 			debugger_display = null;
+			type_proxy = null;
 			is_compiler_generated = false;
 
 			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
@@ -810,6 +813,9 @@ namespace Mono.Debugger.Languages.Mono
 					}
 				} else if (cname == browsable_attr) {
 					browsable_state = (DebuggerBrowsableState) cattr.Blob [2];
+				} else if (cname == type_proxy_attr) {
+					string text = (string) cattr.ConstructorParameters [0];
+					type_proxy = new DebuggerTypeProxyAttribute (text);
 				}
 			}
 		}
