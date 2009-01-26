@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using Cecil = Mono.Cecil;
@@ -9,6 +10,7 @@ namespace Mono.Debugger.Languages.Mono
 	internal class MonoGenericInstanceType : TargetGenericInstanceType, IMonoStructType
 	{
 		public readonly MonoClassType Container;
+		DebuggerDisplayAttribute debugger_display;
 		TargetType[] type_args;
 		TargetAddress class_ptr;
 		MonoClassInfo class_info;
@@ -33,6 +35,13 @@ namespace Mono.Debugger.Languages.Mono
 			}
 			sb.Append ('>');
 			full_name = sb.ToString ();
+
+			bool is_compiler_generated;
+			DebuggerBrowsableState? browsable_state;
+			MonoSymbolFile.CheckCustomAttributes (container.Type,
+							      out browsable_state,
+							      out debugger_display,
+							      out is_compiler_generated);
 		}
 
 		TargetStructType IMonoStructType.Type {
@@ -85,6 +94,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override bool HasParent {
 			get { return true; }
+		}
+
+		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return debugger_display; }
 		}
 
 		internal override TargetStructType GetParentType (TargetMemoryAccess target)

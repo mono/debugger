@@ -31,6 +31,14 @@ namespace Mono.Debugger.Languages
 			this.Accessibility = accessibility;
 		}
 
+		public virtual DebuggerBrowsableState? DebuggerBrowsableState {
+			get { return null; }
+		}
+
+		public virtual DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return null; }
+		}
+
 		protected abstract string MyToString ();
 
 		public override string ToString ()
@@ -84,10 +92,6 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		public virtual DebuggerBrowsableState DebuggerBrowsable {
-			get { return DebuggerBrowsableState.Collapsed; }
-		}
-
 		public abstract object ConstValue {
 			get;
 		}
@@ -119,10 +123,6 @@ namespace Mono.Debugger.Languages
 
 		public bool CanWrite {
 			get { return Setter != null; }
-		}
-
-		public virtual DebuggerBrowsableState DebuggerBrowsable {
-			get { return DebuggerBrowsableState.Collapsed; }
 		}
 
 		protected override string MyToString ()

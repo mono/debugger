@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -776,6 +777,43 @@ namespace Mono.Debugger.Languages.Mono
 		internal override void OnModuleChanged ()
 		{ }
 
+		const string cgen_attr = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
+		const string debugger_display_attr = "System.Diagnostics.DebuggerDisplayAttribute";
+		const string browsable_attr = "System.Diagnostics.DebuggerBrowsableAttribute";
+
+		internal static void CheckCustomAttributes (Cecil.ICustomAttributeProvider type,
+							    out DebuggerBrowsableState? browsable_state,
+							    out DebuggerDisplayAttribute debugger_display,
+							    out bool is_compiler_generated)
+		{
+			browsable_state = null;
+			debugger_display = null;
+			is_compiler_generated = false;
+
+			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
+				string cname = cattr.Constructor.DeclaringType.FullName;
+				if (cname == cgen_attr) {
+					is_compiler_generated = true;
+				} else if (cname == debugger_display_attr) {
+					string text = (string) cattr.ConstructorParameters [0];
+					debugger_display = new DebuggerDisplayAttribute (text);
+					foreach (DictionaryEntry prop in cattr.Properties) {
+						string key = (string) prop.Key;
+						if (key == "Name")
+							debugger_display.Name = (string) prop.Value;
+						else if (key == "Type")
+							debugger_display.Type = (string) prop.Value;
+						else {
+							debugger_display = null;
+							break;
+						}
+					}
+				} else if (cname == browsable_attr) {
+					browsable_state = (DebuggerBrowsableState) cattr.Blob [2];
+				}
+			}
+		}
+
 		protected override void DoDispose ()
 		{
 			if (File != null)
@@ -982,6 +1020,31 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override Method NativeMethod {
 				get { throw new InvalidOperationException (); }
+			}
+
+			public override string[] GetNamespaces ()
+			{
+				int index = method.NamespaceID;
+
+				Hashtable namespaces = new Hashtable ();
+
+				C.CompileUnitEntry source = method.CompileUnit;
+				foreach (C.NamespaceEntry nse in source.Namespaces)
+					namespaces.Add (nse.Index, nse);
+
+				ArrayList list = new ArrayList ();
+
+				while ((index > 0) && namespaces.Contains (index)) {
+					C.NamespaceEntry ns = (C.NamespaceEntry) namespaces [index];
+					list.Add (ns.Name);
+					list.AddRange (ns.UsingClauses);
+
+					index = ns.Parent;
+				}
+
+				string[] retval = new string [list.Count];
+				list.CopyTo (retval, 0);
+				return retval;
 			}
 		}
 
@@ -1894,6 +1957,11 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override Method NativeMethod {
 				get { return wrapper; }
+			}
+
+			public override string[] GetNamespaces ()
+			{
+				return null;
 			}
 		}
 

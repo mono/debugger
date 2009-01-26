@@ -1,10 +1,39 @@
+2009-01-26  Martin Baulig  <martin@ximian.com>
+
+	Add support for the [DebuggerDisplay] attribute.
+
+	* languages/TargetMember.cs
+	(TargetMemberInfo.DebuggerDisplayAttribute): New public property.
+
+	* languages/TargetStructType.cs
+	(TargetStructType.DebuggerDisplayAttribute): New public property.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.CheckCustomAttributes): New internal method.
+
+	* classes/MethodSource.cs
+	(MethodSource.GetNamespaces): New public abstract method.
+
+	* classes/ExpressionEvaluator.cs
+	(ExpressionEvaluator.EvaluationResult): Added `InvalidExpression'.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.GetNamespaces): Removed the overloaded version
+	with a `StackFrame' argument; only keep the parameterless one.
+	(ScriptingContext.CurrentLanguage): Make this work without a frame.
+	(ScriptingContext.ImplicitInstance): New public property; this can
+	be used in expression contexts to implicitly set the `this'.
+	(ScriptingContext.HandleDebuggerDisplay): New private method.
+	(ScriptingContext.MonoObjectToString): Call
+	HandleDebuggerDisplay() to check for the [DebuggerDisplay]
+	attribute.
+
 2009-01-21  Martin Baulig  <martin@ximian.com>
 
 	Add support for the [DebuggerBrowsable] attribute.
 
 	* languages/TargetMember.cs
-	(TargetFieldInfo.DebuggerBrowsable): New public property.
-	(TargetPropertyInfo.DebuggerBrowsable): Likewise.
+	(TargetMemberInfo.DebuggerBrowsableState): New public property.
 
 2009-01-21  Martin Baulig  <martin@ximian.com>
 

@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using C = Mono.CompilerServices.SymbolWriter;
@@ -47,8 +48,10 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable load_handlers;
 		int load_handler_id;
 
-		bool is_compiler_generated;
 		string full_name;
+
+		DebuggerDisplayAttribute debugger_display;
+		bool is_compiler_generated;
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition type)
 			: base (file.MonoLanguage, TargetObjectKind.Class)
@@ -69,11 +72,11 @@ namespace Mono.Debugger.Languages.Mono
 			} else
 				full_name = type.FullName;
 
-			foreach (Cecil.CustomAttribute cattr in type.CustomAttributes) {
-				string cname = cattr.Constructor.DeclaringType.FullName;
-				if (cname == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
-					is_compiler_generated = true;
-			}
+			DebuggerBrowsableState? browsable_state;
+			MonoSymbolFile.CheckCustomAttributes (type,
+							      out browsable_state,
+							      out debugger_display,
+							      out is_compiler_generated);
 		}
 
 		public MonoClassType (MonoSymbolFile file, Cecil.TypeDefinition typedef,
@@ -113,6 +116,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override int Size {
 			get { return 2 * Language.TargetInfo.TargetAddressSize; }
+		}
+
+		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return debugger_display; }
 		}
 
 		public MonoSymbolFile File {

@@ -1,4 +1,6 @@
 using System;
+using System.Text;
+using System.Diagnostics;
 using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
@@ -10,6 +12,7 @@ namespace Mono.Debugger
 			Ok,
 			UnknownError,
 			MethodNotFound,
+			InvalidExpression,
 			Exception,
 			Timeout
 		}
@@ -25,6 +28,9 @@ namespace Mono.Debugger
 				return EvaluationResult.MethodNotFound;
 
 			TargetClass klass = ctype.GetClass (thread);
+			if (klass == null)
+				return EvaluationResult.MethodNotFound;
+
 			TargetMethodInfo[] methods = klass.GetMethods (thread);
 			if (methods == null)
 				return EvaluationResult.MethodNotFound;

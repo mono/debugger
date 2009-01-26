@@ -11,11 +11,9 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
-		DebuggerBrowsableState browsable = DebuggerBrowsableState.Collapsed;
+		DebuggerBrowsableState? browsable_state = null;
+		DebuggerDisplayAttribute debugger_display;
 		bool is_compiler_generated;
-
-		const string cgen_attr = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
-		const string browsable_attr = "System.Diagnostics.DebuggerBrowsableAttribute";
 
 		public MonoFieldInfo (IMonoStructType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
@@ -24,17 +22,18 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			FieldInfo = finfo;
 
-			foreach (Cecil.CustomAttribute cattr in finfo.CustomAttributes) {
-				string cname = cattr.Constructor.DeclaringType.FullName;
-				if (cname == cgen_attr)
-					is_compiler_generated = true;
-				else if (cname == browsable_attr)
-					browsable = (DebuggerBrowsableState) cattr.Blob [2];
-			}
+			MonoSymbolFile.CheckCustomAttributes (finfo,
+							      out browsable_state,
+							      out debugger_display,
+							      out is_compiler_generated);
 		}
 
-		public override DebuggerBrowsableState DebuggerBrowsable {
-			get { return browsable; }
+		public override DebuggerBrowsableState? DebuggerBrowsableState {
+			get { return browsable_state; }
+		}
+
+		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return debugger_display; }
 		}
 
 		internal static TargetMemberAccessibility GetAccessibility (Cecil.FieldDefinition field)
@@ -187,9 +186,8 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly IMonoStructType Klass;
 		public readonly MonoFunctionType GetterType, SetterType;
-		DebuggerBrowsableState browsable = DebuggerBrowsableState.Collapsed;
-
-		const string browsable_attr = "System.Diagnostics.DebuggerBrowsableAttribute";
+		DebuggerBrowsableState? browsable_state = null;
+		DebuggerDisplayAttribute debugger_display;
 
 		private MonoPropertyInfo (TargetType type, IMonoStructType klass, int index,
 					  bool is_static, Cecil.PropertyDefinition pinfo,
@@ -201,15 +199,19 @@ namespace Mono.Debugger.Languages.Mono
 			this.GetterType = getter;
 			this.SetterType = setter;
 
-			foreach (Cecil.CustomAttribute cattr in pinfo.CustomAttributes) {
-				string cname = cattr.Constructor.DeclaringType.FullName;
-				if (cname == browsable_attr)
-					browsable = (DebuggerBrowsableState) cattr.Blob [2];
-			}
+			bool is_compiler_generated;
+			MonoSymbolFile.CheckCustomAttributes (pinfo,
+							      out browsable_state,
+							      out debugger_display,
+							      out is_compiler_generated);
 		}
 
-		public override DebuggerBrowsableState DebuggerBrowsable {
-			get { return browsable; }
+		public override DebuggerBrowsableState? DebuggerBrowsableState {
+			get { return browsable_state; }
+		}
+
+		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return debugger_display; }
 		}
 
 		internal static MonoPropertyInfo Create (IMonoStructType klass, int index,

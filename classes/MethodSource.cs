@@ -53,6 +53,8 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract string[] GetNamespaces ();
+
 		public abstract Method NativeMethod {
 			get;
 		}
