@@ -203,65 +203,63 @@ namespace Mono.Debugger.Frontend
 			interpreter.Print (obj);
 		}
 
-		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetClass klass,
-							   TargetStructObject obj,
-							   DebuggerDisplayAttribute attr,
-							   int timeout, out string result)
+		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetStructObject instance,
+							   string attr_value, int timeout,
+							   out string result)
 		{
 			result = null;
 
 			ScriptingContext expr_context = new ScriptingContext (Interpreter);
 			expr_context.CurrentThread = thread;
-			expr_context.CurrentLanguage = obj.Type.Language;
-			expr_context.ImplicitInstance = obj;
+			expr_context.CurrentLanguage = instance.Type.Language;
+			expr_context.ImplicitInstance = instance;
 
 			StringBuilder sb = new StringBuilder ();
 
-			string value = attr.Value;
 			int pos = 0;
 
-			while (pos < value.Length) {
-				if (value [pos] == '\\') {
-					if (pos == value.Length)
+			while (pos < attr_value.Length) {
+				if (attr_value [pos] == '\\') {
+					if (pos == attr_value.Length)
 						break;
 					else {
-						sb.Append (value [++pos]);
+						sb.Append (attr_value [++pos]);
 						pos++;
 						continue;
 					}
 				}
 
-				if (value [pos] == '}') {
+				if (attr_value [pos] == '}') {
 					result = null;
 					return EE.EvaluationResult.InvalidExpression;
 				}
 
-				if (value [pos] != '{') {
-					sb.Append (value [pos++]);
+				if (attr_value [pos] != '{') {
+					sb.Append (attr_value [pos++]);
 					continue;
 				}
 
 				pos++;
 				StringBuilder expr_text = new StringBuilder ();
 
-				while (pos < value.Length) {
-					if (value [pos] == '\\') {
-						if (pos == value.Length)
+				while (pos < attr_value.Length) {
+					if (attr_value [pos] == '\\') {
+						if (pos == attr_value.Length)
 							break;
 						else {
-							expr_text.Append (value [++pos]);
+							expr_text.Append (attr_value [++pos]);
 							pos++;
 							continue;
 						}
-					} else if (value [pos] == '{') {
+					} else if (attr_value [pos] == '{') {
 						result = null;
 						return EE.EvaluationResult.InvalidExpression;
-					} else if (value [pos] == '}') {
+					} else if (attr_value [pos] == '}') {
 						pos++;
 						break;
 					}
 
-					expr_text.Append (value [pos++]);
+					expr_text.Append (attr_value [pos++]);
 				}
 
 				Expression expr;
@@ -305,23 +303,42 @@ namespace Mono.Debugger.Frontend
 			return EE.EvaluationResult.Ok;
 		}
 
+		public EE.EvaluationResult HandleDebuggerDisplay (Thread thread,
+								  TargetStructObject instance,
+								  DebuggerDisplayAttribute attr,
+								  int timeout, out string name,
+								  out string type)
+		{
+			EE.EvaluationResult result = HandleDebuggerDisplay (
+				thread, instance, attr.Value, timeout, out name);
+
+			if (result != EE.EvaluationResult.Ok) {
+				type = null;
+				return result;
+			}
+
+			if (String.IsNullOrEmpty (attr.Type)) {
+				type = null;
+				return EE.EvaluationResult.Ok;
+			}
+
+			return HandleDebuggerDisplay (
+				thread, instance, attr.Type, timeout, out type);
+		}
+
 		string MonoObjectToString (TargetStructObject obj)
 		{
 			TargetStructType ctype = obj.Type;
 			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
 				return null;
 
-			TargetClass klass = ctype.GetClass (CurrentThread);
-			if (klass == null)
-				return null;
-
-			string text;
+			string text, dummy;
 			ExpressionEvaluator.EvaluationResult result;
 
 			if (ctype.DebuggerDisplayAttribute != null) {
-				result = HandleDebuggerDisplay (CurrentThread, klass, obj,
+				result = HandleDebuggerDisplay (CurrentThread, obj,
 								ctype.DebuggerDisplayAttribute,
-								-1, out text);
+								-1, out text, out dummy);
 				if (result == ExpressionEvaluator.EvaluationResult.Ok)
 					return String.Format ("{{ {0} }}", text);
 				else if (result == ExpressionEvaluator.EvaluationResult.InvalidExpression) {
