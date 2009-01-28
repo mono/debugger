@@ -320,6 +320,34 @@ namespace Mono.Debugger.Languages.Mono
 			return class_info;
 		}
 
+		public override TargetClass ForceClassInitialization (Thread thread)
+		{
+			if (class_info != null)
+				return class_info;
+
+			thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					class_info = ResolveClass (target, false);
+					return class_info;
+				});
+
+			if (class_info != null)
+				return class_info;
+
+			TargetAddress image = file.MonoImage;
+
+			TargetAddress klass = thread.CallMethod (
+				file.MonoLanguage.MonoDebuggerInfo.LookupClass, image, 0, 0,
+				Name);
+
+			return (TargetClass) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					class_info = MonoClassInfo.ReadClassInfo (
+						file.MonoLanguage, target, klass);
+					return class_info;
+				});
+		}
+
 		MonoClassInfo IMonoStructType.ClassInfo {
 			get { return class_info; }
 			set { class_info = value; }

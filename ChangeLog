@@ -1,3 +1,18 @@
+2009-01-28  Martin Baulig  <martin@ximian.com>
+
+	* language/TargetStructType.cs
+	(TargetStructType.ForceClassInitialization): New public method.
+
+	* frontend/Expression.cs
+	(StructAccessExpression.ResolveClass): Force a class init here.
+	[The user wants something from this class, so it should be ok to
+	initialize it.]
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.GetNamespaces): If we have an `ImplicitInstance',
+	only check the direct namespaces from the class name, not any
+	using statements etc.
+
 2009-01-27  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ScriptingContext.cs
