@@ -1,5 +1,11 @@
 2009-01-28  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.HandleDebuggerDisplay): Make this method static.
+	(ScriptingContext.CheckTypeProxy): New public static method.
+
+2009-01-28  Martin Baulig  <martin@ximian.com>
+
 	* language/TargetStructType.cs
 	(TargetStructType.ForceClassInitialization): New public method.
 
