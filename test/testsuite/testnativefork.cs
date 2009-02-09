@@ -21,6 +21,18 @@ namespace Mono.Debugger.Tests
 		const int LineWaitpid = 16;
 		const int LineChild = 14;
 
+		int bpt_waitpid;
+		int bpt_child;
+
+		public override void SetUp ()
+		{
+			base.SetUp ();
+			Config.FollowFork = true;
+
+			bpt_child = AssertBreakpoint ("-global " + LineChild);
+			bpt_waitpid = AssertBreakpoint ("-local " + (LineWaitpid + 1));
+		}
+
 		[Test]
 		[Category("Native")]
 		[Category("Fork")]
@@ -32,6 +44,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
+			AssertExecute ("disable " + bpt_child);
+			AssertExecute ("disable " + bpt_waitpid);
 			AssertExecute ("next -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -98,6 +112,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
+			AssertExecute ("disable " + bpt_child);
+			AssertExecute ("disable " + bpt_waitpid);
 			AssertExecute ("next -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -156,8 +172,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-		        int child_bpt = AssertBreakpoint ("-global " + LineChild);
-			int waitpid_bpt = AssertBreakpoint ("-local " + (LineWaitpid + 1));
+			AssertExecute ("enable " + bpt_child);
+			AssertExecute ("enable " + bpt_waitpid);
 			AssertExecute ("next -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -180,7 +196,7 @@ namespace Mono.Debugger.Tests
 					continue;
 				} else if ((e_thread == child) &&
 					   (args.Type == TargetEventType.TargetHitBreakpoint) &&
-					   ((int) args.Data == child_bpt)) {
+					   ((int) args.Data == bpt_child)) {
 					child_stopped = true;
 					continue;
 				}
@@ -221,7 +237,7 @@ namespace Mono.Debugger.Tests
 
 					if ((e_thread == thread) &&
 					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
-					    ((int) args.Data == waitpid_bpt)) {
+					    ((int) args.Data == bpt_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == child) &&

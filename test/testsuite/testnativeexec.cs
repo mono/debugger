@@ -18,7 +18,19 @@ namespace Mono.Debugger.Tests
 		const int LineWaitpid = 24;
 		const int LineChild = 19;
 
+		int bpt_local_waitpid;
 		int bpt_waitpid;
+		int bpt_child;
+
+		public override void SetUp ()
+		{
+			base.SetUp ();
+			Config.FollowFork = true;
+
+			bpt_local_waitpid = AssertBreakpoint ("-local " + (LineWaitpid+1));
+			bpt_waitpid = AssertBreakpoint ("-local " + LineWaitpid);
+			bpt_child = AssertBreakpoint ("-global " + LineChild);
+		}
 
 		[Test]
 		[Category("Native")]
@@ -31,7 +43,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-			bpt_waitpid = AssertBreakpoint ("-local " + (LineWaitpid+1));
+			AssertExecute ("disable " + bpt_child);
+			AssertExecute ("disable " + bpt_waitpid);
 			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -74,7 +87,7 @@ namespace Mono.Debugger.Tests
 
 					if ((e_thread == thread) &&
 					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
-					    ((int) args.Data == bpt_waitpid)) {
+					    ((int) args.Data == bpt_local_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == execd_child) &&
@@ -107,6 +120,8 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
+			AssertExecute ("disable " + bpt_child);
+			AssertExecute ("disable " + bpt_waitpid);
 			AssertExecute ("continue -wait");
 
 			Thread child = AssertProcessCreated ();
@@ -149,7 +164,7 @@ namespace Mono.Debugger.Tests
 
 					if ((e_thread == thread) &&
 					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
-					    ((int) args.Data == bpt_waitpid)) {
+					    ((int) args.Data == bpt_local_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == execd_child) &&
@@ -181,8 +196,12 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "main", LineMain);
-		        int child_bpt = AssertBreakpoint ("-global " + LineChild);
-			int waitpit_bpt = AssertBreakpoint ("-local " + LineWaitpid);
+			AssertExecute ("enable " + bpt_waitpid);
+			AssertExecute ("enable " + bpt_local_waitpid);
+			AssertExecute ("enable " + bpt_child);
+
+			// int bpt_child = AssertBreakpoint ("-global " + LineChild);
+
 			AssertExecute ("continue -bg");
 
 			Thread child = AssertProcessCreated ();
@@ -201,12 +220,12 @@ namespace Mono.Debugger.Tests
 
 				if ((e_thread == thread) &&
 				    (args.Type == TargetEventType.TargetHitBreakpoint) &&
-				    ((int) args.Data == waitpit_bpt)) {
+				    ((int) args.Data == bpt_waitpid)) {
 					reached_waitpid = true;
 					continue;
 				} else if ((e_thread == child) &&
 					   (args.Type == TargetEventType.TargetHitBreakpoint) &&
-					   ((int) args.Data == child_bpt)) {
+					   ((int) args.Data == bpt_child)) {
 					child_stopped = true;
 					continue;
 				}
@@ -260,7 +279,7 @@ namespace Mono.Debugger.Tests
 
 					if ((e_thread == thread) &&
 					    (args.Type == TargetEventType.TargetHitBreakpoint) &&
-					    ((int) args.Data == bpt_waitpid)) {
+					    ((int) args.Data == bpt_local_waitpid)) {
 						stopped = true;
 						continue;
 					} else if ((e_thread == execd_child) &&
