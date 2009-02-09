@@ -186,38 +186,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
-#if defined(__linux__) || defined(__FreeBSD__)
-	if (stopsig != SIGTRAP)
-		return STOP_ACTION_STOPPED;
-#endif
-
-	if (handle->mono_runtime &&
-	    (INFERIOR_REG_RIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
-		if (stopsig != SIGTRAP)
-			return STOP_ACTION_STOPPED;
-
-		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
-		*retval = INFERIOR_REG_RSI (arch->current_regs);
-		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
-
-		return STOP_ACTION_NOTIFICATION;
-	}
-
-	for (i = 0; i < DR_NADDR; i++) {
-		if (X86_DR_WATCH_HIT (arch, i)) {
-			_server_ptrace_set_dr (inferior, DR_STATUS, 0);
-			arch->dr_status = 0;
-			*retval = arch->dr_regs [i];
-			return STOP_ACTION_BREAKPOINT_HIT;
-		}
-	}
-
-	if (check_breakpoint (handle, INFERIOR_REG_RIP (arch->current_regs) - 1, retval)) {
-		INFERIOR_REG_RIP (arch->current_regs)--;
-		_server_ptrace_set_registers (inferior, &arch->current_regs);
-		return STOP_ACTION_BREAKPOINT_HIT;
-	}
-
 	cdata = get_callback_data (arch);
 	if (cdata && (cdata->call_address == INFERIOR_REG_RIP (arch->current_regs))) {
 		if (cdata->pushed_registers) {
@@ -279,6 +247,38 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 
 		g_free (cdata);
 		return STOP_ACTION_CALLBACK;
+	}
+
+#if defined(__linux__) || defined(__FreeBSD__)
+	if (stopsig != SIGTRAP)
+		return STOP_ACTION_STOPPED;
+#endif
+
+	if (handle->mono_runtime &&
+	    (INFERIOR_REG_RIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
+		if (stopsig != SIGTRAP)
+			return STOP_ACTION_STOPPED;
+
+		*callback_arg = INFERIOR_REG_RDI (arch->current_regs);
+		*retval = INFERIOR_REG_RSI (arch->current_regs);
+		*retval2 = INFERIOR_REG_RDX (arch->current_regs);
+
+		return STOP_ACTION_NOTIFICATION;
+	}
+
+	for (i = 0; i < DR_NADDR; i++) {
+		if (X86_DR_WATCH_HIT (arch, i)) {
+			_server_ptrace_set_dr (inferior, DR_STATUS, 0);
+			arch->dr_status = 0;
+			*retval = arch->dr_regs [i];
+			return STOP_ACTION_BREAKPOINT_HIT;
+		}
+	}
+
+	if (check_breakpoint (handle, INFERIOR_REG_RIP (arch->current_regs) - 1, retval)) {
+		INFERIOR_REG_RIP (arch->current_regs)--;
+		_server_ptrace_set_registers (inferior, &arch->current_regs);
+		return STOP_ACTION_BREAKPOINT_HIT;
 	}
 
 	cbuffer = arch->code_buffer;
