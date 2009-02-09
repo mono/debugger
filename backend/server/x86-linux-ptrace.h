@@ -46,6 +46,9 @@ _server_ptrace_finalize_inferior (ServerHandle *handle);
 static ServerCommandError
 server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo);
 
+static gboolean
+_server_ptrace_wait_for_new_thread (ServerHandle *handle);
+
 #include "x86-ptrace.h"
 
 #endif
