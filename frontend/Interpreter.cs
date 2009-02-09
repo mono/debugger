@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.Remoting;
 using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -70,8 +71,6 @@ namespace Mono.Debugger.Frontend
 			styles.Add ("emacs", new StyleEmacs (this));
 			current_style = (StyleBase) styles ["cli"];
 		}
-
-		AppDomain debugger_domain;
 
 		public void Exit ()
 		{
@@ -460,7 +459,8 @@ namespace Mono.Debugger.Frontend
 			again:
 				Process[] processes = HasTarget ? debugger.Processes : new Process [0];
 				foreach (Process process in processes) {
-					foreach (Thread t in process.GetThreads ()) {
+					Thread[] the_threads = process.GetThreads ();
+					foreach (Thread t in the_threads) {
 						if ((t == thread) || seen_threads.Contains (t))
 							continue;
 
@@ -493,6 +493,8 @@ namespace Mono.Debugger.Frontend
 					result.CompletedEvent.WaitOne ();
 					break;
 				} else if (ret == 1) {
+					seen_threads = new Hashtable ();
+					wait_list = new Hashtable ();
 					process_event.Reset ();
 					goto again;
 				}

@@ -1,5 +1,13 @@
 2008-12-12  Martin Baulig  <martin@ximian.com>
 
+	**** Backport of 121402 ****
+
+	* frontend/Interpreter.cs (Interpreter.WaitAll): Reset
+	`seen_threads' and `wait_list' after receiving a process event; a
+	process may have exited.
+
+2008-12-12  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 121401 ****
 
 	* backend/EventQueue.cs (DebuggerWaitHandle): Implement
