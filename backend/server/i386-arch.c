@@ -507,6 +507,11 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
+#if defined(__linux__) || defined(__FreeBSD__)
+	if (stopsig != SIGTRAP)
+		return STOP_ACTION_STOPPED;
+#endif
+
 	if (handle->mono_runtime &&
 	    ((guint32) INFERIOR_REG_EIP (arch->current_regs) - 1 == handle->mono_runtime->notification_address)) {
 		guint32 addr = (guint32) INFERIOR_REG_ESP (arch->current_regs) + 4;
@@ -627,11 +632,6 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		arch->code_buffer = NULL;
 		return STOP_ACTION_STOPPED;
 	}
-
-#if defined(__linux__) || defined(__FreeBSD__)
-	if (stopsig != SIGTRAP)
-		return STOP_ACTION_STOPPED;
-#endif
 
 	if (server_ptrace_peek_word (handle, GPOINTER_TO_SIZE (INFERIOR_REG_EIP (arch->current_regs) - 1), &code) != COMMAND_ERROR_NONE)
 		return STOP_ACTION_STOPPED;
