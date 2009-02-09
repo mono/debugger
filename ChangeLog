@@ -1,3 +1,14 @@
+2008-12-12  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 121401 ****
+
+	* backend/EventQueue.cs (DebuggerWaitHandle): Implement
+	IDisposable and free unmanaged resources.
+
+	* backend/server/mutex.c
+	(mono_debugger_mutex_free): New function.
+	(mono_debugger_cond_free): New function.
+
 2008-12-08  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 120992 ****

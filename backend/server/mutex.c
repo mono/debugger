@@ -8,6 +8,12 @@ mono_debugger_mutex_new (void)
 }
 
 void
+mono_debugger_mutex_free (GMutex *mutex)
+{
+	g_mutex_free (mutex);
+}
+
+void
 mono_debugger_mutex_lock (GMutex *mutex)
 {
 	g_mutex_lock (mutex);
@@ -29,6 +35,12 @@ GCond *
 mono_debugger_cond_new (void)
 {
 	return g_cond_new ();
+}
+
+void
+mono_debugger_cond_free (GCond *cond)
+{
+	g_cond_free (cond);
 }
 
 void

@@ -1552,6 +1552,9 @@ namespace Mono.Debugger.Backend
 			} else {
 				Method method = Lookup (inferior.MainMethodAddress);
 
+				if (method == null)
+					return false;
+
 				main_frame = new StackFrame (
 					thread, iframe.Address, iframe.StackPointer,
 					iframe.FrameAddress, registers, method);

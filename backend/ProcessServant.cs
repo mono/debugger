@@ -717,11 +717,20 @@ namespace Mono.Debugger.Backend
 				}
 			}
 
-			if (breakpoint_manager != null)
+			if (breakpoint_manager != null) {
 				breakpoint_manager.Dispose ();
+				breakpoint_manager = null;
+			}
 
-			if (thread_db != null)
+			if (thread_db != null) {
 				thread_db.Dispose ();
+				thread_db = null;
+			}
+
+			if (thread_lock_mutex != null) {
+				thread_lock_mutex.Dispose ();
+				thread_lock_mutex = null;
+			}
 
 			manager.RemoveProcess (this);
 		}

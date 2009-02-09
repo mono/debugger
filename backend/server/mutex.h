@@ -10,6 +10,9 @@ GMutex *
 mono_debugger_mutex_new          (void);
 
 void
+mono_debugger_mutex_free         (GMutex *mutex);
+
+void
 mono_debugger_mutex_lock         (GMutex *mutex);
 
 void
@@ -20,6 +23,9 @@ mono_debugger_mutex_trylock      (GMutex *mutex);
 
 GCond *
 mono_debugger_cond_new           (void);
+
+void
+mono_debugger_cond_free          (GCond *cond);
 
 void
 mono_debugger_cond_wait          (GMutex *mutex, GCond *cond);

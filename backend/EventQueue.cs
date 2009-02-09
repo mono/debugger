@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.Backend
 {
-	internal abstract class DebuggerWaitHandle
+	internal abstract class DebuggerWaitHandle : IDisposable
 	{
 		public readonly string Name;
 		public DebugFlags DebugFlags = DebugFlags.Mutex;
@@ -35,6 +35,42 @@ namespace Mono.Debugger.Backend
 		{
 			Report.Debug (DebugFlags, format, args);
 		}
+
+#region IDisposable implementation
+		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("DebuggerWaitHandle");
+		}
+
+		protected virtual void Dispose (bool disposing)
+		{
+			// Check to see if Dispose has already been called.
+			lock (this) {
+				if (disposed)
+					return;
+
+				DoDispose ();
+				disposed = true;
+			}
+		}
+
+		public void Dispose ()
+		{
+			Dispose (true);
+			// Take yourself off the Finalization queue
+			GC.SuppressFinalize (this);
+		}
+
+		protected abstract void DoDispose ();
+
+		~DebuggerWaitHandle ()
+		{
+			Dispose (false);
+		}
+#endregion
 	}
 
 	internal class DebuggerMutex : DebuggerWaitHandle
@@ -43,6 +79,9 @@ namespace Mono.Debugger.Backend
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_mutex_new ();
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_mutex_free (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_mutex_lock (IntPtr handle);
@@ -83,6 +122,12 @@ namespace Mono.Debugger.Backend
 				Debug ("{0} could not lock {1}", CurrentThread, Name);
 			return success;
 		}
+
+		protected override void DoDispose ()
+		{
+			mono_debugger_mutex_free (handle);
+			handle = IntPtr.Zero;
+		}
 	}
 
 	internal class DebuggerEventQueue : DebuggerMutex
@@ -91,6 +136,9 @@ namespace Mono.Debugger.Backend
 
 		[DllImport("monodebuggerserver")]
 		static extern IntPtr mono_debugger_cond_new ();
+
+		[DllImport("monodebuggerserver")]
+		static extern void mono_debugger_cond_free (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_cond_wait (IntPtr mutex, IntPtr cond);
@@ -115,6 +163,12 @@ namespace Mono.Debugger.Backend
 		{
 			Debug ("{0} signal {1}", CurrentThread, Name);
 			mono_debugger_cond_broadcast (cond);
+		}
+
+		protected override void DoDispose ()
+		{
+			mono_debugger_cond_free (cond);
+			cond = IntPtr.Zero;
 		}
 	}
 }
