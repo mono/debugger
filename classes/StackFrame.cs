@@ -386,15 +386,9 @@ namespace Mono.Debugger
 			get { return exc_object; }
 		}
 
-		internal void SetExceptionObject (TargetAddress exc)
+		internal void SetExceptionObject (TargetObject exc_object)
 		{
-			try {
-				Language lang = thread.ThreadServant.ProcessServant.MonoLanguage;
-				if (lang != null)
-					exc_object = lang.CreateObject (thread, exc);
-			} catch {
-				exc_object = null;
-			}
+			this.exc_object = exc_object;
 		}
 
 		internal StackFrame UnwindStack (TargetMemoryAccess memory)

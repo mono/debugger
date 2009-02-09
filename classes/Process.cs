@@ -12,6 +12,8 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
+	public delegate bool ExceptionCatchPointHandler (string exception, out bool stop);
+
 	public class Process : DebuggerMarshalByRefObject
 	{
 		Debugger debugger;
@@ -181,6 +183,22 @@ namespace Mono.Debugger
 		{
 			if (manager != null)
 				manager.OnProcessExited (this);
+		}
+
+		ExceptionCatchPointHandler generic_exc_handler;
+
+		public void InstallGenericExceptionCatchPoint (ExceptionCatchPointHandler handler)
+		{
+			this.generic_exc_handler = handler;
+		}
+
+		public bool GenericExceptionCatchPoint (string exception, out bool stop)
+		{
+			if (generic_exc_handler != null)
+				return generic_exc_handler (exception, out stop);
+
+			stop = false;
+			return false;
 		}
 
 		//
