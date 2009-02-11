@@ -1,3 +1,27 @@
+2009-02-09  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 126360 ****
+
+	Fix #466012 and #423518.
+
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_wait_for_new_thread): New static function.  Wait
+	for a newly created thread to stop.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.StartThread): Added `do_execute' argument and resume the
+	target when it's true.
+	(SSE.OperationInitAfterFork.DoExecute): Call `sse.do_continue ()'.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ThreadCreated): If `do_attach' is false, then the
+	newly created thread has already stopped, so we tell the SSE to
+	resume it.
+
+	* backend/ThreadManager.cs
+	(ThreadManager.wait_thread_main): Ignore `SIGSTOP' events for
+	unknown threads.
+
 2009-01-15  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 123467 ****

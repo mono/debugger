@@ -509,6 +509,9 @@ server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
+	if (!_server_ptrace_wait_for_new_thread (handle))
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
 	return _server_ptrace_setup_inferior (handle);
 }
 

@@ -114,13 +114,16 @@ namespace Mono.Debugger.Backend
 			this.pid = pid;
 		}
 
-		public CommandResult StartThread (bool do_attach)
+		public CommandResult StartThread (bool do_attach, bool do_execute)
 		{
 			CommandResult result = new ThreadCommandResult (thread);
 			if (do_attach)
 				current_operation = new OperationInitialize (this, result);
-			else
+			else {
 				current_operation = new OperationRun (this, result);
+				if (do_execute)
+					current_operation.Execute ();
+			}
 			return result;
 		}
 
@@ -2637,7 +2640,9 @@ namespace Mono.Debugger.Backend
 		}
 
 		protected override void DoExecute ()
-		{ }
+		{
+			sse.do_continue ();
+		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)

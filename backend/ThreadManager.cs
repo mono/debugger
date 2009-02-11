@@ -74,8 +74,6 @@ namespace Mono.Debugger.Backend
 		bool abort_requested;
 		bool waiting;
 
-		Queue<PendingEventInfo> pending_sigstop;
-
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_global_init ();
 
@@ -441,6 +439,9 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.Threads, "Wait thread abort: {0}",
 					      DebuggerWaitHandle.CurrentThread);
 				ST.Thread.ResetAbort ();
+			} catch (Exception ex) {
+				Report.Debug (DebugFlags.Threads, "FUCK: {0}", ex);
+				throw;
 			}
 
 			Report.Debug (DebugFlags.Threads, "Wait thread exiting: {0}",
@@ -454,6 +455,8 @@ namespace Mono.Debugger.Backend
 			waiting = true;
 
 		again:
+			Report.Debug (DebugFlags.Wait, "Wait thread again");
+
 			int pid = 0, status = 0;
 			if (abort_requested) {
 				Report.Debug (DebugFlags.Wait,
@@ -473,55 +476,17 @@ namespace Mono.Debugger.Backend
 				return false;
 			}
 
-			bool has_pending_sigstop = false;
-		check_pending_sigstop:
-			if ((pending_sigstop != null) && (pending_sigstop.Count > 0)) {
-				PendingEventInfo pending = pending_sigstop.Peek ();
+			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
 
-				/*
-				 * There is a race condition in the Linux kernel which shows up on >= 2.6.27:
-				 *
-				 * When creating a new thread, the initial stopping event of that thread is sometimes
-				 * sent before sending the `PTRACE_EVENT_CLONE' for it.
-				 *
-				 * Here, we check whether we already received the thread creation event and process the
-				 * pending stopping event if necessary.
-				 *
-				 * Since we're just trying to catch a race condition, discard all pending events which
-				 * were received more than 200 seconds ago.
-				 *
-				 */
+			//
+			// Wait until we got an event from the target or a command from the user.
+			//
 
-				if (thread_hash.Contains (pending.PID)) {
-					pid = pending.PID;
-					status = pending.Status;
+			pid = mono_debugger_server_global_wait (out status);
 
-					has_pending_sigstop = true;
-					pending_sigstop.Dequeue ();
-				} else if ((DateTime.Now - pending.TimeStamp).TotalSeconds >= 200) {
-					Report.Error ("WARNING: Got stop event for unknown pid {0}; timed-out waiting for thread creation.",
-						      pending.PID);
-					pending_sigstop.Dequeue ();
-					goto check_pending_sigstop;
-				}
-			}
-
-			if (!has_pending_sigstop) {
-				Report.Debug (DebugFlags.Wait, "Wait thread waiting");
-
-				//
-				// Wait until we got an event from the target or a command from the user.
-				//
-
-				pid = mono_debugger_server_global_wait (out status);
-
-				Report.Debug (DebugFlags.Wait,
-					      "Wait thread received event: {0} {1:x}",
-					      pid, status);
-			} else {
-				Report.Debug (DebugFlags.Wait,
-					      "Wait thread processing pending sigstop: {0} {1:x}", pid, status);
-			}
+			Report.Debug (DebugFlags.Wait,
+				      "Wait thread received event: {0} {1:x}",
+				      pid, status);
 
 			//
 			// Note: `pid' is basically just an unique number which identifies the
@@ -542,8 +507,11 @@ namespace Mono.Debugger.Backend
 				 * When creating a new thread, the initial stopping event of that thread is sometimes
 				 * sent before sending the `PTRACE_EVENT_CLONE' for it.
 				 *
-				 * Whenever we get an event for an unknown thread, we check whether it's actually a
-				 * SIGSTOP and then queue it.				 *
+				 * Because of this, we explicitly wait for the new thread to stop and ignore any
+				 * "early" stopping signals.
+				 *
+				 * See also the comments in _server_ptrace_wait_for_new_thread() in x86-linux-ptrace.c
+				 * and bugs #423518 and #466012.
 				 *
 				 */
 
@@ -554,11 +522,7 @@ namespace Mono.Debugger.Backend
 					return true;
 				}
 
-				if (pending_sigstop == null)
-					pending_sigstop = new Queue<PendingEventInfo> ();
-
-				pending_sigstop.Enqueue (new PendingEventInfo (pid, status));
-				Report.Debug (DebugFlags.Wait, "Got SIGSTOP for unknown pid {0}, queueing event.", pid);
+				Report.Debug (DebugFlags.Wait, "Ignoring SIGSTOP from unknown pid {0}.", pid);
 				goto again;
 			}
 
@@ -586,6 +550,7 @@ namespace Mono.Debugger.Backend
 		{
 			if (waiting)
 				throw new InternalError ();
+			Report.Debug (DebugFlags.Wait, "Signalling wait event");
 			wait_event.Set ();
 		}
 
