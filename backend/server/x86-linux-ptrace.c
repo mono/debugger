@@ -194,6 +194,70 @@ server_ptrace_global_wait (guint32 *status_ret)
 	return ret;
 }
 
+static gboolean
+_server_ptrace_wait_for_new_thread (ServerHandle *handle)
+{
+	guint32 ret, status = 0;
+
+	/*
+	 * There is a race condition in the Linux kernel which shows up on >= 2.6.27:
+	 *
+	 * When creating a new thread, the initial stopping event of that thread is sometimes
+	 * sent before sending the `PTRACE_EVENT_CLONE' for it.
+	 *
+	 * Because of this, we wait here until the new thread has been stopped and ignore
+	 * any "early" stopping events.
+	 *
+	 * See also bugs #423518 and #466012.
+.	 *
+	 */
+
+	if (!g_static_mutex_trylock (&wait_mutex)) {
+		/* This should never happen, but let's not deadlock here. */
+		g_warning (G_STRLOC ": Can't lock mutex: %d", handle->inferior->pid);
+		return FALSE;
+	}
+
+	/*
+	 * If the call succeeds, then we're already stopped.
+	 */
+
+	if (x86_arch_get_registers (handle) == COMMAND_ERROR_NONE) {
+		g_static_mutex_unlock (&wait_mutex);
+		return TRUE;
+	}
+
+	/*
+	 * We own the `wait_mutex', so no other thread is currently waiting for the target
+	 * and we can safely wait for it here.
+	 */
+
+	ret = waitpid (handle->inferior->pid, &status, WUNTRACED | __WALL | __WCLONE);
+
+	/*
+	 * Safety check: make sure we got the correct event.
+	 */
+
+	if ((ret != handle->inferior->pid) || !WIFSTOPPED (status) || (WSTOPSIG (status) != SIGSTOP)) {
+		g_warning (G_STRLOC ": Wait failed: %d", handle->inferior->pid);
+		g_static_mutex_unlock (&wait_mutex);
+		return FALSE;
+	}
+
+	/*
+	 * Just as an extra safety check.
+	 */
+
+	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE) {
+		g_static_mutex_unlock (&wait_mutex);
+		g_warning (G_STRLOC ": Failed to get registers: %d", handle->inferior->pid);
+		return FALSE;
+	}
+
+	g_static_mutex_unlock (&wait_mutex);
+	return TRUE;
+}
+
 static ServerCommandError
 server_ptrace_stop (ServerHandle *handle)
 {

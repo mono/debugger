@@ -182,13 +182,13 @@ namespace Mono.Debugger.Backend
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, pid);
 
-			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1}", pid, new_thread);
+			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1} {2}", pid, new_thread, do_attach);
 
 			// Order is important: first add the new engine to the manager's hash table,
 			//                     then call inferior.Initialize() / inferior.Attach().
 			manager.AddEngine (new_thread);
 
-			new_thread.StartThread (do_attach);
+			new_thread.StartThread (do_attach, true);
 
 			if ((mono_manager != null) && !do_attach)
 				mono_manager.ThreadCreated (new_thread);
@@ -274,7 +274,7 @@ namespace Mono.Debugger.Backend
 			thread_hash [inferior.PID] = new_thread;
 
 			manager.ProcessExecd (new_thread);
-			new_thread.StartThread (false);
+			new_thread.StartThread (false, false);
 
 			manager.Debugger.OnProcessExecdEvent (this);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
