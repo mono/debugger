@@ -27,9 +27,9 @@ namespace Mono.Debugger.Tests
 			base.SetUp ();
 			Config.FollowFork = true;
 
-			bpt_local_waitpid = AssertBreakpoint ("-local " + (LineWaitpid+1));
-			bpt_waitpid = AssertBreakpoint ("-local " + LineWaitpid);
-			bpt_child = AssertBreakpoint ("-global " + LineChild);
+			bpt_local_waitpid = AssertBreakpoint (String.Format ("-local {0}:{1}", FileName, LineWaitpid+1));
+			bpt_waitpid = AssertBreakpoint (String.Format ("-local {0}:{1}", FileName, LineWaitpid));
+			bpt_child = AssertBreakpoint (String.Format ("-global {0}:{1}", FileName, LineChild));
 		}
 
 		[Test]
