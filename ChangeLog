@@ -1,3 +1,9 @@
+2009-02-25  Martin Baulig  <martin@ximian.com>
+
+	* backend/arch/X86_Instruction.cs
+	(X86_Instruction.DecodeModRM): Correctly identify ip-relative
+	addressing.
+
 2009-02-09  Martin Baulig  <martin@ximian.com>
 
 	* classes/Process.cs
