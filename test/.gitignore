@@ -1,0 +1,17 @@
+/.deps
+/.libs
+/Makefile
+/Makefile.in
+/*.exe
+/*.dll
+/*.so
+/a.out
+/test
+/foo
+/register
+/testnativetypes
+/*.log
+/*.sum
+/site.exp
+/*.mdb
+/module

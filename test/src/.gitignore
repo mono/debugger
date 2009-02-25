@@ -1,0 +1,12 @@
+/Makefile.in
+/Makefile
+/*.mdb
+/*.exe
+/*.dll
+/testnativefork
+/testnativeexec
+/testnativechild
+/testnativeattach
+/testnativetypes
+/.deps
+/.libs

@@ -1,0 +1,15 @@
+/.deps
+/.libs
+/Makefile.in
+/Makefile
+/mdb
+/mdb.exe
+/*.dll
+/*.mdb
+/*.exe
+/AssemblyInfo.cs
+/Mono.Debugger.dll.config
+/Mono.Debugger.Backend.dll.config
+/TestResult.log
+/TestResult.xml
+/runtests
