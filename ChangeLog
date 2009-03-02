@@ -1,3 +1,10 @@
+2009-03-02  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo.MinorVersion): New public readonly field.
+	(MonoThreadManager.ThreadCreated): Starting with runtime version 80.1,
+	there are now 3 daemon threads.
+
 2009-02-25  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/X86_Instruction.cs

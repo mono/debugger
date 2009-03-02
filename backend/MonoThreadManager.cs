@@ -223,6 +223,10 @@ namespace Mono.Debugger.Backend
 
 			if (++index < 3)
 				sse.SetDaemon ();
+			if (debugger_info.MinorVersion >= 1) {
+				if (index < 4)
+					sse.SetDaemon ();
+			}
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
@@ -403,6 +407,8 @@ namespace Mono.Debugger.Backend
 		public const int  MaxDynamicVersion = 80;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
+		public readonly int MinorVersion;
+
 		public readonly int MonoTrampolineNum;
 		public readonly TargetAddress MonoTrampolineCode;
 		public readonly TargetAddress NotificationAddress;
@@ -472,7 +478,9 @@ namespace Mono.Debugger.Backend
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
 		{
-			/* skip past magic, version, and total_size */
+			reader.Offset = 12;
+			MinorVersion              = reader.ReadInteger ();
+
 			reader.Offset = 24;
 
 			SymbolTableSize           = reader.ReadInteger ();
