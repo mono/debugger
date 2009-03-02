@@ -231,7 +231,7 @@ AC_SUBST(TARGET_MCS)
 AC_SUBST(TARGET_MONO)
 AC_SUBST(NUNIT_PREFIX)
 
-have_nunti_2_3=false
+have_nunit_2_3=false
 if test "x$NUNIT_VERSION" = "x2.3" ; then
    have_nunit_2_3=true
 elif test "x$NUNIT_VERSION" = "x2.4" ; then
