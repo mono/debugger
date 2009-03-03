@@ -14,6 +14,12 @@ namespace Mono.Debugger.Tests
 			: base ("TestMultiThread2")
 		{ }
 
+		public override void SetUp ()
+		{
+			base.SetUp ();
+			Interpreter.IgnoreThreadCreation = true;
+		}
+
 		[Test]
 		[Category("Threads")]
 		public void Main ()
@@ -26,8 +32,17 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "main", "X.Main()");
 
 			AssertExecute ("next");
-			Thread child = AssertThreadCreated ();
-			AssertHitBreakpoint (child, "thread main", "X.ThreadMain()");
+
+			DebuggerEvent e = AssertEvent ();
+
+			if (e.Type != DebuggerEventType.TargetEvent)
+				Assert.Fail ("Got unknown event: {0}", e);
+			TargetEventArgs args = (TargetEventArgs) e.Data2;
+			if (args.Type != TargetEventType.TargetHitBreakpoint)
+				Assert.Fail ("Got unknown event: {0}", args);
+
+			Thread child = (Thread) e.Data;
+			AssertFrame (child, "thread main", "X.ThreadMain()");
 
 			AssertExecute ("kill");
 		}
