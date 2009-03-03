@@ -12,8 +12,6 @@
 	(MonoDebuggerInfo): Accept runtime major versions 80 and 81.
 	(MonoDebuggerInfo.MinorVersion): New public readonly field.
 	(MonoDebuggerInfo.MajorVersion): New public readonly field.
-	(MonoThreadManager.ThreadCreated): Starting with runtime version 81.0,
-	there are now 3 daemon threads.
 
 2009-02-25  Martin Baulig  <martin@ximian.com>
 
