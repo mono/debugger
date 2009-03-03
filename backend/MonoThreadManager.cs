@@ -223,7 +223,7 @@ namespace Mono.Debugger.Backend
 
 			if (++index < 3)
 				sse.SetDaemon ();
-			if (debugger_info.MinorVersion >= 1) {
+			if (debugger_info.MajorVersion >= 81) {
 				if (index < 4)
 					sse.SetDaemon ();
 			}
@@ -404,9 +404,10 @@ namespace Mono.Debugger.Backend
 	{
 		// These constants must match up with those in mono/mono/metadata/mono-debug.h
 		public const int  MinDynamicVersion = 80;
-		public const int  MaxDynamicVersion = 80;
+		public const int  MaxDynamicVersion = 81;
 		public const long DynamicMagic      = 0x7aff65af4253d427;
 
+		public readonly int MajorVersion;
 		public readonly int MinorVersion;
 
 		public readonly int MonoTrampolineNum;
@@ -478,7 +479,8 @@ namespace Mono.Debugger.Backend
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
 		{
-			reader.Offset = 12;
+			reader.Offset = 8;
+			MajorVersion              = reader.ReadInteger ();
 			MinorVersion              = reader.ReadInteger ();
 
 			reader.Offset = 24;

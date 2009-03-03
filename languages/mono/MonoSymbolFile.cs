@@ -1265,13 +1265,17 @@ namespace Mono.Debugger.Languages.Mono
 					} else
 						var = address.LocalVariableInfo [sv.Index];
 
-					TargetStructType type = mono.ReadStructType (memory, var.MonoType);
-					MonoVariable scope_var = new MonoVariable (
-						"$__" + sv.Scope, type, true, type.IsByRef, this, var);
+					try {
+						TargetStructType type = mono.ReadStructType (memory, var.MonoType);
+						MonoVariable scope_var = new MonoVariable (
+							"$__" + sv.Scope, type, true, type.IsByRef, this, var);
 
-					ScopeInfo info = new ScopeInfo (sv.Scope, scope_var, type);
-					scopes.Add (sv.Scope, info);
-					scope_list.Add (info);
+						ScopeInfo info = new ScopeInfo (sv.Scope, scope_var, type);
+						scopes.Add (sv.Scope, info);
+						scope_list.Add (info);
+					} catch (Exception ex) {
+						Report.Error ("Cannot read scope variable: {0}\n{1}", var, ex);
+					}
 				}
 
 				foreach (ScopeInfo scope in scope_list) {
