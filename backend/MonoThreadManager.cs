@@ -223,7 +223,7 @@ namespace Mono.Debugger.Backend
 
 			if (++index < 3)
 				sse.SetDaemon ();
-			if (debugger_info.MinorVersion >= 1) {
+			if (debugger_info.MajorVersion >= 81) {
 				if (index < 4)
 					sse.SetDaemon ();
 			}
