@@ -255,7 +255,7 @@ namespace Mono.Debugger.Backend
 					return;
 
 				case ExceptionAction.StopUnhandled:
-					if (!check_runtime_version (81, 1))
+					if (!check_runtime_version (81, 1) && !check_runtime_version (80, 1))
 						goto case ExceptionAction.Stop;
 					inferior.WriteInteger (info + 4 + 2 * inferior.TargetAddressSize, 1);
 					do_continue ();
