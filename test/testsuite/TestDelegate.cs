@@ -61,11 +61,11 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Boston: 3");
 			AssertNoTargetOutput ();
 
-			AssertBreakpoint ("-invoke x.Foo");
+			int bpt_invoke = AssertBreakpoint ("-invoke x.Foo");
 			AssertExecute ("continue");
 			AssertTargetOutput ("Back in main");
 			AssertNoTargetOutput ();
-			AssertStopped (thread, "X.foo(int)", 17);
+			AssertHitBreakpoint (thread, bpt_invoke, "X.foo(int)", 17);
 			AssertExecute ("next");
 			AssertTargetOutput ("Hello World: 11");
 			AssertNoTargetOutput ();

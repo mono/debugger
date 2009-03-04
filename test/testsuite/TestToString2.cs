@@ -4,6 +4,7 @@ using NUnit.Framework;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
+using EE = Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger.Tests
 {
@@ -35,17 +36,17 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (b != null);
 
 			string text;
-			ExpressionEvaluator.EvaluationResult result;
+			EE.EvaluationResult result;
 
-			result = ExpressionEvaluator.MonoObjectToString (thread, a, 1000, out text);
+			result = EE.MonoObjectToString (thread, a, EE.EvaluationFlags.None, 1000, out text);
 
 			if (result != ExpressionEvaluator.EvaluationResult.Ok)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
 			if (text != "Foo (5)")
 				Assert.Fail ("Failed to print `a': got result {0}", text);
 
-			result = ExpressionEvaluator.MonoObjectToString (thread, b, 1000, out text);
-			if (result != ExpressionEvaluator.EvaluationResult.Timeout)
+			result = EE.MonoObjectToString (thread, b, EE.EvaluationFlags.None, 1000, out text);
+			if (result != EE.EvaluationResult.Timeout)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
 
 			AssertExecute ("continue");

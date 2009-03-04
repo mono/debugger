@@ -222,23 +222,7 @@ namespace Mono.Debugger.Backend
 				inferior.Continue ();
 				return;
 			}
-			ProcessChildEvent (cevent);
-		}
 
-		// <summary>
-		//   Process one event from the target.  The return value specifies whether
-		//   we started another atomic operation or whether the target is still
-		//   stopped.
-		//
-		//   This method is called each time an atomic operation is completed - or
-		//   something unexpected happened, for instance we hit a breakpoint, received
-		//   a signal or just died.
-		//
-		//   Now, our first task is figuring out whether the atomic operation actually
-		//   completed, ie. the target stopped normally.
-		// </summary>
-		protected void ProcessChildEvent (Inferior.ChildEvent cevent)
-		{
 			Inferior.ChildEventType message = cevent.Type;
 			int arg = (int) cevent.Argument;
 
@@ -359,96 +343,109 @@ namespace Mono.Debugger.Backend
 					Report.Debug (DebugFlags.SSE,
 						      "{0} hit temporary breakpoint {1} at {2} {3}",
 						      this, arg, inferior.CurrentFrame, bpt);
-					if ((bpt == null) || !bpt.Breaks (thread.ID)) {
+					if ((bpt == null) || !bpt.Breaks (thread.ID) || bpt.HideFromUser) {
 						message = Inferior.ChildEventType.CHILD_STOPPED;
 						arg = 0;
 						cevent = new Inferior.ChildEvent (
 							Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
 					} else {
-						ProcessChildEvent (cevent, result);
+						ProcessOperationEvent (cevent);
 						return;
 					}
 				}
 			}
 
-			if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
-				// Ok, the next thing we need to check is whether this is actually "our"
-				// breakpoint or whether it belongs to another thread.  In this case,
-				// `step_over_breakpoint' does everything for us and we can just continue
-				// execution.
-				bool remain_stopped = child_breakpoint (cevent, arg);
+			switch (message) {
+			case Inferior.ChildEventType.CHILD_STOPPED:
 				if (stop_requested) {
 					stop_requested = false;
 					frame_changed (inferior.CurrentFrame, null);
-					if (remain_stopped)
-						result = new TargetEventArgs (TargetEventType.TargetHitBreakpoint, arg, current_frame);
-					else
-						result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
-				} else if (!remain_stopped) {
-					do_continue ();
+					OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame));
 					return;
-				}
-			}
-
-			switch (message) {
-			case Inferior.ChildEventType.CHILD_STOPPED:
-				if (stop_requested || (arg != 0)) {
-					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, null);
-					result = new TargetEventArgs (
-						TargetEventType.TargetStopped, arg,
-						current_frame);
 				}
 
 				break;
 
 			case Inferior.ChildEventType.UNHANDLED_EXCEPTION: {
-				TargetAddress exc = new TargetAddress (
-					manager.AddressDomain, cevent.Data1);
-				TargetAddress ip = new TargetAddress (
-					manager.AddressDomain, cevent.Data2);
-
+				TargetAddress exc = new TargetAddress (manager.AddressDomain, cevent.Data1);
+				TargetAddress ip = new TargetAddress (manager.AddressDomain, cevent.Data2);
 				PushOperation (new OperationException (this, ip, exc, true));
 				return;
 			}
 
-			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT:
+			case Inferior.ChildEventType.CHILD_HIT_BREAKPOINT: {
+				// Ok, the next thing we need to check is whether this is actually "our"
+				// breakpoint or whether it belongs to another thread.  In this case,
+				// `step_over_breakpoint' does everything for us and we can just continue
+				// execution.
+				Breakpoint bpt;
+				bool remain_stopped = child_breakpoint (cevent, arg, out bpt);
+				if (stop_requested) {
+					stop_requested = false;
+					frame_changed (inferior.CurrentFrame, null);
+					if (remain_stopped && (bpt != null) && !bpt.HideFromUser)
+						OperationCompleted (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, bpt.Index, current_frame));
+					else
+						OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
+					return;
+				} else if (!remain_stopped) {
+					do_continue ();
+					return;
+				}
 				break;
+			}
 
 			case Inferior.ChildEventType.CHILD_SIGNALED:
 				if (killed)
-					result = new TargetEventArgs (TargetEventType.TargetExited, 0);
+					OperationCompleted (new TargetEventArgs (TargetEventType.TargetExited, 0));
 				else
-					result = new TargetEventArgs (TargetEventType.TargetSignaled, arg);
-				break;
+					OperationCompleted (new TargetEventArgs (TargetEventType.TargetSignaled, arg));
+				return;
 
 			case Inferior.ChildEventType.CHILD_EXITED:
-				result = new TargetEventArgs (TargetEventType.TargetExited, arg);
-				break;
+				OperationCompleted (new TargetEventArgs (TargetEventType.TargetExited, arg));
+				return;
 
 			case Inferior.ChildEventType.CHILD_CALLBACK_COMPLETED:
 				frame_changed (inferior.CurrentFrame, null);
-				result = new TargetEventArgs (
-					TargetEventType.TargetStopped, 0,
-					current_frame);
-				break;
-			}
+				OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
+				return;
 
-			ProcessChildEvent (cevent, result);
-		}
+			case Inferior.ChildEventType.RUNTIME_INVOKE_DONE:
+				OperationRuntimeInvoke rti = rti_stack.Pop ();
+				if (rti.ID != cevent.Argument)
+					throw new InternalError ("{0} got unknown RUNTIME_INVOKE_DONE: {1} {2}", this, rti.ID, cevent);
 
-		protected void ProcessChildEvent (Inferior.ChildEvent cevent, TargetEventArgs result)
-		{
-			Inferior.ChildEventType message = cevent.Type;
-			int arg = (int) cevent.Argument;
+				frame_changed (inferior.CurrentFrame, null);
+				rti.Completed (cevent.Data1, cevent.Data2);
 
-		send_result:
-			// If `result' is not null, then the target stopped abnormally.
-			if (result != null) {
-				// Ok, inform the user that we stopped.
-				OperationCompleted (result);
+				if (rti.IsSuspended) {
+					InterruptibleOperation io = nested_break_stack.Pop ();
+					if (io != rti)
+						throw new InternalError ("{0} unexpected item on nested break state stack: {1}", this, io);
+					process.OnLeaveNestedBreakState (this);
+				}
+
+				if (current_operation != rti)
+					current_operation.CompletedOperation ();
+				current_operation = rti;
+
+				TargetEventArgs args = null;
+				if ((rti.Flags & RuntimeInvokeFlags.SendEventOnCompletion) != 0)
+					args = new TargetEventArgs (TargetEventType.RuntimeInvokeDone, rti.Result, current_frame);
+				OperationCompleted (args);
 				return;
 			}
+
+			ProcessOperationEvent (cevent);
+		}
+
+		protected void ProcessOperationEvent (Inferior.ChildEvent cevent)
+		{
+			TargetEventArgs result = null;
+
+			Inferior.ChildEventType message = cevent.Type;
+			int arg = (int) cevent.Argument;
 
 			//
 			// Sometimes, we need to do just one atomic operation - in all
@@ -460,69 +457,46 @@ namespace Mono.Debugger.Backend
 			// completed by returning true.
 			//
 
-			if (current_operation != null) {
-				bool send_result;
+			if (current_operation == null)
+				throw new InternalError ("SSE {0} has no current operation, but received event {1}", this, cevent);
 
-				if (!current_operation.ProcessEvent (cevent, out result, out send_result))
+			Operation.EventResult status = current_operation.ProcessEvent (cevent, out result);
+
+			Report.Debug (DebugFlags.EventLoop, "{0} processed operation event: {1} {2} {3} {4}", this,
+				      current_operation, cevent, status, result);
+
+			switch (status) {
+			case Operation.EventResult.Running:
+				return;
+
+			case Operation.EventResult.Completed:
+			case Operation.EventResult.SuspendOperation: {
+				Operation.EventResult new_status = current_operation.CompletedOperation (cevent, status, ref result);
+				if (new_status == Operation.EventResult.Running)
 					return;
+				else if (new_status == Operation.EventResult.Completed)
+					OperationCompleted (result);
+				else if (new_status == Operation.EventResult.SuspendOperation)
+					OperationCompleted (result, true);
+				else
+					throw new InternalError ("Got unexpected event result: {0}", new_status);
 
-				if (result != null)
-					goto send_result;
-
-				if (!send_result) {
-					OperationCompleted (null);
-					return;
-				}
-			}
-
-			//
-			// Ok, the target stopped normally.  Now we need to compute the
-			// new stack frame and then send the result to our caller.
-			//
-			TargetAddress frame = inferior.CurrentFrame;
-
-			//
-			// We're done with our stepping operation, but first we need to
-			// compute the new StackFrame.  While doing this, `frame_changed'
-			// may discover that we need to do another stepping operation
-			// before telling the user that we're finished.  This is to avoid
-			// that we stop in things like a method's prologue or epilogue
-			// code.  If that happens, we just continue stepping until we reach
-			// the first actual source line in the method.
-			//
-			Operation new_operation = frame_changed (frame, current_operation);
-			if (new_operation != null) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} frame changed at {1} => new operation {2}",
-					      this, frame, new_operation, message);
-
-				if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
-					new_operation.PendingBreakpoint = arg;
-
-				ProcessOperation (new_operation);
 				return;
 			}
 
-			//
-			// Now we're really finished.
-			//
-			int pending_bpt = -1;
-			if (message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
-				pending_bpt = arg;
-			else if (current_operation != null)
-				pending_bpt = current_operation.PendingBreakpoint;
-			if (pending_bpt >= 0) {
-				Breakpoint bpt = lookup_breakpoint (pending_bpt);
-				if ((bpt != null) && bpt.Breaks (thread.ID) && !bpt.HideFromUser) {
-					result = new TargetEventArgs (
-						TargetEventType.TargetHitBreakpoint, bpt.Index,
-						current_frame);
-					goto send_result;
-				}
-			}
+			case Operation.EventResult.CompletedCallback:
+				OperationCompleted (null);
+				return;
 
-			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
-			goto send_result;
+			case Operation.EventResult.ResumeOperation:
+				if (current_operation.ResumeOperation ())
+					return;
+				status = Operation.EventResult.Completed;
+				goto case Operation.EventResult.Completed;
+
+			default:
+				throw new InternalError ("Got unexpected event result: {0}", status);
+			}
 		}
 
 		bool check_runtime_version (int major, int minor)
@@ -536,21 +510,52 @@ namespace Mono.Debugger.Backend
 
 #endregion
 
+		void AbortRuntimeInvoke (long rti_id)
+		{
+			OperationRuntimeInvoke rti = rti_stack.Pop ();
+			if (rti.ID != rti_id)
+				throw new InternalError ("{0} aborting rti failed: {1} {2}", this, rti.ID, rti_id);
+
+			if (rti.IsSuspended) {
+				InterruptibleOperation io = nested_break_stack.Pop ();
+				if (io != rti)
+					throw new InternalError ("{0} aborting rti failed: {1}", this, io);
+				process.OnLeaveNestedBreakState (this);
+			}
+
+			rti.CompletedOperation ();
+		}
+
 		void OperationCompleted (TargetEventArgs result)
+		{
+			OperationCompleted (result, false);
+		}
+
+		void OperationCompleted (TargetEventArgs result, bool suspended)
 		{
 			lock (this) {
 				remove_temporary_breakpoint ();
 				engine_stopped = true;
 				last_target_event = result;
-				Report.Debug (DebugFlags.EventLoop, "{0} completed operation {1}: {2}",
-					      this, current_operation, result);
-				if (result != null)
-					process.OnTargetEvent (this, result);
-				if (current_operation != null) {
-					Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
-						      this, current_operation.Result);
-					current_operation.Result.Completed ();
+				Report.Debug (DebugFlags.EventLoop, "{0} {1} operation {2}: {3}",
+					      this, suspended ? "suspending" : "terminating", current_operation, result);
+
+				if (suspended) {
+					if (result != null)
+						process.OnTargetEvent (this, result);
+					process.OnEnterNestedBreakState (this);
+					((InterruptibleOperation) current_operation).IsSuspended = true;
+					nested_break_stack.Push ((InterruptibleOperation) current_operation);
 					current_operation = null;
+				} else {
+					if (result != null)
+						process.OnTargetEvent (this, result);
+					if (current_operation != null) {
+						Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
+							      this, current_operation.Result);
+						current_operation.CompletedOperation ();
+						current_operation = null;
+					}
 				}
 			}
 		}
@@ -689,8 +694,7 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.SSE,
 					      "{0} starting {1}", this, operation);
 
-			current_operation = operation;
-			ExecuteOperation (operation);
+			PushOperation (operation);
 			return operation.Result;
 		}
 
@@ -707,7 +711,15 @@ namespace Mono.Debugger.Backend
 		{
 			try {
 				check_inferior ();
-				operation.Execute ();
+
+				InterruptibleOperation iop = operation as InterruptibleOperation;
+				if ((iop != null) && iop.IsSuspended) {
+					iop.IsSuspended = false;
+					do_continue ();
+					return;
+				} else {
+					operation.Execute ();
+				}
 			} catch (Exception ex) {
 				Report.Debug (DebugFlags.SSE, "{0} caught exception while " +
 					      "processing operation {1}: {2}", this, operation, ex);
@@ -951,19 +963,23 @@ namespace Mono.Debugger.Backend
 		//   If we can't find a handler for the breakpoint, the default is to stop
 		//   the target and let the user decide what to do.
 		// </summary>
-		bool child_breakpoint (Inferior.ChildEvent cevent, int index)
+		bool child_breakpoint (Inferior.ChildEvent cevent, int index, out Breakpoint bpt)
 		{
 			// The inferior knows about breakpoints from all threads, so if this is
 			// zero, then no other thread has set this breakpoint.
-			if (index == 0)
+			if (index == 0) {
+				bpt = null;
 				return true;
+			}
 
-			Breakpoint bpt = lookup_breakpoint (index);
+			bpt = lookup_breakpoint (index);
 			if ((bpt == null) || !bpt.Breaks (thread.ID))
 				return false;
 
 			if (!process.BreakpointManager.IsBreakpointEnabled (index))
 				return false;
+
+			index = bpt.Index;
 
 			bool remain_stopped;
 			if (bpt.BreakpointHandler (inferior, out remain_stopped))
@@ -1031,10 +1047,11 @@ namespace Mono.Debugger.Backend
 		ExceptionAction throw_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} throwing exception {1} at {2} while running {3}", this, exc, ip,
-				      current_operation);
+				      "{0} throwing exception {1} at {2} / {3} while running {4}", this, exc, ip,
+				      stack, current_operation);
 
-			if (current_operation is OperationRuntimeInvoke)
+			OperationRuntimeInvoke rti = current_operation as OperationRuntimeInvoke;
+			if ((rti != null) && !rti.NestedBreakStates)
 				return ExceptionAction.None;
 
 			TargetObject exc_obj = process.MonoLanguage.CreateObject (inferior, exc);
@@ -1261,10 +1278,10 @@ namespace Mono.Debugger.Backend
 
 		void remove_temporary_breakpoint ()
 		{
-			Report.Debug (DebugFlags.SSE, "{0} remove temp breakpoint {1}",
-				      this, temp_breakpoint);
-
 			if (temp_breakpoint != null) {
+				Report.Debug (DebugFlags.SSE, "{0} removing temp breakpoint {1}",
+					      this, temp_breakpoint);
+
 				inferior.RemoveBreakpoint (temp_breakpoint.ID);
 				temp_breakpoint = null;
 			}
@@ -1696,12 +1713,12 @@ namespace Mono.Debugger.Backend
 		public override void RuntimeInvoke (TargetFunctionType function,
 						    TargetStructObject object_argument,
 						    TargetObject[] param_objects,
-						    bool is_virtual, bool debug,
+						    RuntimeInvokeFlags flags,
 						    RuntimeInvokeResult result)
 		{
 			StartOperation (new OperationRuntimeInvoke (
 				this, function, object_argument, param_objects,
-				is_virtual, debug, result));
+				flags, result));
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2,
@@ -1748,7 +1765,10 @@ namespace Mono.Debugger.Backend
 					return null;
 
 				if (!process.IsManagedApplication || !run_finally) {
-					inferior.AbortInvoke (parent_frame.StackPointer);
+					long aborted_rti;
+					inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti);
+					if (aborted_rti != 0)
+						AbortRuntimeInvoke (aborted_rti);
 					inferior.SetRegisters (parent_frame.Registers);
 					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
@@ -2205,6 +2225,9 @@ namespace Mono.Debugger.Backend
 		TargetAddress extended_notifications_addr = TargetAddress.Null;
 		TargetAddress main_retaddr = TargetAddress.Null;
 
+		Stack<InterruptibleOperation> nested_break_stack = new Stack<InterruptibleOperation> ();
+		Stack<OperationRuntimeInvoke> rti_stack = new Stack<OperationRuntimeInvoke> ();
+
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject
 		{
@@ -2303,18 +2326,23 @@ namespace Mono.Debugger.Backend
 
 #region SSE Operations
 	protected abstract class Operation {
-		protected enum EventResult
+		public enum EventResult
 		{
 			Running,
 			Completed,
 			CompletedCallback,
 			AskParent,
 			ResumeOperation,
-			ParentResumed
+			ParentResumed,
+			SuspendOperation
 		}
 
 		public abstract bool IsSourceOperation {
 			get;
+		}
+
+		public virtual bool CheckBreakpointsOnCompletion {
+			get { return false; }
 		}
 
 		protected bool HasChild {
@@ -2326,7 +2354,9 @@ namespace Mono.Debugger.Backend
 
 		public readonly CommandResult Result;
 		public Inferior.StackFrame StartFrame;
-		public int PendingBreakpoint = -1;
+
+		protected int ReportBreakpointHit = -1;
+		protected bool ReportSuspend;
 
 		protected Operation (SingleSteppingEngine sse, CommandResult result)
 		{
@@ -2370,37 +2400,14 @@ namespace Mono.Debugger.Backend
 				child = op;
 		}
 
-		public virtual bool ProcessEvent (Inferior.ChildEvent cevent,
-						  out TargetEventArgs args, out bool send_result)
+		public void CompletedOperation ()
 		{
-			EventResult result = ProcessEvent (cevent, out args);
-
-			switch (result) {
-			case EventResult.Running:
-				send_result = false;
-				return false;
-
-			case EventResult.Completed:
-				send_result = true;
-				return true;
-
-			case EventResult.CompletedCallback:
-				send_result = false;
-				return true;
-
-			case EventResult.ResumeOperation:
-				if (ResumeOperation ())
-					goto case EventResult.Running;
-				else
-					goto case EventResult.Completed;
-
-			default:
-				throw new InternalError ("EventResult is none of Running, Completed or CompletedCallback: {0} {1}", this, result);
-			}
+			Result.Completed ();
+			child = null;
 		}
 
-		protected virtual EventResult ProcessEvent (Inferior.ChildEvent cevent,
-							    out TargetEventArgs args)
+		public virtual EventResult ProcessEvent (Inferior.ChildEvent cevent,
+							 out TargetEventArgs args)
 		{
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
 				args = null;
@@ -2408,8 +2415,19 @@ namespace Mono.Debugger.Backend
 					return EventResult.Running;
 			}
 
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) && (cevent.Argument != 0)) {
+				sse.frame_changed (inferior.CurrentFrame, null);
+				args = new TargetEventArgs (TargetEventType.TargetStopped, (int) cevent.Argument, sse.current_frame);
+				return EventResult.Completed;
+			}
+
+			EventResult result;
 			if (child != null) {
-				EventResult result = child.ProcessEvent (cevent, out args);
+				Report.Debug (DebugFlags.EventLoop, "{0} child event: {1} {2}", sse, this, cevent);
+
+				result = child.ProcessEvent (cevent, out args);
+
+				Report.Debug (DebugFlags.EventLoop, "{0} child event done: {1} {2} {3} {4}", sse, this, cevent, result, args);
 
 				if (result == EventResult.ParentResumed) {
 					child = null;
@@ -2433,7 +2451,90 @@ namespace Mono.Debugger.Backend
 					      sse, cevent, old_child, this);
 			}
 
-			return DoProcessEvent (cevent, out args);
+			result = DoProcessEvent (cevent, out args);
+
+			return result;
+		}
+
+		public virtual EventResult CompletedOperation (Inferior.ChildEvent cevent, EventResult result, ref TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.EventLoop, "{0} operation completed: {1} {2} {3} - {4} {5}",
+				      sse, this, cevent, result, ReportBreakpointHit, ReportSuspend);
+
+			child = null;
+
+			if (ReportSuspend) {
+				result = EventResult.SuspendOperation;
+				ReportSuspend = false;
+			}
+
+			if (result == EventResult.SuspendOperation) {
+				if (!(this is InterruptibleOperation) || !sse.process.Session.Config.NestedBreakStates)
+					result = EventResult.Completed;
+			}
+
+			if (args != null)
+				return result;
+
+			//
+			// We're done with our stepping operation, but first we need to
+			// compute the new StackFrame.  While doing this, `frame_changed'
+			// may discover that we need to do another stepping operation
+			// before telling the user that we're finished.  This is to avoid
+			// that we stop in things like a method's prologue or epilogue
+			// code.  If that happens, we just continue stepping until we reach
+			// the first actual source line in the method.
+			//
+			Operation new_operation = sse.frame_changed (inferior.CurrentFrame, this);
+
+			if ((ReportBreakpointHit < 0) &&
+			    (CheckBreakpointsOnCompletion || (result == EventResult.SuspendOperation))) {
+				int index;
+				bool is_enabled;
+				sse.process.BreakpointManager.LookupBreakpoint (
+					inferior.CurrentFrame, out index, out is_enabled);
+
+				if ((index != 0) && is_enabled)
+					ReportBreakpointHit = index;
+			}
+
+			if (new_operation != null) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} frame changed at {1} => new operation {2}",
+					      this, inferior.CurrentFrame, new_operation);
+
+				if (cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
+					ReportBreakpointHit = (int) cevent.Argument;
+				if (result == EventResult.SuspendOperation)
+					ReportSuspend = true;
+
+				sse.PushOperation (new_operation);
+
+				args = null;
+				return EventResult.Running;
+			}
+
+			//
+			// Now we're really finished.
+			//
+			int bpt_hit = ReportBreakpointHit;
+			ReportBreakpointHit = -1;
+
+			if (cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT)
+				bpt_hit = (int) cevent.Argument;
+
+			if (bpt_hit >= 0) {
+				Breakpoint bpt = sse.lookup_breakpoint (bpt_hit);
+				if ((bpt != null) && bpt.Breaks (sse.Thread.ID) && !bpt.HideFromUser) {
+					args = new TargetEventArgs (
+						TargetEventType.TargetHitBreakpoint, bpt.Index,
+						sse.current_frame);
+					return result;
+				}
+			}
+
+			args = new TargetEventArgs (TargetEventType.TargetStopped, 0, sse.current_frame);
+			return result;
 		}
 
 		protected abstract EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -2789,12 +2890,13 @@ namespace Mono.Debugger.Backend
 			return false;
 		}
 
-		protected override EventResult ProcessEvent (Inferior.ChildEvent cevent,
-							     out TargetEventArgs args)
+		public override EventResult ProcessEvent (Inferior.ChildEvent cevent,
+							  out TargetEventArgs args)
 		{
 			if (((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
 			     (cevent.Argument == 0)) ||
-			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK)) {
+			    ((cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) &&
+			     (cevent.Type != Inferior.ChildEventType.RUNTIME_INVOKE_DONE))) {
 				if (!ReleaseThreadLock (cevent)) {
 					args = null;
 					return EventResult.Running;
@@ -2884,6 +2986,10 @@ namespace Mono.Debugger.Backend
 
 	protected abstract class OperationStepBase : Operation
 	{
+		public override bool CheckBreakpointsOnCompletion {
+			get { return true; }
+		}
+
 		protected OperationStepBase (SingleSteppingEngine sse, CommandResult result)
 			: base (sse, result)
 		{ }
@@ -3178,6 +3284,10 @@ namespace Mono.Debugger.Backend
 		TargetAddress until;
 		bool in_background;
 
+		public override bool CheckBreakpointsOnCompletion {
+			get { return true; }
+		}
+
 		public OperationRun (SingleSteppingEngine sse, TargetAddress until,
 				     bool in_background, CommandResult result)
 			: base (sse, result)
@@ -3229,7 +3339,8 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.EventLoop, "{0} received {1} at {2} in {3}",
 				      sse, cevent, inferior.CurrentFrame, this);
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) ||
-			    (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK))
+			    (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK) ||
+			    (cevent.Type == Inferior.ChildEventType.RUNTIME_INVOKE_DONE))
 				return EventResult.Completed;
 			Execute ();
 			return EventResult.Running;
@@ -3367,7 +3478,8 @@ namespace Mono.Debugger.Backend
 			    (cevent.Argument == 0)) {
 				sse.do_continue ();
 				return EventResult.Running;
-			} else if (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) {
+			} else if ((cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK) &&
+				   (cevent.Type != Inferior.ChildEventType.RUNTIME_INVOKE_DONE)) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} aborting callback {1} ({2}) at {3}: {4}",
 					      sse, this, ID, inferior.CurrentFrame, cevent);
@@ -3386,7 +3498,9 @@ namespace Mono.Debugger.Backend
 			try {
 				args = null;
 				return CallbackCompleted (cevent);
-			} catch {
+			} catch (Exception ex) {
+				Report.Debug (DebugFlags.SSE, "{0} got exception while handling event {1}: {2}",
+					      sse, cevent, ex);
 				RestoreStack ();
 				return EventResult.CompletedCallback;
 			}
@@ -3514,314 +3628,427 @@ namespace Mono.Debugger.Backend
 		}
 	}
 
-	protected class OperationRuntimeInvoke : OperationCallback
+	protected class OperationRuntimeInvoke : InterruptibleOperation
 	{
 		new public readonly RuntimeInvokeResult Result;
 		public readonly MonoFunctionType Function;
+		public readonly TargetStructObject Instance;
 		public readonly TargetObject[] ParamObjects;
-		public readonly bool IsVirtual;
-		public readonly bool Debug;
+		public readonly RuntimeInvokeFlags Flags;
 
-		private readonly TargetMemoryAccess internal_target;
-
-		MonoLanguageBackend language;
-		TargetAddress method = TargetAddress.Null;
-		TargetAddress invoke = TargetAddress.Null;
-		TargetStructObject instance;
-		MonoClassInfo class_info;
-		Stage stage;
-
-		protected enum Stage {
-			Uninitialized,
-			ResolvedClass,
-			BoxingInstance,
-			HasMethodAddress,
-			GettingVirtualMethod,
-			HasVirtualMethod,
-			CompilingMethod,
-			CompiledMethod,
-			InvokedMethod
-		}
+		OperationRuntimeInvokeHelper helper;
 
 		public override bool IsSourceOperation {
 			get { return true; }
+		}
+
+		public bool Debug {
+			get { return (Flags & RuntimeInvokeFlags.BreakOnEntry) != 0; }
+		}
+
+		public bool NestedBreakStates {
+			get {
+				if (!sse.Process.Session.Config.NestedBreakStates)
+					return false;
+
+				return (Flags & RuntimeInvokeFlags.NestedBreakStates) != 0;
+			}
+		}
+
+		protected bool IsVirtual {
+			get { return (Flags & RuntimeInvokeFlags.VirtualMethod) != 0; }
+		}
+
+		public long ID {
+			get { return helper.ID; }
 		}
 
 		public OperationRuntimeInvoke (SingleSteppingEngine sse,
 					       TargetFunctionType function,
 					       TargetStructObject instance,
 					       TargetObject[] param_objects,
-					       bool is_virtual, bool debug,
+					       RuntimeInvokeFlags flags,
 					       RuntimeInvokeResult result)
 			: base (sse, result)
 		{
 			this.Result = result;
 			this.Function = (MonoFunctionType) function;
-			this.instance = instance;
+			this.Instance = instance;
 			this.ParamObjects = param_objects;
-			this.IsVirtual = is_virtual;
-			this.Debug = debug;
-			this.method = TargetAddress.Null;
-			this.stage = Stage.Uninitialized;
-
-			this.internal_target = inferior;
+			this.Flags = flags;
 		}
 
 		protected override void DoExecute ()
 		{
-			language = sse.process.MonoLanguage;
-
-			class_info = Function.ResolveClass (inferior, false);
-			if (class_info == null) {
-				MonoClassType klass = Function.DeclaringType as MonoClassType;
-				if (klass == null)
-					throw new TargetException (TargetError.ClassNotInitialized,
-								   "Class `{0}' not initialized yet.",
-								   Function.DeclaringType.Name);
-
-				TargetAddress image = Function.SymbolFile.MonoImage;
-				int token = klass.Token;
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti resolving class {1}:{2:x}", sse, image, token);
-
-				inferior.CallMethod (
-					sse.MonoDebuggerInfo.LookupClass, image.Address, 0, 0,
-					Function.DeclaringType.Name, ID);
-				return;
-			}
-
-			stage = Stage.ResolvedClass;
-			do_execute ();
+			Report.Debug (DebugFlags.SSE, "{0} rti execute", sse);
+			if (helper != null)
+				throw new InternalError ("{0} rti already has a helper operation", sse);
+			helper = new OperationRuntimeInvokeHelper (sse, this);
+			sse.PushOperation (helper);
 		}
 
-		void do_execute ()
+		public override bool ResumeOperation ()
 		{
-			switch (stage) {
-			case Stage.ResolvedClass:
-				if (!get_method_address ())
-					throw new TargetException (TargetError.ClassNotInitialized,
-								   "Class `{0}' not initialized yet.",
-								   Function.DeclaringType.Name);
-				goto case Stage.HasMethodAddress;
+			Report.Debug (DebugFlags.SSE, "{0} rti resuming operation {1}", sse, this);
 
-			case Stage.HasMethodAddress:
-				if (!get_virtual_method ())
-					return;
-				goto case Stage.HasVirtualMethod;
-
-			case Stage.HasVirtualMethod: {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti compiling method: {1}", sse, method);
-
-				stage = Stage.CompilingMethod;
-				inferior.CallMethod (
-					sse.MonoDebuggerInfo.CompileMethod, method.Address, 0, ID);
-				return;
-			}
-
-			case Stage.CompiledMethod: {
-				sse.insert_temporary_breakpoint (invoke);
-
-				inferior.RuntimeInvoke (
-					sse.MonoDebuggerInfo.RuntimeInvoke,
-					method, instance, ParamObjects, ID, Debug);
-
-				stage = Stage.InvokedMethod;
-				return;
-			}
-
-			default:
-				throw new InternalError ();
-			}
-		}
-
-		bool get_method_address ()
-		{
-			method = class_info.GetMethodAddress (inferior, Function.Token);
-			if (method.IsNull)
-				return false;
-
-			if ((instance == null) || instance.Type.IsByRef)
-				return true;
-
-			TargetType decl = Function.DeclaringType;
-			if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
-				return true;
-
-			TargetStructType parent_type = instance.Type.GetParentType (inferior);
-
-			if (!instance.Type.IsByRef && parent_type.IsByRef) {
-				TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
-				stage = Stage.BoxingInstance;
-				inferior.CallMethod (
-					sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
-					instance.Location.GetAddress (internal_target).Address, ID);
-				return false;
-			}
-
+			sse.do_continue ();
 			return true;
-		}
-
-		bool get_virtual_method ()
-		{
-			if (!IsVirtual || (instance == null) || !instance.HasAddress ||
-			    !instance.Type.IsByRef)
-				return true;
-
-			stage = Stage.GettingVirtualMethod;
-			inferior.CallMethod (
-				sse.MonoDebuggerInfo.GetVirtualMethod,
-				instance.Location.GetAddress (internal_target).Address,
-				method.Address, ID);
-			return false;
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			switch (stage) {
-			case Stage.Uninitialized: {
-				TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti resolved class: {1}", sse, klass);
-
-				class_info = language.ReadClassInfo (inferior, klass);
-				((IMonoStructType) Function.DeclaringType).ClassInfo = class_info;
-				((IMonoStructType) Function.DeclaringType).ResolveClass (inferior, false);
-				stage = Stage.ResolvedClass;
-				do_execute ();
-				return EventResult.Running;
-			}
-
-			case Stage.BoxingInstance: {
-				TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti boxed object: {1}", sse, boxed);
-
-				TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-				TargetStructType parent_type = instance.Type.GetParentType (inferior);
-				instance = (TargetStructObject) parent_type.GetObject (inferior, new_loc);
-				stage = Stage.HasMethodAddress;
-				do_execute ();
-				return EventResult.Running;
-			}
-
-			case Stage.GettingVirtualMethod: {
-				method = new TargetAddress (inferior.AddressDomain, data1);
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti got virtual method: {1}", sse, method);
-
-				TargetAddress klass = inferior.ReadAddress (method + 8);
-				TargetType class_type = language.ReadMonoClass (inferior, klass);
-
-				if (class_type == null) {
-					Result.ExceptionMessage = String.Format (
-						"Unable to get virtual method `{0}'.", Function.FullName);
-					Result.InvocationCompleted = true;
-					RestoreStack ();
-					return EventResult.CompletedCallback;
-				}
-
-				if (!class_type.IsByRef) {
-					TargetLocation new_loc = instance.Location.GetLocationAtOffset (
-						2 * inferior.TargetMemoryInfo.TargetAddressSize);
-					instance = (TargetClassObject) class_type.GetObject (
-						inferior, new_loc);
-				}
-
-				stage = Stage.HasVirtualMethod;
-				do_execute ();
-				return EventResult.Running;
-			}
-
-			case Stage.CompilingMethod: {
-				invoke = new TargetAddress (inferior.AddressDomain, data1);
-
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti compiled method: {1}", sse, invoke);
-
-				stage = Stage.CompiledMethod;
-				do_execute ();
-				return EventResult.Running;
-			}
-
-			case Stage.InvokedMethod: {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} rti done: {1:x} {2:x}",
-					      sse, data1, data2);
-
-				if (data2 != 0) {
-					TargetAddress exc_address = new TargetAddress (
-						inferior.AddressDomain, data2);
-					TargetFundamentalObject exc_obj = (TargetFundamentalObject)
-						language.CreateObject (inferior, exc_address);
-
-					Result.ExceptionMessage = (string) exc_obj.GetObject (inferior);
-				}
-
-				if (data1 != 0) {
-					TargetAddress retval_address = new TargetAddress (
-						inferior.AddressDomain, data1);
-
-					Result.ReturnObject = language.CreateObject (
-						inferior, retval_address);
-				}
-
-				Result.InvocationCompleted = true;
-				RestoreStack ();
-				return EventResult.CompletedCallback;
-			}
-
-			default:
-				throw new InternalError ();
-			}
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
-			if (cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} hit breakpoint {1} at {2} during runtime-invoke",
-					      sse, cevent.Argument, inferior.CurrentFrame);
-			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
-				   (cevent.Argument == 0)) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} stopped at {1} during runtime-invoke",
-					      sse, inferior.CurrentFrame);
-			}
+			Report.Debug (DebugFlags.SSE,
+				      "{0} stopped at {1} during outer runtime-invoke: {2}",
+				      sse, inferior.CurrentFrame, cevent);
 
-			if ((cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) ||
-			    (cevent.Type == Inferior.ChildEventType.CHILD_STOPPED)) {
-				if (inferior.CurrentFrame == invoke) {
-					Report.Debug (DebugFlags.SSE,
-						      "{0} stopped at invoke method {1}",
-						      sse, invoke);
+			args = null;
 
-					inferior.MarkRuntimeInvokeFrame ();
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+			    (cevent.Argument == 0)) {
+				if (Debug && (inferior.CurrentFrame == helper.InvokeMethod)) {
+					if (NestedBreakStates)
+						return EventResult.SuspendOperation;
+					else
+						return EventResult.Completed;
 				}
 
-				args = null;
+				goto resume_target;
+			} else if (cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) {
+				if (NestedBreakStates)
+					return EventResult.SuspendOperation;
 				if (Debug)
 					return EventResult.Completed;
-				else {
-					Report.Debug (DebugFlags.SSE,
-						      "{0} resuming target at {1} in runtime-invoke",
-						      sse, inferior.CurrentFrame);
-					sse.do_continue ();
-					return EventResult.Running;
-				}
+
+				goto resume_target;
 			}
 
-			return base.DoProcessEvent (cevent, out args);
+			Report.Debug (DebugFlags.SSE,
+				      "{0} stopped abnormally at {1} during outer runtime-invoke: {2}",
+				      sse, inferior.CurrentFrame, cevent);
+			return EventResult.Completed;
+
+		resume_target:
+			Report.Debug (DebugFlags.SSE,
+				      "{0} resuming target during runtime-invoke", sse);
+
+			sse.do_continue ();
+			return EventResult.Running;
 		}
 
 		public override bool HandleException (TargetAddress stack, TargetAddress exc)
 		{
 			return false;
+		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2, out TargetEventArgs args)
+		{
+			Completed (data1, data2);
+
+			args = null;
+			return EventResult.CompletedCallback;
+		}
+
+		public void Completed (long data1, long data2)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} completed runtime-invoke: {1:x} {2:x}", sse, data1, data2);
+
+			MonoLanguageBackend language = sse.process.MonoLanguage;
+
+			if (data2 != 0) {
+				TargetAddress exc_address = new TargetAddress (inferior.AddressDomain, data2);
+				TargetFundamentalObject exc_obj = (TargetFundamentalObject) language.CreateObject (inferior, exc_address);
+
+				Result.ExceptionMessage = (string) exc_obj.GetObject (inferior);
+			}
+
+			if (data1 != 0) {
+				TargetAddress retval_address = new TargetAddress (inferior.AddressDomain, data1);
+				Result.ReturnObject = language.CreateObject (inferior, retval_address);
+
+				Report.Debug (DebugFlags.SSE, "{0} rti done: {1} {2}", sse, retval_address, Result.ReturnObject);
+			}
+
+			helper.CompletedRTI ();
+			Result.InvocationCompleted = true;
+		}
+
+		protected class OperationRuntimeInvokeHelper : OperationCallback
+		{
+			public readonly OperationRuntimeInvoke RTI;
+
+			MonoLanguageBackend language;
+			TargetAddress method = TargetAddress.Null;
+			TargetAddress invoke = TargetAddress.Null;
+			TargetStructObject instance;
+			MonoClassInfo class_info;
+			Stage stage;
+
+			protected enum Stage {
+				Uninitialized,
+				ResolvedClass,
+				BoxingInstance,
+				HasMethodAddress,
+				GettingVirtualMethod,
+				HasVirtualMethod,
+				CompilingMethod,
+				CompiledMethod,
+				InvokedMethod
+			}
+
+			public override bool IsSourceOperation {
+				get { return false; }
+			}
+
+			public TargetAddress InvokeMethod {
+				get { return invoke; }
+			}
+
+			public OperationRuntimeInvokeHelper (SingleSteppingEngine sse,
+							     OperationRuntimeInvoke rti)
+				: base (sse)
+			{
+				this.RTI = rti;
+
+				this.instance = RTI.Instance;
+				this.method = TargetAddress.Null;
+				this.stage = Stage.Uninitialized;
+			}
+
+			protected override void DoExecute ()
+			{
+				language = sse.process.MonoLanguage;
+
+				class_info = RTI.Function.ResolveClass (inferior, false);
+				if (class_info == null) {
+					MonoClassType klass = RTI.Function.DeclaringType as MonoClassType;
+					if (klass == null)
+						throw new TargetException (TargetError.ClassNotInitialized,
+									   "Class `{0}' not initialized yet.",
+									   RTI.Function.DeclaringType.Name);
+
+					TargetAddress image = RTI.Function.SymbolFile.MonoImage;
+					int token = klass.Token;
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti resolving class {1}:{2:x}", sse, image, token);
+
+					inferior.CallMethod (
+						sse.MonoDebuggerInfo.LookupClass, image.Address, 0, 0,
+						RTI.Function.DeclaringType.Name, ID);
+					return;
+				}
+
+				stage = Stage.ResolvedClass;
+				do_execute ();
+			}
+
+			void do_execute ()
+			{
+				switch (stage) {
+				case Stage.ResolvedClass:
+					if (!get_method_address ())
+						throw new TargetException (TargetError.ClassNotInitialized,
+									   "Class `{0}' not initialized yet.",
+									   RTI.Function.DeclaringType.Name);
+					goto case Stage.HasMethodAddress;
+
+				case Stage.HasMethodAddress:
+					if (!get_virtual_method ())
+						return;
+					goto case Stage.HasVirtualMethod;
+
+				case Stage.HasVirtualMethod: {
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti compiling method: {1}", sse, method);
+
+					stage = Stage.CompilingMethod;
+					inferior.CallMethod (
+						sse.MonoDebuggerInfo.CompileMethod, method.Address, 0, ID);
+					return;
+				}
+
+				case Stage.CompiledMethod: {
+					sse.insert_temporary_breakpoint (invoke);
+					sse.rti_stack.Push (RTI);
+
+					inferior.RuntimeInvoke (
+						sse.MonoDebuggerInfo.RuntimeInvoke,
+						method, instance, RTI.ParamObjects, ID, RTI.Debug);
+
+					stage = Stage.InvokedMethod;
+					return;
+				}
+
+				default:
+					throw new InternalError ();
+				}
+			}
+
+			bool get_method_address ()
+			{
+				method = class_info.GetMethodAddress (inferior, RTI.Function.Token);
+				if (method.IsNull)
+					return false;
+
+				if ((instance == null) || instance.Type.IsByRef)
+					return true;
+
+				TargetType decl = RTI.Function.DeclaringType;
+				if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
+					return true;
+
+				TargetStructType parent_type = RTI.Instance.Type.GetParentType (inferior);
+
+				if (!instance.Type.IsByRef && parent_type.IsByRef) {
+					TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
+					stage = Stage.BoxingInstance;
+					inferior.CallMethod (
+						sse.MonoDebuggerInfo.GetBoxedObjectMethod, klass.Address,
+						instance.Location.GetAddress (inferior).Address, ID);
+					return false;
+				}
+
+				return true;
+			}
+
+			bool get_virtual_method ()
+			{
+				if (!RTI.IsVirtual || (instance == null) || !instance.HasAddress ||
+				    !instance.Type.IsByRef)
+					return true;
+
+				Report.Debug (DebugFlags.SSE, "{0} rti get virtual method: {1}", sse, instance);
+
+				stage = Stage.GettingVirtualMethod;
+				inferior.CallMethod (
+					sse.MonoDebuggerInfo.GetVirtualMethod,
+					instance.Location.GetAddress (inferior).Address,
+					method.Address, ID);
+				return false;
+			}
+
+			protected override EventResult CallbackCompleted (long data1, long data2)
+			{
+				switch (stage) {
+				case Stage.Uninitialized: {
+					TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti resolved class: {1}", sse, klass);
+
+					class_info = language.ReadClassInfo (inferior, klass);
+					((IMonoStructType) RTI.Function.DeclaringType).ClassInfo = class_info;
+					((IMonoStructType) RTI.Function.DeclaringType).ResolveClass (inferior, false);
+					stage = Stage.ResolvedClass;
+					do_execute ();
+					return EventResult.Running;
+				}
+
+				case Stage.BoxingInstance: {
+					TargetAddress boxed = new TargetAddress (inferior.AddressDomain, data1);
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti boxed object: {1}", sse, boxed);
+
+					TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
+					TargetStructType parent_type = instance.Type.GetParentType (inferior);
+					instance = (TargetStructObject) parent_type.GetObject (inferior, new_loc);
+					stage = Stage.HasMethodAddress;
+					do_execute ();
+					return EventResult.Running;
+				}
+
+				case Stage.GettingVirtualMethod: {
+					method = new TargetAddress (inferior.AddressDomain, data1);
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti got virtual method: {1}", sse, method);
+
+					TargetAddress klass = inferior.ReadAddress (method + 8);
+					TargetType class_type = language.ReadMonoClass (inferior, klass);
+
+					if (class_type == null) {
+						RTI.Result.ExceptionMessage = String.Format (
+							"Unable to get virtual method `{0}'.", RTI.Function.FullName);
+						RTI.Result.InvocationCompleted = true;
+						RestoreStack ();
+						return EventResult.CompletedCallback;
+					}
+
+					if (!class_type.IsByRef) {
+						TargetLocation new_loc = instance.Location.GetLocationAtOffset (
+							2 * inferior.TargetMemoryInfo.TargetAddressSize);
+						instance = (TargetClassObject) class_type.GetObject (
+							inferior, new_loc);
+					}
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti got virtual method #1: {1} {2}", sse, class_type,
+						      instance);
+
+					stage = Stage.HasVirtualMethod;
+					do_execute ();
+					return EventResult.Running;
+				}
+
+				case Stage.CompilingMethod: {
+					invoke = new TargetAddress (inferior.AddressDomain, data1);
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} rti compiled method: {1}", sse, invoke);
+
+					stage = Stage.CompiledMethod;
+					do_execute ();
+					return EventResult.Running;
+				}
+
+				case Stage.InvokedMethod: {
+					RTI.Completed (data1, data2);
+					RestoreStack ();
+					return EventResult.CompletedCallback;
+				}
+
+				default:
+					throw new InternalError ();
+				}
+			}
+
+			protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
+								       out TargetEventArgs args)
+			{
+				if ((cevent.Type == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) ||
+				    ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
+				     (cevent.Argument == 0))) {
+					if (inferior.CurrentFrame == invoke) {
+						Report.Debug (DebugFlags.SSE,
+							      "{0} stopped at invoke method {1} / {2}",
+							      sse, invoke, stage);
+
+						inferior.MarkRuntimeInvokeFrame ();
+						RTI.SetupCallback (ID);
+
+						args = null;
+						return EventResult.AskParent;
+					} 
+
+					Report.Debug (DebugFlags.SSE,
+						      "{0} stopped at {1} during runtime-invoke: {2}",
+						      sse, inferior.CurrentFrame, cevent);
+				}
+
+				return base.DoProcessEvent (cevent, out args);
+			}
+
+			public override bool HandleException (TargetAddress stack, TargetAddress exc)
+			{
+				return false;
+			}
+
+			public void CompletedRTI ()
+			{
+				RestoreStack ();
+			}
 		}
 	}
 
@@ -4105,8 +4332,8 @@ namespace Mono.Debugger.Backend
 		TargetObject exc_object;
 		bool unhandled;
 
-		public OperationException (SingleSteppingEngine sse,
-					   TargetAddress ip, TargetAddress exc, bool unhandled)
+		public OperationException (SingleSteppingEngine sse, TargetAddress ip, TargetAddress exc,
+					   bool unhandled)
 			: base (sse, null)
 		{
 			this.ip = ip;
@@ -4136,21 +4363,21 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.SSE,
 				      "{0} processing OperationException at {1}: {2} {3} {4}",
 				      sse, inferior.CurrentFrame, ip, exc, unhandled);
-				      
+
 			if (unhandled) {
 				sse.frame_changed (inferior.CurrentFrame, null);
 				sse.current_frame.SetExceptionObject (exc_object);
 				args = new TargetEventArgs (
 					TargetEventType.UnhandledException,
 					exc_object, sse.current_frame);
-				return EventResult.Completed;
+				return EventResult.SuspendOperation;
 			} else {
 				sse.frame_changed (inferior.CurrentFrame, null);
 				sse.current_frame.SetExceptionObject (exc_object);
 				args = new TargetEventArgs (
 					TargetEventType.Exception,
 					exc_object, sse.current_frame);
-				return EventResult.Completed;
+				return EventResult.SuspendOperation;
 			}
 		}
 	}
@@ -4387,9 +4614,16 @@ namespace Mono.Debugger.Backend
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
+			Report.Debug (DebugFlags.SSE, "{0} completed return", sse);
 			DiscardStack ();
-			inferior.AbortInvoke (ParentFrame.StackPointer);
+			long aborted_rti;
+			bool aborted = inferior.AbortInvoke (ParentFrame.StackPointer, out aborted_rti);
+			Report.Debug (DebugFlags.SSE, "{0} completed return: {1} {2}", sse, aborted, aborted_rti);
 			inferior.SetRegisters (ParentFrame.Registers);
+
+			if (aborted_rti != 0)
+				sse.AbortRuntimeInvoke (aborted_rti);
+
 			return EventResult.Completed;
 		}
 	}
@@ -4412,10 +4646,15 @@ namespace Mono.Debugger.Backend
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
+			Report.Debug (DebugFlags.SSE, "{0} callback completed", this);
+
 			StackFrame parent_frame = Backtrace.Frames [++level];
 
-			if (inferior.AbortInvoke (parent_frame.StackPointer)) {
+			long aborted_rti;
+			if (inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti)) {
 				DiscardStack ();
+				if (aborted_rti != 0)
+					sse.AbortRuntimeInvoke (aborted_rti);
 				return EventResult.Completed;
 			}
 
@@ -4423,6 +4662,45 @@ namespace Mono.Debugger.Backend
 			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 			return EventResult.Running;
 		}
+	}
+
+	protected abstract class InterruptibleOperation : Operation
+	{
+		public bool IsSuspended {
+			get; set;
+		}
+
+		protected InterruptibleOperation (SingleSteppingEngine sse, CommandResult result)
+			: base (sse, result)
+		{ }
+
+		long callback_id;
+
+		public override EventResult ProcessEvent (Inferior.ChildEvent cevent,
+							  out TargetEventArgs args)
+		{
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK) ||
+			    (cevent.Type == Inferior.ChildEventType.RUNTIME_INVOKE_DONE)) {
+				if ((callback_id > 0) && (cevent.Argument == callback_id))
+					return CallbackCompleted (cevent.Data1, cevent.Data2, out args);
+			}
+
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) && (cevent.Argument != 0)) {
+				sse.frame_changed (inferior.CurrentFrame, null);
+				args = new TargetEventArgs (TargetEventType.TargetStopped, (int) cevent.Argument, sse.current_frame);
+				return EventResult.SuspendOperation;
+			}
+
+			return base.ProcessEvent (cevent, out args);
+		}
+
+		protected void SetupCallback (long id)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} interruptible operation setup callback: {1}", sse, id);
+			this.callback_id = id;
+		}
+
+		protected abstract EventResult CallbackCompleted (long data1, long data2, out TargetEventArgs args);
 	}
 #endregion
 	}

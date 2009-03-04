@@ -340,6 +340,12 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			*data1 = retval;
 			*data2 = retval2;
 			return MESSAGE_CHILD_NOTIFICATION;
+
+		case STOP_ACTION_RTI_DONE:
+			*arg = callback_arg;
+			*data1 = retval;
+			*data2 = retval2;
+			return MESSAGE_RUNTIME_INVOKE_DONE;
 		}
 
 		g_assert_not_reached ();

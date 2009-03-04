@@ -116,7 +116,7 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_mark_rti_frame (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_abort_invoke (IntPtr handle, long stack_pointer);
+		static extern TargetError mono_debugger_server_abort_invoke (IntPtr handle, long stack_pointer, out long aborted_rti);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_call_method_invoke (IntPtr handle, long invoke_method, long method_address, int num_params, int blob_size, IntPtr param_data, IntPtr offset_data, IntPtr blob_data, long callback_argument, bool debug);
@@ -203,6 +203,7 @@ namespace Mono.Debugger.Backend
 			CHILD_CALLED_EXIT,
 			CHILD_NOTIFICATION,
 			CHILD_INTERRUPTED,
+			RUNTIME_INVOKE_DONE,
 
 			UNHANDLED_EXCEPTION	= 4001,
 			THROW_EXCEPTION,
@@ -509,10 +510,10 @@ namespace Mono.Debugger.Backend
 			check_error (mono_debugger_server_mark_rti_frame (server_handle));
 		}
 
-		public bool AbortInvoke (TargetAddress stack_pointer)
+		public bool AbortInvoke (TargetAddress stack_pointer, out long aborted_rti)
 		{
 			TargetError result = mono_debugger_server_abort_invoke (
-				server_handle, stack_pointer.Address);
+				server_handle, stack_pointer.Address, out aborted_rti);
 			if (result == TargetError.NoCallbackFrame)
 				return false;
 			check_error (result);
@@ -705,6 +706,7 @@ namespace Mono.Debugger.Backend
 
 			case ChildEventType.CHILD_CALLBACK:
 			case ChildEventType.CHILD_CALLBACK_COMPLETED:
+			case ChildEventType.RUNTIME_INVOKE_DONE:
 			case ChildEventType.CHILD_STOPPED:
 			case ChildEventType.CHILD_INTERRUPTED:
 			case ChildEventType.CHILD_HIT_BREAKPOINT:

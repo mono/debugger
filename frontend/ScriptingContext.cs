@@ -30,6 +30,13 @@ namespace Mono.Debugger.Frontend
 		DontStep
 	}
 
+	[Flags]
+	public enum ScriptingFlags
+	{
+		None			= 0,
+		NestedBreakStates	= 1
+	}
+
 	public class ScriptingContext : DebuggerMarshalByRefObject
 	{
 		Thread current_thread;
@@ -45,6 +52,20 @@ namespace Mono.Debugger.Frontend
 
 		public Interpreter Interpreter {
 			get { return interpreter; }
+		}
+
+		public ScriptingFlags ScriptingFlags {
+			get; set;
+		}
+
+		public RuntimeInvokeFlags GetRuntimeInvokeFlags ()
+		{
+			RuntimeInvokeFlags flags = RuntimeInvokeFlags.VirtualMethod;
+
+			if ((ScriptingFlags & ScriptingFlags.NestedBreakStates) != 0)
+				flags |= RuntimeInvokeFlags.NestedBreakStates;
+
+			return flags;
 		}
 
 		public bool HasTarget {
@@ -332,22 +353,22 @@ namespace Mono.Debugger.Frontend
 				return null;
 
 			string text, dummy;
-			ExpressionEvaluator.EvaluationResult result;
+			EE.EvaluationResult result;
 
 			if (ctype.DebuggerDisplayAttribute != null) {
 				result = HandleDebuggerDisplay (Interpreter, CurrentThread, obj,
 								ctype.DebuggerDisplayAttribute,
 								-1, out text, out dummy);
-				if (result == ExpressionEvaluator.EvaluationResult.Ok)
+				if (result == EE.EvaluationResult.Ok)
 					return String.Format ("{{ {0} }}", text);
-				else if (result == ExpressionEvaluator.EvaluationResult.InvalidExpression) {
+				else if (result == EE.EvaluationResult.InvalidExpression) {
 					if (text != null)
 						return text;
 				}
 			}
 
-			result = ExpressionEvaluator.MonoObjectToString (CurrentThread, obj, -1, out text);
-			if (result == ExpressionEvaluator.EvaluationResult.Ok)
+			result = EE.MonoObjectToString (CurrentThread, obj, EE.EvaluationFlags.None, -1, out text);
+			if (result == EE.EvaluationResult.Ok)
 				return String.Format ("{{ \"{0}\" }}", text);
 			return null;
 		}

@@ -24,7 +24,8 @@ namespace Mono.Debugger
 		DwarfReader             = 2048,
 		Remoting		= 4096,
 		NUnit			= 8192,
-		GUI			= 16384
+		GUI			= 16384,
+		CLI			= 32768
 	}
 
 	public static class Report
@@ -105,6 +106,9 @@ namespace Mono.Debugger
 					break;
 				case "gui":
 					flags |= DebugFlags.GUI;
+					break;
+				case "cli":
+					flags |= DebugFlags.CLI;
 					break;
 				default:
 					return false;

@@ -29,21 +29,24 @@ namespace Mono.Debugger.Frontend
 
 	public class Engine {
 		public readonly Interpreter Interpreter;
-		public readonly string[] CommandFamilyBlurbs;
-		public readonly ArrayList[] CommandsByFamily;
 		public readonly Hashtable Commands = new Hashtable ();
 		public readonly Hashtable Aliases = new Hashtable ();
 		public readonly Completer Completer;
+
+		public static readonly string[] CommandFamilyBlurbs;
+		public static readonly ArrayList[] CommandsByFamily;
 
 		public Engine (Interpreter interpreter)
 		{
 			this.Interpreter = interpreter;
 
 			Completer = new Completer (this);
+		}
 
+		static Engine ()
+		{
 			CommandsByFamily = new ArrayList[Enum.GetValues(typeof (CommandFamily)).Length];
-			CommandFamilyBlurbs = new string [Enum.GetValues(typeof (CommandFamily)).Length];
-		  
+			CommandFamilyBlurbs = new string [Enum.GetValues(typeof (CommandFamily)).Length];		  
 
 			CommandFamilyBlurbs[ (int)CommandFamily.Running ] = "Running the program";
 			CommandFamilyBlurbs[ (int)CommandFamily.Breakpoints ] = "Making program stops at certain points";
@@ -183,49 +186,6 @@ namespace Mono.Debugger.Frontend
 		{
 			Console.WriteLine (String.Format ("Error: " + fmt, args));
 		}
-
-		Command last_command;
-		
-		public void Run (string s, ArrayList args)
-		{
-			Command c = Get (s, args);
-			last_command = c;
-			if (c == null) {
-				Interpreter.Error ("No such command `{0}'.", s);
-				return;
-			}
-
-			try {
-				c.Execute (this);
-			} catch (ThreadAbortException) {
-			} catch (ScriptingException ex) {
-				Interpreter.Error (ex);
-			} catch (TargetException ex) {
-				Interpreter.Error (ex);
-			} catch (Exception ex) {
-				Interpreter.Error (
-					"Caught exception while executing command {0}: {1}",
-					this, ex);
-			}
-		}
-
-		public void Repeat ()
-		{
-			if (last_command == null)
-				return;
-			try {
-				last_command.Repeat (this);
-			} catch (ThreadAbortException) {
-			} catch (ScriptingException ex) {
-				Interpreter.Error (ex);
-			} catch (TargetException ex) {
-				Interpreter.Error (ex);
-			} catch (Exception ex) {
-				Interpreter.Error (
-					"Caught exception while executing command {0}: {1}",
-					this, ex);
-			}
-		}
 	}
 
 	public class LineParser {
@@ -361,13 +321,6 @@ namespace Mono.Debugger.Frontend
 		public bool IsComplete ()
 		{
 			return Parse ();
-		}
-
-		public void Execute ()
-		{
-			if (Parse ()){
-				engine.Run (command, args); 
-			}
 		}
 
 		public Command GetCommand ()

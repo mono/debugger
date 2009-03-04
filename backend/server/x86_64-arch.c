@@ -49,6 +49,7 @@ typedef struct
 	guint64 data_pointer;
 	guint32 data_size;
 	gboolean debug;
+	gboolean is_rti;
 } CallbackData;
 
 ArchInfo *
@@ -238,6 +239,11 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		g_ptr_array_remove (arch->callback_stack, cdata);
 
 		x86_arch_get_registers (handle);
+
+		if (cdata->is_rti) {
+			g_free (cdata);
+			return STOP_ACTION_RTI_DONE;
+		}
 
 		if (cdata->debug) {
 			*retval = 0;
@@ -1165,6 +1171,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	cdata->exc_address = new_rsp + 16;
 	cdata->callback_argument = callback_argument;
 	cdata->debug = debug;
+	cdata->is_rti = TRUE;
 	cdata->saved_signal = handle->inferior->last_signal;
 	handle->inferior->last_signal = 0;
 
@@ -1270,13 +1277,20 @@ server_ptrace_mark_rti_frame (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_abort_invoke (ServerHandle *handle, guint64 stack_pointer)
+server_ptrace_abort_invoke (ServerHandle *handle, guint64 stack_pointer, guint64 *aborted_rti)
 {
 	CallbackData *cdata;
 
 	cdata = get_callback_data (handle->arch);
-	if (!cdata)
+	if (!cdata) {
+		*aborted_rti = 0;
 		return COMMAND_ERROR_NO_CALLBACK_FRAME;
+	}
+
+	if (cdata->is_rti)
+		*aborted_rti = cdata->callback_argument;
+	else
+		*aborted_rti = 0;
 
 	if (cdata->rti_frame && (stack_pointer < cdata->rti_frame))
 		return COMMAND_ERROR_NO_CALLBACK_FRAME;

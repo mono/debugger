@@ -24,7 +24,9 @@ namespace Mono.Debugger.Tests
 		ProcessCreated,
 		ProcessExecd,
 		ProcessExited,
-		TargetExited
+		TargetExited,
+		EnterNestedBreakState,
+		CommandDone
 	}
 
 	public class DebuggerEvent {
@@ -128,7 +130,7 @@ namespace Mono.Debugger.Tests
 			return null;
 		}
 
-		protected void AddEvent (DebuggerEvent e)
+		internal void AddEvent (DebuggerEvent e)
 		{
 			lock (queue.SyncRoot) {
 				queue.Enqueue (e);
@@ -186,6 +188,12 @@ namespace Mono.Debugger.Tests
 				inferior_stderr.Add (line);
 			else
 				inferior_stdout.Add (line);
+		}
+
+		protected override void OnEnterNestedBreakState (Thread thread)
+		{
+			base.OnEnterNestedBreakState (thread);
+			AddEvent (new DebuggerEvent (DebuggerEventType.EnterNestedBreakState, thread));
 		}
 
 		public override void Print (string message)
@@ -411,7 +419,7 @@ namespace Mono.Debugger.Tests
 				Assert.Fail ("No such command: `{0}'", text);
 
 			try {
-				return command.Execute (engine);
+				return command.Execute (engine.Interpreter);
 			} catch (ScriptingException ex) {
 				Assert.Fail ("Failed to execute command `{0}': {1}.",
 					     text, ex.Message);
@@ -437,7 +445,7 @@ namespace Mono.Debugger.Tests
 
 			string exception = "";
 			try {
-				command.Execute (engine);
+				command.Execute (engine.Interpreter);
 				Assert.Fail ("Execution of command `{0}' failed to throw " +
 					     "exception `{1}'.", command, exp_exception);
 			} catch (ScriptingException ex) {
@@ -452,6 +460,24 @@ namespace Mono.Debugger.Tests
 			if (exception != exp_exception)
 				Assert.Fail ("Execution of command `{0}' threw exception `{1}', " +
 					     "but expected `{2}'.", command, exception, exp_exception);
+		}
+
+		public void AssertExecuteInBackground (string text)
+		{
+			parser.Reset ();
+			parser.Append (text);
+			Command command = parser.GetCommand ();
+			if (command == null)
+				Assert.Fail ("No such command: `{0}'", text);
+
+			ST.ThreadPool.QueueUserWorkItem (delegate {
+				try {
+					object result = command.Execute (engine.Interpreter);
+					Interpreter.AddEvent (new DebuggerEvent (DebuggerEventType.CommandDone, result));
+				} catch (Exception ex) {
+					Interpreter.AddEvent (new DebuggerEvent (DebuggerEventType.CommandDone, ex));
+				}
+			});
 		}
 
 		public void AssertFrame (Thread thread, string line, string function)
@@ -536,6 +562,53 @@ namespace Mono.Debugger.Tests
 			if ((int) args.Data != 0)
 				Assert.Fail ("Received event {0} while waiting for {1} to stop.",
 					     args, exp_thread);
+
+			if (exp_func != null)
+				AssertFrame (exp_thread, exp_func, exp_line);
+		}
+
+		public void AssertRuntimeInvokeDone (Thread exp_thread, string exp_func, int exp_line)
+		{
+			TargetEventArgs args = AssertTargetEvent (
+				exp_thread, TargetEventType.RuntimeInvokeDone);
+
+			if (exp_func != null)
+				AssertFrame (exp_thread, exp_func, exp_line);
+		}
+
+		public void AssertNestedBreakState (Thread exp_thread, string exp_func, int exp_line)
+		{
+			bool seen_stopped = false, seen_enter = false;
+
+			while (!seen_stopped || !seen_enter) {
+				DebuggerEvent e = Interpreter.Wait ();
+				if (e == null)
+					Assert.Fail ("Time-out while waiting for nested break state.");
+
+				if (e.Type == DebuggerEventType.EnterNestedBreakState) {
+					if (e.Data != exp_thread)
+						Assert.Fail ("Received event {0} while waiting for nested break state.", e);
+
+						seen_enter = true;
+				} else if (e.Type == DebuggerEventType.TargetEvent) {
+					if (e.Data != exp_thread)
+						Assert.Fail ("Received event {0} while waiting for nested break state.", e);
+
+					TargetEventArgs args = (TargetEventArgs) e.Data2;
+					if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data  != 0))
+						Assert.Fail ("Received event {0} while waiting for {1} to stop.",
+							     args, exp_thread);
+					else if ((args.Type != TargetEventType.TargetStopped) &&
+						 (args.Type != TargetEventType.TargetHitBreakpoint) &&
+						 (args.Type != TargetEventType.Exception) &&
+						 (args.Type != TargetEventType.UnhandledException))
+						Assert.Fail ("Received event {0} while waiting for {1} to stop.",
+							     args, exp_thread);
+
+					seen_stopped = true;
+				} else
+					Assert.Fail ("Received event {0} while waiting for nested break state.", e);
+			}
 
 			if (exp_func != null)
 				AssertFrame (exp_thread, exp_func, exp_line);

@@ -179,6 +179,16 @@ namespace Mono.Debugger
 			Debugger.OnTargetEvent (sse.Client, args);
 		}
 
+		internal void OnEnterNestedBreakState (SingleSteppingEngine sse)
+		{
+			Debugger.OnEnterNestedBreakState (sse.Client);
+		}
+
+		internal void OnLeaveNestedBreakState (SingleSteppingEngine sse)
+		{
+			Debugger.OnLeaveNestedBreakState (sse.Client);
+		}
+
 		internal void OnProcessExited ()
 		{
 			if (manager != null)

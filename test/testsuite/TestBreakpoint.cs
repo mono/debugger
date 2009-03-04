@@ -58,8 +58,8 @@ namespace Mono.Debugger.Tests
 					     line_porta_nigra);
 
 			AssertExecute ("next");
-			AssertStopped (thread, "Martin.Baulig.Hello.World(Postcard.Picture)",
-				       line_world);
+			AssertHitBreakpoint (thread, bpt_world, "Martin.Baulig.Hello.World(Postcard.Picture)",
+					     line_world);
 
 			AssertExecute ("disable " + bpt_world);
 			AssertExecute ("continue");

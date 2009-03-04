@@ -545,14 +545,14 @@ namespace Mono.Debugger
 		public RuntimeInvokeResult RuntimeInvoke (TargetFunctionType function,
 							  TargetStructObject object_argument,
 							  TargetObject[] param_objects,
-							  bool is_virtual, bool debug)
+							  RuntimeInvokeFlags flags)
 		{
 			lock (this) {
 				check_alive ();
 				RuntimeInvokeResult result = new RuntimeInvokeResult (this);
 				servant.RuntimeInvoke (
-					function, object_argument, param_objects, is_virtual,
-					debug, result);
+					function, object_argument, param_objects,
+					flags, result);
 				return result;
 			}
 		}
@@ -917,5 +917,16 @@ namespace Mono.Debugger
 		public bool InvocationCompleted;
 		public TargetObject ReturnObject;
 		public string ExceptionMessage;
+	}
+
+	[Flags]
+	public enum RuntimeInvokeFlags
+	{
+		None			= 0,
+		NoSideEffects		= 1,
+		NestedBreakStates	= 2,
+		BreakOnEntry		= 4,
+		VirtualMethod		= 8,
+		SendEventOnCompletion	= 16
 	}
 }

@@ -13,6 +13,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using EE=Mono.Debugger.ExpressionEvaluator;
 
 using Mono.GetOptions;
 
@@ -146,6 +147,10 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public ExpressionParser ExpressionParser {
+			get { return parser; }
+		}
+
+		public EE.IEvaluator ExpressionEvaluator {
 			get { return parser; }
 		}
 
@@ -551,10 +556,10 @@ namespace Mono.Debugger.Frontend
 							  TargetFunctionType function,
 							  TargetStructObject object_argument,
 							  TargetObject[] param_objects,
-							  bool is_virtual, bool debug)
+							  RuntimeInvokeFlags flags)
 		{
 			RuntimeInvokeResult result = thread.RuntimeInvoke (
-				function, object_argument, param_objects, is_virtual, debug);
+				function, object_argument, param_objects, flags);
 
 			if (DebuggerConfiguration.BrokenThreading) {
 				Thread ret = WaitAll (thread, result, false);
@@ -562,8 +567,13 @@ namespace Mono.Debugger.Frontend
 					result.Abort ();
 					return null;
 				}
-			} else if (debug) {
-				Wait (thread);
+			} else if ((flags & RuntimeInvokeFlags.BreakOnEntry) != 0) {
+				WaitHandle[] handles = new WaitHandle [3];
+				handles [0] = interrupt_event;
+				handles [1] = thread.WaitHandle;
+				handles [2] = result.CompletedEvent;
+
+				WaitHandle.WaitAny (handles);
 
 				CheckLastEvent (thread);
 			} else {
@@ -994,6 +1004,24 @@ namespace Mono.Debugger.Frontend
 				context.ShowDisplay (d);
 		}
 
+		internal CommandLineInterpreter CLI {
+			get; set;
+		}
+
+		protected virtual void OnEnterNestedBreakState (Thread thread)
+		{
+			if (CLI != null)
+				CLI.EnterNestedBreakState ();
+
+			CheckLastEvent (thread);
+		}
+
+		protected void OnLeaveNestedBreakState (Thread thread)
+		{
+			if (CLI != null)
+				CLI.LeaveNestedBreakState ();
+		}
+
 		//
 		// IDisposable
 		//
@@ -1118,6 +1146,14 @@ namespace Mono.Debugger.Frontend
 				this.interpreter = interpreter;
 
 				debugger.TargetEvent += target_event;
+				debugger.EnterNestedBreakStateEvent +=
+					delegate (Debugger unused, Thread thread) {
+						interpreter.OnEnterNestedBreakState (thread);
+					};
+				debugger.LeaveNestedBreakStateEvent +=
+					delegate (Debugger unused, Thread thread) {
+						interpreter.OnLeaveNestedBreakState (thread);
+					};
 			}
 
 			public void target_event (Thread thread, TargetEventArgs args)

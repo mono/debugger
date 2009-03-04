@@ -581,7 +581,7 @@ namespace Mono.Debugger.Backend
 			public override void RuntimeInvoke (TargetFunctionType function,
 							    TargetStructObject object_argument,
 							    TargetObject[] param_objects,
-							    bool is_virtual, bool debug,
+							    RuntimeInvokeFlags flags,
 							    RuntimeInvokeResult result)
 			{
 				throw new InvalidOperationException ();

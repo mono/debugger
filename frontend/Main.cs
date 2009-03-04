@@ -1,8 +1,9 @@
 using System;
 using System.IO;
 using System.Configuration;
-using ST = System.Threading;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using ST = System.Threading;
 
 using Mono.Debugger;
 using Mono.Debugger.Backend;
@@ -11,15 +12,40 @@ namespace Mono.Debugger.Frontend
 {
 	public class CommandLineInterpreter
 	{
+		public string Prompt {
+			get {
+				if (main_loop_stack.Count == 1)
+					return "(mdb) ";
+				else
+					return String.Format ("(nested-break level {0}) ", main_loop_stack.Count-1);
+			}
+		}
+
+		public Interpreter Interpreter {
+			get { return interpreter; }
+		}
+
+		public ST.AutoResetEvent InterruptEvent {
+			get { return interrupt_event; }
+		}
+
+		public ST.AutoResetEvent EnterNestedBreakStateEvent {
+			get { return enter_nested_break_state_event; }
+		}
+
 		Interpreter interpreter;
 		DebuggerEngine engine;
 		LineParser parser;
-		const string prompt = "(mdb) ";
 		int line = 0;
 
 		bool is_inferior_main;
-		ST.Thread command_thread;
+		ST.Thread interrupt_thread;
 		ST.Thread main_thread;
+
+		ST.AutoResetEvent interrupt_event;
+		ST.AutoResetEvent enter_nested_break_state_event;
+
+		Stack<CommandLineInterpreter.MainLoop> main_loop_stack;
 
 		[DllImport("monodebuggerserver")]
 		static extern int mono_debugger_server_static_init ();
@@ -41,45 +67,130 @@ namespace Mono.Debugger.Frontend
 				Report.Initialize ();
 
 			interpreter = new Interpreter (is_interactive, config, options);
+			interpreter.CLI = this;
+
 			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
+
+			interrupt_event = new ST.AutoResetEvent (false);
+			enter_nested_break_state_event = new ST.AutoResetEvent (false);
+
+			main_loop_stack = new Stack<MainLoop> ();
+			main_loop_stack.Push (new MainLoop (interpreter));
 
 			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
 
-			command_thread = new ST.Thread (new ST.ThreadStart (command_thread_main));
-			command_thread.IsBackground = true;
+			interrupt_thread = new ST.Thread (new ST.ThreadStart (interrupt_thread_main));
+			interrupt_thread.IsBackground = true;
 		}
 
 		public CommandLineInterpreter (Interpreter interpreter)
 		{
 			this.interpreter = interpreter;
 			this.engine = interpreter.DebuggerEngine;
+
+			interpreter.CLI = this;
 			parser = new LineParser (engine);
+
+			interrupt_event = new ST.AutoResetEvent (false);
+			enter_nested_break_state_event = new ST.AutoResetEvent (false);
+
+			main_loop_stack = new Stack<MainLoop> ();
+			main_loop_stack.Push (new MainLoop (interpreter));
 
 			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
 
-			command_thread = new ST.Thread (new ST.ThreadStart (command_thread_main));
-			command_thread.IsBackground = true;
+			interrupt_thread = new ST.Thread (new ST.ThreadStart (interrupt_thread_main));
+			interrupt_thread.IsBackground = true;
 		}
 
-		public void MainLoop ()
+		public void DoRunMainLoop ()
 		{
 			string s;
 			bool is_complete = true;
 
 			parser.Reset ();
 			while ((s = ReadInput (is_complete)) != null) {
-				parser.Append (s);
-				if (parser.IsComplete ()){
-					interpreter.ClearInterrupt ();
-					parser.Execute ();
+				MainLoop loop = main_loop_stack.Peek ();
+
+				interpreter.ClearInterrupt ();
+
+				if (s == "") {
+					if (!is_complete || !loop.Repeat ())
+						continue;
+
+					wait_for_completion ();
+
 					parser.Reset ();
 					is_complete = true;
-				} else
+					continue;
+				}
+
+				parser.Append (s);
+				if (!parser.IsComplete ()) {
 					is_complete = false;
+					continue;
+				}
+
+				Command command = parser.GetCommand ();
+				if (command == null)
+					interpreter.Error ("No such command `{0}'.", s);
+				else {
+					loop.ExecuteCommand (command);
+					wait_for_completion ();
+				}
+
+				parser.Reset ();
+				is_complete = true;
 			}
+		}
+
+		void execute_command (Command command)
+		{
+			MainLoop loop = main_loop_stack.Peek ();
+			loop.ExecuteCommand (command);
+
+			wait_for_completion ();
+		}
+
+		void wait_for_completion ()
+		{
+		again:
+			MainLoop loop = main_loop_stack.Peek ();
+
+			Report.Debug (DebugFlags.CLI, "{0} waiting for completion", loop);
+
+			ST.WaitHandle[] wait = new ST.WaitHandle[] {
+				loop.CompletedEvent, interrupt_event, enter_nested_break_state_event
+			};
+			int ret = ST.WaitHandle.WaitAny (wait);
+
+			Report.Debug (DebugFlags.CLI, "{0} waiting for completion done: {1}", loop, ret);
+
+			if (loop.Completed) {
+				main_loop_stack.Pop ();
+				goto again;
+			}
+		}
+
+		public void EnterNestedBreakState ()
+		{
+			MainLoop loop = new MainLoop (interpreter);
+			main_loop_stack.Push (loop);
+
+			Report.Debug (DebugFlags.CLI, "{0} enter nested break state", loop);
+
+			enter_nested_break_state_event.Set ();
+		}
+
+		public void LeaveNestedBreakState ()
+		{
+			MainLoop nested = main_loop_stack.Peek ();
+			nested.Completed = true;
+
+			Report.Debug (DebugFlags.CLI, "{0} leave nested break state", nested);
 		}
 
 		void main_thread_main ()
@@ -87,9 +198,11 @@ namespace Mono.Debugger.Frontend
 			while (true) {
 				try {
 					interpreter.ClearInterrupt ();
-					MainLoop ();
+					DoRunMainLoop ();
 					if (is_inferior_main)
 						break;
+
+					Console.WriteLine ();
 				} catch (ST.ThreadAbortException) {
 					ST.Thread.ResetAbort ();
 				}
@@ -100,7 +213,7 @@ namespace Mono.Debugger.Frontend
 		{
 			is_inferior_main = false;
 
-			command_thread.Start ();
+			interrupt_thread.Start ();
 
 			try {
 				if (interpreter.Options.StartTarget)
@@ -123,7 +236,7 @@ namespace Mono.Debugger.Frontend
 		{
 			is_inferior_main = true;
 
-			command_thread.Start ();
+			interrupt_thread.Start ();
 
 			TextReader old_stdin = Console.In;
 			TextWriter old_stdout = Console.Out;
@@ -168,37 +281,23 @@ namespace Mono.Debugger.Frontend
 				interpreter.IsInteractive = old_is_interactive;
 			}
 
-			command_thread.Abort ();
+			interrupt_thread.Abort ();
 		}
 
 		public string ReadInput (bool is_complete)
 		{
 			++line;
 		again:
-			string result;
-			string the_prompt = is_complete ? prompt : "... ";
+			string the_prompt = is_complete ? Prompt : "... ";
 			if (interpreter.IsScript) {
 				Console.Write (the_prompt);
-				result = Console.ReadLine ();
-				if (result == null)
-					return null;
-				if (result != "") {
-					;
-				} else if (is_complete) {
-					engine.Repeat ();
-					goto again;
-				}
-				return result;
+				return Console.ReadLine ();
 			} else {
-				result = GnuReadLine.ReadLine (the_prompt);
+				string result = GnuReadLine.ReadLine (the_prompt);
 				if (result == null)
 					return null;
 				if (result != "")
 					GnuReadLine.AddHistory (result);
-				else if (is_complete) {
-					engine.Repeat ();
-					goto again;
-				}
 				return result;
 			}
 		}
@@ -212,19 +311,21 @@ namespace Mono.Debugger.Frontend
 				Environment.Exit (1);
 			}
 			else {
-				string prefix = new String (' ', pos + prompt.Length);
+				string prefix = new String (' ', pos + Prompt.Length);
 				Console.WriteLine ("{0}^", prefix);
 				Console.Write ("ERROR: ");
 				Console.WriteLine (message);
 			}
 		}
 
-		void command_thread_main ()
+		void interrupt_thread_main ()
 		{
 			do {
 				Semaphore.Wait ();
 				if (mono_debugger_server_get_pending_sigint () == 0)
 					continue;
+
+				interrupt_event.Set ();
 
 				if (interpreter.Interrupt () > 2)
 					main_thread.Abort ();
@@ -255,6 +356,124 @@ namespace Mono.Debugger.Frontend
 			interpreter.RunMainLoop ();
 
 			config.SaveConfiguration ();
+		}
+
+		public class MainLoop
+		{
+			public Interpreter Interpreter { get; private set; }
+
+			public ST.WaitHandle CompletedEvent {
+				get { return completed_event; }
+			}
+
+			public bool Completed {
+				get; set;
+			}
+
+			public int ID {
+				get { return id; }
+			}
+
+			static int next_id;
+			int id = ++next_id;
+
+			ST.Thread command_thread;
+			ST.ManualResetEvent command_event;
+			ST.ManualResetEvent completed_event;
+			bool repeating;
+			Command last_command;
+			Command command;
+
+			public MainLoop (Interpreter interpreter)
+			{
+				this.Interpreter = interpreter;
+
+				command_event = new ST.ManualResetEvent (false);
+				completed_event = new ST.ManualResetEvent (false);
+
+				command_thread = new ST.Thread (new ST.ThreadStart (command_thread_main));
+				command_thread.Start ();
+			}
+
+			public void ExecuteCommand (Command command)
+			{
+				lock (this) {
+					this.command = command;
+					this.last_command = command;
+					this.repeating = false;
+
+					completed_event.Reset ();
+					command_event.Set ();
+				}
+			}
+
+			public bool Repeat ()
+			{
+				lock (this) {
+					if (last_command == null)
+						return false;
+
+					this.command = last_command;
+					this.repeating = true;
+
+					completed_event.Reset ();
+					command_event.Set ();
+					return true;
+				}
+			}
+
+			void command_thread_main ()
+			{
+				Report.Debug (DebugFlags.CLI, "{0} starting command thread", this);
+
+				while (!Completed) {
+					command_event.WaitOne ();
+
+					Report.Debug (DebugFlags.CLI, "{0} command thread waiting", this);
+
+					Command command;
+					lock (this) {
+						command = this.command;
+						this.command = null;
+
+						command_event.Reset ();
+					}
+
+					Report.Debug (DebugFlags.CLI, "{0} command thread execute: {1}", this, command);
+
+					execute_command (command);
+
+					Report.Debug (DebugFlags.CLI, "{0} command thread done executing: {1}", this, command);
+
+					completed_event.Set ();
+				}
+
+				Report.Debug (DebugFlags.CLI, "{0} terminating command thread", this);
+			}
+
+			void execute_command (Command command)
+			{
+				try {
+					if (repeating)
+						command.Repeat (Interpreter);
+					else
+						command.Execute (Interpreter);
+				} catch (ST.ThreadAbortException) {
+				} catch (ScriptingException ex) {
+					Interpreter.Error (ex);
+				} catch (TargetException ex) {
+					Interpreter.Error (ex);
+				} catch (Exception ex) {
+					Interpreter.Error (
+						"Caught exception while executing command {0}: {1}",
+						this, ex);
+				}
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("MainLoop ({0}{1})", ID, Completed ? ":Completed" : "");
+			}
 		}
 	}
 }
