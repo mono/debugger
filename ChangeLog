@@ -1,10 +1,5 @@
 2009-02-28  Martin Baulig  <martin@ximian.com>
 
-	* backend/Inferior.cs
-	(Inferior.GetSectionAddress): Call `bfd.UpdateSharedLibraryInfo()'
-	and then use `bfd_container.GetSectionAddress()' to search in all
-	shared libraries.
-
 	* backend/arch/BfdContainer.cs
 	(BfdContainer.GetSectionAddress): New public method.
 
