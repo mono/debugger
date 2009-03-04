@@ -1,3 +1,17 @@
+2009-02-28  Martin Baulig  <martin@ximian.com>
+
+	* backend/Inferior.cs
+	(Inferior.GetSectionAddress): Call `bfd.UpdateSharedLibraryInfo()'
+	and then use `bfd_container.GetSectionAddress()' to search in all
+	shared libraries.
+
+	* backend/arch/BfdContainer.cs
+	(BfdContainer.GetSectionAddress): New public method.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.get_thread_info): Silently fail if we're not a
+	managed application.
+
 2009-03-04  Martin Baulig  <martin@ximian.com>
 
 	Implemented nested break states.

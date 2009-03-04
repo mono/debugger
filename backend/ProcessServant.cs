@@ -450,6 +450,8 @@ namespace Mono.Debugger.Backend
 		void get_thread_info (Inferior inferior, SingleSteppingEngine engine)
 		{
 			if (thread_db == null) {
+				if (mono_manager == null)
+					return;
 				Report.Error ("Failed to initialize thread_db on {0}: {1} {2}",
 					      start.CommandLine, start, Environment.StackTrace);
 				throw new InternalError ();

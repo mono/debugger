@@ -821,7 +821,8 @@ namespace Mono.Debugger.Backend
 
 		public TargetAddress GetSectionAddress (string name)
 		{
-			return bfd.GetSectionAddress (name);
+			bfd.UpdateSharedLibraryInfo (this, this);
+			return bfd_container.GetSectionAddress (name);
 		}
 
 		public TargetAddress MainMethodAddress {

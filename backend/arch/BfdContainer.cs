@@ -139,6 +139,17 @@ namespace Mono.Debugger.Backend
 			return false;
 		}
 
+		public TargetAddress GetSectionAddress (string name)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				TargetAddress address = bfd.GetSectionAddress (name);
+				if (!address.IsNull)
+					return address;
+			}
+
+			return TargetAddress.Null;
+		}
+
 		//
 		// IDisposable
 		//

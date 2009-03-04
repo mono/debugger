@@ -398,8 +398,7 @@ namespace Mono.Debugger.Backend
 			try {
 				if (!read_dynamic_info (inferior, target))
 					return;
-			} catch (Exception ex) {
-				Console.WriteLine ("UPDATE SHLIB INFO #1: {0}", ex);
+			} catch {
 				return;
 			}
 
