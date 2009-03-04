@@ -824,10 +824,10 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public int InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-						      TargetType exception)
+						      TargetType exception, bool unhandled)
 		{
 			Event handle = target.Process.Session.InsertExceptionCatchPoint (
-				target, group, exception);
+				target, group, exception, unhandled);
 			return handle.Index;
 		}
 

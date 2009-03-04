@@ -100,6 +100,7 @@
   </xs:complexType>
   <xs:complexType name="Exception">
     <xs:attribute name="type" type="xs:string" use="required" />
+    <xs:attribute name="unhandled" type="xs:boolean" />
   </xs:complexType>
   <xs:complexType name="MainMethod">
   </xs:complexType>

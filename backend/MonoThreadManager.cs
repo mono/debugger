@@ -85,6 +85,7 @@ namespace Mono.Debugger.Backend
 
 		AddressBreakpoint notification_bpt;
 		IntPtr mono_runtime_info;
+		int debugger_version;
 
 		internal bool HasCodeBuffer {
 			get;
@@ -122,7 +123,7 @@ namespace Mono.Debugger.Backend
 				debugger_info.BreakpointArraySize);
 			inferior.SetRuntimeInfo (mono_runtime_info);
 
-			inferior.WriteInteger (debugger_info.DebuggerVersion, 4);
+			debugger_version = inferior.ReadInteger (debugger_info.DebuggerVersion);
 
 			if (notification_bpt != null) {
 				notification_bpt.Remove (inferior);

@@ -24,7 +24,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 
 			AssertStopped (thread, "X.Main()", GetLine ("main"));
-			AssertCatchpoint ("InvalidOperationException");
+			int invalid_op_catchpoint = AssertCatchpoint ("InvalidOperationException");
 			AssertExecute ("continue");
 
 			AssertCaughtException (thread, "X.Test()", GetLine ("exception"));
@@ -55,7 +55,8 @@ namespace Mono.Debugger.Tests
 
 			AssertHitBreakpoint (thread, "try my", "X.TestMy()");
 
-			AssertCatchpoint ("MyException");
+			// Stop when `MyException' is thrown.
+			int my_exc_catchpoint = AssertCatchpoint ("MyException");
 
 			AssertExecute ("continue");
 
@@ -63,9 +64,27 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("MY EXCEPTION: MyException");
+
+			AssertHitBreakpoint (thread, "main3", "X.Main()");
+
+			// Make it a catchpoint for unhandled `MyException' exceptions only.
+			AssertExecute ("delete " + my_exc_catchpoint);
+			AssertExecute ("delete " + invalid_op_catchpoint);
+			my_exc_catchpoint = AssertUnhandledCatchpoint ("MyException");
+
+			// `MyException' is thrown, but we don't stop since we're only interested
+			// in unhandled instances of it.
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("True");
+			AssertHitBreakpoint (thread, "main4", "X.Main()");
+			AssertPrint (thread, "catched", "(bool) true");
+
+			AssertExecute ("continue");
+			AssertCaughtUnhandledException (thread, "X.ThrowMy()", GetLine ("throw my"));
+
+			AssertExecute ("continue");
 			AssertNoTargetOutput ();
-
-
 			AssertTargetExited (thread.Process);
 		}
 	}

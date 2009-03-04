@@ -244,32 +244,58 @@ namespace Mono.Debugger.Backend
 
 			TargetEventArgs result = null;
 
-			if ((message == Inferior.ChildEventType.THROW_EXCEPTION) ||
-			    (message == Inferior.ChildEventType.HANDLE_EXCEPTION)) {
-				TargetAddress info = new TargetAddress (
-					inferior.AddressDomain, cevent.Data1);
-				TargetAddress ip = new TargetAddress (
-					manager.AddressDomain, cevent.Data2);
+			if (message == Inferior.ChildEventType.THROW_EXCEPTION) {
+				TargetAddress info = new TargetAddress (inferior.AddressDomain, cevent.Data1);
+				TargetAddress ip = new TargetAddress (manager.AddressDomain, cevent.Data2);
 
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received exception: {1} {2} {3}",
-					      this, message, info, ip);
+					      "{0} received exception: {1} {2} {3}", this, message, info, ip);
 
 				TargetAddress stack = inferior.ReadAddress (info);
 				TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
 
-				bool stop_on_exc;
-				if (message == Inferior.ChildEventType.THROW_EXCEPTION)
-					stop_on_exc = throw_exception (stack, exc, ip);
-				else
-					stop_on_exc = handle_exception (stack, exc, ip);
+				ExceptionAction action = throw_exception (stack, exc, ip);
 
 				Report.Debug (DebugFlags.SSE,
-					      "{0} {1}stopping at exception ({2}:{3}:{4}) - {5} - {6}",
-					      this, stop_on_exc ? "" : "not ", stack, exc, ip,
-					      current_operation, temp_breakpoint);
+					      "{0} throw exception ({1}:{2}:{3}) - {4} - {5} - {6}",
+					      this, stack, exc, ip, action, current_operation, temp_breakpoint);
 
-				if (stop_on_exc) {
+				switch (action) {
+				case ExceptionAction.None:
+					do_continue ();
+					return;
+
+				case ExceptionAction.Stop:
+					inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
+					PushOperation (new OperationException (this, ip, exc, false));
+					return;
+
+				case ExceptionAction.StopUnhandled:
+					if (!check_runtime_version (81, 1))
+						goto case ExceptionAction.Stop;
+					inferior.WriteInteger (info + 4 + 2 * inferior.TargetAddressSize, 1);
+					do_continue ();
+					return;
+				}
+			}
+
+			if (message == Inferior.ChildEventType.HANDLE_EXCEPTION) {
+				TargetAddress info = new TargetAddress (inferior.AddressDomain, cevent.Data1);
+				TargetAddress ip = new TargetAddress (manager.AddressDomain, cevent.Data2);
+
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received exception: {1} {2} {3}", this, message, info, ip);
+
+				TargetAddress stack = inferior.ReadAddress (info);
+				TargetAddress exc = inferior.ReadAddress (info + inferior.TargetAddressSize);
+
+				bool stop = handle_exception (stack, exc, ip);
+
+				Report.Debug (DebugFlags.SSE,
+					      "{0} {1}stopping at exception handler ({2}:{3}:{4}) - {4} - {5}",
+					      this, stop ? "" : "not ", stack, exc, ip, current_operation, temp_breakpoint);
+
+				if (stop) {
 					inferior.WriteInteger (info + 2 * inferior.TargetAddressSize, 1);
 					PushOperation (new OperationException (this, ip, exc, false));
 					return;
@@ -278,6 +304,7 @@ namespace Mono.Debugger.Backend
 				do_continue ();
 				return;
 			}
+
 
 			if (lmf_breakpoint != null) {
 				if ((message == Inferior.ChildEventType.CHILD_HIT_BREAKPOINT) &&
@@ -497,6 +524,16 @@ namespace Mono.Debugger.Backend
 			result = new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame);
 			goto send_result;
 		}
+
+		bool check_runtime_version (int major, int minor)
+		{
+			if (MonoDebuggerInfo.MajorVersion < major)
+				return false;
+			if (MonoDebuggerInfo.MajorVersion > major)
+				return true;
+			return MonoDebuggerInfo.MinorVersion >= minor;
+		}
+
 #endregion
 
 		void OperationCompleted (TargetEventArgs result)
@@ -991,28 +1028,24 @@ namespace Mono.Debugger.Backend
 			inferior.WriteLongInteger (extended_notifications_addr, notifications);
 		}
 
-		bool throw_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
+		ExceptionAction throw_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} throwing exception {1} at {2} while running {3}", this, exc, ip,
 				      current_operation);
 
-			if ((current_operation != null) && (current_operation.StartFrame != null) &&
-			    (current_operation.StartFrame.Address == ip))
-				return false;
-
 			if (current_operation is OperationRuntimeInvoke)
-				return false;
+				return ExceptionAction.None;
 
 			TargetObject exc_obj = process.MonoLanguage.CreateObject (inferior, exc);
 			if (exc_obj == null)
-				return false; // OOOPS
+				return ExceptionAction.None; // OOOPS
 
 			bool stop;
 			if (process.Client.GenericExceptionCatchPoint (exc_obj.Type.Name, out stop)) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} generic exception catchpoint: {1}", this, stop);
-				return stop;
+				return stop ? ExceptionAction.Stop : ExceptionAction.None;
 			}
 
 			foreach (ExceptionCatchPoint handle in exception_handlers.Values) {
@@ -1023,13 +1056,10 @@ namespace Mono.Debugger.Backend
 				if (!handle.CheckException (process.MonoLanguage, inferior, exc))
 					continue;
 
-				Report.Debug (DebugFlags.SSE,
-					      "{0} stopped on exception {1} at {2}", this, exc, ip);
-
-				return true;
+				return handle.Unhandled ? ExceptionAction.StopUnhandled : ExceptionAction.Stop;
 			}
 
-			return false;
+			return ExceptionAction.None;
 		}
 
 		bool handle_exception (TargetAddress stack, TargetAddress exc, TargetAddress ip)
@@ -1086,7 +1116,7 @@ namespace Mono.Debugger.Backend
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			registers = inferior.GetRegisters ();
 
-			if (!main_retaddr.IsNull && (iframe.StackPointer >= main_retaddr))
+			if ((operation != null) && !main_retaddr.IsNull && (iframe.StackPointer >= main_retaddr))
 				return new OperationRun (this, false, operation.Result);
 
 			// Compute the current stack frame.
@@ -4452,5 +4482,13 @@ namespace Mono.Debugger.Backend
 		LongLong,
 		LongLongLongString,
 		LongObject
+	}
+
+	[Serializable]
+	internal enum ExceptionAction
+	{
+		None = 0,
+		Stop = 1,
+		StopUnhandled = 2
 	}
 }

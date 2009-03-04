@@ -1,3 +1,21 @@
+2009-03-02  Martin Baulig  <martin@ximian.com>
+
+	* frontend/Command.cs
+	(CatchCommand): Added `-unhandled' argument to only catch
+	user-unhandled exceptions.
+
+	* frontend/Interpreter.cs
+	(Interpreter.InsertExceptionCatchPoint): Added `bool unhandled'.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertExceptionCatchPoint): Added `bool
+	unhandled'.
+
+	* classes/ExceptionCatchPoint.cs
+	(ExceptionCatchPoint.Unhandled): New public property.
+
+	* backend/SingleSteppingEngine.cs: Improve exception handling.
+
 2009-03-04  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/testnativefork.cs: Add `[Category ("NotWorking")]'.

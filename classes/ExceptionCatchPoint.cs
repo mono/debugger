@@ -17,15 +17,22 @@ namespace Mono.Debugger
 			get { return true; }
 		}
 
-		internal ExceptionCatchPoint (ThreadGroup group, TargetType exception)
+		public bool Unhandled {
+			get; set;
+		}
+
+		internal ExceptionCatchPoint (ThreadGroup group, TargetType exception, bool unhandled)
 			: base (EventType.CatchException, exception.Name, group)
 		{
 			this.exception = exception;
+			this.Unhandled = unhandled;
 		}
 
-		internal ExceptionCatchPoint (int index, ThreadGroup group, string name)
+		internal ExceptionCatchPoint (int index, ThreadGroup group, string name, bool unhandled)
 			: base (EventType.CatchException, index, name, group)
-		{ }
+		{
+			this.Unhandled = unhandled;
+		}
 
 		public override bool IsActivated {
 			get { return handle > 0; }
@@ -113,6 +120,7 @@ namespace Mono.Debugger
 		{
 			XmlElement exception_e = root.OwnerDocument.CreateElement ("Exception");
 			exception_e.SetAttribute ("type", Name);
+			exception_e.SetAttribute ("unhandled", Unhandled ? "true" : "false");
 			element.AppendChild (exception_e);
 		}
 

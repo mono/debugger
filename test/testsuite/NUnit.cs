@@ -574,6 +574,12 @@ namespace Mono.Debugger.Tests
 			AssertFrame (exp_thread, exp_func, exp_line);
 		}
 
+		public void AssertCaughtUnhandledException (Thread exp_thread, string exp_func, int exp_line)
+		{
+			AssertTargetEvent (exp_thread, TargetEventType.UnhandledException);
+			AssertFrame (exp_thread, exp_func, exp_line);
+		}
+
 		public int AssertBreakpoint (int location)
 		{
 			return AssertBreakpoint (String.Format ("{0}:{1}", FileName, location));
@@ -600,6 +606,17 @@ namespace Mono.Debugger.Tests
 		public int AssertCatchpoint (string location)
 		{
 			object result = AssertExecute ("catch " + location);
+			if (result == null) {
+				Assert.Fail ("Failed to insert catchpoint.");
+				return -1;
+			}
+
+			return (int) result;
+		}
+
+		public int AssertUnhandledCatchpoint (string location)
+		{
+			object result = AssertExecute ("catch -unhandled " + location);
 			if (result == null) {
 				Assert.Fail ("Failed to insert catchpoint.");
 				return -1;

@@ -202,9 +202,9 @@ namespace Mono.Debugger
 		}
 
 		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							TargetType exception)
+							TargetType exception, bool unhandled)
 		{
-			Event handle = new ExceptionCatchPoint (group, exception);
+			Event handle = new ExceptionCatchPoint (group, exception, unhandled);
 			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
@@ -375,7 +375,8 @@ namespace Mono.Debugger
 				return new ExpressionBreakpoint (this, index, group, type, expression);
 			} else if (navigator.Name == "Exception") {
 				string exc = navigator.GetAttribute ("type", "");
-				return new ExceptionCatchPoint (index, group, exc);
+				bool unhandled = Boolean.Parse (navigator.GetAttribute ("unhandled", ""));
+				return new ExceptionCatchPoint (index, group, exc, unhandled);
 			} else if (navigator.Name == "MainMethod") {
 				return new MainMethodBreakpoint (this);
 			} else
