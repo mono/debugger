@@ -1,3 +1,18 @@
+2009-03-02  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of r128465 ****
+
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime.GetGenericClass): Reflect latest runtime changes:
+	starting with version 81.0, `MonoGenericInst.type_argv' is a tail
+	array and not a pointer anymore.  Check for the runtime version
+	and support both versions here.
+
+	* backend/MonoThreadManager.cs
+	(MonoDebuggerInfo): Accept runtime major versions 80 and 81.
+	(MonoDebuggerInfo.MinorVersion): New public readonly field.
+	(MonoDebuggerInfo.MajorVersion): New public readonly field.
+
 2009-02-25  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/X86_Instruction.cs
