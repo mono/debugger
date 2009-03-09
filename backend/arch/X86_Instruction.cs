@@ -291,7 +291,7 @@ namespace Mono.Debugger.Architectures
 		{
 			ModRM = new X86_ModRM (this, reader.ReadByte ());
 
-			if (Is64BitMode && (ModRM.Mod == 0) && ((ModRM.R_M & 0x07) == 0x06)) {
+			if (Is64BitMode && (ModRM.Mod == 0) && ((ModRM.R_M & 0x07) == 0x05)) {
 				is_ip_relative = true;
 			}
 		}
