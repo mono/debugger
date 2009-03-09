@@ -1,3 +1,12 @@
+2009-03-09  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertExceptionCatchPoint): Add
+	compatibility overload.
+
+	* classes/Thread.cs
+	(Thread.RuntimeInvoke): Add compatibility overload.
+
 2009-02-28  Martin Baulig  <martin@ximian.com>
 
 	* backend/arch/BfdContainer.cs
