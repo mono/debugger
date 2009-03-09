@@ -535,10 +535,21 @@ namespace Mono.Debugger.Languages.Mono
 			List<MethodSource> methods = new List<MethodSource> ();
 
 			foreach (C.MethodEntry method in File.Methods) {
-				if (method.CompileUnit.SourceFile.Index != source.Index)
+				if (method.CompileUnit.SourceFile.Index == source.Index) {
+					methods.Add (GetMethodSource (file, method.Index));
 					continue;
+				}
 
-				methods.Add (GetMethodSource (file, method.Index));
+				bool found = false;
+				foreach (C.SourceFileEntry include in method.CompileUnit.IncludeFiles) {
+					if (include.Index == source.Index) {
+						found = true;
+						break;
+					}
+				}
+
+				if (found)
+					methods.Add (GetMethodSource (file, method.Index));
 			}
 
 			return methods.ToArray ();

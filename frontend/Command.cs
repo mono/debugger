@@ -3118,7 +3118,7 @@ namespace Mono.Debugger.Frontend
 				context.CurrentThread = context.Interpreter.GetThread (t_index);
 			}
 
-			if (!gui && context.Interpreter.HasTarget) {
+			if (!gui && !lazy && context.Interpreter.HasTarget) {
 				Thread thread = context.CurrentThread;
 				if (!thread.IsStopped)
 					throw new TargetException (TargetError.NotStopped);

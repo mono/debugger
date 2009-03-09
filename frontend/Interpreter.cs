@@ -300,7 +300,7 @@ namespace Mono.Debugger.Frontend
 				current_process = main_process = debugger.Run (session);
 
 				current_thread = current_process.MainThread;
-				current_thread = WaitAll (current_thread);
+				current_thread = WaitAll (current_thread) ?? current_process.MainThread;
 
 				return current_process;
 			} catch (TargetException) {

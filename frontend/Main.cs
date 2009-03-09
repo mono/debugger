@@ -325,10 +325,8 @@ namespace Mono.Debugger.Frontend
 				if (mono_debugger_server_get_pending_sigint () == 0)
 					continue;
 
-				interrupt_event.Set ();
-
 				if (interpreter.Interrupt () > 2)
-					main_thread.Abort ();
+					interrupt_event.Set ();
 			} while (true);
 		}
 
