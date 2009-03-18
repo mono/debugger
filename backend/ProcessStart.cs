@@ -16,6 +16,7 @@ namespace Mono.Debugger.Backend
 		string cwd;
 		string base_dir;
 		bool stop_in_main = true;
+		bool redirect_output = true;
 		string[] argv;
 		string[] envp;
 		DebuggerOptions options;
@@ -80,6 +81,7 @@ namespace Mono.Debugger.Backend
 				throw new ArgumentException ("InferiorArgs null", "options");
 
 			stop_in_main = options.StopInMain;
+			redirect_output = options.RedirectOutput;
 
 			cwd = options.WorkingDirectory;
 			if (cwd == null)
@@ -227,6 +229,10 @@ namespace Mono.Debugger.Backend
 
 		public bool StopInMain {
 			get { return stop_in_main; }
+		}
+
+		public bool RedirectOutput {
+			get { return redirect_output; }
 		}
 
 		void AddUserEnvironment (Hashtable hash)

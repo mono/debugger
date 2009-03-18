@@ -1058,6 +1058,8 @@ namespace Mono.Debugger.Backend
 			if (exc_obj == null)
 				return ExceptionAction.None; // OOOPS
 
+			Report.Debug (DebugFlags.SSE, "{0} throwing exception: {1}", this, exc_obj.Type.Name);
+
 			bool stop;
 			if (process.Client.GenericExceptionCatchPoint (exc_obj.Type.Name, out stop)) {
 				Report.Debug (DebugFlags.SSE,
@@ -1621,6 +1623,8 @@ namespace Mono.Debugger.Backend
 					iframe.FrameAddress, registers, method);
 				update_current_frame (main_frame);
 			}
+
+			Report.Debug (DebugFlags.SSE, "{0} activate pending breakpoints", this);
 
 			Queue pending = new Queue ();
 			foreach (Event e in process.Session.Events) {

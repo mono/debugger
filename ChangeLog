@@ -1,3 +1,16 @@
+2009-03-19  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.RedirectOutput): New public property.
+	(DebuggerOptions.ParseCommandLine): Added `-no-redirect' command
+	line argument to prevent redirecting stdin and stdout.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.RedirectOutput): New public property.
+
+	* backend/server/x86-ptrace.c
+	(mono_debugger_server_spawn): Added `gboolean redirect_fds'.
+
 2009-03-05  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoSymbolFile.cs

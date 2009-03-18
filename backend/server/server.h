@@ -145,6 +145,7 @@ struct InferiorVTable {
 						       const gchar        *working_directory,
 						       const gchar       **argv,
 						       const gchar       **envp,
+						       gboolean            redirect_fds,
 						       gint               *child_pid,
 						       IOThreadData      **io_data,
 						       gchar             **error);
@@ -431,6 +432,7 @@ mono_debugger_server_spawn                (ServerHandle       *handle,
 					   const gchar        *working_directory,
 					   const gchar       **argv,
 					   const gchar       **envp,
+					   gboolean            redirect_fds,
 					   gint               *child_pid,
 					   IOThreadData      **io_data,
 					   gchar             **error);

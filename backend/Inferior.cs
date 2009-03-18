@@ -65,7 +65,7 @@ namespace Mono.Debugger.Backend
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_io_thread_main (IntPtr io_data, ChildOutputHandler output_handler);
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, out int child_pid, out IntPtr io_data, out IntPtr error);
+		static extern TargetError mono_debugger_server_spawn (IntPtr handle, string working_directory, string[] argv, string[] envp, bool redirect_fds, out int child_pid, out IntPtr io_data, out IntPtr error);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_attach (IntPtr handle, int child_pid);
@@ -609,7 +609,7 @@ namespace Mono.Debugger.Backend
 
 			TargetError result = mono_debugger_server_spawn (
 				server_handle, start.WorkingDirectory, start.CommandLineArguments,
-				start.Environment, out child_pid, out io_data, out error);
+				start.Environment, start.RedirectOutput, out child_pid, out io_data, out error);
 			if (result != TargetError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);
@@ -618,9 +618,11 @@ namespace Mono.Debugger.Backend
 					TargetError.CannotStartTarget, message);
 			}
 
-			ST.Thread io_thread = new ST.Thread (new ST.ThreadStart (io_thread_main));
-			io_thread.IsBackground = true;
-			io_thread.Start ();
+			if (start.RedirectOutput) {
+				ST.Thread io_thread = new ST.Thread (new ST.ThreadStart (io_thread_main));
+				io_thread.IsBackground = true;
+				io_thread.Start ();
+			}
 
 			return child_pid;
 		}
