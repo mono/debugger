@@ -2,6 +2,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <config.h>
 #include <server.h>
 #include <breakpoints.h>
 #include <stdio.h>

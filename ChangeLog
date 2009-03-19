@@ -1,3 +1,13 @@
+2009-03-19  Jonathan Chambers  <joncham@gmail.com>
+
+	* backend/server/i386-arch.h: Wrap include with #ifdef HAVE_SYS_USER_H
+	
+	* backend/server/x86-ptrace.c: Include config.h.
+
+	* configure.in: Add check for sys/user.h.
+
+	* winconfig.h: Added. Used to generate config.h on Windows.
+
 2009-03-19  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerOptions.cs

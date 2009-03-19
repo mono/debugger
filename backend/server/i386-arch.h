@@ -7,7 +7,9 @@ G_BEGIN_DECLS
 
 #if defined(__i386__)
 
+#ifdef HAVE_SYS_USER_H
 #include <sys/user.h>
+#endif
 
 #define INFERIOR_REGS_TYPE	struct user_regs_struct
 #define INFERIOR_FPREGS_TYPE	struct user_fpregs_struct
