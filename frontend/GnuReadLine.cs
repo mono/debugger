@@ -7,7 +7,7 @@ namespace Mono.Debugger.Frontend
 	public delegate void CompletionDelegate (string text, int start, int end);
 	public delegate string CompletionGenerator (string text, int state);
 
-	internal class GnuReadLine
+	internal class GnuReadLine : IReadLine
 	{
 		[DllImport("libmonodebuggerreadline")]
 		extern static void mono_debugger_readline_static_init ();
@@ -46,46 +46,46 @@ namespace Mono.Debugger.Frontend
 			mono_debugger_readline_static_init ();
 		}
 
-		public static bool IsTerminal (int fd)
+		public bool IsTerminal (int fd)
 		{
 			return mono_debugger_readline_is_a_tty (fd) != 0;
 		}
 
-		public static string ReadLine (string prompt)
+		public string ReadLine (string prompt)
 		{
 			return mono_debugger_readline_readline (prompt);
 		}
 
-		public static void AddHistory (string line)
+		public void AddHistory (string line)
 		{
 			mono_debugger_readline_add_history (line);
 		}
 
-		public static int Columns {
+		public int Columns {
 			get {
 				return mono_debugger_readline_get_columns ();
 			}
 		}
 
-		public static void SetCompletionMatches (string[] matches)
+		public void SetCompletionMatches (string[] matches)
 		{
 			mono_debugger_readline_set_completion_matches (matches, matches == null ? 0 : matches.Length);
 		}
 
-		public static void EnableCompletion (CompletionDelegate handler)
+		public void EnableCompletion (CompletionDelegate handler)
 		{
 			completion_handler = handler;
 			mono_debugger_readline_enable_completion (completion_handler);
 		}
 
-		public static string CurrentLine
+		public string CurrentLine
 		{
 			get {
 				return mono_debugger_readline_current_line_buffer ();
 			}
 		}
 
-		public static bool FilenameCompletionDesired
+		public bool FilenameCompletionDesired
 		{
 			get {
 				return mono_debugger_readline_get_filename_completion_desired () == 0 ? false : true;

@@ -13,7 +13,7 @@ namespace Mono.Debugger.Frontend
 			this.engine = engine;
 		}
 
-		/* This method gets installed as the GnuReadLine completion
+		/* This method gets installed as the LineReader completion
 		 * delegate.  It completes commands at the start of the
 		 * line, and does command specific completion for
 		 * arguments. */
@@ -28,7 +28,7 @@ namespace Mono.Debugger.Frontend
 				 * generate the list of strings. 
 				 */
 
-				string line = GnuReadLine.CurrentLine;
+				string line = LineReader.CurrentLine;
 				string command;
 
 				int ptr = 0;
@@ -100,7 +100,7 @@ namespace Mono.Debugger.Frontend
 				match_strings [matched_commands.Count] = null;
 			}
 
-			GnuReadLine.SetCompletionMatches (match_strings);
+			LineReader.SetCompletionMatches (match_strings);
 		}
 
 		public void StringsCompleter (string[] haystack, string text, int start, int end)
@@ -129,7 +129,7 @@ namespace Mono.Debugger.Frontend
 				match_strings [matches.Count] = null;
 			}
 
-			GnuReadLine.SetCompletionMatches (match_strings);
+			LineReader.SetCompletionMatches (match_strings);
 		}
 
 		public void ArgumentCompleter (Type t, string text, int start, int end)
@@ -163,7 +163,7 @@ namespace Mono.Debugger.Frontend
 				match_strings [matched_args.Count] = null;
 			}
 
-			GnuReadLine.SetCompletionMatches (match_strings);
+			LineReader.SetCompletionMatches (match_strings);
 		}
 
 		public void FilenameCompleter (string text, int start, int end)
@@ -172,7 +172,7 @@ namespace Mono.Debugger.Frontend
 			string file_prefix;
 			DebuggerEngine de = engine as DebuggerEngine;
 
-			GnuReadLine.FilenameCompletionDesired = true;
+			LineReader.FilenameCompletionDesired = true;
 
 			if (text.IndexOf (Path.DirectorySeparatorChar) == -1) {
 				dir = de.Interpreter.Options.WorkingDirectory;
@@ -188,7 +188,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				fs_entries = Directory.GetFileSystemEntries (dir, file_prefix + "*");
 			} catch {
-				GnuReadLine.SetCompletionMatches (null);
+				LineReader.SetCompletionMatches (null);
 				return;
 			}
 
@@ -216,7 +216,7 @@ namespace Mono.Debugger.Frontend
 				match_strings [matched_paths.Count] = null;
 			}
 
-			GnuReadLine.SetCompletionMatches (match_strings);
+			LineReader.SetCompletionMatches (match_strings);
 
 		}
 
@@ -224,7 +224,7 @@ namespace Mono.Debugger.Frontend
 		 * matches). */
 	  	public void NoopCompleter (string text, int start, int end)
 		{
-			GnuReadLine.SetCompletionMatches (null);
+			LineReader.SetCompletionMatches (null);
 		}
 
 		public void SymbolCompleter (ScriptingContext context, string text, int start, int end)
@@ -275,9 +275,9 @@ namespace Mono.Debugger.Frontend
 					methods [method_list.Count] = null;
 				}
 
-				GnuReadLine.SetCompletionMatches (methods);
+				LineReader.SetCompletionMatches (methods);
 			} catch {
-				GnuReadLine.SetCompletionMatches (null);
+				LineReader.SetCompletionMatches (null);
 			}
 		}
 	}

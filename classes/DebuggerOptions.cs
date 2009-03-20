@@ -300,9 +300,11 @@ namespace Mono.Debugger
 		{
 			DebuggerOptions options = new DebuggerOptions ();
 			options.InferiorArgs = new string [0];
+#if HAVE_XSP
 			options.StartXSP = true;
 			options.XSP_Root = root;
 			options.SetupXSP ();
+#endif
 			return options;
 		}
 

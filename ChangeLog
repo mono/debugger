@@ -1,5 +1,23 @@
 2009-03-19  Jonathan Chambers  <joncham@gmail.com>
 
+	* frontend/Completer.cs: Switch from using GnuReadLine to LineReader.
+	
+	* frontend/GnuReadLine.cs: Make methods non-static. Now accessed via LineReader.
+	
+	* frontend/LineReader.cs: Added. Handles both GnuReadLine and ManagedReadLine.
+	
+	* frontend/Main.cs: Switch from using GnuReadLine to LineReader.
+	
+	* frontend/ManagedReadLine.cs: Beginning of managed ReadLine implementation.
+	
+	* classes/DebuggerOptions.cs: Add #if HAVE_XSP around xsp specific
+	code.
+	Fixes build.
+
+	* build/Makefile.am: Add LineReader.cs and ManagedReadLine.cs.
+
+2009-03-19  Jonathan Chambers  <joncham@gmail.com>
+
 	* backend/server/i386-arch.h: Wrap include with #ifdef HAVE_SYS_USER_H
 	
 	* backend/server/x86-ptrace.c: Include config.h.

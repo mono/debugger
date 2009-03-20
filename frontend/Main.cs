@@ -293,11 +293,11 @@ namespace Mono.Debugger.Frontend
 				Console.Write (the_prompt);
 				return Console.ReadLine ();
 			} else {
-				string result = GnuReadLine.ReadLine (the_prompt);
+				string result = LineReader.ReadLine (the_prompt);
 				if (result == null)
 					return null;
 				if (result != "")
-					GnuReadLine.AddHistory (result);
+					LineReader.AddHistory (result);
 				return result;
 			}
 		}
@@ -332,7 +332,7 @@ namespace Mono.Debugger.Frontend
 
 		public static void Main (string[] args)
 		{
-			bool is_terminal = GnuReadLine.IsTerminal (0);
+			bool is_terminal = LineReader.IsTerminal (0);
 
 			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
 
