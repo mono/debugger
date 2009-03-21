@@ -16,7 +16,7 @@ namespace Mono.Debugger.Backend
 		string cwd;
 		string base_dir;
 		bool stop_in_main = true;
-		bool redirect_output = true;
+		bool redirect_output = false;
 		string[] argv;
 		string[] envp;
 		DebuggerOptions options;
@@ -81,7 +81,7 @@ namespace Mono.Debugger.Backend
 				throw new ArgumentException ("InferiorArgs null", "options");
 
 			stop_in_main = options.StopInMain;
-			redirect_output = options.RedirectOutput;
+			redirect_output = session.Config.RedirectOutput;
 
 			cwd = options.WorkingDirectory;
 			if (cwd == null)

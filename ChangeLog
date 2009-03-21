@@ -1,3 +1,13 @@
+2009-03-20  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.RedirectOutput): New configuration option.
+
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.RedirectOutput): Removed.
+	(DebuggerOptions.ParseCommandLine): Removed `-no-redirect' command
+	line argument; this is now a configuration option.
+
 2009-03-19  Jonathan Chambers  <joncham@gmail.com>
 
 	* frontend/Completer.cs: Switch from using GnuReadLine to LineReader.

@@ -113,6 +113,8 @@ namespace Mono.Debugger
 					StopOnManagedSignals = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "NestedBreakStates")
 					NestedBreakStates = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "RedirectOutput")
+					RedirectOutput = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "Martin_Boston_07102008")
 					Private_Martin_Boston_07102008 = Boolean.Parse (iter.Current.Value);
 				else
@@ -171,6 +173,10 @@ namespace Mono.Debugger
 				nested_break_states_e.InnerText = NestedBreakStates ? "true" : "false";
 				element.AppendChild (nested_break_states_e);
 
+				XmlElement redirect_output_e = doc.CreateElement ("RedirectOutput");
+				redirect_output_e.InnerText = RedirectOutput ? "true" : "false";
+				element.AppendChild (redirect_output_e);
+
 				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
 				doc.DocumentElement.AppendChild (module_groups);
 
@@ -190,6 +196,7 @@ namespace Mono.Debugger
 		bool opaque_file_names = false;
 		bool stop_on_managed_signals = true;
 		bool nested_break_states = false;
+		bool redirect_output = false;
 		bool is_xsp = false;
 		Hashtable module_groups;
 		Dictionary<string,string> directory_maps;
@@ -309,6 +316,11 @@ namespace Mono.Debugger
 			set { nested_break_states = value; }
 		}
 
+		public bool RedirectOutput {
+			get { return redirect_output; }
+			set { redirect_output = value; }
+		}
+
 		public bool Private_Martin_Boston_07102008 {
 			get; set;
 		}
@@ -351,7 +363,9 @@ namespace Mono.Debugger
 						  StopOnManagedSignals ? "yes" : "no"));
 			sb.Append (String.Format ("  Enable nested break states (nested-break-states):   {0}\n",
 						  NestedBreakStates ? "yes" : "no"));
-						  
+			sb.Append (String.Format ("  Redirect output (redirect-output):                  {0}\n",
+						  RedirectOutput ? "yes" : "no"));
+
 			if (expert_mode) {
 				sb.Append ("\nExpert Settings:\n");
 				sb.Append (String.Format ("  Broken threading (broken-threading):   {0}\n",

@@ -25,7 +25,6 @@ namespace Mono.Debugger
 		DebugFlags? debug_flags;
 		bool? stop_in_main;
 		bool? start_target;
-		bool? redirect_output;
 
 		/* The executable file we're debugging */
 		public string File {
@@ -66,11 +65,6 @@ namespace Mono.Debugger
 			set { start_target = value; }
 		}
 
-		public bool RedirectOutput {
-			get { return redirect_output ?? true; }
-			set { redirect_output = value; }
-		}
-	  
 		/* the value of the -debug-flags: command line argument */
 		public DebugFlags DebugFlags {
 			get { return debug_flags ?? DebugFlags.None; }
@@ -142,7 +136,6 @@ namespace Mono.Debugger
 			options.WorkingDirectory = WorkingDirectory;
 			options.IsScript = IsScript;
 			options.start_target = start_target;
-			options.redirect_output = redirect_output;
 			options.debug_flags = debug_flags;
 			options.DebugOutput = DebugOutput;
 			options.MonoPrefix = MonoPrefix;
@@ -288,7 +281,6 @@ namespace Mono.Debugger
 				"   -mono-prefix:PATH         Override the mono prefix\n" +
 				"   -start                    Start inferior without halting in Main()\n" +
 				"   -run                      Start inferior and stop in Main()\n" +
-				"   -no-redirect              Don't redirect standard output\n" +
 				"   -script                  \n" +
 				"   -usage                   \n" +
 				"   -version                  Display version and licensing information (short -V)\n" +
@@ -525,14 +517,6 @@ namespace Mono.Debugger
 				}
 				debug_options.StartTarget = true;
 				debug_options.StopInMain = true;
-				return true;
-
-			case "-no-redirect":
-				if (ms_value != null) {
-					Usage ();
-					Environment.Exit (1);
-				}
-				debug_options.RedirectOutput = false;
 				return true;
 
 #if HAVE_XSP
