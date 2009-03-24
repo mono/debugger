@@ -311,7 +311,7 @@ namespace Mono.Debugger.Backend
 					Inferior.StackFrame iframe = inferior.GetCurrentFrame (false);
 					engine.SetMainReturnAddress (iframe.StackPointer);
 					engine.ProcessServant.OnProcessReachedMainEvent ();
-					resume_target = !engine.OnModuleLoaded ();
+					resume_target = !engine.OnModuleLoaded (null);
 					return true;
 				}
 

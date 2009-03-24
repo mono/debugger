@@ -24,6 +24,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public bool IsUserModule {
+			get; set;
+		}
+
 		// <summary>
 		//   The type of this event.
 		// </summary>

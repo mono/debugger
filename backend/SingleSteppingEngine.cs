@@ -1583,12 +1583,12 @@ namespace Mono.Debugger.Backend
 			ExecuteOperation (current_operation);
 		}
 
-		internal bool OnModuleLoaded ()
+		internal bool OnModuleLoaded (Module module)
 		{
-			return ActivatePendingBreakpoints ();
+			return ActivatePendingBreakpoints (module);
 		}
 
-		internal bool ActivatePendingBreakpoints ()
+		internal bool ActivatePendingBreakpoints (Module module)
 		{
 			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
 			Registers registers = inferior.GetRegisters ();
@@ -1633,6 +1633,9 @@ namespace Mono.Debugger.Backend
 					continue;
 
 				if (!e.IsEnabled || e.IsActivated)
+					continue;
+
+				if (e.IsUserModule && (module != null) && (module.ModuleGroup.Name != "user"))
 					continue;
 
 				try {
@@ -2626,7 +2629,7 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (!sse.ProcessServant.IsManaged) {
-				if (sse.OnModuleLoaded ())
+				if (sse.OnModuleLoaded (null))
 					return EventResult.Running;
 			}
 

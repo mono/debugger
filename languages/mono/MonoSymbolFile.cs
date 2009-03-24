@@ -411,6 +411,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			foreach (C.SourceFileEntry source in File.Sources) {
 				string file_name = source.FileName;
+				string orig_name = file_name;
 				if (need_conversion)
 					file_name = DebuggerConfiguration.WindowsToUnix (file_name);
 
