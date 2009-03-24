@@ -49,6 +49,7 @@ namespace Mono.Debugger
 		protected readonly ThreadGroup main_thread_group;
 
 		protected readonly Dictionary<string,string> directory_maps;
+		protected readonly List<string> user_modules;
 
 		Process main_process;
 		IExpressionParser parser;
@@ -67,6 +68,7 @@ namespace Mono.Debugger
 			thread_groups = Hashtable.Synchronized (new Hashtable ());
 			main_thread_group = CreateThreadGroup ("main");
 			directory_maps = new Dictionary<string,string> ();
+			user_modules = new List<string> ();
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
@@ -420,7 +422,17 @@ namespace Mono.Debugger
 			if (module != null)
 				return module;
 
-			ModuleGroup group = Config.GetModuleGroup (symfile);
+			ModuleGroup group = null;
+
+			foreach (string user in user_modules) {
+				if (user == symfile.CodeBase) {
+					group = Config.GetModuleGroup ("user");
+					break;
+				}
+			}
+
+			if (group == null)
+				group = Config.GetModuleGroup (symfile);
 
 			module = new Module (group, name, symfile);
 			modules.Add (name, module);
@@ -567,6 +579,15 @@ namespace Mono.Debugger
 			}
 
 			return path;
+		}
+
+		//
+		// User modules
+		//
+
+		public void AddUserModule (string name)
+		{
+			user_modules.Add (name);
 		}
 	}
 }

@@ -211,6 +211,7 @@ namespace Mono.Debugger
 			module_groups.Add ("dll", new ModuleGroup ("dll", false, true, false));
 			module_groups.Add ("runtime", new ModuleGroup ("runtime", false, true, false));
 			module_groups.Add ("managed", new ModuleGroup ("managed", false, true, true));
+			module_groups.Add ("user", new ModuleGroup ("user", false, true, true));
 			module_groups.Add ("corlib", new ModuleGroup ("corlib", false, true, true));
 		}
 

@@ -300,6 +300,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return name; }
 		}
 
+		public override string CodeBase {
+			get { return ImageFile; }
+		}
+
 		public override Language Language {
 			get { return MonoLanguage; }
 		}

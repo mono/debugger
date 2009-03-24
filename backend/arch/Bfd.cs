@@ -509,6 +509,12 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		public override string CodeBase {
+			get {
+				return filename;
+			}
+		}
+
 		public string FileName {
 			get {
 				return filename;
