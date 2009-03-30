@@ -49,6 +49,7 @@ namespace Mono.Debugger
 		protected readonly ThreadGroup main_thread_group;
 
 		protected readonly Dictionary<string,string> directory_maps;
+		protected readonly List<string> user_module_paths;
 		protected readonly List<string> user_modules;
 
 		Process main_process;
@@ -68,6 +69,7 @@ namespace Mono.Debugger
 			thread_groups = Hashtable.Synchronized (new Hashtable ());
 			main_thread_group = CreateThreadGroup ("main");
 			directory_maps = new Dictionary<string,string> ();
+			user_module_paths = new List<string> ();
 			user_modules = new List<string> ();
 		}
 
@@ -413,6 +415,21 @@ namespace Mono.Debugger
 			return module;
 		}
 
+		bool is_user_module (string code_base)
+		{
+			foreach (string user in user_modules) {
+				foreach (string path in user_module_paths) {
+					if (code_base.StartsWith (path))
+						return true;
+				}
+
+				if (user == code_base)
+					return true;
+			}
+
+			return false;
+		}
+
 		internal Module CreateModule (string name, SymbolFile symfile)
 		{
 			if (symfile == null)
@@ -422,16 +439,10 @@ namespace Mono.Debugger
 			if (module != null)
 				return module;
 
-			ModuleGroup group = null;
-
-			foreach (string user in user_modules) {
-				if (user == symfile.CodeBase) {
-					group = Config.GetModuleGroup ("user");
-					break;
-				}
-			}
-
-			if (group == null)
+			ModuleGroup group;
+			if (is_user_module (symfile.CodeBase))
+				group = Config.GetModuleGroup ("user");
+			else
 				group = Config.GetModuleGroup (symfile);
 
 			module = new Module (group, name, symfile);
@@ -588,6 +599,11 @@ namespace Mono.Debugger
 		public void AddUserModule (string name)
 		{
 			user_modules.Add (name);
+		}
+
+		public void AddUserModulePath (string path)
+		{
+			user_module_paths.Add (path);
 		}
 	}
 }

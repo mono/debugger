@@ -1,3 +1,10 @@
+2009-03-30  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.AddUserModulePath): New public method.
+	(DebuggerSession.CreateModule): Also check whether the module is
+	located anywhere in the module paths.
+
 2009-03-27  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/x86-ptrace.c
