@@ -615,5 +615,49 @@ namespace Mono.Debugger.Languages.Mono
 				this.Position = pos;
 			}
 		}
+
+		public AppDomainInfo GetAppDomainInfo (MonoLanguageBackend mono, TargetMemoryAccess memory,
+						       TargetAddress address)
+		{
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+			TargetReader reader = new TargetReader (memory.ReadMemory (address, 12 * addr_size));
+
+			return new AppDomainInfo (mono, memory, reader);
+		}
+
+		public class AppDomainInfo
+		{
+			public readonly string ApplicationBase;
+			public readonly string ApplicationName;
+			public readonly string CachePath;
+			public readonly string ConfigFile;
+			public readonly string DynamicBase;
+			public readonly string ShadowCopyDirectories;
+			public readonly bool ShadowCopyFiles;
+
+			public string ShadowCopyPath;
+
+			public AppDomainInfo (MonoLanguageBackend mono, TargetMemoryAccess memory, TargetReader reader)
+			{
+				int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+
+				reader.Offset = 2 * addr_size;
+				ApplicationBase = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ());
+				ApplicationName = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ());
+				CachePath = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ());
+				ConfigFile = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ());
+				DynamicBase = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ());
+				reader.Offset += 3 * addr_size;
+				ShadowCopyDirectories = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ());
+				ShadowCopyFiles = MonoStringObject.ReadString (mono, memory, reader.ReadAddress ()) == "true";
+			}
+
+			public override string ToString ()
+			{
+				return String.Format ("AppDomainInfo ({0}:{1}:{2}:{3}:{4}:{5}:{6})",
+						      ApplicationBase, ApplicationName, CachePath, ConfigFile,
+						      DynamicBase, ShadowCopyDirectories, ShadowCopyFiles);
+			}
+		}
 	}
 }

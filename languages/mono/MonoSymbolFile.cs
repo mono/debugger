@@ -222,6 +222,10 @@ namespace Mono.Debugger.Languages.Mono
 
 			TypeTable = MonoTypeTable.CreateTypeTable (this, memory, type_table_ptr);
 
+			string shadow_location = language.GetShadowCopyLocation (ImageFile);
+			if (shadow_location != null)
+				ImageFile = shadow_location;
+
 			try {
 				Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
 			} catch (Exception ex) {

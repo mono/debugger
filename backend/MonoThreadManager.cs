@@ -48,6 +48,8 @@ namespace Mono.Debugger.Backend
 		DomainUnload,
 		ClassInitialized,
 		InterruptionRequest,
+		CreateAppDomain,
+		UnloadAppDomain,
 
 		Trampoline	= 256
 	}

@@ -1,3 +1,17 @@
+2009-03-31  Martin Baulig  <martin@ximian.com>
+
+	* backend/MonoThreadManager.cs
+	(NotificationType): Added `CreateAppDomain' and `UnloadAppDomain'.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend): Make things work with shadow copied assemblies.
+	(MonoLanguageBackend.GetShadowCopyLocation): New internal method.
+	(MonoLanguageBackend.Notification): Add support for
+	`CreateAppDomain' and `UnloadAppDomain'.
+
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime.GetAppDomainInfo): New public method.
+
 2009-03-30  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs
