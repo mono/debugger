@@ -90,6 +90,7 @@ namespace Mono.Debugger.SymbolWriter
 				SourceFileEntry source = File.GetSourceFile (i + 1);
 				if (source == null)
 					throw new MonoSymbolFileException ("Cannot get source file {0}.", i+1);
+				Debug ("  [{0}] - {1}", source, source.FileName);
 			}
 			Debug ("Checked {0} source files.", File.SourceCount);
 		}
