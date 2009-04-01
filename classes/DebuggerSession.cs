@@ -417,12 +417,12 @@ namespace Mono.Debugger
 
 		bool is_user_module (string code_base)
 		{
-			foreach (string user in user_modules) {
-				foreach (string path in user_module_paths) {
-					if (code_base.StartsWith (path))
-						return true;
-				}
+			foreach (string path in user_module_paths) {
+				if (code_base.StartsWith (path))
+					return true;
+			}
 
+			foreach (string user in user_modules) {
 				if (user == code_base)
 					return true;
 			}
