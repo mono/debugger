@@ -266,6 +266,8 @@ namespace Mono.Debugger.SymbolWriter
 								   method.Index, method.Token);
 
 			string name = String.Format ("{0} ({1})", method.Index, GetMethodName (mdef));
+			Debug ("[Method {0} - {1} - {2}]", method.Index, method.CompileUnit.SourceFile.FileName,
+			       GetMethodName (mdef));
 
 			LineNumberTable lnt = method.GetLineNumberTable ();
 			if (lnt == null)
@@ -276,6 +278,8 @@ namespace Mono.Debugger.SymbolWriter
 			LineNumberEntry start, end;
 			if (lnt.GetMethodBounds (out start, out end))
 				Debug ("  Bounds: {0} {1}", start, end);
+			foreach (LineNumberEntry line in lnt.LineNumbers)
+				Debug ("    Line: {0}", line);
 
 			CodeBlockEntry[] blocks = method.GetCodeBlocks () ?? new CodeBlockEntry [0];
 			foreach (CodeBlockEntry block in blocks) {
@@ -292,14 +296,14 @@ namespace Mono.Debugger.SymbolWriter
 						"Local variable {0} in method {1} has invalid block index {2} (valid is 0..{3}).",
 						local, name, local.BlockIndex, blocks.Length);
 
-				Debug (" {0} local: {1}", method, local);
+				Debug ("  Local: {0}", local);
 			}
 
 			int num_locals = mdef.Body.Variables.Count;
 
 			ScopeVariable[] scope_vars = method.GetScopeVariables () ?? new ScopeVariable [0];
 			foreach (ScopeVariable var in scope_vars) {
-				Debug (" {0} scope var: {1}", method, var);
+				Debug ("  Scope var: {0}", var);
 				if ((mdef.IsStatic) && (var.Index < 0))
 					throw new MonoSymbolFileException (
 						"Method {0} has invalid scope variable {1} (referencing `this' in static method).",
