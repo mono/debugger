@@ -29,6 +29,7 @@ namespace Mono.Debugger
 	{
 		public static string mono = "@mono@";
 		public static string mcs = "@mcs@";
+		public static string monodis = "@monodis@";
 		public static string xsp = "@xsp@";
 		public static string srcdir = "@srcdir@";
 		public static string builddir = "@builddir@";

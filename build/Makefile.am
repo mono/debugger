@@ -137,6 +137,7 @@ AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 		-e 's^\@builddir\@^$(builddir)^g' \
 		-e 's^\@mono\@^$(TARGET_MONO)^g' \
 		-e 's^\@mcs\@^$(TARGET_MCS)^g' \
+		-e 's^\@monodis\@^$(TARGET_MONODIS)^g' \
 		-e 's^\@xsp\@^$(XSP_EXE)^g' \
 		< $(srcdir)/AssemblyInfo.cs.in > assinfo.tmp \
 	&& mv assinfo.tmp AssemblyInfo.cs

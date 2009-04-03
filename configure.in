@@ -172,11 +172,15 @@ AC_SUBST(monodoc_prefix)
 
 AC_PATH_PROG(MONO, mono)
 AC_PATH_PROG(MCS, gmcs)
+AC_PATH_PROG(MONODIS, monodis)
 if test "x$MONO" = "x" ; then
    AC_MSG_ERROR([Can't find "mono" in your PATH])
 fi
 if test "x$MCS" = "x" ; then
    AC_MSG_ERROR([Can't find "mcs" in your PATH])
+fi
+if test "x$MONODIS" = "x" ; then
+   AC_MSG_ERROR([Can't find "monodis" in your PATH])
 fi
 
 AC_PATH_PROG(NUNIT_CONSOLE, nunit-console2)
@@ -198,11 +202,13 @@ AM_CONDITIONAL(HAVE_TARGET_MONO, test "x$have_target_mono" = "xyes")
 if test "x$have_target_mono" = "xyes" ; then
   TARGET_MCS="$target_mono_prefix/bin/gmcs"
   TARGET_MONO="$target_mono_prefix/bin/mono"
+  TARGET_MONODIS="$target_mono_prefix/bin/monodis"
   NUNIT_PREFIX="$target_mono_prefix"
   NUNIT_VERSION=2.3
 else
   TARGET_MCS="$MCS"
   TARGET_MONO="$MONO"
+  TARGET_MONODIS="$MONODIS"
 
   ## Check NUnit
   if pkg-config --modversion mono-nunit>/dev/null; then
@@ -216,6 +222,7 @@ fi
 NUNIT_PREFIX=`cd $NUNIT_PREFIX && pwd`
 AC_SUBST(TARGET_MCS)
 AC_SUBST(TARGET_MONO)
+AC_SUBST(TARGET_MONODIS)
 AC_SUBST(NUNIT_PREFIX)
 
 have_nunit_2_3=false

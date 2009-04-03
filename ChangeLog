@@ -1,5 +1,13 @@
 2009-04-03  Martin Baulig  <martin@ximian.com>
 
+	* configure.in: Check for monodis and AC_SUBST() `MONODIS' and
+	`TARGET_MONODIS'.	
+
+	* build/AssemblyInfo.cs.in
+	(BuildInfo.monodis): New public static field.
+
+2009-04-03  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Kill the old pre-historic `server_only'.
 
 2009-03-31  Martin Baulig  <martin@ximian.com>
