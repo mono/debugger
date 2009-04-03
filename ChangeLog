@@ -1,3 +1,7 @@
+2009-04-03  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Kill the old pre-historic `server_only'.
+
 2009-03-31  Martin Baulig  <martin@ximian.com>
 
 	* backend/MonoThreadManager.cs

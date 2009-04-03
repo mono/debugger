@@ -36,21 +36,18 @@ case "$host" in
 	x86_64-*-linux*)
 		glue_cflags=-D_GNU_SOURCE
 		server_cflags=-D_GNU_SOURCE
-		server_only=no
 		bfd_target=x86_64
 		platform=x86_64
 		;;
 	*-*-linux*)
 		glue_cflags=-D_GNU_SOURCE
 		server_cflags=-D_GNU_SOURCE
-		server_only=no
 		bfd_target=i386linux
 		platform=i386linux
 		;;
 	powerpc-apple-darwin*)
 		glue_flags=
 		server_cflags=
-		server_only=yes
 		bfd_target=powerpc
 		platform=powerpc
 		;;
@@ -74,10 +71,6 @@ AM_CONDITIONAL(PLATFORM_POWERPC, test x$platform = xpowerpc)
 
 AC_SUBST(glue_cflags)
 AC_SUBST(server_cflags)
-
-#if test x$platform = xi386linux -a x$server_only != xyes; then
-#   LINUX_NPTL_CHECK
-#fi
 
 dnl may require a specific autoconf version
 dnl AC_PROG_CC_FOR_BUILD
@@ -158,43 +151,37 @@ fi
 CECIL_ASM=`pkg-config --variable=Libraries cecil`
 AC_SUBST(CECIL_ASM)
 
-if test x$server_only != xyes ; then
-   PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
-   AC_SUBST(WRAPPER_CFLAGS)
-   AC_SUBST(WRAPPER_LIBS)
+PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
+AC_SUBST(WRAPPER_CFLAGS)
+AC_SUBST(WRAPPER_LIBS)
 
-   GACUTIL_FLAGS='/package $(PACKAGE) /gacdir $(prefix)/lib /root $(DESTDIR)$(prefix)/lib'
-   AC_PATH_PROG(GACUTIL, gacutil, no)
-   if test "x$GACUTIL" = "xno" ; then
-      AC_MSG_ERROR([No gacutil tool found])
-   fi
-else
-   GACUTIL_FLAGS=
+GACUTIL_FLAGS='/package $(PACKAGE) /gacdir $(prefix)/lib /root $(DESTDIR)$(prefix)/lib'
+AC_PATH_PROG(GACUTIL, gacutil, no)
+if test "x$GACUTIL" = "xno" ; then
+   AC_MSG_ERROR([No gacutil tool found])
 fi
 
 AC_SUBST(GACUTIL)
 AC_SUBST(GACUTIL_FLAGS)
 AC_SUBST(CFLAGS)
 
-if test x$server_only != xyes; then
-   mono_prefix="`$PKG_CONFIG --variable=prefix mono`"
-   monodoc_prefix="`$PKG_CONFIG --variable=prefix monodoc`"
-   AC_SUBST(mono_prefix)
-   AC_SUBST(monodoc_prefix)
+mono_prefix="`$PKG_CONFIG --variable=prefix mono`"
+monodoc_prefix="`$PKG_CONFIG --variable=prefix monodoc`"
+AC_SUBST(mono_prefix)
+AC_SUBST(monodoc_prefix)
 
-   AC_PATH_PROG(MONO, mono)
-   AC_PATH_PROG(MCS, gmcs)
-   if test "x$MONO" = "x" ; then
-      AC_MSG_ERROR([Can't find "mono" in your PATH])
-   fi
-   if test "x$MCS" = "x" ; then
-      AC_MSG_ERROR([Can't find "mcs" in your PATH])
-   fi
+AC_PATH_PROG(MONO, mono)
+AC_PATH_PROG(MCS, gmcs)
+if test "x$MONO" = "x" ; then
+   AC_MSG_ERROR([Can't find "mono" in your PATH])
+fi
+if test "x$MCS" = "x" ; then
+   AC_MSG_ERROR([Can't find "mcs" in your PATH])
+fi
 
-   AC_PATH_PROG(NUNIT_CONSOLE, nunit-console2)
-   if test "x$NUNIT_CONSOLE" = "x" ; then
-     AC_MSG_ERROR([Can't find "nunit-console2" in your PATH])
-   fi
+AC_PATH_PROG(NUNIT_CONSOLE, nunit-console2)
+if test "x$NUNIT_CONSOLE" = "x" ; then
+  AC_MSG_ERROR([Can't find "nunit-console2" in your PATH])
 fi
 
 target_mono_prefix="$prefix"
