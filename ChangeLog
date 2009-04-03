@@ -1,5 +1,11 @@
 2009-04-03  Martin Baulig  <martin@ximian.com>
 
+	* classes/Utils.cs: New file.
+	(LessPipe): New public class; derives from `TextWriter' and opens
+	a pipe to `less'.
+
+2009-04-03  Martin Baulig  <martin@ximian.com>
+
 	Add `less' command to view a file with `less'.
 
 	* frontend/Command.cs
