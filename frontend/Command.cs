@@ -3397,7 +3397,8 @@ namespace Mono.Debugger.Frontend
 		{
 			protected override object DoExecute (ScriptingContext context)
 			{
-				context.CurrentFrame.Method.LineNumberTable.DumpLineNumbers ();
+				using (TextWriter writer = new LessPipe ())
+					context.CurrentFrame.Method.LineNumberTable.DumpLineNumbers (writer);
 				return null;
 			}
 

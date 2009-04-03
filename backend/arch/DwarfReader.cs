@@ -1434,17 +1434,17 @@ namespace Mono.Debugger.Backend
 				get { throw new InvalidOperationException (); }
 			}
 
-			public override void DumpLineNumbers ()
+			public override void DumpLineNumbers (TextWriter writer)
 			{
-				Console.WriteLine ("--------");
-				Console.WriteLine ("DUMPING DWARF LINE NUMBER TABLE");
-				Console.WriteLine ("--------");
+				writer.WriteLine ("--------");
+				writer.WriteLine ("DUMPING DWARF LINE NUMBER TABLE");
+				writer.WriteLine ("--------");
 				for (int i = 0; i < addresses.Length; i++) {
 					LineNumber line = (LineNumber) addresses [i];
-					Console.WriteLine ("{0,4} {1,4}  {2:x}", i,
-							   line.Line, line.Offset);
+					writer.WriteLine ("{0,4} {1,4}  {2:x}", i,
+							  line.Line, line.Offset);
 				}
-				Console.WriteLine ("--------");
+				writer.WriteLine ("--------");
 			}
 
 			public override string ToString ()

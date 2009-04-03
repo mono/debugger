@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 using System.Collections;
 
@@ -22,6 +23,6 @@ namespace Mono.Debugger
 
 		public abstract SourceAddress Lookup (TargetAddress address);
 
-		public abstract void DumpLineNumbers ();
+		public abstract void DumpLineNumbers (TextWriter writer);
 	}
 }

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
@@ -1208,6 +1209,10 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source; }
 			}
 
+			public MonoSymbolFile File {
+				get { return file; }
+			}
+
 			public void Load (TargetBinaryReader dynamic_reader, AddressDomain domain)
 			{
 				if (is_loaded)
@@ -1657,27 +1662,27 @@ namespace Mono.Debugger.Languages.Mono
 				return new SourceAddress (file, buffer, entry.Line, offset, range);
 			}
 
-			public override void DumpLineNumbers ()
+			public override void DumpLineNumbers (TextWriter writer)
 			{
-				Console.WriteLine ();
-				Console.Write ("Dumping Line Number Table: {0} - {1} {2}",
+				writer.WriteLine ();
+				writer.Write ("Dumping Line Number Table: {0} - {1} {2}",
 					       Method.Name, Method.StartAddress, Method.EndAddress);
 				if (Method.HasMethodBounds)
-					Console.Write (" - {0} {1}", Method.MethodStartAddress,
-						       Method.MethodEndAddress);
-				Console.WriteLine ();
-				Console.WriteLine ();
+					writer.Write (" - {0} {1}", Method.MethodStartAddress,
+						      Method.MethodEndAddress);
+				writer.WriteLine ();
+				writer.WriteLine ();
 
-				Console.WriteLine ("Generated Lines (file / line / address):");
-				Console.WriteLine ("----------------------------------------");
+				writer.WriteLine ("Generated Lines (file / line / address):");
+				writer.WriteLine ("----------------------------------------");
 
 				for (int i = 0; i < Addresses.Length; i++) {
 					LineEntry entry = (LineEntry) Addresses [i];
-					Console.WriteLine ("{0,4} {1,4} {2,4}  {3}", i,
-							   entry.File, entry.Line, entry.Address);
+					writer.WriteLine ("{0,4} {1,4} {2,4}  {3}", i,
+							  entry.File, entry.Line, entry.Address);
 				}
 
-				Console.WriteLine ("----------------------------------------");
+				writer.WriteLine ("----------------------------------------");
 			}
 
 			protected class LineNumberTableData
@@ -1699,10 +1704,10 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			JitLineNumberEntry[] line_numbers;
 			C.MethodEntry entry;
-			Method method;
+			MonoMethod method;
 			Hashtable namespaces;
 
-			public MonoMethodLineNumberTable (MonoSymbolFile file, Method method,
+			public MonoMethodLineNumberTable (MonoSymbolFile file, MonoMethod method,
 							  MethodSource source, C.MethodEntry entry,
 							  JitLineNumberEntry[] jit_lnt)
 				: base (file, method)
@@ -1769,13 +1774,13 @@ namespace Mono.Debugger.Languages.Mono
 				return new LineNumberTableData (start_row, end_row, lines.ToArray ());
 			}
 
-			public override void DumpLineNumbers ()
+			public override void DumpLineNumbers (TextWriter writer)
 			{
-				base.DumpLineNumbers ();
+				base.DumpLineNumbers (writer);
 
-				Console.WriteLine ();
-				Console.WriteLine ("Symfile Line Numbers (file / row / offset):");
-				Console.WriteLine ("-------------------------------------------");
+				writer.WriteLine ();
+				writer.WriteLine ("Symfile Line Numbers (file / row / offset):");
+				writer.WriteLine ("-------------------------------------------");
 
 				C.LineNumberEntry[] lnt;
 				lnt = entry.GetLineNumberTable ().LineNumbers;
@@ -1785,23 +1790,23 @@ namespace Mono.Debugger.Languages.Mono
 					bool hidden = lne.IsHidden;
 					int file = lne.File;
 
-					Console.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}{4}", i,
-							   file, lne.Row, lne.Offset,
-							   hidden ? " (hidden)" : "");
+					writer.WriteLine ("{0,4} {1,4} {2,4} {3,4:x}{4}", i,
+							  file, lne.Row, lne.Offset,
+							  hidden ? " (hidden)" : "");
 				}
 
-				Console.WriteLine ("-------------------------------------------");
+				writer.WriteLine ("-------------------------------------------");
 
-				Console.WriteLine ();
-				Console.WriteLine ("JIT Line Numbers (il / native / address):");
-				Console.WriteLine ("-----------------------------------------");
+				writer.WriteLine ();
+				writer.WriteLine ("JIT Line Numbers (il / native / address):");
+				writer.WriteLine ("-----------------------------------------");
 				for (int i = 0; i < line_numbers.Length; i++) {
 					JitLineNumberEntry lne = line_numbers [i];
 
-					Console.WriteLine ("{0,4} {1,4:x} {2,4:x}  {3,4:x}", i, lne.Offset,
-							   lne.Address, method.StartAddress + lne.Address);
+					writer.WriteLine ("{0,4} {1,4:x} {2,4:x}  {3,4:x}", i, lne.Offset,
+							  lne.Address, method.StartAddress + lne.Address);
 				}
-				Console.WriteLine ("-----------------------------------------");
+				writer.WriteLine ("-----------------------------------------");
 			}
 		}
 

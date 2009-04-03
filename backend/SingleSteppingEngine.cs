@@ -1413,7 +1413,7 @@ namespace Mono.Debugger.Backend
 			SourceAddress addr = lnt.Lookup (method.MethodStartAddress);
 			if (addr == null) {
 				Report.Error ("OOOOPS - No source for method: {0}", method);
-				lnt.DumpLineNumbers ();
+				lnt.DumpLineNumbers (Console.Out);
 				return false;
 			}
 
