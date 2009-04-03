@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using SD = System.Diagnostics;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
@@ -88,6 +89,7 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("load", typeof (LoadCommand));
 			RegisterCommand ("module", typeof (ModuleCommand));
 			RegisterCommand ("config", typeof (ConfigCommand));
+			RegisterCommand ("less", typeof (LessCommand));
 		}
 	}
 
@@ -3780,4 +3782,51 @@ namespace Mono.Debugger.Frontend
 		public string Description { get { return "Modify configuration options."; } }
 		public string Documentation { get { return ""; } }
 	}
+
+	public class LessCommand : FrameCommand, IDocumentableCommand
+	{
+		protected override bool DoResolve (ScriptingContext context)
+		{
+			if ((Args != null) && (Args.Count != 1))
+				throw new ScriptingException ("Filename argument expected.");
+
+			return true;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			if (Args != null) {
+				ViewFile ((string) Args [0]);
+				return true;
+			}
+
+			Method method = context.CurrentFrame.Method;
+			if ((method == null) || !method.HasSource || !method.MethodSource.HasSourceFile)
+				throw new ScriptingException ("Current stack frame has no soure code.");
+
+			ViewFile (context.CurrentFrame.Method.MethodSource.SourceFile.FileName);
+			return true;
+		}
+
+		void ViewFile (string filename)
+		{
+			if (!File.Exists (filename))
+				throw new ScriptingException ("No such file: {0}", filename);
+
+			SD.Process process = SD.Process.Start ("/usr/bin/less", "-F -M -N " + filename);
+			process.WaitForExit ();
+		}
+
+                public override void Complete (Engine e, string text, int start, int end)
+		{
+			/* attempt filename completion */
+			e.Completer.FilenameCompleter (text, start, end);
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Files; } }
+		public string Description { get { return "Display a file."; } }
+		public string Documentation { get { return ""; } }
+	}
+
 }

@@ -1,5 +1,15 @@
 2009-04-03  Martin Baulig  <martin@ximian.com>
 
+	Add `less' command to view a file with `less'.
+
+	* frontend/Command.cs
+	(LessCommand): New command to view a file.
+
+	* classes/ThreadManager.cs: Ignore exit events from unknown
+	children.	
+
+2009-04-03  Martin Baulig  <martin@ximian.com>
+
 	* configure.in: Check for monodis and AC_SUBST() `MONODIS' and
 	`TARGET_MONODIS'.	
 

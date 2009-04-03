@@ -520,6 +520,13 @@ namespace Mono.Debugger.Backend
 				Inferior.ChildEventType etype = mono_debugger_server_dispatch_simple (status, out arg);
 
 				/*
+				 * Ignore exit events from unknown children.
+				 */
+
+				if ((etype == Inferior.ChildEventType.CHILD_EXITED) && (arg == 0))
+					goto again;
+
+				/*
 				 * There is a race condition in the Linux kernel which shows up on >= 2.6.27:
 				 *
 				 * When creating a new thread, the initial stopping event of that thread is sometimes
