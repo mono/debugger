@@ -1776,6 +1776,12 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override void DumpLineNumbers (TextWriter writer)
 			{
+#if MARTIN_PRIVATE
+				Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) method.MethodHandle;
+				MonoUtils.DumpLineNumberTable (writer, method.File, mdef, entry);
+				return;
+#endif
+
 				base.DumpLineNumbers (writer);
 
 				writer.WriteLine ();
