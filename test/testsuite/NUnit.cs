@@ -247,6 +247,8 @@ namespace Mono.Debugger.Tests
 			FileName = Path.GetFullPath (srcdir + src_file);
 
 			config = new DebuggerConfiguration ();
+			config.RedirectOutput = true;
+
 			options = CreateOptions (ExeFileName, args);
 
 			inferior_stdout = new LineReader ();
