@@ -34,6 +34,17 @@
 
 	* languages/mono/MonoLanguageBackend.cs: Add braces to work around bug 478101.
 
+2009-04-14  Martin Baulig  <martin@ximian.com>
+
+	* symbolwriter/ndesk-options.cs: New file; copied
+	src/NDesk.Options/NDesk.Options/Options.cs from NDesk.Options.
+
+	* symbolwriter/MdbSymbolReader.cs: Some more work on printing the
+	contents of a symbol file instead of just verifying it.
+
+	* build/mdb-symbolreader.in: New file; create a `mdb-symbolreader'
+	wrapper script.
+
 2009-04-06  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/NUnit.cs

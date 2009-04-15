@@ -1,6 +1,6 @@
 twodir = $(prefix)/lib/mono/2.0
 
-bin_SCRIPTS = mdb
+bin_SCRIPTS = mdb mdb-symbolreader
 
 two_SCRIPTS = mdb.exe mdb-symbolreader.exe
 
@@ -64,6 +64,7 @@ SYMBOL_WRITER_SRCLIST = \
 	AssemblyInfo.cs
 
 SYMBOL_READER_SRCLIST = \
+	$(top_srcdir)/symbolwriter/ndesk-options.cs		\
 	$(top_srcdir)/symbolwriter/MonoSymbolFile.cs		\
 	$(top_srcdir)/symbolwriter/MonoSymbolTable.cs		\
 	$(top_srcdir)/symbolwriter/MdbSymbolReader.cs		\
@@ -128,7 +129,7 @@ mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -out:mdb.exe $(MDB_DEPS) $(MDB_SRCLIST) $(MCS_FLAGS)
 
 mdb-symbolreader.exe: Makefile $(SYMBOL_READER_SRCLIST) Mono.Debugger.SymbolWriter.dll
-	$(MCS) -out:mdb-symbolreader.exe $(SYMBOL_READER_DEPS) $(SYMBOL_READER_SRCLIST) $(MCS_FLAGS) -d:CECIL
+	$(MCS) -out:mdb-symbolreader.exe $(SYMBOL_READER_DEPS) $(SYMBOL_READER_SRCLIST) $(MCS_FLAGS) -d:CECIL -d:LINQ -d:NDESK_OPTIONS
 
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
 	sed -e 's^\@libdir\@^$(libdir)^g' \
@@ -150,13 +151,20 @@ CLEANFILES = *.exe *.mdb mdb AssemblyInfo.cs Mono.Debugger.dll.config \
 	Mono.Cecil.dll runtests
 
 EXTRA_DIST = \
-	mdb.in runtests.in mono.snk AssemblyInfo.cs.in Mono.Debugger.dll.config.in
+	mdb.in mdb-symbolreader.in runtests.in mono.snk AssemblyInfo.cs.in \
+	Mono.Debugger.dll.config.in
 
 mdb: mdb.in Makefile
 	sed -e 's^\@twodir\@^$(twodir)^g' \
 	    -e 's^\@libdir\@^$(libdir)^g' \
 		< $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
+
+mdb-symbolreader: mdb-symbolreader.in Makefile
+	sed -e 's^\@twodir\@^$(twodir)^g' \
+	    -e 's^\@libdir\@^$(libdir)^g' \
+		< $(srcdir)/mdb-symbolreader.in > mdb-symbolreader.tmp \
+	&& mv mdb-symbolreader.tmp mdb-symbolreader
 
 NUNIT_CONSOLE_EXE = $(NUNIT_PREFIX)/lib/mono/2.0/nunit-console.exe
 
