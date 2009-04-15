@@ -924,7 +924,19 @@ namespace Mono.CompilerServices.SymbolWriter
 					bw.Write ((byte) 0);
 					bw.Write (DW_LNE_MONO_set_source_range);
 
+					/*
+					 * Use a private extended opcode to encode source ranges.
+					 *
+					 * Instead of only having one integer "line number", we now have a struct
+					 * containing 'StartLine', 'EndLine', 'StartColumn' and 'EndColumn'.
+					 */
+
 					SourceRangeEntry range = (SourceRangeEntry) LineNumbers [i].SourceRange;
+					/*
+					 * We use some optimization here: since the start and end lines are usually
+					 * close together, we use relative values, so we can encode it as a single-byte
+					 * even for large source files.
+					 */
 					bw.WriteLeb128 (range.StartLine - last_line);
 					bw.WriteLeb128 (range.EndLine - range.StartLine);
 					bw.WriteLeb128 (range.StartColumn);
