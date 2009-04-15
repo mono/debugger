@@ -190,7 +190,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			case TargetEventType.Exception:
-			case TargetEventType.UnhandledException:
+			case TargetEventType.UnhandledException: {
 				interpreter.Print ("{0} caught {2}exception at {1}.", target.Name, frame,
 						   args.Type == TargetEventType.Exception ?
 						   "" : "unhandled ");
@@ -209,6 +209,7 @@ namespace Mono.Debugger.Frontend
 				interpreter.Style.UnhandledException (interpreter, frame, insn);
 
 				break;
+			}
 			}
 		}
 

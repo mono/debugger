@@ -1,3 +1,9 @@
+2009-04-15  Jonathan Chambers  <joncham@gmail.com>
+
+	* frontend/Style.cs: Add braces to work around bug 478101.
+
+	* languages/mono/MonoLanguageBackend.cs: Add braces to work around bug 478101.
+
 2009-04-06  Martin Baulig  <martin@ximian.com>
 
 	* test/testsuite/NUnit.cs
