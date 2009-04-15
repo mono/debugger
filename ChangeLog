@@ -1,3 +1,9 @@
+2009-04-15  Martin Baulig  <martin@ximian.com>
+
+	* classes/SourceAddress.cs
+	(SourceAddress): Rename `SourceOffset' -> `LineOffset' and
+	`SourceRange' -> `LineRange'.
+
 2009-04-15  Jonathan Chambers  <joncham@gmail.com>
 
 	* backend/arch/Architecture.cs: Use Disassembler instead of BfdDisassembler

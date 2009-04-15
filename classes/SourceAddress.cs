@@ -20,8 +20,8 @@ namespace Mono.Debugger
 		SourceFile file;
 		SourceBuffer buffer;
 		int row;
-		int source_offset;
-		int source_range;
+		int line_offset;
+		int line_range;
 
 		public SourceAddress (SourceFile file, SourceBuffer buffer, int row,
 				      int offset, int range)
@@ -29,8 +29,8 @@ namespace Mono.Debugger
 			this.file = file;
 			this.buffer = buffer;
 			this.row = row;
-			this.source_offset = offset;
-			this.source_range = range;
+			this.line_offset = offset;
+			this.line_range = range;
 		}
 
 		public SourceFile SourceFile {
@@ -56,15 +56,15 @@ namespace Mono.Debugger
 			}
 		}
 
-		public int SourceRange {
+		public int LineRange {
 			get {
-				return source_range;
+				return line_range;
 			}
 		}
 
-		public int SourceOffset {
+		public int LineOffset {
 			get {
-				return source_offset;
+				return line_offset;
 			}
 		}
 
@@ -86,16 +86,16 @@ namespace Mono.Debugger
 				builder.Append (" line ");
 				builder.Append (Row);
 			}
-			if (SourceOffset > 0) {
+			if (LineOffset > 0) {
 				builder.Append (" (");
 				builder.Append ("offset ");
-				builder.Append (SourceOffset);
+				builder.Append (LineOffset);
 				builder.Append (")");
 			}
-			if (SourceRange > 0) {
+			if (LineRange > 0) {
 				builder.Append (" (");
 				builder.Append ("range ");
-				builder.Append (SourceRange);
+				builder.Append (LineRange);
 				builder.Append (")");
 			}
 			

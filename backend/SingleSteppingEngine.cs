@@ -1222,13 +1222,13 @@ namespace Mono.Debugger.Backend
 			if (source == null)
 				return null;
 
-			if ((source.SourceOffset > 0) && (source.SourceRange > 0)) {
+			if ((source.LineOffset > 0) && (source.LineRange > 0)) {
 				// We stopped between two source lines.  This normally
 				// happens when returning from a method call; in this
 				// case, we need to continue stepping until we reach the
 				// next source line.
 				return new OperationStep (this, new StepFrame (
-					address - source.SourceOffset, address + source.SourceRange,
+					address - source.LineOffset, address + source.LineRange,
 					null, language, StepMode.SourceLine), operation.Result);
 			}
 
@@ -1436,8 +1436,8 @@ namespace Mono.Debugger.Backend
 			// SourceOffset; the next source line will start at the current
 			// address plus SourceRange.
 
-			int offset = frame.SourceAddress.SourceOffset;
-			int range = frame.SourceAddress.SourceRange;
+			int offset = frame.SourceAddress.LineOffset;
+			int range = frame.SourceAddress.LineRange;
 
 			TargetAddress start = frame.TargetAddress - offset;
 			TargetAddress end = frame.TargetAddress + range;
