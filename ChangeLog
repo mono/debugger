@@ -1,5 +1,10 @@
 2009-04-15  Jonathan Chambers  <joncham@gmail.com>
 
+	* frontend/CSharpExpressionParser.cs.win: Add generated files for
+	Windows to build easily in Visual Studio.
+
+2009-04-15  Jonathan Chambers  <joncham@gmail.com>
+
 	* classes/DebuggerConfiguration.cs
 	(DebuggerConfiguration): Use Environment.SpecialFolder.Personal
 	instead of HOME environment variable.
