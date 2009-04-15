@@ -9,14 +9,15 @@ namespace Mono.Debugger.Architectures
 	{
 		ProcessServant process;
 		TargetMemoryInfo target_info;
-		BfdDisassembler disassembler;
+		Disassembler disassembler;
 
 		protected X86_Opcodes (ProcessServant process)
 		{
 			this.process = process;
 
 			target_info = Inferior.GetTargetMemoryInfo (AddressDomain.Global);
-			disassembler = new BfdDisassembler (null, Is64BitMode);
+			if (!Inferior.IsRunningOnWindows)
+				disassembler = new BfdDisassembler (null, Is64BitMode);
 		}
 
 		public abstract bool Is64BitMode {

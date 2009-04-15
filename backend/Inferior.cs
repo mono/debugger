@@ -43,6 +43,12 @@ namespace Mono.Debugger.Backend
 		bool has_signals;
 		SignalInfo signal_info;
 
+		public static bool IsRunningOnWindows {
+			get {
+				return ((int)Environment.OSVersion.Platform < 4);
+			}
+		}
+
 		public bool HasTarget {
 			get {
 				return has_target;
@@ -170,7 +176,7 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_get_threads (IntPtr handle, out int count, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_application (IntPtr handle, out string exe_file, out string cwd, out int nargs, out IntPtr data);
+		static extern TargetError mono_debugger_server_get_application (IntPtr handle, out IntPtr exe_file, out IntPtr cwd, out int nargs, out IntPtr data);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_detach_after_fork (IntPtr handle);
@@ -1313,23 +1319,29 @@ namespace Mono.Debugger.Backend
 		protected string GetApplication (out string cwd, out string[] cmdline_args)
 		{
 			IntPtr data = IntPtr.Zero;
+			IntPtr p_exe = IntPtr.Zero;
+			IntPtr p_cwd = IntPtr.Zero;
 			try {
 				int count;
 				string exe_file;
 				check_error (mono_debugger_server_get_application (
-						     server_handle, out exe_file, out cwd,
+							 server_handle, out p_exe, out p_cwd,
 						     out count, out data));
 
 				cmdline_args = new string [count];
+				exe_file = Marshal.PtrToStringAnsi (p_exe);
+				cwd = Marshal.PtrToStringAnsi (p_cwd);
 
 				for (int i = 0; i < count; i++) {
 					IntPtr ptr = Marshal.ReadIntPtr (data, i * IntPtr.Size);
-					cmdline_args [i] = Marshal.PtrToStringAuto (ptr);
+					cmdline_args [i] = Marshal.PtrToStringAnsi (ptr);
 				}
 
 				return exe_file;
 			} finally {
 				g_free (data);
+				g_free (p_exe);
+				g_free (p_cwd);
 			}
 		}
 

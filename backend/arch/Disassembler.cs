@@ -2,7 +2,7 @@ using System;
 
 namespace Mono.Debugger
 {
-	internal abstract class Disassembler
+	internal abstract class Disassembler : IDisposable
 	{
 		// <summary>
 		//   Get the size of the current instruction.
@@ -24,5 +24,11 @@ namespace Mono.Debugger
 		public abstract AssemblerLine DisassembleInstruction (TargetMemoryAccess memory,
 								      Method method,
 								      TargetAddress address);
+
+		#region IDisposable Members
+
+		public abstract void Dispose ();
+
+		#endregion
 	}
 }

@@ -199,7 +199,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public void Dispose ()
+		public override void Dispose ()
 		{
 			Dispose (true);
 			// Take yourself off the Finalization queue

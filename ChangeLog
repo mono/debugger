@@ -1,5 +1,23 @@
 2009-04-15  Jonathan Chambers  <joncham@gmail.com>
 
+	* backend/arch/Architecture.cs: Use Disassembler instead of BfdDisassembler
+	and only create on non-Windows platforms.
+
+	* backend/arch/BfdDisasembler.cs: Override Dispose since base now implements.
+
+	* backend/arch/Disasembler.cs: Derive from IDisposable.
+
+	* backend/arch/X86_Opcodes.cs: Use Disassembler instead of BfdDisassembler
+	and only create on non-Windows platforms.
+
+	* backend/Inferior.cs
+	(IsRunningOnWindows): Add.
+	(mono_debugger_server_get_application): Change out string to out IntPtr.
+	(GetApplication): Marshal strings manually since on Windows they are freed
+	via CoTaskMemFree instead of g_free.
+
+2009-04-15  Jonathan Chambers  <joncham@gmail.com>
+
 	* frontend/CSharpExpressionParser.cs.win: Add generated files for
 	Windows to build easily in Visual Studio.
 

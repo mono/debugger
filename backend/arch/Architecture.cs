@@ -12,7 +12,7 @@ namespace Mono.Debugger.Backend
 		protected readonly ProcessServant process;
 		protected readonly TargetInfo TargetInfo;
 
-		BfdDisassembler disassembler;
+		Disassembler disassembler;
 		X86_Opcodes opcodes;
 
 		protected Architecture (ProcessServant process, TargetInfo info)
@@ -20,7 +20,8 @@ namespace Mono.Debugger.Backend
 			this.process = process;
 			this.TargetInfo = info;
 
-			disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
+			if (!Inferior.IsRunningOnWindows)
+				disassembler = new BfdDisassembler (process, info.TargetAddressSize == 8);
 			if (info.TargetAddressSize == 8)
 				opcodes = new Opcodes_X86_64 (process);
 			else
