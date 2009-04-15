@@ -24,7 +24,7 @@ namespace Mono.Debugger
 			ConfigDirectory = Environment.GetEnvironmentVariable ("XDG_CONFIG_HOME");
 			if ((ConfigDirectory == null) || (ConfigDirectory == ""))
 				ConfigDirectory = Path.Combine (
-					Environment.GetEnvironmentVariable ("HOME"), ".config");
+					Environment.GetFolderPath(Environment.SpecialFolder.Personal), ".config");
 
 			ConfigDirectory = Path.Combine (ConfigDirectory, "MonoDebugger");
 			ConfigDirectory += Path.DirectorySeparatorChar;
@@ -81,8 +81,10 @@ namespace Mono.Debugger
 
 		void LoadConfigurationFromStream (string filename)
 		{
-			using (FileStream stream = new FileStream (filename, FileMode.Open))
-				LoadConfigurationFromStream (stream);
+			if (File.Exists (filename)) {
+				using (FileStream stream = new FileStream (filename, FileMode.Open))
+					LoadConfigurationFromStream (stream);
+			}
 		}
 
 		void LoadConfigurationFromStream (Stream stream)
