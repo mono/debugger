@@ -1,3 +1,17 @@
+2009-04-16  Martin Baulig  <martin@ximian.com>
+
+	Add support for 'source ranges' - instead of only using line
+	numbers, we now use a struct containing 'StartLine', 'EndLine',
+	'StartColumn' and 'EndColumn'.
+
+	* classes/Method.cs
+	(LineEntry.SourceRange): New public field.
+
+	* classes/SourceAddress.cs
+	(SourceAddress.HasSourceRange): New public property.
+	(SourceAddress.SourceRange): New public property.
+	(SourceRange): New public struct.
+
 2009-04-15  Martin Baulig  <martin@ximian.com>
 
 	* classes/SourceAddress.cs

@@ -19,18 +19,26 @@ namespace Mono.Debugger
 	{
 		SourceFile file;
 		SourceBuffer buffer;
+		SourceRange? source_range;
 		int row;
 		int line_offset;
 		int line_range;
 
 		public SourceAddress (SourceFile file, SourceBuffer buffer, int row,
-				      int offset, int range)
+				      int line_offset, int line_range)
 		{
 			this.file = file;
 			this.buffer = buffer;
 			this.row = row;
-			this.line_offset = offset;
-			this.line_range = range;
+			this.line_offset = line_offset;
+			this.line_range = line_range;
+		}
+
+		public SourceAddress (SourceFile file, SourceBuffer buffer, int row,
+				      int line_offset, int line_range, SourceRange? source_range)
+			: this (file, buffer, row, line_offset, line_range)
+		{
+			this.source_range = source_range;
 		}
 
 		public SourceFile SourceFile {
@@ -53,6 +61,18 @@ namespace Mono.Debugger
 		public int Column {
 			get {
 				return 0;
+			}
+		}
+
+		public bool HasSourceRange {
+			get {
+				return source_range != null;
+			}
+		}
+
+		public SourceRange SourceRange {
+			get {
+				return source_range.Value;
 			}
 		}
 
@@ -100,6 +120,23 @@ namespace Mono.Debugger
 			}
 			
 			return builder.ToString ();
+		}
+	}
+
+	[Serializable]
+	public struct SourceRange
+	{
+		public readonly int StartLine;
+		public readonly int EndLine;
+		public readonly int StartColumn;
+		public readonly int EndColumn;
+
+		public SourceRange (int start_line, int end_line, int start_col, int end_col)
+		{
+			this.StartLine = start_line;
+			this.EndLine = end_line;
+			this.StartColumn = start_col;
+			this.EndColumn = end_col;
 		}
 	}
 }

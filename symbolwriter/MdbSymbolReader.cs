@@ -225,8 +225,15 @@ namespace Mono.Debugger.SymbolWriter
 						seen_files.Add (line.File, true);
 					}
 
-					Message ("    Line {0}:{1}:{2}{3}", line.File, line.Row, line.Offset,
-						 line.IsHidden ? " (hidden)" : "");
+					string range = "";
+					if (line.SourceRange != null) {
+						SourceRangeEntry sre = (SourceRangeEntry) line.SourceRange;
+						range = String.Format (" - {0} {1} {2} {3}", sre.StartLine, sre.EndLine,
+								       sre.StartColumn, sre.EndColumn);
+					}
+
+					Message ("    Line {0}:{1}:{2}{3}{4}", line.File, line.Row, line.Offset,
+						 line.IsHidden ? " (hidden)" : "", range);
 				}
 			}
 		}

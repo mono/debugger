@@ -45,17 +45,24 @@ namespace Mono.Debugger
 		public readonly int File;
 		public readonly int Line;
 		public readonly bool IsHidden;
+		public readonly SourceRange? SourceRange;
 
 		public LineEntry (TargetAddress address, int file, int line)
 			: this (address, file, line, false)
 		{ }
 
 		public LineEntry (TargetAddress address, int file, int line, bool is_hidden)
+			: this (address, file, line, is_hidden, null)
+		{ }
+
+		public LineEntry (TargetAddress address, int file, int line, bool is_hidden,
+				  SourceRange? source_range)
 		{
 			this.Address = address;;
 			this.File = file;
 			this.Line = line;
 			this.IsHidden = is_hidden;
+			this.SourceRange = source_range;
 		}
 
 		public int CompareTo (object obj)

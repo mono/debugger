@@ -115,6 +115,17 @@ namespace Mono.CompilerServices.SymbolWriter
 			current_method.MarkSequencePoint (offset, file, line, column, is_hidden);
 		}
 
+#if DEBUGGER_SOURCE
+		public void MarkSequencePoint (int offset, SourceFileEntry file, int start_line, int end_line,
+					       int start_col, int end_col)
+		{
+			if (current_method == null)
+				return;
+
+			current_method.MarkSequencePoint (offset, file, start_line, end_line, start_col, end_col);
+		}
+#endif
+
 		public SourceMethodBuilder OpenMethod (ICompileUnit file, int ns_id, IMethodDef method)
 		{
 			SourceMethodBuilder builder = new SourceMethodBuilder (file, ns_id, method);
@@ -274,6 +285,22 @@ namespace Mono.CompilerServices.SymbolWriter
 			method_lines [method_lines_pos++] = new LineNumberEntry (
 				file_idx, line, offset, is_hidden);
 		}
+
+#if DEBUGGER_SOURCE
+		public void MarkSequencePoint (int offset, SourceFileEntry file, int start_line, int end_line,
+					       int start_col, int end_col)
+		{
+			if (method_lines_pos == method_lines.Length) {
+				LineNumberEntry [] tmp = method_lines;
+				method_lines = new LineNumberEntry [method_lines.Length * 2];
+				Array.Copy (tmp, method_lines, method_lines_pos);
+			}
+
+			int file_idx = file != null ? file.Index : 0;
+			method_lines [method_lines_pos++] = new LineNumberEntry (
+				file_idx, offset, start_line, end_line, start_col, end_col);
+		}
+#endif
 
 		public void StartBlock (CodeBlockEntry.Type type, int start_offset)
 		{

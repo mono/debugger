@@ -186,6 +186,9 @@ namespace Mono.CompilerServices.SymbolWriter
 		public readonly int File;
 		public readonly int Offset;
 		public readonly bool IsHidden;
+#if DEBUGGER_SOURCE
+		public readonly SourceRangeEntry SourceRange;
+#endif
 		#endregion
 
 		public LineNumberEntry (int file, int row, int offset)
@@ -198,7 +201,27 @@ namespace Mono.CompilerServices.SymbolWriter
 			this.Row = row;
 			this.Offset = offset;
 			this.IsHidden = is_hidden;
+
+#if DEBUGGER_SOURCE
+			this.SourceRange = null;
+#endif
 		}
+
+#if DEBUGGER_SOURCE
+		public LineNumberEntry (int file, int offset, int start_row, int end_row,
+					int start_col, int end_col)
+			: this (file, start_row, offset, false)
+		{
+			SourceRange = new SourceRangeEntry (start_row, end_row, start_col, end_col);
+		}
+
+		public LineNumberEntry (int file, int row, int offset, bool is_hidden,
+					SourceRangeEntry source_range)
+			: this (file, row, offset, is_hidden)
+		{
+			this.SourceRange = source_range;
+		}
+#endif
 
 		public static LineNumberEntry Null = new LineNumberEntry (0, 0, 0);
 
@@ -242,6 +265,24 @@ namespace Mono.CompilerServices.SymbolWriter
 			return String.Format ("[Line {0}:{1}:{2}]", File, Row, Offset);
 		}
 	}
+
+#if DEBUGGER_SOURCE
+	public class SourceRangeEntry
+	{
+		public readonly int StartLine;
+		public readonly int EndLine;
+		public readonly int StartColumn;
+		public readonly int EndColumn;
+
+		public SourceRangeEntry (int start_line, int end_line, int start_col, int end_col)
+		{
+			this.StartLine = start_line;
+			this.EndLine = end_line;
+			this.StartColumn = start_col;
+			this.EndColumn = end_col;
+		}
+	}
+#endif
 
 	public class CodeBlockEntry
 	{
@@ -713,19 +754,27 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			if (guid == null) {
 				guid = Guid.NewGuid ().ToByteArray ();
-				try {
-					using (FileStream fs = new FileStream (file_name, FileMode.Open, FileAccess.Read)) {
-						MD5 md5 = MD5.Create ();
-						hash = md5.ComputeHash (fs);
-					}
-				} catch {
-					hash = new byte [16];
-				}
+				hash = compute_hash (file_name);
 			}
 
 			bw.Write (guid);
 			bw.Write (hash);
 			bw.Write ((byte) (auto_generated ? 1 : 0));
+		}
+
+		byte[] compute_hash (string filename)
+		{
+			try {
+				if (!File.Exists (filename))
+					return new byte [16];
+
+				using (FileStream fs = new FileStream (filename, FileMode.Open, FileAccess.Read)) {
+					MD5 md5 = MD5.Create ();
+					return md5.ComputeHash (fs);
+				}
+			} catch {
+				return new byte [16];
+			}
 		}
 
 		internal void Write (BinaryWriter bw)
@@ -821,6 +870,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		// MONO extensions.
 		public const byte DW_LNE_MONO_negate_is_hidden = 0x40;
+		public const byte DW_LNE_MONO_set_source_range = 0x41;
 
 		internal const byte DW_LNE_MONO__extensions_start = 0x40;
 		internal const byte DW_LNE_MONO__extensions_end   = 0x7f;
@@ -866,6 +916,27 @@ namespace Mono.CompilerServices.SymbolWriter
 					bw.Write (DW_LNE_MONO_negate_is_hidden);
 					last_is_hidden = LineNumbers [i].IsHidden;
 				}
+
+#if DEBUGGER_SOURCE
+				if (LineNumbers [i].SourceRange != null) {
+					bw.Write ((byte) 0);
+					long tmp_offset = bw.BaseStream.Position;
+					bw.Write ((byte) 0);
+					bw.Write (DW_LNE_MONO_set_source_range);
+
+					SourceRangeEntry range = (SourceRangeEntry) LineNumbers [i].SourceRange;
+					bw.WriteLeb128 (range.StartLine - last_line);
+					bw.WriteLeb128 (range.EndLine - range.StartLine);
+					bw.WriteLeb128 (range.StartColumn);
+					bw.WriteLeb128 (range.EndColumn);
+
+					long tmp_size = bw.BaseStream.Position - tmp_offset - 1;
+					long tmp_end = bw.BaseStream.Position;
+					bw.BaseStream.Position = tmp_offset;
+					bw.Write ((byte) tmp_size);
+					bw.BaseStream.Position = tmp_end;
+				}
+#endif
 
 				if (offset_inc >= MaxAddressIncrement) {
 					if (offset_inc < 2 * MaxAddressIncrement) {
@@ -917,6 +988,9 @@ namespace Mono.CompilerServices.SymbolWriter
 
 			bool is_hidden = false, modified = false;
 			int stm_line = 1, stm_offset = 0, stm_file = 1;
+#if DEBUGGER_SOURCE
+			SourceRangeEntry source_range = null;
+#endif
 			while (true) {
 				byte opcode = br.ReadByte ();
 
@@ -927,12 +1001,27 @@ namespace Mono.CompilerServices.SymbolWriter
 
 					if (opcode == DW_LNE_end_sequence) {
 						if (modified)
+#if DEBUGGER_SOURCE
+							lines.Add (new LineNumberEntry (
+								stm_file, stm_line, stm_offset, is_hidden, source_range));
+#else
 							lines.Add (new LineNumberEntry (
 								stm_file, stm_line, stm_offset, is_hidden));
+#endif
 						break;
 					} else if (opcode == DW_LNE_MONO_negate_is_hidden) {
 						is_hidden = !is_hidden;
 						modified = true;
+#if DEBUGGER_SOURCE
+					} else if (opcode == DW_LNE_MONO_set_source_range) {
+						int start_line = stm_line + br.ReadLeb128 ();
+						int end_line = start_line + br.ReadLeb128 ();
+						int start_col = br.ReadLeb128 ();
+						int end_col = br.ReadLeb128 ();
+
+						source_range = new SourceRangeEntry (
+							start_line, end_line, start_col, end_col);
+#endif
 					} else if ((opcode >= DW_LNE_MONO__extensions_start) &&
 						   (opcode <= DW_LNE_MONO__extensions_end)) {
 						; // reserved for future extensions
@@ -947,8 +1036,14 @@ namespace Mono.CompilerServices.SymbolWriter
 				} else if (opcode < OpcodeBase) {
 					switch (opcode) {
 					case DW_LNS_copy:
+#if DEBUGGER_SOURCE
+						lines.Add (new LineNumberEntry (
+							stm_file, stm_line, stm_offset, is_hidden, source_range));
+						source_range = null;
+#else
 						lines.Add (new LineNumberEntry (
 							stm_file, stm_line, stm_offset, is_hidden));
+#endif
 						modified = false;
 						break;
 					case DW_LNS_advance_pc:
@@ -977,8 +1072,14 @@ namespace Mono.CompilerServices.SymbolWriter
 
 					stm_offset += opcode / LineRange;
 					stm_line += LineBase + (opcode % LineRange);
+#if DEBUGGER_SOURCE
+					lines.Add (new LineNumberEntry (
+						stm_file, stm_line, stm_offset, is_hidden, source_range));
+					source_range = null;
+#else
 					lines.Add (new LineNumberEntry (
 						stm_file, stm_line, stm_offset, is_hidden));
+#endif
 					modified = false;
 				}
 			}
