@@ -232,7 +232,7 @@ namespace Mono.Debugger.SymbolWriter
 								       sre.StartColumn, sre.EndColumn);
 					}
 
-					Message ("    Line {0}:{1}:{2}{3}{4}", line.File, line.Row, line.Offset,
+					Message ("    Line {0}:{1}:{2:x}{3}{4}", line.File, line.Row, line.Offset,
 						 line.IsHidden ? " (hidden)" : "", range);
 				}
 			}
