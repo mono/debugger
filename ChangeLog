@@ -1,5 +1,10 @@
 2009-04-17  Martin Baulig  <martin@ximian.com>
 
+	* build/Makefile.am: Don't pass '-noshadow' to nunit-console; this
+	is causing some really weird crashs.
+
+2009-04-17  Martin Baulig  <martin@ximian.com>
+
 	* classes/LineNumberTable.cs
 	(LineNumberTable.Lookup): Add overloaded virtual version taking a
 	`column' argument.
