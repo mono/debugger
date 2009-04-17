@@ -1598,6 +1598,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			public override TargetAddress Lookup (int line, int column)
 			{
+				if (column == -1)
+					return Lookup (line);
+
 				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
 					return TargetAddress.Null;
 
@@ -1610,12 +1613,10 @@ namespace Mono.Debugger.Languages.Mono
 					SourceRange range = entry.SourceRange.Value;
 					if ((line < range.StartLine) || (line > range.EndLine))
 						continue;
-					if (column != -1) {
-						if ((line == range.StartLine) && (column < range.StartColumn))
-							continue;
-						if ((line == range.EndLine) && (column > range.EndColumn))
-							continue;
-					}
+					if ((line == range.StartLine) && (column < range.StartColumn))
+						continue;
+					if ((line == range.EndLine) && (column > range.EndColumn))
+						continue;
 
 					return entry.Address;
 				}
