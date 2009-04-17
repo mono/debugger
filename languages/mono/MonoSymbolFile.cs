@@ -1596,6 +1596,33 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
+			public override TargetAddress Lookup (int line, int column)
+			{
+				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
+					return TargetAddress.Null;
+
+				for (int i = 0; i < Addresses.Length; i++) {
+					LineEntry entry = (LineEntry) Addresses [i];
+
+					if (entry.SourceRange == null)
+						continue;
+
+					SourceRange range = entry.SourceRange.Value;
+					if ((line < range.StartLine) || (line > range.EndLine))
+						continue;
+					if (column != -1) {
+						if ((line == range.StartLine) && (column < range.StartColumn))
+							continue;
+						if ((line == range.EndLine) && (column > range.EndColumn))
+							continue;
+					}
+
+					return entry.Address;
+				}
+
+				return TargetAddress.Null;
+			}
+
 			public override TargetAddress Lookup (int line)
 			{
 				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
@@ -1737,8 +1764,6 @@ namespace Mono.Debugger.Languages.Mono
 						if (lne.SourceRange != null)
 							range = new SourceRange (lne.SourceRange.StartLine, lne.SourceRange.EndLine,
 										 lne.SourceRange.StartColumn, lne.SourceRange.EndColumn);
-
-						Console.WriteLine ("GENERATE LINE: {0} {1} {2}", lne, lne.Row, lne.SourceRange != null);
 
 						lines.Add (new LineEntry (address, file, lne.Row, hidden, range));
 						last_line = lne.Row;

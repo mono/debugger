@@ -21,6 +21,11 @@ namespace Mono.Debugger
 
 		public abstract TargetAddress Lookup (int line);
 
+		public virtual TargetAddress Lookup (int line, int column)
+		{
+			return Lookup (line);
+		}
+
 		public abstract SourceAddress Lookup (TargetAddress address);
 
 		public abstract void DumpLineNumbers (TextWriter writer);

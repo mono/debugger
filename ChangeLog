@@ -1,3 +1,16 @@
+2009-04-17  Martin Baulig  <martin@ximian.com>
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable.Lookup): Add overloaded virtual version taking a
+	`column' argument.
+
+	* classes/SourceLocation.cs
+	(SourceLocation.Column): New public readonly field.
+	(SourceLocation.ctor): Add overloaded versions taking a `column' arg.
+
+	* backend/BreakpointHandle.cs
+	(FunctionBreakpointHandle): Add `column' field.	
+
 2009-04-16  Martin Baulig  <martin@ximian.com>
 
 	Add support for 'source ranges' - instead of only using line

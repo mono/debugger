@@ -17,6 +17,7 @@ namespace Mono.Debugger
 
 		public readonly string FileName;
 		public readonly int Line = -1;
+		public readonly int Column = -1;
 
 		DynamicSourceLocation dynamic;
 
@@ -26,7 +27,7 @@ namespace Mono.Debugger
 		}
 
 		public SourceLocation (TargetFunctionType function)
-			: this (new DynamicSourceLocation (function, -1))
+			: this (new DynamicSourceLocation (function, -1, -1))
 		{
 			Module = function.Module.Name;
 			Method = function.FullName;
@@ -38,11 +39,15 @@ namespace Mono.Debugger
 		}
 
 		public SourceLocation (MethodSource source)
-			: this (source, source.SourceFile, -1)
+			: this (source, source.SourceFile, -1, -1)
 		{ }
 
 		public SourceLocation (MethodSource source, SourceFile file, int line)
-			: this (new DynamicSourceLocation (source, file, line))
+			: this (source, file, line, -1)
+		{ }
+
+		public SourceLocation (MethodSource source, SourceFile file, int line, int column)
+			: this (new DynamicSourceLocation (source, file, line, column))
 		{
 			Module = file.Module.Name;
 			FileName = file.FileName;
@@ -54,15 +59,21 @@ namespace Mono.Debugger
 				Name = source.Name;
 
 			Line = line;
+			Column = column;
 		}
 
 		public SourceLocation (SourceFile file, int line)
-			: this (new DynamicSourceLocation (file, line))
+			: this (file, line, -1)
+		{ }
+
+		public SourceLocation (SourceFile file, int line, int column)
+			: this (new DynamicSourceLocation (file, line, column))
 		{
 			Module = file.Module.Name;
 			FileName = file.FileName;
 			Name = file.FileName + ":" + line;
 			Line = line;
+			Column = column;
 		}
 
 		public SourceLocation (string file, int line)
@@ -70,6 +81,14 @@ namespace Mono.Debugger
 			this.Line = line;
 			this.FileName = file;
 			this.Name = file + ":" + line;
+		}
+
+		public SourceLocation (string file, int line, int column)
+		{
+			this.Line = line;
+			this.Column = column;
+			this.FileName = file;
+			this.Name = file + ":" + line + ":" + column;
 		}
 
 		protected bool Resolve (DebuggerSession session)
@@ -84,7 +103,7 @@ namespace Mono.Debugger
 				if (source == null)
 					return false;
 
-				dynamic = new DynamicSourceLocation (source, source.SourceFile, Line);
+				dynamic = new DynamicSourceLocation (source, source.SourceFile, Line, Column);
 				return true;
 			}
 
@@ -93,7 +112,7 @@ namespace Mono.Debugger
 				if (file == null)
 					return false;
 
-				dynamic = new DynamicSourceLocation (file, Line);
+				dynamic = new DynamicSourceLocation (file, Line, Column);
 				return true;
 			}
 
@@ -143,11 +162,18 @@ namespace Mono.Debugger
 				line_e.InnerText = Line.ToString ();
 				root.AppendChild (line_e);
 			}
+
+			if (Column > 0) {
+				XmlElement col_e = root.OwnerDocument.CreateElement ("Column");
+				col_e.InnerText = Column.ToString ();
+				root.AppendChild (col_e);
+			}
 		}
 
 		internal SourceLocation (DebuggerSession session, XPathNavigator navigator)
 		{
 			this.Line = -1;
+			this.Column = -1;
 
 			XPathNodeIterator children = navigator.SelectChildren (XPathNodeType.Element);
 			while (children.MoveNext ()) {
@@ -161,6 +187,8 @@ namespace Mono.Debugger
 					Name = children.Current.Value;
 				else if (children.Current.Name == "Line")
 					Line = Int32.Parse (children.Current.Value);
+				else if (children.Current.Name == "Column")
+					Column = Int32.Parse (children.Current.Value);
 				else
 					throw new InvalidOperationException ();
 			}
@@ -178,13 +206,13 @@ namespace Mono.Debugger
 		SourceFile file;
 		MethodSource source;
 		TargetFunctionType function;
-		int line;
+		int line, column;
 
 		public DynamicSourceLocation (MethodSource source)
-			: this (source, source.SourceFile, -1)
+			: this (source, source.SourceFile, -1, -1)
 		{ }
 
-		public DynamicSourceLocation (MethodSource source, SourceFile file, int line)
+		public DynamicSourceLocation (MethodSource source, SourceFile file, int line, int column)
 		{
 			if (source.IsManaged) {
 				this.function = source.Function;
@@ -196,22 +224,25 @@ namespace Mono.Debugger
 
 			this.file = file;
 			this.line = line;
+			this.column = column;
 		}
 
-		public DynamicSourceLocation (SourceFile file, int line)
+		public DynamicSourceLocation (SourceFile file, int line, int column)
 		{
 			this.module = file.Module;
 			this.file = file;
 			this.line = line;
+			this.column = column;
 		}
 
-		public DynamicSourceLocation (TargetFunctionType function, int line)
+		public DynamicSourceLocation (TargetFunctionType function, int line, int column)
 		{
 			this.function = function;
 			this.file = null;
 			this.module = function.Module;
 
 			this.line = line;
+			this.column = column;
 		}
 
 		internal BreakpointHandle ResolveBreakpoint (Breakpoint breakpoint)
@@ -231,7 +262,7 @@ namespace Mono.Debugger
 			}
 
 			if (function != null)
-				return new FunctionBreakpointHandle (breakpoint, function, line);
+				return new FunctionBreakpointHandle (breakpoint, function, line, column);
 
 			if ((source == null) || source.IsManaged)
 				throw new TargetException (TargetError.LocationInvalid);
@@ -254,7 +285,7 @@ namespace Mono.Debugger
 
 			if (line != -1) {
 				if (method.HasLineNumbers)
-					return method.LineNumberTable.Lookup (line);
+					return method.LineNumberTable.Lookup (line, column);
 				else
 					return TargetAddress.Null;
 			} else if (method.HasMethodBounds)

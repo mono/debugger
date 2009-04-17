@@ -89,14 +89,19 @@ namespace Mono.Debugger.Backend
 	{
 		TargetFunctionType function;
 		bool has_load_handler;
-		int line = -1;
+		int line, column;
+
+		public FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function, int line)
+			: this (bpt, function, line, -1)
+		{ }
 
 		public FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function,
-						 int line)
+						 int line, int column)
 			: base (bpt)
 		{
 			this.function = function;
 			this.line = line;
+			this.column = column;
 		}
 
 		internal TargetFunctionType Function {
@@ -129,7 +134,7 @@ namespace Mono.Debugger.Backend
 			TargetAddress address;
 			if (line != -1) {
 				if (method.HasLineNumbers)
-					address = method.LineNumberTable.Lookup (line);
+					address = method.LineNumberTable.Lookup (line, column);
 				else
 					address = TargetAddress.Null;
 			} else if (method.HasMethodBounds)
