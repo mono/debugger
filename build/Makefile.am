@@ -188,8 +188,8 @@ uninstall-local:
 	$(GACUTIL) /u Mono.Debugger.SymbolWriter $(GACUTIL_FLAGS) || exit 1;
 
 if HAVE_NUNIT_2_3
-STANDARD_NUNIT_CONSOLE_FLAGS = -noshadow -labels -exclude:$(EXCLUDED_TESTS)
-NUNIT_CONSOLE_FLAGS = -noshadow
+STANDARD_NUNIT_CONSOLE_FLAGS = -labels -exclude:$(EXCLUDED_TESTS)
+NUNIT_CONSOLE_FLAGS =
 else
 STANDARD_NUNIT_CONSOLE_FLAGS = /labels /exclude:$(EXCLUDED_TESTS)
 NUNIT_CONSOLE_FLAGS =

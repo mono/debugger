@@ -1,7 +1,7 @@
 2009-04-17  Martin Baulig  <martin@ximian.com>
 
 	* build/Makefile.am: Don't pass '-noshadow' to nunit-console; this
-	is causing some really weird crashs.
+	is causing some really weird crashes.
 
 2009-04-17  Martin Baulig  <martin@ximian.com>
 
