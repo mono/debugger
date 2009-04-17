@@ -3,6 +3,7 @@
 /Makefile.in
 /Makefile
 /*.la
+/*.o
 /*.lo
 /*.dll
 /test

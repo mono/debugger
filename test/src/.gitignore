@@ -3,6 +3,8 @@
 /*.mdb
 /*.exe
 /*.dll
+/*.o
+/*.lo
 /testnativefork
 /testnativeexec
 /testnativechild

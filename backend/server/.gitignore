@@ -4,6 +4,7 @@
 /Makefile
 /*.la
 /*.lo
+/*.o
 /*.dll
 /mono-debugger-server
 /Debugger-common.c
