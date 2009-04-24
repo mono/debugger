@@ -219,7 +219,6 @@ else
   NUNIT_PREFIX=`pkg-config --variable=prefix mono-nunit`
   NUNIT_VERSION=`pkg-config --modversion mono-nunit`
 
-  echo "NUNIT_VERSION $NUNIT_VERSION" 
 fi
 NUNIT_PREFIX=`cd $NUNIT_PREFIX && pwd`
 AC_SUBST(TARGET_MCS)
