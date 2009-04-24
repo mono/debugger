@@ -1,3 +1,42 @@
+2009-04-23  Jonathan Chambers  <joncham@gmail.com>
+
+	* backend/server/breakpoints.c: Add HAVE_UNISTD_H #ifdef.
+
+	* backend/server/library.c: Add HAVE_UNISTD_H check and add Windows
+	InferiorVTable.
+	(mono_debugger_server_create_inferior): Access through vtable.
+	(mono_debugger_server_get_current_pid): Access through vtable.
+	(mono_debugger_server_get_current_thread): Access through vtable.
+	(mono_debugger_server_static_init): Access through vtable.
+	(mono_debugger_server_get_pending_sigint): Access through vtable.
+	(mono_debugger_server_sem_init): Access through vtable.
+	(mono_debugger_server_sem_wait): Access through vtable.
+	(mono_debugger_server_sem_post): Access through vtable.
+	(mono_debugger_server_sem_get_value): Access through vtable.
+
+	* backend/server/monodebuggerserver.def: Add.
+
+	* backend/server/mutex.c: Add mono_debugger_cond_timed_wait.
+
+	* backend/server/server.h: Add declarations for vtable changes above.
+
+	* backend/server/x86-ptrace.c: Implement vtable functions formerly in
+	library.c.
+
+	* backend/server/x86-windows.c: Added.
+
+	* build/debugger.sln: Added.
+
+	* build/mdb.csproj: Added.
+
+	* build/Mono.Debugger.csproj: Added.
+
+	* build/Mono.Debugger.Frontend.csproj: Added.
+
+	* build/Mono.Debugger.SymbolWriter.csproj: Added.
+
+	* build/monodebuggerserver.vcproj: Added.
+
 2009-04-17  Martin Baulig  <martin@ximian.com>
 
 	* classes/LineNumberTable.cs

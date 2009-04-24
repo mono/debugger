@@ -1,20 +1,21 @@
 #include <config.h>
 #include <server.h>
-#include <signal.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #if defined(__linux__) || defined(__FreeBSD__)
 #include <sys/poll.h>
 #include <sys/select.h>
 #endif
-#include <pthread.h>
-#include <semaphore.h>
-#include <sys/time.h>
 #include <errno.h>
 #include <stdio.h>
 
 #if defined(__POWERPC__)
 extern InferiorVTable powerpc_darwin_inferior;
 InferiorVTable *global_vtable = &powerpc_darwin_inferior;
+#elif defined(WIN32)
+extern InferiorVTable i386_windows_inferior;
+static InferiorVTable *global_vtable = &i386_windows_inferior;
 #else
 extern InferiorVTable i386_ptrace_inferior;
 static InferiorVTable *global_vtable = &i386_ptrace_inferior;
@@ -23,24 +24,19 @@ static InferiorVTable *global_vtable = &i386_ptrace_inferior;
 ServerHandle *
 mono_debugger_server_create_inferior (BreakpointManager *breakpoint_manager)
 {
-	if ((getuid () == 0) || (geteuid () == 0)) {
-		g_message ("WARNING: Running mdb as root may be a problem because setuid() and\n"
-			   "seteuid() do nothing.\n"
-			   "See http://primates.ximian.com/~martin/blog/entry_150.html for details.");
-	}
 	return global_vtable->create_inferior (breakpoint_manager);
 }
 
 guint32
 mono_debugger_server_get_current_pid (void)
 {
-	return getpid ();
+	return global_vtable->get_current_pid ();
 }
 
 guint64
 mono_debugger_server_get_current_thread (void)
 {
-	return pthread_self ();
+	return global_vtable->get_current_thread ();
 }
 
 void
@@ -424,7 +420,7 @@ void
 mono_debugger_server_set_runtime_info (ServerHandle *handle, MonoRuntimeInfo *mono_runtime)
 {
 	if (global_vtable->set_runtime_info)
-		return (* global_vtable->set_runtime_info) (handle, mono_runtime);
+		(* global_vtable->set_runtime_info) (handle, mono_runtime);
 }
 
 ServerCommandError
@@ -491,66 +487,38 @@ mono_debugger_server_get_registers_from_core_file (guint64 *values, const guint8
 }
 
 
-static gboolean initialized = FALSE;
-static sem_t manager_semaphore;
-static int pending_sigint = 0;
-
-static void
-sigint_signal_handler (int _dummy)
-{
-	pending_sigint++;
-	sem_post (&manager_semaphore);
-}
-
 void
 mono_debugger_server_static_init (void)
 {
-	struct sigaction sa;
-
-	if (initialized)
-		return;
-
-	/* catch SIGINT */
-	sa.sa_handler = sigint_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-
-	initialized = TRUE;
+	(* global_vtable->static_init) ();
 }
 
 int
 mono_debugger_server_get_pending_sigint (void)
 {
-	if (pending_sigint > 0)
-		return pending_sigint--;
-
-	return 0;
+	return (* global_vtable->get_pending_sigint) ();
 }
 
 void
 mono_debugger_server_sem_init (void)
 {
-	sem_init (&manager_semaphore, 1, 0);
+	(* global_vtable->sem_init) ();
 }
 
 void
 mono_debugger_server_sem_wait (void)
 {
-	sem_wait (&manager_semaphore);
+	(* global_vtable->sem_wait) ();
 }
 
 void
 mono_debugger_server_sem_post (void)
 {
-	sem_post (&manager_semaphore);
+	(* global_vtable->sem_post) ();
 }
 
 int
 mono_debugger_server_sem_get_value (void)
 {
-	int ret;
-
-	sem_getvalue (&manager_semaphore, &ret);
-	return ret;
+	return (* global_vtable->sem_get_value) ();
 }

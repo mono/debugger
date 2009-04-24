@@ -3,7 +3,9 @@
 #include <glib/gthread.h>
 #include <sys/stat.h>
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>

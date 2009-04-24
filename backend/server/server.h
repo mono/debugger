@@ -126,6 +126,9 @@ struct ServerHandle {
 };
 
 struct InferiorVTable {
+	
+	void                  (* static_init)         (void);
+
 	void                  (* global_init)         (void);
 
 	ServerHandle *        (* create_inferior)     (BreakpointManager  *bpm);
@@ -398,6 +401,20 @@ struct InferiorVTable {
 
 	void         (* get_registers_from_core_file) (guint64           *values,
 						       const guint8      *buffer);
+
+	guint32               (*get_current_pid) (void);
+
+	guint64               (*get_current_thread) (void);
+	
+	void                  (*sem_init) (void);
+
+	void                  (*sem_wait) (void);
+
+	void                  (*sem_post) (void);
+
+	int                   (*sem_get_value) (void);
+
+	int                   (*get_pending_sigint) (void);
 };
 
 /*
@@ -661,15 +678,19 @@ void
 mono_debugger_server_get_registers_from_core_file (guint64 *values,
 						   const guint8 *buffer);
 
+guint32
+mono_debugger_server_get_current_pid (void);
+
+guint64
+mono_debugger_server_get_current_thread (void);
+
+
 /* POSIX semaphores */
 
 void mono_debugger_server_sem_init (void);
 void mono_debugger_server_sem_wait (void);
 void mono_debugger_server_sem_post (void);
 int mono_debugger_server_sem_get_value (void);
-
-guint32 mono_debugger_server_get_current_pid (void);
-guint64 mono_debugger_server_get_current_thread (void);
 
 int mono_debugger_server_get_pending_sigint (void);
 

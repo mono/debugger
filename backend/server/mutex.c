@@ -46,11 +46,20 @@ mono_debugger_cond_free (GCond *cond)
 void
 mono_debugger_cond_wait (GMutex *mutex, GCond *cond)
 {
-	return g_cond_wait (cond, mutex);
+	g_cond_wait (cond, mutex);
+}
+
+gboolean
+mono_debugger_cond_timed_wait (GMutex *mutex, GCond *cond, int milliseconds)
+{
+	GTimeVal time_val;
+	g_get_current_time (&time_val);
+	g_time_val_add (&time_val, milliseconds);
+	return g_cond_timed_wait (cond, mutex, &time_val);
 }
 
 void
 mono_debugger_cond_broadcast (GCond *cond)
 {
-	return g_cond_broadcast (cond);
+	g_cond_broadcast (cond);
 }

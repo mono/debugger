@@ -404,6 +404,12 @@ server_ptrace_create_inferior (BreakpointManager *bpm)
 {
 	ServerHandle *handle = g_new0 (ServerHandle, 1);
 
+	if ((getuid () == 0) || (geteuid () == 0)) {
+		g_message ("WARNING: Running mdb as root may be a problem because setuid() and\n"
+			   "seteuid() do nothing.\n"
+			   "See http://primates.ximian.com/~martin/blog/entry_150.html for details.");
+	}
+
 	handle->bpm = bpm;
 	handle->inferior = g_new0 (InferiorHandle, 1);
 	handle->arch = x86_arch_initialize ();
@@ -618,6 +624,82 @@ server_ptrace_set_runtime_info (ServerHandle *handle, MonoRuntimeInfo *mono_runt
 	handle->mono_runtime = mono_runtime;
 }
 
+static guint32
+server_ptrace_get_current_pid (void)
+{
+	return getpid ();
+}
+
+static guint64
+server_ptrace_get_current_thread (void)
+{
+	return pthread_self ();
+}
+
+static gboolean initialized = FALSE;
+static sem_t manager_semaphore;
+int pending_sigint = 0;
+
+static void
+sigint_signal_handler (int _dummy)
+{
+	pending_sigint++;
+	sem_post (&manager_semaphore);
+}
+
+static void
+server_ptrace_static_init (void)
+{
+	struct sigaction sa;
+
+	if (initialized)
+		return;
+
+	/* catch SIGINT */
+	sa.sa_handler = sigint_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = 0;
+	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
+
+	initialized = TRUE;
+}
+
+static void
+server_ptrace_sem_init (void)
+{
+	sem_init (&manager_semaphore, 1, 0);
+}
+
+static void
+server_ptrace_sem_wait (void)
+{
+	sem_wait (&manager_semaphore);
+}
+
+static void
+server_ptrace_sem_post (void)
+{
+	sem_post (&manager_semaphore);
+}
+
+static int
+server_ptrace_sem_get_value (void)
+{
+	int ret;
+
+	sem_getvalue (&manager_semaphore, &ret);
+	return ret;
+}
+
+static int
+server_ptrace_get_pending_sigint (void)
+{
+	if (pending_sigint > 0)
+		return pending_sigint--;
+
+	return 0;
+}
+
 extern void GC_start_blocking (void);
 extern void GC_end_blocking (void);
 
@@ -638,6 +720,7 @@ extern void GC_end_blocking (void);
 #endif
 
 InferiorVTable i386_ptrace_inferior = {
+	server_ptrace_static_init,
 	server_ptrace_global_init,
 	server_ptrace_create_inferior,
 	server_ptrace_initialize_process,
@@ -688,4 +771,11 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_pop_registers,
 	server_ptrace_get_callback_frame,
 	server_ptrace_get_registers_from_core_file,
+	server_ptrace_get_current_pid,
+	server_ptrace_get_current_thread,
+	server_ptrace_sem_init,
+	server_ptrace_sem_wait,
+	server_ptrace_sem_post,
+	server_ptrace_sem_get_value,
+	server_ptrace_get_pending_sigint,
 };
