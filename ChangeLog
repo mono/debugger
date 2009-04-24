@@ -1,3 +1,8 @@
+2009-04-24  Jonathan Chambers  <joncham@gmail.com>
+
+	* configure.in: Add debug output to figure out why nunit
+	fails to run on buildbots.
+
 2009-04-23  Jonathan Chambers  <joncham@gmail.com>
 
 	* backend/server/breakpoints.c: Add HAVE_UNISTD_H #ifdef.
