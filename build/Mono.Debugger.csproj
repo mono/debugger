@@ -53,6 +53,10 @@
 			<SpecificVersion>False</SpecificVersion>
 			<HintPath>$(MONO_PREFIX)\lib\mono\gac\Mono.Cecil\0.6.9.0__0738eb9f132ed756\Mono.Cecil.dll</HintPath>
 		</Reference>
+    <Reference Include="Mono.GetOptions, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(MONO_PREFIX)\lib\mono\2.0\Mono.GetOptions.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>

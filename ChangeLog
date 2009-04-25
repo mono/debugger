@@ -1,3 +1,15 @@
+2009-04-25  Jonathan Chambers  <joncham@gmail.com>
+
+	* frontend/CSharpExpressionParser.cs.win: Update file.
+
+	* build/Mono.Debugger.csproj: Add reference to Mono.GetOptions.
+
+	* build/AssemblyInfo.cs.win: Add generated file.
+
+	* build/Mono.Debugger.SymbolWriter.csproj: Add DEBUGGER_SOURCE
+	definition. Add reference to Mono.GetOptions. Add prebuild step
+	for AssemblyInfo.cs.win to AssemblyInfo.cs.
+
 2009-04-24  Jonathan Chambers  <joncham@gmail.com>
 
 	* configure.in: Do simple numeric check for nunit
