@@ -1,5 +1,9 @@
 2009-04-25  Jonathan Chambers  <joncham@gmail.com>
 
+	* README.win32: Added.
+
+2009-04-25  Jonathan Chambers  <joncham@gmail.com>
+
 	* frontend/CSharpExpressionParser.cs.win: Update file.
 
 	* build/Mono.Debugger.csproj: Add reference to Mono.GetOptions.

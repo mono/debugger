@@ -1,0 +1,33 @@
+BUILDING
+------------
+
+The debugger is not yet working on windows, and may not even build at times.
+
+To attempt a build you need.
+
+- Visual Studio 2008
+
+- Recent mono install (I am using 2.4)
+
+Set environment variable MONO_PREFIX to your mono install location,
+e.g. MONO_PREFIX=C:\Mono-2.4
+
+Open solution (build\debugger.sln) in Visual Studio 2008.
+
+Build Solution. Set PATH environment variable in debugger options
+to include bin dir under mono install. This allows monodebuggerserver.dll
+to reference mono and glib libraries.
+
+TODO
+------------
+
+- Support building on 64-bit Windows. Right now we produce Any CPU target
+  that runs as 64-bit process on 64-bit Windows. However, we are producing
+  a 32-bit monodebuggerserver.dll at this point. Should we try always build
+  32-bit for now, or support both targets? This would require 64-bit mono
+  and it's dependencies (glib). Those are not easy to produce at this point.
+
+- Rework uncommitted changes that actual allow debugger to launch target
+  process. Some of these changes are located in the uncommitted parts of:
+  http://www.nabble.com/Mono-Debugger-on-Windows-Patch-to22399885ef1367.html#a22557603
+
