@@ -1,3 +1,15 @@
+2009-04-26  Jonathan Chambers  <joncham@gmail.com>
+
+	* build/debugger.sln: Build as 32-bit for now.
+
+	* build/Mono.Debugger.csproj: Build as 32-bit for now.
+
+	* build/Mono.Debugger.SymbolWriter.csproj: Build as 32-bit for now.
+
+	* build/mdb.csproj: Build as 32-bit for now.
+
+	* build/Mono.Debugger.Frontend.csproj: Build as 32-bit for now.
+
 2009-04-25  Jonathan Chambers  <joncham@gmail.com>
 
 	* README.win32: Added.
