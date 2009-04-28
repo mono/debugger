@@ -1,3 +1,11 @@
+2009-04-27  Jonathan Chambers  <joncham@gmail.com>
+
+	* build/debugger.sln: Turn on monodebuggerserver project
+	in AnyCPU target.
+
+	* build/monodebuggerserver.vcproj: Copy glib dependencies
+	to output directory.
+
 2009-04-26  Jonathan Chambers  <joncham@gmail.com>
 
 	* build/debugger.sln: Build as 32-bit for now.

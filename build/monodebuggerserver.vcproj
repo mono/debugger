@@ -90,6 +90,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				CommandLine="copy $(MONO_PREFIX)\bin\libglib-2.0-0.dll $(TargetDir)libglib-2.0-0.dll&#x0D;&#x0A;copy $(MONO_PREFIX)\bin\libgthread-2.0-0.dll $(TargetDir)libgthread-2.0-0.dll"
 			/>
 		</Configuration>
 		<Configuration
