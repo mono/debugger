@@ -8,6 +8,7 @@
 /*.dll
 /*.mdb
 /*.exe
+/*.o
 /AssemblyInfo.cs
 /Mono.Debugger.dll.config
 /Mono.Debugger.Backend.dll.config

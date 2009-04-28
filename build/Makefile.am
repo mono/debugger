@@ -19,9 +19,11 @@ if HAVE_XSP
 MCS_FLAGS += -define:HAVE_XSP
 endif
 
+noinst_PROGRAMS = \
+	ulimit-check
+
 noinst_SCRIPTS = \
 	runtests					\
-	ulimit-check					\
 	Mono.Debugger.dll				\
 	Mono.Debugger.Frontend.dll			\
 	Mono.Debugger.Test.dll
@@ -169,7 +171,7 @@ mdb-symbolreader: mdb-symbolreader.in Makefile
 
 NUNIT_CONSOLE_EXE = $(NUNIT_PREFIX)/lib/mono/2.0/nunit-console.exe
 
-runtests: runtests.in Makefile
+runtests: runtests.in Makefile ulimit-check
 	builddir=$(top_builddir) ; the_builddir=`cd $$builddir && pwd` ; \
 	sed -e 's^\@NUNIT_CONSOLE_EXE\@^$(NUNIT_CONSOLE_EXE)^g' \
 		-e 's^\@MONO\@^$(TARGET_MONO)^g' \
