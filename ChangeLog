@@ -83,6 +83,13 @@
 
 	* build/monodebuggerserver.vcproj: Added.
 
+2009-04-28  Martin Baulig  <martin@ximian.com>
+
+	* build/ulimit-check.c: New helper program to check `ulimit -v';
+	we'll add more checks to it later.
+
+	* build/runtests.in: Refuse the run the tests if `ulimit-check' fails.
+
 2009-04-17  Martin Baulig  <martin@ximian.com>
 
 	* classes/LineNumberTable.cs

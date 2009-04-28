@@ -21,6 +21,7 @@ endif
 
 noinst_SCRIPTS = \
 	runtests					\
+	ulimit-check					\
 	Mono.Debugger.dll				\
 	Mono.Debugger.Frontend.dll			\
 	Mono.Debugger.Test.dll
