@@ -1,3 +1,8 @@
+2009-04-29  Martin Baulig  <martin@ximian.com>
+
+	* backend/BreakpointHandle.cs (FunctionBreakpointHandle): Fix a
+	regression introduced in r132009.
+
 2009-04-27  Jonathan Chambers  <joncham@gmail.com>
 
 	* build/debugger.sln: Turn on monodebuggerserver project

@@ -89,7 +89,7 @@ namespace Mono.Debugger.Backend
 	{
 		TargetFunctionType function;
 		bool has_load_handler;
-		int line, column;
+		int line = -1, column;
 
 		public FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function, int line)
 			: this (bpt, function, line, -1)
