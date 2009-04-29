@@ -1,5 +1,12 @@
 2009-04-29  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoSymbolFile.cs
+	(MonoLineNumberTable.Lookup): If the symbol file doesn't contain
+	any source ranges for the current method, default to traditional
+	line-based lookup.
+
+2009-04-29  Martin Baulig  <martin@ximian.com>
+
 	* backend/BreakpointHandle.cs (FunctionBreakpointHandle): Fix a
 	regression introduced in r132009.
 

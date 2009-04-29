@@ -1604,6 +1604,8 @@ namespace Mono.Debugger.Languages.Mono
 				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
 					return TargetAddress.Null;
 
+				bool found_a_range = false;
+
 				for (int i = 0; i < Addresses.Length; i++) {
 					LineEntry entry = (LineEntry) Addresses [i];
 
@@ -1611,6 +1613,8 @@ namespace Mono.Debugger.Languages.Mono
 						continue;
 
 					SourceRange range = entry.SourceRange.Value;
+					found_a_range = true;
+
 					if ((line < range.StartLine) || (line > range.EndLine))
 						continue;
 					if ((line == range.StartLine) && (column < range.StartColumn))
@@ -1620,6 +1624,14 @@ namespace Mono.Debugger.Languages.Mono
 
 					return entry.Address;
 				}
+
+				//
+				// If the symbol file doesn't contain any source ranges for this
+				// method, default to traditional line-based lookup.
+				//
+
+				if (!found_a_range)
+					return Lookup (line);
 
 				return TargetAddress.Null;
 			}
