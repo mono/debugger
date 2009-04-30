@@ -48,5 +48,10 @@ namespace Mono.Debugger.Languages
 					return GetClass (target);
 			});
 		}
+
+		public virtual TargetClass ForceClassInitialization (Thread thread)
+		{
+			return GetClass (thread);
+		}
 	}
 }

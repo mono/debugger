@@ -1024,9 +1024,6 @@ namespace Mono.Debugger.Frontend
 			if (type != null)
 				return new TypeExpression (type);
 
-			if (!context.HasFrame)
-				return null;
-
 			string[] namespaces = context.GetNamespaces ();
 			if (namespaces == null)
 				return null;
@@ -1752,7 +1749,7 @@ namespace Mono.Debugger.Frontend
 			if (class_info != null)
 				return;
 
-			class_info = Type.GetClass (target);
+			class_info = Type.ForceClassInitialization (target);
 			if (class_info == null)
 				throw new ScriptingException ("Class `{0}' not initialized yet.",
 							      Type.Name);

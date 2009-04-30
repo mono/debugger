@@ -4,6 +4,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Reflection;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
@@ -147,21 +148,18 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (ImplicitInstance != null) {
-				TargetClass klass = ImplicitInstance.Type.GetClass (CurrentThread);
-				if (klass == null)
-					return null;
+				string full_name = ImplicitInstance.Type.Name;
 
-				TargetMethodInfo[] methods = klass.GetMethods (CurrentThread);
-				if (methods == null)
-					return null;
+				List<string> list = new List<string> ();
 
-				foreach (TargetMethodInfo method in methods) {
-					MethodSource source = method.Type.GetSourceCode ();
-					if (source == null)
-						continue;
-
-					return source.GetNamespaces ();
+				int pos;
+				int start = full_name.Length - 1;
+				while ((pos = full_name.LastIndexOf ('.', start)) > 0) {
+					list.Add (full_name.Substring (0, pos));
+					start = pos - 1;
 				}
+
+				return list.ToArray ();
 			}
 
 			return null;
