@@ -37,6 +37,10 @@ namespace Mono.Debugger
 			get;
 		}
 
+		public abstract string CodeBase {
+			get;
+		}
+
 		public abstract Language Language {
 			get;
 		}

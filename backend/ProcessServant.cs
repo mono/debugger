@@ -668,7 +668,7 @@ namespace Mono.Debugger.Backend
 		{
 			((SingleSteppingEngine) main_thread).ManagedCallback (
 				delegate (SingleSteppingEngine sse) {
-					return sse.ActivatePendingBreakpoints ();
+					return sse.ActivatePendingBreakpoints (null);
 				}, result);
 		}
 

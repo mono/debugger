@@ -1321,7 +1321,7 @@ namespace Mono.Debugger.Languages.Mono
 					      "Module load: {0} {1}", data, symfile);
 				engine.Process.Debugger.OnModuleLoaded (symfile.Module);
 				if ((builtin_types != null) && (symfile != null)) {
-					if (engine.OnModuleLoaded ())
+					if (engine.OnModuleLoaded (symfile.Module))
 						return false;
 				}
 				break;

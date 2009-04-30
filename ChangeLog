@@ -1,4 +1,41 @@
-**** Backport of 131141 ****
+2009-03-30  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 130552 ****
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.AddUserModulePath): New public method.
+	(DebuggerSession.CreateModule): Also check whether the module is
+	located anywhere in the module paths.
+
+2009-03-24  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 130097 ****
+
+	* classes/Event.cs
+	(Event.IsUserModule): New public property.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ActivatePendingBreakpoints): When called during a
+	module-load, only activate user-breakpoints if we're actually a
+	user module.
+
+2009-03-23  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 130096 ****
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.CreateDefaultModuleGroups): Add new module
+	group `user' for user code.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.AddUserModule): New public method.
+	(DebuggerSession.CreateModule): If the module's file name matches
+	any of the user modules, use the `user' module group.
+
+	* classes/Module.cs
+	(SymbolFile.CodeBase): New abstract property; this is the absolute
+	path name of the loaded module.
+
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 131141 ****
