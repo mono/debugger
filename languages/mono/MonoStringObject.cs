@@ -47,6 +47,17 @@ namespace Mono.Debugger.Languages.Mono
 			return new String (retval);
 		}
 
+		internal static string ReadString (MonoLanguageBackend mono, TargetMemoryAccess target,
+						   TargetAddress address)
+		{
+			if (address.IsNull)
+				return null;
+
+			TargetLocation location = new AbsoluteTargetLocation (address);
+			MonoStringObject so = new MonoStringObject (mono.BuiltinTypes.StringType, location);
+			return (string) so.DoGetObject (target);
+		}
+
 		internal override string Print (TargetMemoryAccess target)
 		{
 			if (Location.GetAddress (target).IsNull)

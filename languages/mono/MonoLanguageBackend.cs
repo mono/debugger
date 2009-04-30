@@ -705,11 +705,12 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			if (!assembly_by_name.Contains (symfile.Assembly.Name.FullName)) {
-				symfile_by_image_addr.Add (symfile.MonoImage, symfile);
 				assembly_hash.Add (symfile.Assembly, symfile);
 				assembly_by_name.Add (symfile.Assembly.Name.FullName, symfile);
-				symfile_by_index.Add (symfile.Index, symfile);
 			}
+
+			symfile_by_image_addr.Add (symfile.MonoImage, symfile);
+			symfile_by_index.Add (symfile.Index, symfile);
 
 			return symfile;
 		}
@@ -1299,6 +1300,71 @@ namespace Mono.Debugger.Languages.Mono
 			read_builtin_types (memory);
 		}
 
+		Dictionary<int,MonoRuntime.AppDomainInfo> appdomain_info = new Dictionary<int,MonoRuntime.AppDomainInfo> ();
+
+		void create_appdomain (TargetMemoryAccess memory, TargetAddress address)
+		{
+			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
+			TargetReader reader = new TargetReader (
+				memory.ReadMemory (address, 4 * addr_size));
+
+			int id = reader.BinaryReader.ReadInt32 ();
+			int shadow_path_len = reader.BinaryReader.ReadInt32 ();
+			TargetAddress shadow_path_addr = reader.ReadAddress ();
+
+			string shadow_path = null;
+			if (!shadow_path_addr.IsNull) {
+				byte[] buffer = memory.ReadBuffer (shadow_path_addr, shadow_path_len);
+				char[] cbuffer = new char [buffer.Length];
+				for (int i = 0; i < buffer.Length; i++)
+					cbuffer [i] = (char) buffer [i];
+				shadow_path = new String (cbuffer);
+			}
+
+			TargetAddress domain = reader.ReadAddress ();
+			TargetAddress setup = reader.ReadAddress ();
+
+			MonoRuntime.AppDomainInfo info = MonoRuntime.GetAppDomainInfo (this, memory, setup);
+			info.ShadowCopyPath = shadow_path;
+
+			appdomain_info.Add (id, info);
+		}
+
+		void unload_appdomain (int id)
+		{
+			appdomain_info.Remove (id);
+		}
+
+		bool is_shadow_copy_path (string path)
+		{
+			foreach (MonoRuntime.AppDomainInfo info in appdomain_info.Values) {
+				if (!info.ShadowCopyFiles || (info.ShadowCopyPath == null))
+					continue;
+
+				if (path.StartsWith (info.ShadowCopyPath))
+					return true;
+			}
+
+			return false;
+		}
+
+		internal string GetShadowCopyLocation (string path)
+		{
+			if (!is_shadow_copy_path (path))
+				return null;
+
+			string shadow_ini_path = Path.Combine (Path.GetDirectoryName (path), "__AssemblyInfo__.ini");
+			if (!File.Exists (shadow_ini_path))
+				return null;
+
+			try {
+				using (StreamReader ini_reader = File.OpenText (shadow_ini_path))
+					return ini_reader.ReadToEnd ();
+			} catch {
+				return null;
+			}
+		}
+
 		public bool Notification (SingleSteppingEngine engine, Inferior inferior,
 					  NotificationType type, TargetAddress data, long arg)
 		{
@@ -1354,6 +1420,17 @@ namespace Mono.Debugger.Languages.Mono
 					      "Domain unload: {0} {1:x}", data, arg);
 				destroy_data_table ((int) arg, data);
 				engine.Process.BreakpointManager.DomainUnload (inferior, (int) arg);
+				break;
+
+			case NotificationType.ClassInitialized:
+				break;
+
+			case NotificationType.CreateAppDomain:
+				create_appdomain (inferior, data);
+				break;
+
+			case NotificationType.UnloadAppDomain:
+				unload_appdomain ((int) arg);
 				break;
 
 			default:
