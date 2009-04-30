@@ -288,6 +288,7 @@ namespace Mono.Debugger
 				);
 		}
 
+#if HAVE_XSP
 		public static DebuggerOptions CreateXSP (string root)
 		{
 			DebuggerOptions options = new DebuggerOptions ();
@@ -297,6 +298,7 @@ namespace Mono.Debugger
 			options.SetupXSP ();
 			return options;
 		}
+#endif
 
 		public static DebuggerOptions ParseCommandLine (string[] args)
 		{

@@ -1,3 +1,10 @@
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 129875 ****
+
+	* classes/DebuggerOptions.cs
+	(DebuggerOptions.CreateXSP): Put this into a `HAVE_XSP' conditional.
+
 2009-03-19  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 129751 and 129935 ****
