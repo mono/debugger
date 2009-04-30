@@ -1,3 +1,20 @@
+2009-03-04  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 128506 ****
+
+	* test/testsuite/testnativefork.cs: Add `[Category ("NotWorking")]'.
+
+2009-03-03  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 128474 ****
+
+	* test/testsuite/NUnit.cs
+	(NUnitInterpreter.IgnoreThreadCreation): New public property to
+	disable tracking of child threads.
+
+	* test/testsuite/TestAppDomain.cs: Use it here.
+	* test/testsuite/TestAppDomain-Module.cs: And here.
+
 2009-02-09  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 126375 ****

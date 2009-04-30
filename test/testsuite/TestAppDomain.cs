@@ -17,6 +17,12 @@ namespace Mono.Debugger.Tests
 			Config.StayInThread = true;
 		}
 
+		public override void SetUp ()
+		{
+			base.SetUp ();
+			Interpreter.IgnoreThreadCreation = true;
+		}
+
 		int bpt_hello;
 
 		[Test]
@@ -38,7 +44,6 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "main+2", "X.Main()");
 
 			AssertExecute ("next");
-			Thread child = AssertThreadCreated ();
 			AssertStopped (thread, "main+3", "X.Main()");
 
 			AssertExecute ("continue");
@@ -67,51 +72,7 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, "unload", "X.Main()");
 			AssertExecute ("next -wait");
 
-			bool child_exited = false, child_thread_exited = false;
-			bool main_stopped = false, temp_thread_created = false;
-			bool temp_exited = false, temp_thread_exited = false;
-
-			Thread temp_thread = null;
-
-			while (!child_exited || !child_thread_exited || !main_stopped ||
-			       !temp_thread_created || !temp_exited || !temp_thread_exited) {
-				DebuggerEvent e = AssertEvent ();
-
-				if (e.Type == DebuggerEventType.TargetEvent) {
-					Thread e_thread = (Thread) e.Data;
-					TargetEventArgs args = (TargetEventArgs) e.Data2;
-
-					if ((e_thread == child) &&
-					    (args.Type == TargetEventType.TargetExited)) {
-						child_exited = true;
-						continue;
-					} else if ((e_thread == temp_thread) &&
-						   (args.Type == TargetEventType.TargetExited)) {
-						temp_exited = true;
-						continue;
-					} else if ((e_thread == thread) &&
-						   (args.Type == TargetEventType.TargetStopped) &&
-						   ((int) args.Data == 0)) {
-						main_stopped = true;
-						continue;
-					}
-				} else if (e.Type == DebuggerEventType.ThreadCreated) {
-					temp_thread = (Thread) e.Data;
-					temp_thread_created = true;
-					continue;
-				} else if (e.Type == DebuggerEventType.ThreadExited) {
-					Thread e_thread = (Thread) e.Data;
-					if (e_thread == child) {
-						child_thread_exited = true;
-						continue;
-					} else if (e_thread == temp_thread) {
-						temp_thread_exited = true;
-						continue;
-					}
-				}
-
-				Assert.Fail ("Received unexpected event {0}", e);
-			}
+			AssertStopped (thread, "X.Main()", GetLine ("unload") + 1);
 
 			AssertExecute ("continue");
 
@@ -137,7 +98,6 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "main+2", "X.Main()");
 
 			AssertExecute ("next");
-			Thread child = AssertThreadCreated ();
 			AssertStopped (thread, "main+3", "X.Main()");
 
 			AssertExecute ("continue");
@@ -169,51 +129,7 @@ namespace Mono.Debugger.Tests
 			AssertHitBreakpoint (thread, "unload", "X.Main()");
 			AssertExecute ("next -wait");
 
-			bool child_exited = false, child_thread_exited = false;
-			bool main_stopped = false, temp_thread_created = false;
-			bool temp_exited = false, temp_thread_exited = false;
-
-			Thread temp_thread = null;
-
-			while (!child_exited || !child_thread_exited || !main_stopped ||
-			       !temp_thread_created || !temp_exited || !temp_thread_exited) {
-				DebuggerEvent e = AssertEvent ();
-
-				if (e.Type == DebuggerEventType.TargetEvent) {
-					Thread e_thread = (Thread) e.Data;
-					TargetEventArgs args = (TargetEventArgs) e.Data2;
-
-					if ((e_thread == child) &&
-					    (args.Type == TargetEventType.TargetExited)) {
-						child_exited = true;
-						continue;
-					} else if ((e_thread == temp_thread) &&
-						   (args.Type == TargetEventType.TargetExited)) {
-						temp_exited = true;
-						continue;
-					} else if ((e_thread == thread) &&
-						   (args.Type == TargetEventType.TargetStopped) &&
-						   ((int) args.Data == 0)) {
-						main_stopped = true;
-						continue;
-					}
-				} else if (e.Type == DebuggerEventType.ThreadCreated) {
-					temp_thread = (Thread) e.Data;
-					temp_thread_created = true;
-					continue;
-				} else if (e.Type == DebuggerEventType.ThreadExited) {
-					Thread e_thread = (Thread) e.Data;
-					if (e_thread == child) {
-						child_thread_exited = true;
-						continue;
-					} else if (e_thread == temp_thread) {
-						temp_thread_exited = true;
-						continue;
-					}
-				}
-
-				Assert.Fail ("Received unexpected event {0}", e);
-			}
+			AssertStopped (thread, "X.Main()", GetLine ("unload") + 1);
 
 			AssertExecute ("continue");
 

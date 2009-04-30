@@ -29,11 +29,12 @@ namespace Mono.Debugger.Tests
 			base.SetUp ();
 			Config.FollowFork = true;
 
-			bpt_child = AssertBreakpoint ("-global " + LineChild);
-			bpt_waitpid = AssertBreakpoint ("-local " + (LineWaitpid + 1));
+			bpt_child = AssertBreakpoint (String.Format ("-global {0}:{1}", FileName, LineChild));
+			bpt_waitpid = AssertBreakpoint (String.Format ("-local {0}:{1}", FileName, LineWaitpid + 1));
 		}
 
 		[Test]
+		[Category("NotWorking")]
 		[Category("Native")]
 		[Category("Fork")]
 		public void Main ()
@@ -102,6 +103,7 @@ namespace Mono.Debugger.Tests
 
 
 		[Test]
+		[Category("NotWorking")]
 		[Category("Native")]
 		[Category("Fork")]
 		public void Continue ()
@@ -162,6 +164,7 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
+		[Category("NotWorking")]
 		[Category("Native")]
 		[Category("Fork")]
 		public void Breakpoint ()

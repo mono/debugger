@@ -90,6 +90,8 @@ namespace Mono.Debugger.Tests
 
 			Style = style_nunit = new StyleNUnit (this);
 			style_nunit.TargetEventEvent += delegate (Thread thread, TargetEventArgs args) {
+				if (IgnoreThreadCreation && (args.Type == TargetEventType.TargetExited))
+					return;
 				AddEvent (new DebuggerEvent (DebuggerEventType.TargetEvent, thread, args));
 			};
 
@@ -104,6 +106,10 @@ namespace Mono.Debugger.Tests
 
 		public bool HasEvent {
 			get { return queue.Count > 0; }
+		}
+
+		public bool IgnoreThreadCreation {
+			get; set;
 		}
 
 		public DebuggerEvent Wait ()
@@ -133,13 +139,15 @@ namespace Mono.Debugger.Tests
 		protected override void OnThreadCreated (Thread thread)
 		{
 			base.OnThreadCreated (thread);
-			AddEvent (new DebuggerEvent (DebuggerEventType.ThreadCreated, thread));
+			if (!IgnoreThreadCreation)
+				AddEvent (new DebuggerEvent (DebuggerEventType.ThreadCreated, thread));
 		}
 
 		protected override void OnThreadExited (Thread thread)
 		{
 			base.OnThreadExited (thread);
-			AddEvent (new DebuggerEvent (DebuggerEventType.ThreadExited, thread));
+			if (!IgnoreThreadCreation)
+				AddEvent (new DebuggerEvent (DebuggerEventType.ThreadExited, thread));
 		}
 
 		protected override void OnMainProcessCreated (Process process)
@@ -925,18 +933,20 @@ namespace Mono.Debugger.Tests
 
 		public void AssertTargetExited (Process process)
 		{
-			bool target_event = false;
 			bool process_exited = false;
-			bool thread_exited = false;
+			bool target_exited = false;
+			bool target_event = Interpreter.IgnoreThreadCreation;
+			bool thread_exited = Interpreter.IgnoreThreadCreation;
 
 			while (true) {
 				DebuggerEvent e = Interpreter.Wait ();
 				if (e == null)
 					Assert.Fail ("Time-out while waiting for target to exit.");
 
-				if (e.Type == DebuggerEventType.TargetExited)
+				if (e.Type == DebuggerEventType.TargetExited) {
+					target_exited = true;
 					break;
-				if (e.Type == DebuggerEventType.ThreadExited) {
+				} else if (e.Type == DebuggerEventType.ThreadExited) {
 					if (e.Data == process.MainThread)
 						thread_exited = true;
 					continue;
@@ -965,6 +975,9 @@ namespace Mono.Debugger.Tests
 					     "target to exit.");
 			if (!thread_exited)
 				Assert.Fail ("Did not receive `ThreadExitedEvent' while waiting for " +
+					     "target to exit.");
+			if (!target_exited)
+				Assert.Fail ("Did not receive `TargetExitedEvent' while waiting for " +
 					     "target to exit.");
 
 			AssertNoTargetOutput ();
