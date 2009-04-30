@@ -1,3 +1,10 @@
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 128618 ****
+
+	* backend/SingleSteppingEngine.cs: The exception changes have been
+	merged into 2.4.
+
 2009-03-04  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 128551 ****
