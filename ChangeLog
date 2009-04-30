@@ -1,3 +1,18 @@
+2009-04-17  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 132009, 132025, 133002 and 133023 ****
+
+	* classes/LineNumberTable.cs
+	(LineNumberTable.Lookup): Add overloaded virtual version taking a
+	`column' argument.
+
+	* classes/SourceLocation.cs
+	(SourceLocation.Column): New public readonly field.
+	(SourceLocation.ctor): Add overloaded versions taking a `column' arg.
+
+	* backend/BreakpointHandle.cs
+	(FunctionBreakpointHandle): Add `column' field.
+
 2009-04-16  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 131838 ****
@@ -163,7 +178,9 @@
 
 	Merge status as of April 29th:
 
-	- merged until 131777.
+	- merged until 132025.
+
+	- already merged 133002 and 133023.
 
 	- 128557 has been reverted in 128559.
 

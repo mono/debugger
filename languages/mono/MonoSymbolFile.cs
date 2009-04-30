@@ -1591,6 +1591,46 @@ namespace Mono.Debugger.Languages.Mono
 				}
 			}
 
+			public override TargetAddress Lookup (int line, int column)
+			{
+				if (column == -1)
+					return Lookup (line);
+
+				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
+					return TargetAddress.Null;
+
+				bool found_a_range = false;
+
+				for (int i = 0; i < Addresses.Length; i++) {
+					LineEntry entry = (LineEntry) Addresses [i];
+
+					if (entry.SourceRange == null)
+						continue;
+
+					SourceRange range = entry.SourceRange.Value;
+					found_a_range = true;
+
+					if ((line < range.StartLine) || (line > range.EndLine))
+						continue;
+					if ((line == range.StartLine) && (column < range.StartColumn))
+						continue;
+					if ((line == range.EndLine) && (column > range.EndColumn))
+						continue;
+
+					return entry.Address;
+				}
+
+				//
+				// If the symbol file doesn't contain any source ranges for this
+				// method, default to traditional line-based lookup.
+				//
+
+				if (!found_a_range)
+					return Lookup (line);
+
+				return TargetAddress.Null;
+			}
+
 			public override TargetAddress Lookup (int line)
 			{
 				if ((Addresses == null) || (line < StartRow) || (line > EndRow))
@@ -1732,8 +1772,6 @@ namespace Mono.Debugger.Languages.Mono
 						if (lne.SourceRange != null)
 							range = new SourceRange (lne.SourceRange.StartLine, lne.SourceRange.EndLine,
 										 lne.SourceRange.StartColumn, lne.SourceRange.EndColumn);
-
-						Console.WriteLine ("GENERATE LINE: {0} {1} {2}", lne, lne.Row, lne.SourceRange != null);
 
 						lines.Add (new LineEntry (address, file, lne.Row, hidden, range));
 						last_line = lne.Row;
