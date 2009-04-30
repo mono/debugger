@@ -111,6 +111,8 @@ namespace Mono.Debugger
 					OpaqueFileNames = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "StopOnManagedSignals")
 					StopOnManagedSignals = Boolean.Parse (iter.Current.Value);
+				else if (iter.Current.Name == "NestedBreakStates")
+					NestedBreakStates = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "Martin_Boston_07102008")
 					Private_Martin_Boston_07102008 = Boolean.Parse (iter.Current.Value);
 				else
@@ -165,6 +167,10 @@ namespace Mono.Debugger
 				stop_on_signals_e.InnerText = StopOnManagedSignals ? "true" : "false";
 				element.AppendChild (stop_on_signals_e);
 
+				XmlElement nested_break_states_e = doc.CreateElement ("NestedBreakStates");
+				nested_break_states_e.InnerText = NestedBreakStates ? "true" : "false";
+				element.AppendChild (nested_break_states_e);
+
 				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
 				doc.DocumentElement.AppendChild (module_groups);
 
@@ -183,6 +189,7 @@ namespace Mono.Debugger
 		bool hide_auto_generated = false;
 		bool opaque_file_names = false;
 		bool stop_on_managed_signals = true;
+		bool nested_break_states = false;
 		bool is_xsp = false;
 		Hashtable module_groups;
 		Dictionary<string,string> directory_maps;
@@ -297,6 +304,11 @@ namespace Mono.Debugger
 			set { stop_on_managed_signals = value; }
 		}
 
+		public bool NestedBreakStates {
+			get { return nested_break_states; }
+			set { nested_break_states = value; }
+		}
+
 		public bool Private_Martin_Boston_07102008 {
 			get; set;
 		}
@@ -337,6 +349,8 @@ namespace Mono.Debugger
 						  FollowFork ? "yes" : "no"));
 			sb.Append (String.Format ("  Stop on managed signals (stop-on-managed-signals):  {0}\n",
 						  StopOnManagedSignals ? "yes" : "no"));
+			sb.Append (String.Format ("  Enable nested break states (nested-break-states):   {0}\n",
+						  NestedBreakStates ? "yes" : "no"));
 						  
 			if (expert_mode) {
 				sb.Append ("\nExpert Settings:\n");

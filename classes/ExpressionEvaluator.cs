@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Diagnostics;
 using Mono.Debugger.Languages;
+using EE=Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger
 {
@@ -17,8 +18,31 @@ namespace Mono.Debugger
 			Timeout
 		}
 
+		[Flags]
+		public enum EvaluationFlags
+		{
+			None			= 0,
+			NestedBreakStates	= 1
+		}
+
+		public interface IExpression
+		{
+			string Name {
+				get;
+			}
+		}
+
+		public interface IEvaluator
+		{
+			void EvaluateAsync (Thread thread, StackFrame frame, IExpression expression,
+					    EE.EvaluationFlags flags, EE.EvaluationCallback callback);
+		}
+
+		public delegate void EvaluationCallback (EvaluationResult result, object data);
+
 		public static EvaluationResult MonoObjectToString (Thread thread, TargetStructObject obj,
-								   int timeout, out string result)
+								   EvaluationFlags flags, int timeout,
+								   out string result)
 		{
 			result = null;
 
@@ -47,7 +71,13 @@ namespace Mono.Debugger
 
 				RuntimeInvokeResult rti;
 				try {
-					rti = thread.RuntimeInvoke (ftype, obj, new TargetObject [0], true, false);
+					RuntimeInvokeFlags rti_flags = RuntimeInvokeFlags.VirtualMethod;
+
+					if ((flags & EvaluationFlags.NestedBreakStates) != 0)
+						rti_flags |= RuntimeInvokeFlags.NestedBreakStates;
+
+					rti = thread.RuntimeInvoke (
+						ftype, obj, new TargetObject [0], rti_flags);
 
 					if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 						rti.Abort ();
@@ -86,15 +116,20 @@ namespace Mono.Debugger
 		}
 
 		public static EvaluationResult GetProperty (Thread thread, TargetPropertyInfo property,
-							    TargetStructObject instance, int timeout,
-							    out string error, out TargetObject result)
+							    TargetStructObject instance, EvaluationFlags flags,
+							    int timeout, out string error, out TargetObject result)
 		{
 			error = null;
 
 			RuntimeInvokeResult rti;
 			try {
+				RuntimeInvokeFlags rti_flags = RuntimeInvokeFlags.VirtualMethod;
+
+				if ((flags & EvaluationFlags.NestedBreakStates) != 0)
+					rti_flags |= RuntimeInvokeFlags.NestedBreakStates;
+
 				rti = thread.RuntimeInvoke (
-					property.Getter, instance, new TargetObject [0], true, false);
+					property.Getter, instance, new TargetObject [0], rti_flags);
 
 				if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 					rti.Abort ();

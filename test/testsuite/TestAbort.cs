@@ -44,7 +44,7 @@ namespace Mono.Debugger.Tests
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Hello World");
-			AssertStopped (thread, "X.Main()", line_main);
+			AssertRuntimeInvokeDone (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello()");
 			AssertStopped (thread, "X.Hello()", line_hello);

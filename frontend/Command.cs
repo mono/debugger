@@ -128,11 +128,11 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public abstract object Execute (Engine e);
+		public abstract object Execute (Interpreter interpreter);
 
-		public virtual void Repeat (Engine e)
+		public virtual void Repeat (Interpreter interpreter)
 		{
-			Execute (e);
+			Execute (interpreter);
 		}
 
 		/* override this to provide command specific completion */
@@ -219,11 +219,9 @@ namespace Mono.Debugger.Frontend
 		protected bool Error;
 		private ScriptingContext context;
 
-		public override object Execute (Engine e)
+		public override object Execute (Interpreter interpreter)
 		{
-			DebuggerEngine engine = (DebuggerEngine) e;
-
-			context = new ScriptingContext (engine.Interpreter);
+			context = new ScriptingContext (interpreter);
 
 			if (!Resolve (context)) {
 				Error = true;
@@ -233,10 +231,10 @@ namespace Mono.Debugger.Frontend
 			return Execute (context);
 		}
 
-		public override void Repeat (Engine e)
+		public override void Repeat (Interpreter interpreter)
 		{
 			Repeating = true;
-			Execute (e);
+			Execute (interpreter);
 		}
 
 		protected Expression ParseExpression (ScriptingContext context)
@@ -446,9 +444,17 @@ namespace Mono.Debugger.Frontend
 
 	public class PrintExpressionCommand : PrintCommand, IDocumentableCommand
 	{
+		[Property ("nested-break", "nbs")]
+		public bool NestedBreakStates {
+			get; set;
+		}
+
 		protected override string Execute (ScriptingContext context,
 						   Expression expression, DisplayFormat format)
 		{
+			if (NestedBreakStates)
+				context.ScriptingFlags |= ScriptingFlags.NestedBreakStates;
+
 			if (expression is TypeExpression)
 				throw new ScriptingException (
 					"`{0}' is a type, not a variable.", expression.Name);
@@ -1608,7 +1614,7 @@ namespace Mono.Debugger.Frontend
 
 	public class RunCommand : RunCommandBase
 	{
-		public override void Repeat (Engine e)
+		public override void Repeat (Interpreter interpreter)
 		{
 			// Do not repeat the run command.
 		}
@@ -3229,7 +3235,7 @@ namespace Mono.Debugger.Frontend
 			return handle.Index;
 		}
 
-		public override void Repeat (Engine e)
+		public override void Repeat (Interpreter interpreter)
 		{
 			// Do not repeat the break command.
 		}
@@ -3293,7 +3299,7 @@ namespace Mono.Debugger.Frontend
 			return index;
 		}
 
-		public override void Repeat (Engine e)
+		public override void Repeat (Interpreter interpreter)
 		{
 			// Do not repeat the catch command.
 		}
@@ -3345,7 +3351,7 @@ namespace Mono.Debugger.Frontend
 
 		}
 
-		public override void Repeat (Engine e)
+		public override void Repeat (Interpreter interpreter)
 		{
 			// Do not repeat the watch command.
 		}
@@ -3447,14 +3453,15 @@ namespace Mono.Debugger.Frontend
 
 	public class HelpCommand : Command, IDocumentableCommand
 	{
-		public override object Execute (Engine e)
+		public override object Execute (Interpreter interpreter)
 		{
 			if (Args == null || Args.Count == 0) {
 				Console.WriteLine ("List of families of commands:\n");
 				Console.WriteLine ("aliases -- Aliases of other commands");
 
 				foreach (CommandFamily family in Enum.GetValues(typeof (CommandFamily)))
-					Console.WriteLine ("{0} -- {1}", family.ToString().ToLower(), e.CommandFamilyBlurbs[(int)family]);
+					Console.WriteLine ("{0} -- {1}", family.ToString().ToLower(),
+							   Engine.CommandFamilyBlurbs[(int)family]);
 
 				Console.WriteLine ("\n" + 
 						   "Type \"help\" followed by a class name for a list of commands in that family.\n" +
@@ -3473,7 +3480,7 @@ namespace Mono.Debugger.Frontend
 				}
 
 				if (family_index != -1) {
-					ArrayList cmds = (ArrayList) e.CommandsByFamily [family_index];
+					ArrayList cmds = (ArrayList) Engine.CommandsByFamily [family_index];
 
 					if (cmds == null) {
 						Console.WriteLine ("No commands exist in that family");
@@ -3483,7 +3490,7 @@ namespace Mono.Debugger.Frontend
 					/* we're printing out a command family */
 					Console.WriteLine ("List of commands:\n");
 					foreach (string cmd_name in cmds) {
-						Type cmd_type = (Type) e.Commands[cmd_name];
+						Type cmd_type = (Type) interpreter.DebuggerEngine.Commands[cmd_name];
 						IDocumentableCommand c = (IDocumentableCommand) Activator.CreateInstance (cmd_type);
 						Console.WriteLine ("{0} -- {1}", cmd_name, c.Description);
 					}
@@ -3491,9 +3498,9 @@ namespace Mono.Debugger.Frontend
 					Console.WriteLine ("\n" +
 							   "Type \"help\" followed by a command name for full documentation.\n");
 				}
-				else if (e.Commands[args[0]] != null) {
+				else if (interpreter.DebuggerEngine.Commands[args[0]] != null) {
 					/* we're printing out a command */
-					Type cmd_type = (Type) e.Commands[args[0]];
+					Type cmd_type = (Type) interpreter.DebuggerEngine.Commands[args[0]];
 					if (cmd_type.GetInterface ("IDocumentableCommand") != null) {
 						IDocumentableCommand c = (IDocumentableCommand) Activator.CreateInstance (cmd_type);
 
@@ -3505,8 +3512,8 @@ namespace Mono.Debugger.Frontend
 						Console.WriteLine ("No documentation for command \"{0}\".", args[0]);
 					}
 				} else if (args[0] == "aliases") {
-					foreach (string cmd_name in e.Aliases.Keys) {
-						Type cmd_type = (Type) e.Aliases[cmd_name];
+					foreach (string cmd_name in interpreter.DebuggerEngine.Aliases.Keys) {
+						Type cmd_type = (Type) interpreter.DebuggerEngine.Aliases[cmd_name];
 						if (cmd_type.GetInterface ("IDocumentableCommand") != null) {
 							IDocumentableCommand c = (IDocumentableCommand) Activator.CreateInstance (cmd_type);
 
@@ -3535,7 +3542,7 @@ namespace Mono.Debugger.Frontend
 
 	public class AboutCommand : Command, IDocumentableCommand
 	{
-		public override object Execute (Engine e)
+		public override object Execute (Interpreter interpreter)
 		{
 			Console.WriteLine ("Mono Debugger (C) 2003-2007 Novell, Inc.\n" +
 					   "Written by Martin Baulig (martin@ximian.com)\n" +
@@ -3730,6 +3737,10 @@ namespace Mono.Debugger.Frontend
 
 				case "stop-on-managed-signals":
 					config.StopOnManagedSignals = enable;
+					break;
+
+				case "nested-break-states":
+					config.NestedBreakStates = enable;
 					break;
 
 				case "broken-threading":

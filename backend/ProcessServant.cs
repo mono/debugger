@@ -681,6 +681,16 @@ namespace Mono.Debugger.Backend
 			client.OnTargetEvent (sse, args);
 		}
 
+		internal void OnEnterNestedBreakState (SingleSteppingEngine sse)
+		{
+			client.OnEnterNestedBreakState (sse);
+		}
+
+		internal void OnLeaveNestedBreakState (SingleSteppingEngine sse)
+		{
+			client.OnLeaveNestedBreakState (sse);
+		}
+
 		//
 		// IDisposable
 		//

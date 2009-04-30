@@ -47,7 +47,8 @@ typedef enum {
 	MESSAGE_CHILD_EXECD,
 	MESSAGE_CHILD_CALLED_EXIT,
 	MESSAGE_CHILD_NOTIFICATION,
-	MESSAGE_CHILD_INTERRUPTED
+	MESSAGE_CHILD_INTERRUPTED,
+	MESSAGE_RUNTIME_INVOKE_DONE
 } ServerStatusMessageType;
 
 typedef struct {
@@ -288,7 +289,8 @@ struct InferiorVTable {
 	ServerCommandError    (* mark_rti_frame)      (ServerHandle     *handle);
 
 	ServerCommandError    (* abort_invoke)        (ServerHandle     *handle,
-						       guint64           stack_pointer);
+						       guint64           stack_pointer,
+						       guint64          *aborted_rti);
 
 	/*
 	 * Insert a breakpoint at address `address' in the target's address space.
@@ -550,7 +552,8 @@ mono_debugger_mark_rti_framenvoke        (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_abort_invoke        (ServerHandle        *handle,
-					  guint64              stack_pointer);
+					  guint64              stack_pointer,
+					  guint64             *aborted_rti);
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,

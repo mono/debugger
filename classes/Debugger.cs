@@ -61,6 +61,9 @@ namespace Mono.Debugger
 		public event TargetEventHandler TargetEvent;
 		public event SymbolTableChangedHandler SymbolTableChanged;
 
+		public event ThreadEventHandler EnterNestedBreakStateEvent;
+		public event ThreadEventHandler LeaveNestedBreakStateEvent;
+
 		internal Process CreateProcess (ProcessServant servant)
 		{
 			return new Process (this, servant);
@@ -139,6 +142,18 @@ namespace Mono.Debugger
 		{
 			if (ModuleUnLoadedEvent != null)
 				ModuleUnLoadedEvent (module);
+		}
+
+		internal void OnEnterNestedBreakState (Thread thread)
+		{
+			if (EnterNestedBreakStateEvent != null)
+				EnterNestedBreakStateEvent (this, thread);
+		}
+
+		internal void OnLeaveNestedBreakState (Thread thread)
+		{
+			if (LeaveNestedBreakStateEvent != null)
+				LeaveNestedBreakStateEvent (this, thread);
 		}
 
 		public void Kill ()

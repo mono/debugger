@@ -1,8 +1,60 @@
-2009-04-30  Martin Baulig  <martin@ximian.com>
+2009-03-04  Martin Baulig  <martin@ximian.com>
 
-	Merge status as of April 29th:
+	**** Backport of 128551 ****
 
-	- Everything until 128545 is merged.
+	Implemented nested break states.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ProcessChildEvent): Largely rework this to support nested
+	break states.
+	(SSE.Operation.EventResult): Added `SuspendOperation'.
+	(SSE.Operation.CompletedOperation): New public virtual method.
+	Compute the new stack frame here and also check for method operations.
+	(SSE.InterruptibleOperation): New public abstract base class for
+	operations which may be suspended in a nested break state.
+	(SSE.OperationRuntimeInvoke): Derive from `InterruptibleOperation'.
+	Moved all the low-level callbacks into a new private helper
+	operation `OperationRuntimeInvokeHelper'.
+	(SSE.OperationException): Return `EventResult.SuspendOperation' on
+	completion to allow entering a nested break state; CompletedOperation()
+	will check whether we may actually do that and fall back to a
+	normal completion otherwise.
+
+	* classes/Debugger.cs
+	(Debugger.EnterNestedBreakStateEvent): New public event.
+	(Debugger.LeaveNestedBreakStateEvent): New public event.
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.NestedBreakStates): New configuration option.
+
+	* classes/ExpressionEvaluator.cs
+	(EE.EvaluationFlags): New public enum.
+	(EE.IExpression): New public interface.
+	(EE.IEvaluator): New public interface.
+	(EE.EvaluationCallback): New public delegate.
+	(EE.MonoObjectToString): Add `EvaluationFlags' argument.
+	(EE.GetProperty): Add `EvaluationFlags' argument.
+
+	* classes/TargetEvent.cs
+	(TargetEventType): Added `RuntimeInvokeDone'.  This is only sent
+	if explicitly requested via `RuntimeInvokeFlags.SendEventOnCompletion'.
+
+	* classes/Thread.cs
+	(RuntimeInvokeFlags): New public enum.
+	(Thread.RuntimeInvoke): Replaced `is_virtual' and `debug' by
+	`RuntimeInvokeFlags flags'.
+
+	* frontend/Main.cs: Reworked the main loop to support nested break
+	states.
+
+	* frontend/Command.cs
+	(PrintExpressionCommand): Add `-nested-break' argument.
+
+	* backend/Inferior.cs
+	(Inferior.AbortInvoke): Added `out long aborted_rti' argument.
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_abort_invoke): Added `guint64 *aborted_rti'.
 
 2009-03-02  Martin Baulig  <martin@ximian.com>
 

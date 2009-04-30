@@ -79,7 +79,7 @@ namespace Mono.Debugger.Tests
 					     "X.BreakpointTest()", GetLine ("breakpoint test"));
 
 			AssertExecute ("continue");
-			AssertStopped (thread, "main2", "X.Main()");
+			AssertRuntimeInvokeDone (thread, "X.Main()", GetLine ("main2"));
 			AssertExecute ("continue");
 
 			AssertHitBreakpoint (thread, bpt_breakpoint_test,

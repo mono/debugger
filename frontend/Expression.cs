@@ -4,13 +4,15 @@ using System.IO;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
+using ST=System.Threading;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
+using EE=Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger.Frontend
 {
-	public class ExpressionParser : IExpressionParser
+	public class ExpressionParser : IExpressionParser, EE.IEvaluator
 	{
 		public readonly Interpreter Interpreter;
 
@@ -154,9 +156,50 @@ namespace Mono.Debugger.Frontend
 				throw new ScriptingException ("Cannot evaluate expression `{0}'.", text);
 			}
 		}
+
+		public void EvaluateAsync (Thread thread, StackFrame frame, EE.IExpression expression,
+					   EE.EvaluationFlags flags, EE.EvaluationCallback callback)
+		{
+			ST.ThreadPool.QueueUserWorkItem (delegate {
+				ScriptingContext context = new ScriptingContext (Interpreter);
+				context.CurrentThread = thread;
+				context.CurrentFrame = frame;
+
+				object data;
+				EE.EvaluationResult result = DoEvaluate (context, (Expression) expression, out data);
+
+				callback (result, data);
+			});
+		}
+
+		EE.EvaluationResult DoEvaluate (ScriptingContext context, Expression expression, out object result)
+		{
+			Expression resolved = null;
+
+			try {
+				resolved = expression.Resolve (context);
+			} catch (ScriptingException ex) {
+				result = ex.Message;
+				return EE.EvaluationResult.InvalidExpression;
+			} catch (Exception ex) {
+				result = String.Format ("Cannot resolve expression `{0}': {1}", expression.Name, ex);
+				return EE.EvaluationResult.InvalidExpression;
+			}
+
+			try {
+				result = resolved.Evaluate (context);
+				return EE.EvaluationResult.Ok;
+			} catch (ScriptingException ex) {
+				result = ex.Message;
+				return EE.EvaluationResult.InvalidExpression;
+			} catch (Exception ex) {
+				result = String.Format ("Cannot evaluate expression `{0}': {1}", expression.Name, ex);
+				return EE.EvaluationResult.InvalidExpression;
+			}
+		}
 	}
 
-	public abstract class Expression
+	public abstract class Expression : EE.IExpression
 	{
 		public abstract string Name {
 			get;
@@ -1810,9 +1853,11 @@ namespace Mono.Debugger.Frontend
 		protected TargetObject GetProperty (ScriptingContext context,
 						    TargetPropertyInfo prop)
 		{
+			RuntimeInvokeFlags flags = context.GetRuntimeInvokeFlags ();
+
 			RuntimeInvokeResult result = context.Interpreter.RuntimeInvoke (
 				context.CurrentThread, prop.Getter, InstanceObject,
-				new TargetObject [0], true, false);
+				new TargetObject [0], flags);
 
 			if (result.ExceptionMessage != null)
 				throw new ScriptingException (
@@ -2030,9 +2075,11 @@ namespace Mono.Debugger.Frontend
 			if (prop.Setter == null)
 				throw new ScriptingException ("Property `{0}' has no setter.", Name);
 
+			RuntimeInvokeFlags flags = context.GetRuntimeInvokeFlags ();
+
 			RuntimeInvokeResult result = context.Interpreter.RuntimeInvoke (
 				context.CurrentThread, prop.Setter, InstanceObject,
-				new TargetObject [] { obj }, true, false);
+				new TargetObject [] { obj }, flags);
 
 			if (result.ExceptionMessage != null)
 				throw new ScriptingException (
@@ -3182,8 +3229,11 @@ namespace Mono.Debugger.Frontend
 				Thread thread = context.CurrentThread;
 				RuntimeInvokeResult result;
 
-				result = context.Interpreter.RuntimeInvoke (
-					thread, method, instance, objs, true, debug);
+				RuntimeInvokeFlags flags = context.GetRuntimeInvokeFlags ();
+				if (debug)
+					flags |= RuntimeInvokeFlags.BreakOnEntry | RuntimeInvokeFlags.SendEventOnCompletion;
+
+				result = context.Interpreter.RuntimeInvoke (thread, method, instance, objs, flags);
 
 				if (result == null)
 					throw new ScriptingException (

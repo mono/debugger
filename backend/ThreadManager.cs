@@ -30,6 +30,9 @@ namespace Mono.Debugger.Backend
 			processes = ArrayList.Synchronized (new ArrayList ());
 
 			pending_events = Hashtable.Synchronized (new Hashtable ());
+
+			last_pending_sigstop = DateTime.Now;
+			pending_sigstops = new Dictionary<int,DateTime> ();
 			
 			address_domain = AddressDomain.Global;
 
@@ -69,6 +72,9 @@ namespace Mono.Debugger.Backend
 		ArrayList processes;
 
 		AddressDomain address_domain;
+
+		DateTime last_pending_sigstop;
+		Dictionary<int,DateTime> pending_sigstops;
 
 		DebuggerMutex command_mutex;
 		bool abort_requested;
@@ -165,7 +171,10 @@ namespace Mono.Debugger.Backend
 			inferior.Process.Initialize (engine, inferior, false);
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
-				inferior.Process.ThreadCreated (inferior, (int) cevent.Argument, false);
+				int pid = (int) cevent.Argument;
+				if (pending_sigstops.ContainsKey (pid))
+					pending_sigstops.Remove (pid);
+				inferior.Process.ThreadCreated (inferior, pid, false);
 				resume_target = true;
 				return true;
 			}
@@ -476,6 +485,15 @@ namespace Mono.Debugger.Backend
 				return false;
 			}
 
+			if (DateTime.Now - last_pending_sigstop > new TimeSpan (0, 2, 30)) {
+				foreach (int pending in pending_sigstops.Keys) {
+					Report.Error ("Got SIGSTOP from unknown PID {0}!", pending);
+				}
+
+				pending_sigstops.Clear ();
+				last_pending_sigstop = DateTime.Now;
+			}
+
 			Report.Debug (DebugFlags.Wait, "Wait thread waiting");
 
 			//
@@ -521,6 +539,9 @@ namespace Mono.Debugger.Backend
 					RequestWait ();
 					return true;
 				}
+
+				if (!pending_sigstops.ContainsKey (pid))
+					pending_sigstops.Add (pid, DateTime.Now);
 
 				Report.Debug (DebugFlags.Wait, "Ignoring SIGSTOP from unknown pid {0}.", pid);
 				goto again;

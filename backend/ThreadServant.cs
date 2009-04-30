@@ -233,7 +233,7 @@ namespace Mono.Debugger.Backend
 		public abstract void RuntimeInvoke (TargetFunctionType function,
 						    TargetStructObject object_argument,
 						    TargetObject[] param_objects,
-						    bool is_virtual, bool debug,
+						    RuntimeInvokeFlags flags,
 						    RuntimeInvokeResult result);
 
 		public abstract CommandResult CallMethod (TargetAddress method, long arg1,

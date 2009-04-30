@@ -16,7 +16,8 @@ namespace Mono.Debugger
 		TargetExited,
 		FrameChanged,
 		Exception,
-		UnhandledException
+		UnhandledException,
+		RuntimeInvokeDone
 	}
 
 	[Serializable]
