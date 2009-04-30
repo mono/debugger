@@ -2516,6 +2516,11 @@ namespace Mono.Debugger.Backend
 			public override Method NativeMethod {
 				get {return subprog.Method; }
 			}
+
+			public override string[] GetNamespaces ()
+			{
+				return null;
+			}
 		}
 
 		protected class DwarfTargetMethod : Method

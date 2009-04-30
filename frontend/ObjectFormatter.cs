@@ -51,7 +51,6 @@ namespace Mono.Debugger.Frontend
 
 		public void Format (Thread target, TargetObject obj)
 		{
-			sb.Append (String.Format ("({0}) ", obj.TypeName));
 			FormatObjectRecursed (target, obj, false);
 		}
 
@@ -265,7 +264,7 @@ namespace Mono.Debugger.Frontend
 					continue;
 				if (fields [i].IsCompilerGenerated)
 					continue;
-				if (fields [i].DebuggerBrowsable == DebuggerBrowsableState.Never)
+				if (fields [i].DebuggerBrowsableState == DebuggerBrowsableState.Never)
 					continue;
 
 				if (!first) {

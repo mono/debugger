@@ -123,5 +123,10 @@ namespace Mono.Debugger
 		public AssemblerLine[] Lines {
 			get { return lines; }
 		}
+
+		public override string[] GetNamespaces ()
+		{
+			return null;
+		}
 	}
 }

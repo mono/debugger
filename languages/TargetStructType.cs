@@ -1,3 +1,6 @@
+using System;
+using System.Diagnostics;
+
 namespace Mono.Debugger.Languages
 {
 	public abstract class TargetStructType : TargetType
@@ -16,6 +19,14 @@ namespace Mono.Debugger.Languages
 
 		public abstract bool HasParent {
 			get;
+		}
+
+		public virtual DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return null; }
+		}
+
+		public virtual DebuggerTypeProxyAttribute DebuggerTypeProxyAttribute {
+			get { return null; }
 		}
 
 		internal abstract TargetStructType GetParentType (TargetMemoryAccess target);

@@ -1,12 +1,14 @@
 using System;
 using System.Text;
 using System.IO;
+using System.Diagnostics;
 using System.Reflection;
 using System.Collections;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using EE = Mono.Debugger.ExpressionEvaluator;
 
 using Mono.GetOptions;
 
@@ -31,6 +33,7 @@ namespace Mono.Debugger.Frontend
 	{
 		Thread current_thread;
 		Process current_process;
+		Language current_language;
 		StackFrame current_frame;
 		Interpreter interpreter;
 
@@ -93,8 +96,13 @@ namespace Mono.Debugger.Frontend
 			set {
 				current_frame = value;
 
-				if (value != null)
+				if (value != null) {
 					CurrentThread = value.Thread;
+					CurrentLanguage = value.Language;
+				} else {
+					CurrentThread = null;
+					CurrentLanguage = null;
+				}
 			}
 		}
 
@@ -116,27 +124,47 @@ namespace Mono.Debugger.Frontend
 
 		public Language CurrentLanguage {
 			get {
-				StackFrame frame = CurrentFrame;
-				if (frame.Language == null)
+				if (current_language == null)
 					throw new ScriptingException (
 						"Stack frame has no source language.");
 
-				return frame.Language;
+				return current_language;
 			}
-		}
 
-		public string[] GetNamespaces (StackFrame frame)
-		{
-			Method method = frame.Method;
-			if ((method == null) || !method.HasLineNumbers)
-				return null;
-
-			return method.GetNamespaces ();
+			protected set {
+				current_language = value;
+			}
 		}
 
 		public string[] GetNamespaces ()
 		{
-			return GetNamespaces (CurrentFrame);
+			if (HasFrame) {
+				Method method = CurrentFrame.Method;
+				if ((method == null) || !method.HasLineNumbers)
+					return null;
+
+				return method.GetNamespaces ();
+			}
+
+			if (ImplicitInstance != null) {
+				TargetClass klass = ImplicitInstance.Type.GetClass (CurrentThread);
+				if (klass == null)
+					return null;
+
+				TargetMethodInfo[] methods = klass.GetMethods (CurrentThread);
+				if (methods == null)
+					return null;
+
+				foreach (TargetMethodInfo method in methods) {
+					MethodSource source = method.Type.GetSourceCode ();
+					if (source == null)
+						continue;
+
+					return source.GetNamespaces ();
+				}
+			}
+
+			return null;
 		}
 
 		public SourceLocation CurrentLocation {
@@ -156,6 +184,10 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public TargetStructObject ImplicitInstance {
+			get; private set;
+		}
+
 		public void Print (string message)
 		{
 			interpreter.Print (message);
@@ -171,14 +203,192 @@ namespace Mono.Debugger.Frontend
 			interpreter.Print (obj);
 		}
 
+		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetStructObject instance,
+							   string attr_value, int timeout,
+							   out string result)
+		{
+			result = null;
+
+			StringBuilder sb = new StringBuilder ();
+
+			int pos = 0;
+
+			while (pos < attr_value.Length) {
+				if (attr_value [pos] == '\\') {
+					if (pos == attr_value.Length)
+						break;
+					else {
+						sb.Append (attr_value [++pos]);
+						pos++;
+						continue;
+					}
+				}
+
+				if (attr_value [pos] == '}') {
+					result = null;
+					return EE.EvaluationResult.InvalidExpression;
+				}
+
+				if (attr_value [pos] != '{') {
+					sb.Append (attr_value [pos++]);
+					continue;
+				}
+
+				pos++;
+				StringBuilder expr_text = new StringBuilder ();
+
+				while (pos < attr_value.Length) {
+					if (attr_value [pos] == '\\') {
+						if (pos == attr_value.Length)
+							break;
+						else {
+							expr_text.Append (attr_value [++pos]);
+							pos++;
+							continue;
+						}
+					} else if (attr_value [pos] == '{') {
+						result = null;
+						return EE.EvaluationResult.InvalidExpression;
+					} else if (attr_value [pos] == '}') {
+						pos++;
+						break;
+					}
+
+					expr_text.Append (attr_value [pos++]);
+				}
+
+				Expression expr;
+
+				try {
+					expr = Interpreter.ExpressionParser.Parse (expr_text.ToString ());
+				} catch {
+					return EE.EvaluationResult.InvalidExpression;
+				}
+
+				try {
+					expr = expr.Resolve (this);
+				} catch (ScriptingException ex) {
+					result = ex.Message;
+					return EE.EvaluationResult.InvalidExpression;
+				} catch {
+					return EE.EvaluationResult.InvalidExpression;
+				}
+
+				string text;
+
+				try {
+					object retval = expr.Evaluate (this);
+					if (retval is TargetObject)
+						text = DoFormatObject (
+							(TargetObject) retval, DisplayFormat.Object);
+					else
+						text = interpreter.Style.FormatObject (
+							CurrentThread, retval, DisplayFormat.Object);
+				} catch (ScriptingException ex) {
+					result = ex.Message;
+					return EE.EvaluationResult.InvalidExpression;
+				} catch {
+					return EE.EvaluationResult.InvalidExpression;
+				}
+
+				sb.Append (text);
+			}
+
+			result = sb.ToString ();
+			return EE.EvaluationResult.Ok;
+		}
+
+		public static EE.EvaluationResult HandleDebuggerDisplay (Interpreter interpreter,
+									 Thread thread,
+									 TargetStructObject instance,
+									 DebuggerDisplayAttribute attr,
+									 int timeout, out string name,
+									 out string type)
+		{
+			ScriptingContext expr_context = new ScriptingContext (interpreter);
+			expr_context.CurrentThread = thread;
+			expr_context.CurrentLanguage = instance.Type.Language;
+			expr_context.ImplicitInstance = instance;
+
+			EE.EvaluationResult result = expr_context.HandleDebuggerDisplay (
+				 thread, instance, attr.Value, timeout, out name);
+
+			if (result != EE.EvaluationResult.Ok) {
+				type = null;
+				return result;
+			}
+
+			if (String.IsNullOrEmpty (attr.Type)) {
+				type = null;
+				return EE.EvaluationResult.Ok;
+			}
+
+			return expr_context.HandleDebuggerDisplay (
+				thread, instance, attr.Type, timeout, out type);
+		}
+
 		string MonoObjectToString (TargetStructObject obj)
 		{
-			string text;
+			TargetStructType ctype = obj.Type;
+			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
+				return null;
+
+			string text, dummy;
 			ExpressionEvaluator.EvaluationResult result;
+
+			if (ctype.DebuggerDisplayAttribute != null) {
+				result = HandleDebuggerDisplay (Interpreter, CurrentThread, obj,
+								ctype.DebuggerDisplayAttribute,
+								-1, out text, out dummy);
+				if (result == ExpressionEvaluator.EvaluationResult.Ok)
+					return String.Format ("{{ {0} }}", text);
+				else if (result == ExpressionEvaluator.EvaluationResult.InvalidExpression) {
+					if (text != null)
+						return text;
+				}
+			}
+
 			result = ExpressionEvaluator.MonoObjectToString (CurrentThread, obj, -1, out text);
 			if (result == ExpressionEvaluator.EvaluationResult.Ok)
-				return String.Format ("({0}) {{ \"{1}\" }}", obj.Type.Name, text);
+				return String.Format ("{{ \"{0}\" }}", text);
 			return null;
+		}
+
+		TargetStructObject CheckTypeProxy (TargetStructObject obj)
+		{
+			if (obj.Type.DebuggerTypeProxyAttribute == null)
+				return null;
+
+			string proxy_name = obj.Type.DebuggerTypeProxyAttribute.ProxyTypeName;
+			string original_name = proxy_name;
+			proxy_name = proxy_name.Replace ('+', '/');
+
+			Expression expression;
+			try {
+				expression = new TypeProxyExpression (proxy_name, obj);
+				expression = expression.Resolve (this);
+
+				if (expression == null)
+					return null;
+
+				return (TargetStructObject) expression.EvaluateObject (this);
+			} catch {
+				return null;
+			}
+		}
+
+		public static TargetStructObject CheckTypeProxy (Interpreter interpreter, Thread thread,
+								 TargetStructObject obj)
+		{
+			if (obj.Type.DebuggerTypeProxyAttribute == null)
+				return null;
+
+			ScriptingContext expr_context = new ScriptingContext (interpreter);
+			expr_context.CurrentThread = thread;
+			expr_context.CurrentLanguage = obj.Type.Language;
+			expr_context.ImplicitInstance = obj;
+
+			return expr_context.CheckTypeProxy (obj);
 		}
 
 		string DoFormatObject (TargetObject obj, DisplayFormat format)
@@ -189,6 +399,10 @@ namespace Mono.Debugger.Frontend
 					string formatted = MonoObjectToString (cobj);
 					if (formatted != null)
 						return formatted;
+
+					TargetObject proxy = CheckTypeProxy (cobj);
+					if (proxy != null)
+						obj = proxy;
 				}
 			}
 
@@ -199,9 +413,11 @@ namespace Mono.Debugger.Frontend
 		{
 			string formatted;
 			try {
-				if (obj is TargetObject)
-					formatted = DoFormatObject ((TargetObject) obj, format);
-				else
+				if (obj is TargetObject) {
+					TargetObject tobj = (TargetObject) obj;
+					formatted = String.Format ("({0}) {1}", tobj.TypeName,
+								   DoFormatObject (tobj, format));
+				} else
 					formatted = interpreter.Style.FormatObject (
 						CurrentThread, obj, format);
 			} catch {

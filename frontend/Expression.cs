@@ -483,14 +483,13 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame;
-			if ((frame.Language == null) ||
-			    !frame.Language.CanCreateInstance (val.GetType ()))
+			if ((context.CurrentLanguage == null) ||
+			    !context.CurrentLanguage.CanCreateInstance (val.GetType ()))
 				throw new ScriptingException (
 					"Cannot instantiate value '{0}' in the current frame's " +
 					"language", Name);
 
-			return frame.Language.CreateInstance (frame.Thread, val);
+			return context.CurrentLanguage.CreateInstance (context.CurrentThread, val);
 		}
 
 		public override TargetAddress EvaluateAddress (ScriptingContext context)
@@ -535,12 +534,11 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame;
-			if ((frame.Language == null) ||
-			    !frame.Language.CanCreateInstance (typeof (string)))
+			if ((context.CurrentLanguage == null) ||
+			    (!context.CurrentLanguage.CanCreateInstance (typeof (string))))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
-			return frame.Language.CreateInstance (frame.Thread, val);
+			return context.CurrentLanguage.CreateInstance (context.CurrentThread, val);
 		}
 
 		public override string ToString ()
@@ -575,12 +573,11 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame;
-			if ((frame.Language == null) ||
-			    !frame.Language.CanCreateInstance (typeof (bool)))
+			if ((context.CurrentLanguage == null) ||
+			    !context.CurrentLanguage.CanCreateInstance (typeof (bool)))
 				throw new ScriptingException ("Cannot instantiate value '{0}' in the current frame's language", Name);
 
-			return frame.Language.CreateInstance (frame.Thread, val);
+			return context.CurrentLanguage.CreateInstance (context.CurrentThread, val);
 		}
 
 		public override string ToString ()
@@ -935,7 +932,7 @@ namespace Mono.Debugger.Frontend
 			if (member != null)
 				return member;
 
-			string[] namespaces = context.GetNamespaces (frame);
+			string[] namespaces = context.GetNamespaces ();
 			if (namespaces == null)
 				return null;
 
@@ -966,6 +963,22 @@ namespace Mono.Debugger.Frontend
 				TargetAddress address = context.CurrentProcess.LookupSymbol (name);
 				if (!address.IsNull)
 					return new NumberExpression (address.Address);
+			} else if (context.ImplicitInstance != null) {
+				MemberExpression member = StructAccessExpression.FindMember (
+					context.CurrentThread, context.ImplicitInstance.Type,
+					context.ImplicitInstance, name, true, true);
+				if (member != null)
+					return member;
+
+				string[] namespaces = context.GetNamespaces () ?? new string [0];
+				foreach (string ns in namespaces) {
+					string full_name = MakeFQN (ns, name);
+					member = StructAccessExpression.FindMember (
+						context.CurrentThread, context.ImplicitInstance.Type,
+						context.ImplicitInstance, full_name, true, true);
+					if (member != null)
+						return member;
+				}
 			}
 
 			SourceLocation location = context.FindMethod (name);
@@ -1011,7 +1024,10 @@ namespace Mono.Debugger.Frontend
 			if (type != null)
 				return new TypeExpression (type);
 
-			string[] namespaces = context.GetNamespaces (context.CurrentFrame);
+			if (!context.HasFrame)
+				return null;
+
+			string[] namespaces = context.GetNamespaces ();
 			if (namespaces == null)
 				return null;
 
@@ -1221,16 +1237,14 @@ namespace Mono.Debugger.Frontend
 
 		protected override Expression DoResolveType (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame;
-
 			TargetType the_type;
 
 			Expression ltype = left.TryResolveType (context);
 			if (ltype == null)
-				the_type = frame.Language.LookupType (Name);
+				the_type = context.CurrentLanguage.LookupType (Name);
 			else {
 				string nested = ltype.Name + "+" + name;
-				the_type = frame.Language.LookupType (nested);
+				the_type = context.CurrentLanguage.LookupType (nested);
 			}
 
 			if (the_type == null)
@@ -1931,14 +1945,12 @@ namespace Mono.Debugger.Frontend
 
 		protected override TargetObject DoEvaluateObject (ScriptingContext context)
 		{
-			StackFrame frame = context.CurrentFrame;
-
 			if (!Member.IsStatic && (InstanceObject == null))
 				throw new ScriptingException (
 					"Instance member `{0}' cannot be used in static context.", Name);
 
 			try {
-				return GetMember (context, frame.Thread, Member);
+				return GetMember (context, context.CurrentThread, Member);
 			} catch (TargetException ex) {
 				throw new ScriptingException ("Cannot access struct member `{0}': {1}",
 							      Name, ex.Message);
@@ -3299,7 +3311,7 @@ namespace Mono.Debugger.Frontend
 			if (right is NullExpression) {
 				StackFrame frame = context.CurrentFrame;
 				TargetType ltype = left.EvaluateType (context);
-				obj = frame.Language.CreateNullObject (frame.Thread, ltype);
+				obj = context.CurrentLanguage.CreateNullObject (frame.Thread, ltype);
 			} else
 				obj = right.EvaluateObject (context);
 
@@ -3359,4 +3371,49 @@ namespace Mono.Debugger.Frontend
 			return sobj;
 		}
 	}
+
+	internal class TypeProxyExpression : Expression
+	{
+		string proxy_type;
+		TargetStructObject instance;
+
+		public TypeProxyExpression (string proxy_type, TargetStructObject instance)
+		{
+			this.proxy_type = proxy_type;
+			this.instance = instance;
+		}
+
+		public override string Name {
+			get { return String.Format ("[DebuggerTypeProxy(typeof({0}))]", proxy_type); }
+		}
+
+		TargetType LookupType (ScriptingContext context)
+		{
+			TargetType type = context.CurrentLanguage.LookupType (proxy_type);
+			if (type != null)
+				return type;
+
+			string[] namespaces = context.GetNamespaces () ?? new string [0];
+			foreach (string ns in namespaces) {
+				string full_name = SimpleNameExpression.MakeFQN (ns, proxy_type);
+				type = context.CurrentLanguage.LookupType (full_name);
+				if (type != null)
+					return type;
+			}
+
+			return null;
+		}
+
+		protected override Expression DoResolve (ScriptingContext context)
+		{
+			TargetType type = LookupType (context);
+			if (type == null)
+				return null;
+
+			Expression[] args = { new ArgumentExpression (instance) };
+			NewExpression expr = new NewExpression (new TypeExpression (type), args);
+
+			return expr.Resolve (context);
+		}
+	} 
 }
