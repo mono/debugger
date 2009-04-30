@@ -1,0 +1,14 @@
+/.libs
+/.deps
+/Makefile.in
+/Makefile
+/*.la
+/*.lo
+/*.o
+/*.dll
+/mono-debugger-server
+/Debugger-common.c
+/Debugger-skels.c
+/Debugger-stubs.c
+/Debugger.h
+/remote-server
