@@ -1,5 +1,14 @@
 2009-04-15  Jonathan Chambers  <joncham@gmail.com>
 
+	**** Backport of 131777 ****
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration): Use Environment.SpecialFolder.Personal
+	instead of HOME environment variable.
+	(LoadConfigurationFromStream): Verify file exists before trying to access it.
+
+2009-04-15  Jonathan Chambers  <joncham@gmail.com>
+
 	**** Backport of 131776 ****
 
 	* frontend/Style.cs: Add braces to work around bug 478101.
