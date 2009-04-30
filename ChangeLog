@@ -1,3 +1,9 @@
+2009-04-03  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 130985 ****
+
+	* configure.in: Kill the old pre-historic `server_only'.
+
 2009-04-24  Jonathan Chambers  <joncham@gmail.com>
 
 	**** Backport of 132585 ****
