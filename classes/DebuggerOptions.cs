@@ -386,7 +386,7 @@ namespace Mono.Debugger
 		{
 			file = BuildInfo.xsp;
 			if (start_target == null)
-				start_target = true;
+				start_target = false;
 			if (stop_in_main == null)
 				stop_in_main = false;
 		}
