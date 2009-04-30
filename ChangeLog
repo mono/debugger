@@ -1,5 +1,15 @@
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
+	Merge status as of April 29th:
+
+	- merged until 130096.
+
+	- 128557 has been reverted in 128559
+
+	- 129763 and 129857 have not been merged.
+
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 129875 ****
 
 	* classes/DebuggerOptions.cs
