@@ -114,13 +114,16 @@
 
 	- 128557 has been reverted in 128559.
 
-	- 129763 and 129857 will not be merged (jchambers).
+	- 129763, 129857, 131778 and 131779 will not be merged (jchambers).
 
 	- cosmetic fixes which have not yet been merged:
-	130661 (symreader), 130759 (symreader), 130985 (configure.in).
+	130985.
+
+	- mdb-symbolreader changes which have not yet been merged:
+	130661, 130759, 131797 and 131798.
 
 	- monodis and lesspipe have not yet been merged:
-	130986, 130987, 130988, 130989, 131093
+	130986, 130987, 130988, 130989, 131093.
 
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
