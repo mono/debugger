@@ -1651,8 +1651,11 @@ namespace Mono.Debugger.Backend
 
 					pending.Enqueue (fh);
 				} catch (TargetException ex) {
-					breakpoint.OnBreakpointError (
-						"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);
+					if (ex.Type == TargetError.LocationInvalid)
+						breakpoint.OnResolveFailed ();
+					else
+						breakpoint.OnBreakpointError (
+							"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);
 				} catch (Exception ex) {
 					breakpoint.OnBreakpointError (
 						"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);

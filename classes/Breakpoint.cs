@@ -58,6 +58,9 @@ namespace Mono.Debugger
 		protected internal virtual void OnBreakpointBound ()
 		{ }
 
+		protected internal virtual void OnResolveFailed ()
+		{ }
+
 		protected internal virtual void OnBreakpointError (string message)
 		{ }
 
