@@ -4,6 +4,7 @@
 /Makefile
 /mdb
 /mdb.exe
+/mdb-symbolreader
 /*.dll
 /*.mdb
 /*.exe
