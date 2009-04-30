@@ -1,5 +1,14 @@
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
+	* classes/Breakpoint.cs
+	(Breakpoint.OnResolveFailed): New protected internal method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ActivatePendingBreakpoint): Call Breakpoint.OnResolveFailed(),
+	not OnBreakpointError() if we got a `TargetError.LocationInvalid'.
+
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
 	* languages/mono/MonoLanguageBackend.cs
 	(MonoLanguageBackend.create_appdomain): Make this work on i386.
 
