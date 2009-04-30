@@ -1,3 +1,11 @@
+2009-04-15  Jonathan Chambers  <joncham@gmail.com>
+
+	**** Backport of 131776 ****
+
+	* frontend/Style.cs: Add braces to work around bug 478101.
+
+	* languages/mono/MonoLanguageBackend.cs: Add braces to work around bug 478101.
+
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 131139 ****

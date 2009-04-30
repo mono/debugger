@@ -1393,7 +1393,7 @@ namespace Mono.Debugger.Languages.Mono
 				break;
 			}
 
-			case NotificationType.UnloadModule:
+			case NotificationType.UnloadModule: {
 				Report.Debug (DebugFlags.JitSymtab,
 					      "Module unload: {0} {1}", data, arg);
 
@@ -1404,6 +1404,7 @@ namespace Mono.Debugger.Languages.Mono
 				engine.Process.Debugger.OnModuleUnLoaded (symfile.Module);
 				close_symfile (symfile);
 				break;
+			}
 
 			case NotificationType.JitBreakpoint:
 				JitBreakpoint (inferior, (int) arg, data);
