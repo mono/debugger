@@ -1,3 +1,16 @@
+2009-04-06  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 130760, 130761 and 131140 ****
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ActivatePendingBreakpoint): Don't use Report.Error() to
+	report breakpoint failures; `breakpoint.OnBreakpointError()' is
+	all we need.
+
+	* languages/mono/MonoSymbolFile.cs: Small fix.
+
+	* classes/DebuggerSession.cs: Small fix.
+
 2009-03-31  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 130662 ****

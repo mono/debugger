@@ -1753,10 +1753,10 @@ namespace Mono.Debugger.Languages.Mono
 				int start_row = 0, end_row = 0;
 				if (lines.Count > 0) {
 					start_row = lines [0].Line;
-					end_row = lines [0].Line;
+					end_row = lines [lines.Count - 1].Line;
 
 					foreach (LineEntry line in lines) {
-						if (line.IsHidden || (line.File != 0))
+						if (line.IsHidden)
 							continue;
 
 						if (line.Line < start_row)
