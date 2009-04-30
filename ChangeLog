@@ -1,3 +1,9 @@
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 131812, 131813, 131814 and 131817 ****
+
+	* symbolwriter/: Sync with the upstream version.
+
 2009-04-15  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 131799 ****
