@@ -1640,7 +1640,7 @@ namespace Mono.Debugger.Languages.Mono
 						       (int) (Addresses [0].Address - address));
 			}
 
-			SourceAddress create_address (LineEntry entry, int offset, int range)
+			SourceAddress create_address (LineEntry entry, int line_offset, int line_range)
 			{
 				SourceFile file = null;
 				SourceBuffer buffer = null;
@@ -1654,7 +1654,7 @@ namespace Mono.Debugger.Languages.Mono
 						buffer = Method.MethodSource.SourceBuffer;
 				}
 
-				return new SourceAddress (file, buffer, entry.Line, offset, range);
+				return new SourceAddress (file, buffer, entry.Line, line_offset, line_range, entry.SourceRange);
 			}
 
 			public override void DumpLineNumbers ()
@@ -1728,7 +1728,14 @@ namespace Mono.Debugger.Languages.Mono
 						int file = lne.File != entry.CompileUnit.SourceFile.Index ? lne.File : 0;
 						bool hidden = lne.IsHidden;
 
-						lines.Add (new LineEntry (address, file, lne.Row, hidden));
+						SourceRange? range = null;
+						if (lne.SourceRange != null)
+							range = new SourceRange (lne.SourceRange.StartLine, lne.SourceRange.EndLine,
+										 lne.SourceRange.StartColumn, lne.SourceRange.EndColumn);
+
+						Console.WriteLine ("GENERATE LINE: {0} {1} {2}", lne, lne.Row, lne.SourceRange != null);
+
+						lines.Add (new LineEntry (address, file, lne.Row, hidden, range));
 						last_line = lne.Row;
 					}
 

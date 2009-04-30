@@ -1,3 +1,18 @@
+2009-04-16  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 131838 and 131839 ****
+
+	* MonoSymbolTable.cs
+	(SourceRangeEntry): New public class.
+	(LineNumberEntry.SourceRange): New public field.
+	(LineNumberTable): Add support for source ranges.
+	(LineNumberTable.DW_LNE_MONO_set_source_range): New private
+	extended opcode to encode source ranges.
+
+	* MonoSymbolWriter.cs
+	(MonoSymbolWriter.MarkSequencePoint): Add overloaded version
+	supporting source ranges.
+
 2009-03-31  Martin Baulig  <martin@ximian.com>
 
 	* MdbSymbolReader.cs

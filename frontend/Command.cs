@@ -1021,8 +1021,8 @@ namespace Mono.Debugger.Frontend
 					start = method.StartAddress; end = method.EndAddress;
 				} else {
 					SourceAddress source = CurrentFrame.SourceAddress;
-					start = CurrentFrame.TargetAddress - source.SourceOffset;
-					end = CurrentFrame.TargetAddress + source.SourceRange;
+					start = CurrentFrame.TargetAddress - source.LineOffset;
+					end = CurrentFrame.TargetAddress + source.LineRange;
 				}
 
 				foreach (AssemblerLine insn in asm.Lines) {
@@ -2290,8 +2290,8 @@ namespace Mono.Debugger.Frontend
 					TargetAddress address = CurrentFrame.TargetAddress;
 
 					context.Print ("Source: {0}", source);
-					context.Print ("{0} - {1}", address - source.SourceOffset,
-						       address + source.SourceRange);
+					context.Print ("{0} - {1}", address - source.LineOffset,
+						       address + source.LineRange);
 				}
 				return null;
 			}

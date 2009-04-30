@@ -2629,11 +2629,11 @@ namespace Mono.Debugger.Backend
 				start_row = start.Row;
 				end_row = end.Row;
 
-				debug ("DTM - READ LNT: {0} {1} - {2} {3}", start.SourceOffset,
-				       start.SourceRange, end.SourceOffset, end.SourceRange);
+				debug ("DTM - READ LNT: {0} {1} - {2} {3}", start.LineOffset,
+				       start.LineRange, end.LineOffset, end.LineRange);
 
-				SetMethodBounds (StartAddress + start.SourceRange,
-						 EndAddress - end.SourceOffset);
+				SetMethodBounds (StartAddress + start.LineRange,
+						 EndAddress - end.LineOffset);
 
 				source = subprog.dwarf.GetMethodSource (subprog, start_row, end_row);
 

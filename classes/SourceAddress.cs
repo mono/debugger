@@ -19,18 +19,26 @@ namespace Mono.Debugger
 	{
 		SourceFile file;
 		SourceBuffer buffer;
+		SourceRange? source_range;
 		int row;
-		int source_offset;
-		int source_range;
+		int line_offset;
+		int line_range;
 
 		public SourceAddress (SourceFile file, SourceBuffer buffer, int row,
-				      int offset, int range)
+				      int line_offset, int line_range)
 		{
 			this.file = file;
 			this.buffer = buffer;
 			this.row = row;
-			this.source_offset = offset;
-			this.source_range = range;
+			this.line_offset = line_offset;
+			this.line_range = line_range;
+		}
+
+		public SourceAddress (SourceFile file, SourceBuffer buffer, int row,
+				      int line_offset, int line_range, SourceRange? source_range)
+			: this (file, buffer, row, line_offset, line_range)
+		{
+			this.source_range = source_range;
 		}
 
 		public SourceFile SourceFile {
@@ -56,15 +64,27 @@ namespace Mono.Debugger
 			}
 		}
 
-		public int SourceRange {
+		public bool HasSourceRange {
 			get {
-				return source_range;
+				return source_range != null;
 			}
 		}
 
-		public int SourceOffset {
+		public SourceRange SourceRange {
 			get {
-				return source_offset;
+				return source_range.Value;
+			}
+		}
+
+		public int LineRange {
+			get {
+				return line_range;
+			}
+		}
+
+		public int LineOffset {
+			get {
+				return line_offset;
 			}
 		}
 
@@ -86,20 +106,37 @@ namespace Mono.Debugger
 				builder.Append (" line ");
 				builder.Append (Row);
 			}
-			if (SourceOffset > 0) {
+			if (LineOffset > 0) {
 				builder.Append (" (");
 				builder.Append ("offset ");
-				builder.Append (SourceOffset);
+				builder.Append (LineOffset);
 				builder.Append (")");
 			}
-			if (SourceRange > 0) {
+			if (LineRange > 0) {
 				builder.Append (" (");
 				builder.Append ("range ");
-				builder.Append (SourceRange);
+				builder.Append (LineRange);
 				builder.Append (")");
 			}
 			
 			return builder.ToString ();
+		}
+	}
+
+	[Serializable]
+	public struct SourceRange
+	{
+		public readonly int StartLine;
+		public readonly int EndLine;
+		public readonly int StartColumn;
+		public readonly int EndColumn;
+
+		public SourceRange (int start_line, int end_line, int start_col, int end_col)
+		{
+			this.StartLine = start_line;
+			this.EndLine = end_line;
+			this.StartColumn = start_col;
+			this.EndColumn = end_col;
 		}
 	}
 }

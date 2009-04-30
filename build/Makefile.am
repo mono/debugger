@@ -4,7 +4,7 @@ bin_SCRIPTS = mdb mdb-symbolreader
 
 two_SCRIPTS = mdb.exe mdb-symbolreader.exe
 
-MCS_FLAGS = -debug -define:DEBUG -nowarn:0169,0067
+MCS_FLAGS = -debug -define:DEBUG -define:DEBUGGER_SOURCE -nowarn:0169,0067
 
 if MARTIN_PRIVATE
 # Enable some more stuff for me.
