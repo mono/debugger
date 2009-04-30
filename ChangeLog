@@ -1,3 +1,11 @@
+2009-03-27  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 130420 ****
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_kill): Do a `kill (SIGKILL)' in addition to the
+	`ptrace (PTRACE_KILL)'.
+
 2009-03-30  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 130552 ****
@@ -48,7 +56,7 @@
 
 	Merge status as of April 29th:
 
-	- merged until 130096.
+	- merged until 130552.
 
 	- 128557 has been reverted in 128559
 
