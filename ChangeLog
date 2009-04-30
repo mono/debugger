@@ -1,5 +1,10 @@
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.create_appdomain): Make this work on i386.
+
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
 	Merge status as of April 29th:
 
 	- merged until 133023.

@@ -1306,7 +1306,7 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			int addr_size = memory.TargetMemoryInfo.TargetAddressSize;
 			TargetReader reader = new TargetReader (
-				memory.ReadMemory (address, 4 * addr_size));
+				memory.ReadMemory (address, 8 + 3 * addr_size));
 
 			int id = reader.BinaryReader.ReadInt32 ();
 			int shadow_path_len = reader.BinaryReader.ReadInt32 ();
