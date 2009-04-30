@@ -227,8 +227,15 @@ AC_SUBST(TARGET_MONODIS)
 AC_SUBST(NUNIT_PREFIX)
 
 have_nunit_2_3=false
-if test $NUNIT_VERSION > 2.3 ; then
+if test "x$NUNIT_VERSION" = "x2.3" ; then
    have_nunit_2_3=true
+   echo "setting have_nunit_2_3=true for NUNIT_VERSION $NUNIT_VERSION" 
+elif test "x$NUNIT_VERSION" = "x2.4" ; then
+   have_nunit_2_3=true
+   echo "setting have_nunit_2_3=true for NUNIT_VERSION $NUNIT_VERSION" 
+elif test "x$NUNIT_VERSION" = "x2.5" ; then
+   have_nunit_2_3=true
+   echo "setting have_nunit_2_3=true for NUNIT_VERSION $NUNIT_VERSION" 
 fi
 
 AM_CONDITIONAL(HAVE_NUNIT_2_3, test "x$have_nunit_2_3" = "xtrue")

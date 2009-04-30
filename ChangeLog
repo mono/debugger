@@ -69,11 +69,6 @@
 
 2009-04-24  Jonathan Chambers  <joncham@gmail.com>
 
-	* configure.in: Do simple numeric check for nunit
-	version since buildbot sets version to svn rev.
-
-2009-04-24  Jonathan Chambers  <joncham@gmail.com>
-
 	* configure.in: Add debug output to figure out why nunit
 	fails to run on buildbots.
 
