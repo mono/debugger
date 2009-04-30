@@ -15,6 +15,17 @@ public class X
 		throw new MyException ();			// @MDB LINE: throw my
 	}
 
+	public bool CatchedMy ()
+	{
+		try {
+			ThrowMy ();
+		} catch (MyException) {
+			return true;
+		}
+
+		return false;
+	}
+
 	void TestMy ()
 	{
 		try {
@@ -36,5 +47,10 @@ public class X
 		Console.WriteLine ("Done");			// @MDB BREAKPOINT: main2
 
 		x.TestMy ();
+
+		bool catched = x.CatchedMy ();			// @MDB BREAKPOINT: main3
+		Console.WriteLine (catched);
+
+		x.ThrowMy ();					// @MDB BREAKPOINT: main4
 	}
 }

@@ -3245,10 +3245,16 @@ namespace Mono.Debugger.Frontend
 		string group;
 		ThreadGroup tgroup;
 		TargetClassType type;
+		bool unhandled;
 
 		public string Group {
 			get { return group; }
 			set { group = value; }
+		}
+
+		public bool Unhandled {
+			get { return unhandled; }
+			set { unhandled = value; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -3282,7 +3288,7 @@ namespace Mono.Debugger.Frontend
 		protected override object DoExecute (ScriptingContext context)
 		{
 			int index = context.Interpreter.InsertExceptionCatchPoint (
-				CurrentThread, tgroup, type);
+				CurrentThread, tgroup, type, unhandled);
 			context.Print ("Inserted catch point {0} for {1}", index, type.Name);
 			return index;
 		}
