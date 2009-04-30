@@ -542,6 +542,20 @@ namespace Mono.Debugger
 			return servant.DisassembleMethod (method);
 		}
 
+		[Obsolete]
+		public RuntimeInvokeResult RuntimeInvoke (TargetFunctionType function,
+							  TargetStructObject object_argument,
+							  TargetObject[] param_objects,
+							  bool is_virtual, bool debug)
+		{
+			RuntimeInvokeFlags flags = RuntimeInvokeFlags.None;
+			if (is_virtual)
+				flags |= RuntimeInvokeFlags.VirtualMethod;
+			if (debug)
+				flags |= RuntimeInvokeFlags.BreakOnEntry;
+			return RuntimeInvoke (function, object_argument, param_objects, flags);
+		}
+
 		public RuntimeInvokeResult RuntimeInvoke (TargetFunctionType function,
 							  TargetStructObject object_argument,
 							  TargetObject[] param_objects,

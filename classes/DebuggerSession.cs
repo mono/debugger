@@ -201,6 +201,13 @@ namespace Mono.Debugger
 			return handle;
 		}
 
+		[Obsolete]
+		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
+							TargetType exception)
+		{
+			return InsertExceptionCatchPoint (target, group, exception, false);
+		}
+
 		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
 							TargetType exception, bool unhandled)
 		{

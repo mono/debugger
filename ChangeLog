@@ -1,3 +1,14 @@
+2009-03-09  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 128877 ****
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertExceptionCatchPoint): Add
+	compatibility overload.
+
+	* classes/Thread.cs
+	(Thread.RuntimeInvoke): Add compatibility overload.
+
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 128618 ****
