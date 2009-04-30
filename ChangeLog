@@ -101,13 +101,17 @@
 
 	Merge status as of April 29th:
 
-	- merged until 130552.
+	- merged until 131777.
 
-	- 128557 has been reverted in 128559
+	- 128557 has been reverted in 128559.
 
-	- 129763 and 129857 have not been merged.
+	- 129763 and 129857 will not be merged (jchambers).
 
-	- 131141 has already been merged.
+	- cosmetic fixes which have not yet been merged:
+	130661 (symreader), 130759 (symreader), 130985 (configure.in).
+
+	- monodis and lesspipe have not yet been merged:
+	130986, 130987, 130988, 130989, 131093
 
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
