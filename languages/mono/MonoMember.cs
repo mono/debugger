@@ -1,5 +1,7 @@
 using System;
 using System.Text;
+using System.Diagnostics;
+using System.Collections;
 using Cecil = Mono.Cecil;
 
 namespace Mono.Debugger.Languages.Mono
@@ -9,9 +11,11 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		[NonSerialized]
 		public readonly Cecil.FieldDefinition FieldInfo;
+		DebuggerBrowsableState browsable = DebuggerBrowsableState.Collapsed;
 		bool is_compiler_generated;
 
 		const string cgen_attr = "System.Runtime.CompilerServices.CompilerGeneratedAttribute";
+		const string browsable_attr = "System.Diagnostics.DebuggerBrowsableAttribute";
 
 		public MonoFieldInfo (IMonoStructType type, TargetType field_type, int pos,
 				      Cecil.FieldDefinition finfo)
@@ -24,7 +28,13 @@ namespace Mono.Debugger.Languages.Mono
 				string cname = cattr.Constructor.DeclaringType.FullName;
 				if (cname == cgen_attr)
 					is_compiler_generated = true;
+				else if (cname == browsable_attr)
+					browsable = (DebuggerBrowsableState) cattr.Blob [2];
 			}
+		}
+
+		public override DebuggerBrowsableState DebuggerBrowsable {
+			get { return browsable; }
 		}
 
 		internal static TargetMemberAccessibility GetAccessibility (Cecil.FieldDefinition field)
@@ -177,6 +187,9 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public readonly IMonoStructType Klass;
 		public readonly MonoFunctionType GetterType, SetterType;
+		DebuggerBrowsableState browsable = DebuggerBrowsableState.Collapsed;
+
+		const string browsable_attr = "System.Diagnostics.DebuggerBrowsableAttribute";
 
 		private MonoPropertyInfo (TargetType type, IMonoStructType klass, int index,
 					  bool is_static, Cecil.PropertyDefinition pinfo,
@@ -187,6 +200,16 @@ namespace Mono.Debugger.Languages.Mono
 			this.Klass = klass;
 			this.GetterType = getter;
 			this.SetterType = setter;
+
+			foreach (Cecil.CustomAttribute cattr in pinfo.CustomAttributes) {
+				string cname = cattr.Constructor.DeclaringType.FullName;
+				if (cname == browsable_attr)
+					browsable = (DebuggerBrowsableState) cattr.Blob [2];
+			}
+		}
+
+		public override DebuggerBrowsableState DebuggerBrowsable {
+			get { return browsable; }
 		}
 
 		internal static MonoPropertyInfo Create (IMonoStructType klass, int index,
