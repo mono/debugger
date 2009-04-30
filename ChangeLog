@@ -1,3 +1,9 @@
+2009-04-30  Martin Baulig  <martin@ximian.com>
+
+	Merge status as of April 29th:
+
+	- Everything until 128545 is merged.
+
 2009-03-02  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 128545 ****
