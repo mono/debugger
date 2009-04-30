@@ -1004,6 +1004,17 @@ namespace Mono.Debugger.Backend
 			if (current_operation is OperationRuntimeInvoke)
 				return false;
 
+			TargetObject exc_obj = process.MonoLanguage.CreateObject (inferior, exc);
+			if (exc_obj == null)
+				return false; // OOOPS
+
+			bool stop;
+			if (process.Client.GenericExceptionCatchPoint (exc_obj.Type.Name, out stop)) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} generic exception catchpoint: {1}", this, stop);
+				return stop;
+			}
+
 			foreach (ExceptionCatchPoint handle in exception_handlers.Values) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",
@@ -3767,6 +3778,9 @@ namespace Mono.Debugger.Backend
 				if (Debug)
 					return EventResult.Completed;
 				else {
+					Report.Debug (DebugFlags.SSE,
+						      "{0} resuming target at {1} in runtime-invoke",
+						      sse, inferior.CurrentFrame);
 					sse.do_continue ();
 					return EventResult.Running;
 				}
@@ -4058,6 +4072,7 @@ namespace Mono.Debugger.Backend
 	{
 		TargetAddress ip;
 		TargetAddress exc;
+		TargetObject exc_object;
 		bool unhandled;
 
 		public OperationException (SingleSteppingEngine sse,
@@ -4075,6 +4090,12 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
+			try {
+				exc_object = sse.ProcessServant.MonoLanguage.CreateObject (inferior, exc);
+			} catch {
+				exc_object = null;
+			}
+
 			sse.remove_temporary_breakpoint ();
 			sse.do_continue (ip);
 		}
@@ -4088,17 +4109,17 @@ namespace Mono.Debugger.Backend
 				      
 			if (unhandled) {
 				sse.frame_changed (inferior.CurrentFrame, null);
-				sse.current_frame.SetExceptionObject (exc);
+				sse.current_frame.SetExceptionObject (exc_object);
 				args = new TargetEventArgs (
 					TargetEventType.UnhandledException,
-					exc, sse.current_frame);
+					exc_object, sse.current_frame);
 				return EventResult.Completed;
 			} else {
 				sse.frame_changed (inferior.CurrentFrame, null);
-				sse.current_frame.SetExceptionObject (exc);
+				sse.current_frame.SetExceptionObject (exc_object);
 				args = new TargetEventArgs (
 					TargetEventType.Exception,
-					exc, sse.current_frame);
+					exc_object, sse.current_frame);
 				return EventResult.Completed;
 			}
 		}

@@ -1,3 +1,17 @@
+2009-02-09  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 126375 ****
+
+	* classes/Process.cs
+	(ExceptionCatchPointHandler): New public delegate.
+	(Process.InstallGenericExceptionCatchPoint): New public method.
+	(Process.GenericExceptionCatchPoint): New public method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationException.DoProcessEvent): Create
+	`TargetEventArgs(TargetEventType.Exception)' with the exception
+	object as `TargetClassObject'.
+
 2009-01-28  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 124741 ****
