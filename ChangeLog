@@ -1,3 +1,15 @@
+2009-01-21  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 124037 ****
+
+	Add support for decimal.
+
+	* languages/TargetFundamentalType.cs
+	(FundamentalKind): Added `Decimal'.
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoBuiltinTypeInfo): Added `DecimalType'.
+
 2009-03-02  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of r128465 ****

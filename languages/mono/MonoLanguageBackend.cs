@@ -39,6 +39,7 @@ namespace Mono.Debugger.Languages.Mono
 		public readonly MonoFundamentalType SingleType;
 		public readonly MonoFundamentalType DoubleType;
 		public readonly MonoFundamentalType CharType;
+		public readonly MonoFundamentalType DecimalType;
 		public readonly MonoStringType StringType;
 		public readonly MonoClassType ExceptionType;
 		public readonly MonoClassType DelegateType;
@@ -84,6 +85,11 @@ namespace Mono.Debugger.Languages.Mono
 				corlib, memory, FundamentalKind.IntPtr);
 			UIntType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.UIntPtr);
+
+			DecimalType = MonoFundamentalType.Create (
+				corlib, memory, FundamentalKind.Decimal);
+			Cecil.TypeDefinition decimal_type = corlib.ModuleDefinition.Types ["System.Decimal"];
+			corlib.AddType (decimal_type, DecimalType);
 
 			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetArrayClass (memory);
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
@@ -1101,6 +1107,8 @@ namespace Mono.Debugger.Languages.Mono
 				else if (type == typeof (UIntPtr))
 					return builtin_types.UIntType;
 				return null;
+			case TypeCode.Decimal:
+				return builtin_types.DecimalType;
 
 			default:
 				return null;

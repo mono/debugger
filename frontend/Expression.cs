@@ -2705,6 +2705,11 @@ namespace Mono.Debugger.Frontend
 					return true;
 				break;
 
+			case FundamentalKind.Decimal:
+				if (tkind == FundamentalKind.Decimal)
+					return true;
+				break;
+
 			default:
 				break;
 			}
@@ -2745,6 +2750,8 @@ namespace Mono.Debugger.Frontend
 				return System.Convert.ToSingle (value);
 			case FundamentalKind.Double:
 				return System.Convert.ToDouble (value);
+			case FundamentalKind.Decimal:
+				return System.Convert.ToDecimal (value);
 			default:
 				return null;
 			}

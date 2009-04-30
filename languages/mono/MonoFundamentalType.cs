@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Mono.Debugger.Backend;
 
 namespace Mono.Debugger.Languages.Mono
@@ -123,12 +124,23 @@ namespace Mono.Debugger.Languages.Mono
 					"System.UIntPtr", kind, memory.TargetMemoryInfo.TargetAddressSize);
 				break;
 
+			case FundamentalKind.Decimal:
+				fundamental = new MonoFundamentalType (
+					corlib, corlib.ModuleDefinition.Types ["System.Decimal"],
+					"System.Decimal", kind, Marshal.SizeOf (typeof (Decimal)));
+				return fundamental;
+
 			default:
 				throw new InternalError ();
 			}
 
 			fundamental.create_type (memory, klass);
 			return fundamental;
+		}
+
+		internal void SetClass (MonoClassType info)
+		{
+			this.class_type = info;
 		}
 
 		protected void create_type (TargetMemoryAccess memory, TargetAddress klass)

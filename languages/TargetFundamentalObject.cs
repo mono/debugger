@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 
 using Mono.Debugger.Backend;
 
@@ -86,6 +87,21 @@ namespace Mono.Debugger.Languages
 					return new UIntPtr (BitConverter.ToUInt32 (blob.Contents, 0));
 				else
 					return new UIntPtr (BitConverter.ToUInt64 (blob.Contents, 0));
+
+			case FundamentalKind.Decimal: {
+				IntPtr ptr = IntPtr.Zero;
+
+				try {
+					ptr = Marshal.AllocHGlobal (Marshal.SizeOf (typeof (decimal)));
+					Marshal.Copy (blob.Contents, 0, ptr, type.Size);
+
+					decimal d = (decimal) Marshal.PtrToStructure (ptr, typeof (decimal));
+					return d;
+				} finally {
+					if (ptr != IntPtr.Zero)
+						Marshal.FreeHGlobal (ptr);
+				}
+			}
 
 			default:
 				throw new InvalidOperationException ();

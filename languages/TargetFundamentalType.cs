@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.Languages
 {
@@ -20,7 +21,8 @@ namespace Mono.Debugger.Languages
 		Double,
 		String,
 		IntPtr,
-		UIntPtr
+		UIntPtr,
+		Decimal
 	}
 
 	public abstract class TargetFundamentalType : TargetType
@@ -107,12 +109,31 @@ namespace Mono.Debugger.Languages
 				return BitConverter.GetBytes (Convert.ToDouble (obj));
 
 			case FundamentalKind.IntPtr:
-			case FundamentalKind.UIntPtr:
+			case FundamentalKind.UIntPtr: {
 				IntPtr ptr = (IntPtr) obj;
 				if (IntPtr.Size == 4)
 					return BitConverter.GetBytes (ptr.ToInt32 ());
 				else
 					return BitConverter.GetBytes (ptr.ToInt64 ());
+			}
+
+			case FundamentalKind.Decimal: {
+				IntPtr ptr = IntPtr.Zero;
+				try {
+					int size = Marshal.SizeOf (typeof (decimal));
+
+					byte[] data = new byte [size];
+					ptr = Marshal.AllocHGlobal (size);
+					Marshal.StructureToPtr (obj, ptr, false);
+
+					Marshal.Copy (ptr, data, 0, size);
+					return data;
+				} finally {
+					if (ptr != IntPtr.Zero)
+						Marshal.FreeHGlobal (ptr);
+				}
+			}
+
 			default:
 				throw new InvalidOperationException ();
 			}
