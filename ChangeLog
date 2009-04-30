@@ -1,3 +1,10 @@
+2009-04-24  Jonathan Chambers  <joncham@gmail.com>
+
+	**** Backport of 132585 ****
+
+	* configure.in: Do simple numeric check for nunit
+	version since buildbot sets version to svn rev.
+
 2009-04-17  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 132009, 132025, 133002 and 133023 ****
