@@ -64,7 +64,7 @@ namespace Mono.Debugger
 			get { return start_target ?? false; }
 			set { start_target = value; }
 		}
-	  
+
 		/* the value of the -debug-flags: command line argument */
 		public DebugFlags DebugFlags {
 			get { return debug_flags ?? DebugFlags.None; }
@@ -286,6 +286,16 @@ namespace Mono.Debugger
 				"   -version                  Display version and licensing information (short -V)\n" +
 				"   -working-directory:DIR    Sets the working directory (short -cd)\n"
 				);
+		}
+
+		public static DebuggerOptions CreateXSP (string root)
+		{
+			DebuggerOptions options = new DebuggerOptions ();
+			options.InferiorArgs = new string [0];
+			options.StartXSP = true;
+			options.XSP_Root = root;
+			options.SetupXSP ();
+			return options;
 		}
 
 		public static DebuggerOptions ParseCommandLine (string[] args)

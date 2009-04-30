@@ -415,36 +415,42 @@ child_setup_func (InferiorHandle *inferior)
 	if (ptrace (PT_TRACE_ME, getpid (), NULL, 0))
 		g_error (G_STRLOC ": Can't PT_TRACEME: %s", g_strerror (errno));
 
-	dup2 (inferior->output_fd[1], 1);
-	dup2 (inferior->error_fd[1], 2);
+	if (inferior->redirect_fds) {
+		dup2 (inferior->output_fd[1], 1);
+		dup2 (inferior->error_fd[1], 2);
+	}
 }
 
 static ServerCommandError
 server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
-		     const gchar **argv, const gchar **envp, gint *child_pid,
-		     IOThreadData **io_data, gchar **error)
+		     const gchar **argv, const gchar **envp, gboolean redirect_fds,
+		     gint *child_pid, IOThreadData **io_data, gchar **error)
 {	
 	InferiorHandle *inferior = handle->inferior;
-	int fd[2], open_max, ret, len, i;
+	int fd[2], ret, len, i;
 	ServerCommandError result;
 
 	*error = NULL;
+	inferior->redirect_fds = redirect_fds;
+
+	if (redirect_fds) {
+		pipe (inferior->output_fd);
+		pipe (inferior->error_fd);
+
+		*io_data = g_new0 (IOThreadData, 1);
+		(*io_data)->output_fd = inferior->output_fd[0];
+		(*io_data)->error_fd = inferior->error_fd[0];
+	} else {
+		*io_data = NULL;
+	}
 
 	pipe (fd);
-
-	inferior->redirect_fds = TRUE;
-
-	pipe (inferior->output_fd);
-	pipe (inferior->error_fd);
-
-	*io_data = g_new0 (IOThreadData, 1);
-	(*io_data)->output_fd = inferior->output_fd[0];
-	(*io_data)->error_fd = inferior->error_fd[0];
 
 	*child_pid = fork ();
 	if (*child_pid == 0) {
 		gchar *error_message;
 		struct rlimit core_limit;
+		int open_max;
 
 		open_max = sysconf (_SC_OPEN_MAX);
 		for (i = 3; i < open_max; i++)
@@ -465,10 +471,12 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		write (fd [1], error_message, len);
 		_exit (1);
 	} else if (*child_pid < 0) {
-		close (inferior->output_fd[0]);
-		close (inferior->output_fd[1]);
-		close (inferior->error_fd[0]);
-		close (inferior->error_fd[1]);
+		if (redirect_fds) {
+			close (inferior->output_fd[0]);
+			close (inferior->output_fd[1]);
+			close (inferior->error_fd[0]);
+			close (inferior->error_fd[1]);
+		}
 		close (fd [0]);
 		close (fd [1]);
 
@@ -476,8 +484,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
-	close (inferior->output_fd[1]);
-	close (inferior->error_fd[1]);
+	if (redirect_fds) {
+		close (inferior->output_fd[1]);
+		close (inferior->error_fd[1]);
+	}
 	close (fd [1]);
 
 	ret = read (fd [0], &len, sizeof (len));
@@ -488,8 +498,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		*error = g_malloc0 (len);
 		read (fd [0], *error, len);
 		close (fd [0]);
-		close (inferior->output_fd[0]);
-		close (inferior->error_fd[0]);
+		if (redirect_fds) {
+			close (inferior->output_fd[0]);
+			close (inferior->error_fd[0]);
+		}
 		return COMMAND_ERROR_CANNOT_START_TARGET;
 	}
 
@@ -499,8 +511,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 
 	result = _server_ptrace_setup_inferior (handle);
 	if (result != COMMAND_ERROR_NONE) {
-		close (inferior->output_fd[0]);
-		close (inferior->error_fd[0]);
+		if (redirect_fds) {
+			close (inferior->output_fd[0]);
+			close (inferior->error_fd[0]);
+		}
 		return result;
 	}
 

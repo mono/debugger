@@ -1,3 +1,16 @@
+2009-03-19  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 129751 and 129935 ****
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.RedirectOutput): New configuration option.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.RedirectOutput): New public property.
+
+	* backend/server/x86-ptrace.c
+	(mono_debugger_server_spawn): Added `gboolean redirect_fds'.
+
 2009-03-05  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 128878 ****

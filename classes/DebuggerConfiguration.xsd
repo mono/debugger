@@ -9,6 +9,7 @@
       <xs:element name="OpaqueFileNames" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="StopOnManagedSignals" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="NestedBreakStates" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="RedirectOutput" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="Martin_Boston_07102008" type="xs:boolean" minOccurs="0" maxOccurs="1" />
     </xs:choice>
   </xs:complexType>

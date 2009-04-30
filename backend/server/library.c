@@ -51,13 +51,13 @@ mono_debugger_server_io_thread_main (IOThreadData *io_data, ChildOutputFunc func
 
 ServerCommandError
 mono_debugger_server_spawn (ServerHandle *handle, const gchar *working_directory,
-			    const gchar **argv, const gchar **envp, gint *child_pid,
-			    IOThreadData **io_data, gchar **error)
+			    const gchar **argv, const gchar **envp, gboolean redirect_fds,
+			    gint *child_pid, IOThreadData **io_data, gchar **error)
 {
 	if (!global_vtable->spawn)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->spawn) (handle, working_directory, argv, envp,
+	return (* global_vtable->spawn) (handle, working_directory, argv, envp, redirect_fds,
 					 child_pid, io_data, error);
 }
 
