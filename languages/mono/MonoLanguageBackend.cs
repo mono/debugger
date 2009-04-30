@@ -588,7 +588,7 @@ namespace Mono.Debugger.Languages.Mono
 			}
 
 			case MonoTypeEnum.MONO_TYPE_GENERICINST:
-				return ReadGenericClass (memory, data);
+				return ReadGenericClass (memory, data, true);
 
 			case MonoTypeEnum.MONO_TYPE_VAR:
 			case MonoTypeEnum.MONO_TYPE_MVAR: {
@@ -604,8 +604,8 @@ namespace Mono.Debugger.Languages.Mono
 			}
 		}
 
-		public MonoGenericInstanceType ReadGenericClass (TargetMemoryAccess memory,
-								 TargetAddress address)
+		public TargetType ReadGenericClass (TargetMemoryAccess memory, TargetAddress address,
+						    bool handle_nullable)
 		{
 			MonoRuntime.GenericClassInfo info = MonoRuntime.GetGenericClass (memory, address);
 			if (info == null)
@@ -623,6 +623,9 @@ namespace Mono.Debugger.Languages.Mono
 				as MonoClassType;
 			if (container == null)
 				return null;
+
+			if (handle_nullable && (container.Type.FullName == "System.Nullable`1"))
+				return new MonoNullableType (args [0]);
 
 			return new MonoGenericInstanceType (container, args, info.KlassPtr);
 		}

@@ -239,7 +239,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "h", "(ulong) 8");
 			AssertPrint (thread, "i", "(float) 9.1");
 			AssertPrint (thread, "j", "(double) 2.3");
-			AssertPrint (thread, "k", "(System.Decimal) { \"123456789\" }");
+			AssertPrint (thread, "k", "(decimal) 123456789");
 
 			AssertType (thread, "3", "int");
 			AssertType (thread, "-3", "int");
@@ -291,14 +291,15 @@ namespace Mono.Debugger.Tests
 			AssertPrint (thread, "79228162514264337593543950335m",
 				     "79228162514264337593543950335");
 
-			// AssertType (thread, "-79228162514264337593543950335m", "decimal");
-			// AssertType (thread, "79228162514264337593543950335m", "decimal");
-			// AssertExecute ("set k = -79228162514264337593543950335m");
+			AssertType (thread, "-79228162514264337593543950335m", "decimal");
+			AssertType (thread, "79228162514264337593543950335m", "decimal");
+			AssertExecute ("set k = -79228162514264337593543950335m");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("255 -128 -32768 65535 4294967295 -2147483648 -2147483648 " +
 					    "-9223372036854775808 18446744073709551615 " +
-					    "-3.402823E+38 2.71828182845905 123456789");
+					    "-3.402823E+38 2.71828182845905 " +
+					    "-79228162514264337593543950335");
 
 			AssertTargetExited (thread.Process);
 		}

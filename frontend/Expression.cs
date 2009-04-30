@@ -2034,20 +2034,10 @@ namespace Mono.Debugger.Frontend
 		protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 		{
 			if (Member is TargetFieldInfo) {
-				if (Member.Type != obj.Type)
-					throw new ScriptingException (
-						"Type mismatch: cannot assign expression of type " +
-						"`{0}' to field `{1}', which is of type `{2}'.",
-						obj.TypeName, Name, Member.Type.Name);
-
+				obj = Convert.ImplicitConversionRequired (context, obj, Member.Type);
 				SetField (context.CurrentThread, (TargetFieldInfo) Member, obj);
 			} else if (Member is TargetPropertyInfo) {
-				if (Member.Type != obj.Type)
-					throw new ScriptingException (
-						"Type mismatch: cannot assign expression of type " +
-						"`{0}' to property `{1}', which is of type `{2}'.",
-						obj.TypeName, Name, Member.Type.Name);
-
+				obj = Convert.ImplicitConversionRequired (context, obj, Member.Type);
 				SetProperty (context, (TargetPropertyInfo) Member, obj);
 			} else if (Member is TargetEventInfo)
 				throw new ScriptingException ("Can't set events directly.");
@@ -2859,6 +2849,18 @@ namespace Mono.Debugger.Frontend
 				return ImplicitReferenceConversion (
 					context, (TargetClassObject) obj,
 					(TargetClassType) type);
+
+			TargetNullableType ntype = type as TargetNullableType;
+			if (ntype != null) {
+				if (obj.Kind == TargetObjectKind.Null)
+					return obj;
+				else if (obj.Kind != TargetObjectKind.Nullable)
+					return ImplicitConversion (context, obj, ntype.ElementType);
+
+				TargetNullableType ntype2 = (TargetNullableType) obj.Type;
+				if (ImplicitConversionExists (context, ntype2.ElementType, ntype.ElementType))
+					return obj;
+			}
 
 			return null;
 		}

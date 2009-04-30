@@ -117,6 +117,18 @@ namespace Mono.Debugger.Frontend
 			pos = 0;
 		}
 
+		protected void FormatNullable (Thread target, TargetNullableObject nullable)
+		{
+			bool has_value = nullable.HasValue (target);
+
+			if (has_value) {
+				TargetObject value = nullable.GetValue (target);
+				FormatObjectRecursed (target, value, true);
+			} else {
+				Append ("null");
+			}
+		}
+
 		protected void FormatObjectRecursed (Thread target, TargetObject obj, bool recursed)
 		{
 			try {
@@ -143,6 +155,10 @@ namespace Mono.Debugger.Frontend
 					TargetFundamentalObject fobj = (TargetFundamentalObject) obj;
 					object value = fobj.GetObject (target);
 					Format (target, value);
+					break;
+
+				case TargetObjectKind.Nullable:
+					FormatNullable (target, (TargetNullableObject) obj);
 					break;
 
 				default:
@@ -172,7 +188,7 @@ namespace Mono.Debugger.Frontend
 					TargetObject deref = pobj.GetDereferencedObject (target);
 					Append ("&({0}) ", deref.TypeName);
 					FormatObjectRecursed (target, deref, true);
-				} catch {
+				} catch (Exception ex) {
 					FormatObjectRecursed (target, pobj, true);
 				}
 				break;
@@ -205,6 +221,10 @@ namespace Mono.Debugger.Frontend
 
 			case TargetObjectKind.GenericInstance:
 				FormatStructObject (target, (TargetStructObject) obj);
+				break;
+
+			case TargetObjectKind.Nullable:
+				FormatNullable (target, (TargetNullableObject) obj);
 				break;
 
 			default:

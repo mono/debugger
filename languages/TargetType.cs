@@ -51,8 +51,8 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal void SetObject (TargetMemoryAccess target, TargetLocation location,
-					 TargetObject obj)
+		internal virtual void SetObject (TargetMemoryAccess target, TargetLocation location,
+						 TargetObject obj)
 		{
 			if (obj == null) {
 				if (IsByRef) {

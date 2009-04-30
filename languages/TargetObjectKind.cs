@@ -13,6 +13,7 @@ namespace Mono.Debugger.Languages
 		Object,
 		Function,
 		Alias,
+		Nullable,
 		GenericParameter,
 		GenericInstance
 	}
