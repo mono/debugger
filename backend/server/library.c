@@ -403,6 +403,15 @@ mono_debugger_server_set_signal (ServerHandle *handle, guint32 sig, guint32 send
 }
 
 ServerCommandError
+mono_debugger_server_get_pending_signal  (ServerHandle *handle, guint32 *signal)
+{
+	if (!global_vtable->get_pending_signal)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->get_pending_signal) (handle, signal);
+}
+
+ServerCommandError
 mono_debugger_server_kill (ServerHandle *handle)
 {
 	return (* global_vtable->kill) (handle);

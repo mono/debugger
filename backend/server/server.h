@@ -366,6 +366,9 @@ struct InferiorVTable {
 						       guint32           sig,
 						       guint32           send_it);
 
+	ServerCommandError    (* get_pending_signal)  (ServerHandle     *handle,
+						       guint32          *signal);
+
 	/*
 	 * Kill the target.
 	 */
@@ -600,6 +603,10 @@ ServerCommandError
 mono_debugger_server_set_signal          (ServerHandle        *handle,
 					  guint32              sig,
 					  guint32              send_it);
+
+ServerCommandError
+mono_debugger_server_get_pending_signal  (ServerHandle        *handle,
+					  guint32             *signal);
 
 ServerCommandError
 mono_debugger_server_kill                (ServerHandle        *handle);

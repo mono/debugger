@@ -611,6 +611,13 @@ server_ptrace_set_signal (ServerHandle *handle, guint32 sig, guint32 send_it)
 	return COMMAND_ERROR_NONE;
 }
 
+static ServerCommandError
+server_ptrace_get_pending_signal (ServerHandle *handle, guint32 *signal)
+{
+	*signal = handle->inferior->last_signal;
+	return COMMAND_ERROR_NONE;
+}
+
 static void
 server_ptrace_set_runtime_info (ServerHandle *handle, MonoRuntimeInfo *mono_runtime)
 {
@@ -678,6 +685,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_set_registers,
 	server_ptrace_stop,
 	server_ptrace_set_signal,
+	server_ptrace_get_pending_signal,
 	server_ptrace_kill,
 	server_ptrace_get_signal_info,
 	server_ptrace_get_threads,

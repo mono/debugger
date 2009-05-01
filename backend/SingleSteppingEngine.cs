@@ -1292,7 +1292,7 @@ namespace Mono.Debugger.Backend
 		// <summary>
 		//   Step over the next machine instruction.
 		// </summary>
-		void do_next_native ()
+		void do_next ()
 		{
 			check_inferior ();
 			frames_invalid ();
@@ -1302,16 +1302,16 @@ namespace Mono.Debugger.Backend
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, address);
 			if ((instruction == null) || !instruction.HasInstructionSize) {
-				do_step_native ();
+				do_step ();
 				return;
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} do_next_native: {1} {2}", this,
+			Report.Debug (DebugFlags.SSE, "{0} do_next: {1} {2}", this,
 				      address, instruction.InstructionType);
 
 			// Step one instruction unless this is a call
 			if (!instruction.IsCall) {
-				do_step_native ();
+				do_step ();
 				return;
 			}
 
@@ -1349,6 +1349,22 @@ namespace Mono.Debugger.Backend
 			inferior.Step ();
 		}
 
+		void do_step ()
+		{
+			if (step_over_breakpoint (true, TargetAddress.Null))
+				return;
+
+			/*
+			 * Don't step into any signal handlers.
+			 */
+
+			if (inferior.IsManagedSignal (inferior.GetPendingSignal ())) {
+				do_continue (inferior.CurrentFrame);
+			} else {
+				inferior.Step ();
+			}
+		}
+
 		protected bool CheckTrampoline (Instruction instruction, TrampolineHandler handler)
 		{
 			TargetAddress trampoline;
@@ -1367,7 +1383,7 @@ namespace Mono.Debugger.Backend
 			} else if (type == Instruction.TrampolineType.NativeTrampoline) {
 				Method method = Lookup (trampoline);
 				if (!MethodHasSource (method))
-					do_next_native ();
+					do_next ();
 				else
 					do_continue (trampoline);
 				return true;
@@ -3052,14 +3068,14 @@ namespace Mono.Debugger.Backend
 				break;
 
 			case StepMode.NextInstruction:
-				sse.do_next_native ();
+				sse.do_next ();
 				break;
 
 			case StepMode.SourceLine:
 				if (StepFrame == null)
 					StepFrame = sse.CreateStepFrame ();
 				if (StepFrame == null)
-					sse.do_step_native ();
+					sse.do_step ();
 				else
 					Step (true);
 				break;
@@ -3071,7 +3087,7 @@ namespace Mono.Debugger.Backend
 				// instruction before reaching the next line.
 				StepFrame frame = sse.CreateStepFrame ();
 				if (frame == null)
-					sse.do_next_native ();
+					sse.do_next ();
 				else {
 					StepFrame = new StepFrame (
 						frame.Start, frame.End, frame.StackFrame,
@@ -3194,19 +3210,28 @@ namespace Mono.Debugger.Backend
 			}
 
 			/*
+			 * When StepMode.SingleInstruction was requested, enter the method
+			 * no matter whether it's a system function or not.
+			 */
+			if (StepMode == StepMode.SingleInstruction) {
+				sse.do_step_native ();
+				return false;
+			}
+
+			/*
 			 * If this is not a call instruction, continue stepping until we leave
 			 * the specified step frame.
 			 */
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, current_frame);
 			if ((instruction == null) || !instruction.IsCall) {
-				sse.do_step_native ();
+				sse.do_step ();
 				return false;
 			}
 
 			if (!instruction.HasInstructionSize) {
 				/* Ooops, we don't know anything about this instruction */
-				sse.do_step_native ();
+				sse.do_step ();
 				return false;
 			}
 
@@ -3218,7 +3243,7 @@ namespace Mono.Debugger.Backend
 			    (call_target < sse.current_method.MethodEndAddress)) {
 				/* Intra-method call (we stay outside the prologue/epilogue code,
 				 * so this also can't be a recursive call). */
-				sse.do_step_native ();
+				sse.do_step ();
 				return false;
 			}
 
@@ -3226,21 +3251,12 @@ namespace Mono.Debugger.Backend
 			 * In StepMode.Finish, always step over all methods.
 			 */
 			if ((StepMode == StepMode.Finish) || (StepMode == StepMode.NextLine)) {
-				sse.do_next_native ();
+				sse.do_next ();
 				return false;
 			}
 
 			if (sse.CheckTrampoline (instruction, TrampolineHandler))
 				return false;
-
-			/*
-			 * When StepMode.SingleInstruction was requested, enter the method
-			 * no matter whether it's a system function or not.
-			 */
-			if (StepMode == StepMode.SingleInstruction) {
-				sse.do_step_native ();
-				return false;
-			}
 
 			/*
 			 * Try to find out whether this is a system function by doing a symbol lookup.
@@ -3255,20 +3271,20 @@ namespace Mono.Debugger.Backend
 			 */
 			if ((method != null) && (method.WrapperType != WrapperType.None)) {
 				if (method.IsInvokeWrapper) {
-					sse.do_step_native ();
+					sse.do_step ();
 					return false;
 				}
 			}
 
 			if (!sse.MethodHasSource (method)) {
-				sse.do_next_native ();
+				sse.do_next ();
 				return false;
 			}
 
 			/*
 			 * Finally, step into the method.
 			 */
-			sse.do_step_native ();
+			sse.do_step ();
 			return false;
 		}
 
@@ -3394,7 +3410,7 @@ namespace Mono.Debugger.Backend
 					      sse, until, sse.temp_breakpoint);
 			}
 
-			sse.do_next_native ();
+			sse.do_next ();
 		}
 
 		public override bool ResumeOperation ()
@@ -3420,7 +3436,7 @@ namespace Mono.Debugger.Backend
 				if (!in_frame)
 					return true;
 
-				sse.do_next_native ();
+				sse.do_next ();
 				return false;
 			}
 
@@ -3432,7 +3448,7 @@ namespace Mono.Debugger.Backend
 				      "until = {2}", sse, stack, until);
 
 			if (stack <= until) {
-				sse.do_next_native ();
+				sse.do_next ();
 				return false;
 			}
 
@@ -4309,7 +4325,7 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (frame.StackPointer <= stack_pointer) {
-				sse.do_next_native ();
+				sse.do_next ();
 				return EventResult.Running;
 			}
 
@@ -4405,7 +4421,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			sse.do_step_native ();
+			sse.do_step ();
 		}
 
 		protected override bool DoProcessEvent ()
@@ -4424,14 +4440,14 @@ namespace Mono.Debugger.Backend
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, current_frame);
 			if ((instruction == null) || !instruction.HasInstructionSize) {
-				sse.do_step_native ();
+				sse.do_step ();
 				return false;
 			}
 
 			if (sse.CheckTrampoline (instruction, TrampolineHandler))
 				return false;
 
-			sse.do_step_native ();
+			sse.do_step ();
 			return false;
 		}
 
@@ -4459,7 +4475,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			sse.do_step_native ();
+			sse.do_step ();
 		}
 
 		bool finished;
@@ -4481,7 +4497,7 @@ namespace Mono.Debugger.Backend
 			Instruction instruction = inferior.Architecture.ReadInstruction (
 				inferior, current_frame);
 			if ((instruction == null) || !instruction.HasInstructionSize) {
-				sse.do_step_native ();
+				sse.do_step ();
 				return false;
 			}
 
@@ -4492,7 +4508,7 @@ namespace Mono.Debugger.Backend
 			    (instruction.InstructionType == Instruction.Type.IndirectCall))
 				finished = true;
 
-			sse.do_step_native ();
+			sse.do_step ();
 			return false;
 		}
 
@@ -4519,7 +4535,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			sse.do_next_native ();
+			sse.do_next ();
 		}
 
 		protected override bool DoProcessEvent ()
@@ -4536,7 +4552,7 @@ namespace Mono.Debugger.Backend
 			if ((block != null) && block.IsIteratorBody)
 				return true;
 
-			sse.do_next_native ();
+			sse.do_next ();
 			return false;
 		}
 
@@ -4571,7 +4587,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			sse.do_next_native ();
+			sse.do_next ();
 		}
 
 		protected override bool DoProcessEvent ()
@@ -4584,7 +4600,7 @@ namespace Mono.Debugger.Backend
 			    (current_frame > method.StartAddress + block.EndAddress))
 				return true;
 
-			sse.do_next_native ();
+			sse.do_next ();
 			return false;
 		}
 

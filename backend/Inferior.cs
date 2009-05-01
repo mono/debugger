@@ -155,6 +155,9 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_set_signal (IntPtr handle, int signal, int send_it);
 
 		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_get_pending_signal (IntPtr handle, out int signal);
+
+		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_kill (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
@@ -1194,6 +1197,14 @@ namespace Mono.Debugger.Backend
 			check_disposed ();
 			int do_send = send_it ? 1 : 0;
 			check_error (mono_debugger_server_set_signal (server_handle, signal, do_send));
+		}
+
+		public int GetPendingSignal ()
+		{
+			int signal;
+			check_disposed ();
+			check_error (mono_debugger_server_get_pending_signal (server_handle, out signal));
+			return signal;
 		}
 
 		public void Detach ()
