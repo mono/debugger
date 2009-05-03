@@ -182,7 +182,7 @@ server_win32_spawn (ServerHandle *handle, const gchar *working_directory,
 	wprintf(L"Spawning process with\nCommand line: %s\nWorking Directory: %s\nThread Id: %d\n", 
 		utf16_argv, utf16_working_directory, GetCurrentThreadId());
 
-	ret = CreateProcess(NULL, utf16_argv, NULL, NULL, FALSE, DEBUG_PROCESS, 
+	ret = CreateProcess(NULL, utf16_argv, NULL, NULL, FALSE, DEBUG_PROCESS | CREATE_UNICODE_ENVIRONMENT, 
 		utf16_envp, utf16_working_directory, &si, &pi);
 
 	if (!ret)
@@ -223,6 +223,30 @@ server_win32_global_wait (guint32 *status_ret)
 	return de.dwProcessId;
 }
 
+
+static ServerCommandError
+server_win32_get_frame (ServerHandle *handle, StackFrame *frame)
+{
+	ServerCommandError result;
+
+	CONTEXT context;
+	memset (&context, 0, sizeof (CONTEXT));
+	context.ContextFlags = CONTEXT_CONTROL;
+	if (!GetThreadContext (handle->inferior->thread_handle, &context))
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	frame->address = (guint32) context.Eip;
+	frame->stack_pointer = (guint32) context.Esp;
+	frame->frame_address = (guint32) context.Ebp;
+	return COMMAND_ERROR_NONE;
+}
+
+
+static ServerCommandError
+server_win32_initialize_process (ServerHandle *handle)
+{
+	return COMMAND_ERROR_NONE;
+}
 
 static ServerStatusMessageType
 server_win32_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg,
@@ -330,7 +354,7 @@ InferiorVTable i386_windows_inferior = {
 	server_win32_static_init,			/*static_init, */
 	server_win32_global_init,			/*global_init, */
 	server_win32_create_inferior,		/*create_inferior, */
-	NULL,					 			/*initialize_process, */
+	server_win32_initialize_process,	/*initialize_process, */
 	NULL,					 			/*initialize_thread, */
 	NULL,					 			/*set_runtime_info, */
 	server_win32_io_thread_main,		/*io_thread_main, */
@@ -346,7 +370,7 @@ InferiorVTable i386_windows_inferior = {
 	NULL,					 			/*continue, */
 	NULL,					 			/*step, */
 	NULL,					 			/*resume, */
-	NULL,					 			/*get_frame, */
+	server_win32_get_frame,	 			/*get_frame, */
 	NULL,					 			/*current_insn_is_bpt, */
 	NULL,					 			/*peek_word, */
 	NULL,					 			/*read_memory, */
@@ -369,6 +393,7 @@ InferiorVTable i386_windows_inferior = {
 	NULL,					 			/*set_registers, */
 	NULL,					 			/*stop, */
 	NULL,					 			/*set_signal, */
+	NULL,					 			/*server_ptrace_get_pending_signal, */
 	NULL,					 			/*kill, */
 	server_win32_get_signal_info,					 			/*get_signal_info, */
 	NULL,					 			/*get_threads, */

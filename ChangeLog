@@ -1,5 +1,16 @@
 2009-05-02  Jonathan Chambers  <joncham@gmail.com>
 
+	* backend/server/x86-windows.c
+	(server_win32_spawn): Add CREATE_UNICODE_ENVIRONMENT flag.
+	(server_win32_get_frame): Add.
+	(server_win32_initialize_process): Add.
+
+	* backend/server/monodebuggerserver.def: Export
+	mono_debugger_server_get_frame and 
+	mono_debugger_server_initialize_process.
+
+2009-05-02  Jonathan Chambers  <joncham@gmail.com>
+
 	* backend/Inferior.cs (Run): NULL terminate env
 	and args arrays when P/Invoking.
 
