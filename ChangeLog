@@ -19,6 +19,10 @@
 	except when doing single-instruction stepping, don't step into any
 	signal handlers when doing source-level stepping.
 
+2009-05-03  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Drop support for older nunit's.
+
 2009-04-30  Martin Baulig  <martin@ximian.com>
 
 	* classes/Breakpoint.cs
