@@ -18,14 +18,16 @@ Build Solution. Set PATH environment variable in debugger options
 to include bin dir under mono install. This allows monodebuggerserver.dll
 to reference mono and glib libraries.
 
+Run mdb.exe project with -mono command line option to specific mono location.
+This is probably the one in MONO_PREFIX.
+
 TODO
 ------------
 
-- Support building on 64-bit Windows. Right now we produce Any CPU target
-  that runs as 64-bit process on 64-bit Windows. However, we are producing
-  a 32-bit monodebuggerserver.dll at this point. Should we try always build
-  32-bit for now, or support both targets? This would require 64-bit mono
-  and it's dependencies (glib). Those are not easy to produce at this point.
+- Right now the Any CPU target always produce a 32-bit executable since we 
+  are producing a 32-bit monodebuggerserver.dll at this point. For 64-bit
+  support we would require 64-bit mono and it's dependencies (glib). 
+  Those are not easy to produce at this point.
 
 - Rework uncommitted changes that actual allow debugger to launch target
   process. Some of these changes are located in the uncommitted parts of:

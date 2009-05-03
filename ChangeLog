@@ -1,5 +1,9 @@
 2009-05-02  Jonathan Chambers  <joncham@gmail.com>
 
+	* README.win32: Update.
+
+2009-05-02  Jonathan Chambers  <joncham@gmail.com>
+
 	* backend/server/x86-windows.c
 	(server_win32_spawn): Add CREATE_UNICODE_ENVIRONMENT flag.
 	(server_win32_get_frame): Add.
