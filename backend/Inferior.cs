@@ -616,9 +616,13 @@ namespace Mono.Debugger.Backend
 
 			IntPtr error;
 
+			string[] args = new string[start.CommandLineArguments.Length + 1];
+			Array.Copy(start.CommandLineArguments, args, start.CommandLineArguments.Length);
+			string[] env = new string[start.Environment.Length + 1];
+			Array.Copy(start.Environment, env, start.Environment.Length);
 			TargetError result = mono_debugger_server_spawn (
-				server_handle, start.WorkingDirectory, start.CommandLineArguments,
-				start.Environment, start.RedirectOutput, out child_pid, out io_data, out error);
+				server_handle, start.WorkingDirectory, args,
+				env, start.RedirectOutput, out child_pid, out io_data, out error);
 			if (result != TargetError.None) {
 				string message = Marshal.PtrToStringAuto (error);
 				g_free (error);

@@ -1,5 +1,10 @@
 2009-05-02  Jonathan Chambers  <joncham@gmail.com>
 
+	* backend/Inferior.cs (Run): NULL terminate env
+	and args arrays when P/Invoking.
+
+2009-05-02  Jonathan Chambers  <joncham@gmail.com>
+
 	* backend/EventQueue.cs (DebuggerEventQueue): Add timed Wait.
 
 2009-05-02  Martin Baulig  <martin@ximian.com>
