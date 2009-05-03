@@ -1,3 +1,9 @@
+2009-05-03  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(LineNumberTable.GetMethodBounds): Ignore hidden lines when
+	computing the method bounds.
+
 2009-04-16  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 131838 and 131839 ****
