@@ -1102,15 +1102,29 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public bool GetMethodBounds (out LineNumberEntry start, out LineNumberEntry end)
 		{
-			if (_line_numbers.Length > 1) {
-				start = _line_numbers [0];
-				end = _line_numbers [_line_numbers.Length - 1];
-				return true;
+			start = end = LineNumberEntry.Null;
+
+			bool have_start = false;
+			LineNumberEntry current = LineNumberEntry.Null;
+
+			foreach (LineNumberEntry entry in _line_numbers) {
+				if (entry.IsHidden)
+					continue;
+
+				if (!have_start) {
+					start = entry;
+					have_start = true;
+				}
+
+				current = entry;
 			}
 
-			start = LineNumberEntry.Null;
-			end = LineNumberEntry.Null;
-			return false;
+			end = current;
+
+			if (!have_start || (start.File != end.File))
+				return false;
+
+			return true;
 		}
 	}
 
