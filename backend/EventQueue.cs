@@ -143,6 +143,9 @@ namespace Mono.Debugger.Backend
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_cond_wait (IntPtr mutex, IntPtr cond);
 
+		[DllImport ("monodebuggerserver")]
+		static extern bool mono_debugger_cond_timed_wait (IntPtr mutex, IntPtr cond, int milliseconds);
+
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_cond_broadcast (IntPtr cond);
 
@@ -157,6 +160,13 @@ namespace Mono.Debugger.Backend
 			Debug ("{0} waiting {1}", CurrentThread, Name);
 			mono_debugger_cond_wait (handle, cond);
 			Debug ("{0} done waiting {1}", CurrentThread, Name);
+		}
+
+		public bool Wait (int milliseconds) {
+			Debug ("{0} waiting {1}", CurrentThread, Name);
+			bool ret = mono_debugger_cond_timed_wait (handle, cond, milliseconds);
+			Debug ("{0} done waiting {1}", CurrentThread, Name);
+			return ret;
 		}
 
 		public void Signal ()
