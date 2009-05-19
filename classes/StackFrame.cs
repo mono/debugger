@@ -225,6 +225,15 @@ namespace Mono.Debugger
 		}
 	}
 
+	public enum FrameType
+	{
+		Normal,
+		Signal,
+		LMF,
+		Callback,
+		RuntimeInvoke
+	}
+
 	[Serializable]
 	public sealed class StackFrame : DebuggerMarshalByRefObject
 	{
@@ -234,6 +243,7 @@ namespace Mono.Debugger
 		readonly Registers registers;
 
 		int level;
+		FrameType type;
 		Method method;
 		Thread thread;
 		SourceAddress source;
@@ -245,29 +255,31 @@ namespace Mono.Debugger
 		bool has_source;
 		Symbol name;
 
-		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
-				     TargetAddress frame_address, Registers registers)
+		internal StackFrame (Thread thread, FrameType type, TargetAddress address,
+				     TargetAddress stack_ptr, TargetAddress frame_address,
+				     Registers registers)
 		{
 			this.thread = thread;
+			this.type = type;
 			this.address = address;
 			this.stack_pointer = stack_ptr;
 			this.frame_address = frame_address;
 			this.registers = registers;
 		}
 
-		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
-				     TargetAddress frame_address, Registers registers,
-				     Language language, Symbol name)
-			: this (thread, address, stack_ptr, frame_address, registers)
+		internal StackFrame (Thread thread, FrameType type, TargetAddress address,
+				     TargetAddress stack_ptr, TargetAddress frame_address,
+				     Registers registers, Language language, Symbol name)
+			: this (thread, type, address, stack_ptr, frame_address, registers)
 		{
 			this.language = language;
 			this.name = name;
 		}
 
-		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
-				     TargetAddress frame_address, Registers registers,
-				     Method method)
-			: this (thread, address, stack_ptr, frame_address, registers)
+		internal StackFrame (Thread thread, FrameType type, TargetAddress address,
+				     TargetAddress stack_ptr, TargetAddress frame_address,
+				     Registers registers, Method method)
+			: this (thread, type, address, stack_ptr, frame_address, registers)
 		{
 			this.method = method;
 			this.language = method.Module.Language;
@@ -277,10 +289,11 @@ namespace Mono.Debugger
 				this.name = new Symbol (method.Name, address, 0);
 		}
 
-		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
-				     TargetAddress frame_address, Registers registers,
-				     TargetFunctionType function, SourceLocation location)
-			: this (thread, address, stack_ptr, frame_address, registers)
+		internal StackFrame (Thread thread, FrameType type, TargetAddress address,
+				     TargetAddress stack_ptr, TargetAddress frame_address,
+				     Registers registers, TargetFunctionType function,
+				     SourceLocation location)
+			: this (thread, type, address, stack_ptr, frame_address, registers)
 		{
 			this.function = function;
 			this.language = function.DeclaringType.Language;
@@ -288,10 +301,10 @@ namespace Mono.Debugger
 			this.location = location;
 		}
 
-		internal StackFrame (Thread thread, TargetAddress address, TargetAddress stack_ptr,
-				     TargetAddress frame_address, Registers registers,
-				     Method method, SourceAddress source)
-			: this (thread, address, stack_ptr, frame_address, registers, method)
+		internal StackFrame (Thread thread, FrameType type, TargetAddress address,
+				     TargetAddress stack_ptr, TargetAddress frame_address,
+				     Registers registers, Method method, SourceAddress source)
+			: this (thread, type, address, stack_ptr, frame_address, registers, method)
 		{
 			this.source = source;
 			if (method.HasSource && !method.MethodSource.IsDynamic)

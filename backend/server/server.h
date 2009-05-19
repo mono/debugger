@@ -7,6 +7,12 @@
 
 G_BEGIN_DECLS
 
+#ifdef __GNUC__
+#define MONO_ZERO_LEN_ARRAY 0
+#else
+#define MONO_ZERO_LEN_ARRAY 1
+#endif
+
 #define MONO_DEBUGGER_REMOTE_VERSION		1
 #define MONO_DEBUGGER_REMOTE_MAGIC		0x36885fe4
 
@@ -61,6 +67,15 @@ typedef struct {
 	guint64 stack_pointer;
 	guint64 frame_address;
 } StackFrame;
+
+typedef struct {
+	guint64 callback_argument;
+	guint64 call_address;
+	guint64 stack_pointer;
+	guint64 is_rti_frame   : 1;
+	guint64 is_exact_match : 1;
+	guint64 saved_registers [MONO_ZERO_LEN_ARRAY];
+} CallbackInfo;
 
 #define EXECUTABLE_CODE_CHUNK_SIZE		16
 
@@ -400,7 +415,7 @@ struct InferiorVTable {
 	ServerCommandError    (* get_callback_frame)  (ServerHandle      *handle,
 						       guint64            stack_pointer,
 						       gboolean           exact_match,
-						       guint64           *registers);
+						       CallbackInfo      *info);
 
 	void         (* get_registers_from_core_file) (guint64           *values,
 						       const guint8      *buffer);
@@ -662,7 +677,7 @@ ServerCommandError
 mono_debugger_server_get_callback_frame  (ServerHandle        *handle,
 					  guint64              stack_pointer,
 					  gboolean             exact_match,
-					  guint64             *registers);
+					  CallbackInfo        *info);
 
 MonoRuntimeInfo *
 mono_debugger_server_initialize_mono_runtime (guint32 address_size,
