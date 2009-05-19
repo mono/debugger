@@ -606,7 +606,7 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			public override CommandResult Return (bool run_finally)
+			public override CommandResult Return (ReturnMode mode)
 			{
 				throw new InvalidOperationException ();
 			}

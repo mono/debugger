@@ -111,11 +111,11 @@ namespace Mono.Debugger
 				StackFrame frame = thread.Architecture.CreateFrame (
 					thread.Client, FrameType.Normal, memory, callback.Registers);
 
-				FrameType callback_type = callback.IsRuntimeInvokeFrame ? FrameType.Callback : FrameType.RuntimeInvoke;
+				FrameType callback_type = callback.IsRuntimeInvokeFrame ? FrameType.RuntimeInvoke : FrameType.Callback;
 				AddFrame (new StackFrame (
-					thread.Client, callback_type, frame.TargetAddress, frame.StackPointer,
-					frame.FrameAddress, frame.Registers, thread.NativeLanguage,
-					new Symbol ("<method called from mdb>", frame.TargetAddress, 0)));
+					thread.Client, callback_type, callback.CallAddress, callback.StackPointer,
+					TargetAddress.Null, callback.Registers, thread.NativeLanguage,
+					new Symbol ("<method called from mdb>", callback.CallAddress, 0)));
 				AddFrame (frame);
 				return true;
 			} catch (TargetException) {

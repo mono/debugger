@@ -1,3 +1,20 @@
+2009-05-18  Martin Baulig  <martin@ximian.com>
+
+	* classes/Thread.cs
+	(ReturnMode): New public enum.
+	(Thread.Return): Replace the `bool run_finally' with a
+	`ReturnMode' argument.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.Return): Start fixing the return mess.
+
+	* classes/TargetException.cs
+	(TargetError): Added `InvalidReturn'.
+
+	* frontend/Command.cs
+	(ReturnCommand): Add `-native' argument to allow returning from
+	native frames while running managed code.
+
 2009-05-14  Martin Baulig  <martin@ximian.com>
 
 	* classes/StackFrame.cs

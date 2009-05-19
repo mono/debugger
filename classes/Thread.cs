@@ -644,13 +644,13 @@ namespace Mono.Debugger
 			return (TargetAddress) result.Result;
 		}
 
-		public void Return (bool run_finally)
+		public void Return (ReturnMode mode)
 		{
 			CommandResult result;
 
 			lock (this) {
 				check_alive ();
-				result = servant.Return (run_finally);
+				result = servant.Return (mode);
 				if (result == null)
 					return;
 			}
@@ -942,5 +942,12 @@ namespace Mono.Debugger
 		BreakOnEntry		= 4,
 		VirtualMethod		= 8,
 		SendEventOnCompletion	= 16
+	}
+
+	public enum ReturnMode
+	{
+		Managed,
+		Native,
+		Invocation
 	}
 }
