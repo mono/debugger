@@ -484,13 +484,13 @@ mono_debugger_server_pop_registers (ServerHandle *handle)
 
 ServerCommandError
 mono_debugger_server_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
-					 gboolean exact_match, guint64 *registers)
+					 gboolean exact_match, CallbackInfo *info)
 {
 	if (!global_vtable->get_callback_frame)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
 	return (* global_vtable->get_callback_frame) (
-		handle, stack_pointer, exact_match, registers);
+		handle, stack_pointer, exact_match, info);
 }
 
 void

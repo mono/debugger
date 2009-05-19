@@ -102,28 +102,25 @@ namespace Mono.Debugger
 		private bool TryCallback (ThreadServant thread, TargetMemoryAccess memory,
 					  StackFrame last_frame, bool exact_match)
 		{
-			StackFrame new_frame = null;
 			try {
-				Registers callback = thread.GetCallbackFrame (
+				Inferior.CallbackFrame callback = thread.GetCallbackFrame (
 					last_frame.StackPointer, exact_match);
 				if (callback == null)
 					return false;
 
-				new_frame = thread.Architecture.CreateFrame (
-					thread.Client, memory, callback);
+				StackFrame frame = thread.Architecture.CreateFrame (
+					thread.Client, FrameType.Normal, memory, callback.Registers);
+
+				FrameType callback_type = callback.IsRuntimeInvokeFrame ? FrameType.Callback : FrameType.RuntimeInvoke;
+				AddFrame (new StackFrame (
+					thread.Client, callback_type, frame.TargetAddress, frame.StackPointer,
+					frame.FrameAddress, frame.Registers, thread.NativeLanguage,
+					new Symbol ("<method called from mdb>", frame.TargetAddress, 0)));
+				AddFrame (frame);
+				return true;
 			} catch (TargetException) {
 				return false;
 			}
-
-			if (new_frame == null)
-				return false;
-
-			AddFrame (new StackFrame (
-				thread.Client, new_frame.TargetAddress, new_frame.StackPointer,
-				new_frame.FrameAddress, new_frame.Registers, thread.NativeLanguage,
-				new Symbol ("<method called from mdb>", new_frame.TargetAddress, 0)));
-			AddFrame (new_frame);
-			return true;
 		}
 
 		private bool IsFrameOkForMode (StackFrame frame, Mode mode)

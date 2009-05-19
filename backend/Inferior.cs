@@ -185,7 +185,7 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_pop_registers (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr registers);
+		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr info);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_set_runtime_info (IntPtr handle, IntPtr mono_runtime_info);
@@ -1364,25 +1364,50 @@ namespace Mono.Debugger.Backend
 			check_error (mono_debugger_server_pop_registers (server_handle));
 		}
 
-		internal Registers GetCallbackFrame (TargetAddress stack_pointer, bool exact_match)
+		internal CallbackFrame GetCallbackFrame (TargetAddress stack_pointer, bool exact_match)
 		{
 			IntPtr buffer = IntPtr.Zero;
 			try {
 				int count = arch.CountRegisters;
-				int buffer_size = count * 8;
+				int buffer_size = 32 + count * 8;
 				buffer = Marshal.AllocHGlobal (buffer_size);
 				TargetError result = mono_debugger_server_get_callback_frame (
 					server_handle, stack_pointer.Address, exact_match, buffer);
 				if (result == TargetError.NoCallbackFrame)
 					return null;
 				check_error (result);
-				long[] retval = new long [count];
-				Marshal.Copy (buffer, retval, 0, count);
 
-				return new Registers (arch, retval);
+				return new CallbackFrame (this, buffer);
 			} finally {
 				if (buffer != IntPtr.Zero)
 					Marshal.FreeHGlobal (buffer);
+			}
+		}
+
+		internal class CallbackFrame
+		{
+			public readonly long ID;
+			public readonly TargetAddress CallAddress;
+			public readonly TargetAddress StackPointer;
+			public readonly bool IsRuntimeInvokeFrame;
+			public readonly bool IsExactMatch;
+			public readonly Registers Registers;
+
+			public CallbackFrame (Inferior inferior, IntPtr data)
+			{
+				ID = Marshal.ReadInt64 (data);
+				CallAddress = new TargetAddress (inferior.AddressDomain, Marshal.ReadInt64 (data, 8));
+				StackPointer = new TargetAddress (inferior.AddressDomain, Marshal.ReadInt64 (data, 16));
+
+				int flags = Marshal.ReadInt32 (data, 24);
+				IsRuntimeInvokeFrame = (flags & 1) == 1;
+				IsExactMatch = (flags & 2) == 2;
+
+				long[] regs = new long [inferior.arch.CountRegisters];
+				for (int i = 0; i < regs.Length; i++)
+					regs [i] = Marshal.ReadInt64 (data, 32 + 8 * i);
+
+				Registers = new Registers (inferior.arch, regs);
 			}
 		}
 

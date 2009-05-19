@@ -227,8 +227,8 @@ namespace Mono.Debugger.Backend
 
 		public abstract string PrintType (Style style, TargetType type);
 
-		internal abstract Registers GetCallbackFrame (TargetAddress stack_pointer,
-							      bool exact_match);
+		internal abstract Inferior.CallbackFrame GetCallbackFrame (TargetAddress stack_pointer,
+									   bool exact_match);
 
 		public abstract void RuntimeInvoke (TargetFunctionType function,
 						    TargetStructObject object_argument,
