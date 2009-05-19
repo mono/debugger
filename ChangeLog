@@ -1,5 +1,16 @@
 2009-05-19  Martin Baulig  <martin@ximian.com>
 
+	* classes/Thread.cs
+	(Thread.AbortInvocation): Added `long rti_id' argument.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.AbortInvocation): Implemented this using `OperationReturn'.
+
+	* classes/TargetException.cs
+	(TargetError): Added `NoInvocation'.
+
+2009-05-19  Martin Baulig  <martin@ximian.com>
+
 	* backend/Inferior.cs
 	(Inferior.AbortInvoke): Only take `long rti_id' argument; we now
 	abort one specific invocation and don't search on the stack.
@@ -28,12 +39,6 @@
 	before adding it.
 	(Backtrace.TryUnwind): Improve handling of callback frames; also
 	check `until'.
-
-	* backend/ThreadServant.cs
-	(ThreadServant.AbortInvocation): Removed.
-
-	* classes/Thread.cs
-	(Thread.AbortInvocation): Removed.
 
 2009-05-18  Martin Baulig  <martin@ximian.com>
 

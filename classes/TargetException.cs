@@ -33,7 +33,8 @@ namespace Mono.Debugger
 		InvocationException,
 		LocationInvalid,
 		CannotDetach,
-		InvalidReturn
+		InvalidReturn,
+		NoInvocation
 	}
 	#endregion
 
@@ -109,6 +110,8 @@ namespace Mono.Debugger
 					"attach to it.";
 			case TargetError.InvalidReturn:
 				return "Cannot return from this kind of stack frame.";
+			case TargetError.NoInvocation:
+				return "No invocation found.";
 			default:
 				return "Unknown error";
 			}
