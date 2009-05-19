@@ -224,8 +224,13 @@ namespace Mono.Debugger.Backend
 		{
 			sse.Inferior.SetRuntimeInfo (mono_runtime_info);
 
-			if (++index < 3)
-				sse.SetDaemon ();
+			if ((MonoDebuggerInfo.MajorVersion == 81) && (MonoDebuggerInfo.MinorVersion == 2)) {
+				if (++index < 4)
+					sse.SetDaemon ();
+			} else {
+				if (++index < 3)
+					sse.SetDaemon ();
+			}
 		}
 
 		internal bool HandleChildEvent (SingleSteppingEngine engine, Inferior inferior,
