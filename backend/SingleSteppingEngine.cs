@@ -1761,7 +1761,7 @@ namespace Mono.Debugger.Backend
 			return StartOperation (new OperationCallMethod (this, method, method_arg, object_arg));
 		}
 
-		public override CommandResult Return (bool run_finally)
+		public override CommandResult Return (ReturnMode mode)
 		{
 			return (CommandResult) SendCommand (delegate {
 				if (!engine_stopped) {
@@ -1775,6 +1775,9 @@ namespace Mono.Debugger.Backend
 
 				process.UpdateSymbolTable (inferior);
 
+				if (!process.IsManagedApplication && (mode == ReturnMode.Managed))
+					mode = ReturnMode.Native;
+
 				Backtrace bt = new Backtrace (current_frame);
 				bt.GetBacktrace (this, inferior, Backtrace.Mode.Native,
 						 TargetAddress.Null, 2);
@@ -1786,7 +1789,38 @@ namespace Mono.Debugger.Backend
 				if (parent_frame == null)
 					return null;
 
-				if (!process.IsManagedApplication || !run_finally) {
+				Report.Debug (DebugFlags.SSE, "{0} return: {1} {2} {3}", this, mode, current_frame.Type,
+					      parent_frame.Type);
+
+				if (mode == ReturnMode.Native) {
+					if ((current_frame.Type == FrameType.Signal) || (parent_frame.Type == FrameType.Signal) ||
+					    (current_frame.Type == FrameType.Callback) || (parent_frame.Type == FrameType.Callback))
+						throw new TargetException (TargetError.InvalidReturn, "Cannot return from a signal handler or mdb-internal callback.");
+					if ((current_frame.Type != FrameType.Normal) || (parent_frame.Type != FrameType.Normal))
+						throw new TargetException (TargetError.InvalidReturn);
+				} else if (mode == ReturnMode.Managed) {
+					bool ok = true;
+					if (((current_frame.Type == FrameType.Normal) && ((current_frame.Language == null) || !current_frame.Language.IsManaged)) ||
+					    ((current_frame.Type != FrameType.RuntimeInvoke) && (current_frame.Type != FrameType.Normal)))
+						ok = false;
+					if (((parent_frame.Type == FrameType.Normal) && ((parent_frame.Language == null) || !parent_frame.Language.IsManaged)) ||
+					    ((parent_frame.Type != FrameType.RuntimeInvoke) && (parent_frame.Type != FrameType.Normal)))
+						ok = false;
+					if (!ok)
+						throw new TargetException (TargetError.InvalidReturn, "Cannot return from a non-managed frame.");
+				}
+
+				if (mode == ReturnMode.Native) {
+					inferior.SetRegisters (parent_frame.Registers);
+					frame_changed (inferior.CurrentFrame, null);
+					TargetEventArgs args = new TargetEventArgs (
+						TargetEventType.TargetStopped, 0, current_frame);
+					process.OnTargetEvent (this, args);
+					return null;
+				}
+
+#if FIXME
+				if (!process.IsManagedApplication || (mode == ReturnMode.Native) || (mode == ReturnMode.ForceNative)) {
 					long aborted_rti;
 					inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti);
 					if (aborted_rti != 0)
@@ -1798,9 +1832,9 @@ namespace Mono.Debugger.Backend
 					process.OnTargetEvent (this, args);
 					return null;
 				}
+#endif
 
-				MonoLanguageBackend language = process.MonoLanguage;
-				return StartOperation (new OperationReturn (this, language, parent_frame));
+				return StartOperation (new OperationReturn (this, bt, mode));
 			});
 		}
 
@@ -4618,30 +4652,39 @@ namespace Mono.Debugger.Backend
 
 	protected class OperationReturn : OperationCallback
 	{
-		public readonly MonoLanguageBackend Language;
-		public readonly StackFrame ParentFrame;
+		public readonly Backtrace Backtrace;
+		public readonly ReturnMode Mode;
 
-		public OperationReturn (SingleSteppingEngine sse,
-					MonoLanguageBackend language, StackFrame parent_frame)
+		public OperationReturn (SingleSteppingEngine sse, Backtrace bt, ReturnMode mode)
 			: base (sse)
 		{
-			this.Language = language;
-			this.ParentFrame = parent_frame;
+			this.Backtrace = bt;
+			this.Mode = mode;
 		}
 
 		protected override void DoExecute ()
 		{
+			Report.Debug (DebugFlags.SSE, "{0} executing return: {1}\n{2}", sse, Mode, Backtrace.Print ());
 			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
 		{
-			Report.Debug (DebugFlags.SSE, "{0} completed return", sse);
 			DiscardStack ();
+
+			StackFrame parent_frame = Backtrace.Frames [1];
+
+			Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (parent_frame.StackPointer, true);
+			if (cframe == null) {
+				Report.Debug (DebugFlags.SSE, "{0} completed return", sse);
+				inferior.SetRegisters (parent_frame.Registers);
+				return EventResult.Completed;
+			}
+
 			long aborted_rti;
-			bool aborted = inferior.AbortInvoke (ParentFrame.StackPointer, out aborted_rti);
-			Report.Debug (DebugFlags.SSE, "{0} completed return: {1} {2}", sse, aborted, aborted_rti);
-			inferior.SetRegisters (ParentFrame.Registers);
+			bool aborted = inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti);
+			Report.Debug (DebugFlags.SSE, "{0} completed return: {1} {2} {3}", sse, cframe, aborted, aborted_rti != null);
+			inferior.SetRegisters (parent_frame.Registers);
 
 			if (aborted_rti != 0)
 				sse.AbortRuntimeInvoke (aborted_rti);

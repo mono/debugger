@@ -1331,6 +1331,7 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 			}
 			info->is_rti_frame = 1;
 			info->is_exact_match = cdata->rti_frame == stack_pointer;
+			info->stack_pointer = cdata->rti_frame;
 		} else {
 			if (exact_match) {
 				if (cdata->stack_pointer != stack_pointer)
@@ -1341,11 +1342,11 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 			}
 			info->is_rti_frame = 0;
 			info->is_exact_match = cdata->stack_pointer == stack_pointer;
+			info->stack_pointer = cdata->stack_pointer;
 		}
 
 		info->callback_argument = cdata->callback_argument;
 		info->call_address = cdata->call_address;
-		info->stack_pointer = cdata->stack_pointer;
 
 		info->saved_registers [DEBUGGER_REG_R15] = (guint64) INFERIOR_REG_R15 (cdata->saved_regs);
 		info->saved_registers [DEBUGGER_REG_R14] = (guint64) INFERIOR_REG_R14 (cdata->saved_regs);

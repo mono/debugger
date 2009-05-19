@@ -32,7 +32,8 @@ namespace Mono.Debugger
 		SymbolTable,
 		InvocationException,
 		LocationInvalid,
-		CannotDetach
+		CannotDetach,
+		InvalidReturn
 	}
 	#endregion
 
@@ -106,6 +107,8 @@ namespace Mono.Debugger
 			case TargetError.CannotDetach:
 				return "Cannot detach from this target because we did not " +
 					"attach to it.";
+			case TargetError.InvalidReturn:
+				return "Cannot return from this kind of stack frame.";
 			default:
 				return "Unknown error";
 			}
