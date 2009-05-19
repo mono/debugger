@@ -1277,24 +1277,12 @@ server_ptrace_mark_rti_frame (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_abort_invoke (ServerHandle *handle, guint64 stack_pointer, guint64 *aborted_rti)
+server_ptrace_abort_invoke (ServerHandle *handle, guint64 rti_id)
 {
 	CallbackData *cdata;
 
 	cdata = get_callback_data (handle->arch);
-	if (!cdata) {
-		*aborted_rti = 0;
-		return COMMAND_ERROR_NO_CALLBACK_FRAME;
-	}
-
-	if (cdata->is_rti)
-		*aborted_rti = cdata->callback_argument;
-	else
-		*aborted_rti = 0;
-
-	if (cdata->rti_frame && (stack_pointer < cdata->rti_frame))
-		return COMMAND_ERROR_NO_CALLBACK_FRAME;
-	if (stack_pointer < cdata->stack_pointer)
+	if (!cdata || !cdata->is_rti || (cdata->callback_argument != rti_id))
 		return COMMAND_ERROR_NO_CALLBACK_FRAME;
 
 	if (_server_ptrace_set_registers (handle->inferior, &cdata->saved_regs) != COMMAND_ERROR_NONE)

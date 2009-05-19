@@ -100,15 +100,18 @@ namespace Mono.Debugger
 		}
 
 		private bool TryCallback (ThreadServant thread, TargetMemoryAccess memory,
-					  StackFrame last_frame, bool exact_match)
+					  ref StackFrame frame, bool exact_match)
 		{
 			try {
+				if (frame == null)
+					return false;
+
 				Inferior.CallbackFrame callback = thread.GetCallbackFrame (
-					last_frame.StackPointer, exact_match);
+					frame.StackPointer, exact_match);
 				if (callback == null)
 					return false;
 
-				StackFrame frame = thread.Architecture.CreateFrame (
+				frame = thread.Architecture.CreateFrame (
 					thread.Client, FrameType.Normal, memory, callback.Registers);
 
 				FrameType callback_type = callback.IsRuntimeInvokeFrame ? FrameType.RuntimeInvoke : FrameType.Callback;
@@ -116,7 +119,6 @@ namespace Mono.Debugger
 					thread.Client, callback_type, callback.CallAddress, callback.StackPointer,
 					TargetAddress.Null, callback.Registers, thread.NativeLanguage,
 					new Symbol ("<method called from mdb>", callback.CallAddress, 0)));
-				AddFrame (frame);
 				return true;
 			} catch (TargetException) {
 				return false;
@@ -145,23 +147,21 @@ namespace Mono.Debugger
 			} catch (TargetException) {
 			}
 
-			if ((new_frame == null) || !IsFrameOkForMode (new_frame, mode)) {
-				if (TryCallback (thread, memory, last_frame, false))
-					return true;
+			if (!TryCallback (thread, memory, ref new_frame, true)) {
+				if ((new_frame == null) || !IsFrameOkForMode (new_frame, mode)) {
+					if (!tried_lmf) {
+						tried_lmf = true;
+						if (thread.LMFAddress.IsNull)
+							return false;
+						lmf_address = memory.ReadAddress (thread.LMFAddress);
+					}
 
-				if (!tried_lmf) {
-					tried_lmf = true;
-					if (thread.LMFAddress.IsNull)
+					if (!lmf_address.IsNull)
+						new_frame = TryLMF (thread, memory);
+					else
 						return false;
-					lmf_address = memory.ReadAddress (thread.LMFAddress);
 				}
-
-				if (!lmf_address.IsNull)
-					new_frame = TryLMF (thread, memory);
-				else
-					return false;
-			} else if (TryCallback (thread, memory, new_frame, true))
-				return true;
+			}
 
 			if (new_frame == null)
 				return false;
