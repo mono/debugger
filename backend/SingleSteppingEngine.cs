@@ -516,6 +516,8 @@ namespace Mono.Debugger.Backend
 			if (rti.ID != rti_id)
 				throw new InternalError ("{0} aborting rti failed: {1} {2}", this, rti.ID, rti_id);
 
+			inferior.AbortInvoke (rti_id);
+
 			if (rti.IsSuspended) {
 				InterruptibleOperation io = nested_break_stack.Pop ();
 				if (io != rti)
@@ -1759,12 +1761,31 @@ namespace Mono.Debugger.Backend
 
 				process.UpdateSymbolTable (inferior);
 
-				if (!process.IsManagedApplication && (mode == ReturnMode.Managed))
-					mode = ReturnMode.Native;
+				if (!process.IsManagedApplication) {
+					if (mode == ReturnMode.Managed)
+						mode = ReturnMode.Native;
+					else if (mode == ReturnMode.Invocation)
+						throw new TargetException (TargetError.InvalidReturn, "Not a managed application.");
+				}
 
 				Backtrace bt = new Backtrace (current_frame);
-				bt.GetBacktrace (this, inferior, Backtrace.Mode.Native,
-						 TargetAddress.Null, 2);
+
+				if (mode == ReturnMode.Invocation) {
+					Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
+					if (cframe == null)
+						throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
+					bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
+					for (int i = 0; i < bt.Count; i++) {
+						if (bt.Frames [i].Type == FrameType.Normal)
+							continue;
+						else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
+							break;
+						throw new TargetException (TargetError.InvalidReturn, "Cannot abort an invocation which contains non-managed frames.");
+					}
+				} else {
+					bt.GetBacktrace (this, inferior, Backtrace.Mode.Native,
+							 TargetAddress.Null, 2);
+				}
 
 				if (bt.Count < 2)
 					throw new TargetException (TargetError.NoStack);
@@ -1803,37 +1824,7 @@ namespace Mono.Debugger.Backend
 					return null;
 				}
 
-#if FIXME
-				if (!process.IsManagedApplication || (mode == ReturnMode.Native) || (mode == ReturnMode.ForceNative)) {
-					long aborted_rti;
-					inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti);
-					if (aborted_rti != 0)
-						AbortRuntimeInvoke (aborted_rti);
-					inferior.SetRegisters (parent_frame.Registers);
-					frame_changed (inferior.CurrentFrame, null);
-					TargetEventArgs args = new TargetEventArgs (
-						TargetEventType.TargetStopped, 0, current_frame);
-					process.OnTargetEvent (this, args);
-					return null;
-				}
-#endif
-
 				return StartOperation (new OperationReturn (this, bt, mode));
-			});
-		}
-
-		public override CommandResult AbortInvocation ()
-		{
-			return (CommandResult) SendCommand (delegate {
-				GetBacktrace (Backtrace.Mode.Native, -1);
-				if (current_backtrace == null)
-					throw new TargetException (TargetError.NoStack);
-
-				if (!process.IsManagedApplication)
-					throw new InvalidOperationException ();
-
-				return StartOperation (new OperationAbortInvocation (
-					this, current_backtrace));
 			});
 		}
 
@@ -4638,6 +4629,7 @@ namespace Mono.Debugger.Backend
 	{
 		public readonly Backtrace Backtrace;
 		public readonly ReturnMode Mode;
+		int level = 0;
 
 		public OperationReturn (SingleSteppingEngine sse, Backtrace bt, ReturnMode mode)
 			: base (sse)
@@ -4648,7 +4640,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			Report.Debug (DebugFlags.SSE, "{0} executing return: {1}\n{2}", sse, Mode, Backtrace.Print ());
+			Report.Debug (DebugFlags.SSE, "{0} executing return: {1} {2}\n{2}", sse, Mode, level, Backtrace.Print ());
 			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
 		}
 
@@ -4656,59 +4648,23 @@ namespace Mono.Debugger.Backend
 		{
 			DiscardStack ();
 
-			StackFrame parent_frame = Backtrace.Frames [1];
+			StackFrame parent_frame = Backtrace.Frames [++level];
+			inferior.SetRegisters (parent_frame.Registers);
 
 			Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (parent_frame.StackPointer, true);
-			if (cframe == null) {
+			Report.Debug (DebugFlags.SSE, "{0} return: {1} {2}\n{3}", sse, level, cframe, parent_frame);
+			if (cframe != null) {
+				Report.Debug (DebugFlags.SSE, "{0} return aborting rti: {1}", sse, cframe);
+				sse.AbortRuntimeInvoke (cframe.ID);
+				return EventResult.Completed;
+			}
+
+			if (level == Backtrace.Count) {
 				Report.Debug (DebugFlags.SSE, "{0} completed return", sse);
-				inferior.SetRegisters (parent_frame.Registers);
 				return EventResult.Completed;
 			}
 
-			long aborted_rti;
-			bool aborted = inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti);
-			Report.Debug (DebugFlags.SSE, "{0} completed return: {1} {2} {3}", sse, cframe, aborted, aborted_rti != null);
-			inferior.SetRegisters (parent_frame.Registers);
-
-			if (aborted_rti != 0)
-				sse.AbortRuntimeInvoke (aborted_rti);
-
-			return EventResult.Completed;
-		}
-	}
-
-	protected class OperationAbortInvocation : OperationCallback
-	{
-		public readonly Backtrace Backtrace;
-		int level = 0;
-
-		public OperationAbortInvocation (SingleSteppingEngine sse, Backtrace backtrace)
-			: base (sse)
-		{
-			this.Backtrace = backtrace;
-		}
-
-		protected override void DoExecute ()
-		{
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
-		}
-
-		protected override EventResult CallbackCompleted (long data1, long data2)
-		{
-			Report.Debug (DebugFlags.SSE, "{0} callback completed", this);
-
-			StackFrame parent_frame = Backtrace.Frames [++level];
-
-			long aborted_rti;
-			if (inferior.AbortInvoke (parent_frame.StackPointer, out aborted_rti)) {
-				DiscardStack ();
-				if (aborted_rti != 0)
-					sse.AbortRuntimeInvoke (aborted_rti);
-				return EventResult.Completed;
-			}
-
-			inferior.SetRegisters (parent_frame.Registers);
-			inferior.CallMethod (sse.MonoDebuggerInfo.RunFinally, null, ID);
+			DoExecute ();
 			return EventResult.Running;
 		}
 	}

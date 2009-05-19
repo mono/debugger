@@ -611,11 +611,6 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			public override CommandResult AbortInvocation ()
-			{
-				throw new InvalidOperationException ();
-			}
-
 			protected class CoreFileTargetAccess : TargetMemoryAccess
 			{
 				public readonly CoreFileThread Thread;
