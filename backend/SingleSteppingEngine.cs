@@ -1789,7 +1789,7 @@ namespace Mono.Debugger.Backend
 				if (mode == ReturnMode.Invocation) {
 					Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
 					if (cframe == null)
-						throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
+						throw new TargetException (TargetError.NoInvocation);
 					bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
 					for (int i = 0; i < bt.Count; i++) {
 						if (bt.Frames [i].Type == FrameType.Normal)
@@ -1841,6 +1841,63 @@ namespace Mono.Debugger.Backend
 				}
 
 				return StartOperation (new OperationReturn (this, bt, mode));
+			});
+		}
+
+		public override CommandResult AbortInvocation (long rti_id)
+		{
+			return (CommandResult) SendCommand (delegate {
+				if (!engine_stopped) {
+					Report.Debug (DebugFlags.Wait,
+						      "{0} not stopped", this);
+					throw new TargetException (TargetError.NotStopped);
+				}
+
+				if (current_frame == null)
+					throw new TargetException (TargetError.NoStack);
+
+				process.UpdateSymbolTable (inferior);
+
+				if (process.IsManagedApplication)
+					throw new TargetException (TargetError.InvalidReturn, "Not a managed application.");
+
+				Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
+
+				bool found = false;
+				foreach (OperationRuntimeInvoke rti in rti_stack) {
+					if (rti.ID == rti_id) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					if ((cframe == null) || (cframe.ID != rti_id))
+						throw new TargetException (TargetError.NoInvocation);
+				} else {
+					if (cframe == null)
+						throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
+					else if (cframe.ID != rti_id)
+						throw new TargetException (TargetError.InvalidReturn,
+									   "Requested to abort invocation {0}, but current invocation has id {1}.",
+									   rti_id, cframe.ID);
+				}
+
+				Backtrace bt = new Backtrace (current_frame);
+
+				bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
+				for (int i = 0; i < bt.Count; i++) {
+					if (bt.Frames [i].Type == FrameType.Normal)
+						continue;
+					else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
+						break;
+					throw new TargetException (TargetError.InvalidReturn, "Cannot abort an invocation which contains non-managed frames.");
+				}
+
+				if (bt.Count < 2)
+					throw new TargetException (TargetError.NoStack);
+
+				return StartOperation (new OperationReturn (this, bt, ReturnMode.Invocation));
 			});
 		}
 
@@ -3731,6 +3788,7 @@ namespace Mono.Debugger.Backend
 			if (helper != null)
 				throw new InternalError ("{0} rti already has a helper operation", sse);
 			helper = new OperationRuntimeInvokeHelper (sse, this);
+			Result.ID = helper.ID;
 			sse.PushOperation (helper);
 		}
 
