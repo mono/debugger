@@ -82,7 +82,7 @@ namespace Mono.Debugger
 					if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 						rti.Abort ();
 						rti.CompletedEvent.WaitOne ();
-						thread.AbortInvocation ();
+						thread.AbortInvocation (rti.ID);
 						return EvaluationResult.Timeout;
 					}
 
@@ -95,7 +95,7 @@ namespace Mono.Debugger
 						result = rti.ExceptionMessage;
 						return EvaluationResult.Exception;
 					} else if (rti.ReturnObject == null) {
-						thread.AbortInvocation ();
+						thread.AbortInvocation (rti.ID);
 						return EvaluationResult.UnknownError;
 					}
 				} catch (TargetException ex) {
@@ -134,7 +134,7 @@ namespace Mono.Debugger
 				if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 					rti.Abort ();
 					rti.CompletedEvent.WaitOne ();
-					thread.AbortInvocation ();
+					thread.AbortInvocation (rti.ID);
 					result = null;
 					return EvaluationResult.Timeout;
 				}
@@ -151,7 +151,7 @@ namespace Mono.Debugger
 					error = rti.ExceptionMessage;
 					return EvaluationResult.Exception;
 				} else if (rti.ReturnObject == null) {
-					thread.AbortInvocation ();
+					thread.AbortInvocation (rti.ID);
 					return EvaluationResult.UnknownError;
 				}
 

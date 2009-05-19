@@ -658,10 +658,25 @@ namespace Mono.Debugger
 			result.Wait ();
 		}
 
-		[Obsolete("FUCK")]
-		public void AbortInvocation ()
+		public bool AbortInvocation (long rti_id)
 		{
-			throw new InternalError ();
+			CommandResult result;
+
+			lock (this) {
+				check_alive ();
+				try {
+					result = servant.AbortInvocation (rti_id);
+				} catch (TargetException ex) {
+					if (ex.Type == TargetError.NoInvocation)
+						return false;
+					throw;
+				}
+				if (result == null)
+					return false;
+			}
+
+			result.Wait ();
+			return true;
 		}
 
 		public string PrintRegisters (StackFrame frame)
@@ -922,6 +937,7 @@ namespace Mono.Debugger
 			thread.Stop ();
 		}
 
+		public long ID;
 		public bool InvocationCompleted;
 		public TargetObject ReturnObject;
 		public string ExceptionMessage;
