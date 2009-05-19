@@ -1398,6 +1398,12 @@ namespace Mono.Debugger.Backend
 
 				Registers = new Registers (inferior.arch, regs);
 			}
+
+			public override string ToString ()
+			{
+				return String.Format ("Inferior.CallbackFrame ({0}:{1:x}:{2:x}:{3})", ID,
+						      CallAddress, StackPointer, IsRuntimeInvokeFrame);
+			}
 		}
 
 		internal void SetRuntimeInfo (IntPtr mono_runtime_info)

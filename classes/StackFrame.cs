@@ -313,6 +313,10 @@ namespace Mono.Debugger
 			has_source = true;
 		}
 
+		public FrameType Type {
+			get { return type; }
+		}
+
 		public int Level {
 			get { return level; }
 		}

@@ -3603,6 +3603,9 @@ namespace Mono.Debugger.Frontend
 	{
 		bool unconfirmed;
 		bool invocation;
+		bool native;
+
+		ReturnMode mode;
 
 		public bool Yes {
 			get { return unconfirmed; }
@@ -3612,6 +3615,11 @@ namespace Mono.Debugger.Frontend
 		public bool Invocation {
 			get { return invocation; }
 			set { invocation = value; }
+		}
+
+		public bool Native {
+			get { return native; }
+			set { native = value; }
 		}
 
 		protected override bool DoResolve (ScriptingContext context)
@@ -3625,16 +3633,23 @@ namespace Mono.Debugger.Frontend
 				}
 			}
 
+			if (Native && Invocation)
+				throw new ScriptingException ("Cannot use both -native and -invocation");
+
+			if (Native)
+				mode = ReturnMode.Native;
+			else if (Invocation)
+				mode = ReturnMode.Invocation;
+			else
+				mode = ReturnMode.Managed;
+
 			return true;
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
 			Thread thread = CurrentThread;
-			if (Invocation)
-				thread.AbortInvocation ();
-			else
-				thread.Return (true);
+			thread.Return (mode);
 
 			TargetEventArgs args = thread.GetLastTargetEvent ();
 			if (args != null)
