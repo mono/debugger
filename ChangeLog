@@ -1,5 +1,11 @@
 2009-05-19  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(InvocationExpression.DoInvoke): Add
+	`RuntimeInvokeFlags.NestedBreakStates'.	
+
+2009-05-19  Martin Baulig  <martin@ximian.com>
+
 	* classes/Thread.cs
 	(Thread.AbortInvocation): Added `long rti_id' argument.
 

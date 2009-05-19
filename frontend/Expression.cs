@@ -3231,7 +3231,8 @@ namespace Mono.Debugger.Frontend
 
 				RuntimeInvokeFlags flags = context.GetRuntimeInvokeFlags ();
 				if (debug)
-					flags |= RuntimeInvokeFlags.BreakOnEntry | RuntimeInvokeFlags.SendEventOnCompletion;
+					flags |= RuntimeInvokeFlags.BreakOnEntry | RuntimeInvokeFlags.SendEventOnCompletion |
+						RuntimeInvokeFlags.NestedBreakStates;
 
 				result = context.Interpreter.RuntimeInvoke (thread, method, instance, objs, flags);
 
