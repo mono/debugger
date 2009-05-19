@@ -353,7 +353,7 @@ namespace Mono.Debugger.Architectures
 				rbp -= addr_size;
 			}
 
-			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Thread, FrameType.Normal, memory, new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame read_prologue (StackFrame frame, TargetMemoryAccess memory,
@@ -385,7 +385,7 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Thread, FrameType.Normal, memory, new_rip, new_rsp, new_rbp, regs);
 			}
 
 			// push %ebp
@@ -408,7 +408,7 @@ namespace Mono.Debugger.Architectures
 
 				regs [(int) X86_Register.RSP].SetValue (new_rsp);
 
-				return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
+				return CreateFrame (frame.Thread, FrameType.Normal, memory, new_rip, new_rsp, new_rbp, regs);
 			}
 
 			if (code [pos++] != 0x48) {
@@ -453,7 +453,7 @@ namespace Mono.Debugger.Architectures
 
 			rbp -= addr_size;
 
-			return CreateFrame (frame.Thread, memory, new_rip, new_rsp, new_rbp, regs);
+			return CreateFrame (frame.Thread, FrameType.Normal, memory, new_rip, new_rsp, new_rbp, regs);
 		}
 
 		StackFrame try_unwind_sigreturn (StackFrame frame, TargetMemoryAccess memory)
@@ -508,7 +508,7 @@ namespace Mono.Debugger.Architectures
 			Symbol name = new Symbol ("<signal handler>", rip, 0);
 
 			return new StackFrame (
-				frame.Thread, rip, rsp, rbp, regs, frame.Thread.NativeLanguage, name);
+				frame.Thread, FrameType.Signal, rip, rsp, rbp, regs, frame.Thread.NativeLanguage, name);
 		}
 
 		internal override StackFrame TrySpecialUnwind (StackFrame frame,
@@ -536,7 +536,7 @@ namespace Mono.Debugger.Architectures
 			inferior.SetRegisters (regs);
 		}
 
-		internal override StackFrame CreateFrame (Thread thread, TargetMemoryAccess memory, Registers regs)
+		internal override StackFrame CreateFrame (Thread thread, FrameType type, TargetMemoryAccess memory, Registers regs)
 		{
 			TargetAddress address = new TargetAddress (
 				memory.AddressDomain, regs [(int) X86_Register.RIP].GetValue ());
@@ -545,7 +545,7 @@ namespace Mono.Debugger.Architectures
 			TargetAddress frame_pointer = new TargetAddress (
 				memory.AddressDomain, regs [(int) X86_Register.RBP].GetValue ());
 
-			return CreateFrame (thread, memory, address, stack_pointer, frame_pointer, regs);
+			return CreateFrame (thread, type, memory, address, stack_pointer, frame_pointer, regs);
 		}
 
 		internal override StackFrame GetLMF (ThreadServant thread, TargetMemoryAccess memory, ref TargetAddress lmf_address)
@@ -590,7 +590,7 @@ namespace Mono.Debugger.Architectures
 			regs [(int) X86_Register.R14].SetValue (lmf + 72, r14);
 			regs [(int) X86_Register.R15].SetValue (lmf + 80, r15);
 
-			return CreateFrame (thread.Client, memory, rip, rsp, rbp, regs);
+			return CreateFrame (thread.Client, FrameType.LMF, memory, rip, rsp, rbp, regs);
 		}
 	}
 }

@@ -326,7 +326,7 @@ namespace Mono.Debugger.Backend
 				get {
 					if (current_frame == null)
 						current_frame = CoreFile.Architecture.CreateFrame (
-							Thread, TargetAccess, Registers);
+							Thread, FrameType.Normal, TargetAccess, Registers);
 
 					return current_frame;
 				}
@@ -448,8 +448,8 @@ namespace Mono.Debugger.Backend
 				return CoreFile.GetReader (address).BinaryReader.ReadBuffer (size);
 			}
 
-			internal override Registers GetCallbackFrame (TargetAddress stack_pointer,
-								      bool exact_match)
+			internal override Inferior.CallbackFrame GetCallbackFrame (TargetAddress stack_pointer,
+										   bool exact_match)
 			{
 				return null;
 			}

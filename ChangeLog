@@ -1,3 +1,29 @@
+2009-05-14  Martin Baulig  <martin@ximian.com>
+
+	* classes/StackFrame.cs
+	(FrameType): New public enum.
+	(StackFrame.ctor): Take an additional `FrameType' argument.
+
+	* classes/Backtrace.cs
+	(Backtrace.TryCallback): Set `FrameType.Callback' or
+	`FrameType.RuntimeInvoke' depending on the callback type.
+
+	* backend/arch/Architecture.cs
+	(Architecture.CreateFrame): Take an additional `FrameType' argument.
+
+	* backend/Inferior.cs
+	(Inferior.CallbackFrame): New internal class.
+	(Inferior.GetCallbackFrame): Return an `Inferior.CallbackFrame'.
+
+	* backend/ThreadServant.cs
+	(ThreadServant.GetCallbackFrame): Return an `Inferior.CallbackFrame'.
+
+	* backend/server/server.h
+	(CallbackInfo): New typedef.
+	(InferiorVTable.get_callback_frame): Replace `guint64 *registers'
+	with a `CallbackInfo *info'.
+	(mono_debugger_server_get_callback_frame): Likewise.
+
 2009-05-03  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Drop support for older nunit's.

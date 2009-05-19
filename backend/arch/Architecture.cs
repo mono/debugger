@@ -124,10 +124,10 @@ namespace Mono.Debugger.Backend
 		internal abstract StackFrame TrySpecialUnwind (StackFrame last_frame,
 							       TargetMemoryAccess memory);
 
-		internal abstract StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
-							  Registers regs);
+		internal abstract StackFrame CreateFrame (Thread thread, FrameType type,
+							  TargetMemoryAccess target, Registers regs);
 
-		internal StackFrame CreateFrame (Thread thread, TargetMemoryAccess target,
+		internal StackFrame CreateFrame (Thread thread, FrameType type, TargetMemoryAccess target,
 						 TargetAddress address, TargetAddress stack,
 						 TargetAddress frame_pointer, Registers regs)
 		{
@@ -137,11 +137,11 @@ namespace Mono.Debugger.Backend
 			Method method = process.SymbolTableManager.Lookup (address);
 			if (method != null)
 				return new StackFrame (
-					thread, address, stack, frame_pointer, regs, method);
+					thread, type, address, stack, frame_pointer, regs, method);
 
 			Symbol name = process.SymbolTableManager.SimpleLookup (address, false);
 			return new StackFrame (
-				thread, address, stack, frame_pointer, regs,
+				thread, type, address, stack, frame_pointer, regs,
 				process.NativeLanguage, name);
 		}
 

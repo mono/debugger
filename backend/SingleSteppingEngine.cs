@@ -1164,11 +1164,11 @@ namespace Mono.Debugger.Backend
 
 				if (source != null)
 					update_current_frame (new StackFrame (
-						thread, iframe.Address, iframe.StackPointer,
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers, current_method, source));
 				else
 					update_current_frame (new StackFrame (
-						thread, iframe.Address, iframe.StackPointer,
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers, current_method));
 			} else {
 				if (!same_method && (current_method != null)) {
@@ -1180,7 +1180,7 @@ namespace Mono.Debugger.Backend
 
 				if (current_method != null)
 					update_current_frame (new StackFrame (
-						thread, iframe.Address, iframe.StackPointer,
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers, current_method));
 				else {
 					Symbol name;
@@ -1190,7 +1190,7 @@ namespace Mono.Debugger.Backend
 						name = null;
 					}
 					update_current_frame (new StackFrame (
-						thread, iframe.Address, iframe.StackPointer,
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers, thread.NativeLanguage,
 						name));
 				}
@@ -1604,11 +1604,11 @@ namespace Mono.Debugger.Backend
 					SourceLocation location = new SourceLocation (source);
 
 					main_frame = new StackFrame (
-						thread, iframe.Address, iframe.StackPointer,
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers, main, location);
 				} else {
 					main_frame = new StackFrame (
-						thread, iframe.Address, iframe.StackPointer,
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers);
 				}
 				update_current_frame (main_frame);
@@ -1619,7 +1619,7 @@ namespace Mono.Debugger.Backend
 					return false;
 
 				main_frame = new StackFrame (
-					thread, iframe.Address, iframe.StackPointer,
+					thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 					iframe.FrameAddress, registers, method);
 				update_current_frame (main_frame);
 			}
@@ -1949,10 +1949,10 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
-		internal override Registers GetCallbackFrame (TargetAddress stack_pointer,
-							      bool exact_match)
+		internal override Inferior.CallbackFrame GetCallbackFrame (TargetAddress stack_pointer,
+									   bool exact_match)
 		{
-			return (Registers) SendCommand (delegate {
+			return (Inferior.CallbackFrame) SendCommand (delegate {
 				return inferior.GetCallbackFrame (stack_pointer, exact_match);
 			});
 		}

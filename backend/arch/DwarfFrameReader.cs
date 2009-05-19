@@ -372,7 +372,7 @@ namespace Mono.Debugger.Backend
 						target.AddressDomain, ebp.Value);
 
 				return arch.CreateFrame (
-					frame.Thread, target, address, stack, frame_addr, regs);
+					frame.Thread, FrameType.Normal, target, address, stack, frame_addr, regs);
 			}
 		}
 

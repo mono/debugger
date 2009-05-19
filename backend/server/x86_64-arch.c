@@ -1314,7 +1314,7 @@ server_ptrace_abort_invoke (ServerHandle *handle, guint64 stack_pointer, guint64
 
 static ServerCommandError
 server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
-				  gboolean exact_match, guint64 *registers)
+				  gboolean exact_match, CallbackInfo *info)
 {
 	int i;
 
@@ -1329,6 +1329,8 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 				if (cdata->rti_frame < stack_pointer)
 					continue;
 			}
+			info->is_rti_frame = 1;
+			info->is_exact_match = cdata->rti_frame == stack_pointer;
 		} else {
 			if (exact_match) {
 				if (cdata->stack_pointer != stack_pointer)
@@ -1337,35 +1339,41 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 				if (cdata->stack_pointer < stack_pointer)
 					continue;
 			}
+			info->is_rti_frame = 0;
+			info->is_exact_match = cdata->stack_pointer == stack_pointer;
 		}
 
-		registers [DEBUGGER_REG_R15] = (guint64) INFERIOR_REG_R15 (cdata->saved_regs);
-		registers [DEBUGGER_REG_R14] = (guint64) INFERIOR_REG_R14 (cdata->saved_regs);
-		registers [DEBUGGER_REG_R13] = (guint64) INFERIOR_REG_R13 (cdata->saved_regs);
-		registers [DEBUGGER_REG_R12] = (guint64) INFERIOR_REG_R12 (cdata->saved_regs);
-		registers [DEBUGGER_REG_RBP] = (guint64) INFERIOR_REG_RBP (cdata->saved_regs);
-		registers [DEBUGGER_REG_RBX] = (guint64) INFERIOR_REG_RBX (cdata->saved_regs);
-		registers [DEBUGGER_REG_R11] = (guint64) INFERIOR_REG_R11 (cdata->saved_regs);
-		registers [DEBUGGER_REG_R10] = (guint64) INFERIOR_REG_R10 (cdata->saved_regs);
-		registers [DEBUGGER_REG_R9] = (guint64) INFERIOR_REG_R9 (cdata->saved_regs);
-		registers [DEBUGGER_REG_R8] = (guint64) INFERIOR_REG_R8 (cdata->saved_regs);
-		registers [DEBUGGER_REG_RAX] = (guint64) INFERIOR_REG_RAX (cdata->saved_regs);
-		registers [DEBUGGER_REG_RCX] = (guint64) INFERIOR_REG_RCX (cdata->saved_regs);
-		registers [DEBUGGER_REG_RDX] = (guint64) INFERIOR_REG_RDX (cdata->saved_regs);
-		registers [DEBUGGER_REG_RSI] = (guint64) INFERIOR_REG_RSI (cdata->saved_regs);
-		registers [DEBUGGER_REG_RDI] = (guint64) INFERIOR_REG_RDI (cdata->saved_regs);
-		registers [DEBUGGER_REG_ORIG_RAX] = (guint64) INFERIOR_REG_ORIG_RAX (cdata->saved_regs);
-		registers [DEBUGGER_REG_RIP] = (guint64) INFERIOR_REG_RIP (cdata->saved_regs);
-		registers [DEBUGGER_REG_CS] = (guint64) INFERIOR_REG_CS (cdata->saved_regs);
-		registers [DEBUGGER_REG_EFLAGS] = (guint64) INFERIOR_REG_EFLAGS (cdata->saved_regs);
-		registers [DEBUGGER_REG_RSP] = (guint64) INFERIOR_REG_RSP (cdata->saved_regs);
-		registers [DEBUGGER_REG_SS] = (guint64) INFERIOR_REG_SS (cdata->saved_regs);
-		registers [DEBUGGER_REG_FS_BASE] = (guint64) INFERIOR_REG_FS_BASE (cdata->saved_regs);
-		registers [DEBUGGER_REG_GS_BASE] = (guint64) INFERIOR_REG_GS_BASE (cdata->saved_regs);
-		registers [DEBUGGER_REG_DS] = (guint64) INFERIOR_REG_DS (cdata->saved_regs);
-		registers [DEBUGGER_REG_ES] = (guint64) INFERIOR_REG_ES (cdata->saved_regs);
-		registers [DEBUGGER_REG_FS] = (guint64) INFERIOR_REG_FS (cdata->saved_regs);
-		registers [DEBUGGER_REG_GS] = (guint64) INFERIOR_REG_GS (cdata->saved_regs);
+		info->callback_argument = cdata->callback_argument;
+		info->call_address = cdata->call_address;
+		info->stack_pointer = cdata->stack_pointer;
+
+		info->saved_registers [DEBUGGER_REG_R15] = (guint64) INFERIOR_REG_R15 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R14] = (guint64) INFERIOR_REG_R14 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R13] = (guint64) INFERIOR_REG_R13 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R12] = (guint64) INFERIOR_REG_R12 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RBP] = (guint64) INFERIOR_REG_RBP (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RBX] = (guint64) INFERIOR_REG_RBX (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R11] = (guint64) INFERIOR_REG_R11 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R10] = (guint64) INFERIOR_REG_R10 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R9] = (guint64) INFERIOR_REG_R9 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_R8] = (guint64) INFERIOR_REG_R8 (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RAX] = (guint64) INFERIOR_REG_RAX (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RCX] = (guint64) INFERIOR_REG_RCX (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RDX] = (guint64) INFERIOR_REG_RDX (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RSI] = (guint64) INFERIOR_REG_RSI (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RDI] = (guint64) INFERIOR_REG_RDI (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_ORIG_RAX] = (guint64) INFERIOR_REG_ORIG_RAX (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RIP] = (guint64) INFERIOR_REG_RIP (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_CS] = (guint64) INFERIOR_REG_CS (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_EFLAGS] = (guint64) INFERIOR_REG_EFLAGS (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_RSP] = (guint64) INFERIOR_REG_RSP (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_SS] = (guint64) INFERIOR_REG_SS (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_FS_BASE] = (guint64) INFERIOR_REG_FS_BASE (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_GS_BASE] = (guint64) INFERIOR_REG_GS_BASE (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_DS] = (guint64) INFERIOR_REG_DS (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_ES] = (guint64) INFERIOR_REG_ES (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_FS] = (guint64) INFERIOR_REG_FS (cdata->saved_regs);
+		info->saved_registers [DEBUGGER_REG_GS] = (guint64) INFERIOR_REG_GS (cdata->saved_regs);
 
 		return COMMAND_ERROR_NONE;
 	}
