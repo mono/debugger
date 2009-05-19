@@ -658,16 +658,10 @@ namespace Mono.Debugger
 			result.Wait ();
 		}
 
+		[Obsolete("FUCK")]
 		public void AbortInvocation ()
 		{
-			CommandResult result;
-
-			lock (this) {
-				check_alive ();
-				result = servant.AbortInvocation ();
-			}
-
-			result.Wait ();
+			throw new InternalError ();
 		}
 
 		public string PrintRegisters (StackFrame frame)

@@ -247,8 +247,6 @@ namespace Mono.Debugger.Backend
 
 		public abstract CommandResult Return (ReturnMode mode);
 
-		public abstract CommandResult AbortInvocation ();
-
 		public string PrintRegisters (StackFrame frame)
 		{
 			return Architecture.PrintRegisters (frame);

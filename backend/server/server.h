@@ -308,8 +308,7 @@ struct InferiorVTable {
 	ServerCommandError    (* mark_rti_frame)      (ServerHandle     *handle);
 
 	ServerCommandError    (* abort_invoke)        (ServerHandle     *handle,
-						       guint64           stack_pointer,
-						       guint64          *aborted_rti);
+						       guint64           rti_id);
 
 	/*
 	 * Insert a breakpoint at address `address' in the target's address space.
@@ -589,8 +588,7 @@ mono_debugger_mark_rti_framenvoke        (ServerHandle        *handle);
 
 ServerCommandError
 mono_debugger_server_abort_invoke        (ServerHandle        *handle,
-					  guint64              stack_pointer,
-					  guint64             *aborted_rti);
+					  guint64              rti_id);
 
 ServerCommandError
 mono_debugger_server_insert_breakpoint   (ServerHandle        *handle,

@@ -298,12 +298,12 @@ mono_debugger_server_mark_rti_frame (ServerHandle *handle)
 }
 
 ServerCommandError
-mono_debugger_server_abort_invoke (ServerHandle *handle, guint64 stack_pointer, guint64 *aborted_rti)
+mono_debugger_server_abort_invoke (ServerHandle *handle, guint64 rti_id)
 {
 	if (!global_vtable->abort_invoke)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->abort_invoke) (handle, stack_pointer, aborted_rti);
+	return (* global_vtable->abort_invoke) (handle, rti_id);
 }
 
 ServerCommandError
