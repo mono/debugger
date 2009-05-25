@@ -88,7 +88,14 @@ typedef enum bfd_mach_o_load_command_type
     BFD_MACH_O_LC_PREBIND_CKSUM = 0x17, /* Prebind checksum.  */
     /* Load a dynamicly linked shared library that is allowed to be
        missing (weak).  */
-    BFD_MACH_O_LC_LOAD_WEAK_DYLIB = 0x18
+    BFD_MACH_O_LC_LOAD_WEAK_DYLIB = 0x18,
+
+	/* APPLE LOCAL entries */
+	BFD_MACH_O_LC_UUID = 0x1b,             /* 128-bit UUID of the executable.  */
+	BFD_MACH_O_LC_RPATH = 0x1c | BFD_MACH_O_LC_REQ_DYLD,
+	BFD_MACH_O_LC_CODE_SIGNATURE = 0x1d,
+	BFD_MACH_O_LC_SEGMENT_SPLIT_INFO = 0x1e,
+	BFD_MACH_O_LC_REEXPORT_DYLIB = 0x1f | BFD_MACH_O_LC_REQ_DYLD
   }
 bfd_mach_o_load_command_type;
 

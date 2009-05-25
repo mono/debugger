@@ -1,3 +1,17 @@
+2009-05-25  jonas echterhoff  <jonas@unity3d.com>
+
+	Implement debugger for OS X
+
+	*darwin-ptrace.c: Added for Darwin specific implementation.
+
+	*darwin-thread-db.c: Added for Darwin specific implementation.
+
+	*mach-o.c: Added Apple-specific definitions to supress error messages.
+
+	*Bfd.cs: Changed to interpret Mach-O binaries.
+
+	*i386-arch.c: Added code to make memory executable (needed in OS X).
+
 2009-05-25  Martin Baulig  <martin@ximian.com>
 
 	* backend/server/x86-ptrace.c

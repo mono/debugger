@@ -16,7 +16,23 @@ EXTRA_libmonodebuggerserver_la_SOURCES = \
 if PLATFORM_POWERPC
 platform_sources =
 else
-platform_sources = x86-ptrace.c
+if PLATFORM_X86_DARWIN
+platform_sources = \
+	x86-ptrace.c \
+	darwin-thread-db.c \
+	thread-db.h
+libmonodebuggerserver_la_LIBADD = \
+	@SERVER_DEPENDENCIES_LIBS@ \
+	../arch/libmonodebuggerbfdglue.la
+else
+platform_sources = \
+	x86-ptrace.c \
+	thread-db.c	\
+	thread-db.h
+libmonodebuggerserver_la_LIBADD = 
+	@SERVER_DEPENDENCIES_LIBS@ -lthread_db
+	../arch/libmonodebuggerbfdglue.la
+endif
 endif
 
 libmonodebuggerserver_la_SOURCES = \
@@ -27,15 +43,10 @@ libmonodebuggerserver_la_SOURCES = \
 	breakpoints.h		\
 	mutex.c			\
 	mutex.h			\
-	thread-db.c		\
-	thread-db.h		\
 	libgtop-glue.c		\
 	libgtop-glue.h		\
 	linux-proc-service.h
 
-libmonodebuggerserver_la_LIBADD = \
-	@SERVER_DEPENDENCIES_LIBS@ -lthread_db \
-	../arch/libmonodebuggerbfdglue.la
 libmonodebuggerserver_la_LDFLAGS = \
 	 -no-undefined -export-dynamic -shared
 

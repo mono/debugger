@@ -1542,6 +1542,8 @@ bfd_mach_o_scan_read_command (abfd, command)
     case BFD_MACH_O_LC_SUB_LIBRARY:
     case BFD_MACH_O_LC_TWOLEVEL_HINTS:
     case BFD_MACH_O_LC_PREBIND_CKSUM:
+    case BFD_MACH_O_LC_UUID:
+    case BFD_MACH_O_LC_CODE_SIGNATURE:
       break;
     default:
       fprintf (stderr, "unable to read unknown load command 0x%lx\n",

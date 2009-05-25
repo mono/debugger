@@ -88,6 +88,13 @@ bfd_glue_get_symbol (bfd *abfd, asymbol **symbol_table, int idx, int *is_functio
 		*is_function = 0;
 		*address = symbol->section->vma + symbol->value;
 	}
+	else
+	{
+		//Mach headers don't have a function flag. Mark everything as function for now.
+		//Possibly check address against text section to fix this properly?
+		*is_function = 1;
+		*address = symbol->section->vma + symbol->value;
+	}
 
 	return g_strdup (symbol->name);
 }

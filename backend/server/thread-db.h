@@ -3,8 +3,27 @@
 
 #include <server.h>
 #include <pthread.h>
+
+#ifdef __linux__
 #include <thread_db.h>
 #include "linux-proc-service.h"
+#else
+typedef enum
+{
+  PS_OK,		/* Generic "call succeeded".  */
+  PS_ERR,		/* Generic error. */
+  PS_BADPID,		/* Bad process handle.  */
+  PS_BADLID,		/* Bad LWP identifier.  */
+  PS_BADADDR,		/* Bad address.  */
+  PS_NOSYM,		/* Could not find given symbol.  */
+  PS_NOFREGS		/* FPU register set not available for given LWP.  */
+} ps_err_e;
+
+typedef struct{
+	thread_t tid;
+	void *handle;
+} td_thrhandle_t;
+#endif
 
 G_BEGIN_DECLS
 
@@ -17,7 +36,11 @@ typedef gboolean (*IterateOverThreadsFunc) (const td_thrhandle_t *th);
 
 typedef struct ps_prochandle {
 	pid_t pid;
+#ifdef __MACH__
+	mach_port_t task;
+#else
 	td_thragent_t *thread_agent;
+#endif
 	GlobalLookupFunc global_lookup;
 	ReadMemoryFunc read_memory;
 	WriteMemoryFunc write_memory;

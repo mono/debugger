@@ -232,6 +232,34 @@ namespace Mono.Debugger.Backend
 						base_address.Address + got_section.vma);
 					has_got = true;
 				}
+			} else if (target == "mach-o-le") {
+				if (!is_coredump) {
+					Section text = GetSectionByName ("LC_SEGMENT.__TEXT.__text", true);
+					Section bss = GetSectionByName ("LC_SEGMENT.__DATA.__bss", true);
+
+					if (!base_address.IsNull)
+						start_address = new TargetAddress (
+							info.AddressDomain,
+							base_address.Address + text.vma);
+					else
+						start_address = new TargetAddress (
+							info.AddressDomain, text.vma);
+
+					if (!base_address.IsNull)
+						end_address = new TargetAddress (
+							info.AddressDomain,
+							base_address.Address + bss.vma + bss.size);
+					else
+						end_address = new TargetAddress (
+							info.AddressDomain, bss.vma + bss.size);
+				}
+
+				read_bfd_symbols ();
+
+				if (DwarfReader.IsSupported (this))
+					has_debugging_info = true;
+
+				has_got = false;
 			} else
 				throw new SymbolTableException (
 					"Symbol file {0} has unknown target architecture {1}",
@@ -266,6 +294,8 @@ namespace Mono.Debugger.Backend
 			local_symbols = new Hashtable ();
 			simple_symbols = new ArrayList ();
 
+			bool is_mach = (bfd_glue_get_target_name (bfd) == "mach-o-le");
+
 			for (int i = 0; i < num_symbols; i++) {
 				string name;
 				long address;
@@ -275,11 +305,16 @@ namespace Mono.Debugger.Backend
 				if (name == null)
 					continue;
 
+				if(is_mach) {
+					if(name[0] == '_')
+						name = name.Substring(1);
+				}
+
 				TargetAddress relocated = new TargetAddress (
 					info.AddressDomain, base_address.Address + address);
-				if (is_function != 0)
+				if (is_function != 0 && !symbols.Contains (name))
 					symbols.Add (name, relocated);
-				else if ((main_bfd == null) && name.StartsWith ("MONO_DEBUGGER__"))
+				else if ((main_bfd == null) && name.StartsWith ("MONO_DEBUGGER__") && !symbols.Contains (name))
 					symbols.Add (name, relocated);
 				else if (!local_symbols.Contains (name))
 					local_symbols.Add (name, relocated);

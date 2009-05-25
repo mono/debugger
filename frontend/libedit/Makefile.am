@@ -9,7 +9,11 @@ libmonodebuggerreadline_la_SOURCES = \
 	vi.h vis.h el_term.h filecomplete.h tokenizer.c filecomplete.c
 
 libmonodebuggerreadline_la_LIBADD = @BASE_DEPENDENCIES_LIBS@ @READLINE_DEPLIBS@
+if PLATFORM_X86_DARWIN
+libmonodebuggerreadline_la_LDFLAGS = -no-undefined -shared -Wl
+else
 libmonodebuggerreadline_la_LDFLAGS = -no-undefined -shared -Wl,-version-script=$(srcdir)/ldscript
+endif
 
 EXTRA_DIST = ldscript
 

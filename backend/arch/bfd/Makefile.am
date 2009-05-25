@@ -19,6 +19,9 @@ i386_linux_vec_defines = -DHAVE_bfd_elf32_i386_vec -DHAVE_i386linux_vec -DHAVE_b
 x86_64_linux_backend = elf64-x86-64.c elf64.c elf32-i386.c elf32.c elf.c elflink.c elf-strtab.c elf-eh-frame.c dwarf1.c i386linux.c aout32.c efi-app-ia32.c peigen.c cofflink.c elf64-gen.c elf32-gen.c cpu-i386.c pe-i386.c pei-i386.c trad-core.c archive64.c
 x86_64_linux_vec_defines = -DHAVE_bfd_elf64_x86_64_vec -DHAVE_bfd_elf32_i386_vec -DHAVE_i386linux_vec -DHAVE_bfd_efi_app_ia32_vec -DHAVE_bfd_elf64_little_generic_vec -DHAVE_bfd_elf64_big_generic_vec -DHAVE_bfd_elf32_little_generic_vec -DHAVE_bfd_elf32_big_generic_vec
 
+i386_mach_backend = mach-o.c pef.c xsym.c cpu-i386.c
+i386_mach_vec_defines = -DHAVE_mach_o_be_vec -DHAVE_mach_o_le_vec -DHAVE_mach_o_fat_vec -DHAVE_pef_vec -DHAVE_pef_xlib_vec -DHAVE_sym_vec
+
 if BFD_TARGET_POWERPC
 BFD_BACKEND = $(powerpc_backend) $(i386_linux_backend)
 TDEFAULTS =  -DDEFAULT_VECTOR=mach_o_be_vec -DSELECT_VECS='&mach_o_be_vec,&mach_o_le_vec,&mach_o_fat_vec,&pef_vec,&pef_xlib_vec,&sym_vec,&bfd_elf32_i386_vec,&i386linux_vec,&bfd_efi_app_ia32_vec,&bfd_elf32_little_generic_vec,&bfd_elf32_big_generic_vec,&i386pe_vec,&i386pei_vec' -DSELECT_ARCHITECTURES='&bfd_powerpc_arch,&bfd_rs6000_arch,&bfd_i386_arch' $(powerpc_vec_defines) $(i386_linux_vec_defines)
@@ -29,9 +32,15 @@ BFD_BACKEND = $(x86_64_linux_backend)
 TDEFAULTS =  -DDEFAULT_VECTOR=bfd_elf64_x86_64_vec -DSELECT_VECS='&bfd_elf64_x86_64_vec,&bfd_elf32_i386_vec,&i386linux_vec,&bfd_efi_app_ia32_vec,&bfd_elf64_little_generic_vec,&bfd_elf64_big_generic_vec,&bfd_elf32_little_generic_vec,&bfd_elf32_big_generic_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch' $(x86_64_linux_vec_defines)
 bfd_cflags = -DTRAD_CORE -DBFD64
 else
+if BFD_TARGET_X86_MACH
+BFD_BACKEND = $(i386_mach_backend)
+TDEFAULTS =  -DDEFAULT_VECTOR=mach_o_be_vec -DSELECT_VECS='&mach_o_be_vec,&mach_o_le_vec,&mach_o_fat_vec,&pef_vec,&pef_xlib_vec,&sym_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch' $(i386_mach_vec_defines)
+bfd_cflags =
+else
 BFD_BACKEND = $(i386_linux_backend)
 TDEFAULTS =  -DDEFAULT_VECTOR=bfd_elf32_i386_vec -DSELECT_VECS='&bfd_elf32_i386_vec,&i386linux_vec,&bfd_efi_app_ia32_vec,&bfd_elf32_little_generic_vec,&bfd_elf32_big_generic_vec,&i386pe_vec,&i386pei_vec' -DSELECT_ARCHITECTURES='&bfd_i386_arch' $(i386_linux_vec_defines)
 bfd_cflags = -DTRAD_CORE
+endif
 endif
 endif
 

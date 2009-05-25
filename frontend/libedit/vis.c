@@ -81,6 +81,9 @@ extern char *alloca ();
 #include <sys/types.h>
 
 #include <assert.h>
+#ifndef _DIAGASSERT
+#define _DIAGASSERT(x) assert(x)
+#endif
 #include <vis.h>
 #include <stdlib.h>
 
