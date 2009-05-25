@@ -1,5 +1,15 @@
 2009-05-25  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_make_memory_executable): New static method; this
+	is a no-op on Linux.
+
+	* backend/server/i386-arch.c
+	(server_ptrace_call_method_*): Call
+	_server_ptrace_make_memory_executable(), which is required on OSX.
+
+2009-05-25  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-linux-ptrace.h: Moved function prototypes to
 	x86-ptrace.h.	
 

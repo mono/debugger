@@ -29,6 +29,12 @@ _server_ptrace_check_errno (InferiorHandle *inferior)
 }
 
 static ServerCommandError
+_server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guint32 size)
+{
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
 _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs)
 {
 	if (ptrace (PT_GETREGS, inferior->pid, NULL, regs) != 0)

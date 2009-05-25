@@ -49,6 +49,9 @@ static ServerCommandError
 _server_ptrace_check_errno (InferiorHandle *);
 
 static ServerCommandError
+_server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guint32 size);
+
+static ServerCommandError
 _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs);
 
 static ServerCommandError

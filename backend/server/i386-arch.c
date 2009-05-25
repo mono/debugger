@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "x86-linux-ptrace.h"
 #include "x86-arch.h"
 
 typedef struct
@@ -166,6 +165,10 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
 	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
@@ -233,6 +236,10 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
 	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_ESP (arch->current_regs) = INFERIOR_REG_EIP (arch->current_regs) = new_esp;
 
@@ -296,6 +303,10 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
 	INFERIOR_REG_ORIG_EAX (arch->current_regs) = -1;
 	INFERIOR_REG_EIP (arch->current_regs) = method_address;
 	INFERIOR_REG_ESP (arch->current_regs) = new_esp;
@@ -355,6 +366,10 @@ server_ptrace_call_method_3 (ServerHandle *handle, guint64 method_address,
 
 	result = server_ptrace_write_memory (handle, (unsigned long) new_esp, size, code);
 	g_free (code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -429,6 +444,10 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 
 	result = server_ptrace_write_memory (handle, (guint32) new_esp, size, code);
 	g_free (code);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
