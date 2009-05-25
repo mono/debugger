@@ -631,14 +631,13 @@ server_ptrace_get_current_thread (void)
 }
 
 static gboolean initialized = FALSE;
-static sem_t manager_semaphore;
 int pending_sigint = 0;
 
 static void
 sigint_signal_handler (int _dummy)
 {
 	pending_sigint++;
-	sem_post (&manager_semaphore);
+	server_ptrace_sem_post ();
 }
 
 static void
@@ -656,33 +655,6 @@ server_ptrace_static_init (void)
 	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
 
 	initialized = TRUE;
-}
-
-static void
-server_ptrace_sem_init (void)
-{
-	sem_init (&manager_semaphore, 1, 0);
-}
-
-static void
-server_ptrace_sem_wait (void)
-{
-	sem_wait (&manager_semaphore);
-}
-
-static void
-server_ptrace_sem_post (void)
-{
-	sem_post (&manager_semaphore);
-}
-
-static int
-server_ptrace_sem_get_value (void)
-{
-	int ret;
-
-	sem_getvalue (&manager_semaphore, &ret);
-	return ret;
 }
 
 static int

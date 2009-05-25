@@ -1,5 +1,12 @@
 2009-05-25  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-ptrace.c
+	(server_ptrace_sem_*): Moved to x86-linux-ptrace.c.
+	(sigint_signal_handler): Call server_ptrace_sem_post() instead of
+	using sem_post() directly.
+
+2009-05-25  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-linux-ptrace.c
 	(_server_ptrace_make_memory_executable): New static method; this
 	is a no-op on Linux.

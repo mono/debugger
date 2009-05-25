@@ -1,3 +1,32 @@
+static sem_t manager_semaphore;
+
+static void
+server_ptrace_sem_init (void)
+{
+	sem_init (&manager_semaphore, 1, 0);
+}
+
+static void
+server_ptrace_sem_wait (void)
+{
+	sem_wait (&manager_semaphore);
+}
+
+static void
+server_ptrace_sem_post (void)
+{
+	sem_post (&manager_semaphore);
+}
+
+static int
+server_ptrace_sem_get_value (void)
+{
+	int ret;
+
+	sem_getvalue (&manager_semaphore, &ret);
+	return ret;
+}
+
 ServerCapabilities
 server_ptrace_get_capabilities (void)
 {
