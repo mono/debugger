@@ -1,5 +1,10 @@
 2009-05-25  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-linux-ptrace.h: Moved function prototypes to
+	x86-ptrace.h.	
+
+2009-05-25  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/server.h
 	(ServerCapabilities): New public enum.
 	(InferiorVTable.get_capabilities): New method.
