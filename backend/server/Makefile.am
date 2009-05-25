@@ -29,8 +29,8 @@ platform_sources = \
 	x86-ptrace.c \
 	thread-db.c	\
 	thread-db.h
-libmonodebuggerserver_la_LIBADD = 
-	@SERVER_DEPENDENCIES_LIBS@ -lthread_db
+libmonodebuggerserver_la_LIBADD = \
+	@SERVER_DEPENDENCIES_LIBS@ -lthread_db \
 	../arch/libmonodebuggerbfdglue.la
 endif
 endif
