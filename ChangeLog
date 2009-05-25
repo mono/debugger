@@ -1,5 +1,17 @@
 2009-05-25  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/server.h
+	(ServerCapabilities): New public enum.
+	(InferiorVTable.get_capabilities): New method.
+
+	* backend/server/library.c
+	(mono_debugger_server_get_capabilities): New public function.
+
+	* backend/Inferior.cs
+	(Inferior.HasThreadEvents): New public static property.
+
+2009-05-25  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.h
 	(InferiorHandle): Move struct definition here.
 	(OSData): New typedef; moved `mem_fd' here from `InferiorHandle'.

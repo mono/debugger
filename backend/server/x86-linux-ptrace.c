@@ -1,3 +1,9 @@
+ServerCapabilities
+server_ptrace_get_capabilities (void)
+{
+	return SERVER_CAPABILITIES_THREAD_EVENTS;
+}
+
 static ServerCommandError
 _server_ptrace_check_errno (InferiorHandle *inferior)
 {

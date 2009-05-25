@@ -716,6 +716,7 @@ extern void GC_end_blocking (void);
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_static_init,
 	server_ptrace_global_init,
+	server_ptrace_get_capabilities,
 	server_ptrace_create_inferior,
 	server_ptrace_initialize_process,
 	server_ptrace_initialize_thread,

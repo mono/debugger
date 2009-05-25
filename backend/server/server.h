@@ -96,6 +96,11 @@ typedef struct
 	guint8 *executable_code_bitfield;
 } MonoRuntimeInfo;
 
+typedef enum {
+	SERVER_CAPABILITIES_NONE		= 0,
+	SERVER_CAPABILITIES_THREAD_EVENTS	= 1
+} ServerCapabilities;
+
 /* This is an opaque data structure which the backend may use to store stuff. */
 typedef struct InferiorVTable InferiorVTable;
 typedef struct InferiorHandle InferiorHandle;
@@ -145,6 +150,8 @@ struct InferiorVTable {
 	void                  (* static_init)         (void);
 
 	void                  (* global_init)         (void);
+
+	ServerCapabilities    (* get_capabilities)    (void);
 
 	ServerHandle *        (* create_inferior)     (BreakpointManager  *bpm);
 
@@ -446,6 +453,9 @@ mono_debugger_server_static_init          (void);
 
 void
 mono_debugger_server_global_init          (void);
+
+ServerCapabilities
+mono_debugger_server_get_capabilities     (void);
 
 ServerHandle *
 mono_debugger_server_create_inferior      (BreakpointManager  *bpm);

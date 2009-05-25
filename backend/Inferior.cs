@@ -196,6 +196,9 @@ namespace Mono.Debugger.Backend
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_set_runtime_info (IntPtr handle, IntPtr mono_runtime_info);
 
+		[DllImport("monodebuggerserver")]
+		static extern ServerCapabilities mono_debugger_server_get_capabilities ();
+
 		internal enum ChildEventType {
 			NONE = 0,
 			UNKNOWN_ERROR = 1,
@@ -224,6 +227,11 @@ namespace Mono.Debugger.Backend
 			EXECUTE,
 			READ,
 			WRITE
+		}
+
+		internal enum ServerCapabilities {
+			NONE = 0,
+			THREAD_EVENTS = 1
 		}
 
 		internal delegate void ChildEventHandler (ChildEventType message, int arg);
@@ -1648,6 +1656,13 @@ namespace Mono.Debugger.Backend
 					throw new InvalidOperationException ();
 
 				return signal_info.MonoThreadAbortSignal;
+			}
+		}
+
+		public static bool HasThreadEvents {
+			get {
+				ServerCapabilities capabilities = mono_debugger_server_get_capabilities ();
+				return (capabilities & ServerCapabilities.THREAD_EVENTS) != 0;
 			}
 		}
 
