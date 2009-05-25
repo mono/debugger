@@ -65,7 +65,7 @@ _server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, g
 	guint32 old_size = size;
 
 	while (size) {
-		int ret = pread64 (handle->inferior->mem_fd, ptr, size, start);
+		int ret = pread64 (handle->inferior->os.mem_fd, ptr, size, start);
 		if (ret < 0) {
 			if (errno == EINTR)
 				continue;
@@ -357,9 +357,9 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
 
-	handle->inferior->mem_fd = open64 (filename, O_RDONLY);
+	handle->inferior->os.mem_fd = open64 (filename, O_RDONLY);
 
-	if (handle->inferior->mem_fd < 0) {
+	if (handle->inferior->os.mem_fd < 0) {
 		g_warning (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
@@ -371,8 +371,8 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 static void
 _server_ptrace_finalize_inferior (ServerHandle *handle)
 {
-	close (handle->inferior->mem_fd);
-	handle->inferior->mem_fd = -1;
+	close (handle->inferior->os.mem_fd);
+	handle->inferior->os.mem_fd = -1;
 }
 
 static ServerCommandError

@@ -50,19 +50,6 @@ struct IOThreadData
 	int output_fd, error_fd;
 };
 
-struct InferiorHandle
-{
-	guint32 pid;
-#ifdef __linux__
-	int mem_fd;
-#endif
-	int stepping;
-	int last_signal;
-	int redirect_fds;
-	int output_fd [2], error_fd [2];
-	int is_thread, is_initialized;
-};
-
 MonoRuntimeInfo *
 mono_debugger_server_initialize_mono_runtime (guint32 address_size,
 					      guint64 notification_address,

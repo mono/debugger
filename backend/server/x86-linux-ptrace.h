@@ -3,6 +3,11 @@
 
 #include "x86-arch.h"
 
+struct OSData
+{
+	int mem_fd;
+};
+
 static ServerCommandError
 _server_ptrace_check_errno (InferiorHandle *);
 

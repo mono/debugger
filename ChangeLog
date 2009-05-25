@@ -1,3 +1,9 @@
+2009-05-25  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-ptrace.h
+	(InferiorHandle): Move struct definition here.
+	(OSData): New typedef; moved `mem_fd' here from `InferiorHandle'.
+
 2009-05-19  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs

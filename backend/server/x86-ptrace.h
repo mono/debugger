@@ -1,6 +1,20 @@
 #ifndef __MONO_DEBUGGER_X86_64_PTRACE_H__
 #define __MONO_DEBUGGER_X86_64_PTRACE_H__
 
+typedef struct OSData OSData;
+
+struct InferiorHandle
+{
+	OSData os;
+
+	guint32 pid;
+	int stepping;
+	int last_signal;
+	int redirect_fds;
+	int output_fd [2], error_fd [2];
+	int is_thread, is_initialized;
+};
+
 #ifndef PTRACE_SETOPTIONS
 #define PTRACE_SETOPTIONS	0x4200
 #endif
