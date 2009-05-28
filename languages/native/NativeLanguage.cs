@@ -180,11 +180,10 @@ namespace Mono.Debugger.Languages.Native
 			return false;
 		}
 
-		public Bfd this [string filename] {
-			get {
-				check_disposed ();
-				return (Bfd) bfd_hash [filename];
-			}
+		public Bfd LookupModule (string filename)
+		{
+			check_disposed ();
+			return (Bfd) bfd_hash [filename];
 		}
 
 		public Bfd LookupLibrary (TargetAddress address)

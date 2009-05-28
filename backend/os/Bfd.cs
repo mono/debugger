@@ -478,7 +478,7 @@ namespace Mono.Debugger.Backend
 				if (name == null)
 					continue;
 
-				Bfd bfd = language [name];
+				Bfd bfd = language.LookupModule (name);
 				if (bfd != null) {
 					if (!bfd.IsLoaded)
 						bfd.module_loaded (inferior, l_addr);

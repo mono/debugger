@@ -1,5 +1,10 @@
 2009-05-26  Martin Baulig  <martin@ximian.com>
 
+	* languages/native/NativeLanguage.cs
+	(NativeLanguage): Replace the indexer with a LookupModule() method.
+
+2009-05-26  Martin Baulig  <martin@ximian.com>
+
 	Moved everything bfd-related from backend/arch to backend/os.
 
 	* backend/arch/bfd/: Moved.
