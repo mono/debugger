@@ -15,7 +15,7 @@ namespace Mono.Debugger.Backend
 		public abstract NativeExecutableReader LoadExecutable (TargetMemoryInfo memory, string filename,
 								       bool load_native_symtabs);
 
-		public abstract NativeExecutableReader AddExecutableFile (TargetMemoryInfo memory, string filename,
+		public abstract NativeExecutableReader AddExecutableFile (Inferior inferior, string filename,
 									  TargetAddress base_address,
 									  bool step_info, bool is_loaded);
 

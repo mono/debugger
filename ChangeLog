@@ -1,5 +1,27 @@
 2009-05-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/ProcessServant.cs
+	(ProcessServant.LoadLibrary): Disallow loading unmanaged
+	libraries; this never worked since we obviously don't know their
+	correct base address.
+
+	* backend/os/OperatingSystemBackend.cs
+	(OperatingSystemBackend.AddExecutableFile): Take an `Inferior'
+	argument, not `TargetMemoryInfo', so we can do stuff with the
+	library; we're called while the target is stopped.
+
+	* backend/os/LinuxOperatingSystem.cs
+	(LinuxOperatingSystem.check_loaded_library): New private method;
+	moved the nptl_setxid() and mono runtime checks here.
+	(LinuxOperatingSystem.AddExecutableFile): Call check_loaded_library(),
+	so we check for the mono runtime each time a new shared library is
+	loaded, unless we're already running managed.
+	(LinuxOperatingSystem.read_dynamic_info): Call check_loaded_library()
+	on the main module; this should usually find the mono runtime if
+	we're not running embedded.
+
+2009-05-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/ThreadManager.cs
 	(ThreadManager.CreateProcess): Merged into StartApplication().
 	(ThreadManager.HandleChildEvent): Don't call

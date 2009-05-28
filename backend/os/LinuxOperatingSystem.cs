@@ -51,7 +51,7 @@ namespace Mono.Debugger.Backend
 			return bfd;
 		}
 
-		public override NativeExecutableReader AddExecutableFile (TargetMemoryInfo memory, string filename,
+		public override NativeExecutableReader AddExecutableFile (Inferior inferior, string filename,
 									  TargetAddress base_address, bool step_into,
 									  bool is_loaded)
 		{
@@ -60,9 +60,31 @@ namespace Mono.Debugger.Backend
 			if (bfd != null)
 				return bfd;
 
-			bfd = new Bfd (this, memory, filename, base_address, is_loaded);
+			bfd = new Bfd (this, inferior.TargetMemoryInfo, filename, base_address, is_loaded);
 			bfd_hash.Add (filename, bfd);
+			check_loaded_library (inferior, bfd);
 			return bfd;
+		}
+
+		protected void check_loaded_library (Inferior inferior, Bfd bfd)
+		{
+			check_nptl_setxid (inferior, bfd);
+
+			if (!Process.IsManaged)
+				check_for_mono_runtime (inferior, bfd);
+		}
+
+		void check_for_mono_runtime (Inferior inferior, Bfd bfd)
+		{
+			TargetAddress info = bfd.GetSectionAddress (".mdb_debug_info");
+			if (info.IsNull)
+				return;
+
+			TargetAddress data = inferior.ReadAddress (info);
+			if (data.IsNull)
+				return;
+
+			Process.InitializeMono (inferior, data);
 		}
 
 		public override TargetAddress LookupSymbol (string name)
@@ -134,31 +156,32 @@ namespace Mono.Debugger.Backend
 		{
 			// This fails if it's a statically linked executable.
 			try {
-				if (!read_dynamic_info (inferior))
-					return;
-			} catch {
-				return;
-			}
-
-			try {
-				do_update_shlib_info (inferior);
+				read_dynamic_info (inferior);
 			} catch (Exception ex) {
 				Report.Error ("Failed to read shared libraries: {0}", ex);
 				return;
 			}
 		}
 
-		bool read_dynamic_info (Inferior inferior)
+		void read_dynamic_info (Inferior inferior)
 		{
+			if (has_dynlink_info) {
+				if (!first_link_map.IsNull)
+					do_update_shlib_info (inferior);
+				return;
+			}
+
 			TargetAddress debug_base = main_bfd.ReadDynamicInfo (inferior);
 			if (debug_base.IsNull)
-				return false;
+				return;
+
+			has_dynlink_info = true;
 
 			int size = 2 * inferior.TargetLongIntegerSize + 3 * inferior.TargetAddressSize;
 
 			TargetReader reader = new TargetReader (inferior.ReadMemory (debug_base, size));
 			if (reader.ReadLongInteger () != 1)
-				return false;
+				return;
 
 			first_link_map = reader.ReadAddress ();
 			dynlink_breakpoint_addr = reader.ReadAddress ();
@@ -166,7 +189,7 @@ namespace Mono.Debugger.Backend
 			rdebug_state_addr = debug_base + reader.Offset;
 
 			if (reader.ReadLongInteger () != 0)
-				return false;
+				return;
 
 			Instruction insn = inferior.Architecture.ReadInstruction (inferior, dynlink_breakpoint_addr);
 			if ((insn == null) || !insn.CanInterpretInstruction)
@@ -174,7 +197,10 @@ namespace Mono.Debugger.Backend
 
 			dynlink_breakpoint = new DynlinkBreakpoint (this, insn);
 			dynlink_breakpoint.Insert (inferior);
-			return true;
+
+			do_update_shlib_info (inferior);
+
+			check_loaded_library (inferior, main_bfd);
 		}
 
 		bool dynlink_handler (Inferior inferior)
@@ -219,32 +245,12 @@ namespace Mono.Debugger.Backend
 				if (name == null)
 					continue;
 
-				Bfd bfd = (Bfd) LookupLibrary (name);
-				if (bfd != null)
+				if (bfd_hash.Contains (name))
 					continue;
 
 				bool step_into = Process.ProcessStart.LoadNativeSymbolTable;
-				bfd = (Bfd) AddExecutableFile (inferior.TargetMemoryInfo, name, l_addr, step_into, true);
-				check_nptl_setxid (inferior, bfd);
-
-				if (!Process.IsManaged)
-					check_for_mono_runtime (inferior, bfd);
+				AddExecutableFile (inferior, name, l_addr, step_into, true);
 			}
-		}
-
-		void check_for_mono_runtime (Inferior inferior, Bfd bfd)
-		{
-			TargetAddress info = bfd.GetSectionAddress (".mdb_debug_info");
-			if (info.IsNull)
-				return;
-
-			TargetAddress data = inferior.ReadAddress (info);
-			if (data.IsNull)
-				return;
-
-			Console.WriteLine ("FOUND NEW MONO RUNTIME: {0} {1}", info, data);
-
-			Process.InitializeMono (inferior, data);
 		}
 
 		protected class DynlinkBreakpoint : AddressBreakpoint

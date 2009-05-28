@@ -26,9 +26,8 @@ namespace Mono.Debugger.Backend
 		{
 			info = Inferior.GetTargetMemoryInfo (manager.AddressDomain);
 
-			bfd = (Bfd) NativeLanguage.OperatingSystem.AddExecutableFile (
-				info, start.TargetApplication, TargetAddress.Null,
-				true, true);
+			bfd = (Bfd) NativeLanguage.OperatingSystem.LoadExecutable (
+				info, start.TargetApplication, true);
 
 			core_file = start.CoreFile;
 

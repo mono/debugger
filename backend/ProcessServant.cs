@@ -498,12 +498,12 @@ namespace Mono.Debugger.Backend
 		{
 			if (mono_language == null)
 				throw new SymbolTableException (
-						"Cannot load .NET assembly {0} while " +
-						"debugging an unmanaged application",
+						"Cannot load .NET assembly `{0}' while " +
+						"debugging an unmanaged application.",
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				os.AddExecutableFile (thread.TargetMemoryInfo, filename, TargetAddress.Null, true, false);
+				throw new SymbolTableException ("Could not find any .NET assembly `{0}'.", filename);
 		}
 
 		internal MonoLanguageBackend MonoLanguage {
