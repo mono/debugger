@@ -186,6 +186,11 @@ namespace Mono.Debugger.Backend
 				}
 			}
 
+			if (inferior.Process.OperatingSystem.CheckForPendingMonoInit (inferior)) {
+				resume_target = true;
+				return true;
+			}
+
 			bool retval = false;
 			resume_target = false;
 			if (inferior.Process.MonoManager != null)

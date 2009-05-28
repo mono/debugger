@@ -60,20 +60,6 @@ namespace Mono.Debugger.Backend
 	{
 		MonoDebuggerInfo debugger_info;
 
-		public static MonoThreadManager Initialize (ThreadManager thread_manager,
-							    Inferior inferior, bool attach)
-		{
-			TargetAddress info = inferior.GetSectionAddress (".mdb_debug_info");
-			if (!info.IsNull)
-				info = inferior.ReadAddress (info);
-			else
-				info = inferior.SimpleLookup ("MONO_DEBUGGER__debugger_info");
-			if (info.IsNull)
-				return null;
-
-			return new MonoThreadManager (thread_manager, inferior, info, attach);
-		}
-
 		public MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
 					  TargetAddress info, bool attach)
 		{

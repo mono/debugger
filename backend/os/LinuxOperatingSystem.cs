@@ -74,6 +74,8 @@ namespace Mono.Debugger.Backend
 				check_for_mono_runtime (inferior, bfd);
 		}
 
+		TargetAddress pending_mono_init = TargetAddress.Null;
+
 		void check_for_mono_runtime (Inferior inferior, Bfd bfd)
 		{
 			TargetAddress info = bfd.GetSectionAddress (".mdb_debug_info");
@@ -81,10 +83,52 @@ namespace Mono.Debugger.Backend
 				return;
 
 			TargetAddress data = inferior.ReadAddress (info);
-			if (data.IsNull)
+			if (data.IsNull) {
+				//
+				// See CheckForPendingMonoInit() below - this should only happen when
+				// the Mono runtime is embedded - for instance Moonlight inside Firefox.
+				//
+				// Note that we have to do a symbol lookup for it because we do not know
+				// whether the mono runtime is recent enough to have this variable.
+				//
+				data = bfd.LookupSymbol ("MONO_DEBUGGER__using_debugger");
+				if (data.IsNull) {
+					Report.Error ("Failed to initialize the Mono runtime!");
+					return;
+				}
+
+				inferior.WriteInteger (data, 1);
+				pending_mono_init = info;
 				return;
+			}
 
 			Process.InitializeMono (inferior, data);
+		}
+
+		//
+		// There seems to be a bug in some versions of glibc which causes _dl_debug_state() being
+		// called with RT_CONSISTENT before relocations are done.
+		//
+		// If that happens, the debugger cannot read the `MONO_DEBUGGER__debugger_info' structure
+		// at the time the `libmono.so' library is loaded.
+		//
+		// As a workaround, the `mdb_debug_info' now also contains a global variable called
+		// `MONO_DEBUGGER__using_debugger' which may we set to 1 by the debugger to tell us that
+		// we're running inside the debugger.
+		//
+
+		internal override bool CheckForPendingMonoInit (Inferior inferior)
+		{
+			if (pending_mono_init.IsNull)
+				return false;
+
+			TargetAddress data = inferior.ReadAddress (pending_mono_init);
+			if (data.IsNull)
+				return false;
+
+			pending_mono_init = TargetAddress.Null;
+			Process.InitializeMono (inferior, data);
+			return true;
 		}
 
 		public override TargetAddress LookupSymbol (string name)
@@ -175,8 +219,6 @@ namespace Mono.Debugger.Backend
 			if (debug_base.IsNull)
 				return;
 
-			has_dynlink_info = true;
-
 			int size = 2 * inferior.TargetLongIntegerSize + 3 * inferior.TargetAddressSize;
 
 			TargetReader reader = new TargetReader (inferior.ReadMemory (debug_base, size));
@@ -190,6 +232,8 @@ namespace Mono.Debugger.Backend
 
 			if (reader.ReadLongInteger () != 0)
 				return;
+
+			has_dynlink_info = true;
 
 			Instruction insn = inferior.Architecture.ReadInstruction (inferior, dynlink_breakpoint_addr);
 			if ((insn == null) || !insn.CanInterpretInstruction)

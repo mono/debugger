@@ -1,5 +1,11 @@
 2009-05-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/os/LinuxOperatingSystem.cs
+	(LinuxOperatingSystem.CheckForPendingMonoInit): Work around some
+	dynamic loader madness; see documentation inside for details.
+
+2009-05-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/ProcessServant.cs
 	(ProcessServant.LoadLibrary): Disallow loading unmanaged
 	libraries; this never worked since we obviously don't know their

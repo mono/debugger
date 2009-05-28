@@ -30,6 +30,8 @@ namespace Mono.Debugger.Backend
 
 		internal abstract void UpdateSharedLibraries (Inferior inferior);
 
+		internal abstract bool CheckForPendingMonoInit (Inferior inferior);
+
 		internal abstract void ReadNativeTypes ();
 
 #region IDisposable
