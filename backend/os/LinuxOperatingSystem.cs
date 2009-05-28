@@ -220,15 +220,31 @@ namespace Mono.Debugger.Backend
 					continue;
 
 				Bfd bfd = (Bfd) LookupLibrary (name);
-				if (bfd != null) {
-					check_nptl_setxid (inferior, bfd);
+				if (bfd != null)
 					continue;
-				}
 
 				bool step_into = Process.ProcessStart.LoadNativeSymbolTable;
 				bfd = (Bfd) AddExecutableFile (inferior.TargetMemoryInfo, name, l_addr, step_into, true);
 				check_nptl_setxid (inferior, bfd);
+
+				if (!Process.IsManaged)
+					check_for_mono_runtime (inferior, bfd);
 			}
+		}
+
+		void check_for_mono_runtime (Inferior inferior, Bfd bfd)
+		{
+			TargetAddress info = bfd.GetSectionAddress (".mdb_debug_info");
+			if (info.IsNull)
+				return;
+
+			TargetAddress data = inferior.ReadAddress (info);
+			if (data.IsNull)
+				return;
+
+			Console.WriteLine ("FOUND NEW MONO RUNTIME: {0} {1}", info, data);
+
+			Process.InitializeMono (inferior, data);
 		}
 
 		protected class DynlinkBreakpoint : AddressBreakpoint

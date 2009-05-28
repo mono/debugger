@@ -395,6 +395,24 @@ namespace Mono.Debugger.Backend
 			initialized_event.Set ();
 		}
 
+		internal void InitializeMono (Inferior inferior, TargetAddress mdb_debug_info)
+		{
+			mono_manager = new MonoThreadManager (manager, inferior, mdb_debug_info, false);
+			mono_manager.InitializeAfterAttach (inferior);
+
+			int[] threads = inferior.GetThreads ();
+			foreach (int thread in threads) {
+				if (thread_hash.Contains (thread))
+					continue;
+				ThreadCreated (inferior, thread, true);
+			}
+
+			InitializeThreads (inferior);
+
+			if (mono_manager != null)
+				read_thread_table (inferior);
+		}
+
 		void read_thread_table (Inferior inferior)
 		{
 			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);

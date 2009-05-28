@@ -74,8 +74,8 @@ namespace Mono.Debugger.Backend
 			return new MonoThreadManager (thread_manager, inferior, info, attach);
 		}
 
-		protected MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
-					     TargetAddress info, bool attach)
+		public MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
+					  TargetAddress info, bool attach)
 		{
 			debugger_info = MonoDebuggerInfo.Create (inferior, info);
 
