@@ -112,13 +112,13 @@ namespace Mono.Debugger.Backend
 
 		PsErr global_lookup (string obj_name, string sym_name, out long sym_addr)
 		{
-			Bfd bfd = process.NativeLanguage.FindLibrary (obj_name);
-			if (bfd == null) {
+			NativeExecutableReader exe = process.OperatingSystem.LookupLibrary (obj_name);
+			if (exe == null) {
 				sym_addr = 0;
 				return PsErr.NoSym;
 			}
 
-			TargetAddress addr = bfd.LookupLocalSymbol (sym_name);
+			TargetAddress addr = exe.LookupLocalSymbol (sym_name);
 			if (addr.IsNull) {
 				sym_addr = 0;
 				return PsErr.NoSym;

@@ -26,11 +26,9 @@ namespace Mono.Debugger.Backend
 		{
 			info = Inferior.GetTargetMemoryInfo (manager.AddressDomain);
 
-			bfd = NativeLanguage.AddFile (
+			bfd = (Bfd) NativeLanguage.OperatingSystem.AddExecutableFile (
 				info, start.TargetApplication, TargetAddress.Null,
 				true, true);
-
-			NativeLanguage.SetupInferior (info, bfd);
 
 			core_file = start.CoreFile;
 
@@ -67,7 +65,7 @@ namespace Mono.Debugger.Backend
 			main_thread = (CoreFileThread) threads [0];
 
 			TargetMemoryAccess target_access = ((CoreFileThread) threads [0]).TargetAccess;
-			bfd.UpdateSharedLibraryInfo (null, target_access);
+			// bfd.UpdateSharedLibraryInfo (null, target_access);
 
 			TargetAddress mdb_debug_info = bfd.GetSectionAddress (".mdb_debug_info");
 			if (!mdb_debug_info.IsNull) {
@@ -126,9 +124,12 @@ namespace Mono.Debugger.Backend
 			if (reader != null)
 				return reader;
 
-			Bfd bfd = NativeLanguage.LookupLibrary (address);
-			if (bfd != null)
-				return bfd.GetReader (address, false);
+			NativeExecutableReader exe = NativeLanguage.OperatingSystem.LookupLibrary (address);
+			if (exe != null) {
+				reader = exe.GetReader (address);
+				if (reader != null)
+					return reader;
+			}
 
 			throw new TargetException (
 				TargetError.MemoryAccess, "Memory region containing {0} not in " +

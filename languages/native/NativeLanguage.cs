@@ -10,6 +10,7 @@ namespace Mono.Debugger.Languages.Native
 	internal class NativeLanguage : Language
 	{
 		ProcessServant process;
+		OperatingSystemBackend os;
 		TargetFundamentalType unsigned_type;
 		TargetFundamentalType integer_type;
 		TargetFundamentalType long_type;
@@ -19,16 +20,14 @@ namespace Mono.Debugger.Languages.Native
 		NativeStringType string_type;
 		TargetInfo info;
 
-		Hashtable bfd_hash;
 		Hashtable type_hash;
-		Bfd main_bfd;
 
-		public NativeLanguage (ProcessServant process, TargetInfo info)
+		public NativeLanguage (ProcessServant process, OperatingSystemBackend os, TargetInfo info)
 		{
 			this.process = process;
+			this.os = os;
 			this.info = info;
 
-			this.bfd_hash = Hashtable.Synchronized (new Hashtable ());
 			this.type_hash = Hashtable.Synchronized (new Hashtable ());
 
 			integer_type = new NativeFundamentalType (this, "int", FundamentalKind.Int32, 4);
@@ -38,6 +37,10 @@ namespace Mono.Debugger.Languages.Native
 			pointer_type = new NativePointerType (this, "void *", info.TargetAddressSize);
 			void_type = new NativeOpaqueType (this, "void", 0);
 			string_type = new NativeStringType (this, info.TargetAddressSize);
+		}
+
+		internal OperatingSystemBackend OperatingSystem {
+			get { return os; }
 		}
 
 		public override string Name {
@@ -99,8 +102,7 @@ namespace Mono.Debugger.Languages.Native
 
 		public override TargetType LookupType (string name)
 		{
-			foreach (Bfd bfd in bfd_hash.Values)
-				bfd.ReadTypes ();
+			os.ReadNativeTypes ();
 
 			ITypeEntry entry = (ITypeEntry) type_hash [name];
 			if (entry == null)
@@ -180,97 +182,6 @@ namespace Mono.Debugger.Languages.Native
 			return false;
 		}
 
-		public Bfd LookupModule (string filename)
-		{
-			check_disposed ();
-			return (Bfd) bfd_hash [filename];
-		}
-
-		public Bfd LookupLibrary (TargetAddress address)
-		{
-			foreach (Bfd bfd in bfd_hash.Values) {
-				if (!bfd.IsContinuous)
-					continue;
-
-				if ((address >= bfd.StartAddress) && (address < bfd.EndAddress))
-					return bfd;
-			}
-
-			return null;
-		}
-
-		internal void SetupInferior (TargetInfo info, Bfd main_bfd)
-		{
-			this.main_bfd = main_bfd;
-		}
-
-		public Bfd AddFile (TargetMemoryInfo memory, string filename,
-				    TargetAddress base_address, bool step_info, bool is_loaded)
-		{
-			check_disposed ();
-			Bfd bfd = (Bfd) bfd_hash [filename];
-			if (bfd != null)
-				return bfd;
-
-			bfd = new Bfd (this, memory, filename, main_bfd, base_address, is_loaded);
-			bfd_hash.Add (filename, bfd);
-			return bfd;
-		}
-
-		public TargetAddress LookupSymbol (string name)
-		{
-			foreach (Bfd bfd in bfd_hash.Values) {
-				TargetAddress symbol = bfd [name];
-				if (!symbol.IsNull)
-					return symbol;
-			}
-
-			return TargetAddress.Null;
-		}
-
-		public void CloseBfd (Bfd bfd)
-		{
-			if (bfd == null)
-				return;
-
-			bfd_hash.Remove (bfd.FileName);
-			bfd.Dispose ();
-		}
-
-		public Bfd FindLibrary (string name)
-		{
-			foreach (Bfd bfd in bfd_hash.Values) {
-				if (Path.GetFileName (bfd.FileName) == name)
-					return bfd;
-			}
-
-			return null;
-		}
-
-		public bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
-					   out TargetAddress trampoline, out bool is_start)
-		{
-			foreach (Bfd bfd in bfd_hash.Values) {
-				if (bfd.GetTrampoline (memory, address, out trampoline, out is_start))
-					return true;
-			}
-
-			is_start = false;
-			trampoline = TargetAddress.Null;
-			return false;
-		}
-
-		public TargetAddress GetSectionAddress (string name)
-		{
-			foreach (Bfd bfd in bfd_hash.Values) {
-				TargetAddress address = bfd.GetSectionAddress (name);
-				if (!address.IsNull)
-					return address;
-			}
-
-			return TargetAddress.Null;
-		}
-
 		private bool disposed = false;
 
 		private void check_disposed ()
@@ -289,11 +200,6 @@ namespace Mono.Debugger.Languages.Native
 			}
 
 			if (disposing) {
-				if (bfd_hash != null) {
-					foreach (Bfd bfd in bfd_hash.Values)
-						bfd.Dispose ();
-					bfd_hash = null;
-				}
 			}
 		}
 

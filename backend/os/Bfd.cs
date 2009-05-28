@@ -17,13 +17,9 @@ namespace Mono.Debugger.Backend
 	{
 		IntPtr bfd;
 		protected Module module;
-		protected NativeLanguage language;
+		protected LinuxOperatingSystem os;
 		protected TargetMemoryInfo info;
-		protected Bfd main_bfd;
 		protected BfdSymbolFile symfile;
-		TargetAddress first_link_map = TargetAddress.Null;
-		TargetAddress dynlink_breakpoint = TargetAddress.Null;
-		TargetAddress rdebug_state_addr = TargetAddress.Null;
 		TargetAddress entry_point = TargetAddress.Null;
 		bool is_loaded;
 		Hashtable symbols;
@@ -172,14 +168,13 @@ namespace Mono.Debugger.Backend
 			bfd_init ();
 		}
 
-		public Bfd (NativeLanguage language, TargetMemoryInfo info, string filename,
-			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
+		public Bfd (LinuxOperatingSystem os, TargetMemoryInfo info, string filename,
+			    TargetAddress base_address, bool is_loaded)
 		{
-			this.language = language;
+			this.os = os;
 			this.info = info;
 			this.filename = filename;
 			this.base_address = base_address;
-			this.main_bfd = main_bfd;
 			this.is_loaded = is_loaded;
 
 			this.symfile = new BfdSymbolFile (this);
@@ -269,22 +264,22 @@ namespace Mono.Debugger.Backend
 					"Symbol file {0} has unknown target architecture {1}",
 					filename, target);
 
-			entry_point = this ["main"];
+			entry_point = LookupSymbol ("main");
 
-			module = language.Process.Session.GetModule (filename);
+			module = os.Process.Session.GetModule (filename);
 			if (module == null) {
-				module = language.Process.Session.CreateModule (filename, symfile);
+				module = os.Process.Session.CreateModule (filename, symfile);
 				OnModuleChanged ();
 			} else {
 				module.LoadModule (symfile);
 			}
 
-			language.Process.SymbolTableManager.AddSymbolFile (symfile);
+			os.Process.SymbolTableManager.AddSymbolFile (symfile);
 		}
 
 		public Bfd OpenCoreFile (string core_file)
 		{
-			Bfd core = new Bfd (language, info, core_file, this, TargetAddress.Null, true);
+			Bfd core = new Bfd (os, info, core_file, TargetAddress.Null, true);
 			core.is_coredump = true;
 			return core;
 		}
@@ -318,7 +313,7 @@ namespace Mono.Debugger.Backend
 					info.AddressDomain, base_address.Address + address);
 				if (is_function != 0 && !symbols.Contains (name))
 					symbols.Add (name, relocated);
-				else if ((main_bfd == null) && name.StartsWith ("MONO_DEBUGGER__") && !symbols.Contains (name))
+				else if (name.StartsWith ("MONO_DEBUGGER__") && !symbols.Contains (name))
 					symbols.Add (name, relocated);
 				else if (!local_symbols.Contains (name))
 					local_symbols.Add (name, relocated);
@@ -355,144 +350,29 @@ namespace Mono.Debugger.Backend
 			return simple_symbols;
 		}
 
-		bool dynlink_handler (Inferior inferior)
+		internal TargetAddress ReadDynamicInfo (Inferior inferior)
 		{
-			if (inferior.ReadInteger (rdebug_state_addr) != 0)
-				return false;
-
-			do_update_shlib_info (inferior, inferior);
-			return false;
-		}
-
-		void insert_dynlink_breakpoint (Inferior inferior)
-		{
-			Instruction insn = Architecture.ReadInstruction (
-				inferior, dynlink_breakpoint);
-			if ((insn == null) || !insn.CanInterpretInstruction) {
-				Console.WriteLine ("UNKNOWN DYNLINK BREAKPOINT: {0}",
-						   dynlink_breakpoint);
-				return;
-			}
-
-			AddressBreakpoint dynlink_bpt = new DynlinkBreakpoint (this, insn);
-			dynlink_bpt.Insert (inferior);
-		}
-
-		bool read_dynamic_info (Inferior inferior, TargetMemoryAccess target)
-		{
-			if (initialized)
-				return has_shlib_info;
-
-			initialized = true;
-
 			Section section = GetSectionByName (".dynamic", false);
 			if (section == null)
-				return false;
+				return TargetAddress.Null;
 
 			TargetAddress vma = new TargetAddress (info.AddressDomain, section.vma);
 
 			int size = (int) section.size;
-			byte[] dynamic = target.ReadBuffer (vma, size);
+			byte[] dynamic = inferior.ReadBuffer (vma, size);
 
-			TargetAddress debug_base;
 			IntPtr data = IntPtr.Zero;
 			try {
 				data = Marshal.AllocHGlobal (size);
 				Marshal.Copy (dynamic, 0, data, size);
 				long base_ptr = bfd_glue_elfi386_locate_base (bfd, data, size);
 				if (base_ptr == 0)
-					return false;
-				debug_base = new TargetAddress (info.AddressDomain, base_ptr);
+					return TargetAddress.Null;
+				else
+					return new TargetAddress (info.AddressDomain, base_ptr);
 			} finally {
 				if (data != IntPtr.Zero)
 					Marshal.FreeHGlobal (data);
-			}
-
-			int the_size = 2 * info.TargetLongIntegerSize +
-				3 * info.TargetAddressSize;
-
-			TargetBlob blob = target.ReadMemory (debug_base, the_size);
-			TargetReader reader = new TargetReader (blob.Contents, info);
-			if (reader.ReadLongInteger () != 1)
-				return false;
-
-			first_link_map = reader.ReadAddress ();
-			dynlink_breakpoint = reader.ReadAddress ();
-
-			rdebug_state_addr = debug_base + reader.Offset;
-
-			if (reader.ReadLongInteger () != 0)
-				return false;
-
-			if (inferior != null)
-				insert_dynlink_breakpoint (inferior);
-
-			has_shlib_info = true;
-			return true;
-		}
-
-		public void UpdateSharedLibraryInfo (Inferior inferior, TargetMemoryAccess target)
-		{
-			// This fails if it's a statically linked executable.
-			try {
-				if (!read_dynamic_info (inferior, target))
-					return;
-			} catch {
-				return;
-			}
-
-			do_update_shlib_info (inferior, target);
-		}
-
-		void do_update_shlib_info (Inferior inferior, TargetMemoryAccess target)
-		{
-			bool first = true;
-			TargetAddress map = first_link_map;
-			while (!map.IsNull) {
-				int the_size = 4 * info.TargetAddressSize;
-				TargetBlob blob = target.ReadMemory (map, the_size);
-				TargetReader map_reader = new TargetReader (blob.Contents, info);
-
-				TargetAddress l_addr = map_reader.ReadAddress ();
-				TargetAddress l_name = map_reader.ReadAddress ();
-				map_reader.ReadAddress ();
-
-				string name;
-				try {
-					name = target.ReadString (l_name);
-					// glibc 2.3.x uses the empty string for the virtual
-					// "linux-gate.so.1".
-					if ((name != null) && (name == ""))
-						name = null;
-				} catch {
-					name = null;
-				}
-
-				map = map_reader.ReadAddress ();
-
-				if (first) {
-					first = false;
-					continue;
-				}
-
-				if (name == null)
-					continue;
-
-				Bfd bfd = language.LookupModule (name);
-				if (bfd != null) {
-					if (!bfd.IsLoaded)
-						bfd.module_loaded (inferior, l_addr);
-					continue;
-				}
-
-				bfd = language.AddFile (info, name, l_addr, module.StepInto, true);
-				bfd.module_loaded (inferior, l_addr);
-			}
-		}
-
-		public Bfd MainBfd {
-			get {
-				return main_bfd;
 			}
 		}
 
@@ -504,7 +384,7 @@ namespace Mono.Debugger.Backend
 
 		public Architecture Architecture {
 			get {
-				return language.Process.Architecture;
+				return os.Process.Architecture;
 			}
 		}
 
@@ -552,7 +432,7 @@ namespace Mono.Debugger.Backend
 		}
 
 		public NativeLanguage NativeLanguage {
-			get { return language; }
+			get { return os.Process.NativeLanguage; }
 		}
 
 		internal DwarfReader DwarfReader {
@@ -605,7 +485,7 @@ namespace Mono.Debugger.Backend
 			return null;
 		}
 
-		public TargetAddress EntryPoint {
+		public override TargetAddress EntryPoint {
 			get { return entry_point; }
 		}
 
@@ -684,19 +564,18 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public TargetAddress this [string name] {
-			get {
-				if (symbols == null)
-					return TargetAddress.Null;
-
-				if (symbols.Contains (name))
-					return (TargetAddress) symbols [name];
-
+		public override TargetAddress LookupSymbol (string name)
+		{
+			if (symbols == null)
 				return TargetAddress.Null;
-			}
+
+			if (symbols.Contains (name))
+				return (TargetAddress) symbols [name];
+
+			return TargetAddress.Null;
 		}
 
-		public TargetAddress LookupLocalSymbol (string name)
+		public override TargetAddress LookupLocalSymbol (string name)
 		{
 			if (local_symbols == null)
 				return TargetAddress.Null;
@@ -752,7 +631,6 @@ namespace Mono.Debugger.Backend
 
 			ArrayList all_sections = new ArrayList ();
 			all_sections.AddRange (sections);
-			all_sections.AddRange (main_bfd.Sections);
 
 			foreach (Section section in all_sections) {
 				if ((section.flags & SectionFlags.Alloc) == 0)
@@ -803,7 +681,16 @@ namespace Mono.Debugger.Backend
 				filename);
 		}
 
-		public TargetAddress GetSectionAddress (string name)
+		public override TargetReader GetReader (TargetAddress address)
+		{
+			Section section = FindSection (address.Address);
+			if (section != null)
+				return section.GetReader (address);
+
+			return null;
+		}
+
+		public override TargetAddress GetSectionAddress (string name)
 		{
 			IntPtr section;
 
@@ -900,7 +787,7 @@ namespace Mono.Debugger.Backend
 			has_sections = true;
 		}
 
-		public Module Module {
+		public override Module Module {
 			get {
 				return module;
 			}
@@ -914,7 +801,7 @@ namespace Mono.Debugger.Backend
 
 		public bool IsLoaded {
 			get {
-				return (main_bfd == null) || is_loaded || !base_address.IsNull;
+				return is_loaded || !base_address.IsNull;
 			}
 		}
 
@@ -1018,38 +905,6 @@ namespace Mono.Debugger.Backend
 		{
 			if (dwarf != null)
 				dwarf.ReadTypes ();
-		}
-
-		void module_loaded (Inferior inferior, TargetAddress address)
-		{
-			this.base_address = address;
-
-			if ((inferior != null) && symbols.Contains ("__libc_pthread_functions")) {
-				TargetAddress vtable = (TargetAddress)
-					symbols ["__libc_pthread_functions"];
-
-				/*
-				 * Big big hack to allow debugging gnome-vfs:
-				 * We intercept any calls to __nptl_setxid() and make it
-				 * return 0.  This is safe to do since we do not allow
-				 * debugging setuid programs or running as root, so setxid()
-				 * will always be a no-op anyways.
-				 */
-
-				TargetAddress nptl_setxid = inferior.ReadAddress (
-					vtable + 51 * info.TargetAddressSize);
-
-				if (!nptl_setxid.IsNull) {
-					AddressBreakpoint setxid_bpt = new SetXidBreakpoint (
-						this, nptl_setxid);
-					setxid_bpt.Insert (inferior);
-				}
-			}
-
-			if (dwarf != null) {
-				dwarf.ModuleLoaded ();
-				has_debugging_info = true;
-			}
 		}
 
 		protected class BfdSymbolFile : SymbolFile
@@ -1178,58 +1033,6 @@ namespace Mono.Debugger.Backend
 				}
 
 				return null;
-			}
-		}
-
-		protected class SetXidBreakpoint : AddressBreakpoint
-		{
-			protected readonly Bfd bfd;
-
-			public SetXidBreakpoint (Bfd bfd, TargetAddress address)
-				: base ("setxid", ThreadGroup.System, address)
-			{
-				this.bfd = bfd;
-			}
-
-			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
-			{
-				return true;
-			}
-
-			internal override bool BreakpointHandler (Inferior inferior,
-								  out bool remain_stopped)
-			{
-				bfd.Architecture.Hack_ReturnNull (inferior);
-				remain_stopped = false;
-				return true;
-			}
-		}
-
-		protected class DynlinkBreakpoint : AddressBreakpoint
-		{
-			protected readonly Bfd bfd;
-			public readonly Instruction instruction;
-
-			public DynlinkBreakpoint (Bfd bfd, Instruction instruction)
-				: base ("dynlink", ThreadGroup.System, instruction.Address)
-			{
-				this.bfd = bfd;
-				this.instruction = instruction;
-			}
-
-			public override bool CheckBreakpointHit (Thread target, TargetAddress address)
-			{
-				return true;
-			}
-
-			internal override bool BreakpointHandler (Inferior inferior,
-								  out bool remain_stopped)
-			{
-				bfd.dynlink_handler (inferior);
-				if (!instruction.InterpretInstruction (inferior))
-					throw new InternalError ();
-				remain_stopped = false;
-				return true;
 			}
 		}
 

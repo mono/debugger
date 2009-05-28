@@ -7,6 +7,22 @@ namespace Mono.Debugger.Backend
 {
 	internal abstract class NativeExecutableReader : DebuggerMarshalByRefObject, IDisposable
 	{
+		public abstract Module Module {
+			get;
+		}
+
+		public abstract TargetAddress LookupSymbol (string name);
+
+		public abstract TargetAddress LookupLocalSymbol (string name);
+
+		public abstract TargetAddress GetSectionAddress (string name);
+
+		public abstract TargetAddress EntryPoint {
+			get;
+		}
+
+		public abstract TargetReader GetReader (TargetAddress address);
+
 		//
 		// IDisposable
 		//

@@ -177,7 +177,6 @@ namespace Mono.Debugger.Backend
 
 			csharp_language = inferior.Process.CreateMonoLanguage (debugger_info);
 			csharp_language.InitializeAttach (inferior);
-			inferior.InitializeModules ();
 		}
 
 		internal void InitializeAfterExec (Inferior inferior)
@@ -308,7 +307,6 @@ namespace Mono.Debugger.Backend
 					else
 						csharp_language.Initialize (inferior);
 
-					inferior.InitializeModules ();
 					if (!engine.ProcessServant.IsAttached)
 						engine.ProcessServant.InitializeThreads (inferior);
 

@@ -37,8 +37,8 @@ namespace Mono.Debugger
 
 				handle = new FunctionBreakpointHandle (this, main, -1);
 			} else {
-				NativeLanguage language = frame.Thread.Process.Servant.NativeLanguage;
-				TargetAddress main = language.LookupSymbol ("main");
+				OperatingSystemBackend os = frame.Thread.Process.Servant.OperatingSystem;
+				TargetAddress main = os.LookupSymbol ("main");
 				if (main.IsNull)
 					return null;
 

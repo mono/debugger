@@ -20,7 +20,7 @@ namespace Mono.Debugger.Backend
 	{
 		protected IntPtr server_handle;
 		protected IntPtr io_data;
-		protected Bfd bfd;
+		protected NativeExecutableReader exe;
 		protected ThreadManager thread_manager;
 
 		protected readonly ProcessStart start;
@@ -329,9 +329,9 @@ namespace Mono.Debugger.Backend
 			inferior.has_signals = has_signals;
 
 			inferior.target_info = target_info;
-			inferior.bfd = bfd;
+			inferior.exe = exe;
 
-			inferior.arch = inferior.bfd.Architecture;
+			inferior.arch = inferior.process.Architecture;
 
 			return inferior;
 		}
@@ -794,9 +794,8 @@ namespace Mono.Debugger.Backend
 			target_info = GetTargetMemoryInfo (address_domain);
 
 			try {
-				bfd = process.NativeLanguage.AddFile (
-					target_info, start.TargetApplication, TargetAddress.Null,
-					start.LoadNativeSymbolTable, true);
+				exe = process.OperatingSystem.LoadExecutable (
+					target_info, start.TargetApplication, start.LoadNativeSymbolTable);
 			} catch (Exception e) {
 				if (error_handler != null)
 					error_handler (this, String.Format (
@@ -807,37 +806,30 @@ namespace Mono.Debugger.Backend
 				return;
 			}
 
-			process.NativeLanguage.SetupInferior (target_info, bfd);
-
-			arch = bfd.Architecture;
-		}
-
-		public void InitializeModules ()
-		{
-			bfd.UpdateSharedLibraryInfo (this, this);
+			arch = process.Architecture;
 		}
 
 		public BreakpointManager BreakpointManager {
 			get { return breakpoint_manager; }
 		}
 
-		public Bfd Bfd {
-			get { return bfd; }
+		public NativeExecutableReader Executable {
+			get { return exe; }
 		}
 
 		public TargetAddress SimpleLookup (string name)
 		{
-			return bfd [name];
+			return exe.LookupSymbol (name);
 		}
 
 		public TargetAddress GetSectionAddress (string name)
 		{
-			return bfd.GetSectionAddress (name);
+			return exe.GetSectionAddress (name);
 		}
 
 		public TargetAddress MainMethodAddress {
 			get {
-				return bfd.EntryPoint;
+				return exe.EntryPoint;
 			}
 		}
 
@@ -1261,7 +1253,7 @@ namespace Mono.Debugger.Backend
 
 		public Module[] Modules {
 			get {
-				return new Module[] { bfd.Module };
+				return new Module[] { exe.Module };
 			}
 		}
 

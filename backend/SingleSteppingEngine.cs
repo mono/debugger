@@ -2701,6 +2701,8 @@ namespace Mono.Debugger.Backend
 		protected override void DoExecute ()
 		{ }
 
+		bool initialized;
+
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
@@ -2714,20 +2716,32 @@ namespace Mono.Debugger.Backend
 			    (cevent.Type != Inferior.ChildEventType.CHILD_CALLBACK))
 				return EventResult.Completed;
 
-			if (sse.ProcessServant.IsAttached) {
-				if (sse.ProcessServant.IsManaged)
-					sse.ProcessServant.MonoManager.InitializeAfterAttach (inferior);
-				return EventResult.Completed;
-			}
-
 			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
 				inferior.Step ();
 				return EventResult.Running;
 			}
 
+			if (sse.ProcessServant.IsAttached) {
+				sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
+				if (sse.ProcessServant.IsManaged)
+					sse.ProcessServant.MonoManager.InitializeAfterAttach (inferior);
+				return EventResult.Completed;
+			}
+
+			if (!initialized) {
+				initialized = true;
+				sse.do_continue (inferior.MainMethodAddress);
+				return EventResult.Running;
+			}
+
+			sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
+
 			if (!sse.ProcessServant.IsManaged) {
 				if (sse.OnModuleLoaded (null))
 					return EventResult.Running;
+
+				if (sse.ProcessServant.ProcessStart.StopInMain)
+					return EventResult.Completed;
 			}
 
 			Report.Debug (DebugFlags.SSE,

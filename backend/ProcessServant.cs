@@ -20,6 +20,7 @@ namespace Mono.Debugger.Backend
 		TargetInfo target_info;
 		ThreadManager manager;
 		Architecture architecture;
+		OperatingSystemBackend os;
 		NativeLanguage native_language;
 		SymbolTableManager symtab_manager;
 		MonoThreadManager mono_manager;
@@ -72,7 +73,8 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = new SymbolTableManager (session);
 
-			native_language = new NativeLanguage (this, target_info);
+			os = new LinuxOperatingSystem (this);
+			native_language = new NativeLanguage (this, os, target_info);
 
 			session.OnProcessCreated (client);
 		}
@@ -90,6 +92,7 @@ namespace Mono.Debugger.Backend
 			symtab_manager = parent.symtab_manager;
 
 			native_language = parent.native_language;
+			os = parent.os;
 		}
 
 		public int ID {
@@ -131,9 +134,11 @@ namespace Mono.Debugger.Backend
 		}
 
 		public NativeLanguage NativeLanguage {
-			get {
-				return native_language;
-			}
+			get { return native_language; }
+		}
+
+		public OperatingSystemBackend OperatingSystem {
+			get { return os; }
 		}
 
 		public ThreadServant MainThread {
@@ -235,6 +240,9 @@ namespace Mono.Debugger.Backend
 				if (native_language != null)
 					native_language.Dispose ();
 
+				if (os != null)
+					os.Dispose ();
+
 				if (symtab_manager != null)
 					symtab_manager.Dispose ();
 			}
@@ -249,7 +257,8 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = new SymbolTableManager (session);
 
-			native_language = new NativeLanguage (this, target_info);
+			os = new LinuxOperatingSystem (this);
+			native_language = new NativeLanguage (this, os, target_info);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
 			new_inferior.InitializeThread (inferior.PID);
@@ -374,7 +383,6 @@ namespace Mono.Debugger.Backend
 					ThreadCreated (inferior, thread, true);
 				}
 
-				inferior.InitializeModules ();
 				InitializeThreads (inferior);
 
 				if (mono_manager != null)
@@ -536,8 +544,7 @@ namespace Mono.Debugger.Backend
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				native_language.AddFile (thread.TargetMemoryInfo, filename,
-							 TargetAddress.Null, true, false);
+				os.AddExecutableFile (thread.TargetMemoryInfo, filename, TargetAddress.Null, true, false);
 		}
 
 		internal MonoLanguageBackend MonoLanguage {
@@ -594,7 +601,7 @@ namespace Mono.Debugger.Backend
 
 		public TargetAddress LookupSymbol (string name)
 		{
-			return native_language.LookupSymbol (name);
+			return os.LookupSymbol (name);
 		}
 
 		public Thread[] GetThreads ()
@@ -718,6 +725,11 @@ namespace Mono.Debugger.Backend
 				if (native_language != null) {
 					native_language.Dispose ();
 					native_language = null;
+				}
+
+				if (os != null) {
+					os.Dispose ();
+					os = null;
 				}
 
 				if (symtab_manager != null) {
