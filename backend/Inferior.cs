@@ -319,11 +319,13 @@ namespace Mono.Debugger.Backend
 				thread_manager.AddressDomain);
 		}
 
-		public Inferior CreateThread ()
+		public Inferior CreateThread (int pid, bool do_attach)
 		{
 			Inferior inferior = new Inferior (
 				thread_manager, process, start, breakpoint_manager,
 				error_handler, address_domain);
+
+			inferior.child_pid = pid;
 
 			inferior.signal_info = signal_info;
 			inferior.has_signals = has_signals;
@@ -332,6 +334,11 @@ namespace Mono.Debugger.Backend
 			inferior.exe = exe;
 
 			inferior.arch = inferior.process.Architecture;
+
+			if (do_attach)
+				inferior.Attach (pid);
+			else
+				inferior.InitializeThread (pid);
 
 			return inferior;
 		}
@@ -633,14 +640,6 @@ namespace Mono.Debugger.Backend
 				io_thread.Start ();
 			}
 
-			return child_pid;
-		}
-
-		public void InitializeProcess ()
-		{
-			if (initialized)
-				throw new TargetException (TargetError.AlreadyHaveTarget);
-
 			initialized = true;
 
 			check_error (mono_debugger_server_initialize_process (server_handle));
@@ -648,6 +647,8 @@ namespace Mono.Debugger.Backend
 			SetupInferior ();
 
 			change_target_state (TargetState.Stopped, 0);
+
+			return child_pid;
 		}
 
 		public void InitializeThread (int pid)
@@ -681,7 +682,7 @@ namespace Mono.Debugger.Backend
 
 			start.SetupApplication (exe_file, cwd, cmdline_args);
 
-			SetupInferior ();
+			InitializeThread (pid);
 
 			change_target_state (TargetState.Stopped, 0);
 		}

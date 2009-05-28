@@ -1,5 +1,39 @@
 2009-05-28  Martin Baulig  <martin@ximian.com>
 
+	* backend/ThreadManager.cs
+	(ThreadManager.CreateProcess): Merged into StartApplication().
+	(ThreadManager.HandleChildEvent): Don't call
+	ProcessServant.Initialize() anymore; StartApplication() now takes
+	care of that.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.WaitForApplication): Removed.
+	(ProcessServant.Initialize): Removed.
+	(ProcessServant.StartApplication): New public method.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE): We now have three methods to start things:
+	StartApplication(), StartThread() and StartForkedChild(); each of
+	them will start an appropriate operation.
+	(SSE.OperationStart.DoExecute): Always run until `inferior.EntryPoint'.
+	(SSE.OperationStart.DoProcessEvent): We should now be stopped at
+	`inferior.EntryPoint', initialize shared libraries and modules,
+	then push `OperationRun'.
+
+	* backend/Inferior.cs
+	(Inferior.Run): The target is now stopped when returning from this
+	method; merged InitializeProcess() into this method.
+	(Inferior.CreateThread): Add `int pid' and `bool do_attach' args.
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_spawn): Call _server_ptrace_wait_for_new_thread()
+	to make sure the target is stopped before returning.
+
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_wait_for_new_thread): Accept SIGTRAP as well.
+
+2009-05-28  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-linux-ptrace.c
 	(_server_ptrace_setup_inferior): Moved call to
 	x86_arch_remove_hardware_breakpoints() here.

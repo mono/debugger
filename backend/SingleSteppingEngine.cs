@@ -79,8 +79,7 @@ namespace Mono.Debugger.Backend
 		internal delegate bool TrampolineHandler (Method method);
 		internal delegate bool CheckBreakpointHandler ();
 
-		protected SingleSteppingEngine (ThreadManager manager, ProcessServant process,
-						ProcessStart start)
+		protected SingleSteppingEngine (ThreadManager manager, ProcessServant process)
 			: base (manager, process)
 		{
 			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
@@ -90,8 +89,8 @@ namespace Mono.Debugger.Backend
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
-					     ProcessStart start, out CommandResult result)
-			: this (manager, process, start)
+					     ProcessStart start)
+			: this (manager, process)
 		{
 			inferior = Inferior.CreateInferior (manager, process, start);
 
@@ -102,36 +101,41 @@ namespace Mono.Debugger.Backend
 				pid = inferior.Run ();
 			}
 
-			result = new ThreadCommandResult (thread);
-			current_operation = new OperationStart (this, result);
+			manager.AddEngine (this);
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
 					     Inferior inferior, int pid)
-			: this (manager, process, inferior.ProcessStart)
+			: this (manager, process)
 		{
 			this.inferior = inferior;
 			this.pid = pid;
+
+			manager.AddEngine (this);
 		}
 
-		public CommandResult StartThread (bool do_attach, bool do_execute)
+		public CommandResult StartApplication ()
 		{
 			CommandResult result = new ThreadCommandResult (thread);
-			if (do_attach)
-				current_operation = new OperationInitialize (this, result);
-			else {
-				current_operation = new OperationRun (this, result);
-				if (do_execute)
-					current_operation.Execute ();
-			}
+			current_operation = new OperationStart (this, result);
+			current_operation.Execute ();
 			return result;
 		}
 
-		internal void InitAfterFork ()
+		public CommandResult StartThread ()
+		{
+			CommandResult result = new ThreadCommandResult (thread);
+			current_operation = new OperationRun (this, result);
+			current_operation.Execute ();
+			return result;
+		}
+
+		public CommandResult StartForkedChild ()
 		{
 			CommandResult result = new ThreadCommandResult (thread);
 			current_operation = new OperationRun (this, result);
 			PushOperation (new OperationInitAfterFork (this));
+			return result;
 		}
 
 #region child event processing
@@ -2703,17 +2707,17 @@ namespace Mono.Debugger.Backend
 		}
 
 		protected override void DoExecute ()
-		{ }
-
-		bool initialized;
+		{
+			sse.do_continue (inferior.EntryPoint);
+		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} start: {1} {2} {3}", sse,
+				      "{0} start: {1} {2} {3} {4}", sse,
 				      cevent, sse.ProcessServant.IsAttached,
-				      inferior.CurrentFrame);
+				      inferior.CurrentFrame, inferior.EntryPoint);
 
 			args = null;
 			if ((cevent.Type != Inferior.ChildEventType.CHILD_STOPPED) &&
@@ -2725,30 +2729,20 @@ namespace Mono.Debugger.Backend
 				return EventResult.Running;
 			}
 
+			sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
+
 			if (sse.ProcessServant.IsAttached) {
-				sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
 				if (sse.ProcessServant.IsManaged)
 					sse.ProcessServant.MonoManager.InitializeAfterAttach (inferior);
 				return EventResult.Completed;
 			}
-
-			if (!initialized) {
-				initialized = true;
-
-				sse.do_continue (inferior.EntryPoint);
-				return EventResult.Running;
-			}
-
-			sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
 
 			if (!sse.ProcessServant.IsManaged) {
 				if (sse.OnModuleLoaded (null))
 					return EventResult.Running;
 			}
 
-			Report.Debug (DebugFlags.SSE,
-				      "{0} start #1: {1} {2}", sse, cevent,
-				      sse.ProcessServant.IsAttached);
+			Report.Debug (DebugFlags.SSE, "{0} start #1: {1}", sse, cevent);
 			sse.PushOperation (new OperationRun (sse, true, Result));
 			return EventResult.Running;
 		}

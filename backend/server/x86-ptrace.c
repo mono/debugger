@@ -497,6 +497,9 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 
 	inferior->pid = *child_pid;
 
+	if (!_server_ptrace_wait_for_new_thread (handle))
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
 	result = _server_ptrace_setup_inferior (handle);
 	if (result != COMMAND_ERROR_NONE) {
 		if (redirect_fds) {

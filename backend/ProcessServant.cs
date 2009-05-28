@@ -37,7 +37,6 @@ namespace Mono.Debugger.Backend
 		bool is_execed;
 		bool is_forked;
 		bool initialized;
-		ST.ManualResetEvent initialized_event;
 		DebuggerMutex thread_lock_mutex;
 		bool has_thread_lock;
 
@@ -53,7 +52,6 @@ namespace Mono.Debugger.Backend
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
-			initialized_event = new ST.ManualResetEvent (false);
 
 			target_info = Inferior.GetTargetInfo ();
 			if (target_info.TargetAddressSize == 8)
@@ -175,22 +173,11 @@ namespace Mono.Debugger.Backend
 
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)
 		{
-			Inferior new_inferior = inferior.CreateThread ();
-			if (do_attach)
-				new_inferior.Attach (pid);
-			else
-				new_inferior.InitializeThread (pid);
+			Inferior new_inferior = inferior.CreateThread (pid, do_attach);
 
-			SingleSteppingEngine new_thread = new SingleSteppingEngine (
-				manager, this, new_inferior, pid);
+			SingleSteppingEngine new_thread = new SingleSteppingEngine (manager, this, new_inferior, pid);
 
 			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1} {2}", pid, new_thread, do_attach);
-
-			// Order is important: first add the new engine to the manager's hash table,
-			//                     then call inferior.Initialize() / inferior.Attach().
-			manager.AddEngine (new_thread);
-
-			new_thread.StartThread (do_attach, true);
 
 			if ((mono_manager != null) && !do_attach)
 				mono_manager.ThreadCreated (new_thread);
@@ -198,6 +185,8 @@ namespace Mono.Debugger.Backend
 			if (!do_attach && !is_execed)
 				get_thread_info (inferior, new_thread);
 			OnThreadCreatedEvent (new_thread);
+
+			new_thread.StartThread ();
 		}
 
 		internal void ChildForked (Inferior inferior, int pid)
@@ -220,13 +209,10 @@ namespace Mono.Debugger.Backend
 
 			new_process.main_thread = new_thread;
 
-			// Order is important: first add the new engine to the manager's hash table,
-			//                     then call inferior.Initialize() / inferior.Attach().
-			manager.AddEngine (new_thread);
-			new_thread.InitAfterFork ();
-
 			manager.Debugger.OnProcessCreatedEvent (new_process);
 			new_process.OnThreadCreatedEvent (new_thread);
+
+			new_thread.StartForkedChild ();
 		}
 
 		internal void ChildExecd (Inferior inferior)
@@ -279,17 +265,34 @@ namespace Mono.Debugger.Backend
 
 			thread_hash [inferior.PID] = new_thread;
 
-			manager.ProcessExecd (new_thread);
-			new_thread.StartThread (false, false);
+			inferior.Dispose ();
+			inferior = null;
 
 			manager.Debugger.OnProcessExecdEvent (this);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
 			initialized = is_forked = false;
 
-			inferior.Dispose ();
+			new_thread.StartApplication ();
+		}
 
-			Initialize (new_thread, new_inferior, true);
-			new_inferior.Continue ();
+		internal void StartApplication ()
+		{
+			SingleSteppingEngine engine = new SingleSteppingEngine (manager, this, start);
+
+			initialized = true;
+
+			this.main_thread = engine;
+
+			if (thread_hash.Contains (engine.PID))
+				thread_hash [engine.PID] = engine;
+			else
+				thread_hash.Add (engine.PID, engine);
+			session.MainThreadGroup.AddThread (engine.Thread.ID);
+
+			session.OnMainProcessCreated (client);
+			manager.Debugger.OnMainProcessCreatedEvent (this);
+
+			engine.StartApplication ();
 		}
 
 		internal void OnProcessExitedEvent ()
@@ -331,68 +334,6 @@ namespace Mono.Debugger.Backend
 		internal void OnTargetOutput (bool is_stderr, string output)
 		{
 			client.OnTargetOutput (is_stderr, output);
-		}
-
-		internal void WaitForApplication ()
-		{
-			initialized_event.WaitOne ();
-		}
-
-		internal void Initialize (SingleSteppingEngine engine, Inferior inferior,
-					  bool is_exec)
-		{
-			if (initialized)
-				return;
-
-			if (!is_exec)
-				inferior.InitializeProcess ();
-
-			initialized = true;
-			if (!is_forked || is_exec) {
-				mono_manager = MonoThreadManager.Initialize (
-					manager, inferior, (start.PID != 0) && !is_exec);
-
-				if (is_exec && (mono_manager != null))
-					mono_manager.InitializeAfterExec (inferior);
-
-				if (!is_forked && !is_exec && !is_attached &&
-				    !start.IsNative && (mono_manager == null))
-					throw new TargetException (TargetError.CannotStartTarget,
-								   "Unsupported `mono' executable: {0}",
-								   start.TargetApplication);
-			}
-
-			this.main_thread = engine;
-
-			if (thread_hash.Contains (engine.PID))
-				thread_hash [engine.PID] = engine;
-			else
-				thread_hash.Add (engine.PID, engine);
-			session.MainThreadGroup.AddThread (engine.Thread.ID);
-
-			if (!is_forked && !is_exec) {
-				session.OnMainProcessCreated (client);
-				manager.Debugger.OnMainProcessCreatedEvent (this);
-			}
-
-			if ((start.PID != 0) && !is_exec) {
-				int[] threads = inferior.GetThreads ();
-				foreach (int thread in threads) {
-					if (thread_hash.Contains (thread))
-						continue;
-					ThreadCreated (inferior, thread, true);
-				}
-
-				InitializeThreads (inferior);
-
-				if (mono_manager != null)
-					read_thread_table (inferior);
-			}
-
-			if (!IsManaged)
-				manager.Debugger.Client.OnProcessReachedMainEvent (client);
-
-			initialized_event.Set ();
 		}
 
 		internal void InitializeMono (Inferior inferior, TargetAddress mdb_debug_info)

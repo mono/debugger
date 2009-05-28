@@ -279,8 +279,9 @@ _server_ptrace_wait_for_new_thread (ServerHandle *handle)
 	 * Safety check: make sure we got the correct event.
 	 */
 
-	if ((ret != handle->inferior->pid) || !WIFSTOPPED (status) || (WSTOPSIG (status) != SIGSTOP)) {
-		g_warning (G_STRLOC ": Wait failed: %d", handle->inferior->pid);
+	if ((ret != handle->inferior->pid) || !WIFSTOPPED (status) ||
+	    ((WSTOPSIG (status) != SIGSTOP) && (WSTOPSIG (status) != SIGTRAP))) {
+		g_warning (G_STRLOC ": Wait failed: %d, got pid %d, status %x", handle->inferior->pid, ret, status);
 		g_static_mutex_unlock (&wait_mutex);
 		return FALSE;
 	}

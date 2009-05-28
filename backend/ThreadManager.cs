@@ -110,13 +110,6 @@ namespace Mono.Debugger.Backend
 		SingleSteppingEngine current_event = null;
 		int current_event_status = 0;
 
-		public ProcessServant StartApplication (ProcessStart start)
-		{
-			ProcessServant process = CreateProcess (start);
-			process.WaitForApplication ();
-			return process;
-		}
-
 		public ProcessServant OpenCoreFile (ProcessStart start, out Thread[] threads)
 		{
 			CoreFile core = CoreFile.OpenCoreFile (this, start);
@@ -127,17 +120,6 @@ namespace Mono.Debugger.Backend
 		internal void AddEngine (SingleSteppingEngine engine)
 		{
 			thread_hash.Add (engine.PID, engine);
-			engine_hash.Add (engine.ID, engine);
-		}
-
-		internal void ProcessExecd (SingleSteppingEngine engine)
-		{
-			SingleSteppingEngine old_engine = (SingleSteppingEngine) thread_hash [engine.PID];
-			if (old_engine != null) {
-				thread_hash [engine.PID] = engine;
-				engine_hash.Remove (old_engine.ID);
-			} else
-				thread_hash.Add (engine.PID, engine);
 			engine_hash.Add (engine.ID, engine);
 		}
 
@@ -168,8 +150,6 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
-			inferior.Process.Initialize (engine, inferior, false);
-
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
 				int pid = (int) cevent.Argument;
 				if (pending_sigstops.ContainsKey (pid))
@@ -186,6 +166,8 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_EXECD) {
+				thread_hash.Remove (engine.PID);
+				engine_hash.Remove (engine.ID);
 				inferior.Process.ChildExecd (inferior);
 				resume_target = false;
 				return true;
@@ -258,7 +240,7 @@ namespace Mono.Debugger.Backend
 				return command.Result;
 		}
 
-		internal ProcessServant CreateProcess (ProcessStart start)
+		public ProcessServant StartApplication (ProcessStart start)
 		{
 			Command command = new Command (CommandType.CreateProcess, start);
 
@@ -371,14 +353,9 @@ namespace Mono.Debugger.Backend
 				try {
 					ProcessStart start = (ProcessStart) command.Data1;
 					ProcessServant process = new ProcessServant (this, start);
-
-					CommandResult result;
-					SingleSteppingEngine sse = new SingleSteppingEngine (
-						this, process, start, out result);
-
-					thread_hash.Add (sse.PID, sse);
-					engine_hash.Add (sse.ID, sse);
 					processes.Add (process);
+
+					process.StartApplication ();
 
 					RequestWait ();
 
