@@ -1,7 +1,7 @@
 WARN_CFLAGS = @WARN_CFLAGS@
 AM_CFLAGS = $(WARN_CFLAGS)
 
-INCLUDES = -D_GNU_SOURCE -I$(srcdir)/../bfd/include
+INCLUDES = -D_GNU_SOURCE -I$(srcdir)/../include
 
 noinst_LTLIBRARIES = libiberty.la
 

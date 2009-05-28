@@ -1,6 +1,6 @@
 ## Process this file with automake to generate Makefile.in
 
-SUBDIRS = include hosts
+SUBDIRS = include hosts libiberty opcodes
 
 INCDIR = $(srcdir)/include
 CSEARCH = -I. -I$(srcdir) -I$(INCDIR)
@@ -55,7 +55,7 @@ SOURCE_FILES = \
 
 libbfd_la_SOURCES = $(BFD_BACKEND) $(SOURCE_FILES)
 libbfd_la_LDFLAGS = -export-dynamic
-libbfd_la_LIBADD = ../libiberty/libiberty.la
+libbfd_la_LIBADD = libiberty/libiberty.la
 
 # When compiling archures.c and targets.c, supply the default target
 # info from configure.

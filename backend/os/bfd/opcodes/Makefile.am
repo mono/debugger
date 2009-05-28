@@ -13,7 +13,7 @@ arch_sources = i386-dis.c
 endif
 endif
 
-INCLUDES = -D_GNU_SOURCE $(arch_cflags) -I$(srcdir)/../bfd -I$(srcdir)/../bfd/include
+INCLUDES = -D_GNU_SOURCE $(arch_cflags) -I$(srcdir)/.. -I$(srcdir)/../include
 
 libopcodes_la_SOURCES =  dis-buf.c disassemble.c $(arch_sources)
 libopcodes_la_LDFLAGS = -export-dynamic

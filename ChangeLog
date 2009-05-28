@@ -1,5 +1,22 @@
 2009-05-26  Martin Baulig  <martin@ximian.com>
 
+	Moved everything bfd-related from backend/arch to backend/os.
+
+	* backend/arch/bfd/: Moved.
+	* backend/arch/opcodes/: Moved.
+	* backend/arch/libiberty/: Moved.
+
+	* backend/arch/Bfd.cs: Moved.
+	* backend/arch/BfdDisassembler.cs: Moved.
+	* backend/arch/DwarfReader.cs: Moved.
+	* backend/arch/DwarfFrameReader.cs: Moved.
+	* backend/arch/bfdglue.[ch]: Moved.
+
+	* backend/os/bfd/: Moved `opcodes' and `libiberty' inside the
+	`bfd' directory and build these libraries here.
+
+2009-05-26  Martin Baulig  <martin@ximian.com>
+
 	* backend/os/NativeExecutableReader.cs: New abstract base class.
 
 	* backend/arch/Bfd.cs (Bfd): Derive from `NativeExecutableReader'.
