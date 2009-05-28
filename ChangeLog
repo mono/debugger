@@ -1,3 +1,41 @@
+2009-05-27  Martin Baulig  <martin@ximian.com>
+
+	* backend/os/bfdglue.c
+	(bfd_glue_get_entry_point): New function.
+
+	* backend/os/Bfd.cs
+	(Bfd.EntryPoint): Use the executable's entry point from
+	bfd_glue_get_entry_point() instead of doing a symbol lookup for
+	"main".  The entry point address is stored in the ELF header, so
+	this also works on stripped binaries.
+
+	* backend/Inferior.cs
+	(Inferior.MainMethodAddress): Renamed into `EntryPoint' to reflect
+	the changed semantics.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStart): Run until the executable's entry point, then
+	initialize the shared libraries.
+
+2009-05-27  Martin Baulig  <martin@ximian.com>
+
+	* backend/os/OperatingSystemBackend.cs: New file.
+	(OperatingSystemBackend): New internal abstract class.
+
+	* backend/os/LinuxOperatingSystem.cs: New file.
+	(LinuxOperatingSystem): Linux implementation.
+
+	* backend/os/Bfd.cs
+	(Bfd): Moved the dynlink stuff into `LinuxOperatingSystem'.
+
+	* languages/native/NativeLanguage.cs
+	(NativeLanguage): Moved all the symbol file stuff into
+	`OperatingSystemBackend'.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationStart): Run until the native "main" method before
+	initializing shared libraries.
+
 2009-05-26  Martin Baulig  <martin@ximian.com>
 
 	* languages/native/NativeLanguage.cs

@@ -156,6 +156,9 @@ namespace Mono.Debugger.Backend
 		[DllImport("monodebuggerserver")]
 		extern static long bfd_glue_elfi386_locate_base (IntPtr bfd, IntPtr data, int size);
 
+		[DllImport("monodebuggerserver")]
+		extern static long bfd_glue_get_start_address (IntPtr bfd);
+
 		[DllImport("libglib-2.0-0.dll")]
 		extern static void g_free (IntPtr data);
 
@@ -264,7 +267,8 @@ namespace Mono.Debugger.Backend
 					"Symbol file {0} has unknown target architecture {1}",
 					filename, target);
 
-			entry_point = LookupSymbol ("main");
+			long entry_point_addr = bfd_glue_get_start_address (bfd);
+			entry_point = entry_point_addr != 0 ? new TargetAddress (info.AddressDomain, entry_point_addr) : TargetAddress.Null;
 
 			module = os.Process.Session.GetModule (filename);
 			if (module == null) {

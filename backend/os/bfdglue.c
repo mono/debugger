@@ -334,3 +334,8 @@ bfd_glue_core_file_elfi386_get_registers (const guint8 *data, int size, guint32 
 	return FALSE;
 }
 
+guint64
+bfd_glue_get_start_address (bfd *abfd)
+{
+	return bfd_get_start_address (abfd);
+}

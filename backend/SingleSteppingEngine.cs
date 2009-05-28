@@ -1631,7 +1631,11 @@ namespace Mono.Debugger.Backend
 				}
 				update_current_frame (main_frame);
 			} else {
-				Method method = Lookup (inferior.MainMethodAddress);
+				TargetAddress main_address = Process.OperatingSystem.LookupSymbol ("main");
+				if (main_address.IsNull)
+					return false;
+
+				Method method = Lookup (main_address);
 
 				if (method == null)
 					return false;
@@ -2730,7 +2734,8 @@ namespace Mono.Debugger.Backend
 
 			if (!initialized) {
 				initialized = true;
-				sse.do_continue (inferior.MainMethodAddress);
+
+				sse.do_continue (inferior.EntryPoint);
 				return EventResult.Running;
 			}
 
@@ -2739,14 +2744,11 @@ namespace Mono.Debugger.Backend
 			if (!sse.ProcessServant.IsManaged) {
 				if (sse.OnModuleLoaded (null))
 					return EventResult.Running;
-
-				if (sse.ProcessServant.ProcessStart.StopInMain)
-					return EventResult.Completed;
 			}
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} start #1: {1} {2} {3}", sse, cevent,
-				      sse.ProcessServant.IsAttached, inferior.MainMethodAddress);
+				      "{0} start #1: {1} {2}", sse, cevent,
+				      sse.ProcessServant.IsAttached);
 			sse.PushOperation (new OperationRun (sse, true, Result));
 			return EventResult.Running;
 		}

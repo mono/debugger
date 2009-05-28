@@ -827,7 +827,7 @@ namespace Mono.Debugger.Backend
 			return exe.GetSectionAddress (name);
 		}
 
-		public TargetAddress MainMethodAddress {
+		public TargetAddress EntryPoint {
 			get {
 				return exe.EntryPoint;
 			}
