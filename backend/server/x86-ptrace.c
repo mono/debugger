@@ -280,13 +280,6 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 		if (stopsig == SIGCONT)
 			stopsig = 0;
 
-		if (!handle->inferior->is_initialized) {
-			x86_arch_remove_hardware_breakpoints (handle);
-			handle->inferior->is_initialized = TRUE;
-			if (stopsig == SIGSTOP)
-				stopsig = 0;
-		}
-
 		action = x86_arch_child_stopped (
 			handle, stopsig, &callback_arg, &retval, &retval2, opt_data_size, opt_data);
 

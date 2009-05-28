@@ -12,7 +12,7 @@ struct InferiorHandle
 	int last_signal;
 	int redirect_fds;
 	int output_fd [2], error_fd [2];
-	int is_thread, is_initialized;
+	int is_thread;
 };
 
 #ifndef PTRACE_SETOPTIONS

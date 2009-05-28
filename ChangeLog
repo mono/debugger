@@ -1,3 +1,13 @@
+2009-05-28  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_setup_inferior): Moved call to
+	x86_arch_remove_hardware_breakpoints() here.
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_dispatch_event): Don't call
+	x86_arch_remove_hardware_breakpoints() when stopping the first time.
+
 2009-05-27  Martin Baulig  <martin@ximian.com>
 
 	* backend/os/bfdglue.c

@@ -398,6 +398,8 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 {
 	gchar *filename = g_strdup_printf ("/proc/%d/mem", handle->inferior->pid);
 
+	x86_arch_remove_hardware_breakpoints (handle);
+
 	handle->inferior->os.mem_fd = open64 (filename, O_RDONLY);
 
 	if (handle->inferior->os.mem_fd < 0) {
