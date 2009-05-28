@@ -13,13 +13,14 @@ namespace Mono.Debugger.Backend
 {
 	internal delegate void BfdDisposedHandler (Bfd bfd);
  
-	internal class Bfd : SymbolFile, ISymbolContainer
+	internal class Bfd : NativeExecutableReader, ISymbolContainer
 	{
 		IntPtr bfd;
 		protected Module module;
 		protected NativeLanguage language;
 		protected TargetMemoryInfo info;
 		protected Bfd main_bfd;
+		protected BfdSymbolFile symfile;
 		TargetAddress first_link_map = TargetAddress.Null;
 		TargetAddress dynlink_breakpoint = TargetAddress.Null;
 		TargetAddress rdebug_state_addr = TargetAddress.Null;
@@ -181,6 +182,8 @@ namespace Mono.Debugger.Backend
 			this.main_bfd = main_bfd;
 			this.is_loaded = is_loaded;
 
+			this.symfile = new BfdSymbolFile (this);
+
 			bfd = bfd_glue_openr (filename, null);
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
@@ -270,13 +273,13 @@ namespace Mono.Debugger.Backend
 
 			module = language.Process.Session.GetModule (filename);
 			if (module == null) {
-				module = language.Process.Session.CreateModule (filename, this);
+				module = language.Process.Session.CreateModule (filename, symfile);
 				OnModuleChanged ();
 			} else {
-				module.LoadModule (this);
+				module.LoadModule (symfile);
 			}
 
-			language.Process.SymbolTableManager.AddSymbolFile (this);
+			language.Process.SymbolTableManager.AddSymbolFile (symfile);
 		}
 
 		public Bfd OpenCoreFile (string core_file)
@@ -521,30 +524,6 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public override bool IsNative {
-			get {
-				return true;
-			}
-		}
-
-		public string Name {
-			get {
-				return filename;
-			}
-		}
-
-		public override string FullName {
-			get {
-				return filename;
-			}
-		}
-
-		public override string CodeBase {
-			get {
-				return filename;
-			}
-		}
-
 		public string FileName {
 			get {
 				return filename;
@@ -572,12 +551,6 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public override Language Language {
-			get {
-				return language;
-			}
-		}
-
 		public NativeLanguage NativeLanguage {
 			get { return language; }
 		}
@@ -586,11 +559,11 @@ namespace Mono.Debugger.Backend
 			get { return dwarf; }
 		}
 
-		public override bool SymbolsLoaded {
+		protected bool SymbolsLoaded {
 			get { return (dwarf != null); }
 		}
 
-		public override SourceFile[] Sources {
+		protected SourceFile[] Sources {
 			get {
 				if (dwarf != null)
 					return dwarf.Sources;
@@ -599,7 +572,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public override MethodSource[] GetMethods (SourceFile file)
+		protected MethodSource[] GetMethods (SourceFile file)
 		{
 			if (dwarf != null)
 				return dwarf.GetMethods (file);
@@ -607,7 +580,7 @@ namespace Mono.Debugger.Backend
 			throw new InvalidOperationException ();
 		}
 
-		public override MethodSource FindMethod (string name)
+		protected MethodSource FindMethod (string name)
 		{
 			if (dwarf != null)
 				return dwarf.FindMethod (name);
@@ -615,7 +588,7 @@ namespace Mono.Debugger.Backend
 			return null;
 		}
 
-		public override ISymbolTable SymbolTable {
+		protected ISymbolTable SymbolTable {
 			get {
 				if (dwarf != null)
 					return dwarf.SymbolTable;
@@ -624,7 +597,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
+		protected Symbol SimpleLookup (TargetAddress address, bool exact_match)
 		{
 			if (simple_symtab != null)
 				return simple_symtab.SimpleLookup (address, exact_match);
@@ -700,7 +673,7 @@ namespace Mono.Debugger.Backend
 			dwarf = null;
 		}
 
-		internal override void OnModuleChanged ()
+		protected void OnModuleChanged ()
 		{
 			load_frames ();
 
@@ -927,13 +900,13 @@ namespace Mono.Debugger.Backend
 			has_sections = true;
 		}
 
-		public override Module Module {
+		public Module Module {
 			get {
 				return module;
 			}
 		}
 
-		public override bool HasDebuggingInfo {
+		protected bool HasDebuggingInfo {
 			get {
 				return has_debugging_info;
 			}
@@ -1009,7 +982,7 @@ namespace Mono.Debugger.Backend
 			return true;
 		}
 
-		internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)
+		protected StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)
 		{
 			if ((frame.TargetAddress < StartAddress) || (frame.TargetAddress > EndAddress))
 				return null;
@@ -1076,6 +1049,77 @@ namespace Mono.Debugger.Backend
 			if (dwarf != null) {
 				dwarf.ModuleLoaded ();
 				has_debugging_info = true;
+			}
+		}
+
+		protected class BfdSymbolFile : SymbolFile
+		{
+			public readonly Bfd Bfd;
+
+			public BfdSymbolFile (Bfd bfd)
+			{
+				this.Bfd = bfd;
+			}
+
+			public override bool IsNative {
+				get { return true; }
+			}
+
+			public override string FullName {
+				get { return Bfd.FileName; }
+			}
+
+			public override string CodeBase {
+				get { return Bfd.FileName; }
+			}
+
+			public override Language Language {
+				get { return Bfd.NativeLanguage; }
+			}
+
+			public override Module Module {
+				get { return Bfd.Module; }
+			}
+
+			public override bool HasDebuggingInfo {
+				get { return Bfd.HasDebuggingInfo; }
+			}
+
+			public override bool SymbolsLoaded {
+				get { return Bfd.SymbolsLoaded; }
+			}
+
+			public override SourceFile[] Sources {
+				get { return Bfd.Sources; }
+			}
+
+			public override MethodSource[] GetMethods (SourceFile file)
+			{
+				return Bfd.GetMethods (file);
+			}
+
+			public override MethodSource FindMethod (string name)
+			{
+				return Bfd.FindMethod (name);
+			}
+
+			public override ISymbolTable SymbolTable {
+				get { return Bfd.SymbolTable; }
+			}
+
+			public override Symbol SimpleLookup (TargetAddress address, bool exact_match)
+			{
+				return Bfd.SimpleLookup (address, exact_match);
+			}
+
+			internal override void OnModuleChanged ()
+			{
+				Bfd.OnModuleChanged ();
+			}
+
+			internal override StackFrame UnwindStack (StackFrame frame, TargetMemoryAccess memory)
+			{
+				return Bfd.UnwindStack (frame, memory);
 			}
 		}
 

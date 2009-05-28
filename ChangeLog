@@ -1,5 +1,11 @@
 2009-05-26  Martin Baulig  <martin@ximian.com>
 
+	* backend/os/NativeExecutableReader.cs: New abstract base class.
+
+	* backend/arch/Bfd.cs (Bfd): Derive from `NativeExecutableReader'.
+
+2009-05-26  Martin Baulig  <martin@ximian.com>
+
 	Merge `BfdContainer' and `NativeLanguage'.
 
 	* backend/arch/BfdContainer.cs: Removed.

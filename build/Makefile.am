@@ -53,6 +53,7 @@ MDB_SRCLIST = \
 DEBUGGER_SRCLIST = \
 	$(top_srcdir)/interface/*.cs			\
 	$(top_srcdir)/backend/arch/*.cs			\
+	$(top_srcdir)/backend/os/*.cs			\
 	$(top_srcdir)/backend/*.cs			\
 	$(top_srcdir)/languages/*.cs			\
 	$(top_srcdir)/languages/mono/*.cs		\

@@ -3010,7 +3010,7 @@ namespace Mono.Debugger.Backend
 				: base (reader, comp_unit, abbrev)
 			{
 				this.offset = offset;
-				this.language = reader.Bfd.Language;
+				this.language = reader.Bfd.NativeLanguage;
 				comp_unit.AddType (offset, this);
 
 				if (name != null)
