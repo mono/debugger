@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Collections;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger.Backend;
@@ -7,7 +9,7 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeLanguage : Language
 	{
-		BfdContainer bfd_container;
+		ProcessServant process;
 		TargetFundamentalType unsigned_type;
 		TargetFundamentalType integer_type;
 		TargetFundamentalType long_type;
@@ -17,10 +19,17 @@ namespace Mono.Debugger.Languages.Native
 		NativeStringType string_type;
 		TargetInfo info;
 
-		public NativeLanguage (BfdContainer bfd_container, TargetInfo info)
+		Hashtable bfd_hash;
+		Hashtable type_hash;
+		Bfd main_bfd;
+
+		public NativeLanguage (ProcessServant process, TargetInfo info)
 		{
-			this.bfd_container = bfd_container;
+			this.process = process;
 			this.info = info;
+
+			this.bfd_hash = Hashtable.Synchronized (new Hashtable ());
+			this.type_hash = Hashtable.Synchronized (new Hashtable ());
 
 			integer_type = new NativeFundamentalType (this, "int", FundamentalKind.Int32, 4);
 			unsigned_type = new NativeFundamentalType (this, "unsigned int", FundamentalKind.UInt32, 4);
@@ -40,7 +49,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		internal override ProcessServant Process {
-			get { return bfd_container.Process; }
+			get { return process; }
 		}
 
 		public override TargetFundamentalType IntegerType {
@@ -90,7 +99,23 @@ namespace Mono.Debugger.Languages.Native
 
 		public override TargetType LookupType (string name)
 		{
-			return bfd_container.LookupType (name);
+			foreach (Bfd bfd in bfd_hash.Values)
+				bfd.ReadTypes ();
+
+			ITypeEntry entry = (ITypeEntry) type_hash [name];
+			if (entry == null)
+				return null;
+
+			return entry.ResolveType ();
+		}
+
+		public void AddType (ITypeEntry entry)
+		{
+			if (!type_hash.Contains (entry.Name))
+				type_hash.Add (entry.Name, entry);
+
+			if (entry.IsComplete)
+				type_hash [entry.Name] = entry;
 		}
 
 		TargetFundamentalType GetFundamentalType (Type type)
@@ -155,12 +180,105 @@ namespace Mono.Debugger.Languages.Native
 			return false;
 		}
 
-		internal TargetAddress LookupSymbol (string name)
+		public Bfd this [string filename] {
+			get {
+				check_disposed ();
+				return (Bfd) bfd_hash [filename];
+			}
+		}
+
+		public Bfd LookupLibrary (TargetAddress address)
 		{
-			return bfd_container.LookupSymbol (name);
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (!bfd.IsContinuous)
+					continue;
+
+				if ((address >= bfd.StartAddress) && (address < bfd.EndAddress))
+					return bfd;
+			}
+
+			return null;
+		}
+
+		internal void SetupInferior (TargetInfo info, Bfd main_bfd)
+		{
+			this.main_bfd = main_bfd;
+		}
+
+		public Bfd AddFile (TargetMemoryInfo memory, string filename,
+				    TargetAddress base_address, bool step_info, bool is_loaded)
+		{
+			check_disposed ();
+			Bfd bfd = (Bfd) bfd_hash [filename];
+			if (bfd != null)
+				return bfd;
+
+			bfd = new Bfd (this, memory, filename, main_bfd, base_address, is_loaded);
+			bfd_hash.Add (filename, bfd);
+			return bfd;
+		}
+
+		public TargetAddress LookupSymbol (string name)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				TargetAddress symbol = bfd [name];
+				if (!symbol.IsNull)
+					return symbol;
+			}
+
+			return TargetAddress.Null;
+		}
+
+		public void CloseBfd (Bfd bfd)
+		{
+			if (bfd == null)
+				return;
+
+			bfd_hash.Remove (bfd.FileName);
+			bfd.Dispose ();
+		}
+
+		public Bfd FindLibrary (string name)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (Path.GetFileName (bfd.FileName) == name)
+					return bfd;
+			}
+
+			return null;
+		}
+
+		public bool GetTrampoline (TargetMemoryAccess memory, TargetAddress address,
+					   out TargetAddress trampoline, out bool is_start)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd.GetTrampoline (memory, address, out trampoline, out is_start))
+					return true;
+			}
+
+			is_start = false;
+			trampoline = TargetAddress.Null;
+			return false;
+		}
+
+		public TargetAddress GetSectionAddress (string name)
+		{
+			foreach (Bfd bfd in bfd_hash.Values) {
+				TargetAddress address = bfd.GetSectionAddress (name);
+				if (!address.IsNull)
+					return address;
+			}
+
+			return TargetAddress.Null;
 		}
 
 		private bool disposed = false;
+
+		private void check_disposed ()
+		{
+			if (disposed)
+				throw new ObjectDisposedException ("NativeLanguage");
+		}
 
 		private void Dispose (bool disposing)
 		{
@@ -172,10 +290,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 
 			if (disposing) {
-				if (bfd_container != null) {
-					bfd_container.Dispose ();
-
-					bfd_container = null;
+				if (bfd_hash != null) {
+					foreach (Bfd bfd in bfd_hash.Values)
+						bfd.Dispose ();
+					bfd_hash = null;
 				}
 			}
 		}

@@ -533,7 +533,7 @@ namespace Mono.Debugger.Architectures
 				}
 
 				bool is_start;
-				if (Opcodes.Process.BfdContainer.GetTrampoline (
+				if (Opcodes.Process.NativeLanguage.GetTrampoline (
 					    memory, target, out trampoline, out is_start)) {
 					target = trampoline;
 					return is_start ? 

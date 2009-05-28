@@ -39,7 +39,7 @@ namespace Mono.Debugger.Backend
 		bool is_daemon;
 
 		protected internal Language NativeLanguage {
-			get { return process.BfdContainer.NativeLanguage; }
+			get { return process.NativeLanguage; }
 		}
 
 		public override string ToString ()

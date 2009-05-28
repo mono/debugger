@@ -2,6 +2,7 @@ using System;
 using System.Xml;
 using Mono.Debugger.Backend;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Native;
 using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
@@ -36,8 +37,8 @@ namespace Mono.Debugger
 
 				handle = new FunctionBreakpointHandle (this, main, -1);
 			} else {
-				BfdContainer bfd_container = frame.Thread.Process.Servant.BfdContainer;
-				TargetAddress main = bfd_container.LookupSymbol ("main");
+				NativeLanguage language = frame.Thread.Process.Servant.NativeLanguage;
+				TargetAddress main = language.LookupSymbol ("main");
 				if (main.IsNull)
 					return null;
 

@@ -1135,7 +1135,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		public override TargetPointerObject CreatePointer (StackFrame frame, TargetAddress address)
 		{
-			return process.BfdContainer.NativeLanguage.CreatePointer (frame, address);
+			return process.NativeLanguage.CreatePointer (frame, address);
 		}
 
 		public override TargetObject CreateObject (Thread thread, TargetAddress address)

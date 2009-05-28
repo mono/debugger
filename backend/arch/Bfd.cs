@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 
 using Mono.Debugger;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Native;
 using Mono.Debugger.Architectures;
 
 namespace Mono.Debugger.Backend
@@ -16,7 +17,7 @@ namespace Mono.Debugger.Backend
 	{
 		IntPtr bfd;
 		protected Module module;
-		protected BfdContainer container;
+		protected NativeLanguage language;
 		protected TargetMemoryInfo info;
 		protected Bfd main_bfd;
 		TargetAddress first_link_map = TargetAddress.Null;
@@ -170,10 +171,10 @@ namespace Mono.Debugger.Backend
 			bfd_init ();
 		}
 
-		public Bfd (BfdContainer container, TargetMemoryInfo info, string filename,
+		public Bfd (NativeLanguage language, TargetMemoryInfo info, string filename,
 			    Bfd main_bfd, TargetAddress base_address, bool is_loaded)
 		{
-			this.container = container;
+			this.language = language;
 			this.info = info;
 			this.filename = filename;
 			this.base_address = base_address;
@@ -267,20 +268,20 @@ namespace Mono.Debugger.Backend
 
 			entry_point = this ["main"];
 
-			module = container.Process.Session.GetModule (filename);
+			module = language.Process.Session.GetModule (filename);
 			if (module == null) {
-				module = container.Process.Session.CreateModule (filename, this);
+				module = language.Process.Session.CreateModule (filename, this);
 				OnModuleChanged ();
 			} else {
 				module.LoadModule (this);
 			}
 
-			container.Process.SymbolTableManager.AddSymbolFile (this);
+			language.Process.SymbolTableManager.AddSymbolFile (this);
 		}
 
 		public Bfd OpenCoreFile (string core_file)
 		{
-			Bfd core = new Bfd (container, info, core_file, this, TargetAddress.Null, true);
+			Bfd core = new Bfd (language, info, core_file, this, TargetAddress.Null, true);
 			core.is_coredump = true;
 			return core;
 		}
@@ -474,14 +475,14 @@ namespace Mono.Debugger.Backend
 				if (name == null)
 					continue;
 
-				Bfd bfd = container [name];
+				Bfd bfd = language [name];
 				if (bfd != null) {
 					if (!bfd.IsLoaded)
 						bfd.module_loaded (inferior, l_addr);
 					continue;
 				}
 
-				bfd = container.AddFile (info, name, l_addr, module.StepInto, true);
+				bfd = language.AddFile (info, name, l_addr, module.StepInto, true);
 				bfd.module_loaded (inferior, l_addr);
 			}
 		}
@@ -500,13 +501,7 @@ namespace Mono.Debugger.Backend
 
 		public Architecture Architecture {
 			get {
-				return container.Architecture;
-			}
-		}
-
-		public BfdContainer BfdContainer {
-			get {
-				return container;
+				return language.Process.Architecture;
 			}
 		}
 
@@ -579,8 +574,12 @@ namespace Mono.Debugger.Backend
 
 		public override Language Language {
 			get {
-				return container.NativeLanguage;
+				return language;
 			}
+		}
+
+		public NativeLanguage NativeLanguage {
+			get { return language; }
 		}
 
 		internal DwarfReader DwarfReader {
@@ -983,8 +982,7 @@ namespace Mono.Debugger.Backend
 				return false;
 			}
 
-			Instruction target_insn = container.Architecture.ReadInstruction (
-				memory, address);
+			Instruction target_insn = Architecture.ReadInstruction (memory, address);
 			if ((target_insn == null) || !target_insn.HasInstructionSize ||
 			    ((target_insn.InstructionType != Instruction.Type.Jump) &&
 			     (target_insn.InstructionType != Instruction.Type.IndirectJump))) {
@@ -1018,7 +1016,7 @@ namespace Mono.Debugger.Backend
 
 			StackFrame new_frame;
 			try {
-				new_frame = container.Architecture.TrySpecialUnwind (frame, memory);
+				new_frame = Architecture.TrySpecialUnwind (frame, memory);
 				if (new_frame != null)
 					return new_frame;
 			} catch {
@@ -1026,15 +1024,13 @@ namespace Mono.Debugger.Backend
 
 			try {
 				if (frame_reader != null) {
-					new_frame = frame_reader.UnwindStack (
-						frame, memory, container.Architecture);
+					new_frame = frame_reader.UnwindStack (frame, memory, Architecture);
 					if (new_frame != null)
 						return new_frame;
 				}
 
 				if (eh_frame_reader != null) {
-					new_frame = eh_frame_reader.UnwindStack (
-						frame, memory, container.Architecture);
+					new_frame = eh_frame_reader.UnwindStack (frame, memory, Architecture);
 					if (new_frame != null)
 						return new_frame;
 				}

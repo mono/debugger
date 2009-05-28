@@ -112,7 +112,7 @@ namespace Mono.Debugger.Backend
 
 		PsErr global_lookup (string obj_name, string sym_name, out long sym_addr)
 		{
-			Bfd bfd = process.BfdContainer.FindLibrary (obj_name);
+			Bfd bfd = process.NativeLanguage.FindLibrary (obj_name);
 			if (bfd == null) {
 				sym_addr = 0;
 				return PsErr.NoSym;

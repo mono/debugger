@@ -1,3 +1,11 @@
+2009-05-26  Martin Baulig  <martin@ximian.com>
+
+	Merge `BfdContainer' and `NativeLanguage'.
+
+	* backend/arch/BfdContainer.cs: Removed.
+
+	* backend/arch/Bfd.cs: Replaced `BfdContainer' by `NativeLanguage'.
+
 2009-05-25  jonas echterhoff  <jonas@unity3d.com>
 
 	Implement debugger for OS X

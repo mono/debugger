@@ -26,11 +26,11 @@ namespace Mono.Debugger.Backend
 		{
 			info = Inferior.GetTargetMemoryInfo (manager.AddressDomain);
 
-			bfd = BfdContainer.AddFile (
+			bfd = NativeLanguage.AddFile (
 				info, start.TargetApplication, TargetAddress.Null,
 				true, true);
 
-			BfdContainer.SetupInferior (info, bfd);
+			NativeLanguage.SetupInferior (info, bfd);
 
 			core_file = start.CoreFile;
 
@@ -126,7 +126,7 @@ namespace Mono.Debugger.Backend
 			if (reader != null)
 				return reader;
 
-			Bfd bfd = BfdContainer.LookupLibrary (address);
+			Bfd bfd = NativeLanguage.LookupLibrary (address);
 			if (bfd != null)
 				return bfd.GetReader (address, false);
 

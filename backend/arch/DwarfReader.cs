@@ -292,7 +292,7 @@ namespace Mono.Debugger.Backend
 			SourceFile file = (SourceFile) source_file_hash [filename];
 			if (file == null) {
 				file = new DwarfSourceFile (
-					bfd.BfdContainer.Process.Session, module, filename);
+					bfd.NativeLanguage.Process.Session, module, filename);
 				source_file_hash.Add (filename, file);
 			}
 			return file;
@@ -300,7 +300,7 @@ namespace Mono.Debugger.Backend
 
 		protected void AddType (DieType type)
 		{
-			bfd.BfdContainer.AddType (type);
+			bfd.NativeLanguage.AddType (type);
 		}
 
 		bool types_initialized;

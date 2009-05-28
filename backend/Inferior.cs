@@ -25,7 +25,6 @@ namespace Mono.Debugger.Backend
 
 		protected readonly ProcessStart start;
 
-		protected readonly BfdContainer bfd_container;
 		protected readonly ProcessServant process;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
@@ -303,7 +302,6 @@ namespace Mono.Debugger.Backend
 			this.process = process;
 			this.start = start;
 			this.native = start.IsNative;
-			this.bfd_container = process.BfdContainer;
 			this.error_handler = error_handler;
 			this.breakpoint_manager = bpm;
 			this.address_domain = address_domain;
@@ -594,12 +592,6 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public BfdContainer BfdContainer {
-			get {
-				return bfd_container;
-			}
-		}
-
 		public ProcessServant Process {
 			get {
 				return process;
@@ -802,7 +794,7 @@ namespace Mono.Debugger.Backend
 			target_info = GetTargetMemoryInfo (address_domain);
 
 			try {
-				bfd = bfd_container.AddFile (
+				bfd = process.NativeLanguage.AddFile (
 					target_info, start.TargetApplication, TargetAddress.Null,
 					start.LoadNativeSymbolTable, true);
 			} catch (Exception e) {
@@ -815,7 +807,7 @@ namespace Mono.Debugger.Backend
 				return;
 			}
 
-			bfd_container.SetupInferior (target_info, bfd);
+			process.NativeLanguage.SetupInferior (target_info, bfd);
 
 			arch = bfd.Architecture;
 		}

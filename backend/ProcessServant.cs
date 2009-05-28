@@ -9,6 +9,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using Mono.Debugger.Backend;
 using Mono.Debugger.Architectures;
 using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Native;
 using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backend
@@ -19,7 +20,7 @@ namespace Mono.Debugger.Backend
 		TargetInfo target_info;
 		ThreadManager manager;
 		Architecture architecture;
-		BfdContainer bfd_container;
+		NativeLanguage native_language;
 		SymbolTableManager symtab_manager;
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
@@ -71,7 +72,7 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = new SymbolTableManager (session);
 
-			bfd_container = new BfdContainer (this);
+			native_language = new NativeLanguage (this, target_info);
 
 			session.OnProcessCreated (client);
 		}
@@ -88,7 +89,7 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = parent.symtab_manager;
 
-			bfd_container = parent.bfd_container;
+			native_language = parent.native_language;
 		}
 
 		public int ID {
@@ -119,10 +120,6 @@ namespace Mono.Debugger.Backend
 			get { return architecture; }
 		}
 
-		internal BfdContainer BfdContainer {
-			get { return bfd_container; }
-		}
-
 		internal BreakpointManager BreakpointManager {
 			get { return breakpoint_manager; }
 		}
@@ -133,9 +130,9 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public Language NativeLanguage {
+		public NativeLanguage NativeLanguage {
 			get {
-				return bfd_container.NativeLanguage;
+				return native_language;
 			}
 		}
 
@@ -232,11 +229,11 @@ namespace Mono.Debugger.Backend
 			is_execed = true;
 
 			if (!is_forked) {
-				if (bfd_container != null)
-					bfd_container.Dispose ();
-
 				if (mono_language != null)
 					mono_language.Dispose();
+
+				if (native_language != null)
+					native_language.Dispose ();
 
 				if (symtab_manager != null)
 					symtab_manager.Dispose ();
@@ -252,7 +249,7 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = new SymbolTableManager (session);
 
-			bfd_container = new BfdContainer (this);
+			native_language = new NativeLanguage (this, target_info);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
 			new_inferior.InitializeThread (inferior.PID);
@@ -539,8 +536,8 @@ namespace Mono.Debugger.Backend
 						filename);
 
 			if (!mono_language.TryFindImage (thread, filename))
-				bfd_container.AddFile (thread.TargetMemoryInfo, filename,
-						       TargetAddress.Null, true, false);
+				native_language.AddFile (thread.TargetMemoryInfo, filename,
+							 TargetAddress.Null, true, false);
 		}
 
 		internal MonoLanguageBackend MonoLanguage {
@@ -597,7 +594,7 @@ namespace Mono.Debugger.Backend
 
 		public TargetAddress LookupSymbol (string name)
 		{
-			return bfd_container.LookupSymbol (name);
+			return native_language.LookupSymbol (name);
 		}
 
 		public Thread[] GetThreads ()
@@ -713,14 +710,14 @@ namespace Mono.Debugger.Backend
 					architecture = null;
 				}
 
-				if (bfd_container != null) {
-					bfd_container.Dispose ();
-					bfd_container = null;
-				}
-
 				if (mono_language != null) {
 					mono_language.Dispose();
 					mono_language = null;
+				}
+
+				if (native_language != null) {
+					native_language.Dispose ();
+					native_language = null;
 				}
 
 				if (symtab_manager != null) {
