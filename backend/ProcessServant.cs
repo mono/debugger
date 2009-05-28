@@ -398,7 +398,7 @@ namespace Mono.Debugger.Backend
 		internal void InitializeMono (Inferior inferior, TargetAddress mdb_debug_info)
 		{
 			mono_manager = new MonoThreadManager (manager, inferior, mdb_debug_info, false);
-			mono_manager.InitializeAfterAttach (inferior);
+			mono_manager.InitializeAfterExec (inferior);
 
 			int[] threads = inferior.GetThreads ();
 			foreach (int thread in threads) {
