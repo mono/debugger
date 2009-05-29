@@ -1620,6 +1620,8 @@ namespace Mono.Debugger.Backend
 				MonoLanguageBackend mono = process.MonoLanguage;
 
 				MonoFunctionType main = mono.MainMethod;
+				if (main == null)
+					return false;
 
 				MethodSource source = main.SymbolFile.GetMethodByToken (main.Token);
 				if (source != null) {

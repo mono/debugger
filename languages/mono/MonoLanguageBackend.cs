@@ -1373,11 +1373,11 @@ namespace Mono.Debugger.Languages.Mono
 				Report.Debug (DebugFlags.JitSymtab, "Initialize corlib");
 				read_mono_debugger_info (inferior);
 				read_symbol_table (inferior);
+				read_builtin_types (inferior);
 				break;
 
 			case NotificationType.InitializeManagedCode:
 				Report.Debug (DebugFlags.JitSymtab, "Initialize managed code");
-				read_builtin_types (inferior);
 				reached_main (inferior, data);
 				break;
 
