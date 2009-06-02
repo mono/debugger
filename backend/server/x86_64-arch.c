@@ -187,8 +187,18 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 	if (stopsig == SIGSTOP)
 		return STOP_ACTION_INTERRUPTED;
 
+	/*
+	 * By default, when the NX-flag is set in the BIOS, we stop at the `cdata->call_address'
+	 * (which contains an `int 3' instruction) with a SIGSEGV.
+	 *
+	 * When the NX-flag is turned off, that `int 3' instruction is actually executed and we
+	 * stop normally.
+	 */
+
 	cdata = get_callback_data (arch);
-	if (cdata && (cdata->call_address == INFERIOR_REG_RIP (arch->current_regs))) {
+	if (cdata &&
+	    (((stopsig == SIGSEGV) && (cdata->call_address == INFERIOR_REG_RIP (arch->current_regs))) ||
+	     (cdata->call_address == INFERIOR_REG_RIP (arch->current_regs) - 1))) {
 		if (cdata->pushed_registers) {
 			guint64 pushed_regs [13];
 
