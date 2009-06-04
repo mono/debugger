@@ -228,7 +228,7 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gp
 }
 
 static ServerCommandError
-server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guint32 size)
+_server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guint32 size)
 {
 	kern_return_t err;
 	vm_address_t low_address = (vm_address_t) trunc_page (start);

@@ -70,7 +70,7 @@ static gboolean
 _server_ptrace_wait_for_new_thread (ServerHandle *handle);
 
 static ServerCommandError
-server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guint32 size);
+_server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guint32 size);
 
 #define GET_PID(x) ((x)&0x1ffff)
 #define GET_THREAD_INDEX(x) ((x)>>17)

@@ -165,7 +165,7 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	result = _server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -236,7 +236,7 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	result = _server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -303,7 +303,7 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	result = _server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -369,7 +369,7 @@ server_ptrace_call_method_3 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	result = _server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
@@ -447,7 +447,7 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
-	result = server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
+	result = _server_ptrace_make_memory_executable (handle, (guint32) new_esp, size);
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
