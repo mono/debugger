@@ -38,19 +38,19 @@ namespace Mono.Debugger.Tests
 			string text;
 			EE.EvaluationResult result;
 
-			result = EE.MonoObjectToString (thread, a, EE.EvaluationFlags.None, 1000, out text);
+			result = EE.MonoObjectToString (thread, a, EE.EvaluationFlags.None, 500, out text);
 
 			if (result != ExpressionEvaluator.EvaluationResult.Ok)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
-			if (text != "Foo (5)")
+			if (text != "Foo (3)")
 				Assert.Fail ("Failed to print `a': got result {0}", text);
 
-			result = EE.MonoObjectToString (thread, b, EE.EvaluationFlags.None, 1000, out text);
+			result = EE.MonoObjectToString (thread, b, EE.EvaluationFlags.None, 500, out text);
 			if (result != EE.EvaluationResult.Timeout)
 				Assert.Fail ("Failed to print `a': got result {0}", result);
 
 			AssertExecute ("continue");
-			AssertTargetOutput ("TEST: Foo (5) Foo (13)");
+			AssertTargetOutput ("TEST: Foo (3) Foo (8)");
 			AssertTargetExited (thread.Process);
 		}
 	}
