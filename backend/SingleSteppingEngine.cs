@@ -1868,7 +1868,7 @@ namespace Mono.Debugger.Backend
 
 				process.UpdateSymbolTable (inferior);
 
-				if (process.IsManagedApplication)
+				if (!process.IsManagedApplication)
 					throw new TargetException (TargetError.InvalidReturn, "Not a managed application.");
 
 				Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
