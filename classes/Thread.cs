@@ -563,6 +563,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
+				is_running = true;
+				operation_completed_event.Reset ();
 				RuntimeInvokeResult result = new RuntimeInvokeResult (this);
 				servant.RuntimeInvoke (
 					function, object_argument, param_objects,
@@ -658,25 +660,12 @@ namespace Mono.Debugger
 			result.Wait ();
 		}
 
-		public bool AbortInvocation (long rti_id)
+		internal void AbortInvocation (long rti_id)
 		{
-			CommandResult result;
-
 			lock (this) {
 				check_alive ();
-				try {
-					result = servant.AbortInvocation (rti_id);
-				} catch (TargetException ex) {
-					if (ex.Type == TargetError.NoInvocation)
-						return false;
-					throw;
-				}
-				if (result == null)
-					return false;
+				servant.AbortInvocation (rti_id);
 			}
-
-			result.Wait ();
-			return true;
 		}
 
 		public string PrintRegisters (StackFrame frame)
@@ -913,28 +902,17 @@ namespace Mono.Debugger
 		}
 	}
 
-	public class RuntimeInvokeResult : CommandResult
+	public class RuntimeInvokeResult : ThreadCommandResult
 	{
-		Thread thread;
-		ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
-
 		internal RuntimeInvokeResult (Thread thread)
-		{
-			this.thread = thread;
-		}
+			: base (thread)
+		{ }
 
-		public override ST.WaitHandle CompletedEvent {
-			get { return completed_event; }
-		}
-
-		public override void Completed ()
-		{
-			completed_event.Set ();
-		}
 
 		public override void Abort ()
 		{
-			thread.Stop ();
+			Thread.AbortInvocation (ID);
+			Thread.WaitHandle.WaitOne ();
 		}
 
 		public long ID;

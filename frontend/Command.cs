@@ -160,10 +160,7 @@ namespace Mono.Debugger.Frontend
 			if (Argument == "")
 				throw new ScriptingException ("Argument expected");
 
-			Expression expression = context.Interpreter.ExpressionParser.Parse (Argument);
-			if (expression == null)
-				throw new ScriptingException ("Cannot parse expression `{0}'.", Argument);
-
+			context.ParseExpression (Argument);
 			return true;
 		}
 
@@ -249,11 +246,7 @@ namespace Mono.Debugger.Frontend
 
 		protected Expression DoParseExpression (ScriptingContext context, string arg)
 		{
-			Expression expr = context.Interpreter.ExpressionParser.Parse (arg);
-			if (expr == null)
-				throw new ScriptingException ("Cannot parse arguments");
-
-			return expr;
+			return context.ParseExpression (arg);
 		}
 
 		protected abstract object DoExecute (ScriptingContext context);
@@ -3161,10 +3154,7 @@ namespace Mono.Debugger.Frontend
 				return true;
 			}
 
-			Expression expr = context.Interpreter.ExpressionParser.Parse (Argument);
-			if (expr == null)
-				throw new ScriptingException ("Cannot resolve expression `{0}'.", Argument);
-
+			Expression expr = context.ParseExpression (Argument);
 			if (expr is PointerExpression) {
 				address = ((PointerExpression) expr).EvaluateAddress (context);
 				return true;

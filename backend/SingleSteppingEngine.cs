@@ -161,8 +161,8 @@ namespace Mono.Debugger.Backend
 
 		public void ProcessEvent (Inferior.ChildEvent cevent)
 		{
-			Report.Debug (DebugFlags.EventLoop, "{0} received event {1} {2}",
-				      this, cevent, stop_requested ? " - stop requested" : "");
+			Report.Debug (DebugFlags.EventLoop, "{0} received event {1}",
+				      this, cevent);
 
 			if (killed && (cevent.Type != Inferior.ChildEventType.CHILD_EXITED)) {
 				Report.Debug (DebugFlags.EventLoop,
@@ -200,27 +200,29 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
-				stop_requested = false;
 				frame_changed (inferior.CurrentFrame, null);
-				OperationCompleted (new TargetEventArgs (TargetEventType.TargetInterrupted, 0, current_frame));
+
+				long abort_rti = -1;
+				lock (this) {
+					abort_rti = abort_requested;
+					abort_requested = -1;
+				}
+				Report.Debug (DebugFlags.SSE, "{0} interrupted: {1} - {2}", this, abort_rti, current_frame);
+				if (abort_rti >= 0) {
+					DoAbortInvocation (abort_rti);
+				} else {
+					OperationCompleted (new TargetEventArgs (TargetEventType.TargetInterrupted, 0, current_frame));
+				}
 				return;
 			}
 
 			bool resume_target;
 			if (manager.HandleChildEvent (this, inferior, ref cevent, out resume_target)) {
 				Report.Debug (DebugFlags.EventLoop,
-					      "{0} done handling event: {1} {2} {3} {4}",
-					      this, cevent, resume_target, stop_requested,
-					      HasThreadLock);
+					      "{0} done handling event: {1} {2} {3}",
+					      this, cevent, resume_target, HasThreadLock);
 				if (!resume_target)
 					return;
-				if (stop_requested) {
-					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, null);
-					OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
-					return;
-				}
-
 				if ((current_operation != null) && current_operation.ResumeOperation ())
 					return;
 				inferior.Continue ();
@@ -361,13 +363,6 @@ namespace Mono.Debugger.Backend
 
 			switch (message) {
 			case Inferior.ChildEventType.CHILD_STOPPED:
-				if (stop_requested) {
-					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, null);
-					OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, arg, current_frame));
-					return;
-				}
-
 				break;
 
 			case Inferior.ChildEventType.UNHANDLED_EXCEPTION: {
@@ -384,15 +379,7 @@ namespace Mono.Debugger.Backend
 				// execution.
 				Breakpoint bpt;
 				bool remain_stopped = child_breakpoint (cevent, arg, out bpt);
-				if (stop_requested) {
-					stop_requested = false;
-					frame_changed (inferior.CurrentFrame, null);
-					if (remain_stopped && (bpt != null) && !bpt.HideFromUser)
-						OperationCompleted (new TargetEventArgs (TargetEventType.TargetHitBreakpoint, bpt.Index, current_frame));
-					else
-						OperationCompleted (new TargetEventArgs (TargetEventType.TargetStopped, 0, current_frame));
-					return;
-				} else if (!remain_stopped) {
+				if (!remain_stopped) {
 					do_continue ();
 					return;
 				}
@@ -528,8 +515,6 @@ namespace Mono.Debugger.Backend
 					throw new InternalError ("{0} aborting rti failed: {1}", this, io);
 				process.OnLeaveNestedBreakState (this);
 			}
-
-			rti.CompletedOperation ();
 		}
 
 		void OperationCompleted (TargetEventArgs result)
@@ -688,8 +673,6 @@ namespace Mono.Debugger.Backend
 
 		CommandResult ProcessOperation (Operation operation)
 		{
-			stop_requested = false;
-
 			if (HasThreadLock) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} starting {1} while being thread-locked",
@@ -912,36 +895,12 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt: {1} {2}",
 					      this, engine_stopped, current_operation);
 
-				if (engine_stopped || stop_requested)
+				if (engine_stopped)
 					return;
 
-				stop_requested = true;
 				bool stopped = inferior.Stop ();
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt #1: {1}",
 					      this, stopped);
-
-				if (current_operation is OperationStepOverBreakpoint) {
-					int index = ((OperationStepOverBreakpoint) current_operation).Index;
-
-					Report.Debug (DebugFlags.SSE,
-						      "{0} stepped over breakpoint {1}: {2}",
-						      this, index, inferior.CurrentFrame);
-
-					inferior.EnableBreakpoint (index);
-					process.ReleaseGlobalThreadLock (this);
-				}
-
-				if (!stopped) {
-					// We're already stopped, so just consider the
-					// current operation as finished.
-					engine_stopped = true;
-					stop_requested = false;
-
-					frame_changed (inferior.CurrentFrame, null);
-					TargetEventArgs args = new TargetEventArgs (
-						TargetEventType.FrameChanged, current_frame);
-					OperationCompleted (args);
-				}
 			}
 		}
 
@@ -1806,7 +1765,8 @@ namespace Mono.Debugger.Backend
 							continue;
 						else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
 							break;
-						throw new TargetException (TargetError.InvalidReturn, "Cannot abort an invocation which contains non-managed frames.");
+						throw new TargetException (TargetError.InvalidReturn,
+									   "Cannot abort an invocation which contains non-managed frames.");
 					}
 				} else {
 					bt.GetBacktrace (this, inferior, Backtrace.Mode.Native,
@@ -1826,19 +1786,23 @@ namespace Mono.Debugger.Backend
 				if (mode == ReturnMode.Native) {
 					if ((current_frame.Type == FrameType.Signal) || (parent_frame.Type == FrameType.Signal) ||
 					    (current_frame.Type == FrameType.Callback) || (parent_frame.Type == FrameType.Callback))
-						throw new TargetException (TargetError.InvalidReturn, "Cannot return from a signal handler or mdb-internal callback.");
+						throw new TargetException (TargetError.InvalidReturn,
+									   "Cannot return from a signal handler or mdb-internal callback.");
 					if ((current_frame.Type != FrameType.Normal) || (parent_frame.Type != FrameType.Normal))
 						throw new TargetException (TargetError.InvalidReturn);
 				} else if (mode == ReturnMode.Managed) {
 					bool ok = true;
-					if (((current_frame.Type == FrameType.Normal) && ((current_frame.Language == null) || !current_frame.Language.IsManaged)) ||
+					if (((current_frame.Type == FrameType.Normal) &&
+					     ((current_frame.Language == null) || !current_frame.Language.IsManaged)) ||
 					    ((current_frame.Type != FrameType.RuntimeInvoke) && (current_frame.Type != FrameType.Normal)))
 						ok = false;
-					if (((parent_frame.Type == FrameType.Normal) && ((parent_frame.Language == null) || !parent_frame.Language.IsManaged)) ||
+					if (((parent_frame.Type == FrameType.Normal) &&
+					     ((parent_frame.Language == null) || !parent_frame.Language.IsManaged)) ||
 					    ((parent_frame.Type != FrameType.RuntimeInvoke) && (parent_frame.Type != FrameType.Normal)))
 						ok = false;
 					if (!ok)
-						throw new TargetException (TargetError.InvalidReturn, "Cannot return from a non-managed frame.");
+						throw new TargetException (TargetError.InvalidReturn,
+									   "Cannot return from a non-managed frame.");
 				}
 
 				if (mode == ReturnMode.Native) {
@@ -1854,61 +1818,77 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
-		public override CommandResult AbortInvocation (long rti_id)
+		internal override void AbortInvocation (long rti_id)
 		{
-			return (CommandResult) SendCommand (delegate {
-				if (!engine_stopped) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} not stopped", this);
-					throw new TargetException (TargetError.NotStopped);
-				}
+			if (!process.IsManagedApplication)
+				throw new TargetException (TargetError.InvalidReturn, "Not a managed application.");
 
-				if (current_frame == null)
-					throw new TargetException (TargetError.NoStack);
+			SendCommand (delegate {
+				Report.Debug (DebugFlags.SSE, "{0} test abort: {1}", this, engine_stopped);
 
-				process.UpdateSymbolTable (inferior);
+				lock (this) {
+					if (abort_requested >= 0)
+						throw new TargetException (TargetError.InvalidReturn, "Already queued an abort.");
 
-				if (!process.IsManagedApplication)
-					throw new TargetException (TargetError.InvalidReturn, "Not a managed application.");
-
-				Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
-
-				bool found = false;
-				foreach (OperationRuntimeInvoke rti in rti_stack) {
-					if (rti.ID == rti_id) {
-						found = true;
-						break;
+					bool stopped = inferior.Stop ();
+					Report.Debug (DebugFlags.SSE, "{0} abort invocation: {1} {2}", this, rti_id, stopped);
+					if (stopped) {
+						abort_requested = rti_id;
+						return null;
 					}
 				}
 
-				if (!found) {
-					if ((cframe == null) || (cframe.ID != rti_id))
-						throw new TargetException (TargetError.NoInvocation);
-				} else {
-					if (cframe == null)
-						throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
-					else if (cframe.ID != rti_id)
-						throw new TargetException (TargetError.InvalidReturn,
-									   "Requested to abort invocation {0}, but current invocation has id {1}.",
-									   rti_id, cframe.ID);
-				}
-
-				Backtrace bt = new Backtrace (current_frame);
-
-				bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
-				for (int i = 0; i < bt.Count; i++) {
-					if (bt.Frames [i].Type == FrameType.Normal)
-						continue;
-					else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
-						break;
-					throw new TargetException (TargetError.InvalidReturn, "Cannot abort an invocation which contains non-managed frames.");
-				}
-
-				if (bt.Count < 2)
-					throw new TargetException (TargetError.NoStack);
-
-				return StartOperation (new OperationReturn (this, bt, ReturnMode.Invocation));
+				DoAbortInvocation (rti_id);
+				return null;
 			});
+		}
+
+		void DoAbortInvocation (long rti_id)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} do abort invocation: {1}", this, rti_id);
+
+			if (current_frame == null)
+				throw new TargetException (TargetError.NoStack);
+
+			process.UpdateSymbolTable (inferior);
+
+			Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
+
+			bool found = false;
+			foreach (OperationRuntimeInvoke rti in rti_stack) {
+				if (rti.ID == rti_id) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				throw new TargetException (TargetError.NoInvocation);
+			} else {
+				if (cframe == null)
+					throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
+				else if (cframe.ID != rti_id)
+					throw new TargetException (TargetError.InvalidReturn,
+								   "Requested to abort invocation {0}, but current invocation has id {1}.",
+								   rti_id, cframe.ID);
+			}
+
+			Backtrace bt = new Backtrace (current_frame);
+
+			bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
+			for (int i = 0; i < bt.Count; i++) {
+				if (bt.Frames [i].Type == FrameType.Normal)
+					continue;
+				else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
+					break;
+				throw new TargetException (TargetError.InvalidReturn,
+							   "Cannot abort an invocation which contains non-managed frames.");
+			}
+
+			if (bt.Count < 2)
+				throw new TargetException (TargetError.NoStack);
+
+			PushOperation (new OperationReturn (this, bt, ReturnMode.Invocation));
 		}
 
 		public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)
@@ -2322,13 +2302,14 @@ namespace Mono.Debugger.Backend
 		Disassembler disassembler;
 		Hashtable exception_handlers;
 		bool engine_stopped;
-		bool stop_requested;
 		bool reached_main;
 		bool killed, dead;
 		long tid;
 		int pid;
 
 		ThreadLockData thread_lock;
+
+		long abort_requested = -1;
 
 		int stepping_over_breakpoint;
 

@@ -211,16 +211,15 @@ namespace Mono.Debugger
 			return result;
 		}
 
-		public void EvaluateExpressionAsync (Thread thread, StackFrame frame, EE.IEvaluator ee,
-						     EE.IExpression expression, EE.EvaluationFlags flags,
-						     EE.EvaluationCallback callback)
+		public void EvaluateExpressionAsync (StackFrame frame, EE.IExpression expression,
+						     EE.EvaluationFlags flags, EE.EvaluationCallback callback)
 		{
 			if (!break_mode)
 				throw new InvalidOperationException ();
 
 			QueueEvent (new EvaluateAsyncEvent {
-				Manager = this, Thread = thread, Frame = frame, Evaluator = ee,
-				Expression = expression, Flags = flags, Callback = callback
+				Manager = this, Frame = frame, Expression = expression,
+				Flags = flags, Callback = callback
 			});
 		}
 
@@ -265,19 +264,11 @@ namespace Mono.Debugger
 
 		protected class EvaluateAsyncEvent : Event
 		{
-			public Thread Thread {
-				get; set;
-			}
-
 			public StackFrame Frame {
 				get; set;
 			}
 
 			public EE.IExpression Expression {
-				get; set;
-			}
-
-			public EE.IEvaluator Evaluator {
 				get; set;
 			}
 
@@ -292,7 +283,7 @@ namespace Mono.Debugger
 			public override void ProcessEvent ()
 			{
 				Manager.break_mode = false;
-				Evaluator.EvaluateAsync (Thread, Frame, Expression, Flags, EvaluationDone);
+				Expression.EvaluateAsync (Frame, Flags, EvaluationDone);
 			}
 
 			void EvaluationDone (EE.EvaluationResult result, object data)

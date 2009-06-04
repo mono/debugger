@@ -75,9 +75,15 @@ namespace Mono.Debugger.Frontend.CSharp
 			keywords.Add ("@parent", Token.PARENT);
 		}
 
-		public string error {
+		public string Error {
 			get {
 				return error_details;
+			}
+		}
+
+		public int Position {
+			get {
+				return col;
 			}
 		}
 
@@ -87,7 +93,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			this.ref_name = name;
 		}
 
-		public void restart ()
+		public void Restart ()
 		{
 			tokens_seen = false;
 			col = 1;

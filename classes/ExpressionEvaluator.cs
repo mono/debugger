@@ -1,11 +1,38 @@
 using System;
 using System.Text;
+using System.Threading;
 using System.Diagnostics;
 using Mono.Debugger.Languages;
 using EE=Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger
 {
+	public class ExpressionParsingException : Exception
+	{
+		public readonly string Expression;
+		public readonly int Position;
+
+		public readonly string ErrorOutput;
+
+		public ExpressionParsingException (string expression, int pos, string message,
+						   string error_output)
+			: base (message)
+		{
+			this.Expression = expression;
+			this.Position = pos;
+			this.ErrorOutput = error_output;
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("Failed to parse expression `{0}': syntax error at position {1}: {2}",
+					      Expression, Position, Message);
+		}
+	}
+
+	public class EvaluationTimeoutException : Exception
+	{ }
+
 	public static class ExpressionEvaluator
 	{
 		public enum EvaluationResult
@@ -30,12 +57,30 @@ namespace Mono.Debugger
 			string Name {
 				get;
 			}
+
+			AsyncResult EvaluateAsync (StackFrame frame, EE.EvaluationFlags flags,
+						   EE.EvaluationCallback callback);
 		}
 
-		public interface IEvaluator
+		public abstract class AsyncResult : IAsyncResult
 		{
-			void EvaluateAsync (Thread thread, StackFrame frame, IExpression expression,
-					    EE.EvaluationFlags flags, EE.EvaluationCallback callback);
+			public abstract object AsyncState {
+				get;
+			}
+
+			public abstract WaitHandle AsyncWaitHandle {
+				get;
+			}
+
+			public abstract bool CompletedSynchronously {
+				get;
+			}
+
+			public abstract bool IsCompleted {
+				get;
+			}
+
+			public abstract void Abort ();
 		}
 
 		public delegate void EvaluationCallback (EvaluationResult result, object data);
@@ -81,8 +126,6 @@ namespace Mono.Debugger
 
 					if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 						rti.Abort ();
-						rti.CompletedEvent.WaitOne ();
-						thread.AbortInvocation (rti.ID);
 						return EvaluationResult.Timeout;
 					}
 
@@ -95,7 +138,7 @@ namespace Mono.Debugger
 						result = rti.ExceptionMessage;
 						return EvaluationResult.Exception;
 					} else if (rti.ReturnObject == null) {
-						thread.AbortInvocation (rti.ID);
+						rti.Abort ();
 						return EvaluationResult.UnknownError;
 					}
 				} catch (TargetException ex) {
@@ -133,8 +176,6 @@ namespace Mono.Debugger
 
 				if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 					rti.Abort ();
-					rti.CompletedEvent.WaitOne ();
-					thread.AbortInvocation (rti.ID);
 					result = null;
 					return EvaluationResult.Timeout;
 				}
@@ -151,7 +192,7 @@ namespace Mono.Debugger
 					error = rti.ExceptionMessage;
 					return EvaluationResult.Exception;
 				} else if (rti.ReturnObject == null) {
-					thread.AbortInvocation (rti.ID);
+					rti.Abort ();
 					return EvaluationResult.UnknownError;
 				}
 

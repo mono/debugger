@@ -773,9 +773,7 @@ namespace Mono.Debugger.Tests
 		object EvaluateExpression (ScriptingContext context, string expression)
 		{
 			try {
-				Expression expr = interpreter.ExpressionParser.Parse (expression);
-				if (expr == null)
-					Assert.Fail ("Cannot parse expression `{0}'.", expression);
+				Expression expr = context.ParseExpression (expression);
 
 				expr = expr.Resolve (context);
 				if (expr == null)
@@ -800,9 +798,7 @@ namespace Mono.Debugger.Tests
 		TargetType EvaluateExpressionType (ScriptingContext context, string expression)
 		{
 			try {
-				Expression expr = interpreter.ExpressionParser.Parse (expression);
-				if (expr == null)
-					Assert.Fail ("Cannot parse expression `{0}'.", expression);
+				Expression expr = context.ParseExpression (expression);
 
 				Expression resolved = expr.TryResolveType (context);
 				if (resolved != null)

@@ -340,18 +340,21 @@ public ExpressionParser (string name)
 
 public Expression Parse (string text)
 {
+	TextWriter old_error_output = ErrorOutput;
+	StringWriter error_writer = new StringWriter ();
+
 	try {
 		reader.Text = text;
-		lexer.restart ();
+		ErrorOutput = error_writer;
+		lexer.Restart ();
 		if (yacc_verbose_flag)
 			return (Expression) yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
 			return (Expression) yyparse (lexer);
 	} catch {
-		// Please do not remove this, it is used during debugging
-		// of the grammar
-		//
-		throw new ScriptingException (lexer.Location + "  : Parsing error ");
+		throw new ExpressionParsingException (text, lexer.Position, lexer.Error, error_writer.ToString ());
+	} finally {
+		ErrorOutput = old_error_output;
 	}
 }
 
