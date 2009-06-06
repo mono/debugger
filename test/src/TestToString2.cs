@@ -21,8 +21,8 @@ class X
 {
 	static void Main ()
 	{
-		Foo a = new Foo (5);				// @MDB LINE: main
-		Foo b = new Foo (13);
+		Foo a = new Foo (3);				// @MDB LINE: main
+		Foo b = new Foo (8);
 
 		Console.WriteLine ("TEST: {0} {1}", a, b);	// @MDB BREAKPOINT: main2
 	}
