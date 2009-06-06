@@ -4306,6 +4306,12 @@ namespace Mono.Debugger.Backend
 			sse.do_continue ();
 		}
 
+		public override bool ResumeOperation ()
+		{
+			sse.do_continue ();
+			return true;
+		}
+
 		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
 		{
 			sse.disable_extended_notification (NotificationType.Trampoline);

@@ -1,3 +1,16 @@
+2009-06-05  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs:
+	(OperationMonoTrampoline.ResumeOperation): Resume operation in
+	case we're interrupted unexpectedly, for instance because of a
+	module load notification.
+
+	* test/testsuite/TestBreakpoint2.cs: New testcase for it.
+
+	* test/testsuite/NUnit.cs
+	(TestSuite:AddSourceFile): New protected method to read automatic
+	breakpoints in another source file.
+
 2009-06-04  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs
