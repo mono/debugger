@@ -19,12 +19,12 @@ TEST_SRC = \
 
 EXTRA_TEST_SRC = \
 	TestAppDomain.cs TestAppDomain-Module.cs TestAppDomain-Hello.cs \
-	IHelloInterface.cs
+	IHelloInterface.cs TestBreakpoint2.cs TestBreakpoint2-Module.cs
 
 TEST_EXE = $(TEST_SRC:.cs=.exe) $(noinst_PROGRAMS) $(EXTRA_TEST_EXE)
 
 EXTRA_TEST_EXE = TestAppDomain.exe TestAppDomain-Module.exe TestAppDomain-Hello.dll \
-	IHelloInterface.dll
+	IHelloInterface.dll TestBreakpoint2-Module.dll TestBreakpoint2.exe
 
 EXTRA_DIST = $(srcdir)/*.cs
 
@@ -48,5 +48,11 @@ TestAppDomain.exe: TestAppDomain.cs IHelloInterface.dll
 
 TestAppDomain-Module.exe: TestAppDomain-Module.cs IHelloInterface.dll
 	$(TARGET_MCS) $(MCS_FLAGS) /r:IHelloInterface.dll -out:$@ $<
+
+TestBreakpoint2-Module.dll: TestBreakpoint2-Module.cs
+	$(TARGET_MCS) $(MCS_FLAGS) /target:library -out:$@ $<
+
+TestBreakpoint2.exe: TestBreakpoint2.cs TestBreakpoint2-Module.dll
+	$(TARGET_MCS) $(MCS_FLAGS) /r:TestBreakpoint2-Module.dll -out:$@ $<
 
 CLEANFILES = *.exe *.mdb *.dll *.so a.out *.log

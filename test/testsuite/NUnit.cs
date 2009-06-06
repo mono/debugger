@@ -280,6 +280,29 @@ namespace Mono.Debugger.Tests
 			}
 		}
 
+		protected void AddSourceFile (string filename)
+		{
+			string pathname = Path.Combine (SourceDirectory, filename);
+			using (StreamReader reader = new StreamReader (pathname)) {
+				string text;
+				int line = 0;
+				while ((text = reader.ReadLine ()) != null) {
+					line++;
+
+					Match match = Regex.Match (text, mdb_line_re);
+					if (!match.Success)
+						continue;
+
+					string name = match.Groups [2].Value;
+					lines.Add (name, line);
+					if (match.Groups [1].Value == "BREAKPOINT") {
+						string location = String.Format ("{0}:{1}", pathname, line);
+						automatic_breakpoints [name] = AssertBreakpoint (location);
+					}
+				}
+			}
+		}
+
 		protected void AssertHitBreakpoint (Thread thread, string name, string function)
 		{
 			AssertHitBreakpoint (thread, automatic_breakpoints [name],
