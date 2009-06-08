@@ -1,5 +1,17 @@
 2009-06-08  Martin Baulig  <martin@ximian.com>
 
+	* backend/ThreadServant.cs
+	(ThreadServant.GetRuntimeInvokedFunction): New internal function.
+
+	* classes/Backtrace.cs
+	(Backtrace.TryCallback): Print the name of the runtime-invoke'd
+	function int the backtrace.
+
+	* test/testsuite/NUnit/NUnit.cs
+	(TestSuite.AssertRuntimeInvokeFrame): New public method.
+
+2009-06-08  Martin Baulig  <martin@ximian.com>
+
 	* test/{testsuite|src}/TestNestedBreakStates.cs: Add new testcase.
 
 2009-06-08  Martin Baulig  <martin@ximian.com>

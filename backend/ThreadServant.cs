@@ -230,6 +230,8 @@ namespace Mono.Debugger.Backend
 		internal abstract Inferior.CallbackFrame GetCallbackFrame (TargetAddress stack_pointer,
 									   bool exact_match);
 
+		internal abstract TargetFunctionType GetRuntimeInvokedFunction (long ID);
+
 		public abstract void RuntimeInvoke (TargetFunctionType function,
 						    TargetStructObject object_argument,
 						    TargetObject[] param_objects,

@@ -2055,6 +2055,18 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
+		internal override TargetFunctionType GetRuntimeInvokedFunction (long ID)
+		{
+			foreach (OperationRuntimeInvoke rti in rti_stack) {
+				if (rti.ID != ID)
+					continue;
+
+				return rti.Function;
+			}
+
+			return null;
+		}
+
 		public override void WriteBuffer (TargetAddress address, byte[] buffer)
 		{
 			SendCommand (delegate {

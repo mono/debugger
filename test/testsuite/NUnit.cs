@@ -558,6 +558,19 @@ namespace Mono.Debugger.Tests
 			Assert.AreEqual ("<method called from mdb>", frame.Name.ToString (),
 					 "Got frame `{0}', but expected a method " +
 					 "called from mdb.", frame);
+			Assert.AreEqual (FrameType.Callback, frame.Type);
+		}
+
+		public void AssertRuntimeInvokeFrame (StackFrame frame, int level, string func)
+		{
+			Assert.AreEqual (level, frame.Level,
+					 "Stack frame is from level {0}, but expected {1}.",
+					 level, frame.Level);
+			Assert.AreEqual (FrameType.RuntimeInvoke, frame.Type);
+			string exp = String.Format ("<Invocation of: {0}>", func);
+			Assert.AreEqual (exp, frame.Name.ToString (),
+					 "Got frame `{0}', but expected a method " +
+					 "called from mdb.", frame);
 		}
 
 		public void AssertTargetOutput (string line)

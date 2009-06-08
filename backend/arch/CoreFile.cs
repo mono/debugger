@@ -454,6 +454,11 @@ namespace Mono.Debugger.Backend
 				return null;
 			}
 
+			internal override TargetFunctionType GetRuntimeInvokedFunction (long ID)
+			{
+				return null;
+			}
+
 			public override bool CanWrite {
 				get { return false; }
 			}

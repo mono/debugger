@@ -5,6 +5,7 @@ using System.Collections;
 using System.Runtime.InteropServices;
 
 using Mono.Debugger.Backend;
+using Mono.Debugger.Languages;
 
 namespace Mono.Debugger
 {
@@ -114,11 +115,22 @@ namespace Mono.Debugger
 				frame = thread.Architecture.CreateFrame (
 					thread.Client, FrameType.Normal, memory, callback.Registers);
 
-				FrameType callback_type = callback.IsRuntimeInvokeFrame ? FrameType.RuntimeInvoke : FrameType.Callback;
+				FrameType callback_type;
+				string frame_name = "<method called from mdb>";
+
+				if (callback.IsRuntimeInvokeFrame) {
+					callback_type = FrameType.RuntimeInvoke;
+					TargetFunctionType func = thread.GetRuntimeInvokedFunction (callback.ID);
+					if (func != null)
+						frame_name = String.Format ("<Invocation of: {0}>", func.FullName);
+				} else {
+					callback_type = FrameType.Callback;
+				}
+
 				AddFrame (new StackFrame (
 					thread.Client, callback_type, callback.CallAddress, callback.StackPointer,
 					TargetAddress.Null, callback.Registers, thread.NativeLanguage,
-					new Symbol ("<method called from mdb>", callback.CallAddress, 0)));
+					new Symbol (frame_name, callback.CallAddress, 0)));
 				return true;
 			} catch (TargetException) {
 				return false;
