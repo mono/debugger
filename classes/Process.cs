@@ -12,7 +12,15 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger
 {
-	public delegate bool ExceptionCatchPointHandler (string exception, out bool stop);
+	public delegate bool ExceptionCatchPointHandler (string exception, out ExceptionAction action);
+
+	[Serializable]
+	public enum ExceptionAction
+	{
+		None = 0,
+		Stop = 1,
+		StopUnhandled = 2
+	}
 
 	public class Process : DebuggerMarshalByRefObject
 	{
@@ -202,12 +210,12 @@ namespace Mono.Debugger
 			this.generic_exc_handler = handler;
 		}
 
-		public bool GenericExceptionCatchPoint (string exception, out bool stop)
+		public bool GenericExceptionCatchPoint (string exception, out ExceptionAction action)
 		{
 			if (generic_exc_handler != null)
-				return generic_exc_handler (exception, out stop);
+				return generic_exc_handler (exception, out action);
 
-			stop = false;
+			action = ExceptionAction.None;
 			return false;
 		}
 

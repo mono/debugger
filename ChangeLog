@@ -1,3 +1,23 @@
+2009-06-08  Martin Baulig  <martin@ximian.com>
+
+	* classes/Process.cs
+	(ExceptionAction): Make this enum public.
+	(ExceptionCatchPointHandler): Replaced `out bool stopped' with
+	`out ExceptionAction action'.
+	(Process.GenericExceptionCatchPoint): Likewise.
+
+	* frontend/Expression.cs
+	(ExpressionParser.EvaluateAsync): Check the flags and set
+	`ScriptingFlags.NestedBreakStates' if requested.
+	(ExpressionParser.DoEvaluate): Catch `InvocationException' here as
+	well and report `EvaluationResult.Exception'.
+	(InvocationExpression.DoInvoke): Throw an `InvocationException'
+	instead of a `ScriptingException' if we received an exception.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.InvocationException): New public exception
+	class; derives from `ScriptingException'.
+
 2009-06-05  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs:

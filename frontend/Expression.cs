@@ -167,6 +167,9 @@ namespace Mono.Debugger.Frontend
 				context.InterruptionHandler = async;
 				context.CurrentFrame = frame;
 
+				if ((flags & EE.EvaluationFlags.NestedBreakStates) != 0)
+					context.ScriptingFlags |= ScriptingFlags.NestedBreakStates;
+
 				object data;
 				EE.EvaluationResult result = DoEvaluate (context, expression.Expression, out data);
 				async.WaitHandle.Set ();
@@ -182,6 +185,16 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				resolved = expression.Resolve (context);
+				if (resolved == null) {
+					result = String.Format ("Cannot resolve expression `{0}'", expression.Name);
+					return EE.EvaluationResult.InvalidExpression;
+				}
+
+				result = resolved.Evaluate (context);
+				return EE.EvaluationResult.Ok;
+			} catch (InvocationException ex) {
+				result = ex.Exception;
+				return EE.EvaluationResult.Exception;
 			} catch (ScriptingException ex) {
 				result = ex.Message;
 				return EE.EvaluationResult.InvalidExpression;
@@ -190,20 +203,6 @@ namespace Mono.Debugger.Frontend
 				return EE.EvaluationResult.Timeout;
 			} catch (Exception ex) {
 				result = String.Format ("Cannot resolve expression `{0}': {1}", expression.Name, ex);
-				return EE.EvaluationResult.InvalidExpression;
-			}
-
-			try {
-				result = resolved.Evaluate (context);
-				return EE.EvaluationResult.Ok;
-			} catch (ScriptingException ex) {
-				result = ex.Message;
-				return EE.EvaluationResult.InvalidExpression;
-			} catch (EvaluationTimeoutException) {
-				result = null;
-				return EE.EvaluationResult.Timeout;
-			} catch (Exception ex) {
-				result = String.Format ("Cannot evaluate expression `{0}': {1}", expression.Name, ex);
 				return EE.EvaluationResult.InvalidExpression;
 			}
 		}
@@ -3322,9 +3321,7 @@ namespace Mono.Debugger.Frontend
 						"Invocation of `{0}' aborted abnormally.", Name);
 
 				if (result.ExceptionMessage != null)
-					throw new ScriptingException (
-						"Invocation of `{0}' raised an exception: {1}",
-						Name, result.ExceptionMessage);
+					throw new InvocationException (Name, result.ExceptionMessage, result.ReturnObject);
 
 				return result.ReturnObject;
 			} catch (TargetException ex) {

@@ -1025,11 +1025,11 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.SSE, "{0} throwing exception: {1}", this, exc_obj.Type.Name);
 
-			bool stop;
-			if (process.Client.GenericExceptionCatchPoint (exc_obj.Type.Name, out stop)) {
+			ExceptionAction action;
+			if (process.Client.GenericExceptionCatchPoint (exc_obj.Type.Name, out action)) {
 				Report.Debug (DebugFlags.SSE,
-					      "{0} generic exception catchpoint: {1}", this, stop);
-				return stop ? ExceptionAction.Stop : ExceptionAction.None;
+					      "{0} generic exception catchpoint: {1}", this, action);
+				return action;
 			}
 
 			foreach (ExceptionCatchPoint handle in exception_handlers.Values) {
@@ -4838,13 +4838,5 @@ namespace Mono.Debugger.Backend
 		LongLong,
 		LongLongLongString,
 		LongObject
-	}
-
-	[Serializable]
-	internal enum ExceptionAction
-	{
-		None = 0,
-		Stop = 1,
-		StopUnhandled = 2
 	}
 }
