@@ -7,6 +7,9 @@ public class MyException : Exception
 	{ }
 }
 
+public class MyUnhandledException : Exception
+{ }
+
 public class X
 {
 	public double Test ()
@@ -27,6 +30,11 @@ public class X
 	public void OtherException ()
 	{
 		throw new MyException ("second");	// @MDB LINE: second
+	}
+
+	public void UnhandledException ()
+	{
+		throw new MyUnhandledException ();	// @MDB LINE: unhandled
 	}
 
 	public void HandledException ()

@@ -1,5 +1,9 @@
 2009-06-08  Martin Baulig  <martin@ximian.com>
 
+	* test/{testsuite|src}/TestNestedBreakStates.cs: Add new testcase.
+
+2009-06-08  Martin Baulig  <martin@ximian.com>
+
 	* classes/Process.cs
 	(ExceptionAction): Make this enum public.
 	(ExceptionCatchPointHandler): Replaced `out bool stopped' with
