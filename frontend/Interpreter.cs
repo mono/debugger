@@ -548,37 +548,6 @@ namespace Mono.Debugger.Frontend
 			WaitHandle.WaitAny (handles);
 		}
 
-		public RuntimeInvokeResult RuntimeInvoke (Thread thread,
-							  TargetFunctionType function,
-							  TargetStructObject object_argument,
-							  TargetObject[] param_objects,
-							  RuntimeInvokeFlags flags)
-		{
-			RuntimeInvokeResult result = thread.RuntimeInvoke (
-				function, object_argument, param_objects, flags);
-
-			if (DebuggerConfiguration.BrokenThreading) {
-				Thread ret = WaitAll (thread, result, false);
-				if (ret != thread) {
-					result.Abort ();
-					return null;
-				}
-			} else if ((flags & RuntimeInvokeFlags.BreakOnEntry) != 0) {
-				WaitHandle[] handles = new WaitHandle [3];
-				handles [0] = interrupt_event;
-				handles [1] = thread.WaitHandle;
-				handles [2] = result.CompletedEvent;
-
-				WaitHandle.WaitAny (handles);
-
-				CheckLastEvent (thread);
-			} else {
-				Wait (result);
-			}
-
-			return result;
-		}
-
 		public int Interrupt ()
 		{
 			interrupt_event.Set ();
