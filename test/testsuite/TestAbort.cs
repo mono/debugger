@@ -39,7 +39,7 @@ namespace Mono.Debugger.Tests
 					     bt.Count, 5);
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
-			AssertInternalFrame (bt [1], 1);
+			AssertRuntimeInvokeFrame (bt [1], 1, "X.Hello()");
 			AssertFrame (bt [2], 2, "X.Main()", line_main);
 
 			AssertExecute ("continue");
@@ -87,7 +87,7 @@ namespace Mono.Debugger.Tests
 
 			AssertFrame (bt [0], 0, "X.Hello()", line_hello);
 			AssertFrame (bt [1], 1, "X.Hello(int)", line_hello_3);
-			AssertInternalFrame (bt [2], 2);
+			AssertRuntimeInvokeFrame (bt [2], 2, "X.Hello(int)");
 			AssertFrame (bt [3], 3, "X.Main()", line_main);
 
 			AssertExecute ("return -yes -invocation");
