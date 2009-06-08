@@ -22,6 +22,19 @@ namespace Mono.Debugger.Frontend
 		{ }
 	}
 
+	public class InvocationException : ScriptingException
+	{
+		public readonly TargetObject Exception;
+		public readonly string Message;
+
+		public InvocationException (string expr, string message, TargetObject exc)
+			: base ("Invocation of `{0}' raised an exception: {1}", expr, message)
+		{
+			this.Exception = exc;
+			this.Message = message;
+		}
+	}
+
 	public enum ModuleOperation
 	{
 		Ignore,
