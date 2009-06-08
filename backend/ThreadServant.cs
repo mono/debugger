@@ -272,6 +272,10 @@ namespace Mono.Debugger.Backend
 			get;
 		}
 
+		public abstract ST.WaitHandle WaitHandle {
+			get;
+		}
+
 		public abstract TargetMemoryInfo TargetMemoryInfo {
 			get;
 		}

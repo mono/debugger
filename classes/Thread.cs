@@ -33,18 +33,14 @@ namespace Mono.Debugger
 		{
 			this.id = id;
 			this.servant = servant;
-			this.is_running = true;
-			this.operation_completed_event = new ST.ManualResetEvent (false);
 		}
 
 		int id;
 		Flags flags;
-		bool is_running;
-		ST.ManualResetEvent operation_completed_event;
 		ThreadServant servant;
 
 		public ST.WaitHandle WaitHandle {
-			get { return operation_completed_event; }
+			get { return servant.WaitHandle; }
 		}
 
 		protected internal Language NativeLanguage {
@@ -85,7 +81,6 @@ namespace Mono.Debugger
 			lock (this) {
 				TargetEventArgs args = servant.LastTargetEvent;
 				if (args != null) {
-					is_running = false;
 					flags &= ~Flags.Background;
 					return args;
 				}
@@ -94,7 +89,7 @@ namespace Mono.Debugger
 		}
 
 		public bool IsRunning {
-			get { return is_running; }
+			get { return (servant != null) && !servant.IsStopped; }
 		}
 
 		public bool IsAlive {
@@ -295,11 +290,6 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal void SetCompleted ()
-		{
-			operation_completed_event.Set ();
-		}
-
 		// <summary>
 		//   Step one machine instruction, but don't step into trampolines.
 		// </summary>
@@ -307,9 +297,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new OperationCommandResult (this);
 				servant.StepInstruction (result);
 				return result;
 			}
@@ -322,9 +310,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new OperationCommandResult (this);
 				servant.StepNativeInstruction (result);
 				return result;
 			}
@@ -337,9 +323,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new OperationCommandResult (this);
 				servant.NextInstruction (result);
 				return result;
 			}
@@ -352,9 +336,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new OperationCommandResult (this);
 				servant.StepLine (result);
 				return result;
 			}
@@ -367,9 +349,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new OperationCommandResult (this);
 				servant.NextLine (result);
 				return result;
 			}
@@ -382,9 +362,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
+				ThreadCommandResult result = new OperationCommandResult (this);
 				servant.Finish (native, result);
 				return result;
 			}
@@ -399,10 +377,8 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
-				servant.Continue (until, new ThreadCommandResult (this));
+				ThreadCommandResult result = new OperationCommandResult (this);
+				servant.Continue (until, result);
 				return result;
 			}
 		}
@@ -416,18 +392,15 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				is_running = true;
 				flags |= Flags.Background;
-				operation_completed_event.Reset ();
-				ThreadCommandResult result = new ThreadCommandResult (this);
-				servant.Background (until, new ThreadCommandResult (this));
+				ThreadCommandResult result = new OperationCommandResult (this);
+				servant.Background (until, result);
 				return result;
 			}
 		}
 
 		internal void Kill ()
 		{
-			operation_completed_event.Set ();
 			if (servant != null)
 				servant.Kill ();
 			Dispose ();
@@ -435,7 +408,6 @@ namespace Mono.Debugger
 
 		internal void Detach ()
 		{
-			operation_completed_event.Set ();
 			if (servant != null)
 				servant.Detach ();
 			Dispose ();
@@ -451,8 +423,6 @@ namespace Mono.Debugger
 		{
 			check_alive ();
 			servant.Stop ();
-			operation_completed_event.WaitOne ();
-			is_running = false;
 			flags |= Flags.AutoRun;
 		}
 
@@ -832,8 +802,6 @@ namespace Mono.Debugger
 			if (servant != null) {
 				servant.Dispose ();
 				servant = null;
-
-				operation_completed_event.Set ();
 			}
 		}
 
@@ -873,7 +841,7 @@ namespace Mono.Debugger
 			get;
 		}
 
-		public abstract void Completed ();
+		internal abstract void Completed ();
 
 		public abstract void Abort ();
 
@@ -902,39 +870,43 @@ namespace Mono.Debugger
 			get { return thread.WaitHandle; }
 		}
 
+		internal override void Completed ()
+		{ }
+
 		public override void Abort ()
 		{
 			thread.Stop ();
 		}
-
-		public override void Completed ()
-		{
-			thread.SetCompleted ();
-		}
 	}
 
-	public class RuntimeInvokeResult : CommandResult
+	public class OperationCommandResult : ThreadCommandResult
 	{
-		Thread thread;
-		ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
+		protected ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
 
-		internal RuntimeInvokeResult (Thread thread)
-		{
-			this.thread = thread;
-		}
+		internal OperationCommandResult (Thread thread)
+			: base (thread)
+		{ }
 
 		public override ST.WaitHandle CompletedEvent {
 			get { return completed_event; }
 		}
 
-		public override void Completed ()
+		internal override void Completed ()
 		{
 			completed_event.Set ();
 		}
+	}
+
+	public class RuntimeInvokeResult : OperationCommandResult
+	{
+		internal RuntimeInvokeResult (Thread thread)
+			: base (thread)
+		{ }
 
 		public override void Abort ()
 		{
-			thread.Stop ();
+			Thread.AbortInvocation (ID);
+			completed_event.WaitOne ();
 		}
 
 		public long ID;

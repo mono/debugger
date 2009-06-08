@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using ST = System.Threading;
 using System.Runtime.InteropServices;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
@@ -306,6 +307,10 @@ namespace Mono.Debugger.Backend
 
 			public override bool IsStopped {
 				get { return true; }
+			}
+
+			public override ST.WaitHandle WaitHandle {
+				get { throw new InvalidOperationException (); }
 			}
 
 			public override Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames)

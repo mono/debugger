@@ -539,6 +539,7 @@ namespace Mono.Debugger.Backend
 				remove_temporary_breakpoint ();
 				engine_stopped = true;
 				last_target_event = result;
+				operation_completed_event.Set ();
 				Report.Debug (DebugFlags.EventLoop, "{0} {1} operation {2}: {3}",
 					      this, suspended ? "suspending" : "terminating", current_operation, result);
 
@@ -553,8 +554,8 @@ namespace Mono.Debugger.Backend
 					if (result != null)
 						process.OnTargetEvent (this, result);
 					if (current_operation != null) {
-						Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1}",
-							      this, current_operation.Result);
+						Report.Debug (DebugFlags.EventLoop, "{0} setting completed: {1} {2}",
+							      this, current_operation, current_operation.Result);
 						current_operation.CompletedOperation ();
 						current_operation = null;
 					}
@@ -787,6 +788,10 @@ namespace Mono.Debugger.Backend
 
 		public override bool IsStopped {
 			get { return engine_stopped; }
+		}
+
+		public override WaitHandle WaitHandle {
+			get { return operation_completed_event; }
 		}
 
 		internal override ProcessServant ProcessServant {
@@ -2344,6 +2349,8 @@ namespace Mono.Debugger.Backend
 		Stack<InterruptibleOperation> nested_break_stack = new Stack<InterruptibleOperation> ();
 		Stack<OperationRuntimeInvoke> rti_stack = new Stack<OperationRuntimeInvoke> ();
 
+		ManualResetEvent operation_completed_event = new ManualResetEvent (false);
+
 #region Nested SSE classes
 		protected sealed class StackData : DebuggerMarshalByRefObject
 		{
@@ -2693,7 +2700,7 @@ namespace Mono.Debugger.Backend
 				operation.Abort ();
 			}
 
-			public override void Completed ()
+			internal override void Completed ()
 			{
 				completed_event.Set ();
 			}

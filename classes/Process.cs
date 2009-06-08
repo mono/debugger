@@ -152,7 +152,7 @@ namespace Mono.Debugger
 				get { return completed_event; }
 			}
 
-			public override void Completed ()
+			internal override void Completed ()
 			{
 				completed_event.Set ();
 			}
