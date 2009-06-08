@@ -12,7 +12,7 @@ using EE=Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger.Frontend
 {
-	public class ExpressionParser : IExpressionParser, EE.IEvaluator
+	public class ExpressionParser : IExpressionParser
 	{
 		public readonly Interpreter Interpreter;
 
@@ -25,9 +25,21 @@ namespace Mono.Debugger.Frontend
 			parser = new CSharp.ExpressionParser ("C#");
 		}
 
-		public Expression Parse (string expression)
+		/*
+		 * This version throws an `ExpressionParsingException' containing a detailed
+		 * error message and the location of the error.
+		 *
+		 * Use ScriptingContext.ParseExpression() to get a `ScriptingException' with
+		 * a user-readable error message.
+		 */
+		internal Expression ParseInternal (string text)
 		{
-			return parser.Parse (expression);
+			return parser.Parse (text);
+		}
+
+		public EE.IExpression Parse (string text)
+		{
+			return new MyExpression (this, parser.Parse (text));
 		}
 
 		protected static SourceLocation FindFile (ScriptingContext context, string filename,
@@ -50,10 +62,7 @@ namespace Mono.Debugger.Frontend
 		protected SourceLocation DoParseExpression (ScriptingContext context,
 							    LocationType type, string arg)
 		{
-			Expression expr = Interpreter.ExpressionParser.Parse (arg);
-			if (expr == null)
-				throw new ScriptingException ("Cannot resolve expression `{0}'.", arg);
-
+			Expression expr = context.ParseExpression (arg);
 			MethodExpression mexpr = expr.ResolveMethod (context, type);
 
 			if (mexpr != null)
@@ -109,8 +118,8 @@ namespace Mono.Debugger.Frontend
 			return DoParseExpression (context, type, arg);
 		}
 
-		public SourceLocation Parse (Thread target, StackFrame frame,
-					     LocationType type, string arg)
+		public SourceLocation ParseLocation (Thread target, StackFrame frame,
+						     LocationType type, string arg)
 		{
 			ScriptingContext context = new ScriptingContext (Interpreter);
 			context.CurrentThread = target;
@@ -126,16 +135,7 @@ namespace Mono.Debugger.Frontend
 		public string EvaluateExpression (ScriptingContext context, string text,
 						  DisplayFormat format)
 		{
-			Expression expression;
-
-			try {
-				expression = Interpreter.ExpressionParser.Parse (text);
-			} catch (ScriptingException ex) {
-				throw new ScriptingException ("Cannot parse expression `{0}': {1}.",
-							      text, ex.Message);
-			} catch {
-				throw new ScriptingException ("Cannot parse expression `{0}'.", text);
-			}
+			Expression expression = context.ParseExpression (text);
 
 			try {
 				expression = expression.Resolve (context);
@@ -157,22 +157,26 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public void EvaluateAsync (Thread thread, StackFrame frame, EE.IExpression expression,
-					   EE.EvaluationFlags flags, EE.EvaluationCallback callback)
+		protected MyAsyncResult EvaluateAsync (StackFrame frame, MyExpression expression,
+						       EE.EvaluationFlags flags, EE.EvaluationCallback callback)
 		{
+			MyAsyncResult async = new MyAsyncResult (expression);
+
 			ST.ThreadPool.QueueUserWorkItem (delegate {
 				ScriptingContext context = new ScriptingContext (Interpreter);
-				context.CurrentThread = thread;
+				context.InterruptionHandler = async;
 				context.CurrentFrame = frame;
 
 				if ((flags & EE.EvaluationFlags.NestedBreakStates) != 0)
 					context.ScriptingFlags |= ScriptingFlags.NestedBreakStates;
 
 				object data;
-				EE.EvaluationResult result = DoEvaluate (context, (Expression) expression, out data);
-
+				EE.EvaluationResult result = DoEvaluate (context, expression.Expression, out data);
+				async.WaitHandle.Set ();
 				callback (result, data);
 			});
+
+			return async;
 		}
 
 		EE.EvaluationResult DoEvaluate (ScriptingContext context, Expression expression, out object result)
@@ -194,14 +198,88 @@ namespace Mono.Debugger.Frontend
 			} catch (ScriptingException ex) {
 				result = ex.Message;
 				return EE.EvaluationResult.InvalidExpression;
+			} catch (EvaluationTimeoutException) {
+				result = null;
+				return EE.EvaluationResult.Timeout;
 			} catch (Exception ex) {
 				result = String.Format ("Cannot resolve expression `{0}': {1}", expression.Name, ex);
 				return EE.EvaluationResult.InvalidExpression;
 			}
 		}
+
+		protected class MyExpression : EE.IExpression
+		{
+			public readonly ExpressionParser Parser;
+			public readonly Expression Expression;
+
+			public string Name {
+				get { return Expression.Name; }
+			}
+
+			public MyExpression (ExpressionParser parser, Expression expr)
+			{
+				this.Parser = parser;
+				this.Expression = expr;
+			}
+
+			public EE.AsyncResult EvaluateAsync (StackFrame frame, EE.EvaluationFlags flags,
+							     EE.EvaluationCallback callback)
+			{
+				return Parser.EvaluateAsync (frame, this, flags, callback);
+			}
+
+			public override string ToString ()
+			{
+				return Expression.Name;
+			}
+		}
+
+		protected class MyAsyncResult : EE.AsyncResult, IInterruptionHandler
+		{
+			public readonly MyExpression Expression;
+			public readonly ST.ManualResetEvent WaitHandle;
+			public readonly ST.ManualResetEvent AbortHandle;
+
+			public MyAsyncResult (MyExpression expr)
+			{
+				this.Expression = expr;
+				this.WaitHandle = new ST.ManualResetEvent (false);
+				this.AbortHandle = new ST.ManualResetEvent (false);
+			}
+
+			public override object AsyncState {
+				get { return Expression; }
+			}
+
+			public override ST.WaitHandle AsyncWaitHandle {
+				get { return WaitHandle; }
+			}
+
+			public override bool CompletedSynchronously {
+				get { return false; }
+			}
+
+			public override bool IsCompleted {
+				get { return WaitHandle.WaitOne (0); }
+			}
+
+			public override void Abort ()
+			{
+				AbortHandle.Set ();
+			}
+
+			ST.WaitHandle IInterruptionHandler.InterruptionEvent {
+				get { return AbortHandle; }
+			}
+
+			bool IInterruptionHandler.CheckInterruption ()
+			{
+				return AbortHandle.WaitOne (0);
+			}
+		}
 	}
 
-	public abstract class Expression : EE.IExpression
+	public abstract class Expression
 	{
 		public abstract string Name {
 			get;
@@ -1857,7 +1935,7 @@ namespace Mono.Debugger.Frontend
 		{
 			RuntimeInvokeFlags flags = context.GetRuntimeInvokeFlags ();
 
-			RuntimeInvokeResult result = context.Interpreter.RuntimeInvoke (
+			RuntimeInvokeResult result = context.RuntimeInvoke (
 				context.CurrentThread, prop.Getter, InstanceObject,
 				new TargetObject [0], flags);
 
@@ -2079,7 +2157,7 @@ namespace Mono.Debugger.Frontend
 
 			RuntimeInvokeFlags flags = context.GetRuntimeInvokeFlags ();
 
-			RuntimeInvokeResult result = context.Interpreter.RuntimeInvoke (
+			RuntimeInvokeResult result = context.RuntimeInvoke (
 				context.CurrentThread, prop.Setter, InstanceObject,
 				new TargetObject [] { obj }, flags);
 
@@ -3236,7 +3314,7 @@ namespace Mono.Debugger.Frontend
 					flags |= RuntimeInvokeFlags.BreakOnEntry | RuntimeInvokeFlags.SendEventOnCompletion |
 						RuntimeInvokeFlags.NestedBreakStates;
 
-				result = context.Interpreter.RuntimeInvoke (thread, method, instance, objs, flags);
+				result = context.RuntimeInvoke (thread, method, instance, objs, flags);
 
 				if (result == null)
 					throw new ScriptingException (

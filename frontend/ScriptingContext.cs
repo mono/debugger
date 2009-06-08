@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Threading;
 using System.IO;
 using System.Diagnostics;
 using System.Reflection;
@@ -50,6 +51,15 @@ namespace Mono.Debugger.Frontend
 		NestedBreakStates	= 1
 	}
 
+	public interface IInterruptionHandler
+	{
+		WaitHandle InterruptionEvent {
+			get;
+		}
+
+		bool CheckInterruption ();
+	}
+
 	public class ScriptingContext : DebuggerMarshalByRefObject
 	{
 		Thread current_thread;
@@ -68,6 +78,10 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public ScriptingFlags ScriptingFlags {
+			get; set;
+		}
+
+		public IInterruptionHandler InterruptionHandler {
 			get; set;
 		}
 
@@ -235,6 +249,47 @@ namespace Mono.Debugger.Frontend
 			interpreter.Print (obj);
 		}
 
+		public Expression ParseExpression (string text)
+		{
+			try {
+				Expression expr = Interpreter.ExpressionParser.ParseInternal (text);
+				if (expr == null)
+					throw new ScriptingException ("Cannot parse expression `{0}'", text);
+
+				return expr;
+			} catch (ExpressionParsingException ex) {
+				throw new ScriptingException (ex.ToString ());
+			}
+		}
+
+		public RuntimeInvokeResult RuntimeInvoke (Thread thread,
+							  TargetFunctionType function,
+							  TargetStructObject object_argument,
+							  TargetObject[] param_objects,
+							  RuntimeInvokeFlags flags)
+		{
+			IInterruptionHandler interruption = InterruptionHandler ?? Interpreter;
+			if (interruption.CheckInterruption ())
+				throw new EvaluationTimeoutException ();
+
+			RuntimeInvokeResult result = thread.RuntimeInvoke (
+				function, object_argument, param_objects, flags);
+
+			WaitHandle[] handles = new WaitHandle [2];
+			handles [0] = interruption.InterruptionEvent;
+			handles [1] = result.CompletedEvent;
+
+			int ret = WaitHandle.WaitAny (handles);
+
+			if (ret == 0) {
+				result.Abort ();
+				throw new EvaluationTimeoutException ();
+			}
+
+			Interpreter.CheckLastEvent (thread);
+			return result;
+		}
+
 		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetStructObject instance,
 							   string attr_value, int timeout,
 							   out string result)
@@ -292,7 +347,10 @@ namespace Mono.Debugger.Frontend
 				Expression expr;
 
 				try {
-					expr = Interpreter.ExpressionParser.Parse (expr_text.ToString ());
+					expr = Interpreter.ExpressionParser.ParseInternal (expr_text.ToString ());
+				} catch (ExpressionParsingException ex) {
+					result = ex.Message;
+					return EE.EvaluationResult.InvalidExpression;
 				} catch {
 					return EE.EvaluationResult.InvalidExpression;
 				}

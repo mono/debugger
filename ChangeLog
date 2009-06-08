@@ -1,3 +1,47 @@
+2009-06-04  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE): Kill `stop_requested'.
+	(SSE.AbortInvocation): Stop the target if necessary.
+
+	* classes/Thread.cs
+
+	* backend/ThreadServant.cs
+	(ThreadServant.AbortInvocation): Make this internal.
+
+	* classes/Thread.cs
+	(Thread.RuntimeInvoke): Use `operation_completed_event' here as
+	well, just like we're doing it for stepping operations.
+	(Thread.AbortInvocation): Make this internal.
+	(RuntimeInvokeResult): Derive from `ThreadCommandResult'.
+	(RuntimeInvokeResult.Abort): Call Thread.AbortInvocation() and
+	wait until it completed.
+
+	* frontend/Expression.cs
+	(ExpressionParser): Renamed Parse() -> ParseInternal() and added a
+	new Parse() method returning `EE.IExpression'.
+	(Expression): Don't implement `EE.IExpression'.
+
+	* classes/ExpressionEvaluator.cs
+	(ExpressionParsingException): New public class.
+	(EE.IExpression.EvaluateAsync): Moved here from `IEvaluator'.
+	(EE.IEvaluator): Removed.
+
+	* classes/DebuggerSession.cs
+	(IExpressionParser): Renamed Parse() -> ParseLocation().
+
+	* frontend/CSharpExpressionParser.jay
+	(ExpressionParser.Parse): Throw a `ExpressionParsingException' on
+	error; redirect error output and include it in the exception.
+
+	* frontend/Makefile.am: Use `$(srcdir)/jay/skeleton.cs' instead of
+	`$(srcdir)/skeleton'.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.ParseExpression): New public method; use this to
+	parse expressions inside the frontend, this throws a
+	`ScriptingException' with a user-friendly error message.
+
 2009-06-08  Martin Baulig  <martin@ximian.com>
 
 	* backend/ThreadServant.cs

@@ -621,7 +621,7 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			public override CommandResult AbortInvocation (long ID)
+			internal override void AbortInvocation (long ID)
 			{
 				throw new InvalidOperationException ();
 			}

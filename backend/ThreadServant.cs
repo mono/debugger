@@ -249,7 +249,7 @@ namespace Mono.Debugger.Backend
 
 		public abstract CommandResult Return (ReturnMode mode);
 
-		public abstract CommandResult AbortInvocation (long ID);
+		internal abstract void AbortInvocation (long ID);
 
 		public string PrintRegisters (StackFrame frame)
 		{

@@ -19,7 +19,7 @@ using Mono.GetOptions;
 
 namespace Mono.Debugger.Frontend
 {
-	public class Interpreter : DebuggerMarshalByRefObject, IDisposable
+	public class Interpreter : DebuggerMarshalByRefObject, IInterruptionHandler, IDisposable
 	{
 		DebuggerConfiguration config;
 		DebuggerSession session;
@@ -150,10 +150,6 @@ namespace Mono.Debugger.Frontend
 			get { return parser; }
 		}
 
-		public EE.IEvaluator ExpressionEvaluator {
-			get { return parser; }
-		}
-
 		public bool IsInteractive {
 			get { return is_interactive; }
 			set { is_interactive = value; }
@@ -269,7 +265,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected void CheckLastEvent (Thread thread)
+		internal void CheckLastEvent (Thread thread)
 		{
 			if (thread == null)
 				return;
@@ -562,6 +558,15 @@ namespace Mono.Debugger.Frontend
 		{
 			interrupt_level = 0;
 			interrupt_event.Reset ();
+		}
+
+		WaitHandle IInterruptionHandler.InterruptionEvent {
+			get { return interrupt_event; }
+		}
+
+		bool IInterruptionHandler.CheckInterruption ()
+		{
+			return interrupt_level > 0;
 		}
 
 		public void ShowBreakpoints ()

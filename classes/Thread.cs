@@ -628,25 +628,12 @@ namespace Mono.Debugger
 			result.Wait ();
 		}
 
-		public bool AbortInvocation (long rti_id)
+		internal void AbortInvocation (long rti_id)
 		{
-			CommandResult result;
-
 			lock (this) {
 				check_alive ();
-				try {
-					result = servant.AbortInvocation (rti_id);
-				} catch (TargetException ex) {
-					if (ex.Type == TargetError.NoInvocation)
-						return false;
-					throw;
-				}
-				if (result == null)
-					return false;
+				servant.AbortInvocation (rti_id);
 			}
-
-			result.Wait ();
-			return true;
 		}
 
 		public string PrintRegisters (StackFrame frame)

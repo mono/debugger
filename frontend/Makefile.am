@@ -5,8 +5,8 @@ noinst_DATA = CSharpExpressionParser.cs
 JAY = jay/jay
 CSLEX = $(top_builddir)/cslex/cslex.exe
 
-CSharpExpressionParser.cs: CSharpExpressionParser.jay $(srcdir)/skeleton
-	$(JAY) -ctv < $(srcdir)/skeleton $(srcdir)/CSharpExpressionParser.jay > tmp-p && mv -f tmp-p CSharpExpressionParser.cs
+CSharpExpressionParser.cs: CSharpExpressionParser.jay $(srcdir)/jay/skeleton.cs
+	$(JAY) -ctv < $(srcdir)/jay/skeleton.cs $(srcdir)/CSharpExpressionParser.jay > tmp-p && mv -f tmp-p CSharpExpressionParser.cs
 
 DISTCLEANFILES = CSharpExpressionParser.cs y.output
 
