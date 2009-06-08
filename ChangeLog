@@ -1,6 +1,22 @@
 2009-06-08  Martin Baulig  <martin@ximian.com>
 
 	* backend/ThreadServant.cs
+	(ThreadServant.WaitHandle): New public abstract property.
+
+	* classes/Thread.cs
+	(Thread.WaitHandle): Use `servant.WaitHandle'.
+	(Thread.operation_completed_event): Removed; use the SSE's
+	wait handle instead.
+	(CommandResult.Completed): Make this internal, not public.
+	(OperationCommandResult): New public class; derives from
+	`ThreadCommandResult', but has its own wait handle.  This is set
+	when the operation is completed, which is not necessarily when the
+	target is stopped.
+	(RuntimeInvokeResult): Derive from `OperationCommandResult'.
+
+2009-06-08  Martin Baulig  <martin@ximian.com>
+
+	* backend/ThreadServant.cs
 	(ThreadServant.GetRuntimeInvokedFunction): New internal function.
 
 	* classes/Backtrace.cs

@@ -50,6 +50,11 @@ namespace Mono.Debugger.Tests
 			AssertExecuteInBackground ("print -nested-break UnhandledException ()");
 			AssertNestedBreakState (thread, "X.UnhandledException()", GetLine ("unhandled"));
 
+			AssertPrint (thread, "catch",
+				     "(MyUnhandledException) { \"MyUnhandledException: Exception of type 'MyUnhandledException' " +
+				     "was thrown.\n  at X.UnhandledException () [0x00000] in " + FileName + ":" +
+				     GetLine ("unhandled") + " \" }");
+
 			AssertExecute ("continue");
 			e = AssertEvent (DebuggerEventType.CommandDone);
 			if (!(e.Data is ScriptingException))
