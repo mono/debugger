@@ -26,10 +26,13 @@ namespace Mono.Debugger
 
 		ST.Thread manager_thread;
 		ST.AutoResetEvent manager_event;
+		ST.ManualResetEvent result_event;
+		bool want_result;
 		Queue<Event> event_queue;
 
 		bool break_mode;
 		bool suppress_events;
+		long current_evaluation;
 
 		public event TargetEventHandler TargetEvent;
 		public event ProcessEventHandler ProcessExitedEvent;
@@ -40,6 +43,7 @@ namespace Mono.Debugger
 
 			event_queue = new Queue<Event> ();
 			manager_event = new ST.AutoResetEvent (false);
+			result_event = new ST.ManualResetEvent (false);
 			manager_thread = new ST.Thread (new ST.ThreadStart (manager_thread_main));
 			manager_thread.Start ();
 		}
@@ -139,12 +143,18 @@ namespace Mono.Debugger
 			SendTargetEvent (e.Thread, e.Args);
 		}
 
-		protected void QueueEvent (Event e)
+		protected object QueueEvent (Event e)
 		{
 			lock (event_queue) {
 				event_queue.Enqueue (e);
 				manager_event.Set ();
+				result_event.Reset ();
+				want_result = true;
 			}
+			result_event.WaitOne ();
+			if (e.Result is Exception)
+				throw (Exception) e.Result;
+			return e.Result;
 		}
 
 		public void Stop (Thread thread)
@@ -211,15 +221,15 @@ namespace Mono.Debugger
 			return result;
 		}
 
-		public void EvaluateExpressionAsync (StackFrame frame, EE.IExpression expression,
-						     EE.EvaluationFlags flags, EE.EvaluationCallback callback)
+		public EE.AsyncResult EvaluateExpressionAsync (StackFrame frame, EE.IExpression expression,
+							       EE.EvaluationFlags flags, EE.EvaluationCallback cb)
 		{
 			if (!break_mode)
 				throw new InvalidOperationException ();
 
-			QueueEvent (new EvaluateAsyncEvent {
+			return (EE.AsyncResult) QueueEvent (new EvaluateAsyncEvent {
 				Manager = this, Frame = frame, Expression = expression,
-				Flags = flags, Callback = callback
+				Flags = flags, Callback = cb
 			});
 		}
 
@@ -250,6 +260,11 @@ namespace Mono.Debugger
 					e = event_queue.Dequeue ();
 				}
 				e.ProcessEvent ();
+				lock (event_queue) {
+					if (want_result)
+						result_event.Set ();
+					want_result = false;
+				}
 			}
 		}
 
@@ -257,6 +272,10 @@ namespace Mono.Debugger
 		{
 			public GUIManager Manager {
 				get; set;
+			}
+
+			public object Result {
+				get; protected set;
 			}
 
 			public abstract void ProcessEvent ();
@@ -283,7 +302,7 @@ namespace Mono.Debugger
 			public override void ProcessEvent ()
 			{
 				Manager.break_mode = false;
-				Expression.EvaluateAsync (Frame, Flags, EvaluationDone);
+				Result = Expression.EvaluateAsync (Frame, Flags, EvaluationDone);
 			}
 
 			void EvaluationDone (EE.EvaluationResult result, object data)
