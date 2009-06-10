@@ -1,5 +1,11 @@
 2009-06-10  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Expression.cs
+	(ExpressionParser.EvaluateAsync): Invoke the callback before
+	signalling the wait handle.
+
+2009-06-10  Martin Baulig  <martin@ximian.com>
+
 	* classes/GUIManager.cs
 	(GUIManager.EvaluateExpressionAsync): Return an
 	`ExpressionEvaluator.AsyncResult'.
