@@ -172,8 +172,8 @@ namespace Mono.Debugger.Frontend
 
 				object data;
 				EE.EvaluationResult result = DoEvaluate (context, expression.Expression, out data);
-				async.WaitHandle.Set ();
 				callback (result, data);
+				async.WaitHandle.Set ();
 			});
 
 			return async;
