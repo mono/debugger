@@ -1,3 +1,10 @@
+2009-06-15  Martin Baulig  <martin@ximian.com>
+
+	* classes/GUIManager.cs
+	(GUIManager.EvaluationDone): Invoke the callback directly, don't
+	queue it as an event - it must be called before signalling the
+	AsyncResult.
+
 2009-06-10  Martin Baulig  <martin@ximian.com>
 
 	* frontend/Expression.cs

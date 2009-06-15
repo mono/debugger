@@ -307,30 +307,8 @@ namespace Mono.Debugger
 
 			void EvaluationDone (EE.EvaluationResult result, object data)
 			{
-				Manager.QueueEvent (new EvaluateDoneEvent {
-					Manager = Manager, Callback = Callback, Result = result, Data = data
-				});
-			}
-		}
-
-		protected class EvaluateDoneEvent : Event
-		{
-			public EE.EvaluationCallback Callback {
-				get; set;
-			}
-
-			public EE.EvaluationResult Result {
-				get; set;
-			}
-
-			public object Data {
-				get; set;
-			}
-
-			public override void ProcessEvent ()
-			{
 				Manager.break_mode = true;
-				Callback (Result, Data);
+				Callback (result, data);
 			}
 		}
 
