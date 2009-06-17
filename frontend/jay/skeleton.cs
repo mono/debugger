@@ -11,16 +11,11 @@
  prolog		## %{ ... %} prior to the first %%
 
 .
-.  /** error output stream.
-.      It should be changeable.
-.    */
-.  public System.IO.TextWriter ErrorOutput = System.Console.Out;
-.
 .  /** simplified error message.
 .      @see <a href="#yyerror(java.lang.String, java.lang.String[])">yyerror</a>
 .    */
 .  public void yyerror (string message) {
-.    yyerror(message, null);
+.    throw new yyParser.yyException(message);
 .  }
 .
 .  /** (syntax) error message.
@@ -29,13 +24,7 @@
 .      @param expected vector of acceptable tokens, if available.
 .    */
 .  public void yyerror (string message, string[] expected) {
-.    if ((expected != null) && (expected.Length  > 0)) {
-.      ErrorOutput.Write (message+", expecting");
-.      for (int n = 0; n < expected.Length; ++ n)
-.        ErrorOutput.Write (" "+expected[n]);
-.        ErrorOutput.WriteLine ();
-.    } else
-.      ErrorOutput.WriteLine (message);
+.    throw new yyParser.yyException(message, expected);
 .  }
 .
 .  /** debugging support, requires the package jay.yydebug.
@@ -332,7 +321,16 @@ t        if (debug != null) debug.shift(yyStates[yyTop], yyState);
 .  /** thrown for irrecoverable syntax errors and stack overflow.
 .    */
 .  internal class yyException : System.Exception {
+.    public readonly string Message;
+.    public readonly object[] Expected;
+.
 .    public yyException (string message) : base (message) {
+.      this.Message = message;
+.    }
+.
+.    public yyException (string message, object[] expected) : base (message) {
+.      this.Message = message;
+.      this.Expected = expected;
 .    }
 .  }
 .
