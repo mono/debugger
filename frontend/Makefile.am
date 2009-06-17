@@ -10,7 +10,7 @@ CSharpExpressionParser.cs: CSharpExpressionParser.jay $(srcdir)/jay/skeleton.cs
 
 DISTCLEANFILES = CSharpExpressionParser.cs y.output
 
-EXTRA_DIST = skeleton CSharpExpressionParser.jay $(srcdir)/*.cs
+EXTRA_DIST = CSharpExpressionParser.jay $(srcdir)/*.cs
 
 dist-hook:
 	rm -f CSharpExpressionParser.cs

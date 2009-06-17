@@ -8,14 +8,7 @@ using Mono.Debugger;
 
 namespace Mono.Debugger.Frontend.CSharp
 {
-	public class SyntaxError : Exception
-	{
-		public SyntaxError (string message)
-			: base ("syntax error: " + message)
-		{ }
-	}
-
-	public class Tokenizer : yyParser.yyInput
+	internal class Tokenizer : yyParser.yyInput
 	{
 		//
 		// Class variables
@@ -40,11 +33,6 @@ namespace Mono.Debugger.Frontend.CSharp
 		// Whether tokens have been seen on this line
 		//
 		bool tokens_seen = false;
-
-		//
-		// Details about the error encoutered by the tokenizer
-		//
-		string error_details;
 
 		public bool ReadGenericArity { get; set; }
 
@@ -73,12 +61,6 @@ namespace Mono.Debugger.Frontend.CSharp
 			keywords.Add ("False", Token.FALSE);
 			keywords.Add ("null", Token.NULL);
 			keywords.Add ("@parent", Token.PARENT);
-		}
-
-		public string Error {
-			get {
-				return error_details;
-			}
 		}
 
 		public int Position {
@@ -186,8 +168,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					goto default;
 				return v;
 			default:
-				throw new ScriptingException (
-					"Unrecognized escape sequence in " + (char)d);
+				throw new yyParser.yyException ("Unrecognized escape sequence in '" + (char)d + "'");
 			}
 			GetChar ();
 			return v;
@@ -214,7 +195,7 @@ namespace Mono.Debugger.Frontend.CSharp
 		void putback (int c)
 		{
 			if (putback_char != -1)
-				throw new Exception ("This should not happen putback on putback");
+				throw new yyParser.yyException ("This should not happen putback on putback");
 			putback_char = c;
 		}
 
@@ -270,9 +251,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					val = Int32.Parse(digit, NumberStyles.Number);
 					return Token.INT;
 				} catch (Exception) {
-					error_details = String.Format("Can't parse int {0}", digit);
-					val = 0;
-					return Token.ERROR;
+					throw new yyParser.yyException (String.Format ("Can't parse int {0}", digit));
 				}
 			}
 			
@@ -295,10 +274,8 @@ namespace Mono.Debugger.Frontend.CSharp
 			
 			if (PeekChar() == '.') { // read floating point number
 				isdouble = true; // double is default
-				if (ishex) {
-					error_details = "No hexadecimal floating point values allowed";
-					return Token.ERROR;
-				}
+				if (ishex)
+					throw new yyParser.yyException ("No hexadecimal floating point values allowed");
 				sb.Append((char)GetChar());
 				++col;
 				
@@ -369,10 +346,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					val = Single.Parse(digit, numberFormatInfo);
 					return Token.FLOAT;
 				} catch (Exception) {
-					error_details = String.Format("Can't parse float {0}", digit);
-
-					val = 0f;
-					return Token.ERROR;
+					throw new yyParser.yyException (String.Format("Can't parse float {0}", digit));
 				}
 			}
 			if (isdecimal) {
@@ -382,9 +356,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					val = Decimal.Parse(digit, numberFormatInfo);
 					return Token.DECIMAL;
 				} catch (Exception) {
-					error_details = String.Format("Can't parse decimal {0}", digit);
-					val = 0m;
-					return Token.ERROR;
+					throw new yyParser.yyException (String.Format ("Can't parse decimal {0}", digit));
 				}
 			}
 			if (isdouble) {
@@ -394,9 +366,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					val = Double.Parse(digit, numberFormatInfo);
 					return Token.DOUBLE;
 				} catch (Exception) {
-					error_details = String.Format("Can't parse double {0}", digit);
-					val = 0d;
-					return Token.ERROR;
+					throw new yyParser.yyException (String.Format("Can't parse double {0}", digit));
 				}
 			}
 
@@ -411,9 +381,8 @@ namespace Mono.Debugger.Frontend.CSharp
 				try {
 					l = UInt64.Parse (digit, NumberStyles.HexNumber, null);
 				} catch (Exception ex) {
-					error_details = String.Format("Can't parse hexadecimal constant {0}: {1}", digit, ex);
-					val = 0;
-					return Token.ERROR;
+					throw new yyParser.yyException (
+						String.Format("Can't parse hexadecimal constant {0}: {1}", digit, ex.Message));
 				}
 
 				if (l > uint.MaxValue) {
@@ -431,18 +400,14 @@ namespace Mono.Debugger.Frontend.CSharp
 						val = UInt64.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
 						return Token.ULONG;
 					} catch (Exception) {
-						error_details = String.Format("Can't parse unsigned long {0}", digit);
-						val = 0UL;
-						return Token.ERROR;
+						throw new yyParser.yyException (String.Format("Can't parse unsigned long {0}", digit));
 					}
 				} else {
 					try {
 						val = Int64.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
 						return Token.LONG;
 					} catch (Exception) {
-						error_details = String.Format("Can't parse long {0}", digit);
-						val = 0L;
-						return Token.ERROR;
+						throw new yyParser.yyException (String.Format("Can't parse long {0}", digit));
 					}
 				}
 			} else {
@@ -451,18 +416,14 @@ namespace Mono.Debugger.Frontend.CSharp
 						val = UInt32.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
 						return Token.UINT;
 					} catch (Exception) {
-						error_details = String.Format("Can't parse unsigned int {0}", digit);
-						val = 0U;
-						return Token.ERROR;
+						throw new yyParser.yyException (String.Format("Can't parse unsigned int {0}", digit));
 					}
 				} else {
 					try {
 					 	val = Int32.Parse(digit, ishex ? NumberStyles.HexNumber : NumberStyles.Number);
 						return Token.INT;
 					} catch (Exception) {
-						error_details = String.Format("Can't parse int {0}", digit);
-						val = 0;
-						return Token.ERROR;
+						throw new yyParser.yyException (String.Format("Can't parse int {0}", digit));
 					}
 				}
 			}
@@ -497,8 +458,7 @@ namespace Mono.Debugger.Frontend.CSharp
 			if (keyword == -1 || quoted){
 				val = ids;
 				if (ids.Length > 512)
-					throw new ScriptingException (
-						"Identifier too long (limit is 512 chars)");
+					throw new yyParser.yyException ("Identifier too long (limit is 512 chars)");
 				return Token.IDENTIFIER;
 			}
 
@@ -524,7 +484,7 @@ namespace Mono.Debugger.Frontend.CSharp
 
 				if (c == '\n'){
 					if (!quoted)
-						throw new ScriptingException ("Newline in constant");
+						throw new yyParser.yyException ("Newline in constant");
 					col = 0;
 				} else
 					col++;
@@ -537,7 +497,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				string_builder.Append ((char) c);
 			}
 
-			throw new ScriptingException ("Unterminated string literal");
+			throw new yyParser.yyException ("Unterminated string literal");
 		}
 
 		private int consume_quoted_identifier ()
@@ -560,7 +520,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				id_builder.Append ((char) c);
 			}
 
-			throw new ScriptingException ("Unterminated quoted identifier");
+			throw new yyParser.yyException ("Unterminated quoted identifier");
 		}
 
 		public int xtoken ()
@@ -603,7 +563,7 @@ namespace Mono.Debugger.Frontend.CSharp
 					if (ids == "parent")
 						return Token.PARENT;
 					else
-						throw new ScriptingException ("Unknown #-expression");
+						throw new yyParser.yyException ("Unknown $-expression");
 				} else if (c == '@')
 					return Token.AT;
 				else if (c == '#')
@@ -759,15 +719,11 @@ namespace Mono.Debugger.Frontend.CSharp
 					return Token.BACKTICK;
 
 				if (c == ' ' || c == '\t' || c == '\f' || c == '\v' || c == '\r' || c == '\n'){
-					if (current_token == Token.HASH) {
-						error_details = "No whitespace allowed after `#'";
-						return Token.ERROR;
-					}
+					if (current_token == Token.HASH)
+						throw new yyParser.yyException ("No whitespace allowed after `#'");
 					
-					if (current_token == Token.AT) {
-						error_details = "No whitespace allowed after `@'";
-						return Token.ERROR;
-					}
+					if (current_token == Token.AT)
+						throw new yyParser.yyException ("No whitespace allowed after `@'");
 
 					if (c == '\t')
 						col = (((col + 8) / 8) * 8) - 1;
@@ -775,8 +731,7 @@ namespace Mono.Debugger.Frontend.CSharp
 				}
 
 
-				error_details = "Unknown character `" + (char) c + "'";
-				return Token.ERROR;
+				throw new yyParser.yyException ("Unknown character `" + (char) c + "'");
 			}
 
 			return Token.EOF;
@@ -822,22 +777,11 @@ namespace Mono.Debugger.Frontend.CSharp
 		//
 		public string Location {
 			get {
-				string det;
-
-				if (current_token == Token.ERROR)
-					det = "detail: " + error_details;
-				else
-					det = "";
-				
-				// return "Line:     "+line+" Col: "+col + "\n" +
-				//       "VirtLine: "+ref_line +
-				//       " Token: "+current_token + " " + det;
 				string current_token_name = TokenValueName [current_token] as string;
 				if (current_token_name == null)
 					current_token_name = current_token.ToString ();
 
-				return String.Format ("{0}, Token: {1} {2}", ref_name,
-						      current_token_name, det);
+				return String.Format ("{0}, Token: {1}", ref_name, current_token_name);
 			}
 		}
 	}
