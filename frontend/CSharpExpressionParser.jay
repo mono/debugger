@@ -249,7 +249,7 @@ opt_parent_level
 	| PLUS INT
 	  {
 		if ((int) $2 < 1)
-			throw new ScriptingException ("syntax error");
+			throw new yyParser.yyException ("expected positive integer");
 		$$ = (int) $2;
 	  }
 	;
@@ -340,21 +340,18 @@ public ExpressionParser (string name)
 
 public Expression Parse (string text)
 {
-	TextWriter old_error_output = ErrorOutput;
-	StringWriter error_writer = new StringWriter ();
-
 	try {
 		reader.Text = text;
-		ErrorOutput = error_writer;
 		lexer.Restart ();
 		if (yacc_verbose_flag)
 			return (Expression) yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
 			return (Expression) yyparse (lexer);
-	} catch {
-		throw new ExpressionParsingException (text, lexer.Position, lexer.Error, error_writer.ToString ());
-	} finally {
-		ErrorOutput = old_error_output;
+	} catch (yyParser.yyException ex) {
+		throw new ExpressionParsingException (text, lexer.Position, ex.Message);
+	} catch (Exception ex) {
+		string message = String.Format ("caught unexpected exception: {0}", ex.Message);
+		throw new ExpressionParsingException (text, lexer.Position, message);
 	}
 }
 

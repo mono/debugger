@@ -1,3 +1,21 @@
+2009-06-16  Martin Baulig  <martin@ximian.com>
+
+	* classes/ExpressionEvaluator.cs
+	(ExpressionParsingException): Removed `ErrorOutput'.
+
+	* frontend/CSharpTokenizer.cs
+	(SyntaxError): Removed.
+	(Tokenizer): Throw a `yyParser.yyException' instead of returning
+	`Token.ERROR'; killed `Error'.
+
+	* frontend/jay/skeleton.cs: Killed `ErrorOutput', yyerror() now
+	throws a `yyParser.yyException'.
+
+	* frontend/CSharpExpressionParser.jay: Improved error handling.
+
+	* frontend/skeleton: Removed.
+	* frontend/jay/skeleton: Removed.
+
 2009-06-15  Martin Baulig  <martin@ximian.com>
 
 	* classes/GUIManager.cs

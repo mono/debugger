@@ -12,15 +12,11 @@ namespace Mono.Debugger
 		public readonly string Expression;
 		public readonly int Position;
 
-		public readonly string ErrorOutput;
-
-		public ExpressionParsingException (string expression, int pos, string message,
-						   string error_output)
+		public ExpressionParsingException (string expression, int pos, string message)
 			: base (message)
 		{
 			this.Expression = expression;
 			this.Position = pos;
-			this.ErrorOutput = error_output;
 		}
 
 		public override string ToString ()
