@@ -343,8 +343,9 @@ namespace Mono.Debugger.Backend
 			// until we finished the command and sent the result.
 			if (command.Type == CommandType.TargetAccess) {
 				try {
-					command.Result = command.Engine.Invoke (
-						(TargetAccessDelegate) command.Data1, command.Data2);
+					if(command.Engine.Inferior != null)
+						command.Result = command.Engine.Invoke (
+							(TargetAccessDelegate) command.Data1, command.Data2);
 				} catch (ST.ThreadAbortException) {
 					return;
 				} catch (Exception ex) {
@@ -496,8 +497,54 @@ namespace Mono.Debugger.Backend
 			if (abort_requested || (pid <= 0))
 				return true;
 
+			if(!Inferior.HasThreadEvents)
+			{
+				int arg;
+				Inferior.ChildEventType etype = mono_debugger_server_dispatch_simple (status, out arg);
+				SingleSteppingEngine engine = (SingleSteppingEngine) thread_hash [pid];
+				if(etype == Inferior.ChildEventType.CHILD_EXITED) {
+					if(engine != null) {
+						SingleSteppingEngine[] sses = new SingleSteppingEngine [thread_hash.Count];
+						thread_hash.Values.CopyTo (sses, 0);
+						foreach(SingleSteppingEngine sse in sses)
+							sse.ProcessEvent (status);
+						Dispose();
+						waiting = false;
+						return true;
+					}
+					else
+						goto again;
+				}
+
+				if (engine == null) {
+					SingleSteppingEngine[] sses = new SingleSteppingEngine [thread_hash.Count];
+					thread_hash.Values.CopyTo (sses, 0);				
+					Inferior inferior = sses[0].Inferior;		
+					inferior.Process.ThreadCreated (inferior, pid, false);
+				}
+
+				ArrayList check_threads = new ArrayList();
+				bool got_threads = true;
+				foreach(ProcessServant process in processes)
+					got_threads = got_threads && process.CheckForThreads(check_threads);
+
+				if(got_threads) {
+					int[] lwps = new int [thread_hash.Count];
+					thread_hash.Keys.CopyTo (lwps, 0);
+					foreach(int lwp in lwps) {
+						if(!check_threads.Contains(lwp)) {
+							SingleSteppingEngine old_engine = (SingleSteppingEngine) thread_hash [lwp];					
+							thread_hash.Remove (old_engine.PID);
+							engine_hash.Remove (old_engine.ID);
+							old_engine.ProcessServant.OnThreadExitedEvent (old_engine);
+							old_engine.Dispose ();
+						}
+					}
+				}
+			}
+
 			SingleSteppingEngine event_engine = (SingleSteppingEngine) thread_hash [pid];
-			if (event_engine == null) {
+			if (event_engine == null && Inferior.HasThreadEvents) {
 				int arg;
 				Inferior.ChildEventType etype = mono_debugger_server_dispatch_simple (status, out arg);
 

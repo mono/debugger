@@ -571,8 +571,13 @@ namespace Mono.Debugger.Backend
 
 		internal void SetMainReturnAddress (TargetAddress main_ret)
 		{
-			this.main_retaddr = main_ret + inferior.TargetAddressSize;
-			this.reached_main = true;
+			if(main_ret.IsNull)
+				this.main_retaddr = TargetAddress.Null;
+			else
+			{
+				this.main_retaddr = main_ret + inferior.TargetAddressSize;
+				this.reached_main = true;
+			}
 		}
 
 		internal void OnManagedThreadExited ()
@@ -847,6 +852,11 @@ namespace Mono.Debugger.Backend
 				inferior.Kill ();
 				return null;
 			});
+		}
+
+		public void SetKilledFlag ()
+		{
+			killed = true;
 		}
 
 		internal override object DoTargetAccess (TargetAccessHandler func)
@@ -1599,6 +1609,7 @@ namespace Mono.Debugger.Backend
 						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
 						iframe.FrameAddress, registers);
 				}
+
 				update_current_frame (main_frame);
 			} else {
 				TargetAddress main_address = Process.OperatingSystem.LookupSymbol ("main");

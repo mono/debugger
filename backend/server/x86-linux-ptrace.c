@@ -27,7 +27,13 @@ server_ptrace_sem_get_value (void)
 	return ret;
 }
 
-ServerCapabilities
+static ServerType
+server_ptrace_get_server_type (void)
+{
+	return SERVER_TYPE_LINUX_PTRACE;
+}
+
+static ServerCapabilities
 server_ptrace_get_capabilities (void)
 {
 	return SERVER_CAPABILITIES_THREAD_EVENTS;
@@ -135,6 +141,49 @@ server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, gp
 }
 
 static ServerCommandError
+server_ptrace_write_memory (ServerHandle *handle, guint64 start,
+			    guint32 size, gconstpointer buffer)
+{
+	InferiorHandle *inferior = handle->inferior;
+	ServerCommandError result;
+	const long *ptr = buffer;
+	guint64 addr = start;
+	char temp [8];
+
+	while (size >= sizeof (long)) {
+		long word = *ptr++;
+
+		errno = 0;
+		if (ptrace (PT_WRITE_D, inferior->pid, GSIZE_TO_POINTER (addr), word) != 0)
+			return _server_ptrace_check_errno (inferior);
+
+		addr += sizeof (long);
+		size -= sizeof (long);
+	}
+
+	if (!size)
+		return COMMAND_ERROR_NONE;
+
+	result = _server_ptrace_read_memory (handle, addr, sizeof (long), &temp);
+	if (result != COMMAND_ERROR_NONE)
+		return result;
+
+	memcpy (&temp, ptr, size);
+
+	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
+}
+
+static ServerCommandError
+server_ptrace_poke_word (ServerHandle *handle, guint64 addr, gsize value)
+{
+	errno = 0;
+	if (ptrace (PT_WRITE_D, handle->inferior->pid, GSIZE_TO_POINTER (addr), value) != 0)
+		return _server_ptrace_check_errno (handle->inferior);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
 _server_ptrace_set_dr (InferiorHandle *handle, int regnum, guint64 value)
 {
 	errno = 0;
@@ -161,6 +210,44 @@ _server_ptrace_get_dr (InferiorHandle *handle, int regnum, guint64 *value)
 	}
 
 	*value = ret;
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_continue (ServerHandle *handle)
+{
+	InferiorHandle *inferior = handle->inferior;
+
+	errno = 0;
+	inferior->stepping = FALSE;
+	if (ptrace (PT_CONTINUE, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
+		return _server_ptrace_check_errno (inferior);
+	}
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_step (ServerHandle *handle)
+{
+	InferiorHandle *inferior = handle->inferior;
+
+	errno = 0;
+	inferior->stepping = TRUE;
+	if (ptrace (PT_STEP, inferior->pid, (caddr_t) 1, inferior->last_signal))
+		return _server_ptrace_check_errno (inferior);
+
+	return COMMAND_ERROR_NONE;
+}
+
+static ServerCommandError
+server_ptrace_kill (ServerHandle *handle)
+{
+	kill (handle->inferior->pid, SIGKILL);
+
+	if (ptrace (PTRACE_KILL, handle->inferior->pid, NULL, 0))
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+
 	return COMMAND_ERROR_NONE;
 }
 

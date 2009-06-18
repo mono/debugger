@@ -3,6 +3,17 @@
 
 #include <mach/mach.h>
 
+struct OSData
+{
+	mach_port_t task;
+	mach_port_t exception_port;
+	thread_t thread;
+	pthread_t exception_thread;
+	int stop_exception_thread;
+	int thread_index;
+	int is_stopped;
+};
+
 #define PTRACE_KILL PT_KILL
 
 struct user_regs_struct {

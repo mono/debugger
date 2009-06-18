@@ -307,7 +307,9 @@ namespace Mono.Debugger.Backend
 				}
 
 				case NotificationType.WrapperMain:
+					break;
 				case NotificationType.MainExited:
+					engine.SetMainReturnAddress (TargetAddress.Null);
 					break;
 
 				case NotificationType.UnhandledException:
@@ -442,7 +444,7 @@ namespace Mono.Debugger.Backend
 			long magic = header.ReadInt64 ();
 			if (magic != DynamicMagic)
 				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has unknown magic {0:x}.", magic);
+					"`MONO_DEBUGGER__debugger_info' at {0} has unknown magic {1:x}.", info, magic);
 
 			int version = header.ReadInt32 ();
 			if (version < MinDynamicVersion)

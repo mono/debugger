@@ -43,6 +43,10 @@
 #include "x86-freebsd-ptrace.h"
 #endif
 
+#ifdef __MACH__
+#include "darwin-ptrace.h"
+#endif
+
 #include "x86-arch.h"
 
 struct IOThreadData
@@ -106,32 +110,8 @@ server_ptrace_finalize (ServerHandle *handle)
 	g_free (handle);
 }
 
-static ServerCommandError
-server_ptrace_continue (ServerHandle *handle)
-{
-	InferiorHandle *inferior = handle->inferior;
-
-	errno = 0;
-	inferior->stepping = FALSE;
-	if (ptrace (PT_CONTINUE, inferior->pid, (caddr_t) 1, inferior->last_signal)) {
-		return _server_ptrace_check_errno (inferior);
-	}
-
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
-server_ptrace_step (ServerHandle *handle)
-{
-	InferiorHandle *inferior = handle->inferior;
-
-	errno = 0;
-	inferior->stepping = TRUE;
-	if (ptrace (PT_STEP, inferior->pid, (caddr_t) 1, inferior->last_signal))
-		return _server_ptrace_check_errno (inferior);
-
-	return COMMAND_ERROR_NONE;
-}
+#ifndef __MACH__
+#endif
 
 static ServerCommandError
 server_ptrace_resume (ServerHandle *handle)
@@ -157,62 +137,9 @@ server_ptrace_detach (ServerHandle *handle)
 }
 
 static ServerCommandError
-server_ptrace_kill (ServerHandle *handle)
-{
-	kill (handle->inferior->pid, SIGKILL);
-	if (ptrace (PTRACE_KILL, handle->inferior->pid, NULL, 0))
-		return COMMAND_ERROR_UNKNOWN_ERROR;
-
-	return COMMAND_ERROR_NONE;
-}
-
-static ServerCommandError
 server_ptrace_peek_word (ServerHandle *handle, guint64 start, guint64 *retval)
 {
 	return server_ptrace_read_memory (handle, start, sizeof (gsize), retval);
-}
-
-static ServerCommandError
-server_ptrace_write_memory (ServerHandle *handle, guint64 start,
-			    guint32 size, gconstpointer buffer)
-{
-	InferiorHandle *inferior = handle->inferior;
-	ServerCommandError result;
-	const long *ptr = buffer;
-	guint64 addr = start;
-	char temp [8];
-
-	while (size >= sizeof (long)) {
-		long word = *ptr++;
-
-		errno = 0;
-		if (ptrace (PT_WRITE_D, inferior->pid, GSIZE_TO_POINTER (addr), word) != 0)
-			return _server_ptrace_check_errno (inferior);
-
-		addr += sizeof (long);
-		size -= sizeof (long);
-	}
-
-	if (!size)
-		return COMMAND_ERROR_NONE;
-
-	result = _server_ptrace_read_memory (handle, addr, sizeof (long), &temp);
-	if (result != COMMAND_ERROR_NONE)
-		return result;
-
-	memcpy (&temp, ptr, size);
-
-	return server_ptrace_write_memory (handle, addr, sizeof (long), &temp);
-}
-
-static ServerCommandError
-server_ptrace_poke_word (ServerHandle *handle, guint64 addr, gsize value)
-{
-	errno = 0;
-	if (ptrace (PT_WRITE_D, handle->inferior->pid, GSIZE_TO_POINTER (addr), value) != 0)
-		return _server_ptrace_check_errno (handle->inferior);
-
-	return COMMAND_ERROR_NONE;
 }
 
 static ServerStatusMessageType
@@ -220,6 +147,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			      guint64 *data1, guint64 *data2, guint32 *opt_data_size,
 			      gpointer *opt_data)
 {
+	#ifdef PTRACE_EVENT_CLONE
 	if (status >> 16) {
 		switch (status >> 16) {
 		case PTRACE_EVENT_CLONE: {
@@ -270,8 +198,12 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			return MESSAGE_UNKNOWN_ERROR;
 		}
 	}
+	#endif
 
 	if (WIFSTOPPED (status)) {
+#if __MACH__
+		handle->inferior->os.is_stopped = TRUE;
+#endif
 		guint64 callback_arg, retval, retval2;
 		ChildStoppedAction action;
 		int stopsig;
@@ -497,8 +429,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 
 	inferior->pid = *child_pid;
 
+#ifndef __MACH__
 	if (!_server_ptrace_wait_for_new_thread (handle))
 		return COMMAND_ERROR_INTERNAL_ERROR;
+#endif
 
 	result = _server_ptrace_setup_inferior (handle);
 	if (result != COMMAND_ERROR_NONE) {
@@ -509,6 +443,10 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 		return result;
 	}
 
+#ifdef __MACH__
+	*child_pid = COMPOSED_PID(inferior->pid, inferior->thread_index);
+#endif
+
 	return COMMAND_ERROR_NONE;
 }
 
@@ -517,13 +455,20 @@ server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 {
 	InferiorHandle *inferior = handle->inferior;
 
-	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
+#ifdef __MACH__
+	inferior->pid = GET_PID(pid);
+	inferior->thread = get_thread_from_index(GET_THREAD_INDEX(pid));
+#else
+	inferior->pid = pid;
 	if (!_server_ptrace_wait_for_new_thread (handle))
 		return COMMAND_ERROR_INTERNAL_ERROR;
+#endif
 
 	return _server_ptrace_setup_inferior (handle);
+
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -673,6 +618,10 @@ extern void GC_end_blocking (void);
 #include "x86-freebsd-ptrace.c"
 #endif
 
+#ifdef __MACH__
+#include "darwin-ptrace.c"
+#endif
+
 #if defined(__i386__)
 #include "i386-arch.c"
 #elif defined(__x86_64__)
@@ -684,6 +633,7 @@ extern void GC_end_blocking (void);
 InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_static_init,
 	server_ptrace_global_init,
+	server_ptrace_get_server_type,
 	server_ptrace_get_capabilities,
 	server_ptrace_create_inferior,
 	server_ptrace_initialize_process,

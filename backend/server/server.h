@@ -101,6 +101,12 @@ typedef enum {
 	SERVER_CAPABILITIES_THREAD_EVENTS	= 1
 } ServerCapabilities;
 
+typedef enum {
+	SERVER_TYPE_UNKNOWN			= 0,
+	SERVER_TYPE_LINUX_PTRACE		= 1,
+	SERVER_TYPE_DARWIN			= 2
+} ServerType;
+
 /* This is an opaque data structure which the backend may use to store stuff. */
 typedef struct InferiorVTable InferiorVTable;
 typedef struct InferiorHandle InferiorHandle;
@@ -150,6 +156,8 @@ struct InferiorVTable {
 	void                  (* static_init)         (void);
 
 	void                  (* global_init)         (void);
+
+	ServerType            (* get_server_type)     (void);
 
 	ServerCapabilities    (* get_capabilities)    (void);
 
@@ -456,6 +464,9 @@ mono_debugger_server_global_init          (void);
 
 ServerCapabilities
 mono_debugger_server_get_capabilities     (void);
+
+ServerType
+mono_debugger_server_get_server_type      (void);
 
 ServerHandle *
 mono_debugger_server_create_inferior      (BreakpointManager  *bpm);

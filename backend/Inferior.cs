@@ -196,6 +196,9 @@ namespace Mono.Debugger.Backend
 		static extern void mono_debugger_server_set_runtime_info (IntPtr handle, IntPtr mono_runtime_info);
 
 		[DllImport("monodebuggerserver")]
+		static extern ServerType mono_debugger_server_get_server_type ();
+
+		[DllImport("monodebuggerserver")]
 		static extern ServerCapabilities mono_debugger_server_get_capabilities ();
 
 		internal enum ChildEventType {
@@ -226,6 +229,12 @@ namespace Mono.Debugger.Backend
 			EXECUTE,
 			READ,
 			WRITE
+		}
+
+		internal enum ServerType {
+			UNKNOWN = 0,
+			LINUX_PTRACE = 1,
+			DARWIN = 2
 		}
 
 		internal enum ServerCapabilities {
@@ -1188,6 +1197,8 @@ namespace Mono.Debugger.Backend
 		{
 			check_disposed ();
 			TargetError error = mono_debugger_server_stop (server_handle);
+			if(error == TargetError.AlreadyStopped)
+				change_target_state (TargetState.Stopped);
 			return error == TargetError.None;
 		}
 
@@ -1648,6 +1659,19 @@ namespace Mono.Debugger.Backend
 			get {
 				ServerCapabilities capabilities = mono_debugger_server_get_capabilities ();
 				return (capabilities & ServerCapabilities.THREAD_EVENTS) != 0;
+			}
+		}
+
+		public static OperatingSystemBackend CreateOperatingSystemBackend (ProcessServant process)
+		{
+			ServerType type = mono_debugger_server_get_server_type ();
+			switch (type) {
+			case ServerType.LINUX_PTRACE:
+				return new LinuxOperatingSystem (process);
+			case ServerType.DARWIN:
+				return new DarwinOperatingSystem (process);
+			default:
+				throw new NotSupportedException (String.Format ("Unknown server type {0}.", type));
 			}
 		}
 

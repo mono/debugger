@@ -71,7 +71,7 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = new SymbolTableManager (session);
 
-			os = new LinuxOperatingSystem (this);
+			os = Inferior.CreateOperatingSystemBackend (this);
 			native_language = new NativeLanguage (this, os, target_info);
 
 			session.OnProcessCreated (client);
@@ -243,7 +243,7 @@ namespace Mono.Debugger.Backend
 
 			symtab_manager = new SymbolTableManager (session);
 
-			os = new LinuxOperatingSystem (this);
+			os = Inferior.CreateOperatingSystemBackend (this);
 			native_language = new NativeLanguage (this, os, target_info);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
@@ -411,6 +411,16 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
+		public bool CheckForThreads(ArrayList check_threads)
+		{
+			if(thread_db == null)
+				return false;
+			thread_db.GetThreadInfo (null, delegate (int lwp, long tid) {
+				check_threads.Add(lwp);
+			} );
+			return true;
+		}
+
 		void get_thread_info (Inferior inferior, SingleSteppingEngine engine)
 		{
 			if (thread_db == null) {
@@ -465,7 +475,17 @@ namespace Mono.Debugger.Backend
 
 		public void Kill ()
 		{
-			main_thread.Kill ();
+			if(!Inferior.HasThreadEvents)
+			{
+				SingleSteppingEngine[] sses = new SingleSteppingEngine [thread_hash.Count];
+				thread_hash.Values.CopyTo (sses, 0);
+				foreach(SingleSteppingEngine sse in sses)
+					sse.SetKilledFlag();
+				foreach(SingleSteppingEngine sse in sses)
+					sse.Kill();
+			}
+			else
+				main_thread.Kill ();
 		}
 
 		public void Detach ()

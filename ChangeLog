@@ -1,3 +1,50 @@
+2009-06-18  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_step): Moved into x86-linux-ptrace.c.
+	(server_ptrace_continue): Likewise.
+	(server_ptrace_kill): Likewise.
+	(server_ptrace_write_memory): Likewise.
+	(server_ptrace_poke_word): Likewise.
+
+2009-06-18  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/server.h
+	(ServerType): New public enum typedef.
+	(mono_debugger_server_get_server_type): New global function.
+	(InferiorVTable): Add `get_server_type'.
+
+	* backend/Inferior.cs
+	(Inferior.CreateOperatingSystemBackend): New public static method;
+	calls mono_debugger_server_get_type() and creates the appropriate
+	`OperatingSystemBackend'.
+
+2009-06-18  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-ptrace.c: Moved some linux-specific code into
+	x86-linux-ptrace.c.
+
+	* backend/server/darwin-ptrace.c: Moved os-specific stuff from
+	`InferiorHandle' into `OSData'.
+
+2009-06-18  Martin Baulig  <martin@ximian.com>
+
+	Mac OS X patches from jonas echterhoff <jonas@unity3d.com>.
+
+	* backend/ProcessServant.cs: Detect threads on OS X.
+
+	* backend/ThreadManager.cs: Detect threads on OS X.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.SetMainReturnAddress): Reset this when we exit.
+
+	* backend/os/Bfd.cs: `LinuxOperatingSystem' -> `OperatingSystemBackend'.
+
+	* backend/os/DarwinOperatingSystem.cs: New file.
+
+	* backend/server/darwin-ptrace.c
+	(server_ptrace_get_threads): Implemented.
+
 2009-06-16  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionEvaluator.cs

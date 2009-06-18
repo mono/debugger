@@ -17,7 +17,7 @@ namespace Mono.Debugger.Backend
 	{
 		IntPtr bfd;
 		protected Module module;
-		protected LinuxOperatingSystem os;
+		protected OperatingSystemBackend os;
 		protected TargetMemoryInfo info;
 		protected BfdSymbolFile symfile;
 		TargetAddress entry_point = TargetAddress.Null;
@@ -171,7 +171,7 @@ namespace Mono.Debugger.Backend
 			bfd_init ();
 		}
 
-		public Bfd (LinuxOperatingSystem os, TargetMemoryInfo info, string filename,
+		public Bfd (OperatingSystemBackend os, TargetMemoryInfo info, string filename,
 			    TargetAddress base_address, bool is_loaded)
 		{
 			this.os = os;
@@ -257,7 +257,7 @@ namespace Mono.Debugger.Backend
 				}
 
 				read_bfd_symbols ();
-
+read_sections();
 				if (DwarfReader.IsSupported (this))
 					has_debugging_info = true;
 
@@ -779,6 +779,7 @@ namespace Mono.Debugger.Backend
 			ArrayList list = new ArrayList ();
 			IntPtr asection = bfd_glue_get_first_section (bfd);
 			while (asection != IntPtr.Zero) {
+				Console.WriteLine(bfd_glue_get_section_name(asection));
 				Section section = new Section (this, asection);
 				list.Add (section);
 

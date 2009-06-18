@@ -123,7 +123,7 @@ static thread_t server_ptrace_get_inferior_primary_thread(InferiorHandle *inferi
 	kern_return_t err;
 	thread_t result;
 	
-	err = task_threads(inferior->task, &threads, &count);
+	err = task_threads(inferior->os.task, &threads, &count);
 	if (err) {
 		g_message (G_STRLOC ": task_threads failed: %d", err);
 		return 0;
@@ -144,7 +144,7 @@ _server_ptrace_get_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs
 	kern_return_t err;
 	mach_msg_type_number_t state_size = sizeof(x86_thread_state32_t)/sizeof(int);
 	
-	err = thread_get_state(inferior->thread, x86_THREAD_STATE32, (thread_state_t)regs, &state_size);
+	err = thread_get_state(inferior->os.thread, x86_THREAD_STATE32, (thread_state_t)regs, &state_size);
 	if (err)
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 		  
@@ -156,7 +156,7 @@ _server_ptrace_set_registers (InferiorHandle *inferior, INFERIOR_REGS_TYPE *regs
 {
 	kern_return_t err;
 	
-	err = thread_set_state(inferior->thread, x86_THREAD_STATE32, (thread_state_t)regs, sizeof(x86_thread_state32_t)/sizeof(int));
+	err = thread_set_state(inferior->os.thread, x86_THREAD_STATE32, (thread_state_t)regs, sizeof(x86_thread_state32_t)/sizeof(int));
 	if (err) {
 		g_message (G_STRLOC ": thread_set_state failed: %s", mach_error_string(err));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
@@ -171,7 +171,7 @@ _server_ptrace_get_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE 
 	kern_return_t err;
 	mach_msg_type_number_t state_size = sizeof(x86_float_state32_t)/sizeof(int);
 	
-	err = thread_get_state(inferior->thread, x86_FLOAT_STATE32, (thread_state_t)regs, &state_size);
+	err = thread_get_state(inferior->os.thread, x86_FLOAT_STATE32, (thread_state_t)regs, &state_size);
 	if (err) {
 		g_message (G_STRLOC ": thread_get_state failed: %s", mach_error_string(err));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
@@ -185,7 +185,7 @@ _server_ptrace_set_fp_registers (InferiorHandle *inferior, INFERIOR_FPREGS_TYPE 
 {
 	kern_return_t err;
 
-	err = thread_set_state(inferior->thread, x86_FLOAT_STATE32, (thread_state_t)regs, sizeof(x86_float_state32_t)/sizeof(int));
+	err = thread_set_state(inferior->os.thread, x86_FLOAT_STATE32, (thread_state_t)regs, sizeof(x86_float_state32_t)/sizeof(int));
 	if (err) {
 		g_message (G_STRLOC ": thread_set_state failed: %s", mach_error_string(err));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
@@ -204,7 +204,7 @@ _server_ptrace_read_memory (ServerHandle *handle, guint64 start, guint32 size, g
 	mach_msg_type_number_t copy_count;
 
 	/* Get memory from inferior with page aligned addresses */
-	err = vm_read (handle->inferior->task, low_address, aligned_length, &copied, &copy_count);
+	err = vm_read (handle->inferior->os.task, low_address, aligned_length, &copied, &copy_count);
 	if (err)
 		return COMMAND_ERROR_MEMORY_ACCESS;
 	
@@ -243,14 +243,14 @@ _server_ptrace_make_memory_executable (ServerHandle *handle, guint64 start, guin
 		vm_region_basic_info_data_64_t info;
 		mach_msg_type_number_t info_cnt = VM_REGION_BASIC_INFO_COUNT_64;
 		
-		err = vm_region (handle->inferior->task, &region_address, &region_length, VM_REGION_BASIC_INFO_64, (vm_region_info_t) & info, &info_cnt, &object_name);
+		err = vm_region (handle->inferior->os.task, &region_address, &region_length, VM_REGION_BASIC_INFO_64, (vm_region_info_t) & info, &info_cnt, &object_name);
 		if (err) {
 			g_warning (G_STRLOC "vm_region failed: %s", mach_error_string(err));
 			return COMMAND_ERROR_MEMORY_ACCESS;
 		}
 
 		if (!(info.protection & VM_PROT_EXECUTE)) {
-			err = vm_protect (handle->inferior->task, region_address, region_length, FALSE, info.protection | VM_PROT_EXECUTE);
+			err = vm_protect (handle->inferior->os.task, region_address, region_length, FALSE, info.protection | VM_PROT_EXECUTE);
 			if (err) {
 				g_warning (G_STRLOC "vm_protect: restore protection failed: %s", mach_error_string(err));
 				return COMMAND_ERROR_MEMORY_ACCESS;
@@ -283,7 +283,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 	mach_msg_type_number_t copy_count;
 	int fail = FALSE;
 
-	err = vm_read (handle->inferior->task, low_address, aligned_length, &copied, &copy_count);
+	err = vm_read (handle->inferior->os.task, low_address, aligned_length, &copied, &copy_count);
 	if (err) {
 		g_warning (G_STRLOC "vm_read failed: %s", mach_error_string(err));
 		return COMMAND_ERROR_MEMORY_ACCESS;
@@ -306,7 +306,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 			vm_region_basic_info_data_64_t info;
 			mach_msg_type_number_t info_cnt = VM_REGION_BASIC_INFO_COUNT_64;
 			
-			err = vm_region (handle->inferior->task, &region_address, &region_length, VM_REGION_BASIC_INFO_64, (vm_region_info_t) & info, &info_cnt, &object_name);
+			err = vm_region (handle->inferior->os.task, &region_address, &region_length, VM_REGION_BASIC_INFO_64, (vm_region_info_t) & info, &info_cnt, &object_name);
 			if (err) {
 				g_warning (G_STRLOC "vm_region failed: %s", mach_error_string(err));
 				fail = TRUE;
@@ -328,7 +328,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 		if (!fail) {
 			for (scan = region_head; scan; scan = scan->next) {
 				if (!(scan->protection & VM_PROT_WRITE)) {
-					err = vm_protect (handle->inferior->task, scan->start, scan->length, FALSE, scan->protection | VM_PROT_WRITE);
+					err = vm_protect (handle->inferior->os.task, scan->start, scan->length, FALSE, scan->protection | VM_PROT_WRITE);
 					if(err) {
 						g_warning (G_STRLOC "vm_protect: enable write failed: %s", mach_error_string(err));
 						fail = TRUE;
@@ -336,7 +336,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 				}
 			}
 			
-			err = vm_write (handle->inferior->task, low_address, copied, aligned_length);
+			err = vm_write (handle->inferior->os.task, low_address, copied, aligned_length);
 			if (err) {
 				g_warning (G_STRLOC "vm_write failed: %s", mach_error_string(err));
 				fail = TRUE;
@@ -344,7 +344,7 @@ server_ptrace_write_memory (ServerHandle *handle, guint64 start,
 			
 			for (scan = region_head; scan; scan = scan->next) {
 				if (!(scan->protection & VM_PROT_WRITE)) {
-					err = vm_protect (handle->inferior->task, scan->start, scan->length, FALSE, scan->protection);
+					err = vm_protect (handle->inferior->os.task, scan->start, scan->length, FALSE, scan->protection);
 					if (err) {
 						g_warning (G_STRLOC "vm_protect: restore protection failed: %s", mach_error_string(err));
 						fail = TRUE;
@@ -376,15 +376,15 @@ _server_ptrace_set_dr (InferiorHandle *inferior, int regnum, guint64 value)
 	mach_msg_type_number_t state_size = sizeof(x86_debug_state32_t)/sizeof(int);
 	x86_debug_state32_t state;
 	
-	err = thread_get_state(inferior->thread, x86_DEBUG_STATE32, (thread_state_t)&state, &state_size);
+	err = thread_get_state(inferior->os.thread, x86_DEBUG_STATE32, (thread_state_t)&state, &state_size);
 	if (err) {		
-		g_message (G_STRLOC ": thread_get_state failed: %s, %d", mach_error_string(err), inferior->thread);
+		g_message (G_STRLOC ": thread_get_state failed: %s, %d", mach_error_string(err), inferior->os.thread);
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 		
 	(&state.__dr0)[regnum] = value;
 
-	err = thread_set_state(inferior->thread, x86_DEBUG_STATE32, (thread_state_t)&state, state_size);
+	err = thread_set_state(inferior->os.thread, x86_DEBUG_STATE32, (thread_state_t)&state, state_size);
 	if (err) {		
 		g_message (G_STRLOC ": thread_set_state failed: %s", mach_error_string(err));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
@@ -400,7 +400,7 @@ _server_ptrace_get_dr (InferiorHandle *inferior, int regnum, guint64 *value)
 	mach_msg_type_number_t state_size = sizeof(x86_debug_state32_t)/sizeof(int);
 	x86_debug_state32_t state;
 	
-	err = thread_get_state(inferior->thread, x86_DEBUG_STATE32, (thread_state_t)&state, &state_size);
+	err = thread_get_state(inferior->os.thread, x86_DEBUG_STATE32, (thread_state_t)&state, &state_size);
 	if (err) {
 		g_message (G_STRLOC ": thread_get_state failed: %s", mach_error_string(err));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
@@ -522,12 +522,12 @@ server_ptrace_stop (ServerHandle *handle)
 	struct task_basic_info info;
 	mach_msg_type_number_t info_size = sizeof(struct task_basic_info)/sizeof(int);
 
-	kern_return_t err = task_info(inferior->task, TASK_BASIC_INFO, (task_info_t)&info, &info_size);
+	kern_return_t err = task_info(inferior->os.task, TASK_BASIC_INFO, (task_info_t)&info, &info_size);
 	if (err)
 		g_message (G_STRLOC ": task_info failed: %s", mach_error_string(err));
 	else if(info.suspend_count > 0)
 	{
-		thread_suspend (inferior->thread);
+		thread_suspend (inferior->os.thread);
 		/* 
 		 * if we stop the thread this way, we cannot receive signals of it anymore. 
 		 * so, send an already stopped error, to let the debugger take care of us. 
@@ -544,7 +544,7 @@ server_ptrace_stop (ServerHandle *handle)
 			return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
-	g_stopped_thread = COMPOSED_PID(inferior->pid, inferior->thread_index);
+	g_stopped_thread = COMPOSED_PID(inferior->pid, inferior->os.thread_index);
 	
 	return COMMAND_ERROR_NONE;
 }
@@ -683,10 +683,10 @@ void* server_mach_msg_rcv_thread(void *p)
 		kern_return_t err;
 		exception_message_t msg, reply;
 
-		err = mach_msg (&msg.header, MACH_RCV_MSG | MACH_RCV_INTERRUPT | MACH_RCV_TIMEOUT, 0, sizeof (msg), handle->inferior->exception_port, 100, MACH_PORT_NULL);
+		err = mach_msg (&msg.header, MACH_RCV_MSG | MACH_RCV_INTERRUPT | MACH_RCV_TIMEOUT, 0, sizeof (msg), handle->inferior->os.exception_port, 100, MACH_PORT_NULL);
 		if(err == MACH_RCV_TIMED_OUT)
 		{
-			if(handle->inferior->stop_exception_thread)
+			if(handle->inferior->os.stop_exception_thread)
 				break;
 			continue;
 		}
@@ -710,7 +710,7 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 	InferiorHandle *inferior = handle->inferior;
 	kern_return_t err;
 
-	err = task_for_pid(mach_task_self(), inferior->pid, &inferior->task);
+	err = task_for_pid(mach_task_self(), inferior->pid, &inferior->os.task);
 	if(err != KERN_SUCCESS) {
 		g_warning (G_STRLOC ": Can't get Mach task for pid %d: %s. \n" 
 					"If you get an error here, that is usually because the mono runtime executable has not"
@@ -719,38 +719,38 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 		return COMMAND_ERROR_UNKNOWN_ERROR;		
 	}
 	
-	if(inferior->thread == 0) {
-		err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &inferior->exception_port);
+	if(inferior->os.thread == 0) {
+		err = mach_port_allocate (mach_task_self (), MACH_PORT_RIGHT_RECEIVE, &inferior->os.exception_port);
 		if(err != KERN_SUCCESS) {
 			g_warning (G_STRLOC ": mach_port_allocate: %s", mach_error_string(err));
 			return COMMAND_ERROR_UNKNOWN_ERROR;		
 		}
 
-		err = mach_port_insert_right (mach_task_self (), inferior->exception_port, inferior->exception_port, MACH_MSG_TYPE_MAKE_SEND);
+		err = mach_port_insert_right (mach_task_self (), inferior->os.exception_port, inferior->os.exception_port, MACH_MSG_TYPE_MAKE_SEND);
 		if(err != KERN_SUCCESS) {
 			g_warning (G_STRLOC ": mach_port_insert_right: %s", mach_error_string(err));
 			return COMMAND_ERROR_UNKNOWN_ERROR;		
 		}
 								
-		err = task_set_exception_ports (inferior->task, EXC_MASK_ALL, inferior->exception_port, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
+		err = task_set_exception_ports (inferior->os.task, EXC_MASK_ALL, inferior->os.exception_port, EXCEPTION_DEFAULT, THREAD_STATE_NONE);
 		if(err != KERN_SUCCESS) {
 			g_warning (G_STRLOC ": task_set_exception_ports: %s", mach_error_string(err));
 			return COMMAND_ERROR_UNKNOWN_ERROR;		
 		}
 
-		inferior->stop_exception_thread = FALSE;
-		inferior->thread = server_ptrace_get_inferior_primary_thread(inferior);
-		pthread_create(&inferior->exception_thread, NULL, server_mach_msg_rcv_thread, handle);
+		inferior->os.stop_exception_thread = FALSE;
+		inferior->os.thread = server_ptrace_get_inferior_primary_thread(inferior);
+		pthread_create(&inferior->os.exception_thread, NULL, server_mach_msg_rcv_thread, handle);
 
-		g_wait_thread = inferior->thread;
+		g_wait_thread = inferior->os.thread;
 	}
 	else
-		inferior->exception_thread = 0;
+		inferior->os.exception_thread = 0;
 	
-	if(get_thread_index(inferior->task, inferior->thread, &inferior->thread_index))
+	if(get_thread_index(inferior->os.task, inferior->os.thread, &inferior->os.thread_index))
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 
-	inferior->is_stopped = FALSE;
+	inferior->os.is_stopped = FALSE;
 	
 	return COMMAND_ERROR_NONE;
 }
@@ -759,10 +759,10 @@ static void
 _server_ptrace_finalize_inferior (ServerHandle *handle)
 {
 	InferiorHandle *inferior = handle->inferior;
-	if(inferior->exception_thread)
+	if(inferior->os.exception_thread)
 	{
-		inferior->stop_exception_thread = TRUE;
-		pthread_join(inferior->exception_thread, NULL);
+		inferior->os.stop_exception_thread = TRUE;
+		pthread_join(inferior->os.exception_thread, NULL);
 	}
 }
 
@@ -813,10 +813,33 @@ server_ptrace_global_init (void)
 }
 
 static ServerCommandError
-server_ptrace_get_threads (ServerHandle *handle, guint32 *count, guint32 **threads)
+server_ptrace_get_threads (ServerHandle *handle, guint32 *out_count, guint32 **out_threads)
 {
-	g_warning (G_STRLOC ": Can't get threads of %d", handle->inferior->pid);
-	return COMMAND_ERROR_UNKNOWN_ERROR;
+	InferiorHandle *inferior = handle->inferior;
+	thread_array_t threads;
+	mach_msg_type_number_t count;
+	kern_return_t err;
+	int state_size = I386_THREAD_STATE_MAX;
+	int i;
+
+	err = task_threads(inferior->os.task, &threads, &count);
+	if (err)
+		return COMMAND_ERROR_UNKNOWN_ERROR;
+	
+	*out_threads = g_new0 (guint32, count);
+	*out_count = count;
+	for(i = 0; i<count; i++) {
+		int th_index;
+		if(get_thread_index(inferior->os.task, threads[i], &th_index))
+			continue;
+		(*out_threads) [i] = GPOINTER_TO_UINT (COMPOSED_PID(inferior->pid, th_index));
+	}
+	
+	err = vm_deallocate (mach_task_self(), (vm_address_t) threads, (count * sizeof (int)));
+	if (err)
+		g_message (G_STRLOC ": vm_deallocate failed: %d", err);
+	  
+	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -948,20 +971,20 @@ server_ptrace_continue (ServerHandle *handle)
 	regs.eflags &= ~0x100UL;
 	_server_ptrace_set_registers(inferior, &regs);
 
-	err = thread_info (inferior->thread, THREAD_BASIC_INFO, (thread_info_t) &th_info, &info_count);
+	err = thread_info (inferior->os.thread, THREAD_BASIC_INFO, (thread_info_t) &th_info, &info_count);
 	if (err)
 		g_warning (G_STRLOC ": thread_info failed: %s",mach_error_string(err));
 	else while(th_info.suspend_count > 0) {
 		th_info.suspend_count--;
-		thread_resume (inferior->thread);
+		thread_resume (inferior->os.thread);
 	}
 
 	inferior->stepping = FALSE;
 				
-	if(!inferior->is_stopped)
+	if(!inferior->os.is_stopped)
 		return COMMAND_ERROR_NONE;
 		
-	inferior->is_stopped = FALSE;
+	inferior->os.is_stopped = FALSE;
 	
 	errno = 0;
 
@@ -970,10 +993,10 @@ server_ptrace_continue (ServerHandle *handle)
 	}
 
 	/* Make sure we actually resume, in case task_suspend has been called once too much. */
-	task_info(inferior->task, TASK_BASIC_INFO, (task_info_t)&info, &info_size);
+	task_info(inferior->os.task, TASK_BASIC_INFO, (task_info_t)&info, &info_size);
 	while(info.suspend_count > 0) {
 		info.suspend_count--;
-		task_resume(inferior->task);
+		task_resume(inferior->os.task);
 	}
 
 	return COMMAND_ERROR_NONE;
@@ -989,7 +1012,7 @@ server_ptrace_step (ServerHandle *handle)
 	INFERIOR_REGS_TYPE regs;
 	int i;
 	
-	inferior->is_stopped = FALSE;
+	inferior->os.is_stopped = FALSE;
 	/* 
 	 * PT_STEP seems to be badly broken on OS X in multi-threaded environments.
 	 * When using it on anything but the main thread, it kernel panics.
@@ -998,7 +1021,7 @@ server_ptrace_step (ServerHandle *handle)
 	 * All of these have to be reset when continuing normal operation (ie in server_ptrace_continue).  
 	 */	
 	
-	err = task_threads(inferior->task, &threads, &count);
+	err = task_threads(inferior->os.task, &threads, &count);
 	if (err) {
 		g_message (G_STRLOC ": task_threads failed: %d", err);
 		return COMMAND_ERROR_UNKNOWN_ERROR;
@@ -1009,13 +1032,13 @@ server_ptrace_step (ServerHandle *handle)
 
 	struct thread_basic_info info;
 	unsigned int info_count = THREAD_BASIC_INFO_COUNT;
-	thread_info (inferior->thread, THREAD_BASIC_INFO, (thread_info_t) &info, &info_count);
+	thread_info (inferior->os.thread, THREAD_BASIC_INFO, (thread_info_t) &info, &info_count);
 	while(info.suspend_count > 0) {
 		info.suspend_count--;
-		thread_resume (inferior->thread);
+		thread_resume (inferior->os.thread);
 	}
-	g_stepping_thread = inferior->thread;
-	g_stepping_task = inferior->task;
+	g_stepping_thread = inferior->os.thread;
+	g_stepping_task = inferior->os.task;
 	
 	_server_ptrace_get_registers(inferior, &regs);
 	regs.eflags |= 0x100UL;
@@ -1047,7 +1070,7 @@ server_ptrace_kill (ServerHandle *handle)
 
 	kill (inferior->pid, SIGKILL);
 
-	if (task_threads(inferior->task, &threads, &count) == KERN_SUCCESS) {
+	if (task_threads(inferior->os.task, &threads, &count) == KERN_SUCCESS) {
 		for(i=0; i<count; i++) {
 			err = thread_info (threads[i], THREAD_BASIC_INFO, (thread_info_t) &th_info, &info_count);
 			if (err)
@@ -1091,4 +1114,16 @@ server_ptrace_sem_get_value (void)
 
 	sem_getvalue (manager_semaphore, &ret);
 	return ret;
+}
+
+static ServerType
+server_ptrace_get_server_type (void)
+{
+	return SERVER_TYPE_DARWIN;
+}
+
+static ServerCapabilities
+server_ptrace_get_capabilities (void)
+{
+	return SERVER_CAPABILITIES_NONE;
 }
