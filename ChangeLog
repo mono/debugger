@@ -1,5 +1,11 @@
 2009-06-18  Martin Baulig  <martin@ximian.com>
 
+	* backend/os/Bfd.cs
+	(Bfd.ctor): Fix #510031, don't crash when some native library
+	doesn't contain a '.text' or '.bfd' section.
+
+2009-06-18  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86-ptrace.c
 	(server_ptrace_step): Moved into x86-linux-ptrace.c.
 	(server_ptrace_continue): Likewise.

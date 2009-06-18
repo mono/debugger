@@ -196,24 +196,26 @@ namespace Mono.Debugger.Backend
 			target = bfd_glue_get_target_name (bfd);
 			if ((target == "elf32-i386") || (target == "elf64-x86-64")) {
 				if (!is_coredump) {
-					Section text = GetSectionByName (".text", true);
-					Section bss = GetSectionByName (".bss", true);
+					Section text = GetSectionByName (".text", false);
+					Section bss = GetSectionByName (".bss", false);
 
-					if (!base_address.IsNull)
-						start_address = new TargetAddress (
-							info.AddressDomain,
-							base_address.Address + text.vma);
-					else
-						start_address = new TargetAddress (
-							info.AddressDomain, text.vma);
+					if ((text != null) && (bss != null)) {
+						if (!base_address.IsNull)
+							start_address = new TargetAddress (
+								info.AddressDomain,
+								base_address.Address + text.vma);
+						else
+							start_address = new TargetAddress (
+								info.AddressDomain, text.vma);
 
-					if (!base_address.IsNull)
-						end_address = new TargetAddress (
-							info.AddressDomain,
-							base_address.Address + bss.vma + bss.size);
-					else
-						end_address = new TargetAddress (
-							info.AddressDomain, bss.vma + bss.size);
+						if (!base_address.IsNull)
+							end_address = new TargetAddress (
+								info.AddressDomain,
+								base_address.Address + bss.vma + bss.size);
+						else
+							end_address = new TargetAddress (
+								info.AddressDomain, bss.vma + bss.size);
+					}
 				}
 
 				read_bfd_symbols ();
