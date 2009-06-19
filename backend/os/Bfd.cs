@@ -781,7 +781,6 @@ read_sections();
 			ArrayList list = new ArrayList ();
 			IntPtr asection = bfd_glue_get_first_section (bfd);
 			while (asection != IntPtr.Zero) {
-				Console.WriteLine(bfd_glue_get_section_name(asection));
 				Section section = new Section (this, asection);
 				list.Add (section);
 
