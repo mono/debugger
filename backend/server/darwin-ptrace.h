@@ -3,6 +3,8 @@
 
 #include <mach/mach.h>
 
+#include "x86-arch.h"
+
 struct OSData
 {
 	mach_port_t task;
@@ -32,7 +34,7 @@ struct user_fpregs_struct {
 	i386_float_state_t regs;
 };
 
-#include "x86-arch.h"
+#include "x86-ptrace.h"
 
 static ServerCommandError
 _server_ptrace_check_errno (InferiorHandle *);

@@ -444,7 +444,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 	}
 
 #ifdef __MACH__
-	*child_pid = COMPOSED_PID(inferior->pid, inferior->thread_index);
+	*child_pid = COMPOSED_PID(inferior->pid, inferior->os.thread_index);
 #endif
 
 	return COMMAND_ERROR_NONE;
@@ -459,7 +459,7 @@ server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 
 #ifdef __MACH__
 	inferior->pid = GET_PID(pid);
-	inferior->thread = get_thread_from_index(GET_THREAD_INDEX(pid));
+	inferior->os.thread = get_thread_from_index(GET_THREAD_INDEX(pid));
 #else
 	inferior->pid = pid;
 	if (!_server_ptrace_wait_for_new_thread (handle))
