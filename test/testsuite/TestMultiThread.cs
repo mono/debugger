@@ -241,15 +241,7 @@ namespace Mono.Debugger.Tests
 			AssertFrame (thread, "X.LoopDone()", LineLoop);
 			AssertFrame (child, "X.LoopDone()", LineLoop);
 
-			/*
-			 * This doesn't work when broken threading is enabled:
-			 *
-			 *    AssertPrint (thread, "Parent.Test ()", "(int) 7");
-			 *
-			 */
-
-			AssertPrintException (thread, "Parent.Test ()",
-					      "Invocation of `Parent.Test ()' aborted abnormally.");
+			AssertPrint (thread, "Parent.Test ()", "(int) 4");
 
 			AssertExecute ("kill");
 		}
