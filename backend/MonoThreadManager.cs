@@ -58,17 +58,45 @@ namespace Mono.Debugger.Backend
 
 	internal class MonoThreadManager
 	{
+		ProcessServant process;
 		MonoDebuggerInfo debugger_info;
 
-		public MonoThreadManager (ThreadManager thread_manager, Inferior inferior,
-					  TargetAddress info, bool attach)
+		protected MonoThreadManager (ProcessServant process, Inferior inferior,
+					     MonoDebuggerInfo debugger_info)
 		{
-			debugger_info = MonoDebuggerInfo.Create (inferior, info);
+			this.process = process;
+			this.debugger_info = debugger_info;
 
 			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 1);
 
 			notification_bpt = new InitializeBreakpoint (this, debugger_info.Initialize);
 			notification_bpt.Insert (inferior);
+
+			read_thread_table (inferior);
+		}
+
+		public static MonoThreadManager Initialize (ProcessServant process, Inferior inferior,
+							    TargetAddress info, bool attach)
+		{
+			MonoDebuggerInfo debugger_info = MonoDebuggerInfo.Create (inferior, info);
+			if (debugger_info == null)
+				return null;
+
+			if (attach) {
+				if (!debugger_info.CheckRuntimeVersion (81, 2)) {
+					Report.Error ("The Mono runtime of the target application is too old to support attaching,\n" +
+						      "attaching as a native application.");
+					return null;
+				}
+
+				if ((debugger_info.RuntimeFlags & 1) != 1) {
+					Report.Error ("The Mono runtime of the target application does not support attaching,\n" +
+						      "attaching as a native application.");
+					return null;
+				}
+			}
+
+			return new MonoThreadManager (process, inferior, debugger_info);
 		}
 
 		AddressBreakpoint notification_bpt;
@@ -151,7 +179,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		internal void InitializeAfterAttach (Inferior inferior)
+		internal bool InitializeAfterAttach (Inferior inferior)
 		{
 			initialize_notifications (inferior);
 
@@ -163,11 +191,8 @@ namespace Mono.Debugger.Backend
 
 			csharp_language = inferior.Process.CreateMonoLanguage (debugger_info);
 			csharp_language.InitializeAttach (inferior);
-		}
 
-		internal void InitializeAfterExec (Inferior inferior)
-		{
-			inferior.WriteInteger (debugger_info.UsingMonoDebugger, 1);
+			return true;
 		}
 
 		internal void Detach (Inferior inferior)
@@ -208,13 +233,45 @@ namespace Mono.Debugger.Backend
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
 			sse.Inferior.SetRuntimeInfo (mono_runtime_info);
-
-			if ((MonoDebuggerInfo.MajorVersion == 81) && (MonoDebuggerInfo.MinorVersion == 2)) {
-				if (++index < 4)
-					sse.SetDaemon ();
-			} else {
+			if (!process.IsAttached) {
 				if (++index < 3)
 					sse.SetDaemon ();
+			}
+		}
+
+		void read_thread_table (Inferior inferior)
+		{
+			TargetAddress ptr = inferior.ReadAddress (MonoDebuggerInfo.ThreadTable);
+			while (!ptr.IsNull) {
+				int size = 32 + inferior.TargetMemoryInfo.TargetAddressSize;
+				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
+
+				long tid = reader.ReadLongInteger ();
+				TargetAddress lmf_addr = reader.ReadAddress ();
+				TargetAddress end_stack = reader.ReadAddress ();
+
+				TargetAddress extended_notifications_addr = ptr + 24;
+
+				if (inferior.TargetMemoryInfo.TargetAddressSize == 4)
+					tid &= 0x00000000ffffffffL;
+
+				reader.Offset += 8;
+				ptr = reader.ReadAddress ();
+
+				bool found = false;
+				foreach (SingleSteppingEngine engine in process.Engines) {
+					if (engine.TID != tid)
+						continue;
+
+					engine.SetManagedThreadData (lmf_addr, extended_notifications_addr);
+					engine.OnManagedThreadCreated (end_stack);
+					found = true;
+					break;
+				}
+
+				if (!found)
+					Report.Error ("Cannot find thread {0:x} in {1}",
+						      tid, process.ProcessStart.CommandLine);
 			}
 		}
 
@@ -292,9 +349,6 @@ namespace Mono.Debugger.Backend
 						csharp_language.InitializeAttach (inferior);
 					else
 						csharp_language.Initialize (inferior);
-
-					if (!engine.ProcessServant.IsAttached)
-						engine.ProcessServant.InitializeThreads (inferior);
 
 					break;
 
@@ -400,6 +454,8 @@ namespace Mono.Debugger.Backend
 		public readonly int MajorVersion;
 		public readonly int MinorVersion;
 
+		public readonly int RuntimeFlags;
+
 		public readonly int MonoTrampolineNum;
 		public readonly TargetAddress MonoTrampolineCode;
 		public readonly TargetAddress NotificationAddress;
@@ -442,21 +498,24 @@ namespace Mono.Debugger.Backend
 		{
 			TargetBinaryReader header = memory.ReadMemory (info, 24).GetReader ();
 			long magic = header.ReadInt64 ();
-			if (magic != DynamicMagic)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' at {0} has unknown magic {1:x}.", info, magic);
+			if (magic != DynamicMagic) {
+				Report.Error ("`MONO_DEBUGGER__debugger_info' at {0} has unknown magic {1:x}.", info, magic);
+				return null;
+			}
 
 			int version = header.ReadInt32 ();
-			if (version < MinDynamicVersion)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at least {1}.", version,
-					MonoDebuggerInfo.MinDynamicVersion);
-			if (version > MaxDynamicVersion)
-				throw new SymbolTableException (
-					"`MONO_DEBUGGER__debugger_info' has version {0}, " +
-					"but expected at most {1}.", version,
-					MonoDebuggerInfo.MaxDynamicVersion);
+			if (version < MinDynamicVersion) {
+				Report.Error ("`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					      "but expected at least {1}.", version,
+					      MonoDebuggerInfo.MinDynamicVersion);
+				return null;
+			}
+			if (version > MaxDynamicVersion) {
+				Report.Error ("`MONO_DEBUGGER__debugger_info' has version {0}, " +
+					      "but expected at most {1}.", version,
+					      MonoDebuggerInfo.MaxDynamicVersion);
+				return null;
+			}
 
 			header.ReadInt32 (); // minor version
 			header.ReadInt32 ();
@@ -467,11 +526,22 @@ namespace Mono.Debugger.Backend
 			return new MonoDebuggerInfo (memory, reader);
 		}
 
+		public bool CheckRuntimeVersion (int major, int minor)
+		{
+			if (MajorVersion < major)
+				return false;
+			if (MajorVersion > major)
+				return true;
+			return MinorVersion >= minor;
+		}
+
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
 		{
 			reader.Offset = 8;
 			MajorVersion              = reader.ReadInteger ();
 			MinorVersion              = reader.ReadInteger ();
+
+			RuntimeFlags              = reader.ReadInteger ();
 
 			reader.Offset = 24;
 

@@ -154,7 +154,7 @@ namespace Mono.Debugger.Backend
 				int pid = (int) cevent.Argument;
 				if (pending_sigstops.ContainsKey (pid))
 					pending_sigstops.Remove (pid);
-				inferior.Process.ThreadCreated (inferior, pid, false);
+				inferior.Process.ThreadCreated (inferior, pid, false, true);
 				resume_target = true;
 				return true;
 			}
@@ -520,7 +520,7 @@ namespace Mono.Debugger.Backend
 					SingleSteppingEngine[] sses = new SingleSteppingEngine [thread_hash.Count];
 					thread_hash.Values.CopyTo (sses, 0);				
 					Inferior inferior = sses[0].Inferior;		
-					inferior.Process.ThreadCreated (inferior, pid, false);
+					inferior.Process.ThreadCreated (inferior, pid, false, true);
 				}
 
 				ArrayList check_threads = new ArrayList();

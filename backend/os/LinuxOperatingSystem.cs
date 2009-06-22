@@ -70,7 +70,7 @@ namespace Mono.Debugger.Backend
 		{
 			check_nptl_setxid (inferior, bfd);
 
-			if (!Process.IsManaged)
+			if (!Process.MonoRuntimeFound)
 				check_for_mono_runtime (inferior, bfd);
 		}
 

@@ -155,6 +155,10 @@ namespace Mono.Debugger.Backend
 			get { return mono_manager; }
 		}
 
+		internal bool MonoRuntimeFound {
+			get; private set;
+		}
+
 		public bool IsManaged {
 			get { return mono_manager != null; }
 		}
@@ -171,7 +175,7 @@ namespace Mono.Debugger.Backend
 			get { return start.CommandLineArguments; }
 		}
 
-		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach)
+		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach, bool resume_thread)
 		{
 			Inferior new_inferior = inferior.CreateThread (pid, do_attach);
 
@@ -179,14 +183,14 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.Threads, "Thread created: {0} {1} {2}", pid, new_thread, do_attach);
 
-			if ((mono_manager != null) && !do_attach)
+			if (mono_manager != null)
 				mono_manager.ThreadCreated (new_thread);
 
 			if (!do_attach && !is_execed)
 				get_thread_info (inferior, new_thread);
 			OnThreadCreatedEvent (new_thread);
 
-			new_thread.StartThread ();
+			new_thread.StartThread (resume_thread);
 		}
 
 		internal void ChildForked (Inferior inferior, int pid)
@@ -338,61 +342,23 @@ namespace Mono.Debugger.Backend
 
 		internal void InitializeMono (Inferior inferior, TargetAddress mdb_debug_info)
 		{
-			mono_manager = new MonoThreadManager (manager, inferior, mdb_debug_info, false);
-			mono_manager.InitializeAfterExec (inferior);
+			InitializeThreads (inferior, !is_attached);
 
-			int[] threads = inferior.GetThreads ();
-			foreach (int thread in threads) {
-				if (thread_hash.Contains (thread))
-					continue;
-				ThreadCreated (inferior, thread, true);
-			}
+			MonoRuntimeFound = true;
+			mono_manager = MonoThreadManager.Initialize (this, inferior, mdb_debug_info, is_attached);
+			if (mono_manager == null)
+				return;
 
-			InitializeThreads (inferior);
-
-			if (mono_manager != null)
-				read_thread_table (inferior);
+			if (is_attached)
+				mono_manager.InitializeAfterAttach (inferior);
 		}
 
-		void read_thread_table (Inferior inferior)
+		internal void InitializeThreads (Inferior inferior, bool resume_threads)
 		{
-			TargetAddress ptr = inferior.ReadAddress (mono_manager.MonoDebuggerInfo.ThreadTable);
-			while (!ptr.IsNull) {
-				int size = 32 + inferior.TargetMemoryInfo.TargetAddressSize;
-				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
+			if (thread_db != null)
+				return;
 
-				long tid = reader.ReadLongInteger ();
-				TargetAddress lmf_addr = reader.ReadAddress ();
-				TargetAddress end_stack = reader.ReadAddress ();
-
-				TargetAddress extended_notifications_addr = ptr + 24;
-
-				if (inferior.TargetMemoryInfo.TargetAddressSize == 4)
-					tid &= 0x00000000ffffffffL;
-
-				reader.Offset += 8;
-				ptr = reader.ReadAddress ();
-
-				bool found = false;
-				foreach (SingleSteppingEngine engine in thread_hash.Values) {
-					if (engine.TID != tid)
-						continue;
-
-					engine.SetManagedThreadData (lmf_addr, extended_notifications_addr);
-					engine.OnManagedThreadCreated (end_stack);
-					found = true;
-					break;
-				}
-
-				if (!found)
-					Report.Error ("Cannot find thread {0:x} in {1}",
-						      tid, start.CommandLine);
-			}
-		}
-
-		internal void InitializeThreads (Inferior target)
-		{
-			thread_db = ThreadDB.Create (this, target);
+			thread_db = ThreadDB.Create (this, inferior);
 			if (thread_db == null) {
 				if (IsManaged)
 					Report.Error ("Failed to initialize thread_db on {0}",
@@ -400,7 +366,14 @@ namespace Mono.Debugger.Backend
 				return;
 			}
 
-			thread_db.GetThreadInfo (target, delegate (int lwp, long tid) {
+			int[] threads = inferior.GetThreads ();
+			foreach (int thread in threads) {
+				if (thread_hash.Contains (thread))
+					continue;
+				ThreadCreated (inferior, thread, true, resume_threads);
+			}
+
+			thread_db.GetThreadInfo (inferior, delegate (int lwp, long tid) {
 				SingleSteppingEngine engine = (SingleSteppingEngine) thread_hash [lwp];
 				if (engine == null) {
 					Report.Error ("Unknown thread {0} in {1}", lwp,
@@ -578,6 +551,17 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		internal SingleSteppingEngine[] Engines {
+			get {
+				lock (thread_hash.SyncRoot) {
+					int count = thread_hash.Count;
+					SingleSteppingEngine[] engines = new SingleSteppingEngine [count];
+					thread_hash.Values.CopyTo (engines, 0);
+					return engines;
+				}
+			}
+		}
+
 		public TargetAddress LookupSymbol (string name)
 		{
 			return os.LookupSymbol (name);
@@ -647,6 +631,15 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock #1: {0}", caller);
+		}
+
+		internal void DropGlobalThreadLock ()
+		{
+			if (thread_hash.Count != 0)
+				throw new InternalError ();
+
+			has_thread_lock = false;
+			thread_lock_mutex.Unlock ();
 		}
 
 		public void ActivatePendingBreakpoints (CommandResult result)

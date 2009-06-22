@@ -68,7 +68,7 @@ namespace Mono.Debugger.Backend
 
 		protected void check_loaded_library (Inferior inferior, Bfd bfd)
 		{
-			if (!Process.IsManaged)
+			if (!Process.MonoRuntimeFound)
 				check_for_mono_runtime (inferior, bfd);
 		}
 

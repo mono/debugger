@@ -1,5 +1,39 @@
 2009-06-20  Martin Baulig  <martin@ximian.com>
 
+	Fix attaching support.
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.Initialize): New public static method to create
+	a new `MonoThreadManager' instance, we do some error checking here
+	and return null on failure; the .ctor is now private.
+	(MonoThreadManager.read_thread_table): Moved here from
+	ProcessServant.cs.
+	(MonoThreadManager.MonoDebuggerInfo.Create): Return null on
+	failure instead of throwing an exception.
+	(MonoThreadManager.MonoDebuggerInfo.CheckRuntimeVersion): New
+	public method.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.MonoRuntimeFound): New internal property; returns
+	whether we already found a mono runtime, even if we could not use
+	this runtime for some reason and are thus running in native mode.
+	(ProcessServant.ThreadCreated): Added `bool resume_thread'
+	argument to specify whether the new thread should be resumed or
+	remain stopped.
+	(ProcessServant.InitializeMono): Improve error handling.
+	(ProcessServant.InitializeThreads): This may now be called
+	multiple times.
+	(ProcessServant.DropGlobalThreadLock): New internal method;
+	release the `thread_lock' mutex in SSE.Detach() since disposing
+	the still-locked mutex would throw an exception.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.StartThread): Add `bool resume_thread' argument to specify
+	whether the new thread should be resumed or remain stopped.
+	(SSE.Detach): Call `process.DropGlobalThreadLock()'.
+
+2009-06-20  Martin Baulig  <martin@ximian.com>
+
 	* classes/Backtrace.cs
 	(Backtrace.IsFrameOkForMode): `Mode.Default' defaults to native
 	unless we're debugging a managed application.

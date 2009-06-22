@@ -122,10 +122,13 @@ namespace Mono.Debugger.Backend
 			return result;
 		}
 
-		public CommandResult StartThread ()
+		public CommandResult StartThread (bool resume_thread)
 		{
 			CommandResult result = new ThreadCommandResult (thread);
-			current_operation = new OperationRun (this, result);
+			if (resume_thread)
+				current_operation = new OperationRun (this, result);
+			else
+				current_operation = new OperationInitialize (this, result);
 			current_operation.Execute ();
 			return result;
 		}
@@ -197,6 +200,13 @@ namespace Mono.Debugger.Backend
 			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				Report.Debug (DebugFlags.SSE, "{0} is now dead!", this);
 				dead = true;
+			}
+
+			if (ProcessServant.IsAttached && !attach_initialized) {
+				attach_initialized = true;
+
+				if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED)
+					cevent = new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
@@ -881,6 +891,8 @@ namespace Mono.Debugger.Backend
 				if (process.MonoManager != null)
 					process.MonoManager.Detach (inferior);
 				DoDetach ();
+
+				process.DropGlobalThreadLock ();
 				return null;
 			});
 		}
@@ -2332,6 +2344,7 @@ namespace Mono.Debugger.Backend
 		bool engine_stopped;
 		bool reached_main;
 		bool killed, dead;
+		bool attach_initialized;
 		long tid;
 		int pid;
 
@@ -2721,7 +2734,12 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			sse.do_continue (inferior.EntryPoint);
+			Report.Debug (DebugFlags.SSE,
+				      "{0} execute start: {1} {2} {3}", sse, sse.ProcessServant.IsAttached,
+				      inferior.CurrentFrame, inferior.EntryPoint);
+
+			if (!sse.ProcessServant.IsAttached)
+				sse.do_continue (inferior.EntryPoint);
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -2738,17 +2756,18 @@ namespace Mono.Debugger.Backend
 				return EventResult.Completed;
 
 			if (sse.Architecture.IsSyscallInstruction (inferior, inferior.CurrentFrame)) {
+				Report.Debug (DebugFlags.SSE,
+					      "{0} start stopped on syscall instruction {1}",
+					      sse, inferior.CurrentFrame);
 				inferior.Step ();
 				return EventResult.Running;
 			}
 
 			sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
+			sse.ProcessServant.InitializeThreads (inferior, !sse.ProcessServant.IsAttached);
 
-			if (sse.ProcessServant.IsAttached) {
-				if (sse.ProcessServant.IsManaged)
-					sse.ProcessServant.MonoManager.InitializeAfterAttach (inferior);
+			if (sse.ProcessServant.IsAttached)
 				return EventResult.Completed;
-			}
 
 			if (!sse.ProcessServant.IsManaged) {
 				if (sse.OnModuleLoaded (null))
