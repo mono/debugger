@@ -31,7 +31,7 @@ namespace Mono.Debugger.Tests
 			Thread thread = process.MainThread;
 			AssertStopped (thread, "main", "X.Main()");
 
-			AssertExecute ("next");
+			AssertExecute ("next -bg");
 
 			DebuggerEvent e = AssertEvent ();
 
