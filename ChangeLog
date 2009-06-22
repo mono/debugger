@@ -1,5 +1,11 @@
 2009-06-20  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.StartOperation): Fix a regression introduced in r135640:
+	reset `operation_completed_event' when starting a new operation.
+
+2009-06-20  Martin Baulig  <martin@ximian.com>
+
 	* backend/MonoThreadManager.cs: Reflect latest runtime changes; if
 	the target runtime is at least 81.3, check the new 'thread_flags'
 	field in the 'MonoDebuggerThreadInfo' to detect daemon threads.
