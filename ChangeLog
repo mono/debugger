@@ -1,3 +1,9 @@
+2009-06-22  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.GetFields): Check whether the class is already
+	initialized and throw an exception on error.
+
 2009-06-20  Martin Baulig  <martin@ximian.com>
 
 	* classes/Debugger.cs

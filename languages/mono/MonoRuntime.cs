@@ -103,6 +103,13 @@ namespace Mono.Debugger.Languages.Mono
 			return klass + MonoMetadataInfo.KlassByValArgOffset;
 		}
 
+		public bool MonoClassHasFields (TargetMemoryAccess memory, TargetAddress klass)
+		{
+			TargetAddress fields = memory.ReadAddress (
+				klass + MonoMetadataInfo.KlassFieldOffset);
+			return !fields.IsNull;
+		}
+
 		public int MonoClassGetFieldCount (TargetMemoryAccess memory, TargetAddress klass)
 		{
 			return memory.ReadInteger (klass + MonoMetadataInfo.KlassFieldCountOffset);
@@ -116,6 +123,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress fields = memory.ReadAddress (
 				klass + MonoMetadataInfo.KlassFieldOffset);
+			if (fields.IsNull)
+				throw new TargetException (TargetError.ClassNotInitialized);
 
 			return memory.ReadAddress (fields + offset);
 		}
@@ -128,6 +137,8 @@ namespace Mono.Debugger.Languages.Mono
 
 			TargetAddress fields = memory.ReadAddress (
 				klass + MonoMetadataInfo.KlassFieldOffset);
+			if (fields.IsNull)
+				throw new TargetException (TargetError.ClassNotInitialized);
 
 			return memory.ReadInteger (fields + offset);
 		}
@@ -149,6 +160,9 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			TargetAddress methods = memory.ReadAddress (
 				klass + MonoMetadataInfo.KlassMethodsOffset);
+
+			if (methods.IsNull)
+				throw new TargetException (TargetError.ClassNotInitialized);
 
 			methods += index * memory.TargetAddressSize;
 			return memory.ReadAddress (methods);
