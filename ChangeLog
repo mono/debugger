@@ -1,3 +1,9 @@
+2009-06-20  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.StartOperation): Fix a regression introduced in r135640:
+	reset `operation_completed_event' when starting a new operation.
+
 2009-06-16  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionEvaluator.cs
