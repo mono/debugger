@@ -121,6 +121,9 @@ namespace Mono.Debugger.Languages.Mono
 			if (fields != null)
 				return fields;
 
+			if (!MonoRuntime.MonoClassHasFields (target, KlassAddress))
+				throw new TargetException (TargetError.ClassNotInitialized);
+
 			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
 
 			fields = new MonoFieldInfo [field_count];
