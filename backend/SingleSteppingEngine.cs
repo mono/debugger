@@ -645,6 +645,7 @@ namespace Mono.Debugger.Backend
 
 				engine_stopped = false;
 				last_target_event = null;
+				operation_completed_event.Reset ();
 			}
 		}
 
