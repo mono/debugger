@@ -102,6 +102,12 @@ namespace Mono.Debugger.Backend
 			thread.SetThreadFlags (thread.ThreadFlags | Thread.Flags.Daemon | Thread.Flags.Immutable);
 		}
 
+		internal void SetManaged ()
+		{
+			is_daemon = false;
+			thread.SetThreadFlags (thread.ThreadFlags & ~(Thread.Flags.Daemon | Thread.Flags.Immutable));
+		}
+
 		public abstract TargetEventArgs LastTargetEvent {
 			get;
 		}

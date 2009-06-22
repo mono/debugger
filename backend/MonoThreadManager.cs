@@ -54,6 +54,12 @@ namespace Mono.Debugger.Backend
 		Trampoline	= 256
 	}
 
+	internal enum ThreadFlags {
+		None = 0,
+		Internal = 1,
+		ThreadPool = 2
+	};
+
 	internal delegate bool ManagedCallbackFunction (SingleSteppingEngine engine);
 
 	internal class MonoThreadManager
@@ -233,17 +239,29 @@ namespace Mono.Debugger.Backend
 		internal void ThreadCreated (SingleSteppingEngine sse)
 		{
 			sse.Inferior.SetRuntimeInfo (mono_runtime_info);
-			if (!process.IsAttached) {
+			if (!MonoDebuggerInfo.CheckRuntimeVersion (81, 3) && !process.IsAttached) {
 				if (++index < 3)
 					sse.SetDaemon ();
+			} else {
+				sse.SetDaemon ();
 			}
+		}
+
+		void check_thread_flags (SingleSteppingEngine engine, ThreadFlags flags)
+		{
+			if ((flags & (ThreadFlags.Internal | ThreadFlags.ThreadPool)) != ThreadFlags.Internal)
+				engine.SetManaged ();
 		}
 
 		void read_thread_table (Inferior inferior)
 		{
 			TargetAddress ptr = inferior.ReadAddress (MonoDebuggerInfo.ThreadTable);
 			while (!ptr.IsNull) {
-				int size = 32 + inferior.TargetMemoryInfo.TargetAddressSize;
+				int size;
+				if (MonoDebuggerInfo.CheckRuntimeVersion (81, 3))
+					size = 60 + inferior.TargetMemoryInfo.TargetAddressSize;
+				else
+					size = 32 + inferior.TargetMemoryInfo.TargetAddressSize;
 				TargetReader reader = new TargetReader (inferior.ReadMemory (ptr, size));
 
 				long tid = reader.ReadLongInteger ();
@@ -258,6 +276,12 @@ namespace Mono.Debugger.Backend
 				reader.Offset += 8;
 				ptr = reader.ReadAddress ();
 
+				ThreadFlags flags = ThreadFlags.None;
+				if (MonoDebuggerInfo.CheckRuntimeVersion (81, 3)) {
+					reader.Offset = 56 + inferior.TargetAddressSize;
+					flags = (ThreadFlags) reader.ReadInteger ();
+				}
+
 				bool found = false;
 				foreach (SingleSteppingEngine engine in process.Engines) {
 					if (engine.TID != tid)
@@ -265,6 +289,7 @@ namespace Mono.Debugger.Backend
 
 					engine.SetManagedThreadData (lmf_addr, extended_notifications_addr);
 					engine.OnManagedThreadCreated (end_stack);
+					check_thread_flags (engine, flags);
 					found = true;
 					break;
 				}
@@ -304,6 +329,12 @@ namespace Mono.Debugger.Backend
 
 					TargetAddress lmf = inferior.ReadAddress (data + 8);
 					engine.SetManagedThreadData (lmf, data + 24);
+
+					if (MonoDebuggerInfo.CheckRuntimeVersion (81, 3)) {
+						int flags_offset = 56 + inferior.TargetAddressSize;
+						ThreadFlags flags = (ThreadFlags) inferior.ReadInteger (data + flags_offset);
+						check_thread_flags (engine, flags);
+					}
 
 					Report.Debug (DebugFlags.Threads,
 						      "{0} managed thread created: {1:x} {2} {3} - {4}",
