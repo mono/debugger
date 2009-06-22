@@ -1,5 +1,16 @@
 2009-06-20  Martin Baulig  <martin@ximian.com>
 
+	* classes/Debugger.cs
+	(Debugger.ManagedThreadCreatedEvent): New public event.
+
+	* frontend/Interpreter.cs
+	(Interpreter.WaitAll): Wait on all the threads we auto-stopped.
+	(Interpreter.InterpreterEventSink): Also listen for
+	`ManagedThreadCreatedEvents'; 'ThreadCreatedEvent' is emitted for
+	any thread, including native deamon threads.
+
+2009-06-20  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(SSE.StartOperation): Fix a regression introduced in r135640:
 	reset `operation_completed_event' when starting a new operation.

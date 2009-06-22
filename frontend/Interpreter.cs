@@ -515,6 +515,8 @@ namespace Mono.Debugger.Frontend
 			if (!HasTarget)
 				return stopped;
 
+			List<WaitHandle> autostop_list = new List<WaitHandle> ();
+
 			foreach (Process process in Processes) {
 				foreach (Thread t in process.GetThreads ()) {
 					if (t == stopped)
@@ -530,8 +532,11 @@ namespace Mono.Debugger.Frontend
 
 					// Stop and set AutoRun.
 					t.AutoStop ();
+					autostop_list.Add (t.WaitHandle);
 				}
 			}
+
+			WaitHandle.WaitAll (autostop_list.ToArray ());
 
 			return stopped;
 		}
@@ -1043,6 +1048,7 @@ namespace Mono.Debugger.Frontend
 
 				debugger.TargetExitedEvent += target_exited;
 				debugger.ThreadCreatedEvent += thread_created;
+				debugger.ManagedThreadCreatedEvent += managed_thread_created;
 				debugger.ThreadExitedEvent += thread_exited;
 				debugger.MainProcessCreatedEvent += main_process_created;
 				debugger.ProcessReachedMainEvent += process_reached_main;
@@ -1053,8 +1059,14 @@ namespace Mono.Debugger.Frontend
 
 			public void thread_created (Debugger debugger, Thread thread)
 			{
-				if ((thread.ThreadFlags & Thread.Flags.Daemon) == 0)
+				if (!thread.Process.IsManaged ||
+				    ((thread.ThreadFlags & Thread.Flags.Daemon) == 0))
 					interpreter.OnThreadCreated (thread);
+			}
+
+			public void managed_thread_created (Debugger debugger, Thread thread)
+			{
+				interpreter.OnThreadCreated (thread);
 			}
 
 			public void thread_exited (Debugger debugger, Thread thread)

@@ -50,6 +50,7 @@ namespace Mono.Debugger
 
 		public event ThreadEventHandler ThreadCreatedEvent;
 		public event ThreadEventHandler ThreadExitedEvent;
+		public event ThreadEventHandler ManagedThreadCreatedEvent;
 		public event ProcessEventHandler MainProcessCreatedEvent;
 		public event ProcessEventHandler ProcessReachedMainEvent;
 		public event ProcessEventHandler ProcessCreatedEvent;
@@ -118,6 +119,12 @@ namespace Mono.Debugger
 		{
 			if (ThreadCreatedEvent != null)
 				ThreadCreatedEvent (this, new_process);
+		}
+
+		internal void OnManagedThreadCreatedEvent (Thread new_thread)
+		{
+			if (ManagedThreadCreatedEvent != null)
+				ManagedThreadCreatedEvent (this, new_thread);
 		}
 
 		internal void OnThreadExitedEvent (Thread thread)

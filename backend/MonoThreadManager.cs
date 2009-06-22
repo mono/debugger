@@ -249,8 +249,11 @@ namespace Mono.Debugger.Backend
 
 		void check_thread_flags (SingleSteppingEngine engine, ThreadFlags flags)
 		{
-			if ((flags & (ThreadFlags.Internal | ThreadFlags.ThreadPool)) != ThreadFlags.Internal)
+			if ((flags & (ThreadFlags.Internal | ThreadFlags.ThreadPool)) != ThreadFlags.Internal) {
 				engine.SetManaged ();
+				if (engine != process.MainThread)
+					process.Debugger.Client.OnManagedThreadCreatedEvent (engine.Thread);
+			}
 		}
 
 		void read_thread_table (Inferior inferior)
