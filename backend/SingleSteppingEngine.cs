@@ -927,6 +927,12 @@ namespace Mono.Debugger.Backend
 					return;
 
 				bool stopped = inferior.Stop ();
+				if (!Inferior.HasThreadEvents && !stopped)
+				{
+					operation_completed_event.Set ();	
+					engine_stopped = true;
+				}	
+				
 				Report.Debug (DebugFlags.EventLoop, "{0} interrupt #1: {1}",
 					      this, stopped);
 			}

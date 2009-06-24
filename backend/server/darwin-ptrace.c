@@ -891,7 +891,7 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 				if(i == 0)
 					*exe_file = g_strdup (arg);
 				else if(i <= numArgs)
-					g_ptr_array_add (array, g_strdup (arg) );
+					g_ptr_array_add (array,  g_strdup (arg) );
 				else
 					break;
 				while ( ((*cp == '\0') && (cp < &args[size])) )
@@ -910,7 +910,7 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 
 	for (i = 0; i < array->len; i++)
 		ptr  [i] = g_ptr_array_index (array, i);
-	
+
 	free(args);
 	return COMMAND_ERROR_NONE;
 }
