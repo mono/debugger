@@ -178,6 +178,9 @@ server_ptrace_call_method (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+#if __MACH__
+	handle->inferior->os.is_stopped = TRUE;
+#endif
 	return server_ptrace_continue (handle);
 }
 
@@ -249,6 +252,9 @@ server_ptrace_call_method_1 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+#if __MACH__
+	handle->inferior->os.is_stopped = TRUE;
+#endif
 	return server_ptrace_continue (handle);
 }
 
@@ -317,6 +323,9 @@ server_ptrace_call_method_2 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+#if __MACH__
+	handle->inferior->os.is_stopped = TRUE;
+#endif
 	return server_ptrace_continue (handle);
 }
 
@@ -384,6 +393,9 @@ server_ptrace_call_method_3 (ServerHandle *handle, guint64 method_address,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+#if __MACH__
+	handle->inferior->os.is_stopped = TRUE;
+#endif
 	return server_ptrace_continue (handle);
 
 }
@@ -462,6 +474,9 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 	if (result != COMMAND_ERROR_NONE)
 		return result;
 
+#if __MACH__
+	handle->inferior->os.is_stopped = TRUE;
+#endif
 	return server_ptrace_continue (handle);
 }
 
