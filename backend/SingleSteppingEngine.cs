@@ -929,7 +929,7 @@ namespace Mono.Debugger.Backend
 				bool stopped = inferior.Stop ();
 				if (!Inferior.HasThreadEvents && !stopped)
 				{
-					operation_completed_event.Set ();	
+					ProcessEvent (new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_INTERRUPTED, 0, 0, 0));
 					engine_stopped = true;
 				}	
 				
