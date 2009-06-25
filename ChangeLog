@@ -1,3 +1,13 @@
+2009-06-25  jonas echterhoff  <jonas@unity3d.com>
+	
+	* backend/os/DarwinOperatingSystem.cs
+	Add support for detecting dynamic library loads on OS X,
+	will detect dynamically linked libmono.
+	
+	* backend/os/bfd/mach-o.c
+	Don't give errors on some load symbols common for OS X
+	dynamic libraries
+
 2009-06-22  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoClassInfo.cs
