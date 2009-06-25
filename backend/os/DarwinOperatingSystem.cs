@@ -20,13 +20,19 @@ namespace Mono.Debugger.Backend
 
 		internal override void ReadNativeTypes ()
 		{
-			foreach (Bfd bfd in bfd_hash.Values)
+			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd == null)
+					continue;
 				bfd.ReadTypes ();
+			}
 		}
 
 		public override NativeExecutableReader LookupLibrary (TargetAddress address)
 		{
 			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd == null)
+					continue;
+					
 				if (!bfd.IsContinuous)
 					continue;
 
@@ -159,6 +165,9 @@ namespace Mono.Debugger.Backend
 		public override NativeExecutableReader LookupLibrary (string name)
 		{
 			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd == null)
+					continue;
+					
 				if (Path.GetFileName (bfd.FileName) == name)
 					return bfd;
 			}
@@ -170,6 +179,9 @@ namespace Mono.Debugger.Backend
 						    out TargetAddress trampoline, out bool is_start)
 		{
 			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd == null)
+					continue;
+					
 				if (bfd.GetTrampoline (memory, address, out trampoline, out is_start))
 					return true;
 			}
@@ -182,6 +194,9 @@ namespace Mono.Debugger.Backend
 		public TargetAddress GetSectionAddress (string name)
 		{
 			foreach (Bfd bfd in bfd_hash.Values) {
+				if (bfd == null)
+					continue;
+
 				TargetAddress address = bfd.GetSectionAddress (name);
 				if (!address.IsNull)
 					return address;
@@ -320,8 +335,11 @@ namespace Mono.Debugger.Backend
 		protected override void DoDispose ()
 		{
 			if (bfd_hash != null) {
-				foreach (Bfd bfd in bfd_hash.Values)
+				foreach (Bfd bfd in bfd_hash.Values) {
+					if (bfd == null)
+						continue;
 					bfd.Dispose ();
+				}
 				bfd_hash = null;
 			}
 		}
