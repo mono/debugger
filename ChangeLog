@@ -1,3 +1,9 @@
+2009-06-29  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.GetFields): Don't throw an exception if the class
+	doesn't have any fields.
+
 2009-06-25  jonas echterhoff  <jonas@unity3d.com>
 	
 	* backend/os/DarwinOperatingSystem.cs
