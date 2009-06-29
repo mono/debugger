@@ -14,6 +14,12 @@
 	Don't give errors on some load symbols common for OS X
 	dynamic libraries
 
+2009-06-29  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoClassInfo.cs
+	(MonoClassInfo.GetFields): Don't throw an exception if the class
+	doesn't have any fields.
+
 2009-06-22  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoClassInfo.cs
