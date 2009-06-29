@@ -14,7 +14,7 @@ using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
 
-namespace Mono.Debugger.Tests
+namespace Mono.Debugger.Test.Framework
 {
 	public enum DebuggerEventType {
 		TargetEvent,
@@ -203,7 +203,7 @@ namespace Mono.Debugger.Tests
 		}
 	}
 
-	public abstract class TestSuite : MarshalByRefObject
+	public abstract class DebuggerTestFixture : MarshalByRefObject
 	{
 		DebuggerConfiguration config;
 		DebuggerOptions options;
@@ -222,7 +222,7 @@ namespace Mono.Debugger.Tests
 
 		protected static readonly StreamWriter stderr;
 
-		static TestSuite ()
+		static DebuggerTestFixture ()
 		{
 			stderr = new StreamWriter (Console.OpenStandardError ());
 			stderr.AutoFlush = true;
@@ -234,17 +234,14 @@ namespace Mono.Debugger.Tests
 			Report.ReportWriter.PrintToConsole = false;
 		}
 
-		protected TestSuite (string application)
+		protected DebuggerTestFixture (string application)
 			: this (application + ".exe", application + ".cs")
 		{ }
 
-		protected TestSuite (string exe_file, string src_file, params string[] args)
+		protected DebuggerTestFixture (string exe_file, string src_file, params string[] args)
 		{
-			string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");
-			string builddir = Path.Combine (BuildInfo.builddir, "../test/src/");
-
-			ExeFileName = Path.GetFullPath (builddir + exe_file);
-			FileName = Path.GetFullPath (srcdir + src_file);
+			ExeFileName = Path.GetFullPath (Path.Combine (BuildDirectory, exe_file));
+			FileName = Path.GetFullPath (Path.Combine (SourceDirectory, src_file));
 
 			config = new DebuggerConfiguration ();
 			config.RedirectOutput = true;
@@ -347,17 +344,11 @@ namespace Mono.Debugger.Tests
 		}
 
 		public static string SourceDirectory {
-			get {
-				string srcdir = Path.Combine (BuildInfo.srcdir, "../test/src/");
-				return Path.GetFullPath (srcdir);
-			}
+			get { return Path.Combine (Path.Combine (BuildInfo.srcdir, "test"), "src"); }
 		}
 
 		public static string BuildDirectory {
-			get {
-				string builddir = Path.Combine (BuildInfo.builddir, "../test/src/");
-				return Path.GetFullPath (builddir);
-			}
+			get { return Path.Combine (Path.Combine (BuildInfo.builddir, "test"), "src"); }
 		}
 
 		public static string MonoExecutable {

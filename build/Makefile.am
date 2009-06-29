@@ -26,7 +26,9 @@ noinst_SCRIPTS = \
 	runtests					\
 	Mono.Debugger.dll				\
 	Mono.Debugger.Frontend.dll			\
-	Mono.Debugger.Test.dll
+	Mono.Debugger.Test.Framework.dll		\
+	Mono.Debugger.Test.dll				\
+	debugger-test-server.exe
 
 LANGUAGE_SPECIFIC_FILES = \
 	$(top_builddir)/frontend/CSharpExpressionParser.cs	\
@@ -59,7 +61,6 @@ DEBUGGER_SRCLIST = \
 	$(top_srcdir)/languages/mono/*.cs		\
 	$(top_srcdir)/languages/native/*.cs		\
 	$(top_srcdir)/classes/*.cs			\
-	$(top_srcdir)/test/misc/*.cs			\
 	AssemblyInfo.cs
 
 SYMBOL_WRITER_SRCLIST = \
@@ -73,6 +74,24 @@ SYMBOL_READER_SRCLIST = \
 	$(top_srcdir)/symbolwriter/MonoSymbolTable.cs		\
 	$(top_srcdir)/symbolwriter/MdbSymbolReader.cs		\
 	AssemblyInfo.cs
+
+TEST_FRAMEWORK_SRCLIST = \
+	$(top_srcdir)/test/framework/DebuggerTestFixture.cs		\
+	$(top_srcdir)/test/framework/DebuggerTestFixtureAttribute.cs	\
+	$(top_srcdir)/test/framework/DebuggerTestHost.cs		\
+	$(top_srcdir)/test/framework/RemotingContract.cs		\
+	$(top_srcdir)/test/framework/ProxyListener.cs			\
+	$(top_srcdir)/test/framework/LibGTop.cs				\
+	AssemblyInfo.cs
+
+TEST_FRAMEWORK_DEPS = \
+	-r:Mono.GetOptions				\
+	-r:./Mono.Debugger.dll				\
+	-r:./Mono.Debugger.Frontend.dll			\
+	-r:System.Runtime.Remoting			\
+	-r:nunit.framework				\
+	-r:nunit.core					\
+	-r:nunit.core.interfaces
 
 TEST_SRCLIST = \
 	$(top_srcdir)/test/testsuite/*.cs		\
@@ -107,8 +126,21 @@ TEST_DEPS = \
 	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll				\
 	-r:./Mono.Debugger.Frontend.dll			\
+	-r:./Mono.Debugger.Test.Framework.dll		\
 	-r:nunit.framework				\
-	-r:nunit.core
+	-r:nunit.core					\
+	-r:nunit.core.interfaces
+
+DEBUGGER_TEST_SERVER_SRCLIST = \
+	$(top_srcdir)/test/framework/DebuggerTestServer.cs
+
+DEBUGGER_TEST_SERVER_DEPS = \
+	-r:Mono.Debugger.Test.Framework.dll		\
+	-r:System.Runtime.Remoting			\
+	-r:nunit.framework				\
+	-r:nunit.core					\
+	-r:nunit.core.interfaces			\
+	-r:nunit.util
 
 if MARTIN_PRIVATE
 MCS_FLAGS += -define:MARTIN_PRIVATE
@@ -123,6 +155,9 @@ Mono.Debugger.dll: Makefile Mono.Debugger.SymbolWriter.dll $(DEBUGGER_SRCLIST)
 Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 	$(MCS) -target:library -out:Mono.Debugger.Frontend.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(MDB_DEPS) $(MDB_SRCLIST)
 
+Mono.Debugger.Test.Framework.dll: Makefile $(TEST_FRAMEWORK_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
+	$(MCS) -target:library -out:Mono.Debugger.Test.Framework.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_FRAMEWORK_DEPS) $(TEST_FRAMEWORK_SRCLIST)
+
 Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
@@ -135,11 +170,16 @@ mdb.exe: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 mdb-symbolreader.exe: Makefile $(SYMBOL_READER_SRCLIST) Mono.Debugger.SymbolWriter.dll
 	$(MCS) -out:mdb-symbolreader.exe $(SYMBOL_READER_DEPS) $(SYMBOL_READER_SRCLIST) $(MCS_FLAGS) -d:CECIL -d:LINQ -d:NDESK_OPTIONS
 
+debugger-test-server.exe: Makefile $(DEBUGGER_TEST_SERVER_SRCLIST)
+	$(MCS) -out:debugger-test-server.exe $(DEBUGGER_TEST_SERVER_SRCLIST) $(DEBUGGER_TEST_SERVER_DEPS) $(MCS_FLAGS) -d:LINQ
+
 AssemblyInfo.cs: AssemblyInfo.cs.in Makefile
+	builddir=$(top_builddir) ; the_builddir=`cd $$builddir && pwd` ; \
+	srcdir=$(top_srcdir) ; the_srcdir=`cd $$srcdir && pwd` ; \
 	sed -e 's^\@libdir\@^$(libdir)^g' \
 		-e 's^\@prefix\@^$(prefix)^g' \
-		-e 's^\@srcdir\@^$(srcdir)^g' \
-		-e 's^\@builddir\@^$(builddir)^g' \
+		-e "s^\@srcdir\@^$$the_srcdir^g" \
+		-e "s^\@builddir\@^$$the_builddir^g" \
 		-e 's^\@mono\@^$(TARGET_MONO)^g' \
 		-e 's^\@mcs\@^$(TARGET_MCS)^g' \
 		-e 's^\@monodis\@^$(TARGET_MONODIS)^g' \

@@ -356,6 +356,7 @@ frontend/libedit/Makefile
 test/Makefile
 test/src/Makefile
 test/misc/Makefile
+test/framework/Makefile
 test/testsuite/Makefile
 doc/Makefile
 ])
