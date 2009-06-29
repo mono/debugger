@@ -38,6 +38,18 @@ bfd_glue_check_format_core (bfd *abfd)
 	return bfd_check_format (abfd, bfd_core);
 }
 
+gboolean
+bfd_glue_check_format_archive (bfd *abfd)
+{
+	return bfd_check_format (abfd, bfd_archive);
+}
+
+bfd *
+bfd_glue_openr_next_archived_file (bfd* archive, bfd* last)
+{
+	return bfd_openr_next_archived_file (archive, last);
+}
+
 int
 bfd_glue_get_symbols (bfd *abfd, asymbol ***symbol_table)
 {

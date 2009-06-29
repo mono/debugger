@@ -127,6 +127,12 @@ namespace Mono.Debugger.Backend
 		extern static bool bfd_glue_check_format_core (IntPtr bfd);
 
 		[DllImport("monodebuggerserver")]
+		extern static bool bfd_glue_check_format_archive (IntPtr bfd);
+
+		[DllImport("monodebuggerserver")]
+		extern static IntPtr bfd_glue_openr_next_archived_file (IntPtr archive, IntPtr last);
+
+		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_get_symbols (IntPtr bfd, out IntPtr symtab);
 
 		[DllImport("monodebuggerserver")]
@@ -186,6 +192,30 @@ namespace Mono.Debugger.Backend
 			if (bfd == IntPtr.Zero)
 				throw new SymbolTableException ("Can't read symbol file: {0}", filename);
 
+			if (bfd_glue_check_format_archive (bfd))
+			{
+				IntPtr archive = bfd;
+				bfd = IntPtr.Zero;
+				
+				while (true) {
+					bfd = bfd_glue_openr_next_archived_file (archive, bfd);
+					if(bfd == IntPtr.Zero)
+						throw new SymbolTableException ("Can't read symbol file: {0}", filename);
+					
+					if (bfd_glue_check_format_object(bfd))
+					{
+						/*
+						 * At this point, just check for mach-o-le (OS X X86 binary).
+						 * When we want to support other architctures in fat binarys,
+						 * we need to somehow get the correct target string for the
+						 * process, and chech against that.
+						 */
+						if (bfd_glue_get_target_name(bfd) == "mach-o-le")
+							break;
+					}
+				}
+			}
+			
 			if (bfd_glue_check_format_object (bfd))
 				is_coredump = false;
 			else if (bfd_glue_check_format_core (bfd))
@@ -238,28 +268,24 @@ namespace Mono.Debugger.Backend
 				}
 			} else if (target == "mach-o-le") {
 				if (!is_coredump) {
-					Section text = GetSectionByName ("LC_SEGMENT.__TEXT.__text", true);
-					Section bss = GetSectionByName ("LC_SEGMENT.__DATA.__bss", true);
-
-					if (!base_address.IsNull)
-						start_address = new TargetAddress (
-							info.AddressDomain,
-							base_address.Address + text.vma);
-					else
-						start_address = new TargetAddress (
-							info.AddressDomain, text.vma);
-
-					if (!base_address.IsNull)
-						end_address = new TargetAddress (
-							info.AddressDomain,
-							base_address.Address + bss.vma + bss.size);
-					else
-						end_address = new TargetAddress (
-							info.AddressDomain, bss.vma + bss.size);
+					read_sections ();
+					long start = 0xffffffff;
+					long end = 0;
+					foreach (Section section in sections) {
+						long relocated = base_address.Address + section.vma;
+		
+						if (relocated < start)
+							start = relocated;
+						if (relocated + section.size > end)
+							end = relocated + section.size;
+					}
+				
+					start_address = new TargetAddress (info.AddressDomain, start);
+					end_address = new TargetAddress (info.AddressDomain, end);
 				}
 
 				read_bfd_symbols ();
-read_sections();
+
 				if (DwarfReader.IsSupported (this))
 					has_debugging_info = true;
 
