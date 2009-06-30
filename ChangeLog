@@ -1,5 +1,12 @@
 2009-06-30  Martin Baulig  <martin@ximian.com>
 
+	* test/testsuite/TestAttach.cs: Removed the `MARTIN_PRIVATE'
+	conditional for this test and increased the timeout to 10 seconds.
+
+	* test/testsuite/testnativeattach.cs: Likewise.
+
+2009-06-30  Martin Baulig  <martin@ximian.com>
+
 	Officially enable attaching again - we check whether the target
 	runtime actually supports it and attach in native mode if not.
 

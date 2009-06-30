@@ -1,4 +1,3 @@
-#if MARTIN_PRIVATE
 using System;
 using SD = System.Diagnostics;
 using ST = System.Threading;
@@ -11,7 +10,7 @@ using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[DebuggerTestFixture]
+	[DebuggerTestFixture(Timeout = 10000)]
 	public class TestAttach : DebuggerTestFixture
 	{
 		SD.Process child;
@@ -108,4 +107,3 @@ namespace Mono.Debugger.Tests
 		}
 	}
 }
-#endif
