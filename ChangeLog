@@ -1,5 +1,11 @@
 2009-06-30  Martin Baulig  <martin@ximian.com>
 
+	* backend/server/x86-linux-ptrace.c
+	(server_ptrace_kill): Don't call kill(), `ptrace (PTRACE_KILL)'
+	should be enough.
+
+2009-06-30  Martin Baulig  <martin@ximian.com>
+
 	* test/testsuite/TestAttach.cs: Removed the `MARTIN_PRIVATE'
 	conditional for this test and increased the timeout to 10 seconds.
 

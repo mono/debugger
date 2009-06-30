@@ -243,8 +243,6 @@ server_ptrace_step (ServerHandle *handle)
 static ServerCommandError
 server_ptrace_kill (ServerHandle *handle)
 {
-	kill (handle->inferior->pid, SIGKILL);
-
 	if (ptrace (PTRACE_KILL, handle->inferior->pid, NULL, 0))
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 
