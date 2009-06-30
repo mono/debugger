@@ -25,9 +25,6 @@
 	`MonoThreadManager.InitializeThreads()' after our
 	InitializeThreads().
 
-	* backend/server/x86-ptrace.c
-	(server_ptrace_attach): Don't call _server_ptrace_setup_inferior().
-
 2009-06-30  Martin Baulig  <martin@ximian.com>
 
 	Run each test in a separate process to reduce memory requirements

@@ -2747,6 +2747,8 @@ namespace Mono.Debugger.Backend
 
 			if (!sse.ProcessServant.IsAttached)
 				sse.do_continue (inferior.EntryPoint);
+			else
+				sse.ProcessEvent (new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0));
 		}
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,

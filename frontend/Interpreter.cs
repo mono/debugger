@@ -322,7 +322,7 @@ namespace Mono.Debugger.Frontend
 
 				current_process = main_process = debugger.Attach (session, pid);
 				current_thread = current_process.MainThread;
-				current_thread = WaitAll (current_thread);
+				WaitOne (current_thread);
 
 				return current_process;
 			} catch (TargetException) {
