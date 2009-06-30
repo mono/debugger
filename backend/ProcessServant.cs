@@ -451,17 +451,16 @@ namespace Mono.Debugger.Backend
 
 		public void Kill ()
 		{
-			if(!Inferior.HasThreadEvents)
-			{
+			if (!Inferior.HasThreadEvents) {
 				SingleSteppingEngine[] sses = new SingleSteppingEngine [thread_hash.Count];
 				thread_hash.Values.CopyTo (sses, 0);
-				foreach(SingleSteppingEngine sse in sses)
-					sse.SetKilledFlag();
-				foreach(SingleSteppingEngine sse in sses)
-					sse.Kill();
-			}
-			else
+				foreach (SingleSteppingEngine sse in sses)
+					sse.SetKilledFlag ();
+				foreach (SingleSteppingEngine sse in sses)
+					sse.Kill ();
+			} else {
 				main_thread.Kill ();
+			}
 		}
 
 		public void Detach ()
