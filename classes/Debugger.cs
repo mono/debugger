@@ -196,6 +196,9 @@ namespace Mono.Debugger
 			return servant.OpenCoreFile (session, core_file, out threads);
 		}
 
+		public bool HasTarget {
+			get { return servant != null; }
+		}
 
 		public Process[] Processes {
 			get {

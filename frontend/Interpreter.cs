@@ -261,7 +261,7 @@ namespace Mono.Debugger.Frontend
 
 		public bool HasTarget {
 			get {
-				return debugger != null;
+				return (debugger != null) && debugger.HasTarget;
 			}
 		}
 
