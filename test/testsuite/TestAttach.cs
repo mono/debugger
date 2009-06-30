@@ -25,7 +25,7 @@ namespace Mono.Debugger.Tests
 			base.SetUp ();
 
 			SD.ProcessStartInfo start = new SD.ProcessStartInfo (
-				MonoExecutable, "--debug " + ExeFileName);
+				MonoExecutable, "--debug -O=-gshared " + ExeFileName);
 
 			start.UseShellExecute = false;
 			start.RedirectStandardOutput = true;
@@ -52,8 +52,6 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 
 			AssertThreadCreated ();
-			AssertThreadCreated ();
-			AssertThreadCreated ();
 
 			AssertStopped (null, null, -1);
 
@@ -75,8 +73,6 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (process.MainThread.IsStopped);
 
 			AssertThreadCreated ();
-			AssertThreadCreated ();
-			AssertThreadCreated ();
 
 			AssertStopped (null, null, -1);
 
@@ -97,8 +93,6 @@ namespace Mono.Debugger.Tests
 			Process process = Attach (child.Id);
 			Assert.IsTrue (process.MainThread.IsStopped);
 
-			AssertThreadCreated ();
-			AssertThreadCreated ();
 			AssertThreadCreated ();
 
 			AssertStopped (null, null, -1);

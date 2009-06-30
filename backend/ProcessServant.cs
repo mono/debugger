@@ -342,12 +342,15 @@ namespace Mono.Debugger.Backend
 
 		internal void InitializeMono (Inferior inferior, TargetAddress mdb_debug_info)
 		{
-			InitializeThreads (inferior, !is_attached);
-
 			MonoRuntimeFound = true;
 			mono_manager = MonoThreadManager.Initialize (this, inferior, mdb_debug_info, is_attached);
+
+			InitializeThreads (inferior, !is_attached);
+
 			if (mono_manager == null)
 				return;
+
+			mono_manager.InitializeThreads (inferior);
 
 			if (is_attached)
 				mono_manager.InitializeAfterAttach (inferior);

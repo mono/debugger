@@ -118,7 +118,7 @@ namespace Mono.Debugger
 				else if (iter.Current.Name == "RedirectOutput")
 					RedirectOutput = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "Martin_Boston_07102008")
-					Private_Martin_Boston_07102008 = Boolean.Parse (iter.Current.Value);
+					; // ignore, this is no longer uses.
 				else
 					throw new InvalidOperationException ();
 			}
@@ -322,10 +322,6 @@ namespace Mono.Debugger
 		public bool RedirectOutput {
 			get { return redirect_output; }
 			set { redirect_output = value; }
-		}
-
-		public bool Private_Martin_Boston_07102008 {
-			get; set;
 		}
 
 		/*

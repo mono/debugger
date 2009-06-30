@@ -8,11 +8,19 @@ MCS_FLAGS = -debug -define:DEBUG -define:DEBUGGER_SOURCE -nowarn:0169,0067
 
 if MARTIN_PRIVATE
 # Enable some more stuff for me.
+if ATTACHING_SUPPORTED
+EXCLUDED_TESTS = NotWorking
+else
 EXCLUDED_TESTS = NotWorking,Attach
+endif
 else
 # Exclude anything which may potentially break, only enable the
 # 100% safe tests.
+if ATTACHING_SUPPORTED
+EXCLUDED_TESTS = NotWorking,Native,Threads,AppDomain,GUI
+else
 EXCLUDED_TESTS = NotWorking,Attach,Native,Threads,AppDomain,GUI
+endif
 endif
 
 if HAVE_XSP

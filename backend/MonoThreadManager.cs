@@ -77,8 +77,6 @@ namespace Mono.Debugger.Backend
 
 			notification_bpt = new InitializeBreakpoint (this, debugger_info.Initialize);
 			notification_bpt.Insert (inferior);
-
-			read_thread_table (inferior);
 		}
 
 		public static MonoThreadManager Initialize (ProcessServant process, Inferior inferior,
@@ -256,7 +254,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		void read_thread_table (Inferior inferior)
+		internal void InitializeThreads (Inferior inferior)
 		{
 			TargetAddress ptr = inferior.ReadAddress (MonoDebuggerInfo.ThreadTable);
 			while (!ptr.IsNull) {

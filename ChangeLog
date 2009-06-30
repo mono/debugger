@@ -1,5 +1,35 @@
 2009-06-30  Martin Baulig  <martin@ximian.com>
 
+	Officially enable attaching again - we check whether the target
+	runtime actually supports it and attach in native mode if not.
+
+	* configure.in: Check whether the current runtime supports
+	attaching and enable the attaching tests; note that the check is
+	only used to determine whether or not to run the tests, not
+	whether the feature as such is included.
+
+	* classes/DebuggerConfiguration.cs: Removed the private
+	configuration option to enable attaching; attaching is now enabled
+	by default if the target runtime supports it.
+
+	* test/testsuite/TestAttach.cs: Start the child process with
+	`-O=-gshared'.
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.ctor): Don't call read_thread_table().
+	(MonoThreadManager.read_thread_table): Renamed into
+	InitializeThreads() and made it internal.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.InitializeMono): Call
+	`MonoThreadManager.InitializeThreads()' after our
+	InitializeThreads().
+
+	* backend/server/x86-ptrace.c
+	(server_ptrace_attach): Don't call _server_ptrace_setup_inferior().
+
+2009-06-30  Martin Baulig  <martin@ximian.com>
+
 	Run each test in a separate process to reduce memory requirements
 	and also be more robust against crashes.
 

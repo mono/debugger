@@ -467,8 +467,6 @@ server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 #endif
 
 	return _server_ptrace_setup_inferior (handle);
-
-	return COMMAND_ERROR_NONE;
 }
 
 static ServerCommandError
@@ -485,7 +483,7 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid)
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
-	return _server_ptrace_setup_inferior (handle);
+	return COMMAND_ERROR_NONE;
 }
 
 static void

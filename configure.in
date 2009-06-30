@@ -286,7 +286,7 @@ AC_SUBST(XSP_LIBS)
 AM_CONDITIONAL(HAVE_XSP, test "x$with_xsp" = "xyes")
 
 #not sure why, but I cannot get this test to pass on OS X.
-if test x$PLATFORM_X86_DARWIN = "xno" ; then
+if test x$platform != xi386darwin ; then
 AC_MSG_CHECKING([Whether your Mono is working])
 old_CFLAGS=$cflags
 CFLAGS=$WRAPPER_CFLAGS
@@ -308,7 +308,30 @@ CFLAGS=$old_CFLAGS
 if test x$mono_working != xyes; then
    AC_MSG_ERROR([*** Your Mono is too old for this version of the debugger.])
 fi
+
+AC_MSG_CHECKING([Whether attaching is supported in this version of the Mono runtime])
+old_CFLAGS=$cflags
+CFLAGS=$WRAPPER_CFLAGS
+#define MONO_DEBUGGER_MAJOR_VERSION			81
+#define MONO_DEBUGGER_MINOR_VERSION			3
+AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
+#include <mono/metadata/debug-mono-symfile.h>
+], [
+#if MONO_DEBUGGER_MAJOR_VERSION < 81
+#error "Major version older than 81."
+#endif
+#if MONO_DEBUGGER_MAJOR_VERSION == 81
+#if MONO_DEBUGGER_MINOR_VERSION < 3
+#error "Minor version older than 3."
+#endif
+#endif
+], attaching_supported=yes, attaching_supported=no)
+AC_MSG_RESULT($attaching_supported)
+CFLAGS=$old_CFLAGS
+else
+attaching_supported=no
 fi
+AM_CONDITIONAL(ATTACHING_SUPPORTED, test x$attaching_supported = xyes)
 
 martin_private=no
 if test "x$from_svn" = "xyes"; then
