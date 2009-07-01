@@ -178,24 +178,26 @@ namespace Mono.Debugger.Backend
 					      this, cevent, thread_lock, inferior.CurrentFrame);
 				thread_lock.SetStopEvent (cevent);
 				return;
-			} else if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) {
+			}
+			if (cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION)
 				Report.Debug (DebugFlags.Notification,
 					      "{0} received event {1} {2}",
 					      this, cevent, (NotificationType) cevent.Argument);
-			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
-				   (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				Report.Debug (DebugFlags.SSE, "{0} is now dead: {1}", this, cevent);
+			else if ((cevent.Type != Inferior.ChildEventType.CHILD_EXITED) &&
+				 (cevent.Type != Inferior.ChildEventType.CHILD_SIGNALED))
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} at {2} while running {3}",
+					      this, cevent, inferior.CurrentFrame,
+					      current_operation);
+			else
+				Report.Debug (DebugFlags.EventLoop,
+					      "{0} received event {1} while running {2}",
+					      this, cevent, current_operation);
+
+			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
+			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
+				Report.Debug (DebugFlags.SSE, "{0} is now dead!", this);
 				dead = true;
-			} else {
-				Inferior.StackFrame iframe = inferior.GetCurrentFrame (true);
-				if (iframe != null)
-					Report.Debug (DebugFlags.EventLoop,
-						      "{0} received event {1} at {2} while running {3}",
-						      this, cevent, iframe.Address, current_operation);
-				else
-					Report.Debug (DebugFlags.EventLoop,
-						      "{0} received event {1} while running {2}",
-						      this, cevent, current_operation);
 			}
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
