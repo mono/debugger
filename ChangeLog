@@ -1,3 +1,13 @@
+2009-07-01  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 137159 ****
+
+	* classes/Debugger.cs
+	(Debugger.HasTarget): New public property.
+
+	* frontend/Interpreter.cs
+	(Interpreter.HasTarget): Also check 'debugger.HasTarget'.
+
 2009-06-30  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 137143 and 137171 ****
