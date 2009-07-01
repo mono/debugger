@@ -160,11 +160,16 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.EventLoop, "{0} received event {1}",
 				      this, cevent);
 
-			if (killed && (cevent.Type != Inferior.ChildEventType.CHILD_EXITED)) {
-				Report.Debug (DebugFlags.EventLoop,
-					      "{0} received event {1} when already killed",
-					      this, cevent);
-				return;
+			if (killed) {
+				if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED) {
+					inferior.Continue ();
+					return;
+				} else if (cevent.Type != Inferior.ChildEventType.CHILD_EXITED) {
+					Report.Debug (DebugFlags.EventLoop,
+						      "{0} received event {1} when already killed",
+						      this, cevent);
+					return;
+				}
 			}
 
 			if (HasThreadLock) {
@@ -839,6 +844,9 @@ namespace Mono.Debugger.Backend
 		{
 			killed = true;
 			SendCommand (delegate {
+				Inferior.ChildEvent stop_event;
+				if (!engine_stopped)
+					inferior.Stop (out stop_event);
 				inferior.Kill ();
 				return null;
 			});

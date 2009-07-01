@@ -1,5 +1,17 @@
 2009-06-30  Martin Baulig  <martin@ximian.com>
 
+	**** Backport of 137143 and 137171 ****
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.Kill): Stop the target before killing it; for some reason,
+	`ptrace (PTRACE_KILL)' doens't work while the target is running.
+
+	* backend/server/x86-linux-ptrace.c
+	(server_ptrace_kill): Don't call kill(), `ptrace (PTRACE_KILL)'
+	should be enough.
+
+2009-06-30  Martin Baulig  <martin@ximian.com>
+
 	**** Backport or 137128 ****
 
 	Run each test in a separate process to reduce memory requirements
