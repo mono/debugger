@@ -5,11 +5,12 @@ using NUnit.Framework;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
+using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[TestFixture]
-	public class TestIterator : TestSuite
+	[DebuggerTestFixture]
+	public class TestIterator : DebuggerTestFixture
 	{
 		public TestIterator ()
 			: base ("TestIterator")

@@ -4,11 +4,12 @@ using NUnit.Framework;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
+using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[TestFixture]
-	public class TestLineHidden : TestSuite
+	[DebuggerTestFixture]
+	public class TestLineHidden : DebuggerTestFixture
 	{
 		public TestLineHidden ()
 			: base ("TestLineHidden")

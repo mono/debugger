@@ -4,11 +4,12 @@ using NUnit.Framework;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
+using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[TestFixture]
-	public class TestDelegate : TestSuite
+	[DebuggerTestFixture]
+	public class TestDelegate : DebuggerTestFixture
 	{
 		public TestDelegate ()
 			: base ("TestDelegate")

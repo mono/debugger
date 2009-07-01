@@ -1,3 +1,32 @@
+2009-06-30  Martin Baulig  <martin@ximian.com>
+
+	**** Backport or 137128 ****
+
+	Run each test in a separate process to reduce memory requirements
+	and also be more robust against crashes.
+
+	* test/framework/DebuggerTextFixture.cs: Formerly known as
+	../testsuite/NUnit.cs.
+
+	* test/framework/LibGTop.cs: Formerly known as ../misc/LibGTop.cs.
+
+	* test/framework/DebuggerTestFixtureAttribute.cs: New file.
+	* test/framework/DebuggerTestHost.cs: New file.
+	* test/framework/DebuggerTestServer.cs: New file.
+	* test/framework/ProxyListener.cs: New file.
+	* test/framework/RemotingContract.cs: New file.
+
+	* test/testsuite/NUnitAddIn.cs: New file; this is an add-in for
+	nunit which takes care of running the tests.
+
+	* test/testsuite/*.cs: Use [DebuggerTestFixture] instead of
+	[TestSuite]; the attribute takes optional `Timeout' and `Repeat'
+	arguments.
+
+	* build/Makefile.am: Build Mono.Debugger.Test.Framework.dll to
+	contain the test framework; Mono.Debugger.Test.dll now only
+	contains the actual test cases.
+
 2009-06-29  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoClassInfo.cs

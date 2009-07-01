@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Mono.Debugger.Tests
+namespace Mono.Debugger.Test.Framework
 {
 	public static class LibGTop
 	{

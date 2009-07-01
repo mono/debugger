@@ -4,12 +4,13 @@ using NUnit.Framework;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
+using Mono.Debugger.Test.Framework;
 using EE = Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger.Tests
 {
-	[TestFixture]
-	public class TestToString2 : TestSuite
+	[DebuggerTestFixture]
+	public class TestToString2 : DebuggerTestFixture
 	{
 		public TestToString2 ()
 			: base ("TestToString2")

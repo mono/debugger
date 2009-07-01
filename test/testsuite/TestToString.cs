@@ -4,11 +4,12 @@ using NUnit.Framework;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Frontend;
+using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[TestFixture]
-	public class TestToString : TestSuite
+	[DebuggerTestFixture]
+	public class TestToString : DebuggerTestFixture
 	{
 		public TestToString ()
 			: base ("TestToString")
