@@ -292,8 +292,16 @@ namespace Mono.Debugger.Backend
 				}
 
 				case NotificationType.GcThreadExited:
+					Report.Debug (DebugFlags.Threads, "{0} gc thread exited", engine);
 					engine.OnManagedThreadExited ();
-					break;
+					try {
+						inferior.Continue ();
+					} catch {
+						// Ignore errors; for some reason, the thread may have died
+						// already by the time get this notification.
+					}
+					resume_target = false;
+					return true;
 
 				case NotificationType.InitializeThreadManager:
 					csharp_language = inferior.Process.CreateMonoLanguage (

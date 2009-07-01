@@ -1,5 +1,15 @@
 2009-07-01  Martin Baulig  <martin@ximian.com>
 
+	**** Backport of 137160 ****
+
+	* backend/MonoThreadManager.cs
+	(MonoThreadManager.HandleChildEvent): In
+	`NotificationType.GcThreadExited', resume the target and ignore
+	any errors; for some reason, the thread may have died already by
+	the time we get the notification.
+
+2009-07-01  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 137159 ****
 
 	* classes/Debugger.cs
