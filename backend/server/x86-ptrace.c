@@ -483,8 +483,10 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid)
 	inferior->pid = pid;
 	inferior->is_thread = TRUE;
 
+#ifndef __MACH__
 	if (!_server_ptrace_wait_for_new_thread (handle))
 		return COMMAND_ERROR_INTERNAL_ERROR;
+#endif
 
 	return COMMAND_ERROR_NONE;
 }
