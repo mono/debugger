@@ -9,7 +9,7 @@ using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[DebuggerTestFixture]
+	[DebuggerTestFixture(Timeout = 10000)]
 	public class TestSession : DebuggerTestFixture
 	{
 		public TestSession ()
