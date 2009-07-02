@@ -87,7 +87,7 @@ namespace Mono.Debugger.Backend
 				return;
 
 			TargetAddress data = inferior.ReadAddress (info);
-			if (data.IsNull || true) {
+			if (data.IsNull) {
 				//
 				// See CheckForPendingMonoInit() below - this should only happen when
 				// the Mono runtime is embedded - for instance Moonlight inside Firefox.
@@ -263,6 +263,8 @@ namespace Mono.Debugger.Backend
 
 		void do_update_shlib_info (Inferior inferior)
 		{
+//			if (Process.MonoRuntimeFound)
+//				return;
 			if (!dyld_all_image_infos.IsNull) {
 				int size = 2 * inferior.TargetLongIntegerSize + 2 * inferior.TargetAddressSize;
 				TargetReader reader = new TargetReader (inferior.ReadMemory (dyld_all_image_infos, size));
