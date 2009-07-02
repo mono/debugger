@@ -608,7 +608,11 @@ namespace Mono.Debugger.Languages.Mono
 			reader.BinaryReader.ReadInt16 (); /* flags */
 			int pos = reader.BinaryReader.ReadInt16 ();
 
-			string name = memory.ReadString (name_addr);
+			string name;
+			if (!name_addr.IsNull)
+				name = memory.ReadString (name_addr);
+			else
+				name = String.Format ("!{0}", pos);
 
 			return new GenericParamInfo (container, klass, name, pos);
 		}

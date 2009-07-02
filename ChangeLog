@@ -1,5 +1,13 @@
 2009-07-01  Martin Baulig  <martin@ximian.com>
 
+	**** Backport of 137172 ****
+
+	* languages/mono/MonoRuntime.cs
+	(MonoRuntime.GetGenericParameter): Check whether the name field is
+	non-null and use `!0' etc. otherwise.
+
+2009-07-01  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 137160 ****
 
 	* backend/MonoThreadManager.cs
