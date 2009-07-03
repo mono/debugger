@@ -68,12 +68,12 @@
   <ItemGroup>
     <Compile Include="..\interface\*.cs" />
     <Compile Include="..\backend\arch\*.cs" />
+    <Compile Include="..\backend\os\*.cs" />
     <Compile Include="..\backend\*.cs" />
     <Compile Include="..\languages\*.cs" />
     <Compile Include="..\languages\mono\*.cs" />
     <Compile Include="..\languages\native\*.cs" />
     <Compile Include="..\classes\*.cs" />
-    <Compile Include="..\test\misc\*.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

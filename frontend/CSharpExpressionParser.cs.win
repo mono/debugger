@@ -31,7 +31,7 @@ namespace Mono.Debugger.Frontend.CSharp
       @see <a href="#yyerror(java.lang.String, java.lang.String[])">yyerror</a>
     */
   public void yyerror (string message) {
-    yyerror(message, null);
+    throw new yyParser.yyException(message);
   }
 
   /** (syntax) error message.
@@ -40,19 +40,13 @@ namespace Mono.Debugger.Frontend.CSharp
       @param expected vector of acceptable tokens, if available.
     */
   public void yyerror (string message, string[] expected) {
-    if ((expected != null) && (expected.Length  > 0)) {
-      System.Console.Write (message+", expecting");
-      for (int n = 0; n < expected.Length; ++ n)
-        System.Console.Write (" "+expected[n]);
-        System.Console.WriteLine ();
-    } else
-      System.Console.WriteLine (message);
+    throw new yyParser.yyException(message, expected);
   }
 
   /** debugging support, requires the package jay.yydebug.
       Set to null to suppress debugging messages.
     */
-  protected yydebug.yyDebug debug;
+  internal yydebug.yyDebug debug;
 
   protected static  int yyFinal = 22;
   public static  string [] yyRule = {
@@ -185,7 +179,7 @@ namespace Mono.Debugger.Frontend.CSharp
       @return result of the last reduction, if any.
       @throws yyException on irrecoverable parse error.
     */
-  public Object yyparse (yyParser.yyInput yyLex, Object yyd)
+  internal Object yyparse (yyParser.yyInput yyLex, Object yyd)
 				 {
     this.debug = (yydebug.yyDebug)yyd;
     return yyparse(yyLex);
@@ -213,7 +207,7 @@ namespace Mono.Debugger.Frontend.CSharp
       @return result of the last reduction, if any.
       @throws yyException on irrecoverable parse error.
     */
-  public Object yyparse (yyParser.yyInput yyLex)
+  internal Object yyparse (yyParser.yyInput yyLex)
 				{
     if (yyMax <= 0) yyMax = 256;			// initial size
     int yyState = 0;                                   // state stack ptr
@@ -266,7 +260,7 @@ namespace Mono.Debugger.Frontend.CSharp
             switch (yyErrorFlag) {
   
             case 0:
-              yyerror("syntax error", yyExpecting(yyState));
+              yyerror(String.Format ("syntax error, got token `{0}'", yyname (yyToken)), yyExpecting(yyState));
               if (debug != null) debug.error("syntax error");
               goto case 1;
             case 1: case 2:
@@ -502,7 +496,7 @@ case 36:
 #line 250 "./CSharpExpressionParser.jay"
   {
 		if ((int) yyVals[0+yyTop] < 1)
-			throw new ScriptingException ("syntax error");
+			throw new yyParser.yyException ("expected positive integer");
 		yyVal = (int) yyVals[0+yyTop];
 	  }
   break;
@@ -770,16 +764,16 @@ public Expression Parse (string text)
 {
 	try {
 		reader.Text = text;
-		lexer.restart ();
+		lexer.Restart ();
 		if (yacc_verbose_flag)
 			return (Expression) yyparse (lexer, new yydebug.yyDebugSimple ());
 		else
 			return (Expression) yyparse (lexer);
-	} catch {
-		// Please do not remove this, it is used during debugging
-		// of the grammar
-		//
-		throw new ScriptingException (lexer.Location + "  : Parsing error ");
+	} catch (yyParser.yyException ex) {
+		throw new ExpressionParsingException (text, lexer.Position, ex.Message);
+	} catch (Exception ex) {
+		string message = String.Format ("caught unexpected exception: {0}", ex.Message);
+		throw new ExpressionParsingException (text, lexer.Position, message);
 	}
 }
 
@@ -803,7 +797,7 @@ namespace yydebug {
 	 
 	 class yyDebugSimple : yyDebug {
 		 void println (string s){
-			 Console.WriteLine (s);
+			 Console.Error.WriteLine (s);
 		 }
 		 
 		 public void push (int state, Object value) {
@@ -933,7 +927,16 @@ namespace yydebug {
   /** thrown for irrecoverable syntax errors and stack overflow.
     */
   internal class yyException : System.Exception {
+    public readonly string Message;
+    public readonly object[] Expected;
+
     public yyException (string message) : base (message) {
+      this.Message = message;
+    }
+
+    public yyException (string message, object[] expected) : base (message) {
+      this.Message = message;
+      this.Expected = expected;
     }
   }
 
