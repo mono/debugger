@@ -1,3 +1,11 @@
+2009-07-13  Jonathan Chambers  <joncham@gmail.com>
+
+	* backend/os/PEReader.cs: Add.
+
+	* backend/os/WindowsOperatingSystem.cs: Add.
+	
+	Contributed under MIT/X11 license.
+
 2009-07-03  Jonathan Chambers  <joncham@gmail.com>
 
 	* build/Mono.Debugger.csproj: Add backend/os directory.
