@@ -234,7 +234,8 @@ namespace Mono.Debugger.Backend
 		internal enum ServerType {
 			UNKNOWN = 0,
 			LINUX_PTRACE = 1,
-			DARWIN = 2
+			DARWIN = 2,
+			WINDOWS = 3
 		}
 
 		internal enum ServerCapabilities {
@@ -1670,6 +1671,8 @@ namespace Mono.Debugger.Backend
 				return new LinuxOperatingSystem (process);
 			case ServerType.DARWIN:
 				return new DarwinOperatingSystem (process);
+			case ServerType.WINDOWS:
+				return new WindowsOperatingSystem (process);
 			default:
 				throw new NotSupportedException (String.Format ("Unknown server type {0}.", type));
 			}
