@@ -428,6 +428,12 @@ namespace Mono.Debugger.Frontend
 			return expression != null;
 		}
 
+		protected const string Help =
+			"print [options] expression\n" +
+			"  /o, /object   Displays as an object\n" +
+			"  /a, /address  Displays as an address\n" +
+			"  /x, /hex      Displays in hex\n";
+		
 		protected override object DoExecute (ScriptingContext context)
 		{
 			return Execute (context, expression, format);
@@ -462,7 +468,7 @@ namespace Mono.Debugger.Frontend
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Print the result of an expression"; } }
-		public string Documentation { get { return ""; } }
+		public string Documentation { get { return Help; } }
 	}
 
 	public class PrintTypeCommand : PrintCommand, IDocumentableCommand
@@ -479,7 +485,7 @@ namespace Mono.Debugger.Frontend
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Data; } }
 		public string Description { get { return "Print the type of an expression."; } }
-		public string Documentation { get { return ""; } } 
+		public string Documentation { get { return Help; } } 
 	}
 
 	public class CallCommand : FrameCommand, IDocumentableCommand
