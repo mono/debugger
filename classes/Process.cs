@@ -219,6 +219,19 @@ namespace Mono.Debugger
 			return false;
 		}
 
+		public int AddExceptionCatchPoint (ExceptionCatchPoint catchpoint)
+		{
+			check_disposed ();
+			return servant.AddExceptionCatchPoint (catchpoint);
+		}
+
+		public void RemoveExceptionCatchPoint (int index)
+		{
+			check_disposed ();
+			if (servant != null)
+				servant.RemoveExceptionCatchPoint (index);
+		}
+
 		//
 		// IDisposable
 		//

@@ -84,8 +84,6 @@ namespace Mono.Debugger.Backend
 		{
 			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
 				      DebuggerWaitHandle.CurrentThread, this);
-
-			exception_handlers = new Hashtable ();
 		}
 
 		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
@@ -1072,7 +1070,7 @@ namespace Mono.Debugger.Backend
 				return action;
 			}
 
-			foreach (ExceptionCatchPoint handle in exception_handlers.Values) {
+			foreach (ExceptionCatchPoint handle in process.ExceptionCatchPoints) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",
 					      this, handle.Name, exc);
@@ -1993,22 +1991,6 @@ namespace Mono.Debugger.Backend
 			});
 		}
 
-		static int next_event_index = 0;
-		public override int AddEventHandler (Event handle)
-		{
-			if (handle.Type != EventType.CatchException)
-				throw new InternalError ();
-
-			int index = ++next_event_index;
-			exception_handlers.Add (index, handle);
-			return index;
-		}
-
-		public override void RemoveEventHandler (int index)
-		{
-			exception_handlers.Remove (index);
-		}
-
 		public override int GetInstructionSize (TargetAddress address)
 		{
 			return (int) SendCommand (delegate {
@@ -2353,7 +2335,6 @@ namespace Mono.Debugger.Backend
 
 		Inferior inferior;
 		Disassembler disassembler;
-		Hashtable exception_handlers;
 		bool engine_stopped;
 		bool reached_main;
 		bool killed, dead;

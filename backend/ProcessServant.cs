@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using ST = System.Threading;
@@ -25,6 +26,7 @@ namespace Mono.Debugger.Backend
 		SymbolTableManager symtab_manager;
 		MonoThreadManager mono_manager;
 		BreakpointManager breakpoint_manager;
+		Dictionary<int,ExceptionCatchPoint> exception_handlers;
 		ProcessStart start;
 		DebuggerSession session;
 		protected MonoLanguageBackend mono_language;
@@ -69,6 +71,8 @@ namespace Mono.Debugger.Backend
 
 			breakpoint_manager = new BreakpointManager ();
 
+			exception_handlers = new Dictionary<int,ExceptionCatchPoint> ();
+
 			symtab_manager = new SymbolTableManager (session);
 
 			os = Inferior.CreateOperatingSystemBackend (this);
@@ -86,6 +90,10 @@ namespace Mono.Debugger.Backend
 			this.initialized = true;
 
 			breakpoint_manager = new BreakpointManager (parent.breakpoint_manager);
+
+			exception_handlers = new Dictionary<int,ExceptionCatchPoint> ();
+			foreach (KeyValuePair<int,ExceptionCatchPoint> catchpoint in parent.exception_handlers)
+				exception_handlers.Add (catchpoint.Key, catchpoint.Value);
 
 			symtab_manager = parent.symtab_manager;
 
@@ -244,6 +252,8 @@ namespace Mono.Debugger.Backend
 			session.OnProcessCreated (client);
 
 			breakpoint_manager = new BreakpointManager ();
+
+			exception_handlers = new Dictionary<int,ExceptionCatchPoint> ();
 
 			symtab_manager = new SymbolTableManager (session);
 
@@ -653,6 +663,27 @@ namespace Mono.Debugger.Backend
 		}
 
 		//
+		// Breakpoints and exception handlers
+		//
+
+		static int next_exception_index = 0;
+		internal int AddExceptionCatchPoint (ExceptionCatchPoint catchpoint)
+		{
+			int index = ++next_exception_index;
+			exception_handlers.Add (index, catchpoint);
+			return index;
+		}
+
+		internal void RemoveExceptionCatchPoint (int index)
+		{
+			exception_handlers.Remove (index);
+		}
+
+		internal ExceptionCatchPoint[] ExceptionCatchPoints {
+			get { return exception_handlers.Values.ToArray (); }
+		}
+
+		//
 		// Stopping / resuming all threads for the GUI
 		//
 
@@ -726,6 +757,8 @@ namespace Mono.Debugger.Backend
 				thread_lock_mutex.Dispose ();
 				thread_lock_mutex = null;
 			}
+
+			exception_handlers = null;
 
 			manager.RemoveProcess (this);
 		}

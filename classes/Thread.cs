@@ -455,29 +455,6 @@ namespace Mono.Debugger
 				servant.RemoveBreakpoint (handle);
 		}
 
-		// <summary>
-		//   Add an event handler.
-		//
-		//   Returns a number which may be passed to RemoveEventHandler() to remove
-		//   the event handler.
-		// </summary>
-		public int AddEventHandler (Event handle)
-		{
-			check_alive ();
-			return servant.AddEventHandler (handle);
-		}
-
-		// <summary>
-		//   Remove event handler @index.  @index is the event handler number which has
-		//   been returned by AddEventHandler().
-		// </summary>
-		public void RemoveEventHandler (int index)
-		{
-			check_disposed ();
-			if (servant != null)
-				servant.RemoveEventHandler (index);
-		}
-
 		public string PrintObject (Style style, TargetObject obj, DisplayFormat format)
 		{
 			check_alive ();

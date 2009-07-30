@@ -567,16 +567,6 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			public override int AddEventHandler (Event handle)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void RemoveEventHandler (int index)
-			{
-				throw new InvalidOperationException ();
-			}
-
 			public override string PrintObject (Style style, TargetObject obj,
 							    DisplayFormat format)
 			{

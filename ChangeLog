@@ -16,6 +16,27 @@
 
 	* frontend/CSharpExpressionParser.cs.win: Update.
 
+2009-07-07  Martin Baulig  <martin@ximian.com>
+
+	Make exception catchpoints per-process and not per-thread.
+
+	* classes/Process.cs
+	(Process.AddExceptionCatchPoint): New public method.
+	(Process.RemoveExceptionCatchPoint): Likewise.
+
+	* classes/Thread.cs
+	(Thread.AddEventHandler): Removed.
+	(Thread.RemoveEventHandler): Removed.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.AddExceptionCatchPoint): New internal method.
+	(ProcessServant.RemoveExceptionCatchPoint): Likewise.
+	(ProcessServant.ExceptionCatchPoints): New internal property.
+
+	* backend/ThreadServant.cs
+	(ThreadServant.AddEventHandler): Removed.
+	(ThreadServant.RemoveEventHandler): Removed.
+
 2009-07-01  Martin Baulig  <martin@ximian.com>
 
 	* languages/mono/MonoRuntime.cs

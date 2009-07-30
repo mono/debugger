@@ -71,7 +71,7 @@ namespace Mono.Debugger
 				if (handle > 0)
 					return;
 
-				handle = target.AddEventHandler (this);
+				handle = target.Process.AddExceptionCatchPoint (this);
 			}
 		}
 
@@ -79,7 +79,7 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				if (handle > 0)
-					target.RemoveEventHandler (handle);
+					target.Process.RemoveExceptionCatchPoint (handle);
 
 				handle = -1;
 			}

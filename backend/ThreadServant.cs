@@ -209,20 +209,6 @@ namespace Mono.Debugger.Backend
 		// </summary>
 		internal abstract void RemoveBreakpoint (BreakpointHandle handle);
 
-		// <summary>
-		//   Add an event handler.
-		//
-		//   Returns a number which may be passed to RemoveEventHandler() to remove
-		//   the event handler.
-		// </summary>
-		public abstract int AddEventHandler (Event handle);
-
-		// <summary>
-		//   Remove event handler @index.  @index is the event handler number which has
-		//   been returned by AddEventHandler().
-		// </summary>
-		public abstract void RemoveEventHandler (int index);
-
 		internal abstract void AcquireThreadLock ();
 
 		internal abstract void ReleaseThreadLock ();
