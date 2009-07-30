@@ -1,0 +1,129 @@
+Today, July 30th 2009, I committed my threading model patch to SVN
+which massively improves the debugger's single-stepping API and also
+fixes a few bugs discovered while debugging multi-threaded
+applications in a GUI.
+
+Background:
+===========
+
+Internally, the debugger uses a pre-thread stepping model, so you can
+single-step individual threads, leaving other threads untouched.  This
+is a unique feature of MDB and doesn't exist in other debuggers such
+as GDB.
+
+However, while this is a really cool threading-model for the
+command-line, a GUI usually requires all threads being stopped before
+giving control to the user - and pre-thread stepping may also not be
+available on some operating systems.
+
+Because of that, several hacks were added to mdb in the past - the
+hacks usually waited until one thread stopped and then sent the others
+a SIGSTOP, and there were other hacks added on top of these hacks to
+"eat" unwanted events (we only want to send one stopping event to the
+GUI, not one for each thread, etc.)
+
+Well, this feature was called 'broken threading' and it was in fact
+badly broken - there are just too many things which may go wrong
+during this stopping and resuming, some new threads may get created,
+some old threads may die, we may receive exceptions or signals, etc.,
+etc., etc. - the biggest problem was basically that this entire
+suspending and resuming took place in "user-land", opening the door
+for all kinds of race conditions ...
+
+Everything is an Operation:
+===========================
+
+The new code exposes one fundamental design element of the debugger in
+a public API - the stepping operation.
+
+Internally, everything that executes any code in the target is a
+stepping operation - so it's basically everything except reading /
+writing memory (reading the value of a field in managed could could be
+a stepping operation, though - we may need to call some runtime helper
+functions and / or static class constructors).
+
+This concept already existing since the very beginning, but the new
+piece of it is that each operation may now operate on multiple threads
+and it can also suspend / resume other threads.
+
+All the public stepping functions such as Thread.Step() now take a
+`ThreadingModel' argument which specifies which threading model you
+want to use for this particular operation.
+
+You can choose between:
+
+-> `ThreadingModel.Single':
+
+   Debug only this single-thread, leaving all other threads untouched -
+   the operation runs until this particular thread stops.
+
+   This is used on the command line and during func-eval in Visual
+   Studio (if you change the value of a property in the Locals Window
+   or evaluate an expression in the Immediate Window).
+
+-> `ThreadingModel.Process':
+
+   Resume all threads in the current process before starting the
+   operation and run until any thread in the current process stops,
+   suspend all threads before giving control to the user.
+
+   The default in the GUI.
+
+-> `ThreadingModel.Global':
+
+   Same as `ThreadingModel.Process', but apply to all processes -
+   ie. we suspend / resume all threads in all processes.
+
+   This is identical to `ThreadingModel.Process' unless follow-fork is
+   enabled.
+
+In addition to that, you may also tell the debugger what to do with
+other threads by using one of the flags:
+
+-> `ThreadingModel.ResumeThreads':
+
+   Use this together with `ThreadingModel.Single' to resume all other
+   threads before starting the operation; we still run until this
+   particular thread stops and we don't suspend anything when we stop.
+
+   This is useful if all threads have previously been stopped by a
+   `ThreadingModel.Global' operation and you now want to switch to
+   single-thread stepping.
+
+The other two flags are "private", don't use them unless you know what
+you're doing as they can make the debugger hang during single-threaded
+debugging.
+
+Controlling Operations:
+=======================
+
+When starting a new stepping operation, you get a `CommandResult'
+object which you can use to control the operation.
+
+-> `CompletedEvent' is signalled once the operation is completely
+   finished, ie. after suspending threads if that's required.
+
+-> `Abort' aborts the operation, and also suspends threads if
+   required.
+
+GUIManager and Events:
+======================
+
+The `GUIManager' class is now just a thin wrapper around the new API.
+
+You may also just use the events on the `Debugger' class, for instance
+`Debugger.TargetEvent'.
+
+When using `ThreadingModel.Process', the `Debugger.TargetEvent' is
+fired only once each time the target stopped - after suspending all
+threads.
+
+Note that these events are sent from within the debugger's background
+thread, ie. you're not allowed to call back into the debugger remotely
+since this'd deadlock.
+
+`GUIManager' simply uses `ThreadPool.QueueUserWorkItem' to fix this.
+
+
+Last changed July 30th, 2009
+Martin Baulig <martin@novell.com>
