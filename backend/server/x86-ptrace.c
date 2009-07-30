@@ -451,7 +451,7 @@ server_ptrace_spawn (ServerHandle *handle, const gchar *working_directory,
 }
 
 static ServerCommandError
-server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
+server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid, gboolean wait)
 {
 	InferiorHandle *inferior = handle->inferior;
 
@@ -462,7 +462,7 @@ server_ptrace_initialize_thread (ServerHandle *handle, guint32 pid)
 	inferior->os.thread = get_thread_from_index(GET_THREAD_INDEX(pid));
 #else
 	inferior->pid = pid;
-	if (!_server_ptrace_wait_for_new_thread (handle))
+	if (wait && !_server_ptrace_wait_for_new_thread (handle))
 		return COMMAND_ERROR_INTERNAL_ERROR;
 #endif
 
@@ -488,7 +488,7 @@ server_ptrace_attach (ServerHandle *handle, guint32 pid)
 		return COMMAND_ERROR_INTERNAL_ERROR;
 #endif
 
-	return COMMAND_ERROR_NONE;
+	return _server_ptrace_setup_inferior (handle);
 }
 
 static void
@@ -687,6 +687,7 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_push_registers,
 	server_ptrace_pop_registers,
 	server_ptrace_get_callback_frame,
+	server_ptrace_restart_notification,
 	server_ptrace_get_registers_from_core_file,
 	server_ptrace_get_current_pid,
 	server_ptrace_get_current_thread,

@@ -27,6 +27,7 @@ namespace Mono.Debugger.Tests
 		{
 			base.SetUp ();
 			Config.FollowFork = true;
+			Config.ThreadingModel = ThreadingModel.Single;
 
 			bpt_local_waitpid = AssertBreakpoint (String.Format ("-local {0}:{1}", FileName, LineWaitpid+1));
 			bpt_waitpid = AssertBreakpoint (String.Format ("-local {0}:{1}", FileName, LineWaitpid));
@@ -201,8 +202,6 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("enable " + bpt_local_waitpid);
 			AssertExecute ("enable " + bpt_child);
 
-			// int bpt_child = AssertBreakpoint ("-global " + LineChild);
-
 			AssertExecute ("continue -bg");
 
 			Thread child = AssertProcessCreated ();
@@ -241,7 +240,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (child, "pid", "(pid_t) 0");
 
 			AssertExecute ("background -thread " + child.ID);
-			AssertExecute ("continue -wait");
+			AssertExecute ("continue -wait -thread " + thread.ID);
 
 			Thread execd_child = null;
 			bool exited = false;

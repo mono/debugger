@@ -179,14 +179,26 @@ namespace Mono.Debugger
 
 		public Process Run (DebuggerSession session)
 		{
+			CommandResult dummy;
+			return Run (session, out dummy);
+		}
+
+		public Process Run (DebuggerSession session, out CommandResult result)
+		{
 			check_servant ();
-			return servant.Run (session);
+			return servant.Run (session, out result);
 		}
 
 		public Process Attach (DebuggerSession session, int pid)
 		{
+			CommandResult dummy;
+			return Attach (session, pid, out dummy);
+		}
+
+		public Process Attach (DebuggerSession session, int pid, out CommandResult result)
+		{
 			check_servant ();
-			return servant.Attach (session, pid);
+			return servant.Attach (session, pid, out result);
 		}
 
 		public Process OpenCoreFile (DebuggerSession session, string core_file,
@@ -204,6 +216,19 @@ namespace Mono.Debugger
 			get {
 				check_servant ();
 				return servant.Processes;
+			}
+		}
+
+		[Obsolete]
+		GUIManager gui_manager;
+
+		[Obsolete]
+		internal GUIManager GUIManager {
+			get {
+				if (gui_manager == null)
+					gui_manager = new GUIManager (this);
+
+				return gui_manager;
 			}
 		}
 

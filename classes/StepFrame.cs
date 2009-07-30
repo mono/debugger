@@ -5,10 +5,15 @@ using System.Text;
 using Mono.Debugger;
 using Mono.Debugger.Languages;
 
-namespace Mono.Debugger.Backend
+namespace Mono.Debugger
 {
-	internal enum StepMode
+	public enum StepMode
 	{
+		// <summary>
+		//   Resume the target and run until an optional end location.
+		// </summary>
+		Run,
+
 		// <summary>
 		//   Step a single machine instruction, but step over trampolines.
 		// </summary>
@@ -43,22 +48,29 @@ namespace Mono.Debugger.Backend
 		//   Single-step until leaving the specified step frame and never enter any
 		//   methods.
 		// </summary>
-		Finish
+		Finish,
+
+		FinishNative
 	}
 
-	internal sealed class StepFrame
+	[Serializable]
+	public sealed class StepFrame
 	{
 		TargetAddress start, end;
 		Language language;
 		StackFrame stack;
 		StepMode mode;
 
-		internal StepFrame (Language language, StepMode mode)
-			: this (TargetAddress.Null, TargetAddress.Null, null, language, mode)
+		public StepFrame (Language language, StepMode mode)
+			: this (language, mode, null, TargetAddress.Null, TargetAddress.Null)
 		{ }
 
-		internal StepFrame (TargetAddress start, TargetAddress end, StackFrame stack,
-				    Language language, StepMode mode)
+		public StepFrame (Language language, StepMode mode, TargetAddress until)
+			: this (language, mode, null, TargetAddress.Null, until)
+		{ }
+
+		public StepFrame (Language language, StepMode mode, StackFrame stack,
+				  TargetAddress start, TargetAddress end)
 		{
 			this.start = start;
 			this.end = end;
@@ -81,6 +93,15 @@ namespace Mono.Debugger.Backend
 
 		public TargetAddress End {
 			get {
+				return end;
+			}
+		}
+
+		public TargetAddress Until {
+			get {
+				if ((mode != StepMode.Run) && (mode != StepMode.FinishNative))
+					throw new InvalidOperationException ();
+
 				return end;
 			}
 		}

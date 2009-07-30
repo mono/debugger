@@ -16,7 +16,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backend
 {
-	internal class DebuggerServant : DebuggerMarshalByRefObject, IDisposable
+	internal class DebuggerServant : DebuggerMarshalByRefObject, IOperationHost, IDisposable
 	{
 		Debugger client;
 		DebuggerConfiguration config;
@@ -33,6 +33,7 @@ namespace Mono.Debugger.Backend
 			ObjectCache.Initialize ();
 			thread_manager = new ThreadManager (this);
 			process_hash = Hashtable.Synchronized (new Hashtable ());
+			stopped_event = new ManualResetEvent (false);
 		}
 
 		public Debugger Client {
@@ -59,6 +60,7 @@ namespace Mono.Debugger.Backend
 
 		internal void OnMainProcessCreatedEvent (ProcessServant process)
 		{
+			process_hash.Add (process, process);
 			client.OnMainProcessCreatedEvent (process.Client);
 		}
 
@@ -107,6 +109,16 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		internal void OnEnterNestedBreakState (SingleSteppingEngine sse)
+		{
+			client.OnEnterNestedBreakState (sse.Thread);
+		}
+
+		internal void OnLeaveNestedBreakState (SingleSteppingEngine sse)
+		{
+			client.OnLeaveNestedBreakState (sse.Thread);
+		}
+
 		public void Kill ()
 		{
 			main_process = null;
@@ -140,7 +152,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public Process Run (DebuggerSession session)
+		public Process Run (DebuggerSession session, out CommandResult result)
 		{
 			check_disposed ();
 
@@ -148,12 +160,11 @@ namespace Mono.Debugger.Backend
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			ProcessStart start = new ProcessStart (session);
-			main_process = thread_manager.StartApplication (start);
-			process_hash.Add (main_process, main_process);
+			main_process = thread_manager.StartApplication (start, out result);
 			return main_process.Client;
 		}
 
-		public Process Attach (DebuggerSession session, int pid)
+		public Process Attach (DebuggerSession session, int pid, out CommandResult result)
 		{
 			check_disposed ();
 
@@ -161,8 +172,7 @@ namespace Mono.Debugger.Backend
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			ProcessStart start = new ProcessStart (session, pid);
-			main_process = thread_manager.StartApplication (start);
-			process_hash.Add (main_process, main_process);
+			main_process = thread_manager.StartApplication (start, out result);
 			return main_process.Client;
 		}
 
@@ -199,6 +209,78 @@ namespace Mono.Debugger.Backend
 		{
 			Console.WriteLine ("ERROR: " + String.Format (message, args));
 		}
+
+#region Global Threading Model
+
+		ManualResetEvent stopped_event;
+		OperationCommandResult current_operation;
+
+		internal WaitHandle WaitHandle {
+			get { return stopped_event; }
+		}
+
+		internal CommandResult StartOperation (ThreadingModel model, SingleSteppingEngine caller)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			if ((model & ThreadingModel.ThreadingMode) == ThreadingModel.Default) {
+				if (Inferior.HasThreadEvents)
+					model |= ThreadingModel.Single;
+				else
+					model |= ThreadingModel.Process;
+			}
+
+			if ((model & ThreadingModel.ThreadingMode) != ThreadingModel.Global)
+				return caller.Process.StartOperation (model, caller);
+
+			if (current_operation != null)
+				throw new TargetException (TargetError.NotStopped);
+
+			lock (this) {
+				stopped_event.Reset ();
+				current_operation = new OperationCommandResult (this, model);
+			}
+
+			foreach (ProcessServant process in process_hash.Values) {
+				process.StartGlobalOperation (model, caller, current_operation);
+			}
+
+			return current_operation;
+		}
+
+		public void OperationCompleted (SingleSteppingEngine caller, TargetEventArgs result, ThreadingModel model)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			foreach (ProcessServant process in process_hash.Values) {
+				process.OperationCompleted (caller, result, model);
+			}
+
+			lock (this) {
+				current_operation = null;
+				stopped_event.Set ();
+			}
+		}
+
+		WaitHandle IOperationHost.WaitHandle {
+			get { return stopped_event; }
+		}
+
+		void IOperationHost.SendResult (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			SendTargetEvent (sse, args);
+		}
+
+		void IOperationHost.Abort ()
+		{
+			foreach (ProcessServant process in process_hash.Values) {
+				process.Stop ();
+			}
+		}
+
+#endregion
 
 		//
 		// IDisposable

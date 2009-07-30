@@ -51,12 +51,13 @@ namespace Mono.Debugger.Tests
 			AssertStopped (thread, "X.Hello()", line_hello);
 
 			AssertExecute ("return -yes");
-			AssertStopped (thread, "X.Main()", line_main);
+
+			AssertRuntimeInvokeDone (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (8)");
 			AssertStopped (thread, "X.Hello(int)", line_hello_2);
 			AssertExecute ("return -yes");
-			AssertStopped (thread, "X.Main()", line_main);
+			AssertRuntimeInvokeDone (thread, "X.Main()", line_main);
 
 			AssertExecute ("call Hello (9)");
 			AssertStopped (thread, "X.Hello(int)", line_hello_2);
@@ -65,7 +66,7 @@ namespace Mono.Debugger.Tests
 			AssertExecute ("return -yes");
 			AssertTargetOutput ("Done: 9 18 1");
 			AssertNoTargetOutput ();
-			AssertStopped (thread, "X.Main()", line_main);
+			AssertRuntimeInvokeDone (thread, "X.Main()", line_main);
 
 			bt = thread.GetBacktrace (-1);
 			if (bt.Count != 1)
@@ -95,7 +96,7 @@ namespace Mono.Debugger.Tests
 			AssertTargetOutput ("Done: 7 14 2");
 			AssertNoTargetOutput ();
 
-			AssertStopped (thread, "X.Main()", line_main);
+			AssertRuntimeInvokeDone (thread, "X.Main()", line_main);
 
 			bt = thread.GetBacktrace (-1);
 			if (bt.Count != 1)

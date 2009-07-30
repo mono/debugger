@@ -14,8 +14,7 @@ namespace Mono.Debugger.Tests
 		public TestActivateBreakpoints2 ()
 			: base ("TestActivateBreakpoints2")
 		{
-			Config.BrokenThreading = false;
-			Config.StayInThread = true;
+			Config.ThreadingModel = ThreadingModel.Single;
 		}
 
 		[Test]

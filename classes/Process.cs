@@ -76,6 +76,10 @@ namespace Mono.Debugger
 			get { return servant.NativeLanguage; }
 		}
 
+		public ST.WaitHandle WaitHandle {
+			get { return servant.WaitHandle; }
+		}
+
 		public void Kill ()
 		{
 			servant.Kill ();
@@ -134,7 +138,7 @@ namespace Mono.Debugger
 			result.Wait ();
 		}
 
-		public class ProcessCommandResult : CommandResult
+		protected class ProcessCommandResult : CommandResult
 		{
 			Process process;
 			ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
@@ -167,23 +171,15 @@ namespace Mono.Debugger
 		// Stopping / resuming all threads for the GUI
 		//
 
-		GUIManager manager;
-
+		[Obsolete]
 		public GUIManager StartGUIManager ()
 		{
-			if (manager != null)
-				throw new InvalidOperationException ();
-
-			manager = new GUIManager (this);
-			manager.StartGUIManager ();
-			return manager;
+			Session.Config.StopOnManagedSignals = false;
+			return Debugger.GUIManager;
 		}
 
 		internal void OnTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
 		{
-			if (manager != null)
-				manager.OnTargetEvent (sse, args);
-
 			Debugger.OnTargetEvent (sse.Client, args);
 		}
 
@@ -195,12 +191,6 @@ namespace Mono.Debugger
 		internal void OnLeaveNestedBreakState (SingleSteppingEngine sse)
 		{
 			Debugger.OnLeaveNestedBreakState (sse.Client);
-		}
-
-		internal void OnProcessExited ()
-		{
-			if (manager != null)
-				manager.OnProcessExited (this);
 		}
 
 		ExceptionCatchPointHandler generic_exc_handler;

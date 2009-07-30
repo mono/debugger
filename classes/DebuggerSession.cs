@@ -31,6 +31,8 @@ namespace Mono.Debugger
 
 	public interface IExpressionParser
 	{
+		IExpressionParser Clone (DebuggerSession session);
+
 		SourceLocation ParseLocation (Thread target, StackFrame frame,
 					      LocationType type, string name);
 	}
@@ -56,12 +58,10 @@ namespace Mono.Debugger
 		IExpressionParser parser;
 		XmlDocument saved_session;
 
-		private DebuggerSession (DebuggerConfiguration config, string name,
-					 IExpressionParser parser)
+		private DebuggerSession (DebuggerConfiguration config, string name)
 		{
 			this.Config = config;
 			this.Name = name;
-			this.parser = parser;
 
 			modules = Hashtable.Synchronized (new Hashtable ());
 			events = Hashtable.Synchronized (new Hashtable ());
@@ -75,17 +75,41 @@ namespace Mono.Debugger
 
 		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
 					string name, IExpressionParser parser)
-			: this (config, name, parser)
+			: this (config, name)
 		{
 			this.Options = options;
+			this.parser = parser;
 
 			if (Options.StopInMain)
 				AddEvent (new MainMethodBreakpoint (this));
 		}
 
-		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)
+		protected DebuggerSession (DebuggerConfiguration config, Process process, DebuggerOptions options,
+					   string name, IExpressionParser parser, XPathNavigator nav)
+			: this (config, name)
 		{
-			return new DebuggerSession (Config, new_options, new_name, parser);
+			this.main_process = process;
+			this.Options = options;
+			this.parser = parser.Clone (this);
+
+			XPathNodeIterator event_iter = nav.Select ("Events/*");
+			LoadEvents (event_iter);
+
+			XPathNodeIterator display_iter = nav.Select ("Displays/*");
+			LoadDisplays (display_iter);
+		}
+
+		internal DebuggerSession Clone (Process new_process, DebuggerOptions new_options, string new_name)
+		{
+			XmlDocument document = SaveSession ();
+
+			XPathNavigator nav = document.CreateNavigator ();
+			XPathNodeIterator session_iter = nav.Select (
+				"/DebuggerConfiguration/DebuggerSession[@name='" + Name + "']");
+			if (!session_iter.MoveNext ())
+				throw new InternalError ();
+
+			return new DebuggerSession (Config, new_process, new_options, new_name, parser, session_iter.Current);
 		}
 
 		public void SaveSession (Stream stream)
@@ -141,8 +165,10 @@ namespace Mono.Debugger
 
 		public DebuggerSession (DebuggerConfiguration config, Stream stream,
 					IExpressionParser parser)
-			: this (config, "main", parser)
+			: this (config, "main")
 		{
+			this.parser = parser;
+
 			XmlReaderSettings settings = new XmlReaderSettings ();
 			Assembly ass = Assembly.GetExecutingAssembly ();
 			using (Stream schema = ass.GetManifestResourceStream ("DebuggerConfiguration"))
@@ -329,6 +355,14 @@ namespace Mono.Debugger
 			}
 
 			XPathNodeIterator event_iter = session_iter.Current.Select ("Events/*");
+			LoadEvents (event_iter);
+
+			XPathNodeIterator display_iter = session_iter.Current.Select ("Displays/*");
+			LoadDisplays (display_iter);
+		}
+
+		protected void LoadEvents (XPathNodeIterator event_iter)
+		{
 			while (event_iter.MoveNext ()) {
 				if (event_iter.Current.Name != "Breakpoint")
 					throw new InternalError ();
@@ -359,8 +393,10 @@ namespace Mono.Debugger
 				e.IsEnabled = enabled;
 				AddEvent (e);
 			}
+		}
 
-			XPathNodeIterator display_iter = session_iter.Current.Select ("Displays/*");
+		protected void LoadDisplays (XPathNodeIterator display_iter)
+		{
 			while (display_iter.MoveNext ()) {
 				if (display_iter.Current.Name != "Display")
 					throw new InternalError ();
@@ -373,6 +409,7 @@ namespace Mono.Debugger
 				displays.Add (d.Index, d);
 			}
 		}
+
 
 		protected Event ParseEvent (XPathNavigator navigator, int index, ThreadGroup group)
 		{
@@ -393,6 +430,7 @@ namespace Mono.Debugger
 			} else
 				throw new InternalError ();
 		}
+
 
 		//
 		// Modules.

@@ -62,6 +62,8 @@ namespace Mono.Debugger.Frontend
 			this.session = new DebuggerSession (config, options, "main", parser);
 			this.engine = new DebuggerEngine (this);
 
+			parser.Session = session;
+
 			source_factory = new SourceFileFactory ();
 
 			interrupt_event = new ManualResetEvent (false);
@@ -265,19 +267,6 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		internal void CheckLastEvent (Thread thread)
-		{
-			if (thread == null)
-				return;
-
-			TargetEventArgs args = thread.GetLastTargetEvent ();
-			if (args == null)
-				return;
-
-			if ((args.Type == TargetEventType.TargetStopped) && ((int) args.Data == 0))
-				Style.TargetEvent (thread, args);
-		}
-
 		public Process Start ()
 		{
 			if ((debugger != null) || (main_process != null))
@@ -291,12 +280,12 @@ namespace Mono.Debugger.Frontend
 				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
-				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Run (session);
-
+				CommandResult result;
+				current_process = main_process = debugger.Run (session, out result);
 				current_thread = current_process.MainThread;
-				current_thread = WaitAll (current_thread) ?? current_process.MainThread;
+
+				Wait (result);
 
 				return current_process;
 			} catch (TargetException) {
@@ -318,11 +307,12 @@ namespace Mono.Debugger.Frontend
 				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
-				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Attach (session, pid);
+				CommandResult result;
+				current_process = main_process = debugger.Attach (session, pid, out result);
 				current_thread = current_process.MainThread;
-				WaitOne (current_thread);
+
+				Wait (result);
 
 				return current_process;
 			} catch (TargetException) {
@@ -343,7 +333,6 @@ namespace Mono.Debugger.Frontend
 				debugger = new Debugger (config);
 
 				new InterpreterEventSink (this, debugger);
-				new ThreadEventSink (this, debugger);
 
 				Thread[] threads;
 				current_process = main_process = debugger.OpenCoreFile (
@@ -371,15 +360,17 @@ namespace Mono.Debugger.Frontend
 
 			try {
 				debugger = new Debugger (config);
+				parser = new ExpressionParser (this);
 				session = new DebuggerSession (config, stream, parser);
+				parser.Session = session;
 
 				new InterpreterEventSink (this, debugger);
-				new ThreadEventSink (this, debugger);
 
-				current_process = main_process = debugger.Run (session);
-
+				CommandResult result;
+				current_process = main_process = debugger.Run (session, out result);
 				current_thread = current_process.MainThread;
-				current_thread = WaitAll (current_thread);
+
+				Wait (result);
 
 				return current_process;
 			} catch (TargetException ex) {
@@ -417,140 +408,6 @@ namespace Mono.Debugger.Frontend
 				throw (Exception) result.Result;
 
 			return true;
-		}
-
-		public bool WaitOne (Thread thread)
-		{
-			ClearInterrupt ();
-
-			WaitHandle[] handles = new WaitHandle [2];
-			handles [0] = interrupt_event;
-			handles [1] = thread.WaitHandle;
-
-			int ret = WaitHandle.WaitAny (handles);
-
-			if (ret == 0) {
-				thread.Stop ();
-				thread.WaitHandle.WaitOne ();
-				return false;
-			}
-
-			CheckLastEvent (thread);
-			return true;
-		}
-
-		public Thread WaitAll (Thread thread)
-		{
-			return WaitAll (thread, thread.GetWaitHandle (), false);
-		}
-
-		public Thread WaitAll (Thread thread, CommandResult result, bool wait)
-		{
-			if (result == null)
-				return null;
-
-			ClearInterrupt ();
-			process_event.Reset ();
-
-			Thread stopped;
-			Hashtable seen_threads = new Hashtable ();
-			Hashtable wait_list = new Hashtable ();
-
-			do {
-			again:
-				Process[] processes = HasTarget ? debugger.Processes : new Process [0];
-				foreach (Process process in processes) {
-					Thread[] the_threads = process.GetThreads ();
-					foreach (Thread t in the_threads) {
-						if ((t == thread) || seen_threads.Contains (t))
-							continue;
-
-						seen_threads.Add (t, null);
-						if (t.IsRunning)
-							wait_list.Add (t, false);
-						else if ((t.ThreadFlags & Thread.Flags.AutoRun) != 0) {
-							t.Continue ();
-							wait_list.Add (t, true);
-						}
-					}
-				}
-
-				WaitHandle[] handles = new WaitHandle [wait_list.Count + 3];
-				handles [0] = interrupt_event;
-				handles [1] = process_event;
-				handles [2] = result.CompletedEvent;
-
-				Thread[] threads = new Thread [wait_list.Count];
-				wait_list.Keys.CopyTo (threads, 0);
-
-				for (int i = 0; i < wait_list.Count; i++)
-					handles [i + 3] = threads [i].WaitHandle;
-
-				int ret = WaitHandle.WaitAny (handles);
-
-				if (ret == 0) {
-					stopped = null;
-					result.Abort ();
-					result.CompletedEvent.WaitOne ();
-					break;
-				} else if (ret == 1) {
-					seen_threads = new Hashtable ();
-					wait_list = new Hashtable ();
-					process_event.Reset ();
-					goto again;
-				}
-
-				if (result.Result is Exception)
-					throw (Exception) result.Result;
-
-				if (ret == 2)
-					stopped = thread;
-				else
-					stopped = threads [ret - 3];
-
-				CheckLastEvent (stopped);
-				wait_list.Remove (stopped);
-			} while ((stopped != null) && (stopped != thread) && (wait || !stopped.IsAlive));
-
-			if (!HasTarget)
-				return stopped;
-
-			List<WaitHandle> autostop_list = new List<WaitHandle> ();
-
-			foreach (Process process in Processes) {
-				foreach (Thread t in process.GetThreads ()) {
-					if (t == stopped)
-						continue;
-					// Never touch immutable threads.
-					if (!t.IsRunning)
-						continue;
-					if ((t.ThreadFlags & Thread.Flags.Immutable) != 0)
-						continue;
-					// Background thread -> keep running.
-					if ((t.ThreadFlags & Thread.Flags.Background) != 0)
-						continue;
-
-					// Stop and set AutoRun.
-					t.AutoStop ();
-					autostop_list.Add (t.WaitHandle);
-				}
-			}
-
-			WaitHandle.WaitAll (autostop_list.ToArray ());
-
-			return stopped;
-		}
-
-		protected void Wait (Thread thread)
-		{
-			if (thread == null)
-				return;
-
-			WaitHandle[] handles = new WaitHandle [2];
-			handles [0] = interrupt_event;
-			handles [1] = thread.WaitHandle;
-
-			WaitHandle.WaitAny (handles);
 		}
 
 		public int Interrupt ()
@@ -665,12 +522,11 @@ namespace Mono.Debugger.Frontend
 
 		protected virtual void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
-			if (args.Type == TargetEventType.TargetInterrupted) {
-				;
-			} else if ((args.Type != TargetEventType.TargetStopped) || ((int) args.Data != 0))
-				Style.TargetEvent (thread, args);
-			else if ((thread.ThreadFlags & Thread.Flags.Background) != 0)
-				Style.TargetEvent (thread, args);
+			if ((args.Type != TargetEventType.TargetSignaled) &&
+			    (args.Type != TargetEventType.TargetExited) &&
+			    (args.Type != TargetEventType.TargetInterrupted))
+				CurrentThread = thread;
+			Style.TargetEvent (thread, args);
 		}
 
 		protected virtual void OnTargetOutput (bool is_stderr, string line)
@@ -991,8 +847,6 @@ namespace Mono.Debugger.Frontend
 		{
 			if (CLI != null)
 				CLI.EnterNestedBreakState ();
-
-			CheckLastEvent (thread);
 		}
 
 		protected void OnLeaveNestedBreakState (Thread thread)
@@ -1055,6 +909,24 @@ namespace Mono.Debugger.Frontend
 				debugger.ProcessCreatedEvent += process_created;
 				debugger.ProcessExitedEvent += process_exited;
 				debugger.ProcessExecdEvent += process_execd;
+				debugger.TargetEvent += target_event;
+				debugger.EnterNestedBreakStateEvent +=
+					delegate (Debugger unused, Thread thread) {
+						interpreter.OnEnterNestedBreakState (thread);
+					};
+				debugger.LeaveNestedBreakStateEvent +=
+					delegate (Debugger unused, Thread thread) {
+						interpreter.OnLeaveNestedBreakState (thread);
+					};
+			}
+
+			public void target_event (Thread thread, TargetEventArgs args)
+			{
+				if (((thread.ThreadFlags & Thread.Flags.Daemon) != 0) &&
+				    ((args.Type == TargetEventType.TargetExited) ||
+				     (args.Type == TargetEventType.TargetSignaled)))
+					return;
+				interpreter.OnTargetEvent (thread, args);
 			}
 
 			public void thread_created (Debugger debugger, Thread thread)
@@ -1119,36 +991,6 @@ namespace Mono.Debugger.Frontend
 			public void target_output (bool is_stderr, string line)
 			{
 				interpreter.OnTargetOutput (is_stderr, line);
-			}
-		}
-
-		[Serializable]
-		protected class ThreadEventSink
-		{
-			Interpreter interpreter;
-
-			public ThreadEventSink (Interpreter interpreter, Debugger debugger)
-			{
-				this.interpreter = interpreter;
-
-				debugger.TargetEvent += target_event;
-				debugger.EnterNestedBreakStateEvent +=
-					delegate (Debugger unused, Thread thread) {
-						interpreter.OnEnterNestedBreakState (thread);
-					};
-				debugger.LeaveNestedBreakStateEvent +=
-					delegate (Debugger unused, Thread thread) {
-						interpreter.OnLeaveNestedBreakState (thread);
-					};
-			}
-
-			public void target_event (Thread thread, TargetEventArgs args)
-			{
-				if (((thread.ThreadFlags & Thread.Flags.Daemon) != 0) &&
-				    ((args.Type == TargetEventType.TargetExited) ||
-				     (args.Type == TargetEventType.TargetSignaled)))
-					return;
-				interpreter.OnTargetEvent (thread, args);
 			}
 		}
 	}

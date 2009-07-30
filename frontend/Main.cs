@@ -21,6 +21,10 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+		public DebuggerConfiguration Configuration {
+			get; private set;
+		}
+
 		public Interpreter Interpreter {
 			get { return interpreter; }
 		}
@@ -58,15 +62,24 @@ namespace Mono.Debugger.Frontend
 			mono_debugger_server_static_init ();
 		}
 
-		internal CommandLineInterpreter (bool is_interactive, DebuggerConfiguration config,
-						 DebuggerOptions options)
+		internal CommandLineInterpreter (DebuggerOptions options, bool is_interactive)
 		{
 			if (options.HasDebugFlags)
 				Report.Initialize (options.DebugOutput, options.DebugFlags);
 			else
 				Report.Initialize ();
 
-			interpreter = new Interpreter (is_interactive, config, options);
+			Configuration = new DebuggerConfiguration ();
+#if HAVE_XSP
+			if (options.StartXSP)
+				Configuration.SetupXSP ();
+			else
+				Configuration.LoadConfiguration ();
+#else
+			Configuration.LoadConfiguration ();
+#endif
+
+			interpreter = new Interpreter (is_interactive, Configuration, options);
 			interpreter.CLI = this;
 
 			engine = interpreter.DebuggerEngine;
@@ -336,24 +349,13 @@ namespace Mono.Debugger.Frontend
 
 			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
 
-			DebuggerConfiguration config = new DebuggerConfiguration ();
-#if HAVE_XSP
-			if (options.StartXSP)
-				config.SetupXSP ();
-			else
-				config.LoadConfiguration ();
-#else
-			config.LoadConfiguration ();
-#endif
-
 			Console.WriteLine ("Mono Debugger");
 
-			CommandLineInterpreter interpreter = new CommandLineInterpreter (
-				is_terminal, config, options);
+			CommandLineInterpreter interpreter = new CommandLineInterpreter (options, is_terminal);
 
 			interpreter.RunMainLoop ();
 
-			config.SaveConfiguration ();
+			interpreter.Configuration.SaveConfiguration ();
 		}
 
 		public class MainLoop

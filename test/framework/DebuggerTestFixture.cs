@@ -132,6 +132,7 @@ namespace Mono.Debugger.Test.Framework
 
 		internal void AddEvent (DebuggerEvent e)
 		{
+			Report.Debug (DebugFlags.NUnit, "ADD EVENT: {0}", e);
 			lock (queue.SyncRoot) {
 				queue.Enqueue (e);
 				wait_event.Set ();

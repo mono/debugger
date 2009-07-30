@@ -79,12 +79,12 @@ mono_debugger_server_initialize_process (ServerHandle *handle)
 }
 
 ServerCommandError
-mono_debugger_server_initialize_thread (ServerHandle *handle, guint32 pid)
+mono_debugger_server_initialize_thread (ServerHandle *handle, guint32 pid, gboolean wait)
 {
 	if (!global_vtable->initialize_thread)
 		return COMMAND_ERROR_NOT_IMPLEMENTED;
 
-	return (* global_vtable->initialize_thread) (handle, pid);
+	return (* global_vtable->initialize_thread) (handle, pid, wait);
 }
 
 ServerCommandError
@@ -499,6 +499,15 @@ mono_debugger_server_get_callback_frame (ServerHandle *handle, guint64 stack_poi
 
 	return (* global_vtable->get_callback_frame) (
 		handle, stack_pointer, exact_match, info);
+}
+
+ServerCommandError
+mono_debugger_server_restart_notification (ServerHandle *handle)
+{
+	if (!global_vtable->restart_notification)
+		return COMMAND_ERROR_NOT_IMPLEMENTED;
+
+	return (* global_vtable->restart_notification) (handle);
 }
 
 void

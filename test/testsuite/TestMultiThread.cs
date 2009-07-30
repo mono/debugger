@@ -14,7 +14,7 @@ namespace Mono.Debugger.Tests
 		public TestMultiThread ()
 			: base ("TestMultiThread")
 		{
-			Config.BrokenThreading = true;
+			Config.ThreadingModel = ThreadingModel.Process;
 		}
 
 		const int LineMain = 51;
@@ -162,7 +162,7 @@ namespace Mono.Debugger.Tests
 			AssertFrame (thread, "X.LoopDone()", LineLoop);
 			AssertFrame (child, "X.LoopDone()", LineLoop);
 
-			AssertExecute ("continue -wait -thread " + child.ID);
+			AssertExecute ("continue -single -thread " + child.ID);
 			AssertTargetOutput ("Loop: child 4");
 
 			AssertHitBreakpoint (child, bpt_loop, "X.LoopDone()", LineLoop);
@@ -171,13 +171,10 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
 			AssertPrint (child, "Child.Counter", "(int) 4");
-			AssertPrint (child, "Parent.Counter", "(int) 3");
+			AssertPrint (child, "Parent.Counter", "(int) 2");
 
 			AssertFrame (child, "X.LoopDone()", LineLoop);
-
-			Backtrace bt = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
-			Assert.IsTrue (bt.Count == 6);
-			AssertFrame (bt [3], 3, "X.Loop()", LineSleep + 1);
+			AssertFrame (thread, "X.LoopDone()", LineLoop);
 
 			AssertExecute ("continue -thread " + thread.ID);
 			AssertTargetOutput ("Loop: child 5");
@@ -187,12 +184,17 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == child);
 
+
 			AssertPrint (child, "Child.Counter", "(int) 5");
 			AssertPrint (child, "Parent.Counter", "(int) 3");
 
 			AssertFrame (child, "X.LoopDone()", LineLoop);
 
-			AssertExecute ("continue -wait -thread " + thread.ID);
+			Backtrace bt = thread.GetBacktrace (Backtrace.Mode.Managed, -1);
+			Assert.IsTrue (bt.Count == 6);
+			AssertFrame (bt [3], 3, "X.Loop()", LineSleep + 1);
+
+			AssertExecute ("continue -single -thread " + thread.ID);
 			AssertTargetOutput ("Loop: main 3");
 
 			AssertHitBreakpoint (thread, bpt_loop, "X.LoopDone()", LineLoop);
@@ -200,7 +202,7 @@ namespace Mono.Debugger.Tests
 			Assert.IsTrue (child.IsStopped);
 			Assert.IsTrue (Interpreter.CurrentThread == thread);
 
-			AssertPrint (thread, "Child.Counter", "(int) 6");
+			AssertPrint (thread, "Child.Counter", "(int) 5");
 			AssertPrint (thread, "Parent.Counter", "(int) 3");
 
 			Assert.IsTrue (thread.IsStopped);

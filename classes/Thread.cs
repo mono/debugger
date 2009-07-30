@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
-	public class Thread : DebuggerMarshalByRefObject
+	public class Thread : DebuggerMarshalByRefObject, IOperationHost
 	{
 		[Flags]
 		public enum Flags {
@@ -26,13 +26,15 @@ namespace Mono.Debugger
 			Daemon		= 0x0001,
 			Immutable	= 0x0002,
 			Background	= 0x0004,
-			AutoRun		= 0x0008
+			AutoRun		= 0x0008,
+			StopOnExit	= 0x0010
 		}
 
 		internal Thread (ThreadServant servant, int id)
 		{
 			this.id = id;
 			this.servant = servant;
+			this.flags = Flags.AutoRun;
 		}
 
 		int id;
@@ -102,6 +104,7 @@ namespace Mono.Debugger
 
 		public Flags ThreadFlags {
 			get { return flags; }
+			set { flags = value; }
 		}
 
 		public string Name {
@@ -160,11 +163,6 @@ namespace Mono.Debugger
 				check_servant ();
 				return servant;
 			}
-		}
-
-		internal void SetThreadFlags (Flags flags)
-		{
-			this.flags = flags;
 		}
 
 		public ThreadGroup ThreadGroup {
@@ -290,69 +288,78 @@ namespace Mono.Debugger
 			}
 		}
 
-		// <summary>
-		//   Step one machine instruction, but don't step into trampolines.
-		// </summary>
-		public ThreadCommandResult StepInstruction ()
+		public CommandResult Step (ThreadingModel model, StepMode mode)
 		{
 			lock (this) {
 				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.StepInstruction (result);
-				return result;
+				return servant.Step (model, mode, null);
 			}
+		}
+
+		public CommandResult Step (ThreadingModel model, StepMode mode, StepFrame frame)
+		{
+			lock (this) {
+				check_alive ();
+				return servant.Step (model, mode, frame);
+			}
+		}
+
+		protected ThreadCommandResult Old_Step (StepMode mode)
+		{
+			return Old_Step (mode, null);
+		}
+
+		protected ThreadCommandResult Old_Step (StepMode mode, StepFrame frame)
+		{
+			lock (this) {
+				check_alive ();
+				return servant.Old_Step (mode, frame);
+			}
+		}
+
+		// <summary>
+		//   Step one machine instruction, but don't step into trampolines.
+		// </summary>
+		[Obsolete("Use Step (StepMode.SingleInstruction)")]
+		public ThreadCommandResult StepInstruction ()
+		{
+			return Old_Step (StepMode.SingleInstruction);
 		}
 
 		// <summary>
 		//   Step one machine instruction, always step into method calls.
 		// </summary>
+		[Obsolete("Use Step (StepMode.NativeInstruction)")]
 		public ThreadCommandResult StepNativeInstruction ()
 		{
-			lock (this) {
-				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.StepNativeInstruction (result);
-				return result;
-			}
+			return Old_Step (StepMode.NativeInstruction);
 		}
 
 		// <summary>
 		//   Step one machine instruction, but step over method calls.
 		// </summary>
+		[Obsolete("Use Step (StepMode.NextInstruction)")]
 		public ThreadCommandResult NextInstruction ()
 		{
-			lock (this) {
-				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.NextInstruction (result);
-				return result;
-			}
+			return Old_Step (StepMode.NextInstruction);
 		}
 
 		// <summary>
 		//   Step one source line.
 		// </summary>
+		[Obsolete("Use Step (StepMode.SourceLine)")]
 		public ThreadCommandResult StepLine ()
 		{
-			lock (this) {
-				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.StepLine (result);
-				return result;
-			}
+			return Old_Step (StepMode.SourceLine);
 		}
 
 		// <summary>
 		//   Step one source line, but step over method calls.
 		// </summary>
+		[Obsolete("Use Step (StepMode.NextLine)")]
 		public ThreadCommandResult NextLine ()
 		{
-			lock (this) {
-				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.NextLine (result);
-				return result;
-			}
+			return Old_Step (StepMode.NextLine);
 		}
 
 		// <summary>
@@ -362,41 +369,48 @@ namespace Mono.Debugger
 		{
 			lock (this) {
 				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.Finish (native, result);
-				return result;
+
+				if (!native) {
+					if (CurrentMethod == null)
+						throw new TargetException (TargetError.NoMethod);
+
+					StepFrame step_frame = new StepFrame (
+						null, StepMode.Finish, null,
+						CurrentMethod.StartAddress, CurrentMethod.EndAddress);
+
+					return Old_Step (StepMode.Finish, step_frame);
+				} else {
+					StepFrame step_frame = new StepFrame (
+						null, StepMode.FinishNative,
+						CurrentFrame.StackPointer);
+
+					return Old_Step (StepMode.FinishNative, step_frame);
+				}
 			}
 		}
 
+		[Obsolete("Use Step (StepMode.Run)")]
 		public ThreadCommandResult Continue ()
 		{
-			return Continue (TargetAddress.Null);
+			return Old_Step (StepMode.Run);
 		}
 
+		[Obsolete("Use the new Step() API")]
 		public ThreadCommandResult Continue (TargetAddress until)
 		{
-			lock (this) {
-				check_alive ();
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.Continue (until, result);
-				return result;
-			}
+			return Old_Step (StepMode.Run, new StepFrame (NativeLanguage, StepMode.Run, until));
 		}
 
+		[Obsolete("Background() and Continue() are the same")]
 		public ThreadCommandResult Background ()
 		{
-			return Background (TargetAddress.Null);
+			return (ThreadCommandResult) Step (ThreadingModel.Single, StepMode.Run, null);
 		}
 
+		[Obsolete("Background() and Continue() are the same")]
 		public ThreadCommandResult Background (TargetAddress until)
 		{
-			lock (this) {
-				check_alive ();
-				flags |= Flags.Background;
-				ThreadCommandResult result = new OperationCommandResult (this);
-				servant.Background (until, result);
-				return result;
-			}
+			return Continue (until);
 		}
 
 		internal void Kill ()
@@ -423,7 +437,6 @@ namespace Mono.Debugger
 		{
 			check_alive ();
 			servant.Stop ();
-			flags |= Flags.AutoRun;
 		}
 
 		public ThreadCommandResult GetWaitHandle ()
@@ -466,6 +479,23 @@ namespace Mono.Debugger
 			check_alive ();
 			return servant.PrintType (style, type);
 		}
+
+#region User Threads
+
+		void IOperationHost.OperationCompleted (SingleSteppingEngine sse, TargetEventArgs args, ThreadingModel model)
+		{ }
+
+		void IOperationHost.SendResult (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			sse.Process.Debugger.SendTargetEvent (sse, args);
+		}
+
+		void IOperationHost.Abort ()
+		{
+			Stop ();
+		}
+
+#endregion
 
 		//
 		// Disassembling.
@@ -797,57 +827,24 @@ namespace Mono.Debugger
 		}
 	}
 
-	public abstract class CommandResult : DebuggerMarshalByRefObject
+	public class ThreadCommandResult : OperationCommandResult
 	{
-		public object Result;
-
-		public abstract ST.WaitHandle CompletedEvent {
-			get;
+		public Thread Thread {
+			get; private set;
 		}
-
-		internal abstract void Completed ();
-
-		public abstract void Abort ();
-
-		public void Wait ()
-		{
-			CompletedEvent.WaitOne ();
-			if (Result is Exception)
-				throw (Exception) Result;
-		}
-	}
-
-	public class ThreadCommandResult : CommandResult
-	{
-		Thread thread;
 
 		internal ThreadCommandResult (Thread thread)
+			: base (thread, ThreadingModel.Single)
 		{
-			this.thread = thread;
-		}
-
-		public Thread Thread {
-			get { return thread; }
-		}
-
-		public override ST.WaitHandle CompletedEvent {
-			get { return thread.WaitHandle; }
-		}
-
-		internal override void Completed ()
-		{ }
-
-		public override void Abort ()
-		{
-			thread.Stop ();
+			this.Thread = thread;
 		}
 	}
 
-	public class OperationCommandResult : ThreadCommandResult
+	public class RuntimeInvokeResult : ThreadCommandResult
 	{
-		protected ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
+		ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
 
-		internal OperationCommandResult (Thread thread)
+		internal RuntimeInvokeResult (Thread thread)
 			: base (thread)
 		{ }
 
@@ -859,13 +856,6 @@ namespace Mono.Debugger
 		{
 			completed_event.Set ();
 		}
-	}
-
-	public class RuntimeInvokeResult : OperationCommandResult
-	{
-		internal RuntimeInvokeResult (Thread thread)
-			: base (thread)
-		{ }
 
 		public override void Abort ()
 		{
@@ -873,7 +863,15 @@ namespace Mono.Debugger
 			completed_event.WaitOne ();
 		}
 
+		internal override void Completed (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			Host.OperationCompleted (sse, args, ThreadingModel);
+			if (args != null)
+				Host.SendResult (sse, args);
+		}
+
 		public long ID;
+		public bool InvocationAborted;
 		public bool InvocationCompleted;
 		public TargetObject ReturnObject;
 		public string ExceptionMessage;

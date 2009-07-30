@@ -504,42 +504,12 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			public override void StepInstruction (CommandResult result)
+			public override CommandResult Step (ThreadingModel model, StepMode mode, StepFrame frame)
 			{
 				throw new InvalidOperationException ();
 			}
 
-			public override void StepNativeInstruction (CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void NextInstruction (CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void StepLine (CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void NextLine (CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void Finish (bool native, CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void Continue (TargetAddress until, CommandResult result)
-			{
-				throw new InvalidOperationException ();
-			}
-
-			public override void Background (TargetAddress until, CommandResult result)
+			internal override ThreadCommandResult Old_Step (StepMode mode, StepFrame frame)
 			{
 				throw new InvalidOperationException ();
 			}
@@ -558,6 +528,16 @@ namespace Mono.Debugger.Backend
 			}
 
 			public override void Stop ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal override void SuspendUserThread ()
+			{
+				throw new InvalidOperationException ();
+			}
+
+			internal override void ResumeUserThread (CommandResult result)
 			{
 				throw new InvalidOperationException ();
 			}

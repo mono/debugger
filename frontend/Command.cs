@@ -1193,18 +1193,15 @@ namespace Mono.Debugger.Frontend
 			if (Argument == "")
 				return true;
 
+			if (Args.Count < 1)
+				throw new ScriptingException ("Thread number expected.");
+
 			try {
-				index = (int) UInt32.Parse (Argument);
+				index = (int) UInt32.Parse ((string) Args [0]);
 			} catch {
-				context.Print ("Thread number expected.");
-				return false;
+				throw new ScriptingException ("Thread number expected.");
 			}
 
-			return true;
-		}
-
-		protected override object DoExecute (ScriptingContext context)
-		{
 			Thread thread;
 			if (index >= 0)
 				thread = context.Interpreter.GetThread (index);
@@ -1212,8 +1209,37 @@ namespace Mono.Debugger.Frontend
 				thread = context.Interpreter.CurrentThread;
 
 			context.Interpreter.CurrentThread = thread;
-			context.Print ("{0} ({1}:{2:x}) {3}", thread,
-				       thread.PID, thread.TID, thread.State);
+
+			for (int i = 1; i < Args.Count; i++) {
+				string arg = (string) Args [i];
+				if (arg == "-auto")
+					thread.ThreadFlags &= ~Thread.Flags.AutoRun;
+				else if ((arg == "+auto") || (arg == "auto"))
+					thread.ThreadFlags |= Thread.Flags.AutoRun;
+				else if (arg == "-immutable")
+					thread.ThreadFlags &= ~Thread.Flags.Immutable;
+				else if ((arg == "+immutable") || (arg == "immutable"))
+					thread.ThreadFlags |= Thread.Flags.Immutable | Thread.Flags.Daemon;
+				else if (arg == "-daemon") {
+					if ((thread.ThreadFlags & Thread.Flags.Immutable) != 0)
+						throw new ScriptingException ("{0} is immutable, cannot remove daemon flag.", thread);
+					thread.ThreadFlags &= ~Thread.Flags.Daemon;
+				} else if ((arg == "+daemon") || (arg == "daemon"))
+					thread.ThreadFlags |= Thread.Flags.Daemon;
+				else
+					throw new ScriptingException ("Invalid thread option `{0}'.", arg);
+			}
+
+			return true;
+		}
+
+		protected override object DoExecute (ScriptingContext context)
+		{
+			Thread thread = context.Interpreter.CurrentThread;
+
+			context.Print ("{0} ({1}:{2:x}) {3} {4}", thread,
+				       thread.PID, thread.TID, thread.State,
+				       thread.ThreadFlags);
 			return thread;
 		}
 
@@ -1227,12 +1253,17 @@ namespace Mono.Debugger.Frontend
 						"a thread (see `help thread_expression' for details).\n"; } }
 	}
 
-	public class BackgroundThreadCommand : ThreadCommand, IDocumentableCommand
+	public class BackgroundThreadCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override object DoExecute (ScriptingContext context)
+		protected override bool DoResolveBase (ScriptingContext context)
 		{
-			CurrentThread.Background ();
-			return null;
+			InBackground = true;
+			return base.DoResolveBase (context);
+		}
+
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
+		{
+			return thread.Step (model, StepMode.Run, null);
 		}
 
 		// IDocumentableCommand
@@ -1284,61 +1315,69 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class SteppingCommand : ThreadCommand
 	{
-		bool in_background;
-		bool wait, has_wait;
+		ThreadingModel threading_model;
+		bool wait;
 
 		[Property ("in-background", "bg")]
 		public bool InBackground {
-			get { return in_background; }
-			set { in_background = value; }
+			get; set;
 		}
 
+		[Obsolete]
+		[Property ("wait")]
 		public bool Wait {
 			get { return wait; }
-			set {
-				has_wait = true;
-				wait = value;
-			}
+			set { wait = value; }
+		}
+
+		[Property ("single-thread", "single")]
+		public bool SingleThread {
+			get; set;
+		}
+
+		[Property ("entire-process", "process")]
+		public bool EntireProcess {
+			get; set;
 		}
 
 		protected override bool DoResolveBase (ScriptingContext context)
 		{
-			if (!has_wait) {
-				wait = context.Interpreter.DebuggerConfiguration.StayInThread;
-				has_wait = true;
+			threading_model = context.Interpreter.DebuggerConfiguration.ThreadingModel;
+			if (SingleThread && EntireProcess)
+				throw new ScriptingException ("Cannot use both `-single-thread' and `-entire-process'.");
+			if (wait) {
+				if (SingleThread || EntireProcess)
+					throw new ScriptingException ("Cannot use `-single-thread' or `-entire-process' together with `-wait'.");
+				threading_model &= ~ThreadingModel.ThreadingMode;
+				threading_model |= ThreadingModel.Single | ThreadingModel.ResumeThreads;
+			} else if (SingleThread) {
+				threading_model &= ~ThreadingModel.ThreadingMode;
+				threading_model |= ThreadingModel.Single;
+			} else if (EntireProcess) {
+				threading_model &= ~ThreadingModel.ThreadingMode;
+				threading_model |= ThreadingModel.Process;
 			}
 			return base.DoResolveBase (context);
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
-			Thread thread = CurrentThread;
-			ThreadCommandResult result = DoStep (thread, context);
-			if (in_background)
+			CommandResult result = DoStep (CurrentThread, threading_model, context);
+			if (InBackground)
 				return result;
 
-			if (context.Interpreter.DebuggerConfiguration.BrokenThreading) {
-				Thread ret = context.Interpreter.WaitAll (result.Thread, result, wait);
-				if (ret == null)
-					return null;
-
-				if (ret.IsAlive)
-					context.Interpreter.CurrentThread = ret;
-				return ret;
-			}
-
-			context.Interpreter.WaitOne (result.Thread);
-			return result.Thread;
+			context.Interpreter.Wait (result);
+			return result;
 		}
 
-		protected abstract ThreadCommandResult DoStep (Thread thread, ScriptingContext context);
+		protected abstract CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context);
 	}
 
 	public class ContinueCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
 		{
-			return thread.Continue ();
+			return thread.Step (model, StepMode.Run, null);
 		}
 
 		// IDocumentableCommand
@@ -1349,10 +1388,10 @@ namespace Mono.Debugger.Frontend
 
 	public class StepCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = false;
-			return thread.StepLine ();
+			return thread.Step (model, StepMode.SourceLine, null);
 		}
 
 		// IDocumentableCommand
@@ -1363,10 +1402,10 @@ namespace Mono.Debugger.Frontend
 
 	public class NextCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = false;
-			return thread.NextLine ();
+			return thread.Step (model, StepMode.NextLine, null);
 		}
 
 		// IDocumentableCommand
@@ -1384,13 +1423,10 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = true;
-			if (Native)
-				return thread.StepNativeInstruction ();
-			else
-				return thread.StepInstruction ();
+			return thread.Step (model, Native ? StepMode.NativeInstruction : StepMode.SingleInstruction, null);
 		}
 
 		// IDocumentableCommand
@@ -1401,10 +1437,10 @@ namespace Mono.Debugger.Frontend
 
 	public class NextInstructionCommand : SteppingCommand, IDocumentableCommand
 	{
-		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
 		{
 			context.Interpreter.Style.IsNative = true;
-			return thread.NextInstruction ();
+			return thread.Step (model, StepMode.NextInstruction, null);
 		}
 
 		// IDocumentableCommand
@@ -1422,7 +1458,7 @@ namespace Mono.Debugger.Frontend
 			set { native = value; }
 		}
 
-		protected override ThreadCommandResult DoStep (Thread thread, ScriptingContext context)
+		protected override CommandResult DoStep (Thread thread, ThreadingModel model, ScriptingContext context)
 		{
 			return thread.Finish (Native);
 		}
@@ -2057,8 +2093,8 @@ namespace Mono.Debugger.Frontend
 						       context.Interpreter.PrintProcess (process));
 					foreach (Thread proc in process.GetThreads ()) {
 						string prefix = proc.ID == current_id ? "(*)" : "   ";
-						context.Print ("{0} {1} ({2}:{3:x}) {4}", prefix, proc,
-							       proc.PID, proc.TID, proc.State);
+						context.Print ("{0} {1} ({2}:{3:x}) {4} {5}", prefix, proc,
+							       proc.PID, proc.TID, proc.State, proc.ThreadFlags);
 						printed_something = true;
 					}
 				}
@@ -3136,7 +3172,7 @@ namespace Mono.Debugger.Frontend
 
 				context.CurrentFrame = frame;
 
-				if (ExpressionParser.ParseLocation (context, Argument, out location))
+				if (context.Interpreter.ExpressionParser.ParseLocation (context, Argument, out location))
 					return true;
 			}
 
@@ -3647,10 +3683,6 @@ namespace Mono.Debugger.Frontend
 			Thread thread = CurrentThread;
 			thread.Return (mode);
 
-			TargetEventArgs args = thread.GetLastTargetEvent ();
-			if (args != null)
-				context.Interpreter.Style.TargetEvent (thread, args);
-
 			return null;
 		}
 
@@ -3721,6 +3753,12 @@ namespace Mono.Debugger.Frontend
 			set { expert_mode = value; }
 		}
 
+		void require_expert_mode ()
+		{
+			if (!expert_mode)
+				throw new ScriptingException ("This option is only available in expert mode.");
+		}
+
 		protected override bool DoResolve (ScriptingContext context)
 		{
 			DebuggerConfiguration config = context.Interpreter.DebuggerConfiguration;
@@ -3731,6 +3769,28 @@ namespace Mono.Debugger.Frontend
 			}
 
 			foreach (string arg in Args) {
+				if (arg.StartsWith ("threading-model=")) {
+					require_expert_mode ();
+					string arg1 = arg.Substring (16);
+					config.ThreadingModel &= ~ThreadingModel.ThreadingMode;
+					switch (arg1) {
+					case "single":
+						config.ThreadingModel |= ThreadingModel.Single;
+						break;
+					case "process":
+						config.ThreadingModel |= ThreadingModel.Process;
+						break;
+					case "global":
+						config.ThreadingModel |= ThreadingModel.Global;
+						break;
+					case "default":
+						break;
+					default:
+						throw new ScriptingException ("Invalid 'threading-model' option '{0}'.", arg1);
+					}
+					continue;
+				}
+
 				if ((arg [0] != '+') && (arg [0] != '-'))
 					throw new ScriptingException ("Expected `+option' or `-option'.");
 
@@ -3754,25 +3814,24 @@ namespace Mono.Debugger.Frontend
 					config.NestedBreakStates = enable;
 					break;
 
-				case "broken-threading":
-					if (!expert_mode)
-						throw new ScriptingException (
-							"This option is only available in expert mode.");
-
-					config.BrokenThreading = enable;
+				case "stop-daemon-threads":
+					require_expert_mode ();
+					if (enable)
+						config.ThreadingModel |= ThreadingModel.StopDaemonThreads;
+					else
+						config.ThreadingModel &= ~ThreadingModel.StopDaemonThreads;
 					break;
 
-				case "stay-in-thread":
-					if (!expert_mode)
-						throw new ScriptingException (
-							"This option is only available in expert mode.");
-
-					config.StayInThread = enable;
+				case "stop-immutable-threads":
+					require_expert_mode ();
+					if (enable)
+						config.ThreadingModel |= ThreadingModel.StopImmutableThreads;
+					else
+						config.ThreadingModel &= ~ThreadingModel.StopImmutableThreads;
 					break;
 
 				default:
-					throw new ScriptingException (
-						"No such configuration option `{0}'.", option);
+					throw new ScriptingException ("No such configuration option `{0}'.", option);
 				}
 			}
 

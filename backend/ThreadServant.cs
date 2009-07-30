@@ -36,8 +36,6 @@ namespace Mono.Debugger.Backend
 		protected readonly ThreadManager manager;
 		protected readonly ThreadGroup tgroup;
 
-		bool is_daemon;
-
 		protected internal Language NativeLanguage {
 			get { return process.NativeLanguage; }
 		}
@@ -89,23 +87,11 @@ namespace Mono.Debugger.Backend
 		}
 
 		public bool IsDaemon {
-			get { return is_daemon; }
+			get { return (thread.ThreadFlags & (Thread.Flags.Daemon | Thread.Flags.Immutable)) != 0; }
 		}
 
 		public ThreadGroup ThreadGroup {
 			get { return tgroup; }
-		}
-
-		internal void SetDaemon ()
-		{
-			is_daemon = true;
-			thread.SetThreadFlags (thread.ThreadFlags | Thread.Flags.Daemon | Thread.Flags.Immutable);
-		}
-
-		internal void SetManaged ()
-		{
-			is_daemon = false;
-			thread.SetThreadFlags (thread.ThreadFlags & ~(Thread.Flags.Daemon | Thread.Flags.Immutable));
 		}
 
 		public abstract TargetEventArgs LastTargetEvent {
@@ -150,39 +136,9 @@ namespace Mono.Debugger.Backend
 
 		public abstract Backtrace GetBacktrace (Backtrace.Mode mode, int max_frames);
 
-		// <summary>
-		//   Step one machine instruction, but don't step into trampolines.
-		// </summary>
-		public abstract void StepInstruction (CommandResult result);
+		public abstract CommandResult Step (ThreadingModel model, StepMode mode, StepFrame frame);
 
-		// <summary>
-		//   Step one machine instruction, always step into method calls.
-		// </summary>
-		public abstract void StepNativeInstruction (CommandResult result);
-
-		// <summary>
-		//   Step one machine instruction, but step over method calls.
-		// </summary>
-		public abstract void NextInstruction (CommandResult result);
-
-		// <summary>
-		//   Step one source line.
-		// </summary>
-		public abstract void StepLine (CommandResult result);
-
-		// <summary>
-		//   Step one source line, but step over method calls.
-		// </summary>
-		public abstract void NextLine (CommandResult result);
-
-		// <summary>
-		//   Continue until leaving the current method.
-		// </summary>
-		public abstract void Finish (bool native, CommandResult result);
-
-		public abstract void Continue (TargetAddress until, CommandResult result);
-
-		public abstract void Background (TargetAddress until, CommandResult result);
+		internal abstract ThreadCommandResult Old_Step (StepMode mode, StepFrame frame);
 
 		public abstract void Kill ();
 
@@ -191,6 +147,10 @@ namespace Mono.Debugger.Backend
 		internal abstract void DetachThread ();
 
 		public abstract void Stop ();
+
+		internal abstract void SuspendUserThread ();
+
+		internal abstract void ResumeUserThread (CommandResult result);
 
 		internal abstract object Invoke (TargetAccessDelegate func, object data);
 

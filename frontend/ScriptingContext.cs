@@ -286,7 +286,6 @@ namespace Mono.Debugger.Frontend
 				throw new EvaluationTimeoutException ();
 			}
 
-			Interpreter.CheckLastEvent (thread);
 			return result;
 		}
 

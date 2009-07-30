@@ -198,7 +198,7 @@ namespace Mono.Debugger.Backend
 					engine, inferior, ref cevent, out resume_target);
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
-			     (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
+			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
 				engine.OnThreadExited (cevent);
@@ -245,7 +245,7 @@ namespace Mono.Debugger.Backend
 				return command.Result;
 		}
 
-		public ProcessServant StartApplication (ProcessStart start)
+		public ProcessServant StartApplication (ProcessStart start, out CommandResult result)
 		{
 			Command command = new Command (CommandType.CreateProcess, start);
 
@@ -264,8 +264,11 @@ namespace Mono.Debugger.Backend
 
 			if (command.Result is Exception)
 				throw (Exception) command.Result;
-			else
-				return (ProcessServant) command.Result;
+			else {
+				var pair = (KeyValuePair<CommandResult,ProcessServant>) command.Result;
+				result = pair.Key;
+				return pair.Value;
+			}
 		}
 
 		internal void AddPendingEvent (SingleSteppingEngine engine, Inferior.ChildEvent cevent)
@@ -361,11 +364,11 @@ namespace Mono.Debugger.Backend
 					ProcessServant process = new ProcessServant (this, start);
 					processes.Add (process);
 
-					process.StartApplication ();
+					CommandResult result = process.StartApplication ();
 
 					RequestWait ();
 
-					command.Result = process;
+					command.Result = new KeyValuePair<CommandResult,ProcessServant> (result, process);
 				} catch (ST.ThreadAbortException) {
 					return;
 				} catch (Exception ex) {

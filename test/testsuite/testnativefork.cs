@@ -14,8 +14,7 @@ namespace Mono.Debugger.Tests
 		public testnativefork ()
 			: base ("testnativefork", "testnativefork.c")
 		{
-			Config.BrokenThreading = false;
-			Config.StayInThread = true;
+			Config.ThreadingModel = ThreadingModel.Single;
 		}
 
 		const int LineMain = 12;
@@ -29,6 +28,7 @@ namespace Mono.Debugger.Tests
 		{
 			base.SetUp ();
 			Config.FollowFork = true;
+			Config.ThreadingModel = ThreadingModel.Single;
 
 			bpt_child = AssertBreakpoint (String.Format ("-global {0}:{1}", FileName, LineChild));
 			bpt_waitpid = AssertBreakpoint (String.Format ("-local {0}:{1}", FileName, LineWaitpid + 1));
@@ -215,7 +215,7 @@ namespace Mono.Debugger.Tests
 			AssertPrint (child, "pid", "(pid_t) 0");
 
 			AssertExecute ("background -thread " + child.ID);
-			AssertExecute ("continue -wait");
+			AssertExecute ("continue -wait -thread " + thread.ID);
 
 			bool exited = false;
 			bool child_exited = false;

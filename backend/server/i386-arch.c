@@ -1334,3 +1334,16 @@ server_ptrace_get_callback_frame (ServerHandle *handle, guint64 stack_pointer,
 
 	return COMMAND_ERROR_NO_CALLBACK_FRAME;
 }
+
+static ServerCommandError
+server_ptrace_restart_notification (ServerHandle *handle)
+{
+	ServerCommandError result;
+
+	if (!handle->mono_runtime ||
+	    (INFERIOR_REG_EIP (handle->arch->current_regs) - 1 != handle->mono_runtime->notification_address))
+		return COMMAND_ERROR_INTERNAL_ERROR;
+
+	INFERIOR_REG_EIP (handle->arch->current_regs)--;
+	return _server_ptrace_set_registers (handle->inferior, &handle->arch->current_regs);
+}

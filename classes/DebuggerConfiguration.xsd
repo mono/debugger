@@ -11,8 +11,17 @@
       <xs:element name="NestedBreakStates" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="RedirectOutput" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="Martin_Boston_07102008" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="StopDaemonThreads" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="StopImmutableThreads" type="xs:boolean" minOccurs="0" maxOccurs="1" />
+      <xs:element name="ThreadingModel" type="ThreadingModel" minOccurs="0" maxOccurs="1" />
     </xs:choice>
   </xs:complexType>
+  <xs:simpleType name="ThreadingModel">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="single"/>
+      <xs:enumeration value="process"/>
+    </xs:restriction>
+  </xs:simpleType>
   <xs:complexType name="Options">
     <xs:choice maxOccurs="unbounded">
       <xs:element name="File" type="xs:string" minOccurs="1" />

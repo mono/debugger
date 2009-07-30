@@ -15,7 +15,7 @@ using Mono.Debugger.Languages.Mono;
 
 namespace Mono.Debugger.Backend
 {
-	internal class ProcessServant : DebuggerMarshalByRefObject
+	internal class ProcessServant : DebuggerMarshalByRefObject, IOperationHost
 	{
 		Process client;
 		TargetInfo target_info;
@@ -32,6 +32,8 @@ namespace Mono.Debugger.Backend
 		protected MonoLanguageBackend mono_language;
 		protected ThreadServant main_thread;
 		Hashtable thread_hash;
+
+		ProcessServant parent;
 
 		ThreadDB thread_db;
 
@@ -52,6 +54,8 @@ namespace Mono.Debugger.Backend
 			this.client = manager.Debugger.Client.CreateProcess (this);
 
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
+
+			stopped_event = new ST.ManualResetEvent (false);
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 
@@ -88,6 +92,8 @@ namespace Mono.Debugger.Backend
 
 			this.is_forked = true;
 			this.initialized = true;
+
+			this.parent = parent;
 
 			breakpoint_manager = new BreakpointManager (parent.breakpoint_manager);
 
@@ -183,6 +189,10 @@ namespace Mono.Debugger.Backend
 			get { return start.CommandLineArguments; }
 		}
 
+		internal ST.WaitHandle WaitHandle {
+			get { return stopped_event; }
+		}
+
 		internal void ThreadCreated (Inferior inferior, int pid, bool do_attach, bool resume_thread)
 		{
 			Inferior new_inferior = inferior.CreateThread (pid, do_attach);
@@ -198,7 +208,11 @@ namespace Mono.Debugger.Backend
 				get_thread_info (inferior, new_thread);
 			OnThreadCreatedEvent (new_thread);
 
-			new_thread.StartThread (resume_thread);
+			if (resume_thread) {
+				CommandResult result = current_operation != null ?
+					current_operation : new ThreadCommandResult (new_thread.Thread);
+				new_thread.StartThread (result);
+			}
 		}
 
 		internal void ChildForked (Inferior inferior, int pid)
@@ -224,7 +238,8 @@ namespace Mono.Debugger.Backend
 			manager.Debugger.OnProcessCreatedEvent (new_process);
 			new_process.OnThreadCreatedEvent (new_thread);
 
-			new_thread.StartForkedChild ();
+			CommandResult result = new_process.CloneParentOperation (new_thread);
+			new_thread.StartForkedChild (result);
 		}
 
 		internal void ChildExecd (Inferior inferior)
@@ -248,7 +263,7 @@ namespace Mono.Debugger.Backend
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
 
-			session = session.Clone (start.Options, "@" + id);
+			session = session.Clone (client, start.Options, "@" + id);
 			session.OnProcessCreated (client);
 
 			breakpoint_manager = new BreakpointManager ();
@@ -261,7 +276,7 @@ namespace Mono.Debugger.Backend
 			native_language = new NativeLanguage (this, os, target_info);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
-			new_inferior.InitializeThread (inferior.PID);
+			new_inferior.InitializeAfterExec (inferior.PID);
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, inferior.PID);
@@ -285,17 +300,20 @@ namespace Mono.Debugger.Backend
 			manager.Debugger.OnProcessExecdEvent (this);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
 			initialized = is_forked = false;
+			main_thread = new_thread;
 
-			new_thread.StartApplication ();
+			CommandResult result = CloneParentOperation (new_thread);
+			new_thread.StartExecedChild (result);
 		}
 
-		internal void StartApplication ()
+		internal CommandResult StartApplication ()
 		{
 			SingleSteppingEngine engine = new SingleSteppingEngine (manager, this, start);
 
 			initialized = true;
 
 			this.main_thread = engine;
+			engine.Thread.ThreadFlags |= Thread.Flags.StopOnExit;
 
 			if (thread_hash.Contains (engine.PID))
 				thread_hash [engine.PID] = engine;
@@ -306,14 +324,23 @@ namespace Mono.Debugger.Backend
 			session.OnMainProcessCreated (client);
 			manager.Debugger.OnMainProcessCreatedEvent (this);
 
-			engine.StartApplication ();
+			CommandResult result = Debugger.StartOperation (start.Session.Config.ThreadingModel, engine);
+			return engine.StartApplication (result);
 		}
 
 		internal void OnProcessExitedEvent ()
 		{
+			DropGlobalThreadLock ();
+
+			if (current_state == ProcessState.Running) {
+				current_state = ProcessState.Exited;
+				current_operation.Completed ();
+				current_operation = null;
+				stopped_event.Set ();
+			}
+
 			if (!is_forked)
 				session.OnProcessExited (client);
-			client.OnProcessExited ();
 			session.MainThreadGroup.RemoveThread (main_thread.ID);
 			manager.Debugger.OnProcessExitedEvent (this);
 		}
@@ -641,9 +668,202 @@ namespace Mono.Debugger.Backend
 			if (thread_hash.Count != 0)
 				throw new InternalError ();
 
-			has_thread_lock = false;
-			thread_lock_mutex.Unlock ();
+			if (has_thread_lock) {
+				has_thread_lock = false;
+				thread_lock_mutex.Unlock ();
+			}
 		}
+
+#region User Threads
+
+		internal enum ProcessState
+		{
+			SingleThreaded,
+			Running,
+			Stopping,
+			Stopped,
+			Exited
+		}
+
+		protected ST.ManualResetEvent stopped_event;
+
+		ProcessState current_state = ProcessState.Stopped;
+		OperationCommandResult current_operation = null;
+
+		public void OperationCompleted (SingleSteppingEngine caller, TargetEventArgs result, ThreadingModel model)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			if (current_state == ProcessState.Stopping)
+				return;
+			else if (current_state != ProcessState.Running)
+				throw new InternalError ();
+
+			if ((result != null) && (caller != main_thread) &&
+			    ((result.Type == TargetEventType.TargetExited) || (result.Type == TargetEventType.TargetSignaled)))
+				return;
+
+			current_state = ProcessState.Stopping;
+			SuspendUserThreads (model, caller);
+
+			lock (this) {
+				current_state = ProcessState.Stopped;
+				current_operation.Completed ();
+				current_operation = null;
+				stopped_event.Set ();
+			}
+		}
+
+		protected void SuspendUserThreads (ThreadingModel model, SingleSteppingEngine caller)
+		{
+			Report.Debug (DebugFlags.Threads,
+				      "Suspending user threads: {0} {1}", model, caller);
+
+			foreach (SingleSteppingEngine engine in thread_hash.Values) {
+				Report.Debug (DebugFlags.Threads, "  check user thread: {0} {1}",
+					      engine, engine.Thread.ThreadFlags);
+				if (engine == caller)
+					continue;
+				if (((engine.Thread.ThreadFlags & Thread.Flags.Immutable) != 0) &&
+				    ((model & ThreadingModel.StopImmutableThreads) == 0))
+					continue;
+				if (((engine.Thread.ThreadFlags & Thread.Flags.Daemon) != 0) &&
+				    ((model & ThreadingModel.StopDaemonThreads) == 0))
+					continue;
+				engine.SuspendUserThread ();
+			}
+
+			Report.Debug (DebugFlags.Threads,
+				      "Done suspending user threads: {0} {1}", model, caller);
+		}
+
+		protected void ResumeUserThreads (ThreadingModel model, SingleSteppingEngine caller)
+		{
+			Report.Debug (DebugFlags.Threads,
+				      "Resuming user threads: {0}", caller);
+
+			foreach (SingleSteppingEngine engine in thread_hash.Values) {
+				if (engine == caller)
+					continue;
+				if ((engine.Thread.ThreadFlags & Thread.Flags.AutoRun) == 0)
+					continue;
+				if (((engine.Thread.ThreadFlags & Thread.Flags.Immutable) != 0) &&
+				    ((model & ThreadingModel.StopImmutableThreads) == 0))
+					continue;
+				if (((engine.Thread.ThreadFlags & Thread.Flags.Daemon) != 0) &&
+				    ((model & ThreadingModel.StopDaemonThreads) == 0))
+					continue;
+
+				CommandResult result;
+				if (current_operation != null)
+					result = current_operation;
+				else
+					result = new ThreadCommandResult (engine.Thread);
+
+				engine.ResumeUserThread (result);
+			}
+
+			Report.Debug (DebugFlags.Threads,
+				      "Resumed user threads: {0}", caller);
+		}
+
+		internal CommandResult StartOperation (ThreadingModel model, SingleSteppingEngine caller)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			if ((current_state != ProcessState.Stopped) && (current_state != ProcessState.SingleThreaded))
+				throw new TargetException (TargetError.NotStopped);
+
+			if ((model & ThreadingModel.ThreadingMode) == ThreadingModel.Single) {
+				current_state = ProcessState.SingleThreaded;
+				if ((model & ThreadingModel.ResumeThreads) != 0)
+					ResumeUserThreads (model, caller);
+				return new ThreadCommandResult (caller.Thread);
+			} else if ((model & ThreadingModel.ThreadingMode) != ThreadingModel.Process) {
+				throw new ArgumentException ();
+			}
+
+			lock (this) {
+				current_state = ProcessState.Running;
+				stopped_event.Reset ();
+				current_operation = new OperationCommandResult (this, model);
+			}
+
+			ResumeUserThreads (model, caller);
+			return current_operation;
+		}
+
+		internal void StartGlobalOperation (ThreadingModel model, SingleSteppingEngine caller, OperationCommandResult operation)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			if ((current_state != ProcessState.Stopped) && (current_state != ProcessState.SingleThreaded))
+				throw new TargetException (TargetError.NotStopped);
+
+			lock (this) {
+				current_state = ProcessState.Running;
+				stopped_event.Reset ();
+				current_operation = operation;
+			}
+
+			ResumeUserThreads (model, caller);
+		}
+
+		protected CommandResult CloneParentOperation (SingleSteppingEngine new_thread)
+		{
+			if (parent.current_state == ProcessState.SingleThreaded) {
+				current_state = ProcessState.SingleThreaded;
+				return new ThreadCommandResult (new_thread.Thread);
+			}
+
+			if (parent.current_state != ProcessState.Running)
+				throw new InternalError ();
+
+			current_state = ProcessState.Running;
+			if ((parent.current_operation.ThreadingModel & ThreadingModel.ThreadingMode) == ThreadingModel.Global)
+				current_operation = parent.current_operation;
+			else if ((parent.current_operation.ThreadingModel & ThreadingModel.ThreadingMode) == ThreadingModel.Process)
+				current_operation = new OperationCommandResult (this, parent.current_operation.ThreadingModel);
+			else
+				throw new InternalError ();
+
+			return current_operation;
+		}
+
+		internal void Stop ()
+		{
+			main_thread.Invoke (delegate {
+				current_state = ProcessState.Stopping;
+
+				SuspendUserThreads (ThreadingModel.Process, null);
+				current_state = ProcessState.Stopped;
+				if (current_operation != null) {
+					current_operation.Completed ();
+					current_operation = null;
+				}
+				stopped_event.Set ();
+				return null;
+			}, null);
+		}
+
+		ST.WaitHandle IOperationHost.WaitHandle {
+			get { return stopped_event; }
+		}
+
+		void IOperationHost.SendResult (SingleSteppingEngine sse, TargetEventArgs args)
+		{
+			Debugger.SendTargetEvent (sse, args);
+		}
+
+		void IOperationHost.Abort ()
+		{
+			Stop ();
+		}
+
+#endregion
 
 		public void ActivatePendingBreakpoints (CommandResult result)
 		{
@@ -672,25 +892,6 @@ namespace Mono.Debugger.Backend
 
 		internal ExceptionCatchPoint[] ExceptionCatchPoints {
 			get { return exception_handlers.Values.ToArray (); }
-		}
-
-		//
-		// Stopping / resuming all threads for the GUI
-		//
-
-		internal void OnTargetEvent (SingleSteppingEngine sse, TargetEventArgs args)
-		{
-			client.OnTargetEvent (sse, args);
-		}
-
-		internal void OnEnterNestedBreakState (SingleSteppingEngine sse)
-		{
-			client.OnEnterNestedBreakState (sse);
-		}
-
-		internal void OnLeaveNestedBreakState (SingleSteppingEngine sse)
-		{
-			client.OnLeaveNestedBreakState (sse);
 		}
 
 		//

@@ -166,7 +166,8 @@ struct InferiorVTable {
 	ServerCommandError    (* initialize_process)  (ServerHandle       *handle);
 
 	ServerCommandError    (* initialize_thread)   (ServerHandle       *handle,
-						       guint32             pid);
+						       guint32             pid,
+						       gboolean            wait);
 
 	void                  (* set_runtime_info)    (ServerHandle       *handle,
 						       MonoRuntimeInfo    *mono_runtime_info);
@@ -431,6 +432,8 @@ struct InferiorVTable {
 						       gboolean           exact_match,
 						       CallbackInfo      *info);
 
+	ServerCommandError    (* restart_notification) (ServerHandle      *handle);
+
 	void         (* get_registers_from_core_file) (guint64           *values,
 						       const guint8      *buffer);
 
@@ -476,7 +479,8 @@ mono_debugger_server_initialize_process   (ServerHandle       *handle);
 
 ServerCommandError
 mono_debugger_server_initialize_thread    (ServerHandle       *handle,
-					   guint32             pid);
+					   guint32             pid,
+					   gboolean            wait);
 
 void
 mono_debugger_server_io_thread_main       (IOThreadData       *io_data,
@@ -697,6 +701,9 @@ mono_debugger_server_get_callback_frame  (ServerHandle        *handle,
 					  guint64              stack_pointer,
 					  gboolean             exact_match,
 					  CallbackInfo        *info);
+
+ServerCommandError
+mono_debugger_server_restart_notification (ServerHandle        *handle);
 
 MonoRuntimeInfo *
 mono_debugger_server_initialize_mono_runtime (guint32 address_size,

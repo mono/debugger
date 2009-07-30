@@ -44,13 +44,16 @@ namespace Mono.Debugger
 
 		public bool LoadConfiguration()
 		{
-			try {
-				if (!Directory.Exists (ConfigDirectory))
-					Directory.CreateDirectory (ConfigDirectory);
+			string config_file = Path.Combine (ConfigDirectory, ConfigFileName);
+			if (!File.Exists (config_file))
+				return false;
 
-				LoadConfigurationFromStream (Path.Combine (ConfigDirectory, ConfigFileName));
+			try {
+				LoadConfigurationFromStream (config_file);
 				return true;
-			} catch {
+			} catch (Exception ex) {
+				Console.WriteLine ("FUCK: {0}", ex);
+				Report.Error ("Failed to load configuration file {0}: {1}", config_file, ex.Message);
 				return false;
 			}
 		}
@@ -71,7 +74,6 @@ namespace Mono.Debugger
 		public void SetupXSP ()
 		{
 			stay_in_thread = false;
-			broken_threading = true;
 			load_native_symtabs = false;
 			follow_fork = false;
 			notify_thread_creation = false;
@@ -103,11 +105,9 @@ namespace Mono.Debugger
 			while (iter.MoveNext ()) {
 				if (iter.Current.Name == "LoadNativeSymtabs")
 					LoadNativeSymtabs = Boolean.Parse (iter.Current.Value);
-				else if (iter.Current.Name == "BrokenThreading")
-					BrokenThreading = Boolean.Parse (iter.Current.Value);
-				else if (iter.Current.Name == "StayInThread")
-					StayInThread = Boolean.Parse (iter.Current.Value);
-				else if (iter.Current.Name == "FollowFork")
+				else if (iter.Current.Name == "StayInThread") {
+					; // ignore, this is no longer in use.
+				} else if (iter.Current.Name == "FollowFork")
 					FollowFork = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "OpaqueFileNames")
 					OpaqueFileNames = Boolean.Parse (iter.Current.Value);
@@ -117,10 +117,41 @@ namespace Mono.Debugger
 					NestedBreakStates = Boolean.Parse (iter.Current.Value);
 				else if (iter.Current.Name == "RedirectOutput")
 					RedirectOutput = Boolean.Parse (iter.Current.Value);
-				else if (iter.Current.Name == "Martin_Boston_07102008")
-					; // ignore, this is no longer uses.
-				else
-					throw new InvalidOperationException ();
+				else if (iter.Current.Name == "Martin_Boston_07102008") {
+					; // ignore, this is no longer in use.
+				} else if (iter.Current.Name == "BrokenThreading") {
+					; // ignore, this is no longer in use.
+				} else if (iter.Current.Name == "StopDaemonThreads") {
+					if (Boolean.Parse (iter.Current.Value))
+						threading_model |= ThreadingModel.StopDaemonThreads;
+					else
+						threading_model &= ~ThreadingModel.StopDaemonThreads;
+				} else if (iter.Current.Name == "StopImmutableThreads") {
+					if (Boolean.Parse (iter.Current.Value))
+						threading_model |= ThreadingModel.StopImmutableThreads;
+					else
+						threading_model &= ~ThreadingModel.StopImmutableThreads;
+				} else if (iter.Current.Name == "ThreadingModel") {
+					switch (iter.Current.Value.ToLower ()) {
+					case "single":
+						threading_model |= ThreadingModel.Single;
+						break;
+					case "process":
+						threading_model |= ThreadingModel.Process;
+						break;
+					case "global":
+						threading_model |= ThreadingModel.Global;
+						break;
+					case "default":
+						break;
+					default:
+						throw new ArgumentException (String.Format (
+							"Invalid value `{0}' in 'ThreadingModel'", iter.Current.Value));
+					}
+				} else {
+					throw new ArgumentException (String.Format (
+						"Invalid configuration item `{0}'", iter.Current.Name));
+				}
 			}
 
 			iter = nav.Select ("/DebuggerConfiguration/ModuleGroups/ModuleGroup");
@@ -151,14 +182,6 @@ namespace Mono.Debugger
 				load_native_symtabs_e.InnerText = LoadNativeSymtabs ? "true" : "false";
 				element.AppendChild (load_native_symtabs_e);
 
-				XmlElement broken_threading_e = doc.CreateElement ("BrokenThreading");
-				broken_threading_e.InnerText = BrokenThreading ? "true" : "false";
-				element.AppendChild (broken_threading_e);
-
-				XmlElement stay_in_thread_e = doc.CreateElement ("StayInThread");
-				stay_in_thread_e.InnerText = StayInThread ? "true" : "false";
-				element.AppendChild (stay_in_thread_e);
-
 				XmlElement follow_fork_e = doc.CreateElement ("FollowFork");
 				follow_fork_e.InnerText = FollowFork ? "true" : "false";
 				element.AppendChild (follow_fork_e);
@@ -179,6 +202,31 @@ namespace Mono.Debugger
 				redirect_output_e.InnerText = RedirectOutput ? "true" : "false";
 				element.AppendChild (redirect_output_e);
 
+				XmlElement stop_daemon_threads_e = doc.CreateElement ("StopDaemonThreads");
+				stop_daemon_threads_e.InnerText = (ThreadingModel & ThreadingModel.StopDaemonThreads) != 0 ? "true" : "false";
+				element.AppendChild (stop_daemon_threads_e);
+
+				XmlElement stop_immutable_threads_e = doc.CreateElement ("StopImmutableThreads");
+				stop_immutable_threads_e.InnerText = (ThreadingModel & ThreadingModel.StopImmutableThreads) != 0 ? "true" : "false";
+				element.AppendChild (stop_immutable_threads_e);
+
+				XmlElement threading_model_e = doc.CreateElement ("ThreadingModel");
+				switch (threading_model & ThreadingModel.ThreadingMode) {
+				case ThreadingModel.Single:
+					threading_model_e.InnerText = "single";
+					break;
+				case ThreadingModel.Process:
+					threading_model_e.InnerText = "process";
+					break;
+				case ThreadingModel.Global:
+					threading_model_e.InnerText = "global";
+					break;
+				default:
+					threading_model_e.InnerText = "default";
+					break;
+				}
+				element.AppendChild (threading_model_e);
+
 				XmlElement module_groups = doc.CreateElement ("ModuleGroups");
 				doc.DocumentElement.AppendChild (module_groups);
 
@@ -189,8 +237,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		bool stay_in_thread = false;
-		bool broken_threading = true;
+		bool stay_in_thread = true;
 		bool load_native_symtabs = false;
 		bool follow_fork = false;
 		bool notify_thread_creation = true;
@@ -200,6 +247,7 @@ namespace Mono.Debugger
 		bool nested_break_states = false;
 		bool redirect_output = false;
 		bool is_xsp = false;
+		ThreadingModel threading_model = ThreadingModel.Default;
 		Hashtable module_groups;
 		Dictionary<string,string> directory_maps;
 
@@ -289,14 +337,21 @@ namespace Mono.Debugger
 			set { load_native_symtabs = value; }
 		}
 
+		[Obsolete]
 		public bool StayInThread {
-			get { return stay_in_thread; }
-			set { stay_in_thread = value; }
+			get { return false; }
+			set { ; }
 		}
 
+		[Obsolete]
 		public bool BrokenThreading {
-			get { return broken_threading; }
-			set { broken_threading = value; }
+			get { return false; }
+			set { ; }
+		}
+
+		public ThreadingModel ThreadingModel {
+			get { return threading_model; }
+			set { threading_model = value; }
 		}
 
 		public bool FollowFork {
@@ -367,10 +422,26 @@ namespace Mono.Debugger
 
 			if (expert_mode) {
 				sb.Append ("\nExpert Settings:\n");
-				sb.Append (String.Format ("  Broken threading (broken-threading):   {0}\n",
-							  BrokenThreading ? "enabled" : "disabled"));
-				sb.Append (String.Format ("  Stay in thread (stay-in-thread):       {0}\n",
-							  BrokenThreading ? "yes" : "no"));
+				string threading_mode;
+				switch (ThreadingModel & ThreadingModel.ThreadingMode) {
+				case ThreadingModel.Single:
+					threading_mode = "single";
+					break;
+				case ThreadingModel.Process:
+					threading_mode = "process";
+					break;
+				case ThreadingModel.Global:
+					threading_mode = "global";
+					break;
+				default:
+					threading_mode = "default";
+					break;
+				}
+				sb.Append (String.Format ("  Threading Model (threading-model):     {0}\n", threading_mode));
+				sb.Append (String.Format ("  Stop Daemon Threads (stop-daemon):     {0}\n",
+							  (ThreadingModel & ThreadingModel.StopDaemonThreads) != 0 ? "yes" : "no"));
+				sb.Append (String.Format ("  Stop Daemon Threads (stop-immutable):  {0}\n",
+							  (ThreadingModel & ThreadingModel.StopImmutableThreads) != 0 ? "yes" : "no"));
 			}
 			return sb.ToString ();
 		}

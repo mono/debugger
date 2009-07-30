@@ -254,14 +254,17 @@ GStaticMutex wait_mutex_2 = G_STATIC_MUTEX_INIT;
 GStaticMutex wait_mutex_3 = G_STATIC_MUTEX_INIT;
 
 static int
-do_wait (int pid, guint32 *status)
+do_wait (int pid, guint32 *status, gboolean nohang)
 {
-	int ret;
+	int ret, flags;
 
 #if DEBUG_WAIT
-	g_message (G_STRLOC ": do_wait (%d)", pid);
+	g_message (G_STRLOC ": do_wait (%d%s)", pid, nohang ? ",nohang" : "");
 #endif
-	ret = waitpid (pid, status, WUNTRACED | __WALL | __WCLONE);
+	flags = WUNTRACED | __WALL | __WCLONE;
+	if (nohang)
+		flags |= WNOHANG;
+	ret = waitpid (pid, status, flags);
 #if DEBUG_WAIT
 	g_message (G_STRLOC ": do_wait (%d) finished: %d - %x", pid, ret, *status);
 #endif
@@ -287,7 +290,7 @@ server_ptrace_global_wait (guint32 *status_ret)
 
  again:
 	g_static_mutex_lock (&wait_mutex);
-	ret = do_wait (-1, &status);
+	ret = do_wait (-1, &status, FALSE);
 	if (ret <= 0)
 		goto out;
 
@@ -342,15 +345,6 @@ _server_ptrace_wait_for_new_thread (ServerHandle *handle)
 		/* This should never happen, but let's not deadlock here. */
 		g_warning (G_STRLOC ": Can't lock mutex: %d", handle->inferior->pid);
 		return FALSE;
-	}
-
-	/*
-	 * If the call succeeds, then we're already stopped.
-	 */
-
-	if (x86_arch_get_registers (handle) == COMMAND_ERROR_NONE) {
-		g_static_mutex_unlock (&wait_mutex);
-		return TRUE;
 	}
 
 	/*
@@ -415,6 +409,7 @@ static ServerCommandError
 server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 {
 	ServerCommandError result;
+	gboolean already_stopped = FALSE;
 	int ret;
 
 	/*
@@ -426,10 +421,16 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 #endif
 	g_static_mutex_lock (&wait_mutex_2);
 	result = server_ptrace_stop (handle);
-	if (result != COMMAND_ERROR_NONE) {
+	if (result == COMMAND_ERROR_ALREADY_STOPPED) {
+#if DEBUG_WAIT
+		g_message (G_STRLOC ": %d - already stopped", handle->inferior->pid);
+#endif
+		already_stopped = TRUE;
+	} else if (result != COMMAND_ERROR_NONE) {
 #if DEBUG_WAIT
 		g_message (G_STRLOC ": %d - cannot stop %d", handle->inferior->pid, result);
 #endif
+
 		g_static_mutex_unlock (&wait_mutex_2);
 		return result;
 	}
@@ -440,7 +441,8 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 	g_static_mutex_unlock (&wait_mutex_2);
 
 #if DEBUG_WAIT
-	g_message (G_STRLOC ": %d - sent SIGSTOP", handle->inferior->pid);
+	if (!already_stopped)
+		g_message (G_STRLOC ": %d - sent SIGSTOP", handle->inferior->pid);
 #endif
 
 	g_static_mutex_lock (&wait_mutex);
@@ -461,7 +463,7 @@ server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 #if DEBUG_WAIT
 		g_message (G_STRLOC ": %d - waiting", handle->inferior->pid);
 #endif
-		ret = do_wait (handle->inferior->pid, status);
+		ret = do_wait (handle->inferior->pid, status, already_stopped);
 #if DEBUG_WAIT
 		g_message (G_STRLOC ": %d - done waiting %d, %x",
 			   handle->inferior->pid, ret, status);
@@ -684,7 +686,7 @@ server_ptrace_detach_after_fork (ServerHandle *handle)
 	 * Make sure we're stopped.
 	 */
 	if (x86_arch_get_registers (handle) != COMMAND_ERROR_NONE)
-		do_wait (handle->inferior->pid, &status);
+		do_wait (handle->inferior->pid, &status, FALSE);
 
 	result = x86_arch_get_registers (handle);
 	if (result != COMMAND_ERROR_NONE)

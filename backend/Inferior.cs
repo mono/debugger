@@ -65,7 +65,7 @@ namespace Mono.Debugger.Backend
 		static extern TargetError mono_debugger_server_initialize_process (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
-		static extern TargetError mono_debugger_server_initialize_thread (IntPtr handle, int child_pid);
+		static extern TargetError mono_debugger_server_initialize_thread (IntPtr handle, int child_pid, bool wait);
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_io_thread_main (IntPtr io_data, ChildOutputHandler output_handler);
@@ -191,6 +191,9 @@ namespace Mono.Debugger.Backend
 
 		[DllImport("monodebuggerserver")]
 		static extern TargetError mono_debugger_server_get_callback_frame (IntPtr handle, long stack_pointer, bool exact_match, IntPtr info);
+
+		[DllImport("monodebuggerserver")]
+		static extern TargetError mono_debugger_server_restart_notification (IntPtr handle);
 
 		[DllImport("monodebuggerserver")]
 		static extern void mono_debugger_server_set_runtime_info (IntPtr handle, IntPtr mono_runtime_info);
@@ -603,6 +606,11 @@ namespace Mono.Debugger.Backend
 				server_handle, breakpoint));
 		}
 
+		public void RestartNotification ()
+		{
+			check_error (mono_debugger_server_restart_notification (server_handle));
+		}
+
 		public ProcessStart ProcessStart {
 			get {
 				return start;
@@ -668,7 +676,22 @@ namespace Mono.Debugger.Backend
 
 			initialized = true;
 
-			check_error (mono_debugger_server_initialize_thread (server_handle, pid));
+			check_error (mono_debugger_server_initialize_thread (server_handle, pid, true));
+			this.child_pid = pid;
+
+			SetupInferior ();
+
+			change_target_state (TargetState.Stopped, 0);
+		}
+
+		public void InitializeAfterExec (int pid)
+		{
+			if (initialized)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			initialized = true;
+
+			check_error (mono_debugger_server_initialize_thread (server_handle, pid, false));
 			this.child_pid = pid;
 
 			SetupInferior ();
@@ -678,7 +701,7 @@ namespace Mono.Debugger.Backend
 
 		public void Attach (int pid)
 		{
-			if (has_target)
+			if (has_target || initialized)
 				throw new TargetException (TargetError.AlreadyHaveTarget);
 
 			has_target = true;
@@ -692,7 +715,9 @@ namespace Mono.Debugger.Backend
 
 			start.SetupApplication (exe_file, cwd, cmdline_args);
 
-			InitializeThread (pid);
+			initialized = true;
+
+			SetupInferior ();
 
 			change_target_state (TargetState.Stopped, 0);
 		}
@@ -732,6 +757,7 @@ namespace Mono.Debugger.Backend
 			case ChildEventType.CHILD_STOPPED:
 			case ChildEventType.CHILD_INTERRUPTED:
 			case ChildEventType.CHILD_HIT_BREAKPOINT:
+			case ChildEventType.CHILD_NOTIFICATION:
 				change_target_state (TargetState.Stopped);
 				break;
 

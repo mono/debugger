@@ -14,8 +14,7 @@ namespace Mono.Debugger.Tests
 		public TestAppDomain ()
 			: base ("TestAppDomain")
 		{
-			Config.BrokenThreading = false;
-			Config.StayInThread = true;
+			Config.ThreadingModel = ThreadingModel.Single;
 		}
 
 		public override void SetUp ()

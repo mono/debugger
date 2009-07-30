@@ -239,18 +239,20 @@ namespace Mono.Debugger.Backend
 			sse.Inferior.SetRuntimeInfo (mono_runtime_info);
 			if (!MonoDebuggerInfo.CheckRuntimeVersion (81, 3) && !process.IsAttached) {
 				if (++index < 3)
-					sse.SetDaemon ();
+					sse.Thread.ThreadFlags |= Thread.Flags.Daemon | Thread.Flags.Immutable;
 			} else {
-				sse.SetDaemon ();
+				sse.Thread.ThreadFlags |= Thread.Flags.Daemon | Thread.Flags.Immutable;
 			}
 		}
 
 		void check_thread_flags (SingleSteppingEngine engine, ThreadFlags flags)
 		{
 			if ((flags & (ThreadFlags.Internal | ThreadFlags.ThreadPool)) != ThreadFlags.Internal) {
-				engine.SetManaged ();
+				engine.Thread.ThreadFlags &= ~(Thread.Flags.Daemon | Thread.Flags.Immutable);
 				if (engine != process.MainThread)
 					process.Debugger.Client.OnManagedThreadCreatedEvent (engine.Thread);
+			} else if ((flags & ThreadFlags.ThreadPool) != 0) {
+				engine.Thread.ThreadFlags &= ~Thread.Flags.Immutable;
 			}
 		}
 

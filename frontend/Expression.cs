@@ -14,7 +14,13 @@ namespace Mono.Debugger.Frontend
 {
 	public class ExpressionParser : IExpressionParser
 	{
-		public readonly Interpreter Interpreter;
+		public DebuggerSession Session {
+			get; internal set;
+		}
+
+		public Interpreter Interpreter {
+			get; private set;
+		}
 
 		private readonly CSharp.ExpressionParser parser;
 
@@ -23,6 +29,13 @@ namespace Mono.Debugger.Frontend
 			this.Interpreter = interpreter;
 
 			parser = new CSharp.ExpressionParser ("C#");
+		}
+
+		public IExpressionParser Clone (DebuggerSession session)
+		{
+			ExpressionParser parser = new ExpressionParser (Interpreter);
+			parser.Session = session;
+			return parser;
 		}
 
 		/*
@@ -42,10 +55,10 @@ namespace Mono.Debugger.Frontend
 			return new MyExpression (this, parser.Parse (text));
 		}
 
-		protected static SourceLocation FindFile (ScriptingContext context, string filename,
-							  int line)
+		protected SourceLocation FindFile (ScriptingContext context, string filename,
+						   int line)
 		{
-			SourceFile file = context.Interpreter.Session.FindFile (filename);
+			SourceFile file = Session.FindFile (filename);
 			if (file == null)
 				throw new ScriptingException ("Cannot find source file `{0}'.",
 							      filename);
@@ -71,8 +84,8 @@ namespace Mono.Debugger.Frontend
 				return context.FindMethod (arg);
 		}
 
-		public static bool ParseLocation (ScriptingContext context, string arg,
-						  out SourceLocation location)
+		public bool ParseLocation (ScriptingContext context, string arg,
+					   out SourceLocation location)
 		{
 			int line;
 			int pos = arg.IndexOf (':');
