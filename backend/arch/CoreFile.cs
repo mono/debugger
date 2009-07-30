@@ -405,11 +405,6 @@ namespace Mono.Debugger.Backend
 				throw new InvalidOperationException ();
 			}
 
-			internal override void ReleaseThreadLockDone ()
-			{
-				throw new InvalidOperationException ();
-			}
-
 			//
 			// TargetMemoryAccess
 			//

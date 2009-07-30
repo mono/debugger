@@ -657,9 +657,9 @@ namespace Mono.Debugger.Backend
 		void StartOperation ()
 		{
 			lock (this) {
-				if (!engine_stopped || (HasThreadLock && (pending_operation != null))) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} not stopped", this);
+				if (!engine_stopped || HasThreadLock) {
+					Report.Debug (DebugFlags.Wait, "{0} not stopped: {1} {2}",
+						      this, engine_stopped, HasThreadLock);
 					throw new TargetException (TargetError.NotStopped);
 				}
 
@@ -691,16 +691,7 @@ namespace Mono.Debugger.Backend
 
 		CommandResult ProcessOperation (Operation operation)
 		{
-			if (HasThreadLock) {
-				Report.Debug (DebugFlags.SSE,
-					      "{0} starting {1} while being thread-locked",
-					      this, operation);
-				pending_operation = operation;
-				return operation.Result;
-			} else
-				Report.Debug (DebugFlags.SSE,
-					      "{0} starting {1}", this, operation);
-
+			Report.Debug (DebugFlags.SSE,  "{0} starting {1}", this, operation);
 			PushOperation (operation);
 			return operation.Result;
 		}
@@ -830,6 +821,8 @@ namespace Mono.Debugger.Backend
 			get {
 				if (inferior == null)
 					return TargetState.NoTarget;
+				else if (HasThreadLock)
+					return TargetState.Busy;
 				else
 					return inferior.State;
 			}
@@ -1589,19 +1582,6 @@ namespace Mono.Debugger.Backend
 			ProcessEvent (cevent);
 		}
 
-		internal override void ReleaseThreadLockDone ()
-		{
-			if (pending_operation == null)
-				return;
-
-			Report.Debug (DebugFlags.Threads, "{0} starting pending operation {1}", this,
-				      pending_operation);
-
-			current_operation = pending_operation;
-			pending_operation = null;
-			ExecuteOperation (current_operation);
-		}
-
 		internal bool OnModuleLoaded (Module module)
 		{
 			return ActivatePendingBreakpoints (module);
@@ -2331,7 +2311,6 @@ namespace Mono.Debugger.Backend
 		protected Registers registers;
 
 		Operation current_operation;
-		Operation pending_operation;
 
 		Inferior inferior;
 		Disassembler disassembler;

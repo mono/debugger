@@ -634,15 +634,6 @@ namespace Mono.Debugger.Backend
 			thread_lock_mutex.Unlock ();
 			Report.Debug (DebugFlags.Threads,
 				      "Released global thread lock: {0}", caller);
-
-			foreach (ThreadServant thread in thread_hash.Values) {
-				if (thread == caller)
-					continue;
-				thread.ReleaseThreadLockDone ();
-			}
-
-			Report.Debug (DebugFlags.Threads,
-				      "Released global thread lock #1: {0}", caller);
 		}
 
 		internal void DropGlobalThreadLock ()

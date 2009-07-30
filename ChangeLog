@@ -18,6 +18,13 @@
 
 2009-07-07  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.TargetState): Return `TargetState.Busy' while being thread-locked.
+	(SSE.StartOperation): Disallow starting any new operation while
+	being thread-locked.
+
+2009-07-07  Martin Baulig  <martin@ximian.com>
+
 	Make exception catchpoints per-process and not per-thread.
 
 	* classes/Process.cs
