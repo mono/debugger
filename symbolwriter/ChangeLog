@@ -1,3 +1,9 @@
+2009-08-02  Martin Baulig  <martin@ximian.com>
+
+	* MonoSymbolTable.cs
+	(LineNumberTable.GetMethodBounds): Correctly compute start
+	and end lines.
+
 2009-05-03  Martin Baulig  <martin@ximian.com>
 
 	* MonoSymbolTable.cs

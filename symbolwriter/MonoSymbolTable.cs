@@ -1105,21 +1105,19 @@ namespace Mono.CompilerServices.SymbolWriter
 			start = end = LineNumberEntry.Null;
 
 			bool have_start = false;
-			LineNumberEntry current = LineNumberEntry.Null;
 
 			foreach (LineNumberEntry entry in _line_numbers) {
 				if (entry.IsHidden)
 					continue;
 
 				if (!have_start) {
-					start = entry;
+					start = end = entry;
 					have_start = true;
 				}
 
-				current = entry;
+				if (entry.Row > end.Row)
+					end = entry;
 			}
-
-			end = current;
 
 			if (!have_start || (start.File != end.File))
 				return false;
