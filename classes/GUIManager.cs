@@ -102,7 +102,7 @@ namespace Mono.Debugger
 		public EE.AsyncResult EvaluateExpressionAsync (StackFrame frame, EE.IExpression expression,
 							       EE.EvaluationFlags flags, EE.EvaluationCallback cb)
 		{
-			return expression.EvaluateAsync (frame, flags, cb);
+			return expression.Evaluate (frame, flags, cb);
 		}
 	}
 }

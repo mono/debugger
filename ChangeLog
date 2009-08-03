@@ -1,5 +1,19 @@
 2009-08-04  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ExpressionParser.cs: New file.
+	(ExpressionParser): Moved here from Expression.cs.
+	(ExpressionParser.GetVariableAccessExpression): Added.
+	(ExpressionParser.GetMemberAccessExpression): Added.
+
+	* frontend/Expression.cs
+	(StructAccessExpression): Made the .ctor public.
+
+	* classes/ExpressionEvaluator.cs
+	(EE.IExpression): Renamed `EvaluateAsync' -> `Evaluate'.
+	(EE.IExpression): Added `Assign'.
+
+2009-08-04  Martin Baulig  <martin@ximian.com>
+
 	* backend/SingleSteppingEngine.cs
 	(SSE.OperationRuntimeInvokeHelper): Improve error handling.
 
