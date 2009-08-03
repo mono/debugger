@@ -302,7 +302,7 @@ namespace Mono.Debugger
 			public override void ProcessEvent ()
 			{
 				Manager.break_mode = false;
-				Result = Expression.EvaluateAsync (Frame, Flags, EvaluationDone);
+				Result = Expression.Evaluate (Frame, Flags, EvaluationDone);
 			}
 
 			void EvaluationDone (EE.EvaluationResult result, object data)
