@@ -3979,14 +3979,28 @@ namespace Mono.Debugger.Backend
 				this.instance = RTI.Instance;
 				this.method = TargetAddress.Null;
 				this.stage = Stage.Uninitialized;
+
+				language = sse.process.MonoLanguage;
 			}
 
 			protected override void DoExecute ()
 			{
-				language = sse.process.MonoLanguage;
+				try {
+					do_execute ();
+				} catch (TargetException ex) {
+					RTI.Result.ExceptionMessage = ex.Message;
+					throw;
+				}
+			}
 
-				class_info = RTI.Function.ResolveClass (inferior, false);
-				if (class_info == null) {
+			void do_execute ()
+			{
+				switch (stage) {
+				case Stage.Uninitialized: {
+					class_info = RTI.Function.ResolveClass (inferior, false);
+					if (class_info != null)
+						goto case Stage.ResolvedClass;
+
 					MonoClassType klass = RTI.Function.DeclaringType as MonoClassType;
 					if (klass == null)
 						throw new TargetException (TargetError.ClassNotInitialized,
@@ -4002,16 +4016,9 @@ namespace Mono.Debugger.Backend
 					inferior.CallMethod (
 						sse.MonoDebuggerInfo.LookupClass, image.Address, 0, 0,
 						RTI.Function.DeclaringType.Name, ID);
-					return;
+					break;
 				}
 
-				stage = Stage.ResolvedClass;
-				do_execute ();
-			}
-
-			void do_execute ()
-			{
-				switch (stage) {
 				case Stage.ResolvedClass:
 					if (!get_method_address ())
 						throw new TargetException (TargetError.ClassNotInitialized,

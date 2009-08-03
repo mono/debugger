@@ -1,3 +1,8 @@
+2009-08-04  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationRuntimeInvokeHelper): Improve error handling.
+
 2009-07-08  Martin Baulig  <martin@ximian.com>
 
 	Martin's new Threading Model.
