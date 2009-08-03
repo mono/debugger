@@ -54,8 +54,11 @@ namespace Mono.Debugger
 				get;
 			}
 
-			AsyncResult EvaluateAsync (StackFrame frame, EE.EvaluationFlags flags,
-						   EE.EvaluationCallback callback);
+			AsyncResult Evaluate (StackFrame frame, EE.EvaluationFlags flags,
+					      EE.EvaluationCallback callback);
+
+			AsyncResult Assign (StackFrame frame, TargetObject obj,
+					    EE.EvaluationCallback callback);
 		}
 
 		public abstract class AsyncResult : IAsyncResult

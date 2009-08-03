@@ -34,7 +34,7 @@ namespace Mono.Debugger.Tests
 
 			EE.EvaluationFlags flags = EE.EvaluationFlags.NestedBreakStates;
 
-			EE.AsyncResult async = expr.EvaluateAsync (thread.CurrentFrame, flags,
+			EE.AsyncResult async = expr.Evaluate (thread.CurrentFrame, flags,
 				delegate (EE.EvaluationResult result, object data) {
 					Console.WriteLine ("EVALUATION DONE: {0} {1}", result, data);
 			});
