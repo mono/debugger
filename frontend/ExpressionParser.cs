@@ -12,6 +12,8 @@ using EE=Mono.Debugger.ExpressionEvaluator;
 
 namespace Mono.Debugger.Frontend
 {
+	using F = Mono.Debugger.Frontend;
+
 	public class ExpressionParser : IExpressionParser
 	{
 		public DebuggerSession Session {
@@ -45,14 +47,14 @@ namespace Mono.Debugger.Frontend
 		 * Use ScriptingContext.ParseExpression() to get a `ScriptingException' with
 		 * a user-readable error message.
 		 */
-		internal Expression ParseInternal (string text)
+		internal F.Expression ParseInternal (string text)
 		{
 			return parser.Parse (text);
 		}
 
 		public EE.IExpression Parse (string text)
 		{
-			return new MyExpressionWrapper (this, parser.Parse (text));
+			return new ExpressionWrapper (this, parser.Parse (text));
 		}
 
 		protected SourceLocation FindFile (ScriptingContext context, string filename,
@@ -75,7 +77,7 @@ namespace Mono.Debugger.Frontend
 		protected SourceLocation DoParseExpression (ScriptingContext context,
 							    LocationType type, string arg)
 		{
-			Expression expr = context.ParseExpression (arg);
+			F.Expression expr = context.ParseExpression (arg);
 			MethodExpression mexpr = expr.ResolveMethod (context, type);
 
 			if (mexpr != null)
@@ -148,7 +150,7 @@ namespace Mono.Debugger.Frontend
 		public string EvaluateExpression (ScriptingContext context, string text,
 						  DisplayFormat format)
 		{
-			Expression expression = context.ParseExpression (text);
+			F.Expression expression = context.ParseExpression (text);
 
 			try {
 				expression = expression.Resolve (context);
@@ -170,20 +172,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public EE.IExpression GetVariableAccessExpression (TargetVariable var)
-		{
-			return new MyVariableAccessExpression (this, var);
-		}
-
-		public EE.IExpression GetMemberAccessExpression (TargetStructType type,
-								 TargetStructObject instance,
-								 TargetMemberInfo member)
-		{
-			var sae = new StructAccessExpression (type, instance, member);
-			return new MyExpressionWrapper (this, sae);
-		}
-
-		protected abstract class MyExpression : EE.IExpression
+		public abstract class Expression : EE.IExpression
 		{
 			public readonly ExpressionParser Parser;
 
@@ -191,7 +180,7 @@ namespace Mono.Debugger.Frontend
 				get;
 			}
 
-			public MyExpression (ExpressionParser parser)
+			public Expression (ExpressionParser parser)
 			{
 				this.Parser = parser;
 			}
@@ -199,7 +188,7 @@ namespace Mono.Debugger.Frontend
 			public EE.AsyncResult Evaluate (StackFrame frame, EE.EvaluationFlags flags,
 							EE.EvaluationCallback callback)
 			{
-				MyAsyncResult async = new MyAsyncResult (this);
+				AsyncResult async = new AsyncResult (this);
 
 				ST.ThreadPool.QueueUserWorkItem (delegate {
 					ScriptingContext context = new ScriptingContext (Parser.Interpreter);
@@ -247,7 +236,7 @@ namespace Mono.Debugger.Frontend
 			public EE.AsyncResult Assign (StackFrame frame, TargetObject obj,
 						      EE.EvaluationCallback callback)
 			{
-				MyAsyncResult async = new MyAsyncResult (this);
+				AsyncResult async = new AsyncResult (this);
 
 				ST.ThreadPool.QueueUserWorkItem (delegate {
 					ScriptingContext context = new ScriptingContext (Parser.Interpreter);
@@ -302,15 +291,15 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected class MyExpressionWrapper : MyExpression
+		public class ExpressionWrapper : Expression
 		{
-			public readonly Expression Expression;
+			public readonly F.Expression Expression;
 
 			public override string Name {
 				get { return Expression.Name; }
 			}
 
-			public MyExpressionWrapper (ExpressionParser parser, Expression expr)
+			public ExpressionWrapper (ExpressionParser parser, F.Expression expr)
 				: base (parser)
 			{
 				this.Expression = expr;
@@ -318,7 +307,7 @@ namespace Mono.Debugger.Frontend
 
 			protected override object DoEvaluate (ScriptingContext context)
 			{
-				Expression resolved = Expression.Resolve (context);
+				F.Expression resolved = Expression.Resolve (context);
 				if (resolved == null)
 					throw new ScriptingException (
 						"Cannot resolve expression `{0}'", Name);
@@ -328,7 +317,7 @@ namespace Mono.Debugger.Frontend
 
 			protected override bool DoAssign (ScriptingContext context, TargetObject obj)
 			{
-				Expression resolved = Expression.Resolve (context);
+				F.Expression resolved = Expression.Resolve (context);
 				if (resolved == null)
 					throw new ScriptingException (
 						"Cannot resolve expression `{0}'", Name);
@@ -343,13 +332,13 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		protected class MyAsyncResult : EE.AsyncResult, IInterruptionHandler
+		public class AsyncResult : EE.AsyncResult, IInterruptionHandler
 		{
-			public readonly MyExpression Expression;
+			public readonly Expression Expression;
 			public readonly ST.ManualResetEvent WaitHandle;
 			public readonly ST.ManualResetEvent AbortHandle;
 
-			public MyAsyncResult (MyExpression expr)
+			public AsyncResult (Expression expr)
 			{
 				this.Expression = expr;
 				this.WaitHandle = new ST.ManualResetEvent (false);
@@ -384,40 +373,6 @@ namespace Mono.Debugger.Frontend
 			bool IInterruptionHandler.CheckInterruption ()
 			{
 				return AbortHandle.WaitOne (0);
-			}
-		}
-
-		protected class MyVariableAccessExpression : MyExpression
-		{
-			public TargetVariable Variable {
-				get; private set;
-			}
-
-			public MyVariableAccessExpression (ExpressionParser parser, TargetVariable var)
-				: base (parser)
-			{
-				this.Variable = var;
-			}
-
-			public override string Name {
-				get { return Variable.Name; }
-			}
-
-			protected override object DoEvaluate (ScriptingContext context)
-			{
-				return Variable.GetObject (context.CurrentFrame);
-			}
-
-			protected override bool DoAssign (ScriptingContext context, TargetObject obj)
-			{
-				if (!Variable.CanWrite)
-					return false;
-
-				TargetObject new_obj = Convert.ImplicitConversionRequired (
-					context, obj, Variable.Type);
-
-				Variable.SetObject (context.CurrentFrame, new_obj);
-				return true;
 			}
 		}
 	}

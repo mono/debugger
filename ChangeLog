@@ -1,5 +1,13 @@
 2009-08-04  Martin Baulig  <martin@ximian.com>
 
+	* frontend/ExpressionParser.cs
+	(ExpressionParser): Rename `MyExpression' -> `Expression' and make
+	it public; rename `MyExpressionWrapper' -> `ExpressionWrapper' and
+	make it public; rename `MyAsycResult' -> `AsyncResult' and make it
+	public.
+
+2009-08-04  Martin Baulig  <martin@ximian.com>
+
 	* frontend/ExpressionParser.cs: New file.
 	(ExpressionParser): Moved here from Expression.cs.
 	(ExpressionParser.GetVariableAccessExpression): Added.
