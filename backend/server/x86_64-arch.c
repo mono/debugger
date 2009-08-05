@@ -304,7 +304,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 		if (cbuffer->code_address + cbuffer->insn_size != INFERIOR_REG_RIP (arch->current_regs)) {
 			char buffer [1024];
 
-			g_warning (G_STRLOC ": %Lx,%d - %Lx - %Lx",
+			g_warning (G_STRLOC ": %d - %Lx,%d - %Lx - %Lx", cbuffer->slot,
 				   cbuffer->code_address, cbuffer->insn_size,
 				   cbuffer->code_address + cbuffer->insn_size,
 				   INFERIOR_REG_RIP (arch->current_regs));
@@ -314,7 +314,7 @@ x86_arch_child_stopped (ServerHandle *handle, int stopsig,
 				   buffer [0], buffer [1], buffer [2], buffer [3], buffer [4],
 				   buffer [5], buffer [6], buffer [7]);
 
-			return STOP_ACTION_STOPPED;
+			return STOP_ACTION_INTERNAL_ERROR;
 		}
 
 		INFERIOR_REG_RIP (arch->current_regs) = cbuffer->original_rip;
@@ -1212,11 +1212,22 @@ find_code_buffer_slot (MonoRuntimeInfo *runtime)
 {
 	int i;
 
+	for (i = runtime->executable_code_last_slot + 1; i < runtime->executable_code_total_chunks; i++) {
+		if (runtime->executable_code_bitfield [i])
+			continue;
+
+		runtime->executable_code_bitfield [i] = 1;
+		runtime->executable_code_last_slot = i;
+		return i;
+	}
+
+	runtime->executable_code_last_slot = 0;
 	for (i = 0; i < runtime->executable_code_total_chunks; i++) {
 		if (runtime->executable_code_bitfield [i])
 			continue;
 
 		runtime->executable_code_bitfield [i] = 1;
+		runtime->executable_code_last_slot = i;
 		return i;
 	}
 

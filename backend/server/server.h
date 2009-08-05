@@ -54,7 +54,8 @@ typedef enum {
 	MESSAGE_CHILD_CALLED_EXIT,
 	MESSAGE_CHILD_NOTIFICATION,
 	MESSAGE_CHILD_INTERRUPTED,
-	MESSAGE_RUNTIME_INVOKE_DONE
+	MESSAGE_RUNTIME_INVOKE_DONE,
+	MESSAGE_INTERNAL_ERROR
 } ServerStatusMessageType;
 
 typedef struct {
@@ -94,6 +95,7 @@ typedef struct
 	/* Private */
 	guint8 *breakpoint_table_bitfield;
 	guint8 *executable_code_bitfield;
+	guint32 executable_code_last_slot;
 } MonoRuntimeInfo;
 
 typedef enum {

@@ -1187,11 +1187,22 @@ find_code_buffer_slot (MonoRuntimeInfo *runtime)
 {
 	int i;
 
+	for (i = runtime->executable_code_last_slot + 1; i < runtime->executable_code_total_chunks; i++) {
+		if (runtime->executable_code_bitfield [i])
+			continue;
+
+		runtime->executable_code_bitfield [i] = 1;
+		runtime->executable_code_last_slot = i;
+		return i;
+	}
+
+	runtime->executable_code_last_slot = 0;
 	for (i = 0; i < runtime->executable_code_total_chunks; i++) {
 		if (runtime->executable_code_bitfield [i])
 			continue;
 
 		runtime->executable_code_bitfield [i] = 1;
+		runtime->executable_code_last_slot = i;
 		return i;
 	}
 
