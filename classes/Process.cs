@@ -133,7 +133,9 @@ namespace Mono.Debugger
 				return null;
 
 			ProcessCommandResult result = new ProcessCommandResult (this);
-			servant.ActivatePendingBreakpoints (result);
+			bool completed = servant.ActivatePendingBreakpoints (result);
+			if (completed)
+				return null;
 			return result;
 		}
 
