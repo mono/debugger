@@ -1,3 +1,35 @@
+2009-08-05  Martin Baulig  <martin@ximian.com>
+
+	Add error checks to enforce managed context for func-eval.
+
+	NOTE: This patch intentionally ``breaks'' breakpoints in
+	MonoDevelop; func-eval cannot be allowed when stopped at random
+	locations in unmanaged code, the result would be completely
+	unpredictable.
+
+	It looks like there were some misunderstandings about the
+	debugger's breakpoint API:
+
+	-> DebuggerSession.AddEvent() adds an event / breakpoint to the
+	session, but does not activate it.
+
+	-> Event.Activate() activates the event / breakpoint and requires
+	you to be stopped *in managed code* (the only exception is address
+	breakpoints which work everywhere).
+
+	-> Process.ActivatePendingBreakpoints() is the correct API to
+	activate breakpoints while the target is running.  This is an
+	expensive operation, so if you have multiple breakpoints, you
+	should DebuggerSession.AddEvent() them all then then call
+	Process.ActivatePendingBreakpoints() only once when done.
+
+	* classes/TargetException.cs
+	(TargetError): Added `InvalidContext'.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE): Add enforce_managed_context() calls to all CallMethod()
+	overloads and to RuntimeInvoke().
+
 2009-08-04  Martin Baulig  <martin@ximian.com>
 
 	* frontend/ExpressionParser.cs

@@ -1817,6 +1817,16 @@ namespace Mono.Debugger.Backend
 
 #region SSE Commands
 
+		void enforce_managed_context ()
+		{
+			if (!engine_stopped)
+				throw new TargetException (TargetError.NotStopped);
+			if (current_frame == null)
+				throw new TargetException (TargetError.NoStack);
+			if ((current_frame.Language == null) || !current_frame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+		}
+
 		internal override ThreadCommandResult Old_Step (StepMode mode, StepFrame frame)
 		{
 			ThreadCommandResult result = new ThreadCommandResult (thread);
@@ -1841,6 +1851,7 @@ namespace Mono.Debugger.Backend
 						    RuntimeInvokeFlags flags,
 						    RuntimeInvokeResult result)
 		{
+			enforce_managed_context ();
 			StartOperation (new OperationRuntimeInvoke (
 				this, function, object_argument, param_objects,
 				flags, result));
@@ -1849,18 +1860,21 @@ namespace Mono.Debugger.Backend
 		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2,
 							  long arg3, string string_argument)
 		{
+			enforce_managed_context ();
 			return StartOperation (new OperationCallMethod (
 				this, method, arg1, arg2, arg3, string_argument));
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, long arg1, long arg2)
 		{
+			enforce_managed_context ();
 			return StartOperation (new OperationCallMethod (this, method, arg1, arg2));
 		}
 
 		public override CommandResult CallMethod (TargetAddress method, TargetAddress method_arg,
 							  TargetObject object_arg)
 		{
+			enforce_managed_context ();
 			return StartOperation (new OperationCallMethod (this, method, method_arg, object_arg));
 		}
 

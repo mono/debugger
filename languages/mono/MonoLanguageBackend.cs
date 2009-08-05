@@ -998,9 +998,12 @@ namespace Mono.Debugger.Languages.Mono
 				method_load_handlers.Add (index, handler);
 		}
 
-		internal void RemoveMethodLoadHandler (Thread target, int index)
+		internal void RemoveMethodLoadHandler (Thread thread, int index)
 		{
-			target.CallMethod (info.RemoveBreakpoint, index, 0);
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+
+			thread.CallMethod (info.RemoveBreakpoint, index, 0);
 			method_load_handlers.Remove (index);
 		}
 
@@ -1008,6 +1011,9 @@ namespace Mono.Debugger.Languages.Mono
 							FunctionBreakpointHandle handle)
 		{
 			int index = GetUniqueID ();
+
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
 
 			TargetAddress retval = thread.CallMethod (
 				info.InsertSourceBreakpoint, func.SymbolFile.MonoImage,
@@ -1188,6 +1194,9 @@ namespace Mono.Debugger.Languages.Mono
 				klass = info.KlassAddress;
 			} else
 				throw new InvalidOperationException ();
+
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
 
 			TargetAddress boxed = thread.CallMethod (MonoDebuggerInfo.GetBoxedObjectMethod, klass, value);
 			if (boxed.IsNull)
