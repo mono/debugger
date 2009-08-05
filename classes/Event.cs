@@ -24,6 +24,13 @@ namespace Mono.Debugger
 			get;
 		}
 
+		// <summary>
+		//   Whether this event needs to be activated.
+		// </summary>
+		public abstract bool NeedsActivation {
+			get;
+		}
+
 		public bool IsUserModule {
 			get; set;
 		}
@@ -36,10 +43,18 @@ namespace Mono.Debugger
 		}
 
 		// <summary>
-		//   An automatically generated unique index for this event.
+		//   Public, user-visible breakpoint index, preserved across multiple
+		//   invocations of the target.
 		// </summary>
 		public int Index {
 			get { return index; }
+		}
+
+		// <summary>
+		//   An automatically generated unique index for this event.
+		// </summary>
+		internal int UniqueID {
+			get; private set;
 		}
 
 		// <summary>
@@ -141,6 +156,7 @@ namespace Mono.Debugger
 			this.index = index;
 			this.name = name;
 			this.group = group;
+			this.UniqueID = GetNextEventIndex ();
 
 			if (group == null)
 				throw new NullReferenceException ();

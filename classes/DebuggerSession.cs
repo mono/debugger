@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Configuration;
 using System.Collections;
@@ -43,7 +44,6 @@ namespace Mono.Debugger
 		public readonly DebuggerOptions Options;
 
 		protected readonly Hashtable modules;
-		protected readonly Hashtable events;
 		protected readonly Hashtable displays;
 		protected readonly Hashtable thread_groups;
 		protected readonly ThreadGroup main_thread_group;
@@ -52,7 +52,12 @@ namespace Mono.Debugger
 		protected readonly List<string> user_module_paths;
 		protected readonly List<string> user_modules;
 
+		Dictionary<int,Event> events;
+		Dictionary<int,ExceptionCatchPoint> exception_catchpoints;
+		Dictionary<Breakpoint,BreakpointHandle.Action> pending_bpts;
+
 		Process main_process;
+		bool reached_main;
 		IExpressionParser parser;
 		XmlDocument saved_session;
 
@@ -64,13 +69,15 @@ namespace Mono.Debugger
 			this.parser = parser;
 
 			modules = Hashtable.Synchronized (new Hashtable ());
-			events = Hashtable.Synchronized (new Hashtable ());
 			displays = Hashtable.Synchronized (new Hashtable ());
 			thread_groups = Hashtable.Synchronized (new Hashtable ());
 			main_thread_group = CreateThreadGroup ("main");
 			directory_maps = new Dictionary<string,string> ();
 			user_module_paths = new List<string> ();
 			user_modules = new List<string> ();
+			exception_catchpoints = new Dictionary<int,ExceptionCatchPoint> ();
+			events = new Dictionary<int,Event> ();
+			pending_bpts = new Dictionary<Breakpoint,BreakpointHandle.Action> ();
 		}
 
 		public DebuggerSession (DebuggerConfiguration config, DebuggerOptions options,
@@ -182,40 +189,28 @@ namespace Mono.Debugger
 			root.AppendChild (element);
 		}
 
+		//
+		// Breakpoints
+		//
+
 		public Event InsertBreakpoint (ThreadGroup group, SourceLocation location)
 		{
-			Event handle = new SourceBreakpoint (this, group, location);
-			AddEvent (handle);
-			return handle;
+			Breakpoint bpt = new SourceBreakpoint (this, group, location);
+			AddEvent (bpt);
+			return bpt;
 		}
 
 		public Event InsertBreakpoint (ThreadGroup group, LocationType type, string name)
 		{
-			Event handle = new ExpressionBreakpoint (this, group, type, name);
-			AddEvent (handle);
-			return handle;
+			Breakpoint bpt = new ExpressionBreakpoint (this, group, type, name);
+			AddEvent (bpt);
+			return bpt;
 		}
 
 		public Event InsertBreakpoint (Thread target, ThreadGroup group,
 					       TargetAddress address)
 		{
 			Event handle = new AddressBreakpoint (address.ToString (), group, address);
-			handle.Activate (target);
-			AddEvent (handle);
-			return handle;
-		}
-
-		[Obsolete]
-		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							TargetType exception)
-		{
-			return InsertExceptionCatchPoint (target, group, exception, false);
-		}
-
-		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
-							TargetType exception, bool unhandled)
-		{
-			Event handle = new ExceptionCatchPoint (group, exception, unhandled);
 			handle.Activate (target);
 			AddEvent (handle);
 			return handle;
@@ -229,6 +224,33 @@ namespace Mono.Debugger
 			AddEvent (handle);
 			return handle;
 		}
+
+		//
+		// Exception catch points
+		//
+
+		[Obsolete]
+		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
+							TargetType exception)
+		{
+			return InsertExceptionCatchPoint (target, group, exception, false);
+		}
+
+		public Event InsertExceptionCatchPoint (Thread target, ThreadGroup group,
+							TargetType exception, bool unhandled)
+		{
+			Event handle = new ExceptionCatchPoint (group, exception, unhandled);
+			AddEvent (handle);
+			return handle;
+		}
+
+		internal ExceptionCatchPoint[] ExceptionCatchPoints {
+			get { return exception_catchpoints.Values.ToArray (); }
+		}
+
+		//
+		// Source files
+		//
 
 		internal SourceLocation ParseLocation (Thread target, StackFrame frame,
 						       LocationType type, string name)
@@ -286,14 +308,16 @@ namespace Mono.Debugger
 			if (process != main_process)
 				return;
 
+			pending_bpts.Clear ();
+			reached_main = false;
 			main_process = null;
-			Event[] list = new Event [events.Count];
-			events.Values.CopyTo (list, 0);
 
-			foreach (Event e in list) {
-				e.OnTargetExited ();
-				if (!e.IsPersistent)
-					events.Remove (e.Index);
+			lock (this) {
+				foreach (Event e in events.Values.ToArray ()) {
+					e.OnTargetExited ();
+					if (!e.IsPersistent)
+						events.Remove (e.Index);
+				}
 			}
 		}
 
@@ -511,27 +535,168 @@ namespace Mono.Debugger
 
 		public Event[] Events {
 			get {
-				Event[] handles = new Event [events.Count];
-				events.Values.CopyTo (handles, 0);
-				return handles;
+				lock (this) {
+					return events.Values.ToArray ();
+				}
 			}
 		}
 
 		public Event GetEvent (int index)
 		{
-			return (Event) events [index];
+			lock (this) {
+				return (Event) events [index];
+			}
 		}
 
 		public void AddEvent (Event handle)
 		{
-			events.Add (handle.Index, handle);
+			lock (this) {
+				var cp = handle as ExceptionCatchPoint;
+				if (cp != null) {
+					exception_catchpoints.Add (cp.UniqueID, cp);
+					events.Add (cp.Index, cp);
+					return;
+				}
+
+				Breakpoint breakpoint = (Breakpoint) handle;
+				events.Add (breakpoint.Index, breakpoint);
+				if (reached_main)
+					pending_bpts.Add (breakpoint, BreakpointHandle.Action.Insert);
+			}
 		}
 
+		[Obsolete("This is now called RemoveEvent() and does not actually deactivate it.")]
 		public void DeleteEvent (Event handle)
 		{
-			if (main_process != null)
-				handle.Remove (main_process.MainThread);
-			events.Remove (handle.Index);
+			RemoveEvent (handle);
+		}
+
+		public void RemoveEvent (Event handle)
+		{
+			lock (this) {
+				var cp = handle as ExceptionCatchPoint;
+				if (cp != null) {
+					exception_catchpoints.Remove (cp.UniqueID);
+					events.Remove (cp.Index);
+					return;
+				}
+
+				Breakpoint breakpoint = (Breakpoint) handle;
+				breakpoint.IsEnabled = false;
+				events.Remove (breakpoint.Index);
+				if (pending_bpts.ContainsKey (breakpoint))
+					pending_bpts.Remove (breakpoint);
+				if (reached_main)
+					pending_bpts.Add (breakpoint, BreakpointHandle.Action.Remove);
+			}
+		}
+
+		internal bool HasPendingBreakpoints ()
+		{
+			lock (this) {
+				if (!reached_main) {
+					foreach (Event e in events.Values) {
+						Breakpoint bpt = e as Breakpoint;
+						if (bpt == null)
+							continue;
+						pending_bpts.Add (bpt, BreakpointHandle.Action.Insert);
+					}
+					reached_main = true;
+				}
+
+				return pending_bpts.Count > 0;
+			}
+		}
+
+		internal PendingBreakpointQueue GetPendingBreakpoints (SingleSteppingEngine sse, Module module)
+		{
+			var pending_removals = new List<FunctionBreakpointHandle> ();
+			var pending_inserts = new List<FunctionBreakpointHandle> ();
+
+			lock (this) {
+				if (!reached_main) {
+					foreach (Event e in events.Values) {
+						Breakpoint bpt = e as Breakpoint;
+						if (bpt == null)
+							continue;
+						pending_bpts.Add (bpt, BreakpointHandle.Action.Insert);
+					}
+					reached_main = true;
+				}
+
+				foreach (var entry in pending_bpts.ToArray ()) {
+					var breakpoint = entry.Key;
+					var action = entry.Value;
+
+					if (((action == BreakpointHandle.Action.Remove) && !breakpoint.IsActivated) ||
+					    ((action == BreakpointHandle.Action.Insert) && breakpoint.IsActivated)) {
+						pending_bpts.Remove (breakpoint);
+						continue;
+					}
+
+					if ((action == BreakpointHandle.Action.Insert) && breakpoint.IsUserModule &&
+					    (module != null) && (module.ModuleGroup.Name != "user"))
+						continue;
+				}
+
+				if (pending_bpts.Count == 0)
+					return null;
+
+				StackFrame main_frame = new StackFrame (
+					sse.Client, FrameType.Special, TargetAddress.Null, TargetAddress.Null,
+					TargetAddress.Null, null, sse.Process.MonoLanguage,
+					new Symbol ("<main>", TargetAddress.Null, 0));
+
+				foreach (var entry in pending_bpts.ToArray ()) {
+					var breakpoint = entry.Key;
+					var action = entry.Value;
+
+					try {
+						BreakpointHandle handle = breakpoint.Resolve (sse.Client, main_frame);
+						if (handle == null)
+							continue;
+
+						FunctionBreakpointHandle fh = handle as FunctionBreakpointHandle;
+						if (fh == null) {
+							if (action == BreakpointHandle.Action.Insert)
+								handle.Insert (sse.Inferior);
+							else
+								handle.Remove (sse.Inferior);
+							pending_bpts.Remove (breakpoint);
+							continue;
+						}
+
+						pending_bpts.Remove (breakpoint);
+						if (action == BreakpointHandle.Action.Insert)
+							pending_inserts.Add (fh);
+						else
+							pending_removals.Add (fh);
+					} catch (TargetException ex) {
+						if (ex.Type == TargetError.LocationInvalid)
+							breakpoint.OnResolveFailed ();
+						else {
+							Console.WriteLine ("EX: {0} {1} {2}", breakpoint, action, ex);
+							breakpoint.OnBreakpointError (
+								"Cannot insert breakpoint {0}: {1}",
+								breakpoint.Index, ex.Message);
+						}
+					} catch (Exception ex) {
+						Console.WriteLine ("EX: {0} {1} {2}", breakpoint, action, ex);
+						breakpoint.OnBreakpointError (
+							"Cannot insert breakpoint {0}: {1}",
+							breakpoint.Index, ex.Message);
+					}
+				}
+			}
+
+			var pending = new PendingBreakpointQueue ();
+
+			foreach (var pending_removal in pending_inserts)
+				pending.Add (pending_removal, BreakpointHandle.Action.Insert);
+			foreach (var pending_removal in pending_removals)
+				pending.Add (pending_removal, BreakpointHandle.Action.Remove);
+
+			return pending;
 		}
 
 		//
