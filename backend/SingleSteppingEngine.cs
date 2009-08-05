@@ -389,6 +389,13 @@ namespace Mono.Debugger.Backend
 					OperationCompleted (new TargetEventArgs (TargetEventType.TargetSignaled, arg));
 				return;
 
+			case Inferior.ChildEventType.INTERNAL_ERROR:
+				frame_changed (inferior.CurrentFrame, null);
+				Report.Error ("{0} got {1} at {2} while executing {2}", this, message,
+					      inferior.CurrentFrame, current_operation);
+				OperationCompleted (new TargetEventArgs (TargetEventType.TargetSignaled, -1));
+				return true;
+
 			case Inferior.ChildEventType.CHILD_EXITED:
 				OperationCompleted (new TargetEventArgs (TargetEventType.TargetExited, arg));
 				return;

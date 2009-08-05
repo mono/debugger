@@ -1,5 +1,31 @@
 2009-08-05  Martin Baulig  <martin@ximian.com>
 
+	**** Backport of 139424 ****
+
+	* backend/server/x86_64-arch.c
+	(find_code_buffer_slot): Return a different slot each time we're
+	called until we iterated over the entire buffer; it looks like
+	there's a very weird race condition somewhere in the kernel which
+	doesn't always flush the cpu's instruction cache when modifying
+	the current instruction and then immediately executing it.
+	(x86_arch_child_stopped): Return `STOP_ACTION_INTERNAL_ERROR' if
+	we stopped at an unexpected location inside the code buffer.
+
+	* backend/server/i386-arch.c
+	(find_code_buffer_slot): No idea whether we need this here as
+	well, but it doesn't hurt doing it here as well.
+
+	* backend/server/x86-arch.h
+	(ChildStoppedAction): Added `STOP_ACTION_INTERNAL_ERROR'.
+
+	* backend/server/server.h
+	(ServerStatusMessageType): Added `MESSAGE_INTERNAL_ERROR'.
+
+	* backend/Inferior.cs
+	(Inferior.ChildEventType): Added `INTERNAL_ERROR'.
+
+2009-08-05  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 139423 ****
 
 	Add error checks to enforce managed context for func-eval.
