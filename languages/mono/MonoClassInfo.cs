@@ -207,6 +207,9 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal TargetObject GetStaticField (Thread thread, TargetFieldInfo field)
 		{
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+
 			TargetAddress data_address = thread.CallMethod (
 				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
 				KlassAddress, 0);
@@ -276,6 +279,9 @@ namespace Mono.Debugger.Languages.Mono
 		internal void SetStaticField (Thread thread, TargetFieldInfo field,
 					      TargetObject obj)
 		{
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+
 			TargetAddress data_address = thread.CallMethod (
 				SymbolFile.MonoLanguage.MonoDebuggerInfo.ClassGetStaticFieldData,
 				KlassAddress, 0);

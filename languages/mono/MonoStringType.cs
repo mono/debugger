@@ -60,13 +60,16 @@ namespace Mono.Debugger.Languages.Mono
                         return retval;
 		}
 
-                internal override TargetFundamentalObject CreateInstance (Thread target, object obj)
+                internal override TargetFundamentalObject CreateInstance (Thread thread, object obj)
                 {
                         string str = obj as string;
                         if (str == null)
                                 throw new ArgumentException ();
 
-                        TargetAddress retval = target.CallMethod (
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+
+                        TargetAddress retval = thread.CallMethod (
 				CreateString, TargetAddress.Null, 0, 0, str);
                         TargetLocation location = new AbsoluteTargetLocation (retval);
                         return new MonoStringObject (this, location);

@@ -34,7 +34,8 @@ namespace Mono.Debugger
 		LocationInvalid,
 		CannotDetach,
 		InvalidReturn,
-		NoInvocation
+		NoInvocation,
+		InvalidContext,
 	}
 	#endregion
 
@@ -112,6 +113,8 @@ namespace Mono.Debugger
 				return "Cannot return from this kind of stack frame.";
 			case TargetError.NoInvocation:
 				return "No invocation found.";
+			case TargetError.InvalidContext:
+				return "Operation not permitted outside managed context.";
 			default:
 				return "Unknown error";
 			}
