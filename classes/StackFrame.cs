@@ -231,7 +231,8 @@ namespace Mono.Debugger
 		Signal,
 		LMF,
 		Callback,
-		RuntimeInvoke
+		RuntimeInvoke,
+		Special
 	}
 
 	[Serializable]

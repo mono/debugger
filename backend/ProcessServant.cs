@@ -874,27 +874,6 @@ namespace Mono.Debugger.Backend
 		}
 
 		//
-		// Breakpoints and exception handlers
-		//
-
-		static int next_exception_index = 0;
-		internal int AddExceptionCatchPoint (ExceptionCatchPoint catchpoint)
-		{
-			int index = ++next_exception_index;
-			exception_handlers.Add (index, catchpoint);
-			return index;
-		}
-
-		internal void RemoveExceptionCatchPoint (int index)
-		{
-			exception_handlers.Remove (index);
-		}
-
-		internal ExceptionCatchPoint[] ExceptionCatchPoints {
-			get { return exception_handlers.Values.ToArray (); }
-		}
-
-		//
 		// IDisposable
 		//
 

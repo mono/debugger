@@ -1007,17 +1007,23 @@ namespace Mono.Debugger.Languages.Mono
 			method_load_handlers.Remove (index);
 		}
 
+		internal void RemoveMethodLoadHandler (int index)
+		{
+			method_load_handlers.Remove (index);
+		}
+
 		internal int RegisterMethodLoadHandler (Thread thread, MonoFunctionType func,
 							FunctionBreakpointHandle handle)
 		{
-			int index = GetUniqueID ();
+			if (method_load_handlers.Contains (handle.Index))
+				return handle.Index;
 
 			if (!thread.CurrentFrame.Language.IsManaged)
 				throw new TargetException (TargetError.InvalidContext);
 
 			TargetAddress retval = thread.CallMethod (
 				info.InsertSourceBreakpoint, func.SymbolFile.MonoImage,
-				func.Token, index, func.DeclaringType.BaseName);
+				func.Token, handle.Index, func.DeclaringType.BaseName);
 
 			MethodLoadedHandler handler = handle.MethodLoaded;
 
@@ -1030,8 +1036,8 @@ namespace Mono.Debugger.Languages.Mono
 				});
 			}
 
-			method_load_handlers.Add (index, handler);
-			return index;
+			method_load_handlers.Add (handle.Index, handler);
+			return handle.Index;
 		}
 #endregion
 

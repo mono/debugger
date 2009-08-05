@@ -62,6 +62,8 @@ namespace Mono.Debugger.Frontend
 			RegisterCommand ("threadgroup", typeof (ThreadGroupCommand));
 			RegisterCommand ("enable", typeof (BreakpointEnableCommand));
 			RegisterCommand ("disable", typeof (BreakpointDisableCommand));
+			RegisterCommand ("activate", typeof (BreakpointActivateCommand));
+			RegisterCommand ("deactivate", typeof (BreakpointDeactivateCommand));
 			RegisterCommand ("delete", typeof (BreakpointDeleteCommand));
 			RegisterCommand ("list", typeof (ListCommand));
 			RegisterAlias   ("l", typeof (ListCommand));
@@ -2644,7 +2646,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
-	public abstract class EventHandleCommand : DebuggerCommand 
+	public abstract class EventHandleCommand : DebuggerCommand
 	{
 		protected Event handle;
 
@@ -2664,32 +2666,49 @@ namespace Mono.Debugger.Frontend
 			handle = context.Interpreter.GetEvent (id);
 			return handle != null;
 		}
-	}
 
-	public class BreakpointEnableCommand : EventHandleCommand, IDocumentableCommand
-	{
-		protected void Activate (ScriptingContext context, Event handle)
-		{
-			handle.IsEnabled = true;
+		protected abstract void Action (ScriptingContext context, Event handle);
 
-			if (context.Interpreter.HasTarget && !handle.IsActivated)
-				handle.Activate (context.Interpreter.CurrentThread);
+		protected virtual void ActionDone (ScriptingContext context)
+		{ }
+
+		protected abstract string ActionName {
+			get;
 		}
 
 		protected override object DoExecute (ScriptingContext context)
 		{
 			if (handle != null) {
-				Activate (context, handle);
+				Action (context, handle);
+				ActionDone (context);
 			} else {
-				if (!context.Interpreter.Query ("Enable all breakpoints?"))
+				if (!context.Interpreter.Query (ActionName + " all breakpoints?"))
 					return null;
 
 				// enable all breakpoints
-				foreach (Event h in context.Interpreter.Session.Events)
-					Activate (context, h);
+				bool found_one = false;
+				foreach (Event h in context.Interpreter.Session.Events) {
+					found_one = true;
+					Action (context, h);
+				}
+
+				if (found_one)
+					ActionDone (context);
 			}
 
 			return null;
+		}
+	}
+
+	public class BreakpointEnableCommand : EventHandleCommand, IDocumentableCommand
+	{
+		protected override void Action (ScriptingContext context, Event handle)
+		{
+			handle.IsEnabled = true;
+		}
+
+		protected override string ActionName {
+			get { return "Enable"; }
 		}
 
 		// IDocumentableCommand
@@ -2700,28 +2719,13 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointDisableCommand : EventHandleCommand, IDocumentableCommand
 	{
-		protected void Deactivate (ScriptingContext context, Event handle)
+		protected override void Action (ScriptingContext context, Event handle)
 		{
 			handle.IsEnabled = false;
-
-			if (context.Interpreter.HasTarget && handle.IsActivated)
-				handle.Deactivate (context.Interpreter.CurrentThread);
 		}
 
-		protected override object DoExecute (ScriptingContext context)
-		{
-			if (handle != null) {
-				Deactivate (context, handle);
-			} else {
-				if (!context.Interpreter.Query ("Disable all breakpoints?"))
-					return null;
-
-				// enable all breakpoints
-				foreach (Event h in context.Interpreter.Session.Events)
-					Deactivate (context, h);
-			}
-
-			return null;
+		protected override string ActionName {
+			get { return "Disable"; }
 		}
 
 		// IDocumentableCommand
@@ -2732,30 +2736,60 @@ namespace Mono.Debugger.Frontend
 
 	public class BreakpointDeleteCommand : EventHandleCommand, IDocumentableCommand
 	{
-		protected override object DoExecute (ScriptingContext context)
+		protected override void Action (ScriptingContext context, Event handle)
 		{
-			if (handle != null) {
-				context.Interpreter.Session.DeleteEvent (handle);
-			} else {
-				Event[] hs = context.Interpreter.Session.Events;
+			context.Interpreter.Session.RemoveEvent (handle);
+		}
 
-				if (hs.Length == 0)
-					return null;
+		protected override string ActionName {
+			get { return "Delete"; }
+		}
 
-				if (!context.Interpreter.Query ("Delete all breakpoints?"))
-					return null;
-
-				// delete all breakpoints
-				foreach (Event h in context.Interpreter.Session.Events)
-					context.Interpreter.Session.DeleteEvent (h);
-			}
-
-			return null;
+		protected override void ActionDone (ScriptingContext context)
+		{
+			if (context.Interpreter.HasTarget)
+				context.Interpreter.CurrentProcess.ActivatePendingBreakpoints ();
 		}
 
 		// IDocumentableCommand
 		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
 		public string Description { get { return "Delete breakpoint/catchpoint."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class BreakpointActivateCommand : EventHandleCommand, IDocumentableCommand
+	{
+		protected override void Action (ScriptingContext context, Event handle)
+		{
+			if (!handle.IsActivated && handle.NeedsActivation)
+				handle.Activate (context.Interpreter.CurrentThread);
+		}
+
+		protected override string ActionName {
+			get { return "Activate"; }
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
+		public string Description { get { return "Activate breakpoint."; } }
+		public string Documentation { get { return ""; } }
+	}
+
+	public class BreakpointDeactivateCommand : EventHandleCommand, IDocumentableCommand
+	{
+		protected override void Action (ScriptingContext context, Event handle)
+		{
+			if (handle.IsActivated && handle.NeedsActivation)
+				handle.Deactivate (context.Interpreter.CurrentThread);
+		}
+
+		protected override string ActionName {
+			get { return "Deactivate"; }
+		}
+
+		// IDocumentableCommand
+		public CommandFamily Family { get { return CommandFamily.Breakpoints; } }
+		public string Description { get { return "Deactivate breakpoint."; } }
 		public string Documentation { get { return ""; } }
 	}
 

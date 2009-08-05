@@ -19,6 +19,10 @@ namespace Mono.Debugger
 	{
 		internal abstract BreakpointHandle Resolve (Thread target, StackFrame frame);
 
+		public override bool NeedsActivation {
+			get { return true; }
+		}
+
 		public virtual bool HideFromUser {
 			get { return false; }
 		}

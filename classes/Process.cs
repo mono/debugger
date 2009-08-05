@@ -131,11 +131,14 @@ namespace Mono.Debugger
 		// Test
 		//
 
-		public void ActivatePendingBreakpoints ()
+		public CommandResult ActivatePendingBreakpoints ()
 		{
+			if (!Session.HasPendingBreakpoints ())
+				return null;
+
 			ProcessCommandResult result = new ProcessCommandResult (this);
 			servant.ActivatePendingBreakpoints (result);
-			result.Wait ();
+			return result;
 		}
 
 		protected class ProcessCommandResult : CommandResult
@@ -209,17 +212,18 @@ namespace Mono.Debugger
 			return false;
 		}
 
+		[Obsolete("Use DebuggerSession.InsertExceptionCatchPoint().")]
 		public int AddExceptionCatchPoint (ExceptionCatchPoint catchpoint)
 		{
 			check_disposed ();
-			return servant.AddExceptionCatchPoint (catchpoint);
+			// Do nothing; the session now maintains exception catchpoints.
+			return catchpoint.UniqueID;
 		}
 
+		[Obsolete("Use DebuggerSession.RemoveEvent().")]
 		public void RemoveExceptionCatchPoint (int index)
 		{
 			check_disposed ();
-			if (servant != null)
-				servant.RemoveExceptionCatchPoint (index);
 		}
 
 		//

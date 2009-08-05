@@ -398,7 +398,7 @@ namespace Mono.Debugger.Backend
 					Inferior.StackFrame iframe = inferior.GetCurrentFrame (false);
 					engine.SetMainReturnAddress (iframe.StackPointer);
 					engine.ProcessServant.OnProcessReachedMainEvent ();
-					resume_target = !engine.OnModuleLoaded (null);
+					resume_target = !engine.InitializeBreakpoints ();
 					return true;
 				}
 

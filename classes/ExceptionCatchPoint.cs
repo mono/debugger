@@ -11,10 +11,12 @@ namespace Mono.Debugger
 	[Serializable]
 	public sealed class ExceptionCatchPoint : Event
 	{
-		int handle = -1;
-
 		public override bool IsPersistent {
 			get { return true; }
+		}
+
+		public override bool NeedsActivation {
+			get { return false; }
 		}
 
 		public bool Unhandled {
@@ -35,55 +37,22 @@ namespace Mono.Debugger
 		}
 
 		public override bool IsActivated {
-			get { return handle > 0; }
+			get { return true; }
 		}
 
 		public override void Activate (Thread target)
-		{
-			lock (this) {
-				EnableCatchpoint (target);
-			}
-		}
+		{ }
 
 		public override void Deactivate (Thread target)
-		{
-			lock (this) {
-				DisableCatchpoint (target);
-			}
-		}
+		{ }
 
 		internal override void OnTargetExited ()
 		{
 			exception = null;
-			handle = -1;
 		}
 
 		public override void Remove (Thread target)
-		{
-			lock (this) {
-				DisableCatchpoint (target);
-			}
-		}
-
-		void EnableCatchpoint (Thread target)
-		{
-			lock (this) {
-				if (handle > 0)
-					return;
-
-				handle = target.Process.AddExceptionCatchPoint (this);
-			}
-		}
-
-		void DisableCatchpoint (Thread target)
-		{
-			lock (this) {
-				if (handle > 0)
-					target.Process.RemoveExceptionCatchPoint (handle);
-
-				handle = -1;
-			}
-		}
+		{ }
 
 		bool IsSubclassOf (TargetMemoryAccess target, TargetStructType type,
 				   TargetType parent)
