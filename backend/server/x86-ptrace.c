@@ -346,6 +346,9 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 			*data1 = retval;
 			*data2 = retval2;
 			return MESSAGE_RUNTIME_INVOKE_DONE;
+
+		case STOP_ACTION_INTERNAL_ERROR:
+			return MESSAGE_INTERNAL_ERROR;
 		}
 
 		g_assert_not_reached ();
