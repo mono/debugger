@@ -1047,7 +1047,7 @@ namespace Mono.Debugger.Backend
 				return action;
 			}
 
-			foreach (ExceptionCatchPoint handle in exception_handlers.Values) {
+			foreach (ExceptionCatchPoint handle in process.Session.ExceptionCatchPoints) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} invoking exception handler {1} for {0}",
 					      this, handle.Name, exc);
