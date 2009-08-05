@@ -2096,14 +2096,8 @@ namespace Mono.Debugger.Backend
 					// all the work without starting an operation.
 					//
 					OperationManagedCallback omc = new OperationManagedCallback (this, data);
-					bool running = omc.Run ();
-					if (running) {
-						//
-						// Ok, we triggered a func-eval, so we need to push ourself.
-						//
-						PushOperationNoExec (omc);
+					if (omc.Run ())
 						return false;
-					}
 
 					//
 					// Ok, we're done -> return to the user.
@@ -2271,7 +2265,6 @@ namespace Mono.Debugger.Backend
 			OperationManagedCallback omc = new OperationManagedCallback (this, callbacks);
 			if (omc.Run ()) {
 				Report.Debug (DebugFlags.SSE, "{0} started managed callback operation", this);
-				PushOperationNoExec (omc);
 				return true;
 			}
 
@@ -3717,7 +3710,7 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (do_execute ()) {
-				sse.PushOperation (this);
+				sse.PushOperationNoExec (this);
 				return true;
 			}
 
