@@ -306,7 +306,8 @@ namespace Mono.Debugger.Backend
 					Report.Debug (DebugFlags.SSE, "{0} back in managed land #1: {1}", this, is_managed);
 
 					Queue<ManagedCallbackData> queue = process.MonoManager.ClearManagedCallbacks (inferior);
-					OnManagedCallback (queue);
+					if (!OnManagedCallback (queue))
+						do_continue ();
 					return;
 				}
 			}
@@ -391,7 +392,7 @@ namespace Mono.Debugger.Backend
 
 			case Inferior.ChildEventType.INTERNAL_ERROR:
 				frame_changed (inferior.CurrentFrame, null);
-				Report.Error ("{0} got {1} at {2} while executing {2}", this, message,
+				Report.Error ("{0} got {1} at {2} while executing {3}", this, message,
 					      inferior.CurrentFrame, current_operation);
 				OperationCompleted (new TargetEventArgs (TargetEventType.TargetSignaled, -1));
 				return;
@@ -692,12 +693,17 @@ namespace Mono.Debugger.Backend
 			return operation.Result;
 		}
 
-		void PushOperation (Operation operation)
+		void PushOperationNoExec (Operation operation)
 		{
 			if (current_operation != null)
 				current_operation.PushOperation (operation);
 			else
 				current_operation = operation;
+		}
+
+		void PushOperation (Operation operation)
+		{
+			PushOperationNoExec (operation);
 			ExecuteOperation (operation);
 		}
 
@@ -2075,68 +2081,93 @@ namespace Mono.Debugger.Backend
 		}
 #endregion
 
-		public void ManagedCallback (ManagedCallbackFunction func, CommandResult result)
+		public bool ManagedCallback (ManagedCallbackFunction func, CommandResult result)
 		{
 			ManagedCallbackData data = new ManagedCallbackData (func, result);
 
-			SendCommand (delegate {
+			return (bool) SendCommand (delegate {
 				Report.Debug (DebugFlags.SSE, "{0} starting managed callback: {1}", this, func);
 
 				AcquireThreadLock ();
 
-				if (!do_managed_callback (data)) {
-					Report.Debug (DebugFlags.SSE, "{0} managed callback needs thread lock", this);
+				if (do_managed_callback (data)) {
+					//
+					// We found a managed frame; now let's first check whether we can do
+					// all the work without starting an operation.
+					//
+					OperationManagedCallback omc = new OperationManagedCallback (this, data);
+					bool running = omc.Run ();
+					if (running) {
+						//
+						// Ok, we triggered a func-eval, so we need to push ourself.
+						//
+						PushOperationNoExec (omc);
+						return false;
+					}
 
-					bool ok = false;
-					process.AcquireGlobalThreadLock (this);
-					foreach (SingleSteppingEngine engine in process.ThreadServants) {
+					//
+					// Ok, we're done -> return to the user.
+					//
+
+					ReleaseThreadLock ();
+					return true;
+				}
+
+				Report.Debug (DebugFlags.SSE, "{0} managed callback needs thread lock", this);
+
+				bool ok = false;
+				process.AcquireGlobalThreadLock (this);
+				foreach (SingleSteppingEngine engine in process.ThreadServants) {
+					try {
 						if (engine.do_managed_callback (data)) {
 							ok = true;
 							break;
 						}
+					} catch (Exception ex) {
+						Console.WriteLine ("FUCK: {0} {1}", engine, ex);
 					}
-
-					if (!ok) {
-						TargetAddress lmf_address = inferior.ReadAddress (LMFAddress);
-						StackFrame lmf_frame = Architecture.GetLMF (this, inferior, ref lmf_address);
-
-						Report.Debug (DebugFlags.SSE, "{0} requesting managed callback: {1}", this, lmf_frame);
-						process.MonoManager.AddManagedCallback (inferior, data);
-
-						/*
-						 * Prevent a race condition:
-						 * If we stopped just before returning from native code,
-						 * mono_thread_interruption_checkpoint_request() may not be called again
-						 * before returning back to managed code; it's called next time we're entering
-						 * native code again.
-						 *
-						 * This could lead to problems if the managed code does some CPU-intensive
-						 * before going unmanaged next time - or even loops forever.
-						 *
-						 * I have a test case where an icall contains a sleep() and the managed code
-						 * contains an infinite loop (`for (;;) ;) immediately after returning from
-						 * this icall.
-						 *
-						 * To prevent this from happening, we insert a breakpoint on the last managed
-						 * frame.
-						 */
-
-						if (lmf_frame != null)
-							insert_lmf_breakpoint (lmf_frame.TargetAddress);
-						else {
-							Report.Error ("{0} unable to compute LMF for managed callback: {1}",
-								      this, inferior.CurrentFrame);
-						}
-					}
-
-					Report.Debug (DebugFlags.SSE, "{0} managed callback releasing thread lock", this);
-					process.ReleaseGlobalThreadLock (this);
 				}
+
+				if (!ok) {
+					TargetAddress lmf_address = inferior.ReadAddress (LMFAddress);
+					StackFrame lmf_frame = Architecture.GetLMF (this, inferior, ref lmf_address);
+
+					Report.Debug (DebugFlags.SSE, "{0} requesting managed callback: {1}", this, lmf_frame);
+					process.MonoManager.AddManagedCallback (inferior, data);
+
+					/*
+					 * Prevent a race condition:
+					 * If we stopped just before returning from native code,
+					 * mono_thread_interruption_checkpoint_request() may not be called again
+					 * before returning back to managed code; it's called next time we're entering
+					 * native code again.
+					 *
+					 * This could lead to problems if the managed code does some CPU-intensive
+					 * before going unmanaged next time - or even loops forever.
+					 *
+					 * I have a test case where an icall contains a sleep() and the managed code
+					 * contains an infinite loop (`for (;;) ;) immediately after returning from
+					 * this icall.
+					 *
+					 * To prevent this from happening, we insert a breakpoint on the last managed
+					 * frame.
+					 */
+
+					if (lmf_frame != null)
+						insert_lmf_breakpoint (lmf_frame.TargetAddress);
+					else {
+						Report.Error ("{0} unable to compute LMF for managed callback: {1}",
+							      this, inferior.CurrentFrame);
+					}
+				}
+
+				Report.Debug (DebugFlags.SSE, "{0} managed callback releasing thread lock", this);
+				process.ReleaseGlobalThreadLock (this);
 
 				ReleaseThreadLock ();
 
 				Report.Debug (DebugFlags.SSE, "{0} managed callback done: {1} {2}", this, data.Running, data.Completed);
-				return null;
+				return false;
 			});
 		}
 
@@ -2229,16 +2260,23 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.SSE, "{0} found managed frame: {1} {2}", this,
 				      inferior.CurrentFrame, method);
 
-			PushOperation (new OperationManagedCallback (this, data));
 			return true;
 		}
 
 		LMFBreakpointData lmf_breakpoint = null;
 
-		internal void OnManagedCallback (Queue<ManagedCallbackData> callbacks)
+		internal bool OnManagedCallback (Queue<ManagedCallbackData> callbacks)
 		{
 			Report.Debug (DebugFlags.SSE, "{0} on managed callback", this);
-			PushOperation (new OperationManagedCallback (this, callbacks));
+			OperationManagedCallback omc = new OperationManagedCallback (this, callbacks);
+			if (omc.Run ()) {
+				Report.Debug (DebugFlags.SSE, "{0} started managed callback operation", this);
+				PushOperationNoExec (omc);
+				return true;
+			}
+
+			Report.Debug (DebugFlags.SSE, "{0} completed managed callback", this);
+			return false;
 		}
 
 #region IDisposable implementation
@@ -3659,8 +3697,17 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
+			throw new InternalError ();
+		}
+
+		public bool Run ()
+		{
 			Report.Debug (DebugFlags.SSE, "{0} managed callback execute: {1}",
 				      sse, sse.thread_lock);
+
+			//
+			// Steal the thread-lock.
+			//
 
 			if (sse.HasThreadLock) {
 				this.thread_lock = sse.thread_lock;
@@ -3669,12 +3716,21 @@ namespace Mono.Debugger.Backend
 				this.thread_lock.PopRegisters (inferior);
 			}
 
-			if (!do_execute ()) {
-				byte[] nop_insn = sse.Architecture.Opcodes.GenerateNopInstruction ();
-				sse.PushOperation (new OperationExecuteInstruction (sse, nop_insn, false));
+			if (do_execute ()) {
+				sse.PushOperation (this);
+				return true;
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} managed callback execute done", sse);
+			//
+			// If we actually stole the thread-lock, then we must give it back here.
+			//
+
+			if ((thread_lock != null) && (thread_lock.StopEvent != null)) {
+				sse.ThreadManager.AddPendingEvent (sse, thread_lock.StopEvent);
+				return true;
+			}
+
+			return false;
 		}
 
 		bool do_execute ()
