@@ -1,3 +1,37 @@
+**** Backport of 139425 ****
+2009-08-05  Martin Baulig  <martin@ximian.com>
+
+	**** Backport of 139425 ****
+
+	Support removing breakpoints while the target is running.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ExceptionCatchPoints): Removed; the session now
+	maintains exception catchpoints.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ActivatePendingBreakpoints): We now also handle removals.
+	(SSE.OperationRemoveBreakpoint): New operation to remove a managed
+	breakpoint.
+
+	* classes/Breakpoint.cs
+	(Breakpoint.NeedsActivation): New public property; event handlers
+	don't need any activation.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.InsertExceptionCatchPoint): Exception catchpoints
+	don't need to be activated.
+	(DebuggerSession.ExceptionCatchPoints): The session now maintains
+	all exception catchpoints; moved here from `ProcessServant'.
+	(DebuggerSession.RemoveBreakpoint): Immediately remove the
+	breakpoint from our list, but don't actually delete it - the
+	target doesn't need to be stopped to call this method, the method
+	is queued for removal during Process.ActivatePendingBreakpoints().
+
+	* classes/Process.cs
+	(Process.ActivatePendingBreakpoints): Don't block, return a
+	`CommandResult' you can wait on.
+
 2009-08-05  Martin Baulig  <martin@ximian.com>
 
 	**** Backport of 139424 ****

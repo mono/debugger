@@ -127,11 +127,14 @@ namespace Mono.Debugger
 		// Test
 		//
 
-		public void ActivatePendingBreakpoints ()
+		public CommandResult ActivatePendingBreakpoints ()
 		{
+			if (!Session.HasPendingBreakpoints ())
+				return null;
+
 			ProcessCommandResult result = new ProcessCommandResult (this);
 			servant.ActivatePendingBreakpoints (result);
-			result.Wait ();
+			return result;
 		}
 
 		public class ProcessCommandResult : CommandResult

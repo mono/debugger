@@ -394,7 +394,7 @@ namespace Mono.Debugger.Backend
 				Report.Error ("{0} got {1} at {2} while executing {2}", this, message,
 					      inferior.CurrentFrame, current_operation);
 				OperationCompleted (new TargetEventArgs (TargetEventType.TargetSignaled, -1));
-				return true;
+				return;
 
 			case Inferior.ChildEventType.CHILD_EXITED:
 				OperationCompleted (new TargetEventArgs (TargetEventType.TargetExited, arg));
@@ -1573,6 +1573,11 @@ namespace Mono.Debugger.Backend
 			ExecuteOperation (current_operation);
 		}
 
+		internal bool InitializeBreakpoints ()
+		{
+			return ActivatePendingBreakpoints (null);
+		}
+
 		internal bool OnModuleLoaded (Module module)
 		{
 			return ActivatePendingBreakpoints (module);
@@ -1580,79 +1585,8 @@ namespace Mono.Debugger.Backend
 
 		internal bool ActivatePendingBreakpoints (Module module)
 		{
-			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
-			Registers registers = inferior.GetRegisters ();
-
-			StackFrame main_frame;
-			if (process.MonoManager != null) {
-				MonoLanguageBackend mono = process.MonoLanguage;
-
-				MonoFunctionType main = mono.MainMethod;
-
-				MethodSource source = main.SymbolFile.GetMethodByToken (main.Token);
-				if (source != null) {
-					SourceLocation location = new SourceLocation (source);
-
-					main_frame = new StackFrame (
-						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
-						iframe.FrameAddress, registers, main, location);
-				} else {
-					main_frame = new StackFrame (
-						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
-						iframe.FrameAddress, registers);
-				}
-				update_current_frame (main_frame);
-			} else {
-				Method method = Lookup (inferior.MainMethodAddress);
-
-				if (method == null)
-					return false;
-
-				main_frame = new StackFrame (
-					thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
-					iframe.FrameAddress, registers, method);
-				update_current_frame (main_frame);
-			}
-
-			Report.Debug (DebugFlags.SSE, "{0} activate pending breakpoints", this);
-
-			Queue pending = new Queue ();
-			foreach (Event e in process.Session.Events) {
-				Breakpoint breakpoint = e as Breakpoint;
-				if (breakpoint == null)
-					continue;
-
-				if (!e.IsEnabled || e.IsActivated)
-					continue;
-
-				if (e.IsUserModule && (module != null) && (module.ModuleGroup.Name != "user"))
-					continue;
-
-				try {
-					BreakpointHandle handle = breakpoint.Resolve (thread, main_frame);
-					if (handle == null)
-						continue;
-
-					FunctionBreakpointHandle fh = handle as FunctionBreakpointHandle;
-					if (fh == null) {
-						handle.Insert (thread);
-						continue;
-					}
-
-					pending.Enqueue (fh);
-				} catch (TargetException ex) {
-					if (ex.Type == TargetError.LocationInvalid)
-						breakpoint.OnResolveFailed ();
-					else
-						breakpoint.OnBreakpointError (
-							"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);
-				} catch (Exception ex) {
-					breakpoint.OnBreakpointError (
-						"Cannot insert breakpoint {0}: {1}", e.Index, ex.Message);
-				}
-			}
-
-			if (pending.Count == 0)
+			var pending = process.Session.GetPendingBreakpoints (this, module);
+			if ((pending == null) || (pending.Count == 0))
 				return false;
 
 			PushOperation (new OperationActivateBreakpoints (this, pending));
@@ -2748,7 +2682,7 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (!sse.ProcessServant.IsManaged) {
-				if (sse.OnModuleLoaded (null))
+				if (sse.InitializeBreakpoints ())
 					return EventResult.Running;
 			}
 
@@ -2767,7 +2701,7 @@ namespace Mono.Debugger.Backend
 
 	protected class OperationActivateBreakpoints : Operation
 	{
-		public OperationActivateBreakpoints (SingleSteppingEngine sse, Queue pending)
+		public OperationActivateBreakpoints (SingleSteppingEngine sse, PendingBreakpointQueue pending)
 			: base (sse, null)
 		{
 			this.pending_events = pending;
@@ -2782,7 +2716,7 @@ namespace Mono.Debugger.Backend
 			get { return false; }
 		}
 
-		Queue pending_events;
+		PendingBreakpointQueue pending_events;
 		bool completed;
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
@@ -2819,13 +2753,18 @@ namespace Mono.Debugger.Backend
 				return false;
 			}
 
-			FunctionBreakpointHandle handle =
-				(FunctionBreakpointHandle) pending_events.Dequeue ();
+			var entry = pending_events.Dequeue ();
+
+			BreakpointHandle.Action action = entry.Value;
+			FunctionBreakpointHandle handle = entry.Key;
 
 			Report.Debug (DebugFlags.SSE,
-				      "{0} activate breakpoints: {1}", sse, handle);
+				      "{0} activate breakpoints: {1} {2}", sse, action, handle);
 
-			sse.PushOperation (new OperationInsertBreakpoint (sse, handle));
+			if (action == BreakpointHandle.Action.Insert)
+				sse.PushOperation (new OperationInsertBreakpoint (sse, handle));
+			else
+				sse.PushOperation (new OperationRemoveBreakpoint (sse, handle));
 			return true;
 		}
 	}
@@ -2833,14 +2772,12 @@ namespace Mono.Debugger.Backend
 	protected class OperationInsertBreakpoint : OperationCallback
 	{
 		public readonly FunctionBreakpointHandle Handle;
-		public readonly int Index;
 
 		public OperationInsertBreakpoint (SingleSteppingEngine sse,
 						  FunctionBreakpointHandle handle)
 			: base (sse, null)
 		{
 			this.Handle = handle;
-			this.Index = MonoLanguageBackend.GetUniqueID ();
 		}
 
 		protected override void DoExecute ()
@@ -2852,11 +2789,11 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} insert breakpoint: {1} {2} {3:x}",
-				      sse, func, Index, func.Token);
+				      sse, func, Handle.Index, func.Token);
 
 			inferior.CallMethod (
 				info.InsertSourceBreakpoint, image.Address,
-				func.Token, Index, func.DeclaringType.BaseName, ID);
+				func.Token, Handle.Index, func.DeclaringType.BaseName, ID);
 		}
 
 		protected override EventResult CallbackCompleted (long data1, long data2)
@@ -2865,7 +2802,7 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.SSE, "{0} insert breakpoint done: {1}", sse, info);
 
-			sse.Process.MonoLanguage.RegisterMethodLoadHandler (inferior, info, Index, Handle.MethodLoaded);
+			sse.Process.MonoLanguage.RegisterMethodLoadHandler (inferior, info, Handle.Index, Handle.MethodLoaded);
 
 			Handle.Breakpoint.OnBreakpointBound ();
 			return EventResult.AskParent;
@@ -2894,6 +2831,37 @@ namespace Mono.Debugger.Backend
 
 			args = null;
 			return EventResult.Completed;
+		}
+	}
+
+	protected class OperationRemoveBreakpoint : OperationCallback
+	{
+		public readonly FunctionBreakpointHandle Handle;
+		public readonly int Index;
+
+		public OperationRemoveBreakpoint (SingleSteppingEngine sse,
+						  FunctionBreakpointHandle handle)
+			: base (sse, null)
+		{
+			this.Handle = handle;
+			this.Index = MonoLanguageBackend.GetUniqueID ();
+		}
+
+		protected override void DoExecute ()
+		{
+			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+
+			Report.Debug (DebugFlags.SSE,
+				      "{0} remove breakpoint: {1} {2}", sse, Handle, Handle.Index);
+
+			sse.Process.MonoLanguage.RemoveMethodLoadHandler (Handle.Index);
+			inferior.BreakpointManager.RemoveBreakpoint (inferior, Handle);
+			inferior.CallMethod (info.RemoveBreakpoint, Handle.Index, 0, ID);
+		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2)
+		{
+			return EventResult.AskParent;
 		}
 	}
 
