@@ -151,18 +151,24 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		internal override bool InsertBreakpoint (Thread target,
+		internal override bool InsertBreakpoint (Thread thread,
 							 FunctionBreakpointHandle handle)
 		{
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+
 			load_handler = klass.File.MonoLanguage.RegisterMethodLoadHandler (
-				target, this, handle);
+				thread, this, handle);
 			return load_handler > 0;
 		}
 
-		internal override void RemoveBreakpoint (Thread target)
+		internal override void RemoveBreakpoint (Thread thread)
 		{
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
+
 			if (load_handler > 0) {
-				klass.File.MonoLanguage.RemoveMethodLoadHandler (target, load_handler);
+				klass.File.MonoLanguage.RemoveMethodLoadHandler (thread, load_handler);
 				load_handler = -1;
 			}
 		}
@@ -179,6 +185,9 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (!ContainsGenericParameters)
 				return new MonoMethodSignature (return_type, parameter_types);
+
+			if (!thread.CurrentFrame.Language.IsManaged)
+				throw new TargetException (TargetError.InvalidContext);
 
 			TargetAddress addr = (TargetAddress) thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target)  {
