@@ -1,5 +1,12 @@
 2009-08-05  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.ManagedCallback): If we found a managed frame, check whether
+	we can do all the work immediately or whether we need to start an
+	operation for it.
+
+2009-08-05  Martin Baulig  <martin@ximian.com>
+
 	Support removing breakpoints while the target is running.
 
 	* backend/ProcessServant.cs

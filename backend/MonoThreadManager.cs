@@ -444,9 +444,9 @@ namespace Mono.Debugger.Backend
 
 				case NotificationType.InterruptionRequest:
 					inferior.WriteInteger (MonoDebuggerInfo.InterruptionRequest, 0);
-					engine.OnManagedCallback (managed_callbacks);
+					var callbacks = managed_callbacks;
 					managed_callbacks = new Queue<ManagedCallbackData> ();
-					resume_target = false;
+					resume_target = !engine.OnManagedCallback (callbacks);
 					return true;
 
 				default: {

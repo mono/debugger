@@ -865,9 +865,9 @@ namespace Mono.Debugger.Backend
 
 #endregion
 
-		public void ActivatePendingBreakpoints (CommandResult result)
+		public bool ActivatePendingBreakpoints (CommandResult result)
 		{
-			((SingleSteppingEngine) main_thread).ManagedCallback (
+			return ((SingleSteppingEngine) main_thread).ManagedCallback (
 				delegate (SingleSteppingEngine sse) {
 					return sse.ActivatePendingBreakpoints (null);
 				}, result);
