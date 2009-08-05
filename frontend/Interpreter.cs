@@ -62,6 +62,8 @@ namespace Mono.Debugger.Frontend
 			this.session = new DebuggerSession (config, options, "main", parser);
 			this.engine = new DebuggerEngine (this);
 
+			parser.Session = session;
+
 			source_factory = new SourceFileFactory ();
 
 			interrupt_event = new ManualResetEvent (false);
@@ -372,6 +374,7 @@ namespace Mono.Debugger.Frontend
 			try {
 				debugger = new Debugger (config);
 				session = new DebuggerSession (config, stream, parser);
+				parser.Session = session;
 
 				new InterpreterEventSink (this, debugger);
 				new ThreadEventSink (this, debugger);
