@@ -1,5 +1,11 @@
 2009-08-06  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ActivateEventAsync): New public method.
+	(DebuggerSession.DeactivateEventAsync): New public method.
+
+2009-08-06  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 139478 ****
 
 	Don't require the target to be stopped to detach.
