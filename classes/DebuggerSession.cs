@@ -567,19 +567,19 @@ namespace Mono.Debugger
 
 		public void ActivateEventAsync (Event handle)
 		{
-			AsyncActivateOrDeactivateEvent (handle, true);
+			ActivateOrDeactivateEventAsync (handle, true);
 		}
 
 		public void DeactivateEventAsync (Event handle)
 		{
-			AsyncActivateOrDeactivateEvent (handle, false);
+			ActivateOrDeactivateEventAsync (handle, false);
 		}
 
-		void AsyncActivateOrDeactivateEvent (Event handle, bool activate)
+		public bool ActivateOrDeactivateEventAsync (Event handle, bool activate)
 		{
 			lock (this) {
 				if (!handle.NeedsActivation || (activate == handle.IsActivated))
-					return;
+					return false;
 
 				var action = activate ? BreakpointHandle.Action.Insert :
 					BreakpointHandle.Action.Remove;
@@ -589,6 +589,8 @@ namespace Mono.Debugger
 					pending_bpts [breakpoint] = action;
 				else
 					pending_bpts.Add (breakpoint, action);
+
+				return true;
 			}
 		}
 
