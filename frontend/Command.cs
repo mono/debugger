@@ -3848,6 +3848,10 @@ namespace Mono.Debugger.Frontend
 					config.NestedBreakStates = enable;
 					break;
 
+				case "redirect-output":
+					config.RedirectOutput = enable;
+					break;
+
 				case "stop-daemon-threads":
 					require_expert_mode ();
 					if (enable)
