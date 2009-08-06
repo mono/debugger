@@ -877,11 +877,7 @@ namespace Mono.Debugger.Backend
 		public override void Detach ()
 		{
 			SendCommand (delegate {
-				if (!engine_stopped) {
-					Report.Debug (DebugFlags.Wait,
-						      "{0} not stopped", this);
-					throw new TargetException (TargetError.NotStopped);
-				}
+				AcquireThreadLock ();
 
 				process.AcquireGlobalThreadLock (this);
 				process.BreakpointManager.RemoveAllBreakpoints (inferior);

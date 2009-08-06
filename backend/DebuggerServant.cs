@@ -122,11 +122,17 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		public bool CanDetach {
+			get {
+				return (main_process != null) && main_process.CanDetach;
+			}
+		}
+
 		public void Detach ()
 		{
 			if (main_process == null)
 				throw new TargetException (TargetError.NoTarget);
-			else if (!main_process.IsAttached)
+			else if (!main_process.CanDetach)
 				throw new TargetException (TargetError.CannotDetach);
 
 			ProcessServant[] procs;

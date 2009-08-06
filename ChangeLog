@@ -1,5 +1,21 @@
 2009-08-06  Martin Baulig  <martin@ximian.com>
 
+	**** Backport of 139478 ****
+
+	Don't require the target to be stopped to detach.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.CanDetach): New property.
+	(ProcessServant.Detach): Can `CanDetach', not `IsAttach'.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.Detach): Don't require the target to be stopped.
+
+	* classes/Debugger.cs
+	(Debugger.CanDetach): New public property.
+
+2009-08-06  Martin Baulig  <martin@ximian.com>
+
 	**** Backport of 139477 ****
 
 	* frontend/Command.cs:
