@@ -3782,6 +3782,10 @@ namespace Mono.Debugger.Frontend
 					config.NestedBreakStates = enable;
 					break;
 
+				case "redirect-output":
+					config.RedirectOutput = enable;
+					break;
+
 				case "broken-threading":
 					if (!expert_mode)
 						throw new ScriptingException (
