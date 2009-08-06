@@ -99,6 +99,10 @@ namespace Mono.Debugger.Backend
 			get { return is_attached; }
 		}
 
+		public bool CanDetach {
+			get { return is_attached; }
+		}
+
 		public bool IsExeced {
 			get { return is_execed; }
 		}
@@ -504,7 +508,7 @@ namespace Mono.Debugger.Backend
 
 		public void Detach ()
 		{
-			if (!IsAttached)
+			if (!CanDetach)
 				throw new TargetException (TargetError.CannotDetach);
 
 			main_thread.Detach ();
