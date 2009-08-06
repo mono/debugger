@@ -603,6 +603,33 @@ namespace Mono.Debugger
 			}
 		}
 
+		public void ActivateEventAsync (Event handle)
+		{
+			AsyncActivateOrDeactivateEvent (handle, true);
+		}
+
+		public void DeactivateEventAsync (Event handle)
+		{
+			AsyncActivateOrDeactivateEvent (handle, false);
+		}
+
+		void AsyncActivateOrDeactivateEvent (Event handle, bool activate)
+		{
+			lock (this) {
+				if (!handle.NeedsActivation)
+					return;
+
+				var action = activate ? BreakpointHandle.Action.Insert :
+					BreakpointHandle.Action.Remove;
+
+				Breakpoint breakpoint = (Breakpoint) handle;
+				if (pending_bpts.ContainsKey (breakpoint))
+					pending_bpts [breakpoint] = action;
+				else
+					pending_bpts.Add (breakpoint, action);
+			}
+		}
+
 		[Obsolete("This is now called RemoveEvent() and does not actually deactivate it.")]
 		public void DeleteEvent (Event handle)
 		{
