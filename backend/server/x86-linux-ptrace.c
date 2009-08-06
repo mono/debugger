@@ -36,7 +36,7 @@ server_ptrace_get_server_type (void)
 static ServerCapabilities
 server_ptrace_get_capabilities (void)
 {
-	return SERVER_CAPABILITIES_THREAD_EVENTS;
+	return SERVER_CAPABILITIES_THREAD_EVENTS | SERVER_CAPABILITIES_CAN_DETACH_ANY;
 }
 
 static ServerCommandError

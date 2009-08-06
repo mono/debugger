@@ -1,5 +1,29 @@
 2009-08-06  Martin Baulig  <martin@ximian.com>
 
+	Don't require the target to be stopped to detach; allow detaching
+	from any target on Linux.
+
+	* backend/server/server.h
+	(ServerCapabilities): Add `SERVER_CAPABILITIES_CAN_DETACH_ANY'.
+
+	* backend/server/x86-linux-ptrace.c
+	(server_ptrace_get_capabilities):  ... and add it here.
+
+	* backend/Inferior.cs
+	(Inferior.CanDetachAny): New public static property.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.CanDetach): New property.
+	(ProcessServant.Detach): Can `CanDetach', not `IsAttach'.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.Detach): Don't require the target to be stopped.
+
+	* classes/Debugger.cs
+	(Debugger.CanDetach): New public property.
+
+2009-08-06  Martin Baulig  <martin@ximian.com>
+
 	* frontend/Command.cs:
 	(ConfigCommand): Add "redirect-output" here, this was missing.
 

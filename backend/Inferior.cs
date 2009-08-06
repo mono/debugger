@@ -244,7 +244,8 @@ namespace Mono.Debugger.Backend
 
 		internal enum ServerCapabilities {
 			NONE = 0,
-			THREAD_EVENTS = 1
+			THREAD_EVENTS = 1,
+			CAN_DETACH_ANY = 2
 		}
 
 		internal delegate void ChildEventHandler (ChildEventType message, int arg);
@@ -1687,6 +1688,22 @@ namespace Mono.Debugger.Backend
 			get {
 				ServerCapabilities capabilities = mono_debugger_server_get_capabilities ();
 				return (capabilities & ServerCapabilities.THREAD_EVENTS) != 0;
+			}
+		}
+
+		//
+		// Whether we can detach from any target.
+		//
+		// Background:
+		//
+		// The Linux kernel allows detaching from any traced child, even if we did not
+		// previously attach to it.
+		//
+
+		public static bool CanDetachAny {
+			get {
+				ServerCapabilities capabilities = mono_debugger_server_get_capabilities ();
+				return (capabilities & ServerCapabilities.CAN_DETACH_ANY) != 0;
 			}
 		}
 

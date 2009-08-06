@@ -219,6 +219,10 @@ namespace Mono.Debugger
 			}
 		}
 
+		public bool CanDetach {
+			get { return (servant != null) && servant.CanDetach; }
+		}
+
 		[Obsolete]
 		GUIManager gui_manager;
 
