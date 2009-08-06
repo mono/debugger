@@ -578,7 +578,7 @@ namespace Mono.Debugger
 		void AsyncActivateOrDeactivateEvent (Event handle, bool activate)
 		{
 			lock (this) {
-				if (!handle.NeedsActivation)
+				if (!handle.NeedsActivation || (activate == handle.IsActivated))
 					return;
 
 				var action = activate ? BreakpointHandle.Action.Insert :
