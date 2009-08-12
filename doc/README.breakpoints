@@ -1,0 +1,65 @@
+On August 4th, 2008, the API to insert or remove breakpoints from a
+GUI has been improved significantly.
+
+These are the most important changes:
+
+* Debugger.Detach() doesn't require the target to be stopped anymore
+
+* DebuggerSession.AddEvent(Event) and DebuggerSession.RemoveEvent(Event)
+  may be called anytime; these functions only add / remove the event
+  from the session and mark it as pending, but do not activate or
+  deactivate it.
+
+  Pending means the breakpoint may be automatically activated or
+  deactivated at any time, but there is no guarantee when this will
+  happen or whether this will happen at all.
+
+* There are two ways to activate or deactivate a breakpoint:
+
+  -> You to call Event.Activate(Thread) / Event.Deactivate(Thread)
+     when the target is stopped, this will immediately activate /
+     deactivate the breakpoints.
+
+  -> You call Process.ActivatePendingBreakpoints() anytime, this'll
+     activate / deactivate all pending breakpoints.
+
+* There are three new functions in the DebuggerSession:
+  ActivateEventAsync(Event), DeactivateEventAsync(Event) and
+  ActivateOrDeactivateEventAsync(Event,bool).
+
+  These functions schedule an async activation / deactivation; you
+  need to call Process.ActivatePendingBreakpoints() when done.
+
+Some comments:
+
+-> Functions which don't take a `Thread' argument do not immediately
+   activate / deactivate a breakpoint.
+
+-> Functions which take a `Thread' argument require the target to be
+   stopped and immediately activate / deactivate the breakpoint.
+
+-> After scheduling an async activation, the breakpoint may be enabled /
+   disabled at any time, but there is no guarantee when this will
+   happen and whether it will happen at all.
+
+   Call Process.ActivatePendingBreakpoints() to activate / deactivate
+   all pending breakpoints; this will activate / deactivate all
+   pending breakpoints.
+
+-> If you insert a source breakpoint (ie. a breakpoint which is
+   identified by filename and line number) in a module that's not
+   currently loaded, you need to use async activation (ie. only use
+   DebuggerSession.AddEvent(Event), but not Event.Activate(Thread));
+   the breakpoint will automatically be activated when the module is
+   loaded.
+
+-> When inserting an expression breakpoint, you should use synchronous
+   activation unless the expression may be evaluated in global scope
+   (ie. you call DebuggerSession.AddEvent(Event) when the target is
+   stopped, followed by Event.Activate(Thread)).
+
+
+Last changed August 12th, 2009
+Martin Baulig <martin@novell.com>
+
+

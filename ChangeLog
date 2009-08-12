@@ -1,3 +1,8 @@
+2009-08-12  Martin Baulig  <martin@ximian.com>
+
+	* doc/README.breakpoints: Add documentation about the new
+	breakpoint API.
+
 2009-08-06  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs
