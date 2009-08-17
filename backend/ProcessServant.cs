@@ -414,7 +414,7 @@ namespace Mono.Debugger.Backend
 			foreach (int thread in threads) {
 				if (thread_hash.Contains (thread))
 					continue;
-				ThreadCreated (inferior, thread, true, resume_threads);
+				ThreadCreated (inferior, thread, Inferior.HasThreadEvents, resume_threads);
 			}
 
 			thread_db.GetThreadInfo (inferior, delegate (int lwp, long tid) {
