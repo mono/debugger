@@ -696,7 +696,7 @@ namespace Mono.Debugger.Backend
 
 		public void OperationCompleted (SingleSteppingEngine caller, TargetEventArgs result, ThreadingModel model)
 		{
-			if (!ThreadManager.InBackgroundThread)
+			if (!ThreadManager.InBackgroundThread && Inferior.HasThreadEvents)
 				throw new InternalError ();
 
 			if (current_state == ProcessState.Stopping)

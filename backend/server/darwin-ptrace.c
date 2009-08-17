@@ -6,6 +6,13 @@ int g_thread_index_count = 0;
 thread_t g_thread_list[THREAD_INDEX_MAX];
 int g_thread_used_list[THREAD_INDEX_MAX];
 
+struct InferiorList {
+	InferiorHandle *inferior;
+	struct InferiorList *next;
+};
+struct InferiorList *g_inferior_list = NULL;
+GStaticMutex g_inferior_list_mutex = G_STATIC_MUTEX_INIT;
+
 thread_t get_thread_from_index(int th_index)
 {
 	return g_thread_list[th_index];
@@ -522,29 +529,31 @@ server_ptrace_stop (ServerHandle *handle)
 	struct task_basic_info info;
 	mach_msg_type_number_t info_size = sizeof(struct task_basic_info)/sizeof(int);
 
-	kern_return_t err = task_info(inferior->os.task, TASK_BASIC_INFO, (task_info_t)&info, &info_size);
-	if (err)
-		g_message (G_STRLOC ": task_info failed: %s", mach_error_string(err));
-	else if(info.suspend_count > 0)
-	{
-		thread_suspend (inferior->os.thread);
-		/* 
-		 * if we stop the thread this way, we cannot receive signals of it anymore. 
-		 * so, send an already stopped error, to let the debugger take care of us. 
-		 */
-		return COMMAND_ERROR_ALREADY_STOPPED;
-	}
-	if (syscall (SYS_kill, inferior->pid, SIGSTOP)) {
-		/*
-		 * It's already dead.
-		 */
-		if (errno == ESRCH)
-			return COMMAND_ERROR_NO_TARGET;
-		else
-			return COMMAND_ERROR_UNKNOWN_ERROR;
-	}
+	inferior->os.wants_to_run = FALSE;
 
-	g_stopped_thread = COMPOSED_PID(inferior->pid, inferior->os.thread_index);
+	if (task_info(inferior->os.task, TASK_BASIC_INFO, (task_info_t)&info, &info_size) == KERN_SUCCESS)
+	{
+		if(info.suspend_count > 0)
+		{
+			thread_suspend (inferior->os.thread);
+			/* 
+			 * if we stop the thread this way, we cannot receive signals of it anymore. 
+			 * so, send an already stopped error, to let the debugger take care of us. 
+			 */
+			return COMMAND_ERROR_ALREADY_STOPPED;
+		}
+		if (syscall (SYS_kill, inferior->pid, SIGSTOP)) {
+			/*
+			 * It's already dead.
+			 */
+			if (errno == ESRCH)
+				return COMMAND_ERROR_NO_TARGET;
+			else
+				return COMMAND_ERROR_UNKNOWN_ERROR;
+		}
+
+		g_stopped_thread = COMPOSED_PID(inferior->pid, inferior->os.thread_index);
+	}
 	
 	return COMMAND_ERROR_NONE;
 }
@@ -552,65 +561,15 @@ server_ptrace_stop (ServerHandle *handle)
 static ServerCommandError
 server_ptrace_stop_and_wait (ServerHandle *handle, guint32 *status)
 {
-	ServerCommandError result;
-	int ret;
-
-#if DEBUG_WAIT
-	g_message (G_STRLOC ": stop and wait %d", handle->inferior->pid);
-#endif
-	g_static_mutex_lock (&wait_mutex_2);
-	result = server_ptrace_stop (handle);
-	if (result != COMMAND_ERROR_NONE) {
-#if DEBUG_WAIT
-		g_message (G_STRLOC ": %d - cannot stop %d", handle->inferior->pid, result);
-#endif
-		g_static_mutex_unlock (&wait_mutex_2);
-		return result;
-	}
-
-	g_static_mutex_lock (&wait_mutex_3);
-
-	stop_requested = handle->inferior->pid;
-	g_static_mutex_unlock (&wait_mutex_2);
-
-#if DEBUG_WAIT
-	g_message (G_STRLOC ": %d - sent SIGSTOP", handle->inferior->pid);
-#endif
-
-	g_static_mutex_lock (&wait_mutex);
-#if DEBUG_WAIT
-	g_message (G_STRLOC ": %d - got stop status %x", handle->inferior->pid, stop_status);
-#endif
-	if (stop_status) {
-		*status = stop_status;
-		stop_requested = stop_status = 0;
-		g_static_mutex_unlock (&wait_mutex);
-		g_static_mutex_unlock (&wait_mutex_3);
-		return COMMAND_ERROR_NONE;
-	}
-
-	stop_requested = stop_status = 0;
-
-	do {
-#if DEBUG_WAIT
-		g_message (G_STRLOC ": %d - waiting", handle->inferior->pid);
-#endif
-		ret = do_wait (handle->inferior->pid, (int*)status);
-#if DEBUG_WAIT
-		g_message (G_STRLOC ": %d - done waiting %d, %x",
-			   handle->inferior->pid, ret, status);
-#endif
-	} while (ret == 0);
-	g_static_mutex_unlock (&wait_mutex);
-	g_static_mutex_unlock (&wait_mutex_3);
-
 	/*
-	 * Should never happen.
+	 * stop_and_wait doesn't make sense on OS X, since we are not guaranteed that wait will
+	 * return the same thread. Just make it the same as stop, and have the wait loop catch the 
+	 * signal.
 	 */
-	if (ret < 0)
-		return COMMAND_ERROR_NO_TARGET;
-
-	return COMMAND_ERROR_NONE;
+	
+	*status = NULL;
+	
+	return server_ptrace_stop (handle);
 }
 
 thread_t
@@ -750,7 +709,20 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 	if(get_thread_index(inferior->os.task, inferior->os.thread, &inferior->os.thread_index))
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 
-	inferior->os.is_stopped = FALSE;
+	inferior->os.wants_to_run = TRUE;
+
+	g_static_mutex_lock (&g_inferior_list_mutex);
+
+	struct InferiorList **inferior_list_iterator = &g_inferior_list;
+	
+	while (*inferior_list_iterator != NULL)
+		inferior_list_iterator = &((*inferior_list_iterator)->next);
+	
+	(*inferior_list_iterator) = g_malloc (sizeof (struct InferiorList));
+	(*inferior_list_iterator)->inferior = inferior;
+	(*inferior_list_iterator)->next = NULL;
+	
+	g_static_mutex_unlock (&g_inferior_list_mutex);	
 	
 	return COMMAND_ERROR_NONE;
 }
@@ -764,6 +736,20 @@ _server_ptrace_finalize_inferior (ServerHandle *handle)
 		inferior->os.stop_exception_thread = TRUE;
 		pthread_join(inferior->os.exception_thread, NULL);
 	}
+
+	g_static_mutex_lock (&g_inferior_list_mutex);
+
+	struct InferiorList **inferior_list_iterator = &g_inferior_list;
+	
+	while (*inferior_list_iterator != inferior && *inferior_list_iterator != NULL)
+		inferior_list_iterator = &((*inferior_list_iterator)->next);
+	
+	if (*inferior_list_iterator != NULL) {
+		g_free (*inferior_list_iterator);
+		*inferior_list_iterator = (*inferior_list_iterator)->next;
+	}
+	
+	g_static_mutex_unlock (&g_inferior_list_mutex);	
 }
 
 static ServerCommandError
@@ -980,11 +966,24 @@ server_ptrace_continue (ServerHandle *handle)
 	}
 
 	inferior->stepping = FALSE;
-				
-	if(!inferior->os.is_stopped)
-		return COMMAND_ERROR_NONE;
-		
-	inferior->os.is_stopped = FALSE;
+	inferior->os.wants_to_run = TRUE;
+	
+	g_static_mutex_lock (&g_inferior_list_mutex);
+
+	struct InferiorList *inferior_list_iterator = g_inferior_list;
+
+	int wants_to_run = TRUE;
+	while (inferior_list_iterator != NULL)
+	{
+		if (inferior_list_iterator->inferior->pid == inferior->pid)
+			wants_to_run &= inferior_list_iterator->inferior->os.wants_to_run;
+		inferior_list_iterator = (inferior_list_iterator)->next;
+	}
+	
+	g_static_mutex_unlock (&g_inferior_list_mutex);	
+
+	if (!wants_to_run)
+		return COMMAND_ERROR_NONE;		
 	
 	errno = 0;
 
@@ -1012,7 +1011,6 @@ server_ptrace_step (ServerHandle *handle)
 	INFERIOR_REGS_TYPE regs;
 	int i;
 	
-	inferior->os.is_stopped = FALSE;
 	/* 
 	 * PT_STEP seems to be badly broken on OS X in multi-threaded environments.
 	 * When using it on anything but the main thread, it kernel panics.
@@ -1072,10 +1070,7 @@ server_ptrace_kill (ServerHandle *handle)
 
 	if (task_threads(inferior->os.task, &threads, &count) == KERN_SUCCESS) {
 		for(i=0; i<count; i++) {
-			err = thread_info (threads[i], THREAD_BASIC_INFO, (thread_info_t) &th_info, &info_count);
-			if (err)
-				g_warning (G_STRLOC ": thread_info failed: %s", mach_error_string(err));
-			else while(th_info.suspend_count > 0) {
+			if (thread_info (threads[i], THREAD_BASIC_INFO, (thread_info_t) &th_info, &info_count) == KERN_SUCCESS) {
 				th_info.suspend_count--;
 				thread_resume (threads[i]);
 			}

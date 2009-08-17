@@ -246,7 +246,8 @@ namespace Mono.Debugger.Backend
 
 			switch (message) {
 			case Inferior.ChildEventType.CHILD_INTERRUPTED:
-				OperationInterrupted ();
+				if (current_operation != null)
+					OperationInterrupted ();
 				return true;
 			case Inferior.ChildEventType.CHILD_SIGNALED:
 				if (killed)
@@ -2809,7 +2810,7 @@ namespace Mono.Debugger.Backend
 				      "{0} execute start: {1} {2} {3}", sse, sse.ProcessServant.IsAttached,
 				      inferior.CurrentFrame, inferior.EntryPoint);
 
-			if (!sse.ProcessServant.IsAttached)
+			if (!sse.ProcessServant.IsAttached && Inferior.HasThreadEvents)
 				sse.do_continue (inferior.EntryPoint);
 			else
 				sse.ProcessEvent (new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0));

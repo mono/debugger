@@ -13,7 +13,7 @@ struct OSData
 	pthread_t exception_thread;
 	int stop_exception_thread;
 	int thread_index;
-	int is_stopped;
+	int wants_to_run;
 };
 
 #define PTRACE_KILL PT_KILL

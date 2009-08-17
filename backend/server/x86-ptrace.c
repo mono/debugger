@@ -202,7 +202,7 @@ server_ptrace_dispatch_event (ServerHandle *handle, guint32 status, guint64 *arg
 
 	if (WIFSTOPPED (status)) {
 #if __MACH__
-		handle->inferior->os.is_stopped = TRUE;
+		handle->inferior->os.wants_to_run = FALSE;
 #endif
 		guint64 callback_arg, retval, retval2;
 		ChildStoppedAction action;

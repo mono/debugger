@@ -524,6 +524,7 @@ namespace Mono.Debugger.Backend
 					thread_hash.Values.CopyTo (sses, 0);				
 					Inferior inferior = sses[0].Inferior;		
 					inferior.Process.ThreadCreated (inferior, pid, false, true);
+					goto again;
 				}
 
 				ArrayList check_threads = new ArrayList();
