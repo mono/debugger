@@ -1,3 +1,15 @@
+2009-08-18  Martin Baulig  <martin@ximian.com>
+
+	Fix #531062; correctly handle methods in compiler-generated files.
+
+	* languages/mono/MonoSymbolFile.cs
+	(MonoSymbolFile.GetMethods): Use the compilation unit from the
+	symbol file as the method's source file.
+
+	* classes/SourceInfo.cs
+	(SourceFile.GetMethod): Check whether the method is in the correct
+	source file.
+
 2009-08-12  Martin Baulig  <martin@ximian.com>
 
 	* doc/README.breakpoints: Add documentation about the new

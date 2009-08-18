@@ -189,8 +189,8 @@ namespace Mono.Debugger.Languages.Mono
 		Hashtable type_hash;
 		Hashtable class_entry_by_token;
 		ArrayList sources;
-		Hashtable source_hash;
-		Hashtable source_file_hash;
+		Dictionary<SourceFile,C.SourceFileEntry> source_hash;
+		Dictionary<C.SourceFileEntry,SourceFile> source_file_hash;
 		Hashtable method_index_hash;
 
 		internal MonoSymbolFile (MonoLanguageBackend language, ProcessServant process,
@@ -400,8 +400,8 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			sources = new ArrayList ();
-			source_hash = new Hashtable ();
-			source_file_hash = new Hashtable ();
+			source_hash = new Dictionary<SourceFile,C.SourceFileEntry> ();
+			source_file_hash = new Dictionary<C.SourceFileEntry,SourceFile> ();
 			method_index_hash = new Hashtable ();
 
 			if (File == null)
@@ -461,7 +461,7 @@ namespace Mono.Debugger.Languages.Mono
 			if (source == null)
 				return null;
 
-			return (SourceFile) source_file_hash [source];
+			return source_file_hash [source];
 		}
 
 		public MonoFunctionType GetFunctionByToken (int token)
@@ -488,7 +488,7 @@ namespace Mono.Debugger.Languages.Mono
 				return null;
 
 			C.MethodEntry entry = File.GetMethod (index);
-			SourceFile file = (SourceFile) source_file_hash [entry.CompileUnit.SourceFile];
+			SourceFile file = source_file_hash [entry.CompileUnit.SourceFile];
 			return CreateMethodSource (file, index);
 		}
 
@@ -540,26 +540,26 @@ namespace Mono.Debugger.Languages.Mono
 		public override MethodSource[] GetMethods (SourceFile file)
 		{
 			ensure_sources ();
-			C.SourceFileEntry source = (C.SourceFileEntry) source_hash [file];
+			C.SourceFileEntry source = source_hash [file];
 
 			List<MethodSource> methods = new List<MethodSource> ();
 
 			foreach (C.MethodEntry method in File.Methods) {
+				var cfile = source_file_hash [method.CompileUnit.SourceFile];
+				Cecil.MethodDefinition mdef = MonoDebuggerSupport.GetMethod (
+					ModuleDefinition, method.Token);
+
 				if (method.CompileUnit.SourceFile.Index == source.Index) {
-					methods.Add (GetMethodSource (file, method.Index));
+					methods.Add (GetMethodSource (cfile, method.Index));
 					continue;
 				}
 
-				bool found = false;
 				foreach (C.SourceFileEntry include in method.CompileUnit.IncludeFiles) {
 					if (include.Index == source.Index) {
-						found = true;
+						methods.Add (GetMethodSource (cfile, method.Index));
 						break;
 					}
 				}
-
-				if (found)
-					methods.Add (GetMethodSource (file, method.Index));
 			}
 
 			return methods.ToArray ();

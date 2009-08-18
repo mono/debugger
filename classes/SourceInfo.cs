@@ -63,7 +63,7 @@ namespace Mono.Debugger
 		{
 			MethodSource[] methods = module.GetMethods (this);
 			foreach (MethodSource method in methods) {
-				if (!method.HasSourceFile)
+				if (!method.HasSourceFile || (method.SourceFile != this))
 					continue;
 				if ((method.StartRow <= line) && (method.EndRow >= line))
 					return method;
