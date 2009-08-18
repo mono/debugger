@@ -1,3 +1,12 @@
+2009-08-18  Martin Baulig  <martin@ximian.com>
+
+	Fix #530596 for MonoVS; this is a 2.4 / 2.4.2 only patch; don't
+	merge this into trunk.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationActivateBreakpoints): Don't send a target event when
+	we're done; fixes #530596.
+
 2009-08-06  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs
