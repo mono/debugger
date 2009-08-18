@@ -2706,8 +2706,11 @@ namespace Mono.Debugger.Frontend
 
 		protected override void ActionDone (ScriptingContext context)
 		{
-			if (context.Interpreter.HasTarget)
-				context.Interpreter.CurrentProcess.ActivatePendingBreakpoints ();
+			if (!context.Interpreter.HasTarget)
+				return;
+
+			var result = context.Interpreter.CurrentProcess.ActivatePendingBreakpoints ();
+			context.Interpreter.Wait (result);
 		}
 
 		// IDocumentableCommand
@@ -3242,7 +3245,8 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (gui) {
-				context.CurrentProcess.ActivatePendingBreakpoints ();
+				var result = context.CurrentProcess.ActivatePendingBreakpoints ();
+				context.Interpreter.Wait (result);
 				return handle.Index;
 			}
 

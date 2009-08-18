@@ -2734,7 +2734,7 @@ namespace Mono.Debugger.Backend
 		}
 	}
 
-	protected class OperationActivateBreakpoints : Operation
+	protected class OperationActivateBreakpoints : OperationCallbackBase
 	{
 		public OperationActivateBreakpoints (SingleSteppingEngine sse, PendingBreakpointQueue pending)
 			: base (sse, null)
@@ -2745,10 +2745,6 @@ namespace Mono.Debugger.Backend
 		protected override void DoExecute ()
 		{
 			do_execute ();
-		}
-
-		public override bool IsSourceOperation {
-			get { return false; }
 		}
 
 		PendingBreakpointQueue pending_events;
@@ -2801,6 +2797,18 @@ namespace Mono.Debugger.Backend
 			else
 				sse.PushOperation (new OperationRemoveBreakpoint (sse, handle));
 			return true;
+		}
+
+		public override EventResult CompletedOperation (Inferior.ChildEvent cevent, EventResult result, ref TargetEventArgs args)
+		{
+			if ((result == EventResult.Completed) && (cevent.Type == Inferior.ChildEventType.CHILD_CALLBACK)) {
+				RestoreStack ();
+				args = null;
+				return result;
+			}
+
+			DiscardStack ();
+			return base.CompletedOperation (cevent, result, ref args);
 		}
 	}
 
@@ -3568,18 +3576,14 @@ namespace Mono.Debugger.Backend
 		}
 	}
 
-	protected abstract class OperationCallback : Operation
+	protected abstract class OperationCallbackBase : Operation
 	{
 		public readonly long ID = ++next_id;
 		StackData stack_data;
 
 		static int next_id = 0;
 
-		protected OperationCallback (SingleSteppingEngine sse)
-			: base (sse, null)
-		{ }
-
-		protected OperationCallback (SingleSteppingEngine sse, CommandResult result)
+		protected OperationCallbackBase (SingleSteppingEngine sse, CommandResult result)
 			: base (sse, result)
 		{ }
 
@@ -3593,6 +3597,38 @@ namespace Mono.Debugger.Backend
 				throw;
 			}
 		}
+
+		public override bool IsSourceOperation {
+			get { return false; }
+		}
+
+		protected void AbortOperation ()
+		{
+			stack_data = null;
+		}
+
+		protected void RestoreStack ()
+		{
+			if (stack_data != null)
+				sse.restore_stack (stack_data);
+			stack_data = null;
+		}
+
+		protected void DiscardStack ()
+		{
+			stack_data = null;
+		}
+	}
+
+	protected abstract class OperationCallback : OperationCallbackBase
+	{
+		protected OperationCallback (SingleSteppingEngine sse)
+			: base (sse, null)
+		{ }
+
+		protected OperationCallback (SingleSteppingEngine sse, CommandResult result)
+			: base (sse, result)
+		{ }
 
 		protected override EventResult DoProcessEvent (Inferior.ChildEvent cevent,
 							       out TargetEventArgs args)
@@ -3641,27 +3677,6 @@ namespace Mono.Debugger.Backend
 		}
 
 		protected abstract EventResult CallbackCompleted (long data1, long data2);
-
-		public override bool IsSourceOperation {
-			get { return false; }
-		}
-
-		protected void AbortOperation ()
-		{
-			stack_data = null;
-		}
-
-		protected void RestoreStack ()
-		{
-			if (stack_data != null)
-				sse.restore_stack (stack_data);
-			stack_data = null;
-		}
-
-		protected void DiscardStack ()
-		{
-			stack_data = null;
-		}
 	}
 
 	protected class OperationManagedCallback : Operation
