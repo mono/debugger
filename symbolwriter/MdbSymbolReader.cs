@@ -177,7 +177,7 @@ namespace Mono.Debugger.SymbolWriter
 									   method.Index, method.Token);
 
 				string name = String.Format ("{0} ({1})", method.Index, GetMethodName (mdef));
-				Message ("Method {0} - {1}", method.Index, GetMethodName (mdef));
+				Message ("Method {0} ({1:x}) - {2}", method.Index, method.Token, GetMethodName (mdef));
 			}
 		}
 
