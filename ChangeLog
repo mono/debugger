@@ -1,3 +1,11 @@
+2009-09-26  Jonathan Chambers  <joncham@gmail.com>
+
+	* build/mdb.csproj: Add ExpressionParser.cs.
+
+	* build/Mono.Debugger.Frontend.csproj: Add ExpressionParser.cs.
+	
+	Contributed under MIT/X11 license.
+
 2009-08-18  Martin Baulig  <martin@ximian.com>
 
 	Fix #531062; correctly handle methods in compiler-generated files.

@@ -72,6 +72,7 @@
     <Compile Include="..\frontend\CSharpTokenizer.cs" />
     <Compile Include="..\frontend\DebuggerTextWriter.cs" />
     <Compile Include="..\frontend\Expression.cs" />
+    <Compile Include="..\frontend\ExpressionParser.cs" />
     <Compile Include="..\frontend\GnuReadLine.cs" />
     <Compile Include="..\frontend\Interpreter.cs" />
     <Compile Include="..\frontend\LineReader.cs" />
