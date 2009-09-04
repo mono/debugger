@@ -67,12 +67,7 @@ namespace Mono.Debugger.Languages
 				index = index * length + indices [i];
 			}
 
-			if (Type.ElementType.IsByRef)
-				return index * target.TargetMemoryInfo.TargetAddressSize;
-			else if (Type.ElementType.HasFixedSize)
-				return index * Type.ElementType.Size;
-			else
-				throw new InvalidOperationException ();
+			return index * Type.GetElementSize (target);
 		}
 
 		protected int GetLength (TargetMemoryAccess target)

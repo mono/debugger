@@ -79,6 +79,24 @@ namespace Mono.Debugger.Languages.Mono
 			return memory.ReadInteger (klass + MonoMetadataInfo.KlassTokenOffset);
 		}
 
+		public int MonoClassGetInstanceSize (TargetMemoryAccess memory,
+						     TargetAddress klass)
+		{
+			int flags = memory.ReadInteger (klass + 4 * memory.TargetAddressSize);
+
+			bool size_inited = (flags & 4) != 0;
+			bool valuetype = (flags & 8) != 0;
+
+			if (!size_inited)
+				throw new TargetException (TargetError.ClassNotInitialized);
+
+			int size = memory.ReadInteger (klass + 4 + 3 * memory.TargetAddressSize);
+			if (valuetype)
+				size -= 2 * memory.TargetAddressSize;
+
+			return size;
+		}
+
 		public TargetAddress MonoClassGetParent (TargetMemoryAccess memory,
 							 TargetAddress klass)
 		{

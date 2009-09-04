@@ -116,6 +116,11 @@ namespace Mono.Debugger.Languages.Mono
 			get { return !GenericClass.IsNull; }
 		}
 
+		internal int GetInstanceSize (TargetMemoryAccess target)
+		{
+			return MonoRuntime.MonoClassGetInstanceSize (target, KlassAddress);
+		}
+
 		internal MonoFieldInfo[] GetFields (TargetMemoryAccess target)
 		{
 			if (fields != null)

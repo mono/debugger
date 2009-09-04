@@ -31,6 +31,16 @@ namespace Mono.Debugger.Languages.Mono
 			get { return 4 * Language.TargetInfo.TargetAddressSize; }
 		}
 
+		internal override int GetElementSize (TargetMemoryAccess target)
+		{
+			IMonoStructType stype = ElementType as IMonoStructType;
+			if ((stype == null) || stype.Type.IsByRef)
+				return base.GetElementSize (target);
+
+			MonoClassInfo cinfo = stype.ResolveClass (target, true);
+			return cinfo.GetInstanceSize (target);
+		}
+
 		protected override TargetObject DoGetObject (TargetMemoryAccess target, TargetLocation location)
 		{
 			return new MonoArrayObject (this, location);
