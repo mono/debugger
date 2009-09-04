@@ -125,5 +125,15 @@ namespace Mono.Debugger.Languages
 
 			return element_type.Name + rank_specifier;
 		}
+
+		internal virtual int GetElementSize (TargetMemoryAccess target)
+		{
+			if (ElementType.IsByRef)
+				return target.TargetMemoryInfo.TargetAddressSize;
+			else if (ElementType.HasFixedSize)
+				return ElementType.Size;
+			else
+				throw new InvalidOperationException ();
+		}
 	}
 }

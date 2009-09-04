@@ -195,9 +195,17 @@ public class X
 
 	public static void StructArray ()
 	{
-		A[] array = new A [] { new A (5, 256, "New England Patriots") };
+		A[] array = new A [] { new A (5, 256, "New England Patriots"), new A (8, 19, "Boston Red Sox") };
 		Console.WriteLine (array [0]);
+		Console.WriteLine (array [1]);
 	}						// @MDB BREAKPOINT: struct array
+
+	public static void ClassArray ()
+	{
+		B[] array = new B [] { new B (5, 256, "New England Patriots"), new B (8, 19, "Boston Red Sox") };
+		Console.WriteLine (array [0]);
+		Console.WriteLine (array [1]);
+	}						// @MDB BREAKPOINT: class array
 
 	public static void StructType ()
 	{
@@ -250,6 +258,7 @@ public class X
 		StringArray ();
 		MultiStringArray ();
 		StructArray ();
+		ClassArray ();
 		StructType ();
 		ClassType ();
 		InheritedClassType ();
