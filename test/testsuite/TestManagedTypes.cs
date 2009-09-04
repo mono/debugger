@@ -152,9 +152,23 @@ namespace Mono.Debugger.Tests
 
 			AssertPrint (thread, "array [0]",
 				     "(A) { a = 5, b = 256, c = \"New England Patriots\", f = 51.2 }");
+			AssertPrint (thread, "array [1]",
+				     "(A) { a = 8, b = 19, c = \"Boston Red Sox\", f = 2.375 }");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("A");
+			AssertTargetOutput ("A");
+
+			AssertHitBreakpoint (thread, "class array", "X.ClassArray()");
+
+			AssertPrint (thread, "array [0]",
+				     "(B) { a = 5, b = 256, c = \"New England Patriots\" }");
+			AssertPrint (thread, "array [1]",
+				     "(B) { a = 8, b = 19, c = \"Boston Red Sox\" }");
+
+			AssertExecute ("continue");
+			AssertTargetOutput ("B");
+			AssertTargetOutput ("B");
 			AssertTargetOutput ("51.2");
 			AssertTargetOutput ("Hello World");
 			AssertNoTargetOutput ();
