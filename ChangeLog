@@ -1,3 +1,17 @@
+2009-10-08  Jonathan Chambers  <joncham@gmail.com>
+
+	* backend/server/i386-arch.h: Define register access for CONTEXT on Windows.
+
+	* backend/server/server.h: Add SERVER_TYPE_WIN32.
+
+	* backend/server/x86-windows.c: Merge of work from Unity.
+
+	Unity is releasing all the sourcecode that Friedrich Dominicus has
+	done on the mono debugger, as part of a contracting agreement with
+	Unity, under the MIT-X11 license.
+
+	Joachim Ante, CTO Unity
+
 2009-09-26  Jonathan Chambers  <joncham@gmail.com>
 
 	* build/mdb.csproj: Add ExpressionParser.cs.

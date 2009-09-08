@@ -107,7 +107,8 @@ typedef enum {
 typedef enum {
 	SERVER_TYPE_UNKNOWN			= 0,
 	SERVER_TYPE_LINUX_PTRACE		= 1,
-	SERVER_TYPE_DARWIN			= 2
+	SERVER_TYPE_DARWIN			= 2,
+	SERVER_TYPE_WIN32			= 3
 } ServerType;
 
 /* This is an opaque data structure which the backend may use to store stuff. */
