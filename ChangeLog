@@ -1,5 +1,10 @@
 2009-09-15  Martin Baulig  <martin@ximian.com>
 
+	* backend/mono/MonoRuntime.cs: Renamed into MetadataHelper.cs.
+	(MonoRuntime): Renamed into `MetadataHelper'.
+
+2009-09-15  Martin Baulig  <martin@ximian.com>
+
 	* backend/mono/: Moved all the Mono Runtime code here.
 
 	* backend/MonoThreadManager.cs: Moved to backend/mono/.

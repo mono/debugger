@@ -29,98 +29,98 @@ namespace Mono.Debugger.Languages.Mono
 
 			switch (kind) {
 			case FundamentalKind.Boolean:
-				klass = corlib.MonoLanguage.MonoRuntime.GetBooleanClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetBooleanClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Boolean"],
 					"bool", kind, 1);
 				break;
 
 			case FundamentalKind.Char:
-				klass = corlib.MonoLanguage.MonoRuntime.GetCharClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetCharClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Char"],
 					"char", kind, 2);
 				break;
 
 			case FundamentalKind.SByte:
-				klass = corlib.MonoLanguage.MonoRuntime.GetSByteClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetSByteClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.SByte"],
 					"sbyte", kind, 1);
 				break;
 
 			case FundamentalKind.Byte:
-				klass = corlib.MonoLanguage.MonoRuntime.GetByteClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetByteClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Byte"],
 					"byte", kind, 1);
 				break;
 
 			case FundamentalKind.Int16:
-				klass = corlib.MonoLanguage.MonoRuntime.GetInt16Class (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetInt16Class (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Int16"],
 					"short", kind, 2);
 				break;
 
 			case FundamentalKind.UInt16:
-				klass = corlib.MonoLanguage.MonoRuntime.GetUInt16Class (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetUInt16Class (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.UInt16"],
 					"ushort", kind, 2);
 				break;
 
 			case FundamentalKind.Int32:
-				klass = corlib.MonoLanguage.MonoRuntime.GetInt32Class (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetInt32Class (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Int32"],
 					"int", kind, 4);
 				break;
 
 			case FundamentalKind.UInt32:
-				klass = corlib.MonoLanguage.MonoRuntime.GetUInt32Class (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetUInt32Class (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.UInt32"],
 					"uint", kind, 4);
 				break;
 
 			case FundamentalKind.Int64:
-				klass = corlib.MonoLanguage.MonoRuntime.GetInt64Class (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetInt64Class (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Int64"],
 					"long", kind, 8);
 				break;
 
 			case FundamentalKind.UInt64:
-				klass = corlib.MonoLanguage.MonoRuntime.GetUInt64Class (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetUInt64Class (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.UInt64"],
 					"ulong", kind, 8);
 				break;
 
 			case FundamentalKind.Single:
-				klass = corlib.MonoLanguage.MonoRuntime.GetSingleClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetSingleClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Single"],
 					"float", kind, 4);
 				break;
 
 			case FundamentalKind.Double:
-				klass = corlib.MonoLanguage.MonoRuntime.GetDoubleClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetDoubleClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.Double"],
 					"double", kind, 8);
 				break;
 
 			case FundamentalKind.IntPtr:
-				klass = corlib.MonoLanguage.MonoRuntime.GetIntPtrClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetIntPtrClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.IntPtr"],
 					"System.IntPtr", kind, memory.TargetMemoryInfo.TargetAddressSize);
 				break;
 
 			case FundamentalKind.UIntPtr:
-				klass = corlib.MonoLanguage.MonoRuntime.GetUIntPtrClass (memory);
+				klass = corlib.MonoLanguage.MetadataHelper.GetUIntPtrClass (memory);
 				fundamental = new MonoFundamentalType (
 					corlib, corlib.ModuleDefinition.Types ["System.UIntPtr"],
 					"System.UIntPtr", kind, memory.TargetMemoryInfo.TargetAddressSize);

@@ -48,21 +48,21 @@ namespace Mono.Debugger.Backend.Mono
 		MONO_TYPE_ENUM       = 0x55        /* an enumeration */
 	}
 
-	internal class MonoRuntime : DebuggerMarshalByRefObject
+	internal class MetadataHelper : DebuggerMarshalByRefObject
 	{
 		protected readonly MonoDebuggerInfo MonoDebuggerInfo;
 		protected readonly MetadataInfo MonoMetadataInfo;
 
-		protected MonoRuntime (MonoDebuggerInfo info, MetadataInfo metadata)
+		protected MetadataHelper (MonoDebuggerInfo info, MetadataInfo metadata)
 		{
 			this.MonoDebuggerInfo = info;
 			this.MonoMetadataInfo = metadata;
 		}
 
-		public static MonoRuntime Create (TargetMemoryAccess memory, MonoDebuggerInfo info)
+		public static MetadataHelper Create (TargetMemoryAccess memory, MonoDebuggerInfo info)
 		{
 			MetadataInfo metadata = new MetadataInfo (memory, info.MonoMetadataInfo);
-			return new MonoRuntime (info, metadata);
+			return new MetadataHelper (info, metadata);
 		}
 
 		//

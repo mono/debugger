@@ -24,7 +24,7 @@ namespace Mono.Debugger.Languages.Mono
 			MonoVoidType type = new MonoVoidType (
 				corlib, corlib.ModuleDefinition.Types ["System.Void"]);
 
-			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetVoidClass (memory);
+			TargetAddress klass = corlib.MonoLanguage.MetadataHelper.GetVoidClass (memory);
 			type.create_type (memory, klass);
 
 			return type;

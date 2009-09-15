@@ -202,7 +202,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			signature = (MonoMethodSignature) thread.ThreadServant.DoTargetAccess (
 				delegate (TargetMemoryAccess target)  {
-					return mono.MonoRuntime.GetMethodSignature (mono, target, sig);
+					return mono.MetadataHelper.GetMethodSignature (mono, target, sig);
 			});
 
 			return signature;

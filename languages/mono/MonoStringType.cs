@@ -29,7 +29,7 @@ namespace Mono.Debugger.Languages.Mono
 				corlib, corlib.ModuleDefinition.Types ["System.String"],
 				object_size, object_size + 4);
 
-			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetStringClass (memory);
+			TargetAddress klass = corlib.MonoLanguage.MetadataHelper.GetStringClass (memory);
 			type.create_type (memory, klass);
 
 			return type;

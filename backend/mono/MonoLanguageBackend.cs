@@ -93,17 +93,17 @@ namespace Mono.Debugger.Backend.Mono
 			Cecil.TypeDefinition decimal_type = corlib.ModuleDefinition.Types ["System.Decimal"];
 			corlib.AddType (decimal_type, DecimalType);
 
-			TargetAddress klass = corlib.MonoLanguage.MonoRuntime.GetArrayClass (memory);
+			TargetAddress klass = corlib.MonoLanguage.MetadataHelper.GetArrayClass (memory);
 			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
 			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
-			klass = corlib.MonoLanguage.MonoRuntime.GetDelegateClass (memory);
+			klass = corlib.MonoLanguage.MetadataHelper.GetDelegateClass (memory);
 			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
-			klass = corlib.MonoLanguage.MonoRuntime.GetExceptionClass (memory);
+			klass = corlib.MonoLanguage.MetadataHelper.GetExceptionClass (memory);
 			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
 			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
@@ -223,7 +223,7 @@ namespace Mono.Debugger.Backend.Mono
 		Hashtable data_tables;
 		GlobalDataTable global_data_table;
 
-		MonoRuntime runtime;
+		MetadataHelper runtime;
 
 		ProcessServant process;
 		MonoDebuggerInfo info;
@@ -249,7 +249,7 @@ namespace Mono.Debugger.Backend.Mono
 			get { return info; }
 		}
 
-		internal MonoRuntime MonoRuntime {
+		internal MetadataHelper MetadataHelper {
 			get { return runtime; }
 		}
 
@@ -459,7 +459,7 @@ namespace Mono.Debugger.Backend.Mono
 
 		void read_mono_debugger_info (TargetMemoryAccess memory)
 		{
-			runtime = MonoRuntime.Create (memory, info);
+			runtime = MetadataHelper.Create (memory, info);
 
 			trampolines = new TargetAddress [info.MonoTrampolineNum];
 
@@ -486,9 +486,9 @@ namespace Mono.Debugger.Backend.Mono
 		internal MonoFunctionType ReadMonoMethod (TargetMemoryAccess memory,
 							  TargetAddress address)
 		{
-			int token = MonoRuntime.MonoMethodGetToken (memory, address);
-			TargetAddress klass = MonoRuntime.MonoMethodGetClass (memory, address);
-			TargetAddress image = MonoRuntime.MonoClassGetMonoImage (memory, klass);
+			int token = MetadataHelper.MonoMethodGetToken (memory, address);
+			TargetAddress klass = MetadataHelper.MonoMethodGetClass (memory, address);
+			TargetAddress image = MetadataHelper.MonoClassGetMonoImage (memory, klass);
 
 			MonoSymbolFile file = GetImage (image);
 			if (file == null)
@@ -499,15 +499,15 @@ namespace Mono.Debugger.Backend.Mono
 
 		public TargetType ReadMonoClass (TargetMemoryAccess target, TargetAddress klass)
 		{
-			TargetAddress byval_type = MonoRuntime.MonoClassGetByValType (target, klass);
+			TargetAddress byval_type = MetadataHelper.MonoClassGetByValType (target, klass);
 			return ReadType (target, byval_type);
 		}
 
 		public TargetType ReadType (TargetMemoryAccess memory, TargetAddress address)
 		{
-			TargetAddress data = MonoRuntime.MonoTypeGetData (memory, address);
-			MonoTypeEnum type = MonoRuntime.MonoTypeGetType (memory, address);
-			bool byref = MonoRuntime.MonoTypeGetIsByRef (memory, address);
+			TargetAddress data = MetadataHelper.MonoTypeGetData (memory, address);
+			MonoTypeEnum type = MetadataHelper.MonoTypeGetType (memory, address);
+			bool byref = MetadataHelper.MonoTypeGetIsByRef (memory, address);
 
 			TargetType target_type = ReadType (memory, type, data);
 			if (target_type == null)
@@ -521,8 +521,8 @@ namespace Mono.Debugger.Backend.Mono
 
 		public TargetClassType ReadStructType (TargetMemoryAccess memory, TargetAddress address)
 		{
-			TargetAddress data = MonoRuntime.MonoTypeGetData (memory, address);
-			MonoTypeEnum type = MonoRuntime.MonoTypeGetType (memory, address);
+			TargetAddress data = MetadataHelper.MonoTypeGetData (memory, address);
+			MonoTypeEnum type = MetadataHelper.MonoTypeGetType (memory, address);
 
 			return (TargetClassType) ReadType (memory, type, data);
 		}
@@ -580,10 +580,10 @@ namespace Mono.Debugger.Backend.Mono
 			}
 
 			case MonoTypeEnum.MONO_TYPE_ARRAY: {
-				TargetAddress klass = MonoRuntime.MonoArrayTypeGetClass (memory, data);
-				int rank = MonoRuntime.MonoArrayTypeGetRank (memory, data);
+				TargetAddress klass = MetadataHelper.MonoArrayTypeGetClass (memory, data);
+				int rank = MetadataHelper.MonoArrayTypeGetRank (memory, data);
 
-				MonoRuntime.MonoArrayTypeGetBounds (memory, data);
+				MetadataHelper.MonoArrayTypeGetBounds (memory, data);
 
 				TargetType etype = ReadMonoClass (memory, klass);
 				return new MonoArrayType (etype, rank);
@@ -594,7 +594,7 @@ namespace Mono.Debugger.Backend.Mono
 
 			case MonoTypeEnum.MONO_TYPE_VAR:
 			case MonoTypeEnum.MONO_TYPE_MVAR: {
-				MonoRuntime.GenericParamInfo info = MonoRuntime.GetGenericParameter (
+				MetadataHelper.GenericParamInfo info = MetadataHelper.GetGenericParameter (
 					memory, data);
 
 				return new MonoGenericParameterType (this, info.Name);
@@ -609,7 +609,7 @@ namespace Mono.Debugger.Backend.Mono
 		public TargetType ReadGenericClass (TargetMemoryAccess memory, TargetAddress address,
 						    bool handle_nullable)
 		{
-			MonoRuntime.GenericClassInfo info = MonoRuntime.GetGenericClass (memory, address);
+			MetadataHelper.GenericClassInfo info = MetadataHelper.GetGenericClass (memory, address);
 			if (info == null)
 				return null;
 
@@ -1317,7 +1317,7 @@ namespace Mono.Debugger.Backend.Mono
 			read_builtin_types (memory);
 		}
 
-		Dictionary<int,MonoRuntime.AppDomainInfo> appdomain_info = new Dictionary<int,MonoRuntime.AppDomainInfo> ();
+		Dictionary<int,MetadataHelper.AppDomainInfo> appdomain_info = new Dictionary<int,MetadataHelper.AppDomainInfo> ();
 
 		void create_appdomain (TargetMemoryAccess memory, TargetAddress address)
 		{
@@ -1341,7 +1341,7 @@ namespace Mono.Debugger.Backend.Mono
 			TargetAddress domain = reader.ReadAddress ();
 			TargetAddress setup = reader.ReadAddress ();
 
-			MonoRuntime.AppDomainInfo info = MonoRuntime.GetAppDomainInfo (this, memory, setup);
+			MetadataHelper.AppDomainInfo info = MetadataHelper.GetAppDomainInfo (this, memory, setup);
 			info.ShadowCopyPath = shadow_path;
 
 			appdomain_info.Add (id, info);
@@ -1354,7 +1354,7 @@ namespace Mono.Debugger.Backend.Mono
 
 		bool is_shadow_copy_path (string path)
 		{
-			foreach (MonoRuntime.AppDomainInfo info in appdomain_info.Values) {
+			foreach (MetadataHelper.AppDomainInfo info in appdomain_info.Values) {
 				if (!info.ShadowCopyFiles || (info.ShadowCopyPath == null))
 					continue;
 

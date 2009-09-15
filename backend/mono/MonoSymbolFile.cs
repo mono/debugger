@@ -7,7 +7,6 @@ using System.Globalization;
 using System.Text;
 using C = Mono.CompilerServices.SymbolWriter;
 using Mono.Debugger;
-using Mono.Debugger.Backend;
 
 using Mono.Debugger.Backend;
 using Mono.Debugger.Languages;
@@ -1258,7 +1257,7 @@ namespace Mono.Debugger.Backend.Mono
 
 				MonoLanguageBackend mono = file.MonoLanguage;
 
-				TargetAddress decl_klass = mono.MonoRuntime.MonoMethodGetClass (
+				TargetAddress decl_klass = mono.MetadataHelper.MonoMethodGetClass (
 					memory, address.MonoMethod);
 				TargetType decl = mono.ReadMonoClass (memory, decl_klass);
 				if (decl.HasClassType)

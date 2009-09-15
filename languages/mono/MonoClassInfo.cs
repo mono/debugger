@@ -32,12 +32,12 @@ namespace Mono.Debugger.Languages.Mono
 							   TargetMemoryAccess target,
 							   TargetAddress klass)
 		{
-			TargetAddress image = mono.MonoRuntime.MonoClassGetMonoImage (target, klass);
+			TargetAddress image = mono.MetadataHelper.MonoClassGetMonoImage (target, klass);
 			MonoSymbolFile file = mono.GetImage (image);
 			if (file == null)
 				throw new InternalError ();
 
-			int token = mono.MonoRuntime.MonoClassGetToken (target, klass);
+			int token = mono.MetadataHelper.MonoClassGetToken (target, klass);
 			if ((token & 0xff000000) != 0x02000000)
 				throw new InternalError ();
 
@@ -97,13 +97,13 @@ namespace Mono.Debugger.Languages.Mono
 			this.KlassAddress = klass;
 			this.CecilType = typedef;
 
-			parent_klass = MonoRuntime.MonoClassGetParent (target, klass);
-			GenericClass = MonoRuntime.MonoClassGetGenericClass (target, klass);
-			GenericContainer = MonoRuntime.MonoClassGetGenericContainer (target, klass);
+			parent_klass = MetadataHelper.MonoClassGetParent (target, klass);
+			GenericClass = MetadataHelper.MonoClassGetGenericClass (target, klass);
+			GenericContainer = MetadataHelper.MonoClassGetGenericContainer (target, klass);
 		}
 
-		protected MonoRuntime MonoRuntime {
-			get { return SymbolFile.MonoLanguage.MonoRuntime; }
+		protected MetadataHelper MetadataHelper {
+			get { return SymbolFile.MonoLanguage.MetadataHelper; }
 		}
 
 		public override TargetType RealType {
@@ -120,7 +120,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal int GetInstanceSize (TargetMemoryAccess target)
 		{
-			return MonoRuntime.MonoClassGetInstanceSize (target, KlassAddress);
+			return MetadataHelper.MonoClassGetInstanceSize (target, KlassAddress);
 		}
 
 		internal MonoFieldInfo[] GetFields (TargetMemoryAccess target)
@@ -128,8 +128,8 @@ namespace Mono.Debugger.Languages.Mono
 			if (fields != null)
 				return fields;
 
-			int field_count = MonoRuntime.MonoClassGetFieldCount (target, KlassAddress);
-			if ((field_count != 0) && !MonoRuntime.MonoClassHasFields (target, KlassAddress))
+			int field_count = MetadataHelper.MonoClassGetFieldCount (target, KlassAddress);
+			if ((field_count != 0) && !MetadataHelper.MonoClassHasFields (target, KlassAddress))
 				throw new TargetException (TargetError.ClassNotInitialized);
 
 			fields = new MonoFieldInfo [field_count];
@@ -139,11 +139,11 @@ namespace Mono.Debugger.Languages.Mono
 			for (int i = 0; i < field_count; i++) {
 				Cecil.FieldDefinition field = CecilType.Fields [i];
 
-				TargetAddress type_addr = MonoRuntime.MonoClassGetFieldType (
+				TargetAddress type_addr = MetadataHelper.MonoClassGetFieldType (
 					target, KlassAddress, i);
 
 				field_types [i] = SymbolFile.MonoLanguage.ReadType (target, type_addr);
-				field_offsets [i] = MonoRuntime.MonoClassGetFieldOffset (
+				field_offsets [i] = MetadataHelper.MonoClassGetFieldOffset (
 					target, KlassAddress, i);
 
 				fields [i] = new MonoFieldInfo (struct_type, field_types [i], i, field);
@@ -346,17 +346,17 @@ namespace Mono.Debugger.Languages.Mono
 				return;
 
 			try {
-				if (!MonoRuntime.MonoClassHasMethods (target, KlassAddress))
+				if (!MetadataHelper.MonoClassHasMethods (target, KlassAddress))
 					return;
 
-				int count = MonoRuntime.MonoClassGetMethodCount (target, KlassAddress);
+				int count = MetadataHelper.MonoClassGetMethodCount (target, KlassAddress);
 
 				methods_by_token = new Dictionary<int,TargetAddress> ();
 
 				for (int i = 0; i < count; i++) {
-					TargetAddress address = MonoRuntime.MonoClassGetMethod (
+					TargetAddress address = MetadataHelper.MonoClassGetMethod (
 						target, KlassAddress, i);
-					int mtoken = MonoRuntime.MonoMethodGetToken (target, address);
+					int mtoken = MetadataHelper.MonoMethodGetToken (target, address);
 					if (mtoken != 0)
 						methods_by_token.Add (mtoken, address);
 				}
@@ -397,7 +397,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		void get_parent (TargetMemoryAccess target)
 		{
-			parent_klass = MonoRuntime.MonoClassGetParent (target, KlassAddress);
+			parent_klass = MetadataHelper.MonoClassGetParent (target, KlassAddress);
 			if (parent_klass.IsNull)
 				return;
 
