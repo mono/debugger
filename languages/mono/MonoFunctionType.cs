@@ -4,8 +4,8 @@ using System.Runtime.Serialization;
 using C = Mono.CompilerServices.SymbolWriter;
 using Cecil = Mono.Cecil;
 
-using Mono.Debugger;
 using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Languages.Mono
 {

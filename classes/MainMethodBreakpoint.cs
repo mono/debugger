@@ -1,6 +1,8 @@
 using System;
 using System.Xml;
+
 using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Native;
 using Mono.Debugger.Languages.Mono;

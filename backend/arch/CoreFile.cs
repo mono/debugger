@@ -3,8 +3,10 @@ using System.IO;
 using System.Collections;
 using ST = System.Threading;
 using System.Runtime.InteropServices;
+
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
+using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Backend
 {

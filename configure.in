@@ -359,6 +359,7 @@ build/Mono.Debugger.dll.config
 backend/Makefile
 backend/server/Makefile
 backend/arch/Makefile
+backend/mono/Makefile
 backend/os/Makefile
 backend/os/bfd/libiberty/Makefile
 backend/os/bfd/opcodes/Makefile

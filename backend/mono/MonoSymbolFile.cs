@@ -9,7 +9,11 @@ using C = Mono.CompilerServices.SymbolWriter;
 using Mono.Debugger;
 using Mono.Debugger.Backend;
 
-namespace Mono.Debugger.Languages.Mono
+using Mono.Debugger.Backend;
+using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
+
+namespace Mono.Debugger.Backend.Mono
 {
 	internal class VariableInfo
 	{

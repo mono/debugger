@@ -1,5 +1,13 @@
 2009-09-15  Martin Baulig  <martin@ximian.com>
 
+	* backend/mono/: Moved all the Mono Runtime code here.
+
+	* backend/MonoThreadManager.cs: Moved to backend/mono/.
+	* languages/mono/MonoLanguageBackend.cs: Likewise.
+	* languages/mono/MonoRuntime.cs: Likewise.
+
+2009-09-15  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetStructType.cs: Removed.
 	(TargetStructType): Moved everything into `TargetClassType'.
 

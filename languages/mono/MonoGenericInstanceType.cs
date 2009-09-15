@@ -5,6 +5,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Cecil = Mono.Cecil;
 
+using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
+
 namespace Mono.Debugger.Languages.Mono
 {
 	internal class MonoGenericInstanceType : TargetGenericInstanceType, IMonoStructType

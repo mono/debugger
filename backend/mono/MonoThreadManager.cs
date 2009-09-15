@@ -15,8 +15,7 @@ using Mono.Debugger;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Mono;
 
-
-namespace Mono.Debugger.Backend
+namespace Mono.Debugger.Backend.Mono
 {
 
 // <summary>

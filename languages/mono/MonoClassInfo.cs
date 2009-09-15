@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+
 using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Languages.Mono
 {

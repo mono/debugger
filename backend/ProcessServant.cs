@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 using Mono.Debugger.Architectures;
 using Mono.Debugger.Languages;
 using Mono.Debugger.Languages.Native;

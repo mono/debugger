@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
+
 using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Languages.Mono
 {

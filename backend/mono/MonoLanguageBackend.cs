@@ -9,8 +9,10 @@ using System.Threading;
 using C = Mono.CompilerServices.SymbolWriter;
 
 using Mono.Debugger.Backend;
+using Mono.Debugger.Languages;
+using Mono.Debugger.Languages.Mono;
 
-namespace Mono.Debugger.Languages.Mono
+namespace Mono.Debugger.Backend.Mono
 {
 	internal delegate void BreakpointHandler (Inferior inferior, TargetAddress address,
 						  object user_data);

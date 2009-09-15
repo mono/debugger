@@ -1,6 +1,8 @@
 using System;
-using Mono.Debugger.Backend;
 using Cecil = Mono.Cecil;
+
+using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Languages.Mono
 {
