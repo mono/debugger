@@ -18,7 +18,7 @@ namespace Mono.Debugger.Languages.Mono
 			get;
 		}
 
-		TargetStructType Type {
+		TargetClassType Type {
 			get;
 		}
 
@@ -33,16 +33,12 @@ namespace Mono.Debugger.Languages.Mono
 
 	internal class MonoClassType : TargetClassType, IMonoStructType
 	{
-		MonoFieldInfo[] fields;
-		MonoMethodInfo[] methods;
-		MonoPropertyInfo[] properties;
-		MonoEventInfo[] events;
-		MonoMethodInfo[] constructors;
-
 		Cecil.TypeDefinition type;
 		MonoSymbolFile file;
 		IMonoStructType parent_type;
 		MonoClassInfo class_info;
+
+		MonoStructType struct_type;
 
 		bool resolved;
 		Hashtable load_handlers;
@@ -59,6 +55,8 @@ namespace Mono.Debugger.Languages.Mono
 		{
 			this.type = type;
 			this.file = file;
+
+			struct_type = new MonoStructType (file, this, type);
 
 			if (type.GenericParameters.Count > 0) {
 				StringBuilder sb = new StringBuilder (type.FullName);
@@ -92,7 +90,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.FullName; }
 		}
 
-		TargetStructType IMonoStructType.Type {
+		TargetClassType IMonoStructType.Type {
 			get { return this; }
 		}
 
@@ -140,7 +138,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type.GenericParameters.Count != 0; }
 		}
 
-		internal override TargetStructType GetParentType (TargetMemoryAccess target)
+		internal override TargetClassType GetParentType (TargetMemoryAccess target)
 		{
 			if (parent_type != null)
 				return parent_type.Type;
@@ -165,124 +163,33 @@ namespace Mono.Debugger.Languages.Mono
 			get { return (int) (type.MetadataToken.TokenType + type.MetadataToken.RID); }
 		}
 
-		void get_fields ()
-		{
-			if (fields != null)
-				return;
-
-			fields = new MonoFieldInfo [type.Fields.Count];
-
-			for (int i = 0; i < fields.Length; i++) {
-				Cecil.FieldDefinition field = type.Fields [i];
-				TargetType ftype = File.MonoLanguage.LookupMonoType (field.FieldType);
-				fields [i] = new MonoFieldInfo (this, ftype, i, field);
-			}
-		}
-
-		public override TargetFieldInfo[] Fields {
-			get {
-				get_fields ();
-				return fields;
-			}
-		}
-
-		void get_methods ()
-		{
-			if (methods != null)
-				return;
-
-			int num_methods = 0;
-			foreach (Cecil.MethodDefinition method in type.Methods) {
-				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
-					continue;
-				num_methods++;
-			}
-
-			methods = new MonoMethodInfo [num_methods];
-
-			int pos = 0;
-			foreach (Cecil.MethodDefinition method in type.Methods) {
-				if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
-					continue;
-				methods [pos] = MonoMethodInfo.Create (this, pos, method);
-				pos++;
-			}
-		}
-
-		void get_properties ()
-		{
-			if (properties != null)
-				return;
-
-			properties = new MonoPropertyInfo [type.Properties.Count];
-
-			for (int i = 0; i < properties.Length; i++) {
-				Cecil.PropertyDefinition prop = type.Properties [i];
-				Cecil.MethodDefinition m = prop.GetMethod;
-				if (m == null) m = prop.SetMethod;
-
-				properties [i] = MonoPropertyInfo.Create (this, i, prop);
-			}
-		}
+		#region Members
 
 		public override TargetMethodInfo[] Methods {
-			get {
-				get_methods ();
-				return methods;
-			}
-		}
-
-		public override TargetPropertyInfo[] Properties {
-			get {
-				get_properties ();
-				return properties;
-			}
-		}
-
-		void get_events ()
-		{
-			if (events != null)
-				return;
-
-			events = new MonoEventInfo [type.Events.Count];
-
-			for (int i = 0; i < events.Length; i++) {
-				Cecil.EventDefinition ev = type.Events [i];
-				events [i] = MonoEventInfo.Create (this, i, ev);
-			}
-		}
-
-		public override TargetEventInfo[] Events {
-			get {
-				get_events ();
-				return events;
-			}
-		}
-
-		public TargetObject GetStaticEvent (StackFrame frame, int index)
-		{
-			get_events ();
-			return null;
-		}
-
-		void get_constructors ()
-		{
-			if (constructors != null)
-				return;
-
-			constructors = new MonoMethodInfo [type.Constructors.Count];
-
-			for (int i = 0; i < constructors.Length; i++) {
-				Cecil.MethodDefinition method = type.Constructors [i];
-				constructors [i] = MonoMethodInfo.Create (this, i, method);
-			}
+			get { return struct_type.Methods; }
 		}
 
 		public override TargetMethodInfo[] Constructors {
-			get {
-				get_constructors ();
-				return constructors;
-			}
+			get { return struct_type.Constructors; }
+		}
+
+		public override TargetFieldInfo[] Fields {
+			get { return struct_type.Fields; }
+		}
+
+		public override TargetPropertyInfo[] Properties {
+			get { return struct_type.Properties; }
+		}
+
+		public override TargetEventInfo[] Events {
+			get { return struct_type.Events; }
+		}
+
+		#endregion
+
+		public TargetObject GetStaticEvent (StackFrame frame, int index)
+		{
+			throw new NotImplementedException ();
 		}
 
 		internal override TargetClass GetClass (TargetMemoryAccess target)
@@ -360,7 +267,7 @@ namespace Mono.Debugger.Languages.Mono
 			return new MonoClassObject (this, class_info, location);
 		}
 
-		internal TargetStructObject GetCurrentObject (TargetMemoryAccess target,
+		internal TargetClassObject GetCurrentObject (TargetMemoryAccess target,
 							      TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
@@ -378,7 +285,7 @@ namespace Mono.Debugger.Languages.Mono
 				location = location.GetLocationAtOffset (
 					2 * target.TargetMemoryInfo.TargetAddressSize);
 
-			return (TargetStructObject) current.GetObject (target, location);
+			return (TargetClassObject) current.GetObject (target, location);
 		}
 
 		Dictionary<int,MonoFunctionType> function_hash;

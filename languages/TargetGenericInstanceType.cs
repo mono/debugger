@@ -1,6 +1,6 @@
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetGenericInstanceType : TargetStructType
+	public abstract class TargetGenericInstanceType : TargetClassType
 	{
 		protected TargetGenericInstanceType (Language language)
 			: base (language, TargetObjectKind.GenericInstance)

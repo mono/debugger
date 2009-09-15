@@ -19,6 +19,8 @@ namespace Mono.Debugger.Languages.Mono
 		string full_name;
 		bool resolved;
 
+		MonoStructType struct_type;
+
 		public MonoGenericInstanceType (MonoClassType container, TargetType[] type_args,
 						TargetAddress class_ptr)
 			: base (container.File.MonoLanguage)
@@ -26,6 +28,8 @@ namespace Mono.Debugger.Languages.Mono
 			this.Container = container;
 			this.type_args = type_args;
 			this.class_ptr = class_ptr;
+
+			struct_type = new MonoStructType (container.File, this, container.Type);
 
 			StringBuilder sb = new StringBuilder (container.BaseName);
 			sb.Append ('<');
@@ -46,7 +50,7 @@ namespace Mono.Debugger.Languages.Mono
 							      out is_compiler_generated);
 		}
 
-		TargetStructType IMonoStructType.Type {
+		TargetClassType IMonoStructType.Type {
 			get { return this; }
 		}
 
@@ -98,6 +102,30 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
+		#region Members
+
+		public override TargetMethodInfo[] Methods {
+			get { return struct_type.Methods; }
+		}
+
+		public override TargetMethodInfo[] Constructors {
+			get { return struct_type.Constructors; }
+		}
+
+		public override TargetFieldInfo[] Fields {
+			get { return struct_type.Fields; }
+		}
+
+		public override TargetPropertyInfo[] Properties {
+			get { return struct_type.Properties; }
+		}
+
+		public override TargetEventInfo[] Events {
+			get { return struct_type.Events; }
+		}
+
+		#endregion
+
 		public override DebuggerDisplayAttribute DebuggerDisplayAttribute {
 			get { return debugger_display; }
 		}
@@ -106,7 +134,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type_proxy; }
 		}
 
-		internal override TargetStructType GetParentType (TargetMemoryAccess target)
+		internal override TargetClassType GetParentType (TargetMemoryAccess target)
 		{
 			ResolveClass (target, true);
 
@@ -117,7 +145,7 @@ namespace Mono.Debugger.Languages.Mono
 			return parent.Type;
 		}
 
-		internal TargetStructObject GetCurrentObject (TargetMemoryAccess target,
+		internal TargetClassObject GetCurrentObject (TargetMemoryAccess target,
 							      TargetLocation location)
 		{
 			// location.Address resolves to the address of the MonoObject,
@@ -135,7 +163,7 @@ namespace Mono.Debugger.Languages.Mono
 				location = location.GetLocationAtOffset (
 					2 * target.TargetMemoryInfo.TargetAddressSize);
 
-			return (TargetStructObject) current.GetObject (target, location);
+			return (TargetClassObject) current.GetObject (target, location);
 		}
 
 		public MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)

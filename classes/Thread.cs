@@ -521,7 +521,7 @@ namespace Mono.Debugger
 
 		[Obsolete]
 		public RuntimeInvokeResult RuntimeInvoke (TargetFunctionType function,
-							  TargetStructObject object_argument,
+							  TargetClassObject object_argument,
 							  TargetObject[] param_objects,
 							  bool is_virtual, bool debug)
 		{
@@ -534,7 +534,7 @@ namespace Mono.Debugger
 		}
 
 		public RuntimeInvokeResult RuntimeInvoke (TargetFunctionType function,
-							  TargetStructObject object_argument,
+							  TargetClassObject object_argument,
 							  TargetObject[] param_objects,
 							  RuntimeInvokeFlags flags)
 		{

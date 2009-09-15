@@ -12,10 +12,10 @@ namespace Mono.Debugger.Languages.Mono
 
 		bool resolved;
 		MonoClassInfo klass;
-		TargetStructType type;
+		TargetClassType type;
 		TargetFieldInfo[] fields;
 
-		public ScopeInfo (int id, TargetVariable var, TargetStructType type)
+		public ScopeInfo (int id, TargetVariable var, TargetClassType type)
 		{
 			this.ID = id;
 			this.var = var;
@@ -50,7 +50,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (!Parent.Resolve (target))
 					return false;
 
-				type = (TargetStructType) Parent.Type;
+				type = (TargetClassType) Parent.Type;
 			}
 
 			klass = (MonoClassInfo) type.GetClass (target);
@@ -81,7 +81,7 @@ namespace Mono.Debugger.Languages.Mono
 			if ((obj == null) || (obj is MonoNullObject))
 				return null;
 
-			TargetStructObject sobj = (TargetStructObject) obj;
+			TargetClassObject sobj = (TargetClassObject) obj;
 			foreach (TargetFieldInfo field in fields) {
 				if (field.Name != name)
 					continue;

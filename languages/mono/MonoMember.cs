@@ -133,10 +133,10 @@ namespace Mono.Debugger.Languages.Mono
 	[Serializable]
 	internal class MonoEventInfo : TargetEventInfo
 	{
-		public readonly MonoClassType Klass;
+		public readonly IMonoStructType Klass;
 		public readonly MonoFunctionType AddType, RemoveType, RaiseType;
 
-		private MonoEventInfo (MonoClassType klass, int index, Cecil.EventDefinition einfo,
+		private MonoEventInfo (IMonoStructType klass, int index, Cecil.EventDefinition einfo,
 				       TargetType type, bool is_static,
 				       TargetMemberAccessibility accessibility, MonoFunctionType add,
 				       MonoFunctionType remove, MonoFunctionType raise)
@@ -148,7 +148,7 @@ namespace Mono.Debugger.Languages.Mono
 			this.RaiseType = raise;
 		}
 
-		internal static MonoEventInfo Create (MonoClassType klass, int index,
+		internal static MonoEventInfo Create (IMonoStructType klass, int index,
 						      Cecil.EventDefinition einfo)
 		{
 			TargetType type = klass.File.MonoLanguage.LookupMonoType (einfo.EventType);

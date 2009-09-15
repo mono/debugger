@@ -517,12 +517,12 @@ namespace Mono.Debugger.Languages.Mono
 			return target_type;
 		}
 
-		public TargetStructType ReadStructType (TargetMemoryAccess memory, TargetAddress address)
+		public TargetClassType ReadStructType (TargetMemoryAccess memory, TargetAddress address)
 		{
 			TargetAddress data = MonoRuntime.MonoTypeGetData (memory, address);
 			MonoTypeEnum type = MonoRuntime.MonoTypeGetType (memory, address);
 
-			return (TargetStructType) ReadType (memory, type, data);
+			return (TargetClassType) ReadType (memory, type, data);
 		}
 
 		TargetType ReadType (TargetMemoryAccess memory, MonoTypeEnum type, TargetAddress data)

@@ -17,7 +17,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return type; }
 		}
 
-		public override TargetStructType Type {
+		public override TargetClassType Type {
 			get { return type; }
 		}
 
@@ -36,7 +36,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override TargetObject GetField (Thread thread,
-						       TargetStructObject instance,
+						       TargetClassObject instance,
 						       TargetFieldInfo field)
 		{
 			if (field.HasConstValue)
@@ -49,7 +49,7 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		internal TargetObject GetField (TargetMemoryAccess target,
-						TargetStructObject instance,
+						TargetClassObject instance,
 						TargetFieldInfo field)
 		{
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (field.Offset);
@@ -65,7 +65,7 @@ namespace Mono.Debugger.Languages.Native
 			return field.Type.GetObject (target, field_loc);
 		}
 
-		public override void SetField (Thread thread, TargetStructObject instance,
+		public override void SetField (Thread thread, TargetClassObject instance,
 					       TargetFieldInfo field, TargetObject value)
 		{
 			TargetLocation field_loc = instance.Location.GetLocationAtOffset (field.Offset);

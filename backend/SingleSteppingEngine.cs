@@ -1783,7 +1783,7 @@ namespace Mono.Debugger.Backend
 		}
 
 		public override void RuntimeInvoke (TargetFunctionType function,
-						    TargetStructObject object_argument,
+						    TargetClassObject object_argument,
 						    TargetObject[] param_objects,
 						    RuntimeInvokeFlags flags,
 						    RuntimeInvokeResult result)
@@ -3801,7 +3801,7 @@ namespace Mono.Debugger.Backend
 	{
 		new public readonly RuntimeInvokeResult Result;
 		public readonly MonoFunctionType Function;
-		public readonly TargetStructObject Instance;
+		public readonly TargetClassObject Instance;
 		public readonly TargetObject[] ParamObjects;
 		public readonly RuntimeInvokeFlags Flags;
 
@@ -3835,7 +3835,7 @@ namespace Mono.Debugger.Backend
 
 		public OperationRuntimeInvoke (SingleSteppingEngine sse,
 					       TargetFunctionType function,
-					       TargetStructObject instance,
+					       TargetClassObject instance,
 					       TargetObject[] param_objects,
 					       RuntimeInvokeFlags flags,
 					       RuntimeInvokeResult result)
@@ -3970,7 +3970,7 @@ namespace Mono.Debugger.Backend
 			MonoLanguageBackend language;
 			TargetAddress method = TargetAddress.Null;
 			TargetAddress invoke = TargetAddress.Null;
-			TargetStructObject instance;
+			TargetClassObject instance;
 			MonoClassInfo class_info;
 			Stage stage;
 
@@ -4095,7 +4095,7 @@ namespace Mono.Debugger.Backend
 				if ((decl.Name != "System.ValueType") && (decl.Name != "System.Object"))
 					return true;
 
-				TargetStructType parent_type = RTI.Instance.Type.GetParentType (inferior);
+				TargetClassType parent_type = RTI.Instance.Type.GetParentType (inferior);
 
 				if (!instance.Type.IsByRef && parent_type.IsByRef) {
 					TargetAddress klass = ((MonoClassObject) instance).KlassAddress;
@@ -4150,8 +4150,8 @@ namespace Mono.Debugger.Backend
 						      "{0} rti boxed object: {1}", sse, boxed);
 
 					TargetLocation new_loc = new AbsoluteTargetLocation (boxed);
-					TargetStructType parent_type = instance.Type.GetParentType (inferior);
-					instance = (TargetStructObject) parent_type.GetObject (inferior, new_loc);
+					TargetClassType parent_type = instance.Type.GetParentType (inferior);
+					instance = (TargetClassObject) parent_type.GetObject (inferior, new_loc);
 					stage = Stage.HasMethodAddress;
 					do_execute ();
 					args = null;

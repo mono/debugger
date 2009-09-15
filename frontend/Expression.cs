@@ -105,7 +105,7 @@ namespace Mono.Debugger.Frontend
 			if (obj == null)
 				return null;
 
-			TargetStructObject cobj = obj as TargetStructObject;
+			TargetClassObject cobj = obj as TargetClassObject;
 			if (cobj != null) {
 				TargetObject current;
 				try {
@@ -763,14 +763,14 @@ namespace Mono.Debugger.Frontend
 			if (method == null)
 				return null;
 
-			TargetStructType decl_type = method.GetDeclaringType (context.CurrentThread);
+			TargetClassType decl_type = method.GetDeclaringType (context.CurrentThread);
 			if (decl_type == null)
 				return null;
 
-			TargetStructObject instance = null;
+			TargetClassObject instance = null;
 			if (method.HasThis) {
 				TargetVariable this_var = method.GetThis (context.CurrentThread);
-				instance = (TargetStructObject) this_var.GetObject (frame);
+				instance = (TargetClassObject) this_var.GetObject (frame);
 			}
 
 			member = StructAccessExpression.FindMember (
@@ -1003,7 +1003,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (lexpr != null) {
-				TargetStructObject sobj = Convert.ToStructObject (
+				TargetClassObject sobj = Convert.ToStructObject (
 					target, lexpr.EvaluateObject (context));
 				if (sobj == null)
 					throw new ScriptingException (
@@ -1108,7 +1108,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class MemberExpression : Expression
 	{
-		public abstract TargetStructObject InstanceObject {
+		public abstract TargetClassObject InstanceObject {
 			get;
 		}
 
@@ -1150,13 +1150,13 @@ namespace Mono.Debugger.Frontend
 
 	public class MethodGroupExpression : MethodExpression
 	{
-		protected readonly TargetStructType stype;
-		protected readonly TargetStructObject instance;
+		protected readonly TargetClassType stype;
+		protected readonly TargetClassObject instance;
 		protected readonly string name;
 		protected readonly TargetFunctionType[] methods;
 		protected readonly bool is_instance, is_static;
 
-		public MethodGroupExpression (TargetStructType stype, TargetStructObject instance,
+		public MethodGroupExpression (TargetClassType stype, TargetClassObject instance,
 					      string name, TargetFunctionType[] methods,
 					      bool is_instance, bool is_static)
 		{
@@ -1173,7 +1173,7 @@ namespace Mono.Debugger.Frontend
 			get { return stype.Name + "." + name; }
 		}
 
-		public override TargetStructObject InstanceObject {
+		public override TargetClassObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1555,13 +1555,13 @@ namespace Mono.Debugger.Frontend
 
 	public class StructAccessExpression : MemberExpression
 	{
-		public readonly TargetStructType Type;
+		public readonly TargetClassType Type;
 		public readonly TargetMemberInfo Member;
-		protected readonly TargetStructObject instance;
+		protected readonly TargetClassObject instance;
 		TargetClass class_info;
 
-		public StructAccessExpression (TargetStructType type,
-					       TargetStructObject instance,
+		public StructAccessExpression (TargetClassType type,
+					       TargetClassObject instance,
 					       TargetMemberInfo member)
 		{
 			this.Type = type;
@@ -1574,7 +1574,7 @@ namespace Mono.Debugger.Frontend
 			get { return Type.Name + "." + Member.Name; }
 		}
 
-		public override TargetStructObject InstanceObject {
+		public override TargetClassObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1691,8 +1691,8 @@ namespace Mono.Debugger.Frontend
 							      Name, member.GetType ());
 		}
 
-		public static MemberExpression FindMember (Thread target, TargetStructType stype,
-							   TargetStructObject instance, string name,
+		public static MemberExpression FindMember (Thread target, TargetClassType stype,
+							   TargetClassObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
 		again:
@@ -2323,10 +2323,10 @@ namespace Mono.Debugger.Frontend
 			return this;
 		}
 
-		static TargetStructObject TryParentCast (ScriptingContext context,
-							 TargetStructObject source,
-							 TargetStructType source_type,
-							 TargetStructType target_type)
+		static TargetClassObject TryParentCast (ScriptingContext context,
+							 TargetClassObject source,
+							 TargetClassType source_type,
+							 TargetClassType target_type)
 		{
 			if (source_type == target_type)
 				return source;
@@ -2334,7 +2334,7 @@ namespace Mono.Debugger.Frontend
 			if (!source_type.HasParent)
 				return null;
 
-			TargetStructType parent_type = source_type.GetParentType (context.CurrentThread);
+			TargetClassType parent_type = source_type.GetParentType (context.CurrentThread);
 			source = TryParentCast (context, source, parent_type, target_type);
 			if (source == null)
 				return null;
@@ -2342,11 +2342,11 @@ namespace Mono.Debugger.Frontend
 			return source.GetParentObject (context.CurrentThread) as TargetClassObject;
 		}
 
-		static TargetStructObject TryCurrentCast (ScriptingContext context,
+		static TargetClassObject TryCurrentCast (ScriptingContext context,
 							  TargetClassObject source,
 							  TargetClassType target_type)
 		{
-			TargetStructObject current = source.GetCurrentObject (context.CurrentThread);
+			TargetClassObject current = source.GetCurrentObject (context.CurrentThread);
 			if (current == null)
 				return null;
 
@@ -2363,7 +2363,7 @@ namespace Mono.Debugger.Frontend
 			if (sobj == null)
 				return null;
 
-			TargetStructObject result = TryParentCast (context, sobj, sobj.Type, target_type);
+			TargetClassObject result = TryParentCast (context, sobj, sobj.Type, target_type);
 			if (result != null)
 				return result;
 
@@ -2371,8 +2371,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		static bool TryParentCast (ScriptingContext context,
-					   TargetStructType source_type,
-					   TargetStructType target_type)
+					   TargetClassType source_type,
+					   TargetClassType target_type)
 		{
 			if (source_type == target_type)
 				return true;
@@ -2380,7 +2380,7 @@ namespace Mono.Debugger.Frontend
 			if (!source_type.HasParent)
 				return false;
 
-			TargetStructType parent_type = source_type.GetParentType (context.CurrentThread);
+			TargetClassType parent_type = source_type.GetParentType (context.CurrentThread);
 			return TryParentCast (context, parent_type, target_type);
 		}
 
@@ -2657,8 +2657,8 @@ namespace Mono.Debugger.Frontend
 		}
 
 		static bool ImplicitReferenceConversionExists (ScriptingContext context,
-							       TargetStructType source,
-							       TargetStructType target)
+							       TargetClassType source,
+							       TargetClassType target)
 		{
 			if (source == target)
 				return true;
@@ -2666,7 +2666,7 @@ namespace Mono.Debugger.Frontend
 			if (!source.HasParent)
 				return false;
 
-			TargetStructType parent_type = source.GetParentType (context.CurrentThread);
+			TargetClassType parent_type = source.GetParentType (context.CurrentThread);
 			return ImplicitReferenceConversionExists (context, parent_type, target);
 		}
 
@@ -2784,9 +2784,9 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-		public static TargetStructObject ToStructObject (Thread target, TargetObject obj)
+		public static TargetClassObject ToStructObject (Thread target, TargetObject obj)
 		{
-			TargetStructObject sobj = obj as TargetStructObject;
+			TargetClassObject sobj = obj as TargetClassObject;
 			if (sobj != null)
 				return sobj;
 
@@ -2929,7 +2929,7 @@ namespace Mono.Debugger.Frontend
 			return mg;
 		}
 
-		public override TargetStructObject InstanceObject {
+		public override TargetClassObject InstanceObject {
 			get { return method_expr.InstanceObject; }
 		}
 
@@ -3030,7 +3030,7 @@ namespace Mono.Debugger.Frontend
 					context, args [i], sig.ParameterTypes [i]);
 			}
 
-			TargetStructObject instance = method_expr.InstanceObject;
+			TargetClassObject instance = method_expr.InstanceObject;
 
 			if (!method.IsStatic && !method.IsConstructor && (instance == null))
 				throw new ScriptingException (
@@ -3219,7 +3219,7 @@ namespace Mono.Debugger.Frontend
 			if (obj == null)
 				return null;
 
-			TargetStructObject sobj = (TargetStructObject) obj;
+			TargetClassObject sobj = (TargetClassObject) obj;
 			for (int i = 0; i <= level; i++) {
 				sobj = sobj.GetParentObject (context.CurrentThread);
 				if (sobj == null)
@@ -3233,9 +3233,9 @@ namespace Mono.Debugger.Frontend
 	internal class TypeProxyExpression : Expression
 	{
 		string proxy_type;
-		TargetStructObject instance;
+		TargetClassObject instance;
 
-		public TypeProxyExpression (string proxy_type, TargetStructObject instance)
+		public TypeProxyExpression (string proxy_type, TargetClassObject instance)
 		{
 			this.proxy_type = proxy_type;
 			this.instance = instance;

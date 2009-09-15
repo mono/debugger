@@ -49,7 +49,7 @@ namespace Mono.Debugger.Languages
 			get { return DeclaringType.Module; }
 		}
 
-		public abstract TargetStructType DeclaringType {
+		public abstract TargetClassType DeclaringType {
 			get;
 		}
 

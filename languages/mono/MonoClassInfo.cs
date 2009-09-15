@@ -65,7 +65,7 @@ namespace Mono.Debugger.Languages.Mono
 				info.type = info.struct_type.Type;
 			} else {
 				info.type = file.LookupMonoType (typedef);
-				if (info.type is TargetStructType)
+				if (info.type is TargetClassType)
 					info.struct_type = (IMonoStructType) info.type;
 				else
 					info.struct_type = (IMonoStructType) info.type.ClassType;
@@ -108,7 +108,7 @@ namespace Mono.Debugger.Languages.Mono
 			get { return type; }
 		}
 
-		public override TargetStructType Type {
+		public override TargetClassType Type {
 			get { return struct_type.Type; }
 		}
 
@@ -165,7 +165,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		public override TargetObject GetField (Thread thread,
-						       TargetStructObject instance,
+						       TargetClassObject instance,
 						       TargetFieldInfo field)
 		{
 			if (field.HasConstValue)
@@ -185,7 +185,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal TargetObject GetInstanceField (TargetMemoryAccess target,
-							TargetStructObject instance,
+							TargetClassObject instance,
 							TargetFieldInfo field)
 		{
 			GetFields (target);
@@ -242,7 +242,7 @@ namespace Mono.Debugger.Languages.Mono
 			return type.GetObject (target, field_loc);
 		}
 
-		public override void SetField (Thread thread, TargetStructObject instance,
+		public override void SetField (Thread thread, TargetClassObject instance,
 					       TargetFieldInfo field, TargetObject value)
 		{
 			if (field.IsStatic) {
@@ -263,7 +263,7 @@ namespace Mono.Debugger.Languages.Mono
 		}
 
 		internal void SetInstanceField (TargetMemoryAccess target,
-						TargetStructObject instance,
+						TargetClassObject instance,
 						TargetFieldInfo field, TargetObject obj)
 		{
 			GetFields (target);

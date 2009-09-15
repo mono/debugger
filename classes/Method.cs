@@ -299,7 +299,7 @@ namespace Mono.Debugger
                         return true;
                 }
 
-		public abstract TargetStructType GetDeclaringType (Thread target);
+		public abstract TargetClassType GetDeclaringType (Thread target);
 
 		public abstract bool HasThis {
 			get;

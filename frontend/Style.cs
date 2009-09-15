@@ -374,7 +374,7 @@ namespace Mono.Debugger.Frontend
 					sb.Append (" ");
 				}
 				if (ctype.HasParent) {
-					TargetStructType parent = ctype.GetParentType (target);
+					TargetClassType parent = ctype.GetParentType (target);
 					sb.Append (": ");
 					sb.Append (parent.Name);
 				}
@@ -409,7 +409,7 @@ namespace Mono.Debugger.Frontend
 
 				sb.Append (String.Format ("{0} = ", gtype.Name));
 
-				TargetStructType parent = gtype.ContainerType.GetParentType (target);
+				TargetClassType parent = gtype.ContainerType.GetParentType (target);
 				sb.Append (String.Format ("{0}", gtype.ContainerType.Name));
 				if (parent != null)
 					sb.Append (String.Format (" : {0}", parent.Name));

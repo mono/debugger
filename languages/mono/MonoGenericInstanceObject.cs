@@ -15,19 +15,19 @@ namespace Mono.Debugger.Languages.Mono
 			this.type = type;
 		}
 
-		internal override TargetStructObject GetParentObject (TargetMemoryAccess target)
+		internal override TargetClassObject GetParentObject (TargetMemoryAccess target)
 		{
 			if (!type.HasParent || !type.IsByRef)
 				return null;
 
-			TargetStructType sparent = type.GetParentType (target);
+			TargetClassType sparent = type.GetParentType (target);
 			if (sparent == null)
 				return null;
 
-			return (TargetStructObject) sparent.GetObject (target, Location);
+			return (TargetClassObject) sparent.GetObject (target, Location);
 		}
 
-		internal override TargetStructObject GetCurrentObject (TargetMemoryAccess target)
+		internal override TargetClassObject GetCurrentObject (TargetMemoryAccess target)
 		{
 			if (!type.IsByRef)
 				return null;

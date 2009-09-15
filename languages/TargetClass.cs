@@ -4,7 +4,7 @@ namespace Mono.Debugger.Languages
 {
 	public abstract class TargetClass : DebuggerMarshalByRefObject
 	{
-		public abstract TargetStructType Type {
+		public abstract TargetClassType Type {
 			get;
 		}
 
@@ -21,10 +21,10 @@ namespace Mono.Debugger.Languages
 		public abstract TargetFieldInfo[] GetFields (Thread thread);
 
 		public abstract TargetObject GetField (Thread thread,
-						       TargetStructObject instance,
+						       TargetClassObject instance,
 						       TargetFieldInfo field);
 
-		public abstract void SetField (Thread thread, TargetStructObject instance,
+		public abstract void SetField (Thread thread, TargetClassObject instance,
 					       TargetFieldInfo field, TargetObject value);
 
 		public abstract TargetPropertyInfo[] GetProperties (Thread thread);

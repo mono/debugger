@@ -1,3 +1,13 @@
+2009-09-15  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetStructType.cs: Removed.
+	(TargetStructType): Moved everything into `TargetClassType'.
+
+	* languages/TargetStructObject.cs: Removed.
+	(TargetStructObject): Moved everything into `TargetClassObject'.
+
+	* languages/mono/MonoStructType: New file.
+
 2009-09-08  Jonathan Chambers  <joncham@gmail.com>
 
 	* backend/server/i386-arch.h: Define register access for CONTEXT on Windows.

@@ -1151,7 +1151,7 @@ namespace Mono.Debugger.Languages.Mono
 			MethodSource source;
 			C.MethodEntry method;
 			Cecil.MethodDefinition mdef;
-			TargetStructType decl_type;
+			TargetClassType decl_type;
 			TargetVariable this_var;
 			MonoCodeBlock[] code_blocks;
 			List<MonoCodeBlock> root_blocks;
@@ -1260,7 +1260,7 @@ namespace Mono.Debugger.Languages.Mono
 				if (decl.HasClassType)
 					decl_type = decl.ClassType;
 				else
-					decl_type = (TargetStructType) decl;
+					decl_type = (TargetClassType) decl;
 
 				do_read_blocks ();
 
@@ -1291,7 +1291,7 @@ namespace Mono.Debugger.Languages.Mono
 						var = address.LocalVariableInfo [sv.Index];
 
 					try {
-						TargetStructType type = mono.ReadStructType (memory, var.MonoType);
+						TargetClassType type = mono.ReadStructType (memory, var.MonoType);
 						MonoVariable scope_var = new MonoVariable (
 							"$__" + sv.Scope, type, true, type.IsByRef, this, var);
 
@@ -1326,7 +1326,7 @@ namespace Mono.Debugger.Languages.Mono
 							if (cv.Type.HasClassType)
 								decl_type = cv.Type.ClassType;
 							else
-								decl_type = (TargetStructType) cv.Type;
+								decl_type = (TargetClassType) cv.Type;
 							this_var = cv;
 							continue;
 						default:
@@ -1462,7 +1462,7 @@ namespace Mono.Debugger.Languages.Mono
 				return locals.ToArray ();
 			}
 
-			public override TargetStructType GetDeclaringType (Thread target)
+			public override TargetClassType GetDeclaringType (Thread target)
 			{
 				read_variables (target);
 				return decl_type;
@@ -2094,7 +2094,7 @@ namespace Mono.Debugger.Languages.Mono
 				get { return source; }
 			}
 
-			public override TargetStructType GetDeclaringType (Thread target)
+			public override TargetClassType GetDeclaringType (Thread target)
 			{
 				return null;
 			}

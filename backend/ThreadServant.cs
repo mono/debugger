@@ -183,7 +183,7 @@ namespace Mono.Debugger.Backend
 		internal abstract TargetFunctionType GetRuntimeInvokedFunction (long ID);
 
 		public abstract void RuntimeInvoke (TargetFunctionType function,
-						    TargetStructObject object_argument,
+						    TargetClassObject object_argument,
 						    TargetObject[] param_objects,
 						    RuntimeInvokeFlags flags,
 						    RuntimeInvokeResult result);

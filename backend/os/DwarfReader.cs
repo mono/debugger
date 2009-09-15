@@ -2551,7 +2551,7 @@ namespace Mono.Debugger.Backend
 				get { return -1; }
 			}
 
-			public override TargetStructType GetDeclaringType (Thread target)
+			public override TargetClassType GetDeclaringType (Thread target)
 			{
 				return null;
 			}

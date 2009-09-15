@@ -1,14 +1,27 @@
+using System;
+using System.Diagnostics;
+
 namespace Mono.Debugger.Languages
 {
-	public abstract class TargetClassType : TargetStructType
+	public abstract class TargetClassType : TargetType
 	{
 		protected TargetClassType (Language language, TargetObjectKind kind)
 			: base (language, kind)
 		{ }
 
-		public abstract bool IsCompilerGenerated {
+		public abstract string BaseName {
 			get;
 		}
+
+		public abstract Module Module {
+			get;
+		}
+
+		public abstract bool HasParent {
+			get;
+		}
+
+		#region Members
 
 		public abstract TargetFieldInfo[] Fields {
 			get;
@@ -61,6 +74,49 @@ namespace Mono.Debugger.Languages
 			}
 
 			return null;
+		}
+
+		#endregion
+
+		#region Debuggable Attributes
+
+		public virtual bool IsCompilerGenerated {
+			get { return false; }
+		}  
+
+		public virtual DebuggerDisplayAttribute DebuggerDisplayAttribute {
+			get { return null; }
+		}
+
+		public virtual DebuggerTypeProxyAttribute DebuggerTypeProxyAttribute {
+			get { return null; }
+		}
+
+		#endregion
+
+		internal abstract TargetClassType GetParentType (TargetMemoryAccess target);
+
+		public TargetClassType GetParentType (Thread thread)
+		{
+			return (TargetClassType) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetParentType (target);
+			});
+		}
+
+		internal abstract TargetClass GetClass (TargetMemoryAccess target);
+
+		public TargetClass GetClass (Thread thread)
+		{
+			return (TargetClass) thread.ThreadServant.DoTargetAccess (
+				delegate (TargetMemoryAccess target) {
+					return GetClass (target);
+			});
+		}
+
+		public virtual TargetClass ForceClassInitialization (Thread thread)
+		{
+			return GetClass (thread);
 		}
 	}
 }

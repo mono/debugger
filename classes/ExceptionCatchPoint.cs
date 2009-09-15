@@ -54,7 +54,7 @@ namespace Mono.Debugger
 		public override void Remove (Thread target)
 		{ }
 
-		bool IsSubclassOf (TargetMemoryAccess target, TargetStructType type,
+		bool IsSubclassOf (TargetMemoryAccess target, TargetClassType type,
 				   TargetType parent)
 		{
 			while (type != null) {

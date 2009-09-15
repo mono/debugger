@@ -230,7 +230,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public TargetStructObject ImplicitInstance {
+		public TargetClassObject ImplicitInstance {
 			get; private set;
 		}
 
@@ -264,7 +264,7 @@ namespace Mono.Debugger.Frontend
 
 		public RuntimeInvokeResult RuntimeInvoke (Thread thread,
 							  TargetFunctionType function,
-							  TargetStructObject object_argument,
+							  TargetClassObject object_argument,
 							  TargetObject[] param_objects,
 							  RuntimeInvokeFlags flags)
 		{
@@ -289,7 +289,7 @@ namespace Mono.Debugger.Frontend
 			return result;
 		}
 
-		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetStructObject instance,
+		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetClassObject instance,
 							   string attr_value, int timeout,
 							   out string result)
 		{
@@ -389,7 +389,7 @@ namespace Mono.Debugger.Frontend
 
 		public static EE.EvaluationResult HandleDebuggerDisplay (Interpreter interpreter,
 									 Thread thread,
-									 TargetStructObject instance,
+									 TargetClassObject instance,
 									 DebuggerDisplayAttribute attr,
 									 int timeout, out string name,
 									 out string type)
@@ -416,9 +416,9 @@ namespace Mono.Debugger.Frontend
 				thread, instance, attr.Type, timeout, out type);
 		}
 
-		string MonoObjectToString (TargetStructObject obj)
+		string MonoObjectToString (TargetClassObject obj)
 		{
-			TargetStructType ctype = obj.Type;
+			TargetClassType ctype = obj.Type;
 			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
 				return null;
 
@@ -443,7 +443,7 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-		TargetStructObject CheckTypeProxy (TargetStructObject obj)
+		TargetClassObject CheckTypeProxy (TargetClassObject obj)
 		{
 			if (obj.Type.DebuggerTypeProxyAttribute == null)
 				return null;
@@ -460,14 +460,14 @@ namespace Mono.Debugger.Frontend
 				if (expression == null)
 					return null;
 
-				return (TargetStructObject) expression.EvaluateObject (this);
+				return (TargetClassObject) expression.EvaluateObject (this);
 			} catch {
 				return null;
 			}
 		}
 
-		public static TargetStructObject CheckTypeProxy (Interpreter interpreter, Thread thread,
-								 TargetStructObject obj)
+		public static TargetClassObject CheckTypeProxy (Interpreter interpreter, Thread thread,
+								 TargetClassObject obj)
 		{
 			if (obj.Type.DebuggerTypeProxyAttribute == null)
 				return null;
@@ -483,7 +483,7 @@ namespace Mono.Debugger.Frontend
 		string DoFormatObject (TargetObject obj, DisplayFormat format)
 		{
 			if (format == DisplayFormat.Object) {
-				TargetStructObject cobj = obj as TargetStructObject;
+				TargetClassObject cobj = obj as TargetClassObject;
 				if (cobj != null) {
 					string formatted = MonoObjectToString (cobj);
 					if (formatted != null)
