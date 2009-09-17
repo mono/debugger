@@ -1784,7 +1784,7 @@ namespace Mono.Debugger.Backend
 		}
 
 		public override void RuntimeInvoke (TargetFunctionType function,
-						    TargetClassObject object_argument,
+						    TargetStructObject object_argument,
 						    TargetObject[] param_objects,
 						    RuntimeInvokeFlags flags,
 						    RuntimeInvokeResult result)
@@ -3802,7 +3802,7 @@ namespace Mono.Debugger.Backend
 	{
 		new public readonly RuntimeInvokeResult Result;
 		public readonly MonoFunctionType Function;
-		public readonly TargetClassObject Instance;
+		public readonly TargetStructObject Instance;
 		public readonly TargetObject[] ParamObjects;
 		public readonly RuntimeInvokeFlags Flags;
 
@@ -3836,7 +3836,7 @@ namespace Mono.Debugger.Backend
 
 		public OperationRuntimeInvoke (SingleSteppingEngine sse,
 					       TargetFunctionType function,
-					       TargetClassObject instance,
+					       TargetStructObject instance,
 					       TargetObject[] param_objects,
 					       RuntimeInvokeFlags flags,
 					       RuntimeInvokeResult result)
@@ -3971,7 +3971,7 @@ namespace Mono.Debugger.Backend
 			MonoLanguageBackend language;
 			TargetAddress method = TargetAddress.Null;
 			TargetAddress invoke = TargetAddress.Null;
-			TargetClassObject instance;
+			TargetStructObject instance;
 			MonoClassInfo class_info;
 			Stage stage;
 

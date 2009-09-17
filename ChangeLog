@@ -1,3 +1,11 @@
+2009-09-17  Martin Baulig  <martin@ximian.com>
+
+	* languages/TargetClassType.cs: Renamed `TargetClassType' into
+	`TargetStructType' and add a new empty `TargetClassType'.
+
+	* languages/TargetClassObject.cs: Renamed `TargetClassObject' into
+	`TargetStructObject' and add a new empty `TargetClassObject'.
+
 2009-09-15  Martin Baulig  <martin@ximian.com>
 
 	* backend/mono/MonoRuntime.cs: Renamed into MetadataHelper.cs.
