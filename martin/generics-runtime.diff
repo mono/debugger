@@ -1,0 +1,1264 @@
+From cb5d621b5f0118445a85ed2f1366cffd57a5fb5e Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Tue, 8 Sep 2009 17:05:45 +0200
+Subject: [PATCH] Add test function to dlopen() the library.
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debug-debugger.c |   27 ++++++++++++++++++++++++++-
+ mono/mini/debug-debugger.h |    3 +++
+ 2 files changed, 29 insertions(+), 1 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="cb5d621b5f0118445a85ed2f1366cffd57a5fb5e.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="cb5d621b5f0118445a85ed2f1366cffd57a5fb5e.diff"
+
+diff --git a/mono/mini/debug-debugger.c b/mono/mini/debug-debugger.c
+index 45f75b7..1378cd6 100644
+--- a/mono/mini/debug-debugger.c
++++ b/mono/mini/debug-debugger.c
+@@ -12,6 +12,7 @@
+ #include <unistd.h>
+ #include <locale.h>
+ #include <string.h>
++#include <dlfcn.h>
+ 
+ /*
+  * This file is only compiled on platforms where the debugger is supported - see the conditional
+@@ -50,6 +51,9 @@ static guint64 debugger_register_class_init_callback (guint64 image_argument, gu
+ static void debugger_remove_class_init_callback (guint64 index, G_GNUC_UNUSED guint64 dummy);
+ static guint64 debugger_get_method_signature (guint64 argument1, G_GNUC_UNUSED guint64 argument2);
+ 
++static gint64 debugger_test (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++			     G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
++
+ #define EXECUTABLE_CODE_BUFFER_SIZE 4096
+ static guint8 *debugger_executable_code_buffer = NULL;
+ 
+@@ -167,9 +171,30 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
+ 	debugger_event_handler,
+ 
+ 	&_mono_debug_using_mono_debugger,
+-	(gint32*)&_mono_debugger_interruption_request
++	(gint32*)&_mono_debugger_interruption_request,
++
++	&debugger_test
+ };
+ 
++static gint64
++debugger_test (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++	       G_GNUC_UNUSED guint64 dummy2, gchar *full_path)
++{
++	void *handle, *ptr;
++
++	g_message (G_STRLOC ": %s", full_path);
++
++	handle = dlopen (full_path, RTLD_NOW | RTLD_LOCAL | RTLD_DEEPBIND);
++
++	g_message (G_STRLOC ": %p", handle);
++
++	ptr = dlsym (handle, "MARTIN_DEBUGGER__test");
++
++	g_message (G_STRLOC ": %p", ptr);
++
++	return (guint64) (gsize) ptr;
++}
++
+ static guint64
+ debugger_compile_method (guint64 method_arg)
+ {
+diff --git a/mono/mini/debug-debugger.h b/mono/mini/debug-debugger.h
+index e945a5c..cf7d4ec 100644
+--- a/mono/mini/debug-debugger.h
++++ b/mono/mini/debug-debugger.h
+@@ -90,6 +90,9 @@ struct _MonoDebuggerInfo {
+ 	void (*debugger_event_handler) (MonoDebuggerEvent event, guint64 data, guint64 arg);
+ 	gint32 *using_mono_debugger;
+ 	gint32 *interruption_request;
++
++	gint64 (*test) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++			G_GNUC_UNUSED guint64 dummy2, gchar *full_name);
+ };
+ 
+ struct _MonoDebuggerMetadataInfo {
+
+--------------1.5.6--
+
+
+
+From 41dba00d6ec693217240293d1b04a1b71a475565 Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Tue, 8 Sep 2009 21:15:33 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debug-debugger.c |   43 +++++++++++++++++++++++++++++++++++++++----
+ mono/mini/debug-debugger.h |   12 ++++++++++--
+ 2 files changed, 49 insertions(+), 6 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="41dba00d6ec693217240293d1b04a1b71a475565.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="41dba00d6ec693217240293d1b04a1b71a475565.diff"
+
+diff --git a/mono/mini/debug-debugger.c b/mono/mini/debug-debugger.c
+index 1378cd6..c977117 100644
+--- a/mono/mini/debug-debugger.c
++++ b/mono/mini/debug-debugger.c
+@@ -51,7 +51,7 @@ static guint64 debugger_register_class_init_callback (guint64 image_argument, gu
+ static void debugger_remove_class_init_callback (guint64 index, G_GNUC_UNUSED guint64 dummy);
+ static guint64 debugger_get_method_signature (guint64 argument1, G_GNUC_UNUSED guint64 argument2);
+ 
+-static gint64 debugger_test (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++static gint64 debugger_load_library (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 			     G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
+ 
+ #define EXECUTABLE_CODE_BUFFER_SIZE 4096
+@@ -117,6 +117,27 @@ static MonoDebuggerMetadataInfo debugger_metadata_info = {
+ 
+ extern void MONO_DEBUGGER__notification_function (guint64 command, guint64 data, guint64 data2);
+ 
++static MonoGenericInst *
++debugger_get_generic_inst (int type_argc, MonoType **type_argv)
++{
++	return mono_metadata_get_generic_inst (type_argc, type_argv);
++}
++
++static MonoGenericContext *
++debugger_get_generic_context (MonoGenericInst *class_inst, MonoGenericInst *method_inst)
++{
++	MonoGenericContext *ctx = g_new0 (MonoGenericContext, 1);
++
++	ctx->class_inst = class_inst;
++	ctx->method_inst = method_inst;
++	return ctx;
++}
++
++static MonoDebuggerLibraryHelpers debugger_library_helpers = {
++	&debugger_get_generic_inst,
++	&debugger_get_generic_context
++};
++
+ /*
+  * This is a global data symbol which is read by the debugger.
+  */
+@@ -173,18 +194,29 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
+ 	&_mono_debug_using_mono_debugger,
+ 	(gint32*)&_mono_debugger_interruption_request,
+ 
+-	&debugger_test
++	&debugger_load_library,
++	&debugger_library_helpers
+ };
+ 
++typedef struct _MartinDebuggerTest {
++	guint64 magic;
++	guint32 major_version;
++	guint32 minor_version;
++
++	void (*initialize) (MonoDebuggerLibraryHelpers *helpers);
++	guint64 (*test) (guint64 argument);
++} MartinDebuggerTest;
++
+ static gint64
+-debugger_test (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++debugger_load_library (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 	       G_GNUC_UNUSED guint64 dummy2, gchar *full_path)
+ {
+ 	void *handle, *ptr;
++	MartinDebuggerTest *test;
+ 
+ 	g_message (G_STRLOC ": %s", full_path);
+ 
+-	handle = dlopen (full_path, RTLD_NOW | RTLD_LOCAL | RTLD_DEEPBIND);
++	handle = dlopen (full_path, RTLD_NOW | RTLD_LOCAL);
+ 
+ 	g_message (G_STRLOC ": %p", handle);
+ 
+@@ -192,6 +224,9 @@ debugger_test (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 
+ 	g_message (G_STRLOC ": %p", ptr);
+ 
++	test = (MartinDebuggerTest *) ptr;
++	test->initialize (&debugger_library_helpers);
++
+ 	return (guint64) (gsize) ptr;
+ }
+ 
+diff --git a/mono/mini/debug-debugger.h b/mono/mini/debug-debugger.h
+index cf7d4ec..34c6bc3 100644
+--- a/mono/mini/debug-debugger.h
++++ b/mono/mini/debug-debugger.h
+@@ -17,6 +17,8 @@
+ typedef struct _MonoDebuggerInfo		MonoDebuggerInfo;
+ typedef struct _MonoDebuggerMetadataInfo	MonoDebuggerMetadataInfo;
+ 
++typedef struct _MonoDebuggerLibraryHelpers	MonoDebuggerLibraryHelpers;
++
+ /*
+  * Address of the x86 trampoline code.  This is used by the debugger to check
+  * whether a method is a trampoline.
+@@ -91,8 +93,9 @@ struct _MonoDebuggerInfo {
+ 	gint32 *using_mono_debugger;
+ 	gint32 *interruption_request;
+ 
+-	gint64 (*test) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+-			G_GNUC_UNUSED guint64 dummy2, gchar *full_name);
++	gint64 (*load_library) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++				G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
++	MonoDebuggerLibraryHelpers *library_helpers;
+ };
+ 
+ struct _MonoDebuggerMetadataInfo {
+@@ -151,4 +154,9 @@ struct _MonoDebuggerMetadataInfo {
+ 	int mono_vtable_vtable_offset;
+ };
+ 
++struct _MonoDebuggerLibraryHelpers {
++	MonoGenericInst * (* get_generic_inst) (int argc, MonoType **type_argv);
++	MonoGenericContext * (* get_generic_context) (MonoGenericInst *class_inst, MonoGenericInst *method_inst);
++};
++
+ #endif
+
+--------------1.5.6--
+
+
+
+From 0f0ce91874cd10076e108a1950d5d6303464a69c Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Wed, 9 Sep 2009 19:50:09 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debug-debugger.c |   24 +++++++++++++++++++++++-
+ mono/mini/debug-debugger.h |    1 +
+ 2 files changed, 24 insertions(+), 1 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="0f0ce91874cd10076e108a1950d5d6303464a69c.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="0f0ce91874cd10076e108a1950d5d6303464a69c.diff"
+
+diff --git a/mono/mini/debug-debugger.c b/mono/mini/debug-debugger.c
+index c977117..1023a2c 100644
+--- a/mono/mini/debug-debugger.c
++++ b/mono/mini/debug-debugger.c
+@@ -133,9 +133,31 @@ debugger_get_generic_context (MonoGenericInst *class_inst, MonoGenericInst *meth
+ 	return ctx;
+ }
+ 
++static MonoType *
++parse_type (guint8 **ptr)
++{
++	g_message (G_STRLOC ": %p - %p - %x", ptr, *ptr, **ptr);
++
++	switch (**ptr) {
++	case MONO_TYPE_I4:
++		return &mono_defaults.int32_class->byval_arg;
++	default:
++		return NULL;
++	}
++}
++
++static MonoType *
++debugger_parse_type (guint8 *ptr)
++{
++	g_message (G_STRLOC ": %p", ptr);
++
++	return parse_type (&ptr);
++}
++
+ static MonoDebuggerLibraryHelpers debugger_library_helpers = {
+ 	&debugger_get_generic_inst,
+-	&debugger_get_generic_context
++	&debugger_get_generic_context,
++	&debugger_parse_type
+ };
+ 
+ /*
+diff --git a/mono/mini/debug-debugger.h b/mono/mini/debug-debugger.h
+index 34c6bc3..b587257 100644
+--- a/mono/mini/debug-debugger.h
++++ b/mono/mini/debug-debugger.h
+@@ -157,6 +157,7 @@ struct _MonoDebuggerMetadataInfo {
+ struct _MonoDebuggerLibraryHelpers {
+ 	MonoGenericInst * (* get_generic_inst) (int argc, MonoType **type_argv);
+ 	MonoGenericContext * (* get_generic_context) (MonoGenericInst *class_inst, MonoGenericInst *method_inst);
++	MonoType * (* parse_type) (guint8 *ptr);
+ };
+ 
+ #endif
+
+--------------1.5.6--
+
+
+
+From 08a724519bed34b5d004ba6341fea2466c0ceb77 Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Wed, 9 Sep 2009 21:10:09 +0200
+Subject: [PATCH] More work on the parser.
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debug-debugger.c |  113 ++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 109 insertions(+), 4 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="08a724519bed34b5d004ba6341fea2466c0ceb77.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="08a724519bed34b5d004ba6341fea2466c0ceb77.diff"
+
+diff --git a/mono/mini/debug-debugger.c b/mono/mini/debug-debugger.c
+index 1023a2c..aa7af7b 100644
+--- a/mono/mini/debug-debugger.c
++++ b/mono/mini/debug-debugger.c
+@@ -4,6 +4,7 @@
+ #include <mono/metadata/assembly.h>
+ #include <mono/metadata/mono-debug.h>
+ #include <mono/metadata/mono-config.h>
++#include <mono/metadata/mono-endian.h>
+ #define _IN_THE_MONO_DEBUGGER
+ #include "debug-debugger.h"
+ #include "debug-mini.h"
+@@ -27,6 +28,28 @@
+ #error "Some clown #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
+ #endif
+ 
++#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
++
++#if NO_UNALIGNED_ACCESS
++#define RETURN_UNALIGNED(type, addr) \
++	{ \
++		type val; \
++		memcpy(&val, p + offset, sizeof(val)); \
++		return val; \
++	}
++#define WRITE_UNALIGNED(type, addr, val) \
++	memcpy(addr, &val, sizeof(type))
++#define READ_UNALIGNED(type, addr, val) \
++	memcpy(&val, addr, sizeof(type))
++#else
++#define RETURN_UNALIGNED(type, addr) \
++	return *(type*)(p + offset);
++#define WRITE_UNALIGNED(type, addr, val) \
++	(*(type *)(addr) = (val))
++#define READ_UNALIGNED(type, addr, val) \
++	val = (*(type *)(addr))
++#endif
++
+ static guint64 debugger_compile_method (guint64 method_arg);
+ static guint64 debugger_get_virtual_method (guint64 class_arg, guint64 method_arg);
+ static guint64 debugger_get_boxed_object (guint64 klass_arg, guint64 val_arg);
+@@ -134,13 +157,95 @@ debugger_get_generic_context (MonoGenericInst *class_inst, MonoGenericInst *meth
+ }
+ 
+ static MonoType *
+-parse_type (guint8 **ptr)
+-{
+-	g_message (G_STRLOC ": %p - %p - %x", ptr, *ptr, **ptr);
+-
+-	switch (**ptr) {
++parse_type (guint8 *ptr, guint8 **rptr)
++{
++	g_message (G_STRLOC ": %p - %x", ptr, *ptr);
++
++	*rptr = ptr+1;
++
++	switch (*ptr++) {
++	case MONO_TYPE_BOOLEAN:
++		return &mono_defaults.boolean_class->byval_arg;
++	case MONO_TYPE_CHAR:
++		return &mono_defaults.char_class->byval_arg;
++	case MONO_TYPE_I1:
++		return &mono_defaults.sbyte_class->byval_arg;
++	case MONO_TYPE_U1:
++		return &mono_defaults.byte_class->byval_arg;
++	case MONO_TYPE_I2:
++		return &mono_defaults.int16_class->byval_arg;
++	case MONO_TYPE_U2:
++		return &mono_defaults.uint16_class->byval_arg;
+ 	case MONO_TYPE_I4:
+ 		return &mono_defaults.int32_class->byval_arg;
++	case MONO_TYPE_U4:
++		return &mono_defaults.uint32_class->byval_arg;
++	case MONO_TYPE_I8:
++		return &mono_defaults.int64_class->byval_arg;
++	case MONO_TYPE_U8:
++		return &mono_defaults.uint64_class->byval_arg;
++	case MONO_TYPE_R4:
++		return &mono_defaults.single_class->byval_arg;
++	case MONO_TYPE_R8:
++		return &mono_defaults.double_class->byval_arg;
++	case MONO_TYPE_I:
++		return &mono_defaults.int_class->byval_arg;
++	case MONO_TYPE_U:
++		return &mono_defaults.uint_class->byval_arg;
++	case MONO_TYPE_STRING:
++		return &mono_defaults.string_class->byval_arg;
++
++	case MONO_TYPE_VALUETYPE:
++	case MONO_TYPE_CLASS: {
++		MonoImage *image;
++		guint32 type_token;
++		MonoClass *klass;
++
++		READ_UNALIGNED (gpointer, ptr, image);
++		ptr += sizeof (gpointer);
++		type_token = read32 (ptr);
++		ptr += 4;
++
++		klass = mono_class_get (image, type_token);
++		if (!klass)
++			return NULL;
++
++		*rptr = ptr;
++		return &klass->byval_arg;
++	}
++
++	case MONO_TYPE_GENERICINST: {
++		MonoGenericContext ctx;
++		MonoType *container;
++		MonoType **type_args;
++		guint32 type_argc;
++		int i;
++
++		container = parse_type (ptr, &ptr);
++		if (!container)
++			return NULL;
++
++		type_argc = read32 (ptr);
++		ptr += 4;
++
++		g_message (G_STRLOC ": %p - %d", container, type_argc);
++
++		type_args = g_new0 (MonoType *, type_argc);
++
++		for (i = 0; i < type_argc; i++) {
++			type_args [i] = parse_type (ptr, &ptr);
++			if (!type_args [i])
++				return NULL;
++		}
++
++		*rptr = ptr;
++
++		ctx.class_inst = mono_metadata_get_generic_inst (type_argc, type_args);
++		ctx.method_inst = NULL;
++
++		return mono_class_inflate_generic_type (container, &ctx);
++	}
++
+ 	default:
+ 		return NULL;
+ 	}
+@@ -151,7 +256,7 @@ debugger_parse_type (guint8 *ptr)
+ {
+ 	g_message (G_STRLOC ": %p", ptr);
+ 
+-	return parse_type (&ptr);
++	return parse_type (ptr, &ptr);
+ }
+ 
+ static MonoDebuggerLibraryHelpers debugger_library_helpers = {
+
+--------------1.5.6--
+
+
+
+From e8c958c06874c5168335062060fcab7143bba80a Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Thu, 10 Sep 2009 14:37:18 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debug-debugger.c |   66 ++++++++++++++++++++++++++++++++++++++-----
+ mono/mini/debug-debugger.h |    5 ++-
+ mono/mini/debug-mini.c     |    3 ++
+ 3 files changed, 65 insertions(+), 9 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="e8c958c06874c5168335062060fcab7143bba80a.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="e8c958c06874c5168335062060fcab7143bba80a.diff"
+
+diff --git a/mono/mini/debug-debugger.c b/mono/mini/debug-debugger.c
+index aa7af7b..4d16256 100644
+--- a/mono/mini/debug-debugger.c
++++ b/mono/mini/debug-debugger.c
+@@ -74,7 +74,10 @@ static guint64 debugger_register_class_init_callback (guint64 image_argument, gu
+ static void debugger_remove_class_init_callback (guint64 index, G_GNUC_UNUSED guint64 dummy);
+ static guint64 debugger_get_method_signature (guint64 argument1, G_GNUC_UNUSED guint64 argument2);
+ 
+-static gint64 debugger_load_library (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++static guint64 debugger_parse_type (G_GNUC_UNUSED guint64 dummy, guint64 argument);
++static guint64 debugger_parse_method (G_GNUC_UNUSED guint64 dummy, guint64 argument);
++
++static guint64 debugger_load_library (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 				     G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
+ 
+ #define EXECUTABLE_CODE_BUFFER_SIZE 4096
+@@ -251,18 +254,61 @@ parse_type (guint8 *ptr, guint8 **rptr)
+ 	}
+ }
+ 
+-static MonoType *
+-debugger_parse_type (guint8 *ptr)
++static guint64
++debugger_parse_type (G_GNUC_UNUSED guint64 dummy, guint64 argument)
+ {
+-	g_message (G_STRLOC ": %p", ptr);
++	guint8 *ptr = (guint8 *) GUINT_TO_POINTER ((gsize) argument);
++	MonoType *type;
++	MonoClass *klass;
++
++	g_message (G_STRLOC ": %p - %x,%x,%x,%x", ptr, ptr [0], ptr [1], ptr [2], ptr [3]);
++
++	type = parse_type (ptr, &ptr);
++	g_message (G_STRLOC ": %p", type);
++
++	klass = mono_class_from_mono_type (type);
++	g_message (G_STRLOC ": %p", klass);
+ 
+-	return parse_type (ptr, &ptr);
++	return (guint64) (gsize) klass;
++}
++
++static guint64
++debugger_parse_method (G_GNUC_UNUSED guint64 dummy, guint64 argument)
++{
++	guint8 *ptr = (guint8 *) GUINT_TO_POINTER ((gsize) argument);
++	MonoType *type;
++	MonoClass *klass;
++	guint32 token;
++	MonoMethod *method;
++	gpointer iter = NULL;
++
++	g_message (G_STRLOC ": %p - %x,%x,%x,%x", ptr, ptr [0], ptr [1], ptr [2], ptr [3]);
++
++	type = parse_type (ptr, &ptr);
++	g_message (G_STRLOC ": %p", type);
++
++	klass = mono_class_from_mono_type (type);
++	g_message (G_STRLOC ": %p", klass);
++
++	token = read32 (ptr);
++	ptr += 4;
++
++	g_message (G_STRLOC ": %x", token);
++
++	while (method = mono_class_get_methods (klass, &iter)) {
++		g_message (G_STRLOC ": %p - %x - %s", method,
++			   mono_method_get_token (method), mono_method_get_name (method));
++
++		if (mono_method_get_token (method) == token)
++			return (guint64) (gsize) method;
++	}
++
++	return 0;
+ }
+ 
+ static MonoDebuggerLibraryHelpers debugger_library_helpers = {
+ 	&debugger_get_generic_inst,
+-	&debugger_get_generic_context,
+-	&debugger_parse_type
++	&debugger_get_generic_context
+ };
+ 
+ /*
+@@ -321,6 +367,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
+ 	&_mono_debug_using_mono_debugger,
+ 	(gint32*)&_mono_debugger_interruption_request,
+ 
++	&debugger_parse_type,
++	&debugger_parse_method,
+ 	&debugger_load_library,
+ 	&debugger_library_helpers
+ };
+@@ -334,7 +382,7 @@ typedef struct _MartinDebuggerTest {
+ 	guint64 (*test) (guint64 argument);
+ } MartinDebuggerTest;
+ 
+-static gint64
++static guint64
+ debugger_load_library (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 		       G_GNUC_UNUSED guint64 dummy2, gchar *full_path)
+ {
+@@ -376,6 +424,8 @@ debugger_get_virtual_method (guint64 object_arg, guint64 method_arg)
+ 	MonoObject *object = (MonoObject *) GUINT_TO_POINTER ((gsize) object_arg);
+ 	MonoMethod *method = (MonoMethod *) GUINT_TO_POINTER ((gsize) method_arg);
+ 
++	g_message (G_STRLOC ": get virtual - %p - %p - %p", object, method, method->klass);
++
+ 	if (mono_class_is_valuetype (mono_method_get_class (method)))
+ 		return method_arg;
+ 
+diff --git a/mono/mini/debug-debugger.h b/mono/mini/debug-debugger.h
+index b587257..4494293 100644
+--- a/mono/mini/debug-debugger.h
++++ b/mono/mini/debug-debugger.h
+@@ -93,7 +93,10 @@ struct _MonoDebuggerInfo {
+ 	gint32 *using_mono_debugger;
+ 	gint32 *interruption_request;
+ 
+-	gint64 (*load_library) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
++	guint64 (*parse_type) (G_GNUC_UNUSED guint64 dummy, guint64 argument);
++	guint64 (*parse_method) (G_GNUC_UNUSED guint64 dummy, guint64 argument);
++
++	guint64 (*load_library) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 				G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
+ 	MonoDebuggerLibraryHelpers *library_helpers;
+ };
+diff --git a/mono/mini/debug-mini.c b/mono/mini/debug-mini.c
+index 2866f63..f5c0015 100644
+--- a/mono/mini/debug-mini.c
++++ b/mono/mini/debug-mini.c
+@@ -1108,6 +1108,9 @@ mono_debugger_runtime_invoke (MonoMethod *method, void *obj, void **params, Mono
+ 
+ 	mono_debugger_unlock ();
+ 
++	g_message (G_STRLOC ": %p - %p - %p,%p", method, method->klass,
++		   method->klass->generic_container, method->klass->generic_class);
++
+ 	if (!strcmp (method->name, ".ctor")) {
+ 		retval = obj = mono_object_new (mono_domain_get (), method->klass);
+ 
+
+--------------1.5.6--
+
+
+
+From b4d7faec4cedab5fe47117b8ae2d6dd54a998679 Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Mon, 14 Sep 2009 15:01:36 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/Makefile.am      |    2 +-
+ mono/mini/debug-debugger.c |   15 ++++++++++++++-
+ mono/mini/debug-debugger.h |    2 ++
+ 3 files changed, 17 insertions(+), 2 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="b4d7faec4cedab5fe47117b8ae2d6dd54a998679.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="b4d7faec4cedab5fe47117b8ae2d6dd54a998679.diff"
+
+diff --git a/mono/mini/Makefile.am b/mono/mini/Makefile.am
+index 4c73518..1a8c9f5 100644
+--- a/mono/mini/Makefile.am
++++ b/mono/mini/Makefile.am
+@@ -316,7 +316,7 @@ mono_debugger_arch_sources = mdb-debug-info32.s
+ endif
+ endif
+ endif
+-mono_debugger_sources = debug-debugger.c debug-debugger.h $(mono_debugger_arch_sources)
++mono_debugger_sources = debug-debugger.c debug-debugger.h debugger-commands.c debugger-commands.h $(mono_debugger_arch_sources)
+ else
+ mono_debugger_sources =
+ endif
+diff --git a/mono/mini/debug-debugger.c b/mono/mini/debug-debugger.c
+index 4d16256..837e92c 100644
+--- a/mono/mini/debug-debugger.c
++++ b/mono/mini/debug-debugger.c
+@@ -8,6 +8,7 @@
+ #define _IN_THE_MONO_DEBUGGER
+ #include "debug-debugger.h"
+ #include "debug-mini.h"
++#include "debugger-commands.h"
+ #include <libgc/include/libgc-mono-debugger.h>
+ #include "mini.h"
+ #include <unistd.h>
+@@ -76,6 +77,7 @@ static guint64 debugger_get_method_signature (guint64 argument1, G_GNUC_UNUSED g
+ 
+ static guint64 debugger_parse_type (G_GNUC_UNUSED guint64 dummy, guint64 argument);
+ static guint64 debugger_parse_method (G_GNUC_UNUSED guint64 dummy, guint64 argument);
++static guint64 debugger_run_command (guint64 context_arg, guint64 data_arg);
+ 
+ static guint64 debugger_load_library (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 				      G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
+@@ -295,7 +297,7 @@ debugger_parse_method (G_GNUC_UNUSED guint64 dummy, guint64 argument)
+ 
+ 	g_message (G_STRLOC ": %x", token);
+ 
+-	while (method = mono_class_get_methods (klass, &iter)) {
++	while ((method = mono_class_get_methods (klass, &iter)) != NULL) {
+ 		g_message (G_STRLOC ": %p - %x - %s", method,
+ 			   mono_method_get_token (method), mono_method_get_name (method));
+ 
+@@ -306,6 +308,15 @@ debugger_parse_method (G_GNUC_UNUSED guint64 dummy, guint64 argument)
+ 	return 0;
+ }
+ 
++static guint64
++debugger_run_command (guint64 context_arg, guint64 data_arg)
++{
++	MonoContext *ctx = (MonoContext *) GUINT_TO_POINTER ((gsize) context_arg);
++	guint8 *data = (guint8 *) GUINT_TO_POINTER ((gsize) data_arg);
++
++	return mini_debugger_run_command (ctx, data);
++}
++
+ static MonoDebuggerLibraryHelpers debugger_library_helpers = {
+ 	&debugger_get_generic_inst,
+ 	&debugger_get_generic_context
+@@ -369,6 +380,8 @@ MonoDebuggerInfo MONO_DEBUGGER__debugger_info = {
+ 
+ 	&debugger_parse_type,
+ 	&debugger_parse_method,
++
++	&debugger_run_command,
+ 	&debugger_load_library,
+ 	&debugger_library_helpers
+ };
+diff --git a/mono/mini/debug-debugger.h b/mono/mini/debug-debugger.h
+index 4494293..ae655b9 100644
+--- a/mono/mini/debug-debugger.h
++++ b/mono/mini/debug-debugger.h
+@@ -96,6 +96,8 @@ struct _MonoDebuggerInfo {
+ 	guint64 (*parse_type) (G_GNUC_UNUSED guint64 dummy, guint64 argument);
+ 	guint64 (*parse_method) (G_GNUC_UNUSED guint64 dummy, guint64 argument);
+ 
++	guint64 (*run_command) (G_GNUC_UNUSED guint64 dummy, guint64 argument);
++
+ 	guint64 (*load_library) (G_GNUC_UNUSED guint64 dummy, G_GNUC_UNUSED guint64 dummy1,
+ 				 G_GNUC_UNUSED guint64 dummy2, gchar *full_path);
+ 	MonoDebuggerLibraryHelpers *library_helpers;
+
+--------------1.5.6--
+
+
+
+From 4b397d3d8ebe82c9385a76110da7944454c94a6c Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Mon, 14 Sep 2009 15:52:36 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debugger-commands.c |  259 +++++++++++++++++++++++++++++++++++++++++
+ mono/mini/debugger-commands.h |   34 ++++++
+ 2 files changed, 293 insertions(+), 0 deletions(-)
+ create mode 100644 mono/mini/debugger-commands.c
+ create mode 100644 mono/mini/debugger-commands.h
+--------------1.5.6
+Content-Type: text/x-patch; name="4b397d3d8ebe82c9385a76110da7944454c94a6c.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="4b397d3d8ebe82c9385a76110da7944454c94a6c.diff"
+
+diff --git a/mono/mini/debugger-commands.c b/mono/mini/debugger-commands.c
+new file mode 100644
+index 0000000..07a8209
+--- /dev/null
++++ b/mono/mini/debugger-commands.c
+@@ -0,0 +1,259 @@
++#include <config.h>
++#include <mono/io-layer/io-layer.h>
++#include <mono/metadata/threads.h>
++#include <mono/metadata/assembly.h>
++#include <mono/metadata/mono-debug.h>
++#include <mono/metadata/mono-config.h>
++#include <mono/metadata/mono-endian.h>
++#define _IN_THE_MONO_DEBUGGER
++#include "debugger-commands.h"
++#include "mini.h"
++#include <unistd.h>
++#include <locale.h>
++#include <string.h>
++#include <dlfcn.h>
++
++/*
++ * This file is only compiled on platforms where the debugger is supported - see the conditional
++ * definition of `debugger_sources' in Makefile.am.
++ *
++ * configure.in checks whether we're using the included libgc and disables the debugger if not.
++ */
++
++#if !defined(MONO_DEBUGGER_SUPPORTED)
++#error "Some clown tried to compile debug-debugger.c on an unsupported platform - fix Makefile.am!"
++#elif !defined(USE_INCLUDED_LIBGC)
++#error "Some clown #defined MONO_DEBUGGER_SUPPORTED without USE_INCLUDED_GC - fix configure.in!"
++#endif
++
++#define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
++
++#if NO_UNALIGNED_ACCESS
++#define RETURN_UNALIGNED(type, addr) \
++	{ \
++		type val; \
++		memcpy(&val, p + offset, sizeof(val)); \
++		return val; \
++	}
++#define WRITE_UNALIGNED(type, addr, val) \
++	memcpy(addr, &val, sizeof(type))
++#define READ_UNALIGNED(type, addr, val) \
++	memcpy(&val, addr, sizeof(type))
++#else
++#define RETURN_UNALIGNED(type, addr) \
++	return *(type*)(p + offset);
++#define WRITE_UNALIGNED(type, addr, val) \
++	(*(type *)(addr) = (val))
++#define READ_UNALIGNED(type, addr, val) \
++	val = (*(type *)(addr))
++#endif
++
++static MonoType *
++parse_type (guint8 *ptr, guint8 **rptr)
++{
++	g_message (G_STRLOC ": %p - %x", ptr, *ptr);
++
++	*rptr = ptr+1;
++
++	switch (*ptr++) {
++	case MONO_TYPE_BOOLEAN:
++		return &mono_defaults.boolean_class->byval_arg;
++	case MONO_TYPE_CHAR:
++		return &mono_defaults.char_class->byval_arg;
++	case MONO_TYPE_I1:
++		return &mono_defaults.sbyte_class->byval_arg;
++	case MONO_TYPE_U1:
++		return &mono_defaults.byte_class->byval_arg;
++	case MONO_TYPE_I2:
++		return &mono_defaults.int16_class->byval_arg;
++	case MONO_TYPE_U2:
++		return &mono_defaults.uint16_class->byval_arg;
++	case MONO_TYPE_I4:
++		return &mono_defaults.int32_class->byval_arg;
++	case MONO_TYPE_U4:
++		return &mono_defaults.uint32_class->byval_arg;
++	case MONO_TYPE_I8:
++		return &mono_defaults.int64_class->byval_arg;
++	case MONO_TYPE_U8:
++		return &mono_defaults.uint64_class->byval_arg;
++	case MONO_TYPE_R4:
++		return &mono_defaults.single_class->byval_arg;
++	case MONO_TYPE_R8:
++		return &mono_defaults.double_class->byval_arg;
++	case MONO_TYPE_I:
++		return &mono_defaults.int_class->byval_arg;
++	case MONO_TYPE_U:
++		return &mono_defaults.uint_class->byval_arg;
++	case MONO_TYPE_STRING:
++		return &mono_defaults.string_class->byval_arg;
++
++	case MONO_TYPE_VALUETYPE:
++	case MONO_TYPE_CLASS: {
++		MonoImage *image;
++		guint32 type_token;
++		MonoClass *klass;
++
++		READ_UNALIGNED (gpointer, ptr, image);
++		ptr += sizeof (gpointer);
++		type_token = read32 (ptr);
++		ptr += 4;
++
++		klass = mono_class_get (image, type_token);
++		if (!klass)
++			return NULL;
++
++		*rptr = ptr;
++		return &klass->byval_arg;
++	}
++
++	case MONO_TYPE_GENERICINST: {
++		MonoGenericContext ctx;
++		MonoType *container;
++		MonoType **type_args;
++		guint32 type_argc;
++		int i;
++
++		container = parse_type (ptr, &ptr);
++		if (!container)
++			return NULL;
++
++		type_argc = read32 (ptr);
++		ptr += 4;
++
++		g_message (G_STRLOC ": %p - %d", container, type_argc);
++
++		type_args = g_new0 (MonoType *, type_argc);
++
++		for (i = 0; i < type_argc; i++) {
++			type_args [i] = parse_type (ptr, &ptr);
++			if (!type_args [i])
++				return NULL;
++		}
++
++		*rptr = ptr;
++
++		ctx.class_inst = mono_metadata_get_generic_inst (type_argc, type_args);
++		ctx.method_inst = NULL;
++
++		return mono_class_inflate_generic_type (container, &ctx);
++	}
++
++	default:
++		return NULL;
++	}
++}
++
++static DebuggerCommandResult
++command_parse_type (guint8 **ptr, guint8 **ret_ptr, MonoClass **out_klass)
++{
++	MonoType *type;
++	MonoClass *klass;
++
++	type = parse_type (*ptr, ptr);
++	g_message (G_STRLOC ": parsed type %p", type);
++
++	if (!type)
++		return DEBUGGER_COMMAND_RESULT_PARSE_TYPE_FAILED;
++
++	klass = mono_class_from_mono_type (type);
++	g_message (G_STRLOC ": klass %p", klass);
++
++	WRITE_UNALIGNED (gpointer, *ret_ptr, klass);
++	*ret_ptr += sizeof (gpointer);
++
++	if (out_klass)
++		*out_klass = klass;
++
++	return DEBUGGER_COMMAND_RESULT_OK;
++}
++
++static DebuggerCommandResult
++command_parse_method (guint8 **ptr, guint8 **ret_ptr,
++		      MonoClass **out_klass, MonoMethod **out_method)
++{
++	DebuggerCommandResult result;
++	MonoClass *klass;
++	MonoMethod *method;
++	gpointer iter = NULL;
++	guint32 token;
++
++	result = command_parse_type (ptr, ret_ptr, &klass);
++	if (result)
++		return result;
++
++	g_message (G_STRLOC ": %p", klass);
++
++	if (out_klass)
++		*out_klass = klass;
++
++	token = read32 (*ptr);
++	*ptr += 4;
++
++	g_message (G_STRLOC ": %x", token);
++
++	while ((method = mono_class_get_methods (klass, &iter)) != NULL) {
++		g_message (G_STRLOC ": %p - %x - %s", method,
++			   mono_method_get_token (method), mono_method_get_name (method));
++
++		if (mono_method_get_token (method) == token) {
++			WRITE_UNALIGNED (gpointer, *ret_ptr, method);
++			*ret_ptr += sizeof (gpointer);
++
++			if (out_method)
++				*out_method = method;
++
++			return DEBUGGER_COMMAND_RESULT_OK;
++		}
++	}
++
++	return DEBUGGER_COMMAND_RESULT_METHOD_NOT_FOUND;
++}
++
++static DebuggerCommandResult
++command_parse_virtual_method (guint8 **ptr, guint8 **ret_ptr)
++{
++	DebuggerCommandResult result;
++	MonoClass *klass;
++	MonoMethod *method;
++
++	result = command_parse_method (ptr, ret_ptr, &klass, &method);
++	if (result)
++		return result;
++
++	return DEBUGGER_COMMAND_RESULT_VIRTUAL_METHOD_FAILED;
++}
++
++
++DebuggerCommandResult
++mini_debugger_run_command (MonoContext *ctx, guint8 *ptr)
++{
++	DebuggerCommand command;
++	guint32 ret_size;
++	guint8 *ret_ptr;
++
++	g_message (G_STRLOC ": %p - %x", ptr, *ptr);
++
++	command = *ptr++;
++	ret_size = read32 (ptr);
++	ptr += 4;
++
++	ret_ptr = ptr;
++	ptr += ret_size;
++
++	g_message (G_STRLOC ": %d  - %d", command, ret_size);
++
++	switch (command) {
++	case DEBUGGER_COMMAND_PARSE_TYPE:
++		return command_parse_type (&ptr, &ret_ptr, NULL);
++
++	case DEBUGGER_COMMAND_PARSE_METHOD:
++		return command_parse_method (&ptr, &ret_ptr, NULL, NULL);
++
++	case DEBUGGER_COMMAND_PARSE_VIRTUAL_METHOD:
++		return command_parse_virtual_method (&ptr, &ret_ptr);
++
++	default:
++		g_warning (G_STRLOC ": invalid command %d", command);
++		return DEBUGGER_COMMAND_RESULT_INVALID_COMMAND;
++	}
++}
+diff --git a/mono/mini/debugger-commands.h b/mono/mini/debugger-commands.h
+new file mode 100644
+index 0000000..86c6fac
+--- /dev/null
++++ b/mono/mini/debugger-commands.h
+@@ -0,0 +1,34 @@
++/*
++ * This is a private header file for the debugger.
++ */
++
++#ifndef __DEBUGGER_COMMANDS_H__
++#define __DEBUGGER_COMMANDS_H__
++
++#if !defined _IN_THE_MONO_DEBUGGER
++#error "<debug-debugger.h> is a private header file only intended to be used by the debugger."
++#endif
++
++#include "debug-debugger.h"
++#include "mini.h"
++
++typedef enum {
++	DEBUGGER_COMMAND_PARSE_TYPE = 1,
++	DEBUGGER_COMMAND_PARSE_METHOD,
++	DEBUGGER_COMMAND_PARSE_VIRTUAL_METHOD
++} DebuggerCommand;
++
++typedef enum {
++	DEBUGGER_COMMAND_RESULT_OK = 0,
++	DEBUGGER_COMMAND_RESULT_INVALID_COMMAND,
++	DEBUGGER_COMMAND_RESULT_UNKNOWN_ERROR,
++
++	DEBUGGER_COMMAND_RESULT_PARSE_TYPE_FAILED	= 16,
++	DEBUGGER_COMMAND_RESULT_METHOD_NOT_FOUND,
++	DEBUGGER_COMMAND_RESULT_VIRTUAL_METHOD_FAILED
++} DebuggerCommandResult;
++
++DebuggerCommandResult
++mini_debugger_run_command (MonoContext *ctx, guint8 *data);
++
++#endif
+
+--------------1.5.6--
+
+
+
+From 20f5d7b3b077391faa7b2cfb9c1ce3c7f78077b3 Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Mon, 14 Sep 2009 18:13:47 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debugger-commands.c |   13 +++++++++++--
+ mono/mini/mini.c              |    2 +-
+ 2 files changed, 12 insertions(+), 3 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="20f5d7b3b077391faa7b2cfb9c1ce3c7f78077b3.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="20f5d7b3b077391faa7b2cfb9c1ce3c7f78077b3.diff"
+
+diff --git a/mono/mini/debugger-commands.c b/mono/mini/debugger-commands.c
+index 07a8209..33e8551 100644
+--- a/mono/mini/debugger-commands.c
++++ b/mono/mini/debugger-commands.c
+@@ -51,7 +51,7 @@
+ static MonoType *
+ parse_type (guint8 *ptr, guint8 **rptr)
+ {
+-	g_message (G_STRLOC ": %p - %x", ptr, *ptr);
++	g_message (G_STRLOC ": parse type %p - %x", ptr, *ptr);
+ 
+ 	*rptr = ptr+1;
+ 
+@@ -102,6 +102,8 @@ parse_type (guint8 *ptr, guint8 **rptr)
+ 		if (!klass)
+ 			return NULL;
+ 
++		g_message (G_STRLOC ": parse type %x - %p", type_token, klass);
++
+ 		*rptr = ptr;
+ 		return &klass->byval_arg;
+ 	}
+@@ -156,7 +158,8 @@ command_parse_type (guint8 **ptr, guint8 **ret_ptr, MonoClass **out_klass)
+ 		return DEBUGGER_COMMAND_RESULT_PARSE_TYPE_FAILED;
+ 
+ 	klass = mono_class_from_mono_type (type);
+-	g_message (G_STRLOC ": klass %p", klass);
++	g_message (G_STRLOC ": klass %p - %p,%p", klass,
++		   klass->generic_container, klass->generic_class);
+ 
+ 	WRITE_UNALIGNED (gpointer, *ret_ptr, klass);
+ 	*ret_ptr += sizeof (gpointer);
+@@ -199,6 +202,12 @@ command_parse_method (guint8 **ptr, guint8 **ret_ptr,
+ 			WRITE_UNALIGNED (gpointer, *ret_ptr, method);
+ 			*ret_ptr += sizeof (gpointer);
+ 
++			g_message (G_STRLOC ": method %p - %d,%d,%d,%d", method,
++				   mono_class_generic_sharing_enabled (method->klass),
++				   mono_method_is_generic_impl (method),
++				   mono_method_is_generic_sharable_impl (method, FALSE),
++				   mono_method_is_generic_sharable_impl (method, TRUE));
++
+ 			if (out_method)
+ 				*out_method = method;
+ 
+diff --git a/mono/mini/mini.c b/mono/mini/mini.c
+index da9fa3c..c1690ce 100644
+--- a/mono/mini/mini.c
++++ b/mono/mini/mini.c
+@@ -3220,7 +3220,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, gbool
+ 		cfg->opt &= ~MONO_OPT_INLINE;
+ 		cfg->opt &= ~MONO_OPT_COPYPROP;
+ 		cfg->opt &= ~MONO_OPT_CONSPROP;
+-		cfg->opt &= ~MONO_OPT_GSHARED;
++		// cfg->opt &= ~MONO_OPT_GSHARED;
+ 	}
+ 
+ 	if (mono_using_xdebug) {
+
+--------------1.5.6--
+
+
+
+From 393e6f07208720454349e7f00b321698db4a84ca Mon Sep 17 00:00:00 2001
+From: Martin Baulig <martin@novell.com>
+Date: Thu, 17 Sep 2009 17:03:18 +0200
+Subject: [PATCH] .
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="------------1.5.6"
+
+This is a multi-part message in MIME format.
+--------------1.5.6
+Content-Type: text/plain; charset=UTF-8; format=fixed
+Content-Transfer-Encoding: 8bit
+
+---
+ mono/mini/debugger-commands.c |   25 +++++++++++++++++++++++++
+ mono/mini/debugger-commands.h |    3 ++-
+ 2 files changed, 27 insertions(+), 1 deletions(-)
+--------------1.5.6
+Content-Type: text/x-patch; name="393e6f07208720454349e7f00b321698db4a84ca.diff"
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline; filename="393e6f07208720454349e7f00b321698db4a84ca.diff"
+
+diff --git a/mono/mini/debugger-commands.c b/mono/mini/debugger-commands.c
+index 33e8551..dfed923 100644
+--- a/mono/mini/debugger-commands.c
++++ b/mono/mini/debugger-commands.c
+@@ -232,6 +232,28 @@ command_parse_virtual_method (guint8 **ptr, guint8 **ret_ptr)
+ 	return DEBUGGER_COMMAND_RESULT_VIRTUAL_METHOD_FAILED;
+ }
+ 
++static DebuggerCommandResult
++command_get_method_signature (guint8 **ptr, guint8 **ret_ptr)
++{
++	DebuggerCommandResult result;
++	MonoMethodSignature *sig;
++	MonoClass *klass;
++	MonoMethod *method;
++
++	result = command_parse_method (ptr, ret_ptr, &klass, &method);
++	if (result)
++		return result;
++
++	sig = mono_method_signature (method);
++
++	g_message (G_STRLOC ": get signature - %p,%p - %p", klass, method, sig);
++
++	WRITE_UNALIGNED (gpointer, *ret_ptr, sig);
++	*ret_ptr += sizeof (gpointer);
++
++	return DEBUGGER_COMMAND_RESULT_VIRTUAL_METHOD_FAILED;
++}
++
+ 
+ DebuggerCommandResult
+ mini_debugger_run_command (MonoContext *ctx, guint8 *ptr)
+@@ -261,6 +283,9 @@ mini_debugger_run_command (MonoContext *ctx, guint8 *ptr)
+ 	case DEBUGGER_COMMAND_PARSE_VIRTUAL_METHOD:
+ 		return command_parse_virtual_method (&ptr, &ret_ptr);
+ 
++	case DEBUGGER_COMMAND_GET_METHOD_SIGNATURE:
++		return command_get_method_signature (&ptr, &ret_ptr);
++
+ 	default:
+ 		g_warning (G_STRLOC ": invalid command %d", command);
+ 		return DEBUGGER_COMMAND_RESULT_INVALID_COMMAND;
+diff --git a/mono/mini/debugger-commands.h b/mono/mini/debugger-commands.h
+index 86c6fac..859f1e7 100644
+--- a/mono/mini/debugger-commands.h
++++ b/mono/mini/debugger-commands.h
+@@ -15,7 +15,8 @@
+ typedef enum {
+ 	DEBUGGER_COMMAND_PARSE_TYPE = 1,
+ 	DEBUGGER_COMMAND_PARSE_METHOD,
+-	DEBUGGER_COMMAND_PARSE_VIRTUAL_METHOD
++	DEBUGGER_COMMAND_PARSE_VIRTUAL_METHOD,
++	DEBUGGER_COMMAND_GET_METHOD_SIGNATURE
+ } DebuggerCommand;
+ 
+ typedef enum {
+
+--------------1.5.6--
+
+
