@@ -36,6 +36,7 @@ namespace Mono.Debugger
 			Ok,
 			UnknownError,
 			MethodNotFound,
+			NotInitialized,
 			InvalidExpression,
 			Exception,
 			Timeout
@@ -97,7 +98,7 @@ namespace Mono.Debugger
 
 			TargetClass klass = ctype.GetClass (thread);
 			if (klass == null)
-				return EvaluationResult.MethodNotFound;
+				return EvaluationResult.NotInitialized;
 
 			TargetMethodInfo[] methods = klass.GetMethods (thread);
 			if (methods == null)
@@ -126,6 +127,12 @@ namespace Mono.Debugger
 					if (!rti.CompletedEvent.WaitOne (timeout, false)) {
 						rti.Abort ();
 						return EvaluationResult.Timeout;
+					}
+
+					if ((rti.TargetException != null) &&
+					    (rti.TargetException.Type == TargetError.ClassNotInitialized)) {
+						result = null;
+						return EvaluationResult.NotInitialized;
 					}
 
 					if (rti.Result is Exception) {
@@ -177,6 +184,13 @@ namespace Mono.Debugger
 					rti.Abort ();
 					result = null;
 					return EvaluationResult.Timeout;
+				}
+
+				if ((rti.TargetException != null) &&
+				    (rti.TargetException.Type == TargetError.ClassNotInitialized)) {
+					result = null;
+					error = rti.ExceptionMessage;
+					return EvaluationResult.NotInitialized;
 				}
 
 				if (rti.Result is Exception) {
