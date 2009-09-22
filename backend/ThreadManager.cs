@@ -152,9 +152,9 @@ namespace Mono.Debugger.Backend
 
 			if (cevent.Type == Inferior.ChildEventType.CHILD_CREATED_THREAD) {
 				int pid = (int) cevent.Argument;
+				inferior.Process.ThreadCreated (inferior, pid, false, true);
 				if (pending_sigstops.ContainsKey (pid))
 					pending_sigstops.Remove (pid);
-				inferior.Process.ThreadCreated (inferior, pid, false, true);
 				resume_target = true;
 				return true;
 			}
@@ -207,6 +207,15 @@ namespace Mono.Debugger.Backend
 			}
 
 			return retval;
+		}
+
+		internal bool HasPendingSigstopForNewThread (int pid)
+		{
+			if (!pending_sigstops.ContainsKey (pid))
+				return false;
+
+			pending_sigstops.Remove (pid);
+			return true;
 		}
 
 		public DebuggerServant Debugger {

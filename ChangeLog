@@ -1,5 +1,16 @@
 2009-09-22  Martin Baulig  <martin@ximian.com>
 
+	Fix #528160.
+
+	* backend/ThreadManager.cs
+	(ThreadManager.HasPendingSigstopForNewThread): New internal method.
+
+	* backend/Inferior.cs
+	(Inferior.InitializeThread): Call it here to see whether we
+	already received the SIGSTOP for the new thread.
+
+2009-09-22  Martin Baulig  <martin@ximian.com>
+
 	* frontend/ScriptingContext.cs: Some more `TargetClassType' ->
 	`TargetStructType'.
 

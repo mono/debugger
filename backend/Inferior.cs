@@ -678,7 +678,9 @@ namespace Mono.Debugger.Backend
 
 			initialized = true;
 
-			check_error (mono_debugger_server_initialize_thread (server_handle, pid, true));
+			bool pending_sigstop = process.ThreadManager.HasPendingSigstopForNewThread (pid);
+
+			check_error (mono_debugger_server_initialize_thread (server_handle, pid, !pending_sigstop));
 			this.child_pid = pid;
 
 			SetupInferior ();
