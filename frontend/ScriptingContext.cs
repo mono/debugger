@@ -230,7 +230,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-		public TargetClassObject ImplicitInstance {
+		public TargetStructObject ImplicitInstance {
 			get; private set;
 		}
 
@@ -264,7 +264,7 @@ namespace Mono.Debugger.Frontend
 
 		public RuntimeInvokeResult RuntimeInvoke (Thread thread,
 							  TargetFunctionType function,
-							  TargetClassObject object_argument,
+							  TargetStructObject object_argument,
 							  TargetObject[] param_objects,
 							  RuntimeInvokeFlags flags)
 		{
@@ -289,7 +289,7 @@ namespace Mono.Debugger.Frontend
 			return result;
 		}
 
-		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetClassObject instance,
+		EE.EvaluationResult HandleDebuggerDisplay (Thread thread, TargetStructObject instance,
 							   string attr_value, int timeout,
 							   out string result)
 		{
@@ -389,7 +389,7 @@ namespace Mono.Debugger.Frontend
 
 		public static EE.EvaluationResult HandleDebuggerDisplay (Interpreter interpreter,
 									 Thread thread,
-									 TargetClassObject instance,
+									 TargetStructObject instance,
 									 DebuggerDisplayAttribute attr,
 									 int timeout, out string name,
 									 out string type)
@@ -443,7 +443,7 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-		TargetClassObject CheckTypeProxy (TargetClassObject obj)
+		TargetClassObject CheckTypeProxy (TargetStructObject obj)
 		{
 			if (obj.Type.DebuggerTypeProxyAttribute == null)
 				return null;
@@ -467,7 +467,7 @@ namespace Mono.Debugger.Frontend
 		}
 
 		public static TargetClassObject CheckTypeProxy (Interpreter interpreter, Thread thread,
-								 TargetClassObject obj)
+								TargetStructObject obj)
 		{
 			if (obj.Type.DebuggerTypeProxyAttribute == null)
 				return null;

@@ -1108,7 +1108,7 @@ namespace Mono.Debugger.Frontend
 
 	public abstract class MemberExpression : Expression
 	{
-		public abstract TargetClassObject InstanceObject {
+		public abstract TargetStructObject InstanceObject {
 			get;
 		}
 
@@ -1150,13 +1150,13 @@ namespace Mono.Debugger.Frontend
 
 	public class MethodGroupExpression : MethodExpression
 	{
-		protected readonly TargetClassType stype;
-		protected readonly TargetClassObject instance;
+		protected readonly TargetStructType stype;
+		protected readonly TargetStructObject instance;
 		protected readonly string name;
 		protected readonly TargetFunctionType[] methods;
 		protected readonly bool is_instance, is_static;
 
-		public MethodGroupExpression (TargetClassType stype, TargetClassObject instance,
+		public MethodGroupExpression (TargetStructType stype, TargetStructObject instance,
 					      string name, TargetFunctionType[] methods,
 					      bool is_instance, bool is_static)
 		{
@@ -1173,7 +1173,7 @@ namespace Mono.Debugger.Frontend
 			get { return stype.Name + "." + name; }
 		}
 
-		public override TargetClassObject InstanceObject {
+		public override TargetStructObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1555,13 +1555,13 @@ namespace Mono.Debugger.Frontend
 
 	public class StructAccessExpression : MemberExpression
 	{
-		public readonly TargetClassType Type;
+		public readonly TargetStructType Type;
 		public readonly TargetMemberInfo Member;
-		protected readonly TargetClassObject instance;
+		protected readonly TargetStructObject instance;
 		TargetClass class_info;
 
-		public StructAccessExpression (TargetClassType type,
-					       TargetClassObject instance,
+		public StructAccessExpression (TargetStructType type,
+					       TargetStructObject instance,
 					       TargetMemberInfo member)
 		{
 			this.Type = type;
@@ -1574,7 +1574,7 @@ namespace Mono.Debugger.Frontend
 			get { return Type.Name + "." + Member.Name; }
 		}
 
-		public override TargetClassObject InstanceObject {
+		public override TargetStructObject InstanceObject {
 			get { return instance; }
 		}
 
@@ -1691,8 +1691,8 @@ namespace Mono.Debugger.Frontend
 							      Name, member.GetType ());
 		}
 
-		public static MemberExpression FindMember (Thread target, TargetClassType stype,
-							   TargetClassObject instance, string name,
+		public static MemberExpression FindMember (Thread target, TargetStructType stype,
+							   TargetStructObject instance, string name,
 							   bool search_static, bool search_instance)
 		{
 		again:
@@ -2929,7 +2929,7 @@ namespace Mono.Debugger.Frontend
 			return mg;
 		}
 
-		public override TargetClassObject InstanceObject {
+		public override TargetStructObject InstanceObject {
 			get { return method_expr.InstanceObject; }
 		}
 
@@ -3030,7 +3030,7 @@ namespace Mono.Debugger.Frontend
 					context, args [i], sig.ParameterTypes [i]);
 			}
 
-			TargetClassObject instance = method_expr.InstanceObject;
+			TargetStructObject instance = method_expr.InstanceObject;
 
 			if (!method.IsStatic && !method.IsConstructor && (instance == null))
 				throw new ScriptingException (
@@ -3233,9 +3233,9 @@ namespace Mono.Debugger.Frontend
 	internal class TypeProxyExpression : Expression
 	{
 		string proxy_type;
-		TargetClassObject instance;
+		TargetStructObject instance;
 
-		public TypeProxyExpression (string proxy_type, TargetClassObject instance)
+		public TypeProxyExpression (string proxy_type, TargetStructObject instance)
 		{
 			this.proxy_type = proxy_type;
 			this.instance = instance;

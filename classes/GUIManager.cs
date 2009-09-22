@@ -85,7 +85,7 @@ namespace Mono.Debugger
 		}
 
 
-		public EE.EvaluationResult MonoObjectToString (Thread thread, TargetClassObject obj,
+		public EE.EvaluationResult MonoObjectToString (Thread thread, TargetStructObject obj,
 							       EE.EvaluationFlags flags, int timeout,
 							       out string text)
 		{
@@ -93,7 +93,7 @@ namespace Mono.Debugger
 		}
 
 		public EE.EvaluationResult GetProperty (Thread thread, TargetPropertyInfo property,
-							TargetClassObject instance, EE.EvaluationFlags flags,
+							TargetStructObject instance, EE.EvaluationFlags flags,
 							int timeout, out string error, out TargetObject value)
 		{
 			return EE.GetProperty (thread, property, instance, flags, timeout, out error, out value);

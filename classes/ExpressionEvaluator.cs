@@ -84,14 +84,14 @@ namespace Mono.Debugger
 
 		public delegate void EvaluationCallback (EvaluationResult result, object data);
 
-		public static EvaluationResult MonoObjectToString (Thread thread, TargetClassObject obj,
+		public static EvaluationResult MonoObjectToString (Thread thread, TargetStructObject obj,
 								   EvaluationFlags flags, int timeout,
 								   out string result)
 		{
 			result = null;
 
 		again:
-			TargetClassType ctype = obj.Type;
+			TargetStructType ctype = obj.Type;
 			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
 				return EvaluationResult.MethodNotFound;
 
@@ -158,7 +158,7 @@ namespace Mono.Debugger
 		}
 
 		public static EvaluationResult GetProperty (Thread thread, TargetPropertyInfo property,
-							    TargetClassObject instance, EvaluationFlags flags,
+							    TargetStructObject instance, EvaluationFlags flags,
 							    int timeout, out string error, out TargetObject result)
 		{
 			error = null;
