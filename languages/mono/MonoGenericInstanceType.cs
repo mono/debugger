@@ -205,6 +205,10 @@ namespace Mono.Debugger.Languages.Mono
 			return class_info;
 		}
 
+		public override bool IsClassInitialized {
+			get { return class_info != null; }
+		}
+
 		MonoClassInfo IMonoStructType.ClassInfo {
 			get { return class_info; }
 			set { class_info = value; }

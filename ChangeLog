@@ -1,5 +1,10 @@
 2009-09-22  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetStructType.cs
+	(TargetStructType.IsClassInitialized): New public property.
+
+2009-09-22  Martin Baulig  <martin@ximian.com>
+
 	Fix #528160.
 
 	* backend/ThreadManager.cs

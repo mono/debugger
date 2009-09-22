@@ -186,6 +186,10 @@ namespace Mono.Debugger.Languages.Native
 			}
 		}
 
+		public override bool IsClassInitialized {
+			get { return true; }
+		}
+
 		internal override TargetClass GetClass (TargetMemoryAccess target)
 		{
 			if (class_info == null)

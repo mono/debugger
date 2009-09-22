@@ -104,6 +104,10 @@ namespace Mono.Debugger.Languages
 			});
 		}
 
+		public abstract bool IsClassInitialized {
+			get;
+		}
+
 		internal abstract TargetClass GetClass (TargetMemoryAccess target);
 
 		public TargetClass GetClass (Thread thread)
