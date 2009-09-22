@@ -900,6 +900,7 @@ namespace Mono.Debugger
 		public bool InvocationCompleted;
 		public TargetObject ReturnObject;
 		public string ExceptionMessage;
+		public TargetException TargetException;
 	}
 
 	[Flags]
