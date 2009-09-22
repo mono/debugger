@@ -4014,6 +4014,7 @@ namespace Mono.Debugger.Backend
 					do_execute ();
 				} catch (TargetException ex) {
 					RTI.Result.ExceptionMessage = ex.Message;
+					RTI.Result.TargetException = ex;
 					throw;
 				}
 			}
