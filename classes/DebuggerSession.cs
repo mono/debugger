@@ -86,8 +86,7 @@ namespace Mono.Debugger
 		{
 			this.Options = options;
 
-			if (Options.StopInMain)
-				AddEvent (new MainMethodBreakpoint (this));
+			AddEvent (new MainMethodBreakpoint (this));
 		}
 
 		internal DebuggerSession Clone (DebuggerOptions new_options, string new_name)

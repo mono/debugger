@@ -580,8 +580,13 @@ namespace Mono.Debugger.Backend
 
 		internal void SetMainReturnAddress (TargetAddress main_ret)
 		{
-			this.main_retaddr = main_ret + inferior.TargetAddressSize;
-			this.reached_main = true;
+			if (main_ret.IsNull) {
+				this.main_retaddr = TargetAddress.Null;
+				this.reached_main = false;
+			} else {
+				this.main_retaddr = main_ret + inferior.TargetAddressSize;
+				this.reached_main = true;
+			}
 		}
 
 		internal void OnManagedThreadExited ()
@@ -956,11 +961,18 @@ namespace Mono.Debugger.Backend
 				return true;
 			}
 
+			Inferior.StackFrame iframe = inferior.GetCurrentFrame ();
+
 			bpt = lookup_breakpoint (index);
-			if ((bpt == null) || !bpt.Breaks (thread.ID))
+			if (bpt == null)
 				return false;
 
-			if (!process.BreakpointManager.IsBreakpointEnabled (index))
+			if (bpt is MainMethodBreakpoint) {
+				main_retaddr = iframe.StackPointer + inferior.TargetAddressSize;
+				reached_main = true;
+			}
+
+			if (!bpt.Breaks (thread.ID) || !process.BreakpointManager.IsBreakpointEnabled (index))
 				return false;
 
 			index = bpt.Index;
