@@ -10,6 +10,16 @@
 	(OperationRuntimeInvoke): Set 'RuntimeInvokeResult.TargetException'
 	on error.
 
+2009-09-24  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ctor): Always insert the `MainMethodBreakpoint';
+	we need it to correctly set the stack pointer.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.child_breakpoint): Set `main_retaddr' if we're the
+	`MainMethodBreakpoint'.
+
 2009-09-22  Martin Baulig  <martin@ximian.com>
 
 	* languages/TargetStructType.cs

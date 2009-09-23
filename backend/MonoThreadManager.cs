@@ -318,7 +318,9 @@ namespace Mono.Debugger.Backend
 				}
 
 				case NotificationType.WrapperMain:
+					break;
 				case NotificationType.MainExited:
+					engine.SetMainReturnAddress (TargetAddress.Null);
 					break;
 
 				case NotificationType.UnhandledException:
