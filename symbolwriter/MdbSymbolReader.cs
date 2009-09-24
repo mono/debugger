@@ -43,6 +43,10 @@ namespace Mono.Debugger.SymbolWriter
 			get; set;
 		}
 
+		public static bool ShowLocals {
+			get; set;
+		}
+
 		static Dictionary<int,bool> methods = new Dictionary<int,bool> ();
 		public static Dictionary<int,bool> Methods {
 			get { return methods; }
@@ -155,7 +159,7 @@ namespace Mono.Debugger.SymbolWriter
 			}
 		}
 
-		public void PrintMethods ()
+		public void PrintMethods (bool include_locals)
 		{
 			Message ("Reading {0}, version {1}.{2}.", File.FileName, File.MajorVersion,
 				 File.MinorVersion);
@@ -176,8 +180,23 @@ namespace Mono.Debugger.SymbolWriter
 					throw new MonoSymbolFileException ("Method {0} (token {1:x}) not found in assembly.",
 									   method.Index, method.Token);
 
-				string name = String.Format ("{0} ({1})", method.Index, GetMethodName (mdef));
 				Message ("Method {0} ({1:x}) - {2}", method.Index, method.Token, GetMethodName (mdef));
+
+				if (include_locals)
+					PrintLocals (method);
+			}
+		}
+
+		public void PrintLocals (MethodEntry method)
+		{
+			CodeBlockEntry[] blocks = method.GetCodeBlocks () ?? new CodeBlockEntry [0];
+			foreach (CodeBlockEntry block in blocks) {
+				Message ("  CodeBlock {0}", block);
+			}
+
+			LocalVariableEntry[] locals = method.GetLocals () ?? new LocalVariableEntry [0];
+			foreach (LocalVariableEntry local in locals) {
+				Message ("  Local {0}", local);
 			}
 		}
 
@@ -505,11 +524,16 @@ namespace Mono.Debugger.SymbolWriter
 					if (v != null)
 						line_number_tables.Add (Int32.Parse (v), true);
 					ShowLineNumberTables = true;
-				} }
+				} },
+				{ "locals:", v => {
+					if (v != null)
+						methods.Add (Int32.Parse (v), true);
+					ShowLocals = true;
+				} },
 			};
 			List<string> extra = p.Parse (args);
 
-			if (ShowSources || ShowCompileUnits || ShowMethods || ShowLineNumberTables)
+			if (ShowSources || ShowCompileUnits || ShowMethods || ShowLineNumberTables || ShowLocals)
 				Verify = false;
 
 			bool fail = false;
@@ -542,9 +566,11 @@ namespace Mono.Debugger.SymbolWriter
 				if (ShowCompileUnits)
 					reader.PrintCompileUnits ();
 				if (ShowMethods)
-					reader.PrintMethods ();
+					reader.PrintMethods (false);
 				if (ShowLineNumberTables)
 					reader.PrintLineNumberTables ();
+				if (ShowLocals)
+					reader.PrintMethods (true);
 				if (Verify)
 					reader.Read ();
 			} catch (MonoSymbolFileException ex) {
