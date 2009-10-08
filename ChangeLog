@@ -1,3 +1,12 @@
+2009-10-08  Martin Baulig  <martin@ximian.com>
+
+	* build/mdb: Use the full pathname to invoke mono.
+	* build/mdb-symbolreader: Likewise.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.SetupEnvironment): Don't set `MONO_GAC_PREFIX',
+	`MONO_PATH', `LD_LIBRARY_PATH' and `PATH'.
+
 2009-10-01  Martin Baulig  <martin@ximian.com>
 
 	* classes/ProcessStart.cs
