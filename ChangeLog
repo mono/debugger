@@ -1,3 +1,9 @@
+2009-10-01  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs
+	(ProcessStart.cctor): Use `BuildInfo.mono' to set `MonoPath'
+	instead of computing it here.
+
 2009-09-29  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerSession.cs

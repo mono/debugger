@@ -26,9 +26,7 @@ namespace Mono.Debugger.Backend
 
 		static ProcessStart ()
 		{
-			/* Use relative path based on where mscorlib.dll is at to enable relocation */
-			string prefix = new DirectoryInfo (Path.GetDirectoryName (typeof (int).Assembly.Location)).Parent.Parent.Parent.FullName;
-			MonoPath = Path.Combine (Path.Combine (prefix, "bin"), "mono");
+			MonoPath = Path.GetFullPath (BuildInfo.mono);
 		}
 
 		static bool IsMonoAssembly (string filename)
