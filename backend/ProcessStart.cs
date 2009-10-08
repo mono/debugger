@@ -265,14 +265,6 @@ namespace Mono.Debugger.Backend
 				hash.Add (var, env_vars [var]);
 			}
 
-			if (Options.MonoPrefix != null) {
-				string prefix = Options.MonoPrefix;
-				add_env_path (hash, "MONO_GAC_PREFIX", prefix);
-				add_env_path (hash, "MONO_PATH", prefix + "/lib");
-				add_env_path (hash, "LD_LIBRARY_PATH", prefix + "/lib");
-				add_env_path (hash, "PATH", prefix + "/bin");
-			}
-
 			add_env_path (hash, "MONO_SHARED_HOSTNAME", "mdb");
 
 			add_env_path (hash, "MONO_GENERIC_SHARING", "none");
