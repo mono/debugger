@@ -670,10 +670,15 @@ namespace Mono.Debugger
 				if (pending_bpts.Count == 0)
 					return null;
 
+				Language language;
+				if (sse.Process.IsManaged)
+					language = sse.Process.MonoLanguage;
+				else
+					language = sse.Process.NativeLanguage;
+
 				StackFrame main_frame = new StackFrame (
 					sse.Client, FrameType.Special, TargetAddress.Null, TargetAddress.Null,
-					TargetAddress.Null, null, sse.Process.MonoLanguage,
-					new Symbol ("<main>", TargetAddress.Null, 0));
+					TargetAddress.Null, null, language, new Symbol ("<main>", TargetAddress.Null, 0));
 
 				foreach (var entry in pending_bpts.ToArray ()) {
 					var breakpoint = entry.Key;
