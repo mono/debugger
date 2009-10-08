@@ -196,12 +196,14 @@ EXTRA_DIST = \
 mdb: mdb.in Makefile
 	sed -e 's^\@twodir\@^$(twodir)^g' \
 	    -e 's^\@libdir\@^$(libdir)^g' \
+	    -e 's^\@mono\@^$(MONO)^g' \
 		< $(srcdir)/mdb.in > mdb.tmp \
 	&& mv mdb.tmp mdb 
 
 mdb-symbolreader: mdb-symbolreader.in Makefile
 	sed -e 's^\@twodir\@^$(twodir)^g' \
 	    -e 's^\@libdir\@^$(libdir)^g' \
+	    -e 's^\@mono\@^$(MONO)^g' \
 		< $(srcdir)/mdb-symbolreader.in > mdb-symbolreader.tmp \
 	&& mv mdb-symbolreader.tmp mdb-symbolreader
 
