@@ -288,9 +288,7 @@ namespace Mono.Debugger
 			if (main_process == null)
 				return null;
 
-			Module[] modules = main_process.Modules;
-
-			foreach (Module module in modules) {
+			foreach (Module module in modules.Values) {
 				SourceFile file = module.FindFile (filename);
 				if (file != null)
 					return file;
@@ -302,7 +300,7 @@ namespace Mono.Debugger
 			filename = Path.GetFullPath (Path.Combine (
 				Options.WorkingDirectory, filename));
 
-			foreach (Module module in modules) {
+			foreach (Module module in modules.Values) {
 				SourceFile file = module.FindFile (filename);
 				if (file != null)
 					return file;
@@ -333,17 +331,30 @@ namespace Mono.Debugger
 			if (process != main_process)
 				return;
 
-			pending_bpts.Clear ();
-			reached_main = false;
-			main_process = null;
-
 			lock (this) {
+				pending_bpts.Clear ();
+				reached_main = false;
+				main_process = null;
+
+				foreach (Module module in modules.Values) {
+					module.UnLoadModule ();
+				}
+
 				foreach (Event e in events.Values.ToArray ()) {
 					e.OnTargetExited ();
 					if (!e.IsPersistent)
 						events.Remove (e.Index);
 				}
 			}
+		}
+
+		internal void OnProcessExecd (Process process)
+		{
+			if (process != main_process)
+				return;
+
+			OnProcessExited (process);
+			main_process = process;
 		}
 
 		protected void LoadSession (XPathNavigator nav)
@@ -496,20 +507,22 @@ namespace Mono.Debugger
 			if (symfile == null)
 				throw new NullReferenceException ();
 
-			Module module = (Module) modules [name];
-			if (module != null)
+			lock (this) {
+				Module module = (Module) modules [name];
+				if (module != null)
+					return module;
+
+				ModuleGroup group;
+				if (is_user_module (symfile.CodeBase))
+					group = Config.GetModuleGroup ("user");
+				else
+					group = Config.GetModuleGroup (symfile);
+
+				module = new Module (group, name, symfile);
+				modules.Add (name, module);
+
 				return module;
-
-			ModuleGroup group;
-			if (is_user_module (symfile.CodeBase))
-				group = Config.GetModuleGroup ("user");
-			else
-				group = Config.GetModuleGroup (symfile);
-
-			module = new Module (group, name, symfile);
-			modules.Add (name, module);
-
-			return module;
+			}
 		}
 
 		public Module[] Modules {

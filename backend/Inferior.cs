@@ -835,8 +835,13 @@ namespace Mono.Debugger.Backend
 			target_info = GetTargetMemoryInfo (address_domain);
 
 			try {
+				string cwd;
+				string[] cmdline_args;
+
+				string application = GetApplication (out cwd, out cmdline_args);
+
 				exe = process.OperatingSystem.LoadExecutable (
-					target_info, start.TargetApplication, start.LoadNativeSymbolTable);
+					target_info, application, start.LoadNativeSymbolTable);
 			} catch (Exception e) {
 				if (error_handler != null)
 					error_handler (this, String.Format (

@@ -192,8 +192,6 @@ namespace Mono.Debugger.Backend
 			options.InferiorArgs = cmdline_args;
 			options.WorkingDirectory = cwd;
 
-			stop_in_main = false;
-
 			SetupEnvironment ();
 		}
 
@@ -227,6 +225,7 @@ namespace Mono.Debugger.Backend
 
 		public bool StopInMain {
 			get { return stop_in_main; }
+			internal set { stop_in_main = value; }
 		}
 
 		public bool RedirectOutput {

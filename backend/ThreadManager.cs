@@ -168,7 +168,7 @@ namespace Mono.Debugger.Backend
 			if (cevent.Type == Inferior.ChildEventType.CHILD_EXECD) {
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
-				inferior.Process.ChildExecd (inferior);
+				inferior.Process.ChildExecd (engine, inferior);
 				resume_target = false;
 				return true;
 			}

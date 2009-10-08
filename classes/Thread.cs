@@ -829,24 +829,21 @@ namespace Mono.Debugger
 
 	public class ThreadCommandResult : OperationCommandResult
 	{
+		protected ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
+
 		public Thread Thread {
 			get; private set;
 		}
 
+		internal override IOperationHost Host {
+			get { return Thread; }
+		}
+
 		internal ThreadCommandResult (Thread thread)
-			: base (thread, ThreadingModel.Single)
+			: base (ThreadingModel.Single)
 		{
 			this.Thread = thread;
 		}
-	}
-
-	public class RuntimeInvokeResult : ThreadCommandResult
-	{
-		ST.ManualResetEvent completed_event = new ST.ManualResetEvent (false);
-
-		internal RuntimeInvokeResult (Thread thread)
-			: base (thread)
-		{ }
 
 		public override ST.WaitHandle CompletedEvent {
 			get { return completed_event; }
@@ -856,6 +853,18 @@ namespace Mono.Debugger
 		{
 			completed_event.Set ();
 		}
+
+		internal override void OnExecd (SingleSteppingEngine new_thread)
+		{
+			Thread = new_thread.Thread;
+		}
+	}
+
+	public class RuntimeInvokeResult : ThreadCommandResult
+	{
+		internal RuntimeInvokeResult (Thread thread)
+			: base (thread)
+		{ }
 
 		public override void Abort ()
 		{

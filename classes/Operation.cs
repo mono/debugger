@@ -56,24 +56,23 @@ namespace Mono.Debugger
 		void Abort ();
 	}
 
-	public class OperationCommandResult : CommandResult
+	public abstract class OperationCommandResult : CommandResult
 	{
 		public ThreadingModel ThreadingModel {
 			get; private set;
 		}
 
-		internal IOperationHost Host {
-			get; private set;
+		internal abstract IOperationHost Host {
+			get;
 		}
 
 		public bool IsCompleted {
 			get; private set;
 		}
 
-		internal OperationCommandResult (IOperationHost host, ThreadingModel model)
+		internal OperationCommandResult (ThreadingModel model)
 		{
 			this.ThreadingModel = model;
-			this.Host = host;
 		}
 
 		public override ST.WaitHandle CompletedEvent {
@@ -99,6 +98,8 @@ namespace Mono.Debugger
 					Host.SendResult (sse, args);
 			}
 		}
+
+		internal abstract void OnExecd (SingleSteppingEngine new_thread);
 
 		public override void Abort ()
 		{

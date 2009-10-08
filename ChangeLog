@@ -1,3 +1,49 @@
+2009-10-08  Martin Baulig  <martin@ximian.com>
+
+	Improve follow-fork(), allow following exec() without fork()ing
+	first; shell scripts, for instance, use this technique.
+
+	* classes/Thread.cs
+	(ThreadCommandResult): Use a private `ManualResetEvent'.
+
+	* classes/Operation.cs
+	(OperationCommandResult): Make this class abstract.
+	(OperationCommandResult.Host): Make this property abstract.
+	(OperationCommandResult.OnExecd): New internal abstract method.
+
+	* backend/Inferior.cs
+	(Inferior.SetupInferior): Call GetApplication() instead of using
+	`start.TargetApplication'.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.StopInMain): Add internal setter.
+	(ProcessStart.SetupApplication): Don't set StopInMain to false.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ChildForked): Set `StopInMain' to false here ...
+	(ProcessServant.ChildExecd): ... but not here.
+	(ProcessServant.ChildExecd): Don't clone the session and reuse the
+	`OperationCommandResult', only call OnExecd() on it to change its
+	`Host' if necessary.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.OnProcessExecd): New internal method.
+	(DebuggerSession.OnProcessExited): Unload all modules if we're the
+	main process.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ProcessCommandResult): New protected class.
+
+	* backend/DebuggerServant.cs
+	(DebuggerServant.GlobalCommandResult): New protected class.
+
+	* test/testsuite/testnativenoforkexec.cs: New test.
+	* test/src/testnativenoforkexec.c: New test.
+
+	* test/testsuite/TestDontFollowFork.cs: Increase timeout.
+
+	* test/testsuite/testnativefork.cs: Remove "NotWorking".
+
 2009-10-01  Martin Baulig  <martin@ximian.com>
 
 	* classes/ProcessStart.cs

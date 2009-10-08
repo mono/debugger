@@ -596,7 +596,7 @@ namespace Mono.Debugger.Backend
 
 				Report.Debug (DebugFlags.EventLoop, "{0} {1} operation {2}: {3} {4}",
 					      this, suspended ? "suspending" : "terminating", current_operation,
-					      result != null, args);
+					      result != null ? result.ToString () : "null", args);
 
 				if (result != null)
 					result.Completed (this, args);
@@ -614,6 +614,15 @@ namespace Mono.Debugger.Backend
 					current_operation = null;
 				}
 			}
+		}
+
+		internal CommandResult OnExecd (SingleSteppingEngine new_engine)
+		{
+			OperationCommandResult ocr = current_operation.Result as OperationCommandResult;
+			if (ocr != null)
+				ocr.OnExecd (new_engine);
+
+			return current_operation.Result;
 		}
 
 		internal void OnManagedThreadCreated (TargetAddress end_stack_address)
@@ -2856,7 +2865,7 @@ namespace Mono.Debugger.Backend
 					return EventResult.Running;
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} start #1: {1}", sse, cevent);
+			Report.Debug (DebugFlags.SSE, "{0} start #1: {1} {2}", sse, cevent, Result);
 			sse.PushOperation (new OperationStep (sse, StepMode.Run, Result));
 			return EventResult.Running;
 		}
