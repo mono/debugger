@@ -186,7 +186,7 @@ namespace Mono.Debugger.Backend
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				Report.Debug (DebugFlags.SSE, "{0} received {1} while running {2}",
+				Report.Debug (DebugFlags.EventLoop, "{0} received {1} while running {2}",
 					      this, cevent, current_operation);
 				// we can't remove the breakpoint anymore after
 				// the target exited, but we need to clear this id.
@@ -4440,8 +4440,12 @@ namespace Mono.Debugger.Backend
 		{
 			sse.disable_extended_notification (NotificationType.Trampoline);
 
+			Report.Debug (DebugFlags.SSE, "{0} compiled trampoline: {1} {2} {3}",
+				      sse, mono_method, code, TrampolineHandler != null);
+
 			if (TrampolineHandler != null) {
 				Method method = sse.Lookup (code);
+				Report.Debug (DebugFlags.SSE, "{0} compiled trampoline #1: {1}", sse, method);
 				if (!TrampolineHandler (method)) {
 					sse.do_continue (CallSite.Address + CallSite.InstructionSize);
 					return;
