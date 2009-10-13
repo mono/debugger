@@ -4377,10 +4377,26 @@ namespace Mono.Debugger.Backend
 			get { return true; }
 		}
 
+		/*
+		 * On October 13th, 2009 a new notification was added to the debugger to fix
+		 * https://bugzilla.novell.com/show_bug.cgi?id=544935.
+		 *
+		 * This new notification also gives us the address of the callsite, so we can
+		 * identify recursive calls to mono_generic_trampoline().
+		 *
+		 * The runtime versions are 80.2 for 2.4.x and 81.4 for trunk.
+		 *
+		 */
+
 		protected override void DoExecute ()
 		{
-			sse.enable_extended_notification (NotificationType.Trampoline);
-			sse.do_continue ();
+			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification ()) {
+				sse.enable_extended_notification (NotificationType.Trampoline);
+				sse.do_continue (CallSite.Address + CallSite.InstructionSize);
+			} else {
+				sse.enable_extended_notification (NotificationType.OldTrampoline);
+				sse.do_continue ();
+			}
 		}
 
 		public override bool ResumeOperation ()
@@ -4391,7 +4407,12 @@ namespace Mono.Debugger.Backend
 
 		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
 		{
-			sse.disable_extended_notification (NotificationType.Trampoline);
+			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification ()) {
+				sse.disable_extended_notification (NotificationType.Trampoline);
+				sse.remove_temporary_breakpoint ();
+			} else {
+				sse.disable_extended_notification (NotificationType.OldTrampoline);
+			}
 
 			if (TrampolineHandler != null) {
 				Method method = sse.Lookup (code);
@@ -4409,6 +4430,26 @@ namespace Mono.Debugger.Backend
 		{
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
 			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
+				TargetAddress info = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
+
+				TargetReader reader = new TargetReader (inferior.ReadMemory (info, 3 * inferior.TargetAddressSize));
+				TargetAddress trampoline = reader.ReadAddress ();
+				TargetAddress method = reader.ReadAddress ();
+				TargetAddress code = reader.ReadAddress ();
+
+				if ((trampoline.IsNull) || (trampoline != CallSite.Address + CallSite.InstructionSize)) {
+					args = null;
+					sse.do_continue ();
+					return EventResult.Running;
+				}
+
+				args = null;
+				compiled = true;
+				TrampolineCompiled (method, code);
+				return EventResult.Running;
+			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
+				   ((NotificationType) cevent.Argument == NotificationType.OldTrampoline)) {
 				TargetAddress method = new TargetAddress (
 					inferior.AddressDomain, cevent.Data1);
 				TargetAddress code = new TargetAddress (
