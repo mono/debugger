@@ -50,7 +50,8 @@ namespace Mono.Debugger.Backend.Mono
 		CreateAppDomain,
 		UnloadAppDomain,
 
-		Trampoline	= 256
+		OldTrampoline	= 256,
+		Trampoline	= 512
 	}
 
 	internal enum ThreadFlags {
@@ -434,6 +435,7 @@ namespace Mono.Debugger.Backend.Mono
 					csharp_language = null;
 					break;
 
+				case NotificationType.OldTrampoline:
 				case NotificationType.Trampoline:
 					resume_target = false;
 					return false;
@@ -574,6 +576,11 @@ namespace Mono.Debugger.Backend.Mono
 			if (MajorVersion > major)
 				return true;
 			return MinorVersion >= minor;
+		}
+
+		public bool HasNewTrampolineNotification ()
+		{
+			return CheckRuntimeVersion (80, 2) || CheckRuntimeVersion (81, 4);
 		}
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
