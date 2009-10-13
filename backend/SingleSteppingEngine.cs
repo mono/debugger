@@ -1179,7 +1179,7 @@ namespace Mono.Debugger.Backend
 		// </summary>
 		bool is_in_step_frame (StepFrame frame, TargetAddress address)
                 {
-			if (address.IsNull || frame.Start.IsNull)
+			if (address.IsNull || (frame == null) || frame.Start.IsNull)
 				return false;
 
                         if ((address < frame.Start) || (address >= frame.End))

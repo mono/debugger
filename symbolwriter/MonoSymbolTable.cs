@@ -262,7 +262,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public override string ToString ()
 		{
-			return String.Format ("[Line {0}:{1}:{2}]", File, Row, Offset);
+			return String.Format ("[Line {0}:{1}:{2:x}]", File, Row, Offset);
 		}
 	}
 
@@ -340,7 +340,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public override string ToString ()
 		{
-			return String.Format ("[CodeBlock {0}:{1}:{2}:{3}:{4}]",
+			return String.Format ("[CodeBlock {0}:{1}:{2}:{3:x}:{4:x}]",
 					      Index, Parent, BlockType, StartOffset, EndOffset);
 		}
 	}
@@ -377,7 +377,7 @@ namespace Mono.CompilerServices.SymbolWriter
 		public override string ToString ()
 		{
 			return String.Format ("[LocalVariable {0}:{1}:{2}]",
-					      Name, Index, BlockIndex);
+					      Name, Index, BlockIndex - 1);
 		}
 	}
 
@@ -836,7 +836,7 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public override string ToString ()
 		{
-			return String.Format ("SourceFileEntry ({0}:{1})", Index, DataOffset);
+			return String.Format ("SourceFileEntry ({0}:{1:x})", Index, DataOffset);
 		}
 	}
 
