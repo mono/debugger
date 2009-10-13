@@ -51,7 +51,8 @@ namespace Mono.Debugger.Backend
 		CreateAppDomain,
 		UnloadAppDomain,
 
-		Trampoline	= 256
+		OldTrampoline	= 256,
+		Trampoline	= 512
 	}
 
 	internal delegate bool ManagedCallbackFunction (SingleSteppingEngine engine);
@@ -358,6 +359,7 @@ namespace Mono.Debugger.Backend
 					csharp_language = null;
 					break;
 
+				case NotificationType.OldTrampoline:
 				case NotificationType.Trampoline:
 					resume_target = false;
 					return false;
@@ -484,6 +486,20 @@ namespace Mono.Debugger.Backend
 
 			TargetReader reader = new TargetReader (memory.ReadMemory (info, size));
 			return new MonoDebuggerInfo (memory, reader);
+		}
+
+		public bool CheckRuntimeVersion (int major, int minor)
+		{
+			if (MajorVersion < major)
+				return false;
+			if (MajorVersion > major)
+				return true;
+			return MinorVersion >= minor;
+		}
+
+		public bool HasNewTrampolineNotification ()
+		{
+			return CheckRuntimeVersion (80, 2) || CheckRuntimeVersion (81, 4);
 		}
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
