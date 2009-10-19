@@ -491,6 +491,9 @@ _server_ptrace_setup_inferior (ServerHandle *handle)
 	handle->inferior->os.mem_fd = open64 (filename, O_RDONLY);
 
 	if (handle->inferior->os.mem_fd < 0) {
+		if (errno == EACCES)
+			return COMMAND_ERROR_PERMISSION_DENIED;
+
 		g_warning (G_STRLOC ": Can't open (%s): %s", filename, g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
@@ -614,7 +617,7 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 	char buffer [BUFSIZ+1];
 	GPtrArray *array;
 	gchar *cmdline, **ptr;
-	gsize pos, len;
+	gssize pos, len;
 	int i;
 
 	len = readlink (exe_filename, buffer, BUFSIZ);
@@ -622,7 +625,12 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 		g_free (cwd_filename);
 		g_free (exe_filename);
 		g_free (cmdline_filename);
-		g_warning (G_STRLOC ": Can't get exe file of %d", handle->inferior->pid);
+
+		if (errno == EACCES)
+			return COMMAND_ERROR_PERMISSION_DENIED;
+
+		g_warning (G_STRLOC ": Can't get exe file of %d: %s", handle->inferior->pid,
+			   g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 
@@ -634,7 +642,8 @@ server_ptrace_get_application (ServerHandle *handle, gchar **exe_file, gchar **c
 		g_free (cwd_filename);
 		g_free (exe_filename);
 		g_free (cmdline_filename);
-		g_warning (G_STRLOC ": Can't get cwd of %d", handle->inferior->pid);
+		g_warning (G_STRLOC ": Can't get cwd of %d: %s", handle->inferior->pid,
+			   g_strerror (errno));
 		return COMMAND_ERROR_UNKNOWN_ERROR;
 	}
 

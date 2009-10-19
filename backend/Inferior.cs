@@ -698,6 +698,12 @@ namespace Mono.Debugger.Backend
 			check_error (mono_debugger_server_initialize_thread (server_handle, pid, false));
 			this.child_pid = pid;
 
+			string exe_file, cwd;
+			string[] cmdline_args;
+			exe_file = GetApplication (out cwd, out cmdline_args);
+
+			start.SetupApplication (exe_file, cwd, cmdline_args);
+
 			SetupInferior ();
 
 			change_target_state (TargetState.Stopped, 0);
@@ -724,17 +730,6 @@ namespace Mono.Debugger.Backend
 			SetupInferior ();
 
 			change_target_state (TargetState.Stopped, 0);
-		}
-
-		void child_execd ()
-		{
-			string exe_file, cwd;
-			string[] cmdline_args;
-			exe_file = GetApplication (out cwd, out cmdline_args);
-
-			start.SetupApplication (exe_file, cwd, cmdline_args);
-
-			SetupInferior ();
 		}
 
 		public ChildEvent ProcessEvent (int status)
@@ -766,7 +761,6 @@ namespace Mono.Debugger.Backend
 				break;
 
 			case ChildEventType.CHILD_EXECD:
-				child_execd ();
 				break;
 			}
 
@@ -1376,7 +1370,7 @@ namespace Mono.Debugger.Backend
 				int count;
 				string exe_file;
 				check_error (mono_debugger_server_get_application (
-							 server_handle, out p_exe, out p_cwd,
+						     server_handle, out p_exe, out p_cwd,
 						     out count, out data));
 
 				cmdline_args = new string [count];

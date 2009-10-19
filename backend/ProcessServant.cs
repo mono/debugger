@@ -281,7 +281,18 @@ namespace Mono.Debugger.Backend
 			native_language = new NativeLanguage (this, os, target_info);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
-			new_inferior.InitializeAfterExec (inferior.PID);
+			try {
+				new_inferior.InitializeAfterExec (inferior.PID);
+			} catch (Exception ex) {
+				if ((ex is TargetException) && (((TargetException) ex).Type == TargetError.PermissionDenied)) {
+					Report.Error ("Permission denied when trying to debug exec()ed child {0}, detaching!",
+						      inferior.PID);
+				} else {
+					Report.Error ("InitializeAfterExec() failed on pid {0}: {1}", inferior.PID, ex);
+				}
+				new_inferior.DetachAfterFork ();
+				return;
+			}
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, inferior.PID);

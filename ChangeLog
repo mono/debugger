@@ -1,3 +1,25 @@
+2009-10-19  Martin Baulig  <martin@ximian.com>
+
+	Detach after exec() if we don't have permission to debug the
+	child; this happens if the exec()d binary is setuid/setgid.
+
+	* backend/Inferior.cs
+	(Inferior.ProcessEvent): Removed child_execd().
+	(Inferior.InitializeAfterExec): Call GetApplication() and
+	start.SetupApplication() here.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ChildExecd): Catch `TargetError.PermissionDenied'
+	and detach from the process; this happens when exec()ing
+	setuid/setgid applications.
+
+	* classes/TargetException.cs
+	(TargetError): Add `PermissionDenied'.
+
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_setup_inferior): Check `EACCES' and return
+	`COMMAND_ERROR_PERMISSION_DENIED'.
+
 2009-10-14  Martin Baulig  <martin@ximian.com>
 
 	* backend/SingleSteppingEngine.cs
