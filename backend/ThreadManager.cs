@@ -179,6 +179,9 @@ namespace Mono.Debugger.Backend
 						Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
 					resume_target = true;
 					return true;
+				} else if (inferior.Has_SIGWINCH && (cevent.Argument == inferior.SIGWINCH)) {
+					resume_target = true;
+					return true;
 				} else if (inferior.HasSignals && (cevent.Argument == inferior.Kernel_SIGRTMIN+1)) {
 					// __SIGRTMIN and __SIGRTMIN+1 are used internally by the threading library
 					resume_target = true;

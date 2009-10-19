@@ -296,6 +296,7 @@ namespace Mono.Debugger.Backend
 			public int SIGSEGV;
 			public int SIGILL;
 			public int SIGBUS;
+			public int SIGWINCH;
 
 			public int Kernel_SIGRTMIN;
 			public int MonoThreadAbortSignal;
@@ -1647,6 +1648,19 @@ namespace Mono.Debugger.Backend
 					throw new InvalidOperationException ();
 
 				return signal_info.SIGCHLD;
+			}
+		}
+
+		public bool Has_SIGWINCH {
+			get { return has_signals && (signal_info.SIGWINCH > 0); }
+		}
+
+		public int SIGWINCH {
+			get {
+				if (!has_signals || (signal_info.SIGWINCH < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGWINCH;
 			}
 		}
 

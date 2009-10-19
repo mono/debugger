@@ -540,6 +540,7 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 	sinfo->sigsegv = SIGSEGV;
 	sinfo->sigill = SIGILL;
 	sinfo->sigbus = SIGBUS;
+	sinfo->sigwinch = SIGWINCH;
 
 	/* __SIGRTMIN is the hard limit from the kernel, SIGRTMIN is the first
 	 * user-visible real-time signal.  __SIGRTMIN and __SIGRTMIN+1 are used

@@ -134,6 +134,7 @@ typedef struct {
 	int sigsegv;
 	int sigill;
 	int sigbus;
+	int sigwinch;
 	int kernel_sigrtmin;
 	int mono_thread_abort;
 } SignalInfo;

@@ -1,5 +1,18 @@
 2009-10-19  Martin Baulig  <martin@ximian.com>
 
+	* backend/Inferior.cs
+	(Inferior.SignalInfo): Add `SIGWINCH'.
+	(Inferior.Has_SIGWINCH): New public property.
+	(Inferior.SIGWINCH): New public property.
+
+	* backend/server.h
+	(SignalInfo): Add `sigwinch'.
+
+	* backend/ThreadManager.cs
+	(ThreadManager.HandleChildEvent): Ignore `SIGWINCH'.
+
+2009-10-19  Martin Baulig  <martin@ximian.com>
+
 	Detach after exec() if we don't have permission to debug the
 	child; this happens if the exec()d binary is setuid/setgid.
 
