@@ -1402,6 +1402,8 @@ namespace Mono.Debugger.Backend.Mono
 				MonoSymbolFile symfile = load_symfile (inferior, data);
 				Report.Debug (DebugFlags.JitSymtab,
 					      "Module load: {0} {1}", data, symfile);
+				if (symfile == null)
+					break;
 				engine.Process.Debugger.OnModuleLoaded (symfile.Module);
 				if ((builtin_types != null) && (symfile != null)) {
 					if (engine.OnModuleLoaded (symfile.Module))

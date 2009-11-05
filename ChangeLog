@@ -41,6 +41,12 @@
 	address of the callsite, so we can detect recursive invocations of
 	mono_generic_trampoline().
 
+2009-11-05  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.Notification): On `LoadModule': don't crash
+	if load_symfile() failed.
+
 2009-10-08  Martin Baulig  <martin@ximian.com>
 
 	* build/mdb: Use the full pathname to invoke mono.
