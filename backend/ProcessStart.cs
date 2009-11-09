@@ -26,9 +26,7 @@ namespace Mono.Debugger.Backend
 
 		static ProcessStart ()
 		{
-			/* Use relative path based on where mscorlib.dll is at to enable relocation */
-			string prefix = new DirectoryInfo (Path.GetDirectoryName (typeof (int).Assembly.Location)).Parent.Parent.Parent.FullName;
-			MonoPath = Path.Combine (Path.Combine (prefix, "bin"), "mono");
+			MonoPath = Path.GetFullPath (BuildInfo.mono);
 		}
 
 		static bool IsMonoAssembly (string filename)
@@ -194,8 +192,6 @@ namespace Mono.Debugger.Backend
 			options.InferiorArgs = cmdline_args;
 			options.WorkingDirectory = cwd;
 
-			stop_in_main = false;
-
 			SetupEnvironment ();
 		}
 
@@ -229,6 +225,7 @@ namespace Mono.Debugger.Backend
 
 		public bool StopInMain {
 			get { return stop_in_main; }
+			internal set { stop_in_main = value; }
 		}
 
 		public bool RedirectOutput {
@@ -266,14 +263,6 @@ namespace Mono.Debugger.Backend
 				if (hash.Contains (var))
 					continue;
 				hash.Add (var, env_vars [var]);
-			}
-
-			if (Options.MonoPrefix != null) {
-				string prefix = Options.MonoPrefix;
-				add_env_path (hash, "MONO_GAC_PREFIX", prefix);
-				add_env_path (hash, "MONO_PATH", prefix + "/lib");
-				add_env_path (hash, "LD_LIBRARY_PATH", prefix + "/lib");
-				add_env_path (hash, "PATH", prefix + "/bin");
 			}
 
 			add_env_path (hash, "MONO_SHARED_HOSTNAME", "mdb");

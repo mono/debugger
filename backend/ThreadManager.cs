@@ -168,7 +168,7 @@ namespace Mono.Debugger.Backend
 			if (cevent.Type == Inferior.ChildEventType.CHILD_EXECD) {
 				thread_hash.Remove (engine.PID);
 				engine_hash.Remove (engine.ID);
-				inferior.Process.ChildExecd (inferior);
+				inferior.Process.ChildExecd (engine, inferior);
 				resume_target = false;
 				return true;
 			}
@@ -177,6 +177,9 @@ namespace Mono.Debugger.Backend
 				if (cevent.Argument == inferior.SIGCHLD) {
 					cevent = new Inferior.ChildEvent (
 						Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
+					resume_target = true;
+					return true;
+				} else if (inferior.Has_SIGWINCH && (cevent.Argument == inferior.SIGWINCH)) {
 					resume_target = true;
 					return true;
 				} else if (inferior.HasSignals && (cevent.Argument == inferior.Kernel_SIGRTMIN+1)) {

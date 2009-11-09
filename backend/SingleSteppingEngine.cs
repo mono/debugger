@@ -186,7 +186,7 @@ namespace Mono.Debugger.Backend
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_EXITED) ||
 			    (cevent.Type == Inferior.ChildEventType.CHILD_SIGNALED)) {
-				Report.Debug (DebugFlags.SSE, "{0} received {1} while running {2}",
+				Report.Debug (DebugFlags.EventLoop, "{0} received {1} while running {2}",
 					      this, cevent, current_operation);
 				// we can't remove the breakpoint anymore after
 				// the target exited, but we need to clear this id.
@@ -596,7 +596,7 @@ namespace Mono.Debugger.Backend
 
 				Report.Debug (DebugFlags.EventLoop, "{0} {1} operation {2}: {3} {4}",
 					      this, suspended ? "suspending" : "terminating", current_operation,
-					      result != null, args);
+					      result != null ? result.ToString () : "null", args);
 
 				if (result != null)
 					result.Completed (this, args);
@@ -614,6 +614,15 @@ namespace Mono.Debugger.Backend
 					current_operation = null;
 				}
 			}
+		}
+
+		internal CommandResult OnExecd (SingleSteppingEngine new_engine)
+		{
+			OperationCommandResult ocr = current_operation.Result as OperationCommandResult;
+			if (ocr != null)
+				ocr.OnExecd (new_engine);
+
+			return current_operation.Result;
 		}
 
 		internal void OnManagedThreadCreated (TargetAddress end_stack_address)
@@ -1170,7 +1179,7 @@ namespace Mono.Debugger.Backend
 		// </summary>
 		bool is_in_step_frame (StepFrame frame, TargetAddress address)
                 {
-			if (address.IsNull || frame.Start.IsNull)
+			if (address.IsNull || (frame == null) || frame.Start.IsNull)
 				return false;
 
                         if ((address < frame.Start) || (address >= frame.End))
@@ -2856,7 +2865,7 @@ namespace Mono.Debugger.Backend
 					return EventResult.Running;
 			}
 
-			Report.Debug (DebugFlags.SSE, "{0} start #1: {1}", sse, cevent);
+			Report.Debug (DebugFlags.SSE, "{0} start #1: {1} {2}", sse, cevent, Result);
 			sse.PushOperation (new OperationStep (sse, StepMode.Run, Result));
 			return EventResult.Running;
 		}
@@ -4415,10 +4424,26 @@ namespace Mono.Debugger.Backend
 			get { return true; }
 		}
 
+		/*
+		 * On October 13th, 2009 a new notification was added to the debugger to fix
+		 * https://bugzilla.novell.com/show_bug.cgi?id=544935.
+		 *
+		 * This new notification also gives us the address of the callsite, so we can
+		 * identify recursive calls to mono_generic_trampoline().
+		 *
+		 * The runtime versions are 80.2 for 2.4.x and 81.4 for trunk.
+		 *
+		 */
+
 		protected override void DoExecute ()
 		{
-			sse.enable_extended_notification (NotificationType.Trampoline);
-			sse.do_continue ();
+			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification ()) {
+				sse.enable_extended_notification (NotificationType.Trampoline);
+				sse.do_continue (CallSite.Address + CallSite.InstructionSize);
+			} else {
+				sse.enable_extended_notification (NotificationType.OldTrampoline);
+				sse.do_continue ();
+			}
 		}
 
 		public override bool ResumeOperation ()
@@ -4429,10 +4454,19 @@ namespace Mono.Debugger.Backend
 
 		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
 		{
-			sse.disable_extended_notification (NotificationType.Trampoline);
+			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification ()) {
+				sse.disable_extended_notification (NotificationType.Trampoline);
+				sse.remove_temporary_breakpoint ();
+			} else {
+				sse.disable_extended_notification (NotificationType.OldTrampoline);
+			}
+
+			Report.Debug (DebugFlags.SSE, "{0} compiled trampoline: {1} {2} {3}",
+				      sse, mono_method, code, TrampolineHandler != null);
 
 			if (TrampolineHandler != null) {
 				Method method = sse.Lookup (code);
+				Report.Debug (DebugFlags.SSE, "{0} compiled trampoline #1: {1}", sse, method);
 				if (!TrampolineHandler (method)) {
 					sse.do_continue (CallSite.Address + CallSite.InstructionSize);
 					return;
@@ -4447,6 +4481,26 @@ namespace Mono.Debugger.Backend
 		{
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
 			    ((NotificationType) cevent.Argument == NotificationType.Trampoline)) {
+				TargetAddress info = new TargetAddress (
+					inferior.AddressDomain, cevent.Data1);
+
+				TargetReader reader = new TargetReader (inferior.ReadMemory (info, 3 * inferior.TargetAddressSize));
+				TargetAddress trampoline = reader.ReadAddress ();
+				TargetAddress method = reader.ReadAddress ();
+				TargetAddress code = reader.ReadAddress ();
+
+				if ((trampoline.IsNull) || (trampoline != CallSite.Address + CallSite.InstructionSize)) {
+					args = null;
+					sse.do_continue ();
+					return EventResult.Running;
+				}
+
+				args = null;
+				compiled = true;
+				TrampolineCompiled (method, code);
+				return EventResult.Running;
+			} else if ((cevent.Type == Inferior.ChildEventType.CHILD_NOTIFICATION) &&
+				   ((NotificationType) cevent.Argument == NotificationType.OldTrampoline)) {
 				TargetAddress method = new TargetAddress (
 					inferior.AddressDomain, cevent.Data1);
 				TargetAddress code = new TargetAddress (

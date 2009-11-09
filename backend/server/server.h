@@ -36,6 +36,7 @@ typedef enum {
 	COMMAND_ERROR_NOT_IMPLEMENTED,
 	COMMAND_ERROR_IO_ERROR,
 	COMMAND_ERROR_NO_CALLBACK_FRAME,
+	COMMAND_ERROR_PERMISSION_DENIED
 } ServerCommandError;
 
 typedef enum {
@@ -133,6 +134,7 @@ typedef struct {
 	int sigsegv;
 	int sigill;
 	int sigbus;
+	int sigwinch;
 	int kernel_sigrtmin;
 	int mono_thread_abort;
 } SignalInfo;

@@ -223,6 +223,7 @@ namespace Mono.Debugger.Backend
 		internal void ChildForked (Inferior inferior, int pid)
 		{
 			ProcessServant new_process = new ProcessServant (this, pid);
+			new_process.ProcessStart.StopInMain = false;
 
 			Inferior new_inferior = Inferior.CreateInferior (
 				manager, new_process, new_process.ProcessStart);
@@ -247,7 +248,7 @@ namespace Mono.Debugger.Backend
 			new_thread.StartForkedChild (result);
 		}
 
-		internal void ChildExecd (Inferior inferior)
+		internal void ChildExecd (SingleSteppingEngine engine, Inferior inferior)
 		{
 			is_execed = true;
 
@@ -268,8 +269,7 @@ namespace Mono.Debugger.Backend
 			if (breakpoint_manager != null)
 				breakpoint_manager.Dispose ();
 
-			session = session.Clone (client, start.Options, "@" + id);
-			session.OnProcessCreated (client);
+			session.OnProcessExecd (client);
 
 			breakpoint_manager = new BreakpointManager ();
 
@@ -281,7 +281,18 @@ namespace Mono.Debugger.Backend
 			native_language = new NativeLanguage (this, os, target_info);
 
 			Inferior new_inferior = Inferior.CreateInferior (manager, this, start);
-			new_inferior.InitializeAfterExec (inferior.PID);
+			try {
+				new_inferior.InitializeAfterExec (inferior.PID);
+			} catch (Exception ex) {
+				if ((ex is TargetException) && (((TargetException) ex).Type == TargetError.PermissionDenied)) {
+					Report.Error ("Permission denied when trying to debug exec()ed child {0}, detaching!",
+						      inferior.PID);
+				} else {
+					Report.Error ("InitializeAfterExec() failed on pid {0}: {1}", inferior.PID, ex);
+				}
+				new_inferior.DetachAfterFork ();
+				return;
+			}
 
 			SingleSteppingEngine new_thread = new SingleSteppingEngine (
 				manager, this, new_inferior, inferior.PID);
@@ -307,7 +318,10 @@ namespace Mono.Debugger.Backend
 			initialized = is_forked = false;
 			main_thread = new_thread;
 
-			CommandResult result = CloneParentOperation (new_thread);
+			if ((engine.Thread.ThreadFlags & Thread.Flags.StopOnExit) != 0)
+				new_thread.Thread.ThreadFlags |= Thread.Flags.StopOnExit;
+
+			CommandResult result = engine.OnExecd (new_thread);
 			new_thread.StartExecedChild (result);
 		}
 
@@ -793,7 +807,7 @@ namespace Mono.Debugger.Backend
 			lock (this) {
 				current_state = ProcessState.Running;
 				stopped_event.Reset ();
-				current_operation = new OperationCommandResult (this, model);
+				current_operation = new ProcessCommandResult (this, model);
 			}
 
 			ResumeUserThreads (model, caller);
@@ -831,7 +845,7 @@ namespace Mono.Debugger.Backend
 			if ((parent.current_operation.ThreadingModel & ThreadingModel.ThreadingMode) == ThreadingModel.Global)
 				current_operation = parent.current_operation;
 			else if ((parent.current_operation.ThreadingModel & ThreadingModel.ThreadingMode) == ThreadingModel.Process)
-				current_operation = new OperationCommandResult (this, parent.current_operation.ThreadingModel);
+				current_operation = new ProcessCommandResult (this, parent.current_operation.ThreadingModel);
 			else
 				throw new InternalError ();
 
@@ -868,6 +882,28 @@ namespace Mono.Debugger.Backend
 			Stop ();
 		}
 
+		protected class ProcessCommandResult : OperationCommandResult
+		{
+			public ProcessServant Process {
+				get; private set;
+			}
+
+			internal override IOperationHost Host {
+				get { return Process; }
+			}
+
+			internal ProcessCommandResult (ProcessServant process, ThreadingModel model)
+				: base (model)
+			{
+				this.Process = process;
+			}
+
+			internal override void OnExecd (SingleSteppingEngine new_thread)
+			{
+				Process = new_thread.Process;
+			}
+		}
+
 #endregion
 
 		public bool ActivatePendingBreakpoints (CommandResult result)
@@ -876,6 +912,11 @@ namespace Mono.Debugger.Backend
 				delegate (SingleSteppingEngine sse) {
 					return sse.ActivatePendingBreakpoints (null);
 				}, result);
+		}
+
+		public override string ToString ()
+		{
+			return String.Format ("{0} ({1})", GetType (), ID);
 		}
 
 		//

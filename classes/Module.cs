@@ -189,7 +189,7 @@ namespace Mono.Debugger
 
 		public override string ToString ()
 		{
-			return String.Format ("{0} ({1}:{2}:{3}:{4}{5})", GetType (), name,
+			return String.Format ("{0} ({1}:{2}:{3}:{4}:{5}{6})", GetType (), id, name,
 					      HideFromUser ? "hide" : "nohide",
 					      LoadSymbols ? "load" : "noload",
 					      StepInto ? "step" : "nostep", MyToString ());

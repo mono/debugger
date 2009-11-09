@@ -35,7 +35,6 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("NotWorking")]
 		[Category("Native")]
 		[Category("Fork")]
 		public void Main ()
@@ -104,7 +103,6 @@ namespace Mono.Debugger.Tests
 
 
 		[Test]
-		[Category("NotWorking")]
 		[Category("Native")]
 		[Category("Fork")]
 		public void Continue ()
@@ -165,7 +163,6 @@ namespace Mono.Debugger.Tests
 		}
 
 		[Test]
-		[Category("NotWorking")]
 		[Category("Native")]
 		[Category("Fork")]
 		public void Breakpoint ()

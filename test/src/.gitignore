@@ -10,5 +10,6 @@
 /testnativechild
 /testnativeattach
 /testnativetypes
+/testnativenoforkexec
 /.deps
 /.libs

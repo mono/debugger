@@ -1,3 +1,119 @@
+2009-10-19  Martin Baulig  <martin@ximian.com>
+
+	* backend/Inferior.cs
+	(Inferior.SignalInfo): Add `SIGWINCH'.
+	(Inferior.Has_SIGWINCH): New public property.
+	(Inferior.SIGWINCH): New public property.
+
+	* backend/server.h
+	(SignalInfo): Add `sigwinch'.
+
+	* backend/ThreadManager.cs
+	(ThreadManager.HandleChildEvent): Ignore `SIGWINCH'.
+
+2009-10-19  Martin Baulig  <martin@ximian.com>
+
+	Detach after exec() if we don't have permission to debug the
+	child; this happens if the exec()d binary is setuid/setgid.
+
+	* backend/Inferior.cs
+	(Inferior.ProcessEvent): Removed child_execd().
+	(Inferior.InitializeAfterExec): Call GetApplication() and
+	start.SetupApplication() here.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ChildExecd): Catch `TargetError.PermissionDenied'
+	and detach from the process; this happens when exec()ing
+	setuid/setgid applications.
+
+	* classes/TargetException.cs
+	(TargetError): Add `PermissionDenied'.
+
+	* backend/server/x86-linux-ptrace.c
+	(_server_ptrace_setup_inferior): Check `EACCES' and return
+	`COMMAND_ERROR_PERMISSION_DENIED'.
+
+2009-10-14  Martin Baulig  <martin@ximian.com>
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.OperationMonoTrampoline): Fix bug #544935; the runtime now
+	supports a new trampoline notification which also gives us the
+	address of the callsite, so we can detect recursive invocations of
+	mono_generic_trampoline().
+
+2009-11-05  Martin Baulig  <martin@ximian.com>
+
+	* languages/mono/MonoLanguageBackend.cs
+	(MonoLanguageBackend.Notification): On `LoadModule': don't crash
+	if load_symfile() failed.
+
+2009-10-08  Martin Baulig  <martin@ximian.com>
+
+	* build/mdb: Use the full pathname to invoke mono.
+	* build/mdb-symbolreader: Likewise.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.SetupEnvironment): Don't set `MONO_GAC_PREFIX',
+	`MONO_PATH', `LD_LIBRARY_PATH' and `PATH'.
+
+2009-10-08  Martin Baulig  <martin@ximian.com>
+
+	Improve follow-fork(), allow following exec() without fork()ing
+	first; shell scripts, for instance, use this technique.
+
+	* classes/Thread.cs
+	(ThreadCommandResult): Use a private `ManualResetEvent'.
+
+	* classes/Operation.cs
+	(OperationCommandResult): Make this class abstract.
+	(OperationCommandResult.Host): Make this property abstract.
+	(OperationCommandResult.OnExecd): New internal abstract method.
+
+	* backend/Inferior.cs
+	(Inferior.SetupInferior): Call GetApplication() instead of using
+	`start.TargetApplication'.
+
+	* backend/ProcessStart.cs
+	(ProcessStart.StopInMain): Add internal setter.
+	(ProcessStart.SetupApplication): Don't set StopInMain to false.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ChildForked): Set `StopInMain' to false here ...
+	(ProcessServant.ChildExecd): ... but not here.
+	(ProcessServant.ChildExecd): Don't clone the session and reuse the
+	`OperationCommandResult', only call OnExecd() on it to change its
+	`Host' if necessary.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.OnProcessExecd): New internal method.
+	(DebuggerSession.OnProcessExited): Unload all modules if we're the
+	main process.
+
+	* backend/ProcessServant.cs
+	(ProcessServant.ProcessCommandResult): New protected class.
+
+	* backend/DebuggerServant.cs
+	(DebuggerServant.GlobalCommandResult): New protected class.
+
+	* test/testsuite/testnativenoforkexec.cs: New test.
+	* test/src/testnativenoforkexec.c: New test.
+
+	* test/testsuite/TestDontFollowFork.cs: Increase timeout.
+
+	* test/testsuite/testnativefork.cs: Remove "NotWorking".
+
+2009-10-01  Martin Baulig  <martin@ximian.com>
+
+	* classes/ProcessStart.cs
+	(ProcessStart.cctor): Use `BuildInfo.mono' to set `MonoPath'
+	instead of computing it here.
+
+2009-09-29  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.GetPendingBreakpoints): Small fix; make this work
+	for native applications.
+
 2009-09-23  Martin Baulig  <martin@ximian.com>
 
 	* classes/ExpressionEvaluator.cs

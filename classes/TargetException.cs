@@ -23,6 +23,7 @@ namespace Mono.Debugger
 		NotImplemented,
 		IOError,
 		NoCallbackFrame,
+		PermissionDenied,
 
 		NoStack			= 101,
 		NoMethod,
@@ -115,6 +116,8 @@ namespace Mono.Debugger
 				return "No invocation found.";
 			case TargetError.InvalidContext:
 				return "Operation not permitted outside managed context.";
+			case TargetError.PermissionDenied:
+				return "Permission denied.";
 			default:
 				return "Unknown error";
 			}

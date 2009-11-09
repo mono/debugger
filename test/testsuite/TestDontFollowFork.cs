@@ -9,7 +9,7 @@ using Mono.Debugger.Test.Framework;
 
 namespace Mono.Debugger.Tests
 {
-	[DebuggerTestFixture]
+	[DebuggerTestFixture(Timeout = 15000)]
 	public class TestDontFollowFork : DebuggerTestFixture
 	{
 		public TestDontFollowFork ()

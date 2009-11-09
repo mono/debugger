@@ -463,6 +463,10 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		public ProcessServant Process {
+			get { return os.Process; }
+		}
+
 		public NativeLanguage NativeLanguage {
 			get { return os.Process.NativeLanguage; }
 		}

@@ -296,6 +296,7 @@ namespace Mono.Debugger.Backend
 			public int SIGSEGV;
 			public int SIGILL;
 			public int SIGBUS;
+			public int SIGWINCH;
 
 			public int Kernel_SIGRTMIN;
 			public int MonoThreadAbortSignal;
@@ -698,6 +699,12 @@ namespace Mono.Debugger.Backend
 			check_error (mono_debugger_server_initialize_thread (server_handle, pid, false));
 			this.child_pid = pid;
 
+			string exe_file, cwd;
+			string[] cmdline_args;
+			exe_file = GetApplication (out cwd, out cmdline_args);
+
+			start.SetupApplication (exe_file, cwd, cmdline_args);
+
 			SetupInferior ();
 
 			change_target_state (TargetState.Stopped, 0);
@@ -724,17 +731,6 @@ namespace Mono.Debugger.Backend
 			SetupInferior ();
 
 			change_target_state (TargetState.Stopped, 0);
-		}
-
-		void child_execd ()
-		{
-			string exe_file, cwd;
-			string[] cmdline_args;
-			exe_file = GetApplication (out cwd, out cmdline_args);
-
-			start.SetupApplication (exe_file, cwd, cmdline_args);
-
-			SetupInferior ();
 		}
 
 		public ChildEvent ProcessEvent (int status)
@@ -766,7 +762,6 @@ namespace Mono.Debugger.Backend
 				break;
 
 			case ChildEventType.CHILD_EXECD:
-				child_execd ();
 				break;
 			}
 
@@ -835,8 +830,13 @@ namespace Mono.Debugger.Backend
 			target_info = GetTargetMemoryInfo (address_domain);
 
 			try {
+				string cwd;
+				string[] cmdline_args;
+
+				string application = GetApplication (out cwd, out cmdline_args);
+
 				exe = process.OperatingSystem.LoadExecutable (
-					target_info, start.TargetApplication, start.LoadNativeSymbolTable);
+					target_info, application, start.LoadNativeSymbolTable);
 			} catch (Exception e) {
 				if (error_handler != null)
 					error_handler (this, String.Format (
@@ -1371,7 +1371,7 @@ namespace Mono.Debugger.Backend
 				int count;
 				string exe_file;
 				check_error (mono_debugger_server_get_application (
-							 server_handle, out p_exe, out p_cwd,
+						     server_handle, out p_exe, out p_cwd,
 						     out count, out data));
 
 				cmdline_args = new string [count];
@@ -1648,6 +1648,19 @@ namespace Mono.Debugger.Backend
 					throw new InvalidOperationException ();
 
 				return signal_info.SIGCHLD;
+			}
+		}
+
+		public bool Has_SIGWINCH {
+			get { return has_signals && (signal_info.SIGWINCH > 0); }
+		}
+
+		public int SIGWINCH {
+			get {
+				if (!has_signals || (signal_info.SIGWINCH < 0))
+					throw new InvalidOperationException ();
+
+				return signal_info.SIGWINCH;
 			}
 		}
 

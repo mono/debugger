@@ -245,7 +245,7 @@ namespace Mono.Debugger.Backend
 
 			lock (this) {
 				stopped_event.Reset ();
-				current_operation = new OperationCommandResult (this, model);
+				current_operation = new GlobalCommandResult (this, model);
 			}
 
 			foreach (ProcessServant process in process_hash.Values) {
@@ -284,6 +284,26 @@ namespace Mono.Debugger.Backend
 			foreach (ProcessServant process in process_hash.Values) {
 				process.Stop ();
 			}
+		}
+
+		protected class GlobalCommandResult : OperationCommandResult
+		{
+			public DebuggerServant Debugger {
+				get; private set;
+			}
+
+			internal override IOperationHost Host {
+				get { return Debugger; }
+			}
+
+			internal GlobalCommandResult (DebuggerServant debugger, ThreadingModel model)
+				: base (model)
+			{
+				this.Debugger = debugger;
+			}
+
+			internal override void OnExecd (SingleSteppingEngine new_thread)
+			{ }
 		}
 
 #endregion
