@@ -201,6 +201,9 @@ namespace Mono.Debugger.Backend
 			// This fails if it's a statically linked executable.
 			try {
 				read_dynamic_info (inferior);
+			} catch (TargetException ex) {
+				Report.Error ("Failed to read shared libraries: {0}", ex.Message);
+				return;
 			} catch (Exception ex) {
 				Report.Error ("Failed to read shared libraries: {0}", ex);
 				return;

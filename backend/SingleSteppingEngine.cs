@@ -503,7 +503,17 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.EventLoop, "{0} process operation event: {1} {2}", this, current_operation, cevent);
 
-			Operation.EventResult status = current_operation.ProcessEvent (cevent, out result);
+			Operation.EventResult status;
+
+			try {
+				status = current_operation.ProcessEvent (cevent, out result);
+			} catch (TargetException ex) {
+				Report.Error ("{0} caught exception while processing event {1}: {2}", this, cevent, ex.Message);
+				killed = true;
+				inferior.Kill ();
+				OperationCompleted (null);
+				return;
+			}
 
 			Report.Debug (DebugFlags.EventLoop, "{0} processed operation event: {1} {2} {3} {4}", this,
 				      current_operation, cevent, status, result);
