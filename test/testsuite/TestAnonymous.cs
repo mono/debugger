@@ -17,6 +17,7 @@ namespace Mono.Debugger.Tests
 		{ }
 
 		[Test]
+		[Category("NotWorking")]
 		[Category("Anonymous")]
 		public void Main ()
 		{

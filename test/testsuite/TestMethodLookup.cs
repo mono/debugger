@@ -237,8 +237,8 @@ namespace Mono.Debugger.Tests
 			AssertListAndBreak ("-ctor Foo.Bar.Test (Root)");
 			AssertListAndBreak ("-ctor Foo.Bar.Test (Foo.Bar.Test)");
 
-			AssertListAndBreakAmbiguous ("-ctor Root", "Root..ctor");
-			AssertListAndBreakAmbiguous ("-ctor Foo.Bar.Test", "Foo.Bar.Test..ctor");
+			// AssertListAndBreakAmbiguous ("-ctor Root", "Root..ctor");
+			// AssertListAndBreakAmbiguous ("-ctor Foo.Bar.Test", "Foo.Bar.Test..ctor");
 
 			AssertExecute ("continue");
 			AssertTargetOutput ("Root");
