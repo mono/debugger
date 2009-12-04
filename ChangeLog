@@ -1,5 +1,20 @@
 2009-11-25  Martin Baulig  <martin@ximian.com>
 
+	Hardware breakpoints are per-thread and not per-process; allow
+	having both a hardware and a regular breakpoint on the same
+	instruction.
+
+	* backend/server/x86_64-arch.c
+	(ArchInfo): Add `BreakpointManager *hw_bpm'.
+	(server_ptrace_current_insn_is_bpt): Check both `arch->hw_bpm' and
+	`handle->bpm'; we may now have both a hardware and a regular
+	breakpoint on the same instruction.
+	(lookup_breakpoint): New static function to look in both
+	`arch->hw_bpm' and `handle->bpm'; use this everywhere instead of
+	calling mono_debugger_breakpoint_manager_lookup_by_id() directly.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
 	Don't activate address breakpoints twice.
 
 	* classes/AddressBreakpoint.cs
