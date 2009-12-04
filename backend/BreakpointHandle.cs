@@ -111,22 +111,17 @@ namespace Mono.Debugger.Backend
 		}
 	}
 
-	internal class FunctionBreakpointHandle : BreakpointHandle
+	internal abstract class FunctionBreakpointHandle : BreakpointHandle
 	{
 		TargetFunctionType function;
-		bool has_load_handler;
 		int line = -1, column;
 
 		internal int Index {
 			get; private set;
 		}
 
-		public FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function, int line)
-			: this (bpt, function, line, -1)
-		{ }
-
-		public FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function,
-						 int line, int column)
+		protected FunctionBreakpointHandle (Breakpoint bpt, TargetFunctionType function,
+						    int line, int column)
 			: base (bpt)
 		{
 			this.function = function;
@@ -140,41 +135,17 @@ namespace Mono.Debugger.Backend
 			get { return function; }
 		}
 
+		public int Line {
+			get { return line; }
+		}
+
+		public int Column {
+			get { return column; }
+		}
+
 		public override void Insert (Inferior target)
 		{
 			throw new InternalError ();
-		}
-
-		public override void Insert (Thread target)
-		{
-			if (has_load_handler)
-				return;
-
-			has_load_handler = function.InsertBreakpoint (target, this);
-		}
-
-		internal void MethodLoaded (TargetAccess target, Method method)
-		{
-			TargetAddress address;
-			if (line != -1) {
-				if (method.HasLineNumbers)
-					address = method.LineNumberTable.Lookup (line, column);
-				else
-					address = TargetAddress.Null;
-			} else if (method.HasMethodBounds)
-				address = method.MethodStartAddress;
-			else
-				address = method.StartAddress;
-
-			if (address.IsNull)
-				return;
-
-			try {
-				target.InsertBreakpoint (this, address, method.Domain);
-			} catch (TargetException ex) {
-				Report.Error ("Can't insert breakpoint {0} at {1}: {2}",
-					      Breakpoint.Index, address, ex.Message);
-			}
 		}
 
 		public override void Remove (Inferior target)
@@ -182,14 +153,7 @@ namespace Mono.Debugger.Backend
 			throw new InternalError ();
 		}
 
-		public override void Remove (Thread target)
-		{
-			target.RemoveBreakpoint (this);
-
-			if (has_load_handler)
-				function.RemoveBreakpoint (target);
-			has_load_handler = false;
-		}
+		internal abstract void MethodLoaded (TargetAccess target, Method method);
 
 		public override string ToString ()
 		{

@@ -145,13 +145,8 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		internal override bool InsertBreakpoint (Thread target,
-							 FunctionBreakpointHandle handle)
-		{
-			throw new InvalidOperationException ();
-		}
-
-		internal override void RemoveBreakpoint (Thread target)
+		internal override FunctionBreakpointHandle GetBreakpointHandle (
+			Breakpoint breakpoint, int line, int column)
 		{
 			throw new InvalidOperationException ();
 		}

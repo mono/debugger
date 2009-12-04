@@ -1,3 +1,13 @@
+2009-12-04  Martin Baulig  <martin@ximian.com>
+
+	* backend/BreakpointHandle.cs
+	(FunctionBreakpointHandle): Make this class abstract.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType): Replace InsertBreakpoint() and
+	RemoveBreakpoint() with a new GetBreakpointHandle() API which
+	returns a `FunctionBreakpointHandle'.
+
 2009-11-29  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerConfiguration.cs
