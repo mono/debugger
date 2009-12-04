@@ -1,3 +1,16 @@
+2009-11-29  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.LoadConfigurationFromStream): Use
+	Report.Error() to report errors instead of throwing an exception.
+	(DebuggerConfiguration.UserNotifications): New public property.
+	(DebuggerConfiguration.NotifyUser_ThreadCreation): Mark as obsolete.
+	(DebuggerConfiguration.UserNotificationType): New public enum.
+
+	* frontend/Command.cs
+	(ConfigCommand): Add `user-notifications' option to modify the new
+	`DebuggerConfiguration.UserNotifications'.
+
 2009-11-25  Martin Baulig  <martin@ximian.com>
 
 	* classes/DebuggerConfiguration.cs

@@ -3826,6 +3826,23 @@ namespace Mono.Debugger.Frontend
 					continue;
 				}
 
+				if (arg.StartsWith ("user-notifications=")) {
+					foreach (string arg1 in arg.Substring (19).Split (',')) {
+						switch (arg1) {
+						case "threads":
+						case "+threads":
+							config.UserNotifications |= DebuggerConfiguration.UserNotificationType.Threads;
+							break;
+						case "-threads":
+							config.UserNotifications &= ~DebuggerConfiguration.UserNotificationType.Threads;
+							break;
+						default:
+							throw new ScriptingException ("Invalid 'user-notifications' option '{0}'.", arg1);
+						}
+					}
+					continue;
+				}
+
 				if ((arg [0] != '+') && (arg [0] != '-'))
 					throw new ScriptingException ("Expected `+option' or `-option'.");
 

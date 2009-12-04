@@ -14,12 +14,20 @@
       <xs:element name="StopDaemonThreads" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="StopImmutableThreads" type="xs:boolean" minOccurs="0" maxOccurs="1" />
       <xs:element name="ThreadingModel" type="ThreadingModel" minOccurs="0" maxOccurs="1" />
+      <xs:element name="UserNotifications" type="UserNotifications" minOccurs="0" maxOccurs="1" />
     </xs:choice>
   </xs:complexType>
   <xs:simpleType name="ThreadingModel">
     <xs:restriction base="xs:string">
       <xs:enumeration value="single"/>
       <xs:enumeration value="process"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="UserNotifications">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="threads"/>
+      <xs:enumeration value="+threads"/>
+      <xs:enumeration value="-threads"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="Options">
