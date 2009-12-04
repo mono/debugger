@@ -1,5 +1,15 @@
 2009-11-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.IsCLI): New public property to check
+	whether we're running the CLI or a GUI.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ctor): Only auto-insert the
+	`MainMethodBreakpoint' in the CLI.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
 	* classes/DebuggerSession.cs
 	(DebuggerSession.GetEvent): Return null if the event doesn't
 	exist, don't throw any exception.

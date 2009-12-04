@@ -87,7 +87,8 @@ namespace Mono.Debugger
 			this.Options = options;
 			this.parser = parser;
 
-			AddEvent (new MainMethodBreakpoint (this));
+			if (config.IsCLI)
+				AddEvent (new MainMethodBreakpoint (this));
 		}
 
 		protected DebuggerSession (DebuggerConfiguration config, Process process, DebuggerOptions options,
