@@ -1,5 +1,21 @@
 2009-11-25  Martin Baulig  <martin@ximian.com>
 
+	* classes/DebuggerSession.cs
+	(DebuggerSession.GetEvent): Return null if the event doesn't
+	exist, don't throw any exception.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.ActivatePendingBreakpoint): New internal method;
+	activate pending breakpoints and wait for its completion.
+
+	* frontend/Command.cs
+	(BreakpointDeleteCommand.ActionDone): Call it here ...
+	(BreakCommand.DoExecute): ... and here.
+
+	* test/testsuite/TestMethodLookup.cs: This fixes a race condition here.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
 	Hardware breakpoints are per-thread and not per-process; allow
 	having both a hardware and a regular breakpoint on the same
 	instruction.

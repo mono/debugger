@@ -127,10 +127,6 @@ namespace Mono.Debugger
 				TargetOutputEvent (is_stderr, output);
 		}
 
-		//
-		// Test
-		//
-
 		public CommandResult ActivatePendingBreakpoints ()
 		{
 			if (!Session.HasPendingBreakpoints ())

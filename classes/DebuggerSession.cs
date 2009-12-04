@@ -594,7 +594,10 @@ namespace Mono.Debugger
 		public Event GetEvent (int index)
 		{
 			lock (this) {
-				return (Event) events [index];
+				if (!events.ContainsKey (index))
+					return null;
+
+				return events [index];
 			}
 		}
 

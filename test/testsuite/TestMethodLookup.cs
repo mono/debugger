@@ -26,9 +26,9 @@ namespace Mono.Debugger.Tests
 		protected void AssertListAndBreak (string method)
 		{
 			try {
-			AssertExecute ("list " + method);
-			int bpt = AssertBreakpoint (method);
-			AssertExecute ("delete " + bpt);
+				AssertExecute ("list " + method);
+				int bpt = AssertBreakpoint (method);
+				AssertExecute ("delete " + bpt);
 			} catch (AssertionException ex) {
 				++CountFailures;
 				Failures.Append (ex.Message + "\n");

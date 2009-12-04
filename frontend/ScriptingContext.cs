@@ -676,5 +676,14 @@ namespace Mono.Debugger.Frontend
 				       ex);
 			}
 		}
+
+		internal void ActivatePendingBreakpoints ()
+		{
+			CommandResult result = Interpreter.CurrentProcess.ActivatePendingBreakpoints ();
+			if (result == null)
+				return;
+
+			Interpreter.Wait (result);
+		}
 	}
 }
