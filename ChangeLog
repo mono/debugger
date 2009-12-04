@@ -1,3 +1,14 @@
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
+	Don't activate address breakpoints twice.
+
+	* classes/AddressBreakpoint.cs
+	(AddressBreakpoint.NeedsActivation): Overwrite and return `false'.
+
+	* frontend/Command.cs
+	(BreakCommand.DoExecute): Check `Breakpoint.NeedsActivation' before
+	calling Activate() on it.
+
 2009-10-19  Martin Baulig  <martin@ximian.com>
 
 	* backend/Inferior.cs

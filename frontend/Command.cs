@@ -3291,7 +3291,8 @@ namespace Mono.Debugger.Frontend
 				return handle.Index;
 
 			try {
-				handle.Activate (context.Interpreter.CurrentThread);
+				if (handle.NeedsActivation)
+					handle.Activate (context.Interpreter.CurrentThread);
 			} catch {
 				if (!lazy)
 					throw;

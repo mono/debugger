@@ -14,6 +14,10 @@ namespace Mono.Debugger
 			get { return false; }
 		}
 
+		public override bool NeedsActivation {
+			get { return false; }
+		}
+
 		public TargetAddress Address {
 			get { return address; }
 		}
