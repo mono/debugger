@@ -1418,7 +1418,7 @@ namespace Mono.Debugger.Backend.Mono
 
 				MonoSymbolFile symfile = (MonoSymbolFile) symfile_by_index [(int) arg];
 				if (symfile == null)
-					throw new InternalError ();
+					break;
 
 				engine.Process.Debugger.OnModuleUnLoaded (symfile.Module);
 				close_symfile (symfile);
