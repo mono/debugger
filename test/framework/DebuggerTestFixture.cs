@@ -246,6 +246,8 @@ namespace Mono.Debugger.Test.Framework
 			config = new DebuggerConfiguration ();
 			config.RedirectOutput = true;
 
+			config.SetupCLI ();
+
 			options = CreateOptions (ExeFileName, args);
 
 			inferior_stdout = new LineReader ();

@@ -346,6 +346,8 @@ namespace Mono.Debugger.Frontend
 			config.LoadConfiguration ();
 #endif
 
+			config.SetupCLI ();
+
 			Console.WriteLine ("Mono Debugger");
 
 			CommandLineInterpreter interpreter = new CommandLineInterpreter (
