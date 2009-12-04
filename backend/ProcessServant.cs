@@ -419,10 +419,12 @@ namespace Mono.Debugger.Backend
 
 			thread_db = ThreadDB.Create (this, inferior);
 			if (thread_db == null) {
-				if (IsManaged)
-					Report.Error ("Failed to initialize thread_db on {0}",
-						      start.CommandLine);
-				return;
+				if (!IsManaged)
+					return;
+
+				Report.Error ("Failed to initialize thread_db on {0}", start.CommandLine);
+				throw new TargetException (TargetError.CannotStartTarget,
+							   "Failed to initialize thread_db on {0}", start.CommandLine);
 			}
 
 			int[] threads = inferior.GetThreads ();
@@ -435,8 +437,7 @@ namespace Mono.Debugger.Backend
 			thread_db.GetThreadInfo (inferior, delegate (int lwp, long tid) {
 				SingleSteppingEngine engine = (SingleSteppingEngine) thread_hash [lwp];
 				if (engine == null) {
-					Report.Error ("Unknown thread {0} in {1}", lwp,
-						      start.CommandLine);
+					Report.Error ("Unknown thread {0} in {1}", lwp, start.CommandLine);
 					return;
 				}
 				engine.SetTID (tid);
@@ -485,9 +486,9 @@ namespace Mono.Debugger.Backend
 			}
 
 			if (thread_db == null) {
-				Report.Error ("Failed to initialize thread_db on {0}: {1} {2}",
-					      start.CommandLine, start, Environment.StackTrace);
-				throw new InternalError ();
+				Report.Error ("Failed to initialize thread_db on {0}: {1}",
+					      start.CommandLine, start);
+				return null;
 			}
 
 			SingleSteppingEngine result = null;

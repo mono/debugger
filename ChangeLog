@@ -1,3 +1,78 @@
+2009-12-04  Martin Baulig  <martin@ximian.com>
+
+	* backend/BreakpointHandle.cs
+	(FunctionBreakpointHandle): Make this class abstract.
+
+	* languages/TargetFunctionType.cs
+	(TargetFunctionType): Replace InsertBreakpoint() and
+	RemoveBreakpoint() with a new GetBreakpointHandle() API which
+	returns a `FunctionBreakpointHandle'.
+
+2009-11-29  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.LoadConfigurationFromStream): Use
+	Report.Error() to report errors instead of throwing an exception.
+	(DebuggerConfiguration.UserNotifications): New public property.
+	(DebuggerConfiguration.NotifyUser_ThreadCreation): Mark as obsolete.
+	(DebuggerConfiguration.UserNotificationType): New public enum.
+
+	* frontend/Command.cs
+	(ConfigCommand): Add `user-notifications' option to modify the new
+	`DebuggerConfiguration.UserNotifications'.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerConfiguration.cs
+	(DebuggerConfiguration.IsCLI): New public property to check
+	whether we're running the CLI or a GUI.
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.ctor): Only auto-insert the
+	`MainMethodBreakpoint' in the CLI.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
+	* classes/DebuggerSession.cs
+	(DebuggerSession.GetEvent): Return null if the event doesn't
+	exist, don't throw any exception.
+
+	* frontend/ScriptingContext.cs
+	(ScriptingContext.ActivatePendingBreakpoint): New internal method;
+	activate pending breakpoints and wait for its completion.
+
+	* frontend/Command.cs
+	(BreakpointDeleteCommand.ActionDone): Call it here ...
+	(BreakCommand.DoExecute): ... and here.
+
+	* test/testsuite/TestMethodLookup.cs: This fixes a race condition here.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
+	Hardware breakpoints are per-thread and not per-process; allow
+	having both a hardware and a regular breakpoint on the same
+	instruction.
+
+	* backend/server/x86_64-arch.c
+	(ArchInfo): Add `BreakpointManager *hw_bpm'.
+	(server_ptrace_current_insn_is_bpt): Check both `arch->hw_bpm' and
+	`handle->bpm'; we may now have both a hardware and a regular
+	breakpoint on the same instruction.
+	(lookup_breakpoint): New static function to look in both
+	`arch->hw_bpm' and `handle->bpm'; use this everywhere instead of
+	calling mono_debugger_breakpoint_manager_lookup_by_id() directly.
+
+2009-11-25  Martin Baulig  <martin@ximian.com>
+
+	Don't activate address breakpoints twice.
+
+	* classes/AddressBreakpoint.cs
+	(AddressBreakpoint.NeedsActivation): Overwrite and return `false'.
+
+	* frontend/Command.cs
+	(BreakCommand.DoExecute): Check `Breakpoint.NeedsActivation' before
+	calling Activate() on it.
+
 2009-10-19  Martin Baulig  <martin@ximian.com>
 
 	* backend/Inferior.cs

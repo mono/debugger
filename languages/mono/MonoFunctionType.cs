@@ -19,7 +19,6 @@ namespace Mono.Debugger.Languages.Mono
 		string name;
 		int token;
 
-		int load_handler;
 		MonoMethodSignature signature;
 
 		internal MonoFunctionType (IMonoStructType klass, Cecil.MethodDefinition mdef)
@@ -151,26 +150,10 @@ namespace Mono.Debugger.Languages.Mono
 			get { return true; }
 		}
 
-		internal override bool InsertBreakpoint (Thread thread,
-							 FunctionBreakpointHandle handle)
+		internal override FunctionBreakpointHandle GetBreakpointHandle (
+			Breakpoint breakpoint, int line, int column)
 		{
-			if (!thread.CurrentFrame.Language.IsManaged)
-				throw new TargetException (TargetError.InvalidContext);
-
-			load_handler = klass.File.MonoLanguage.RegisterMethodLoadHandler (
-				thread, this, handle);
-			return load_handler > 0;
-		}
-
-		internal override void RemoveBreakpoint (Thread thread)
-		{
-			if (!thread.CurrentFrame.Language.IsManaged)
-				throw new TargetException (TargetError.InvalidContext);
-
-			if (load_handler > 0) {
-				klass.File.MonoLanguage.RemoveMethodLoadHandler (thread, load_handler);
-				load_handler = -1;
-			}
+			return new MyBreakpointHandle (breakpoint, this, line, column);
 		}
 
 		internal MonoClassInfo ResolveClass (TargetMemoryAccess target, bool fail)
@@ -206,6 +189,63 @@ namespace Mono.Debugger.Languages.Mono
 			});
 
 			return signature;
+		}
+
+		protected class MyBreakpointHandle : FunctionBreakpointHandle
+		{
+			MonoFunctionType function;
+			int load_handler = -1;
+
+			public MyBreakpointHandle (Breakpoint bpt, MonoFunctionType function,
+						   int line, int column)
+				: base (bpt, function, line, column)
+			{
+				this.function = function;
+			}
+
+			public override void Insert (Thread thread)
+			{
+				if (load_handler > 0)
+					return;
+
+				load_handler = function.SymbolFile.MonoLanguage.RegisterMethodLoadHandler (
+					thread, function, this);
+			}
+
+			internal override void MethodLoaded (TargetAccess target, Method method)
+			{
+				TargetAddress address;
+				if (Line != -1) {
+					if (method.HasLineNumbers)
+						address = method.LineNumberTable.Lookup (Line, Column);
+					else
+						address = TargetAddress.Null;
+				} else if (method.HasMethodBounds)
+					address = method.MethodStartAddress;
+				else
+					address = method.StartAddress;
+
+				if (address.IsNull)
+					return;
+
+				try {
+					target.InsertBreakpoint (this, address, method.Domain);
+				} catch (TargetException ex) {
+					Report.Error ("Can't insert breakpoint {0} at {1}: {2}",
+						      Breakpoint.Index, address, ex.Message);
+				}
+			}
+
+			public override void Remove (Thread thread)
+			{
+				thread.RemoveBreakpoint (this);
+
+				if (load_handler > 0) {
+					function.SymbolFile.MonoLanguage.RemoveMethodLoadHandler (
+						thread, load_handler);
+					load_handler = -1;
+				}
+			}
 		}
 	}
 }

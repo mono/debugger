@@ -92,6 +92,11 @@ mono_debugger_breakpoint_manager_get_breakpoints (BreakpointManager *bpm)
 void
 mono_debugger_breakpoint_manager_remove (BreakpointManager *bpm, BreakpointInfo *breakpoint)
 {
+	if (!mono_debugger_breakpoint_manager_lookup_by_id (bpm, breakpoint->id)) {
+		g_warning (G_STRLOC ": mono_debugger_breakpoint_manager_remove(): No such breakpoint %d", breakpoint->id);
+		return;
+	}
+
 	if (--breakpoint->refcount > 0)
 		return;
 

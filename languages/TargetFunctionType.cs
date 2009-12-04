@@ -57,10 +57,8 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal abstract bool InsertBreakpoint (Thread target,
-							 FunctionBreakpointHandle handle);
-
-		internal abstract void RemoveBreakpoint (Thread target);
+		internal abstract FunctionBreakpointHandle GetBreakpointHandle (
+			Breakpoint breakpoint, int line, int column);
 
 		public abstract TargetMethodSignature GetSignature (Thread target);
 	}

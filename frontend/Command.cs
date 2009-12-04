@@ -2748,7 +2748,7 @@ namespace Mono.Debugger.Frontend
 		protected override void ActionDone (ScriptingContext context)
 		{
 			if (context.Interpreter.HasTarget)
-				context.Interpreter.CurrentProcess.ActivatePendingBreakpoints ();
+				context.ActivatePendingBreakpoints ();
 		}
 
 		// IDocumentableCommand
@@ -3283,7 +3283,7 @@ namespace Mono.Debugger.Frontend
 			}
 
 			if (gui) {
-				context.CurrentProcess.ActivatePendingBreakpoints ();
+				context.ActivatePendingBreakpoints ();
 				return handle.Index;
 			}
 
@@ -3291,7 +3291,8 @@ namespace Mono.Debugger.Frontend
 				return handle.Index;
 
 			try {
-				handle.Activate (context.Interpreter.CurrentThread);
+				if (handle.NeedsActivation)
+					handle.Activate (context.Interpreter.CurrentThread);
 			} catch {
 				if (!lazy)
 					throw;
@@ -3821,6 +3822,23 @@ namespace Mono.Debugger.Frontend
 						break;
 					default:
 						throw new ScriptingException ("Invalid 'threading-model' option '{0}'.", arg1);
+					}
+					continue;
+				}
+
+				if (arg.StartsWith ("user-notifications=")) {
+					foreach (string arg1 in arg.Substring (19).Split (',')) {
+						switch (arg1) {
+						case "threads":
+						case "+threads":
+							config.UserNotifications |= DebuggerConfiguration.UserNotificationType.Threads;
+							break;
+						case "-threads":
+							config.UserNotifications &= ~DebuggerConfiguration.UserNotificationType.Threads;
+							break;
+						default:
+							throw new ScriptingException ("Invalid 'user-notifications' option '{0}'.", arg1);
+						}
 					}
 					continue;
 				}

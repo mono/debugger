@@ -434,15 +434,27 @@ namespace Mono.Debugger.Backend
 
 				remove_temporary_breakpoint ();
 
-				Breakpoint bpt = lookup_breakpoint (arg);
+				//
+				// Lookup again using the current address since `arg' points to the hardware breakpoint,
+				// but there may be a user breakpoint on the current instruction as well.
+				//
+
+				int idx;
+				bool is_enabled;
+				BreakpointHandle handle = process.BreakpointManager.LookupBreakpoint (
+					inferior.CurrentFrame, out idx, out is_enabled);
+
 				Report.Debug (DebugFlags.SSE,
-					      "{0} hit temporary breakpoint {1} at {2} {3}",
-					      this, arg, inferior.CurrentFrame, bpt);
-				if ((bpt == null) || !bpt.Breaks (thread.ID) || bpt.HideFromUser) {
+					      "{0} hit temporary breakpoint {1} at {2}: {3} {4} {5}",
+					      this, arg, inferior.CurrentFrame, handle, idx, is_enabled);
+
+				if ((handle == null) || !is_enabled || !handle.Breakpoint.Breaks (thread.ID) ||
+				    handle.Breakpoint.HideFromUser) {
 					message = Inferior.ChildEventType.CHILD_STOPPED;
 					arg = 0;
 					cevent = new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0);
 				} else {
+					cevent = new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_HIT_BREAKPOINT, idx, 0, 0);
 					ProcessOperationEvent (cevent);
 					return;
 				}
@@ -491,7 +503,17 @@ namespace Mono.Debugger.Backend
 
 			Report.Debug (DebugFlags.EventLoop, "{0} process operation event: {1} {2}", this, current_operation, cevent);
 
-			Operation.EventResult status = current_operation.ProcessEvent (cevent, out result);
+			Operation.EventResult status;
+
+			try {
+				status = current_operation.ProcessEvent (cevent, out result);
+			} catch (TargetException ex) {
+				Report.Error ("{0} caught exception while processing event {1}: {2}", this, cevent, ex.Message);
+				killed = true;
+				inferior.Kill ();
+				OperationCompleted (null);
+				return;
+			}
 
 			Report.Debug (DebugFlags.EventLoop, "{0} processed operation event: {1} {2} {3} {4}", this,
 				      current_operation, cevent, status, result);

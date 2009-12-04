@@ -262,7 +262,7 @@ namespace Mono.Debugger
 			}
 
 			if (function != null)
-				return new FunctionBreakpointHandle (breakpoint, function, line, column);
+				return function.GetBreakpointHandle (breakpoint, line, column);
 
 			if ((source == null) || source.IsManaged)
 				throw new TargetException (TargetError.LocationInvalid);

@@ -79,6 +79,8 @@ namespace Mono.Debugger.Frontend
 			Configuration.LoadConfiguration ();
 #endif
 
+			Configuration.SetupCLI ();
+
 			interpreter = new Interpreter (is_interactive, Configuration, options);
 			interpreter.CLI = this;
 
