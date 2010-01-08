@@ -2421,6 +2421,9 @@ namespace Mono.Debugger.Frontend
 				    (source is TargetFundamentalObject))
 					return target_type.Language.CreateBoxedObject (context.CurrentThread, source);
 
+				if (source is TargetObjectObject)
+					return source;
+
 				throw new ScriptingException (
 					"Cannot box object `{0}': not a value-type", expr.Name);
 			}
@@ -2694,6 +2697,10 @@ namespace Mono.Debugger.Frontend
 					context, (TargetFundamentalType) source,
 					(TargetFundamentalType) target);
 
+			if ((source is TargetFundamentalType) && (target is TargetObjectType) &&
+			    (((TargetFundamentalType) source).FundamentalKind == FundamentalKind.String))
+				return true;
+
 			if ((source is TargetClassType) && (target is TargetClassType))
 				return ImplicitReferenceConversionExists (
 					context, (TargetClassType) source,
@@ -2712,6 +2719,10 @@ namespace Mono.Debugger.Frontend
 				return ImplicitFundamentalConversion (
 					context, (TargetFundamentalObject) obj,
 					(TargetFundamentalType) type);
+
+			if ((obj is TargetFundamentalObject) && (type is TargetObjectType) &&
+			    (((TargetFundamentalType) obj.Type).FundamentalKind == FundamentalKind.String))
+				return obj.Type.Language.CreateBoxedObject (context.CurrentThread, obj);
 
 			if ((obj is TargetClassObject) && (type is TargetClassType))
 				return ImplicitReferenceConversion (
