@@ -9,6 +9,7 @@ using SD = System.Diagnostics;
 using C = Mono.CompilerServices.SymbolWriter;
 
 using Mono.Debugger.Backend;
+using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Languages.Mono
 {
