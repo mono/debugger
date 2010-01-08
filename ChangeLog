@@ -1,5 +1,16 @@
 2010-01-08  Martin Baulig  <martin@ximian.com>
 
+	Fix #559045.
+
+	* languages/mono/MonoArrayType.cs
+	(MonoArrayType.GetElementSize): Add support for enums.
+
+	* languages/mono/MonoArrayObject.cs
+	(MonoArrayObject.GetDynamicSize): Use
+	MonoArrayTpe.GetElementSize().
+
+2010-01-08  Martin Baulig  <martin@ximian.com>
+
 	Fix #510995.
 
 	* frontend/Expression.cs

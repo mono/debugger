@@ -33,7 +33,13 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal override int GetElementSize (TargetMemoryAccess target)
 		{
-			IMonoStructType stype = ElementType as IMonoStructType;
+			TargetType element_type;
+			if (ElementType is MonoEnumType)
+				element_type = ((MonoEnumType) ElementType).ClassType;
+			else
+				element_type = ElementType;
+
+			IMonoStructType stype = element_type as IMonoStructType;
 			if ((stype == null) || stype.Type.IsByRef)
 				return base.GetElementSize (target);
 

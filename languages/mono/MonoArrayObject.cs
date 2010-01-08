@@ -83,21 +83,11 @@ namespace Mono.Debugger.Languages.Mono
 			Type.ElementType.SetObject (target, new_loc, obj);
 		}
 
-		int GetElementSize (TargetInfo info)
-		{
-			if (Type.ElementType.IsByRef)
-				return info.TargetAddressSize;
-			else if (Type.ElementType.HasFixedSize)
-				return Type.ElementType.Size;
-			else
-				throw new InvalidOperationException ();
-		}
-
 		internal override long GetDynamicSize (TargetMemoryAccess target, TargetBlob blob,
 						       TargetLocation location,
 						       out TargetLocation dynamic_location)
 		{
-			int element_size = GetElementSize (blob.TargetMemoryInfo);
+			int element_size = Type.GetElementSize (target);
 			dynamic_location = location.GetLocationAtOffset (Type.Size);
 			return element_size * GetLength (target);
 		}
