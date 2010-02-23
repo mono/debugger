@@ -126,7 +126,7 @@ namespace Mono.Debugger.Backend
 			this.filename = bfd.FileName;
 			this.target_info = bfd.TargetMemoryInfo;
 
-			debug_info_reader = create_reader (".debug_info");
+			debug_info_reader = create_reader (".debug_info", false);
 
 			DwarfBinaryReader reader = DebugInfoReader;
 
@@ -143,13 +143,13 @@ namespace Mono.Debugger.Backend
 				throw new DwarfException (
 					bfd, "Unknown address size: {0}", address_size);
 
-			debug_abbrev_reader = create_reader (".debug_abbrev");
-			debug_line_reader = create_reader (".debug_line");
-			debug_aranges_reader = create_reader (".debug_aranges");
-			debug_pubnames_reader = create_reader (".debug_pubnames");
-			debug_pubtypes_reader = create_reader (".debug_pubtypes");
-			debug_str_reader = create_reader (".debug_str");
-			debug_loc_reader = create_reader (".debug_loc");
+			debug_abbrev_reader = create_reader (".debug_abbrev", false);
+			debug_line_reader = create_reader (".debug_line", false);
+			debug_aranges_reader = create_reader (".debug_aranges", true);
+			debug_pubnames_reader = create_reader (".debug_pubnames", true);
+			debug_pubtypes_reader = create_reader (".debug_pubtypes", true);
+			debug_str_reader = create_reader (".debug_str", true);
+			debug_loc_reader = create_reader (".debug_loc", false);
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
@@ -576,9 +576,13 @@ namespace Mono.Debugger.Backend
 
 		ArrayList read_aranges ()
 		{
-			DwarfBinaryReader reader = DebugArangesReader;
-
 			ArrayList ranges = new ArrayList ();
+
+			if (debug_aranges_reader == null)
+				return ranges;
+
+			DwarfBinaryReader reader = new DwarfBinaryReader (
+				bfd, (TargetBlob) debug_aranges_reader.Data, Is64Bit);
 
 			while (!reader.IsEof) {
 				long length = reader.ReadInitialLength ();
@@ -644,12 +648,11 @@ namespace Mono.Debugger.Backend
 
 		Hashtable read_pubnames ()
 		{
-			DwarfBinaryReader reader = DebugPubnamesReader;
-
-			// if the reader comes back null, we just can't look up symbols
-			// by name, return null.
-			if (reader == null)
+			if (debug_pubnames_reader == null)
 				return null;
+
+			DwarfBinaryReader reader = new DwarfBinaryReader (
+				bfd, (TargetBlob) debug_pubnames_reader.Data, Is64Bit);
 
 			Hashtable names = Hashtable.Synchronized (new Hashtable ());
 
@@ -681,12 +684,11 @@ namespace Mono.Debugger.Backend
 
 		Hashtable read_pubtypes ()
 		{
-			DwarfBinaryReader reader = DebugPubtypesReader;
-
-			// if the reader comes back null, we just can't look up types
-			// by name, return null.
-			if (reader == null)
+			if (debug_pubtypes_reader == null)
 				return null;
+
+			DwarfBinaryReader reader = new DwarfBinaryReader (
+				bfd, (TargetBlob) debug_pubtypes_reader.Data, Is64Bit);
 
 			Hashtable names = Hashtable.Synchronized (new Hashtable ());
 
@@ -725,13 +727,19 @@ namespace Mono.Debugger.Backend
 				Report.Debug (DebugFlags.DwarfReader,
 					      "{1} Can't find DWARF 2 debugging info in section `{0}'",
 					      bfd.FileName, (string) user_data);
-
 				return null;
 			}
 		}
 
-		ObjectCache create_reader (string section_name)
+		ObjectCache create_reader (string section_name, bool optional)
 		{
+			if (!bfd.HasSection (section_name)) {
+				if (optional)
+					return null;
+
+				throw new DwarfException (bfd, "Missing section '{0}'.", section_name);
+			}
+
 			return new ObjectCache (new ObjectCacheFunc (create_reader_func), section_name, 5);
 		}
 
@@ -756,28 +764,6 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public DwarfBinaryReader DebugPubnamesReader {
-			get {
-				TargetBlob blob = (TargetBlob) debug_pubnames_reader.Data;
-				if (blob == null)
-					return null;
-				else
-					return new DwarfBinaryReader (
-							bfd, (TargetBlob) debug_pubnames_reader.Data, Is64Bit);
-			}
-		}
-
-		public DwarfBinaryReader DebugPubtypesReader {
-			get {
-				TargetBlob blob = (TargetBlob) debug_pubtypes_reader.Data;
-				if (blob == null)
-					return null;
-				else
-					return new DwarfBinaryReader (
-							bfd, (TargetBlob) debug_pubtypes_reader.Data, Is64Bit);
-			}
-		}
-
 		public DwarfBinaryReader DebugLineReader {
 			get {
 				return new DwarfBinaryReader (
@@ -785,15 +771,10 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public DwarfBinaryReader DebugArangesReader {
-			get {
-				return new DwarfBinaryReader (
-					bfd, (TargetBlob) debug_aranges_reader.Data, Is64Bit);
-			}
-		}
-
 		public DwarfBinaryReader DebugStrReader {
 			get {
+				if (debug_str_reader == null)
+					return null;
 				return new DwarfBinaryReader (
 					bfd, (TargetBlob) debug_str_reader.Data, Is64Bit);
 			}
@@ -1656,6 +1637,10 @@ namespace Mono.Debugger.Backend
 				}
 
 				case DwarfForm.strp: {
+					if (dwarf.DebugStrReader == null)
+						throw new DwarfException (
+							dwarf.bfd, "Got DW_FORM_strp, but " +
+							"'.debug_str' section is missing.");
 					long str_offset = reader.PeekOffset (offset, out data_size);
 					return dwarf.DebugStrReader.PeekString (str_offset);
 				}
