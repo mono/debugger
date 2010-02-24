@@ -1367,6 +1367,44 @@ namespace Mono.Debugger.Backend
 			current_frame = new_frame;
 		}
 
+		StackFrame compute_frame (TargetAddress address)
+		{
+			var method = Lookup (address);
+
+			var iframe = inferior.GetCurrentFrame ();
+			var registers = inferior.GetRegisters ();
+
+			if ((method != null) && method.HasLineNumbers) {
+				var source = method.LineNumberTable.Lookup (address);
+
+				if (source != null)
+					return new StackFrame (
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, method, source);
+				else
+					return new StackFrame (
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, method);
+			} else {
+				if (method != null)
+					return new StackFrame (
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, method);
+				else {
+					Symbol name;
+					try {
+						name = SimpleLookup (address, false);
+					} catch {
+						name = null;
+					}
+					return new StackFrame (
+						thread, FrameType.Normal, iframe.Address, iframe.StackPointer,
+						iframe.FrameAddress, registers, thread.NativeLanguage,
+						name);
+				}
+			}
+		}
+
 		TemporaryBreakpointData temp_breakpoint = null;
 
 		void insert_temporary_breakpoint (TargetAddress address)
@@ -2241,7 +2279,7 @@ namespace Mono.Debugger.Backend
 
 				AcquireThreadLock ();
 
-				if (do_managed_callback (data)) {
+				if (is_managed_frame ()) {
 					//
 					// We found a managed frame; now let's first check whether we can do
 					// all the work without starting an operation.
@@ -2258,13 +2296,17 @@ namespace Mono.Debugger.Backend
 					return true;
 				}
 
-				Report.Debug (DebugFlags.SSE, "{0} managed callback needs thread lock", this);
+				//
+				// Stop all threads and check whether one of them is in managed land.
+				//
+
+				Report.Debug (DebugFlags.SSE, "{0} managed callback needs global thread lock", this);
 
 				bool ok = false;
 				process.AcquireGlobalThreadLock (this);
 				foreach (SingleSteppingEngine engine in process.ThreadServants) {
 					try {
-						if (engine.do_managed_callback (data)) {
+						if (engine.is_managed_frame ()) {
 							ok = true;
 							break;
 						}
@@ -2274,39 +2316,14 @@ namespace Mono.Debugger.Backend
 				}
 
 				if (!ok) {
-					TargetAddress lmf_address = inferior.ReadAddress (LMFAddress);
-					StackFrame lmf_frame = Architecture.GetLMF (this, inferior, ref lmf_address);
-
-					Report.Debug (DebugFlags.SSE, "{0} requesting managed callback: {1}", this, lmf_frame);
-					process.MonoManager.AddManagedCallback (inferior, data);
-
-					/*
-					 * Prevent a race condition:
-					 * If we stopped just before returning from native code,
-					 * mono_thread_interruption_checkpoint_request() may not be called again
-					 * before returning back to managed code; it's called next time we're entering
-					 * native code again.
-					 *
-					 * This could lead to problems if the managed code does some CPU-intensive
-					 * before going unmanaged next time - or even loops forever.
-					 *
-					 * I have a test case where an icall contains a sleep() and the managed code
-					 * contains an infinite loop (`for (;;) ;) immediately after returning from
-					 * this icall.
-					 *
-					 * To prevent this from happening, we insert a breakpoint on the last managed
-					 * frame.
-					 */
-
-					if (lmf_frame != null)
-						insert_lmf_breakpoint (lmf_frame.TargetAddress);
-					else {
-						Report.Error ("{0} unable to compute LMF for managed callback: {1}",
-							      this, inferior.CurrentFrame);
-					}
+					//
+					// None of the threads is currently in managed land; request a managed
+					// callback.
+					//
+					request_managed_callback (data);
 				}
 
-				Report.Debug (DebugFlags.SSE, "{0} managed callback releasing thread lock", this);
+				Report.Debug (DebugFlags.SSE, "{0} managed callback releasing global thread lock", this);
 				process.ReleaseGlobalThreadLock (this);
 
 				ReleaseThreadLock ();
@@ -2391,7 +2408,7 @@ namespace Mono.Debugger.Backend
 			lmf_breakpoint = null;
 		}
 
-		bool do_managed_callback (ManagedCallbackData data)
+		bool is_managed_frame ()
 		{
 			Inferior.StackFrame sframe = inferior.GetCurrentFrame ();
 			Method method = Lookup (inferior.CurrentFrame);
@@ -2406,6 +2423,40 @@ namespace Mono.Debugger.Backend
 				      inferior.CurrentFrame, method);
 
 			return true;
+		}
+
+		void request_managed_callback (ManagedCallbackData data)
+		{
+			TargetAddress lmf_address = inferior.ReadAddress (LMFAddress);
+			StackFrame lmf_frame = Architecture.GetLMF (this, inferior, ref lmf_address);
+
+			Report.Debug (DebugFlags.SSE, "{0} requesting managed callback: {1}", this, lmf_frame);
+			process.MonoManager.AddManagedCallback (inferior, data);
+
+			/*
+			 * Prevent a race condition:
+			 * If we stopped just before returning from native code,
+			 * mono_thread_interruption_checkpoint_request() may not be called again
+			 * before returning back to managed code; it's called next time we're entering
+			 * native code again.
+			 *
+			 * This could lead to problems if the managed code does some CPU-intensive
+			 * before going unmanaged next time - or even loops forever.
+			 *
+			 * I have a test case where an icall contains a sleep() and the managed code
+			 * contains an infinite loop (`for (;;) ;) immediately after returning from
+			 * this icall.
+			 *
+			 * To prevent this from happening, we insert a breakpoint on the last managed
+			 * frame.
+			 */
+
+			if (lmf_frame != null)
+				insert_lmf_breakpoint (lmf_frame.TargetAddress);
+			else {
+				Report.Error ("{0} unable to compute LMF for managed callback: {1}",
+					      this, inferior.CurrentFrame);
+			}
 		}
 
 		LMFBreakpointData lmf_breakpoint = null;
@@ -4459,7 +4510,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification ()) {
+			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification) {
 				sse.enable_extended_notification (NotificationType.Trampoline);
 				sse.do_continue (CallSite.Address + CallSite.InstructionSize);
 			} else {
@@ -4476,7 +4527,7 @@ namespace Mono.Debugger.Backend
 
 		protected void TrampolineCompiled (TargetAddress mono_method, TargetAddress code)
 		{
-			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification ()) {
+			if (sse.MonoDebuggerInfo.HasNewTrampolineNotification) {
 				sse.disable_extended_notification (NotificationType.Trampoline);
 				sse.remove_temporary_breakpoint ();
 			} else {
