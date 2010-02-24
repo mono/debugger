@@ -207,7 +207,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetAddress addr = field_loc.GetAddress (target);
 
 			if (field_loc.HasAddress && field_loc.GetAddress (target).IsNull)
-				return new MonoNullObject (type, field_loc);
+				return new TargetNullObject (type);
 
 			return type.GetObject (target, field_loc);
 		}

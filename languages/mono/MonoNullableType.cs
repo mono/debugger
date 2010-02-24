@@ -15,7 +15,7 @@ namespace Mono.Debugger.Languages.Mono
 			TargetLocation flag_loc = location.GetLocationAtOffset (ElementType.Size);
 			byte[] buffer = new byte [1];
 
-			if (obj is MonoNullObject) {
+			if (obj is TargetNullObject) {
 				buffer [0] = 0;
 				flag_loc.WriteBuffer (target, buffer);
 				return;

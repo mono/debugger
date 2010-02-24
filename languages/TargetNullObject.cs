@@ -1,11 +1,11 @@
 using System;
 
-namespace Mono.Debugger.Languages.Mono
+namespace Mono.Debugger.Languages
 {
-	internal class MonoNullObject : TargetObject
+	public class TargetNullObject : TargetObject
 	{
-		public MonoNullObject (TargetType type, TargetLocation location)
-			: base (type, location)
+		public TargetNullObject (TargetType type)
+			: base (type, new AbsoluteTargetLocation (TargetAddress.Null))
 		{ }
 
 		public override TargetObjectKind Kind {

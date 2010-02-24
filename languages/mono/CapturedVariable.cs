@@ -78,7 +78,7 @@ namespace Mono.Debugger.Languages.Mono
 						 string name)
 		{
 			TargetObject obj = GetObject (frame, target);
-			if ((obj == null) || (obj is MonoNullObject))
+			if ((obj == null) || (obj is TargetNullObject))
 				return null;
 
 			TargetClassObject sobj = (TargetClassObject) obj;

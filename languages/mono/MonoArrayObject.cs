@@ -59,7 +59,7 @@ namespace Mono.Debugger.Languages.Mono
 				new_loc = new_loc.GetDereferencedLocation ();
 
 			if (new_loc.HasAddress && new_loc.GetAddress (target).IsNull)
-				return new MonoNullObject (Type.ElementType, new_loc);
+				return new TargetNullObject (Type.ElementType);
 
 			return Type.ElementType.GetObject (target, new_loc);
 		}

@@ -1,5 +1,13 @@
 2010-02-23  Martin Baulig  <martin@ximian.com>
 
+	* languages/TargetNullObject.cs: New file.
+	(TargetNullObject): New public class.
+
+	* languages/mono/MonoNullObject.cs: Removed.
+	(MonoNullObject): Removed; use `TargetNullObject' instead.
+
+2010-02-23  Martin Baulig  <martin@ximian.com>
+
 	* backend/os/DwarfReader.cs
 	(DwarfReader): Don't crash, if the .debug_aranges,
 	.debug_pubnames, .debug_pubtypes or .debug_str section is
