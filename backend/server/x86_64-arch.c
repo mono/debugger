@@ -1191,13 +1191,13 @@ server_ptrace_call_method_invoke (ServerHandle *handle, guint64 invoke_method,
 			ptr [i] = param_data [i];
 	}
 
-	*((guint64 *) code) = new_rsp + static_size - 1;
+	*((guint64 *) code) = new_rsp + 24;
 	*((guint64 *) (code+8)) = callback_argument;
 
 	cdata = g_new0 (CallbackData, 1);
 	memcpy (&cdata->saved_regs, &arch->current_regs, sizeof (arch->current_regs));
 	memcpy (&cdata->saved_fpregs, &arch->current_fpregs, sizeof (arch->current_fpregs));
-	cdata->call_address = new_rsp + static_size - 1;
+	cdata->call_address = new_rsp + 24;
 	cdata->stack_pointer = new_rsp + 8;
 	cdata->exc_address = new_rsp + 16;
 	cdata->callback_argument = callback_argument;
