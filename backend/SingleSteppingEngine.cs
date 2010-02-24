@@ -288,8 +288,12 @@ namespace Mono.Debugger.Backend
 					process.Debugger.OnLeaveNestedBreakState (this);
 				}
 
-				if (current_operation != rti)
+				if (current_operation != rti) {
+					OperationCommandResult result = current_operation.Result as OperationCommandResult;
+					if (result != null)
+						result.Completed (this, null);
 					current_operation.Result.Completed ();
+				}
 				current_operation = rti;
 
 				TargetEventArgs args = rti.OperationCompleted (current_frame, false);
