@@ -404,6 +404,10 @@ namespace Mono.Debugger
 			get { return exc_object; }
 		}
 
+		public bool IsManaged {
+			get { return (language != null) && language.IsManaged; }
+		}
+
 		internal void SetExceptionObject (TargetObject exc_object)
 		{
 			this.exc_object = exc_object;

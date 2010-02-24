@@ -3070,6 +3070,8 @@ namespace Mono.Debugger.Frontend
 			} catch (TargetException ex) {
 				throw new ScriptingException (
 					"Invocation of `{0}' raised an exception: {1}", Name, ex.Message);
+			} catch (EvaluationTimeoutException ex) {
+				throw new ScriptingException ("Invocation of `{0}' timed out.", Name);
 			}
 		}
 

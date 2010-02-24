@@ -578,9 +578,8 @@ namespace Mono.Debugger.Backend.Mono
 			return MinorVersion >= minor;
 		}
 
-		public bool HasNewTrampolineNotification ()
-		{
-			return CheckRuntimeVersion (80, 2) || CheckRuntimeVersion (81, 4);
+		public bool HasNewTrampolineNotification {
+			get { return CheckRuntimeVersion (80, 2) || CheckRuntimeVersion (81, 4); }
 		}
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
