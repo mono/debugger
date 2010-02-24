@@ -572,9 +572,17 @@ namespace Mono.Debugger.Backend
 				abort_rti = abort_requested;
 				abort_requested = -1;
 			}
-			Report.Debug (DebugFlags.SSE, "{0} operation interrupted: {1} - {2}", this, abort_rti, current_frame);
+			Report.Debug (DebugFlags.SSE, "{0} operation interrupted: {1} - {2} {3}",
+				      this, abort_rti, current_operation, current_frame);
 			if (abort_rti >= 0) {
-				DoAbortInvocation (abort_rti);
+				try {
+					DoAbortInvocation (abort_rti);
+				} catch (TargetException ex) {
+					Report.Debug (DebugFlags.SSE, "{0} operation interrupted - exception: {1}",
+						      this, ex.Message);
+					if (!current_operation.ResumeOperation ())
+						inferior.Continue ();
+				}
 			} else {
 				if (stop_requested)
 					OperationCompleted (null);
@@ -2034,22 +2042,42 @@ namespace Mono.Debugger.Backend
 								   rti_id, cframe.ID);
 			}
 
+			CommandResult result = new ThreadCommandResult (thread);
+
 			Backtrace bt = new Backtrace (current_frame);
 
 			bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
-			for (int i = 0; i < bt.Count; i++) {
-				if (bt.Frames [i].Type == FrameType.Normal)
-					continue;
-				else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
-					break;
-				throw new TargetException (TargetError.InvalidReturn,
-							   "Cannot abort an invocation which contains non-managed frames.");
-			}
-
 			if (bt.Count < 2)
 				throw new TargetException (TargetError.NoStack);
 
-			CommandResult result = new ThreadCommandResult (thread);
+			//
+			// Walk the stack and check whether we can abort this invocation.
+			//
+
+			bool stack_ok = true;
+
+			for (int i = 0; i < bt.Count; i++) {
+				StackFrame frame = bt.Frames [i];
+
+				Report.Debug (DebugFlags.SSE, "{0} do abort invocation - frame {1} ({2}:{3}): {4}",
+					      this, i, frame.Type, frame.IsManaged, frame);
+
+				if ((frame.Type == FrameType.Normal) && frame.IsManaged) {
+					continue;
+				} else if ((frame.Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
+					break;
+
+				stack_ok = false;
+				break;
+			}
+
+			if (!stack_ok)
+				throw new TargetException (TargetError.InvalidReturn,
+							   "Cannot abort an invocation which contains non-managed frames.");
+
+			//
+			// We're all set - the stack only contains managed frames, so we can go ahead here.
+			//
 			PushOperation (new OperationReturn (this, bt, ReturnMode.Invocation, result));
 		}
 
