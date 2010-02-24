@@ -137,7 +137,7 @@ namespace Mono.Debugger.Languages.Mono
 
 			if (location.HasAddress && location.GetAddress (target).IsNull) {
 				TargetLocation null_loc = new AbsoluteTargetLocation (TargetAddress.Null);
-				return new MonoNullObject ((TargetType) type, null_loc);
+				return new TargetNullObject (type);
 			}
 
 			return type.GetObject (target, location);

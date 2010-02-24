@@ -1182,9 +1182,7 @@ namespace Mono.Debugger.Backend.Mono
 
 		public override TargetObject CreateNullObject (Thread target, TargetType type)
 		{
-			TargetLocation location = new AbsoluteTargetLocation (TargetAddress.Null);
-
-			return new MonoNullObject ((TargetType) type, location);
+			return new TargetNullObject (type);
 		}
 
 		public override TargetObjectObject CreateBoxedObject (Thread thread, TargetObject value)
