@@ -1,5 +1,11 @@
 2010-02-23  Martin Baulig  <martin@ximian.com>
 
+	* backend/SingleSteppingEngine.cs
+	(SSE.DoAbortInvocation): Disallow aborting if there are any
+	non-managed frames on the stack.
+
+2010-02-23  Martin Baulig  <martin@ximian.com>
+
 	* languages/TargetNullObject.cs: New file.
 	(TargetNullObject): New public class.
 
