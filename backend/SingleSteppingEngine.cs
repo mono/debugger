@@ -1925,15 +1925,26 @@ namespace Mono.Debugger.Backend
 						throw new TargetException (TargetError.InvalidReturn, "Not a managed application.");
 				}
 
+				CommandResult result = new ThreadCommandResult (thread);
+
 				Backtrace bt = new Backtrace (current_frame);
 
 				if (mode == ReturnMode.Invocation) {
-					Inferior.CallbackFrame cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
+					var cframe = inferior.GetCallbackFrame (current_frame.StackPointer, false);
 					if (cframe == null)
 						throw new TargetException (TargetError.NoInvocation);
+
+					if (MonoDebuggerInfo.HasAbortRuntimeInvoke) {
+						OperationRuntimeInvoke rti = rti_stack.Peek ();
+						if (rti.ID != cframe.ID)
+							throw new TargetException (TargetError.NoInvocation);
+
+						return StartOperation (new OperationAbortRuntimeInvoke (this, result));
+					}
+
 					bt.GetBacktrace (this, inferior, Backtrace.Mode.Native, cframe.StackPointer, -1);
 					for (int i = 0; i < bt.Count; i++) {
-						if (bt.Frames [i].Type == FrameType.Normal)
+						if ((bt.Frames [i].Type == FrameType.Normal) && bt.Frames [i].IsManaged)
 							continue;
 						else if ((bt.Frames [i].Type == FrameType.RuntimeInvoke) && (i + 1 == bt.Count))
 							break;
@@ -1964,14 +1975,26 @@ namespace Mono.Debugger.Backend
 						throw new TargetException (TargetError.InvalidReturn);
 				} else if (mode == ReturnMode.Managed) {
 					bool ok = true;
-					if (((current_frame.Type == FrameType.Normal) &&
-					     ((current_frame.Language == null) || !current_frame.Language.IsManaged)) ||
-					    ((current_frame.Type != FrameType.RuntimeInvoke) && (current_frame.Type != FrameType.Normal)))
+					if (current_frame.Type == FrameType.Normal) {
+						if (!current_frame.IsManaged)
+							ok = false;
+					} else {
+						if (current_frame.Type == FrameType.RuntimeInvoke)
+							throw new TargetException (TargetError.InvalidReturn,
+										   "Cannot return from an invocation.");
 						ok = false;
-					if (((parent_frame.Type == FrameType.Normal) &&
-					     ((parent_frame.Language == null) || !parent_frame.Language.IsManaged)) ||
-					    ((parent_frame.Type != FrameType.RuntimeInvoke) && (parent_frame.Type != FrameType.Normal)))
+					}
+
+					if (parent_frame.Type == FrameType.Normal) {
+						if (!parent_frame.IsManaged)
+							ok = false;
+					} else {
+						if (parent_frame.Type == FrameType.RuntimeInvoke)
+							throw new TargetException (TargetError.InvalidReturn,
+										   "Cannot return from an invocation.");
 						ok = false;
+					}
+
 					if (!ok)
 						throw new TargetException (TargetError.InvalidReturn,
 									   "Cannot return from a non-managed frame.");
@@ -1986,7 +2009,6 @@ namespace Mono.Debugger.Backend
 					return null;
 				}
 
-				CommandResult result = new ThreadCommandResult (thread);
 				return StartOperation (new OperationReturn (this, bt, mode, result));
 			});
 		}
@@ -2029,24 +2051,31 @@ namespace Mono.Debugger.Backend
 
 			bool found = false;
 			foreach (OperationRuntimeInvoke rti in rti_stack) {
-				if (rti.ID == rti_id) {
-					found = true;
-					break;
-				}
+				if (rti.ID != rti_id)
+					continue;
+
+				found = true;
+				if (!rti.RequestAbort ())
+					throw new TargetException (TargetError.NoInvocation);
+				break;
 			}
 
-			if (!found) {
+			if (!found)
 				throw new TargetException (TargetError.NoInvocation);
-			} else {
-				if (cframe == null)
-					throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
-				else if (cframe.ID != rti_id)
-					throw new TargetException (TargetError.InvalidReturn,
-								   "Requested to abort invocation {0}, but current invocation has id {1}.",
-								   rti_id, cframe.ID);
-			}
+
+			if (cframe == null)
+				throw new TargetException (TargetError.InvalidReturn, "No invocation found.");
+			else if (cframe.ID != rti_id)
+				throw new TargetException (TargetError.InvalidReturn,
+							   "Requested to abort invocation {0}, but current invocation has id {1}.",
+							   rti_id, cframe.ID);
 
 			CommandResult result = new ThreadCommandResult (thread);
+
+			if (MonoDebuggerInfo.HasAbortRuntimeInvoke) {
+				PushOperation (new OperationAbortRuntimeInvoke (this, result));
+				return;
+			}
 
 			Backtrace bt = new Backtrace (current_frame);
 
@@ -3927,6 +3956,14 @@ namespace Mono.Debugger.Backend
 		public readonly TargetObject[] ParamObjects;
 		public readonly RuntimeInvokeFlags Flags;
 
+		public bool HasStarted {
+			get; protected set;
+		}
+
+		public bool AbortRequested {
+			get; protected set;
+		}
+
 		bool stopped_somewhere;
 		OperationRuntimeInvokeHelper helper;
 
@@ -3977,6 +4014,7 @@ namespace Mono.Debugger.Backend
 				throw new InternalError ("{0} rti already has a helper operation", sse);
 			helper = new OperationRuntimeInvokeHelper (sse, this);
 			Result.ID = helper.ID;
+			sse.rti_stack.Push (this);
 			sse.PushOperation (helper);
 		}
 
@@ -4077,6 +4115,16 @@ namespace Mono.Debugger.Backend
 
 			stopped_somewhere = true;
 			return new TargetEventArgs (TargetEventType.TargetStopped, 0, frame);
+		}
+
+		public bool RequestAbort ()
+		{
+			if (!HasStarted) {
+				AbortRequested = true;
+				return false;
+			}
+
+			return true;
 		}
 
 		public void AbortInvoke ()
@@ -4189,8 +4237,9 @@ namespace Mono.Debugger.Backend
 				}
 
 				case Stage.CompiledMethod: {
+					RTI.HasStarted = true;
+
 					sse.insert_temporary_breakpoint (invoke);
-					sse.rti_stack.Push (RTI);
 
 					inferior.RuntimeInvoke (
 						sse.MonoDebuggerInfo.RuntimeInvoke,
@@ -4250,6 +4299,14 @@ namespace Mono.Debugger.Backend
 
 			protected override EventResult CallbackCompleted (long data1, long data2, out TargetEventArgs args)
 			{
+				if (RTI.AbortRequested) {
+					CompletedRTI ();
+					RTI.Result.InvocationAborted = true;
+					RestoreStack ();
+					args = null;
+					return EventResult.CompletedCallback;
+				}
+
 				switch (stage) {
 				case Stage.Uninitialized: {
 					TargetAddress klass = new TargetAddress (inferior.AddressDomain, data1);
@@ -5021,6 +5078,29 @@ namespace Mono.Debugger.Backend
 				return aborted_rti.OperationCompleted (frame, suspended);
 			else
 				return new TargetEventArgs (TargetEventType.TargetStopped, 0, frame);
+		}
+	}
+
+	protected class OperationAbortRuntimeInvoke : OperationCallback
+	{
+		public OperationAbortRuntimeInvoke (SingleSteppingEngine sse, CommandResult result)
+			: base (sse, result)
+		{ }
+
+		protected override void DoExecute ()
+		{
+			Report.Debug (DebugFlags.SSE, "{0} abort runtime invoke", sse);
+			inferior.CallMethod (sse.MonoDebuggerInfo.AbortRuntimeInvoke, null, ID);
+		}
+
+		protected override EventResult CallbackCompleted (long data1, long data2, out TargetEventArgs args)
+		{
+			Report.Debug (DebugFlags.SSE, "{0} abort runtime invoke - callback completed: {1:x}",
+				      sse, data1);
+			args = null;
+
+			inferior.Continue ();
+			return EventResult.Running;
 		}
 	}
 

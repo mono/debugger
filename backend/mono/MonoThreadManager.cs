@@ -537,6 +537,8 @@ namespace Mono.Debugger.Backend.Mono
 		public readonly TargetAddress UsingMonoDebugger;
 		public readonly TargetAddress InterruptionRequest;
 
+		public readonly TargetAddress AbortRuntimeInvoke = TargetAddress.Null;
+
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
 			TargetBinaryReader header = memory.ReadMemory (info, 24).GetReader ();
@@ -580,6 +582,10 @@ namespace Mono.Debugger.Backend.Mono
 
 		public bool HasNewTrampolineNotification {
 			get { return CheckRuntimeVersion (80, 2) || CheckRuntimeVersion (81, 4); }
+		}
+
+		public bool HasAbortRuntimeInvoke {
+			get { return CheckRuntimeVersion (81, 5); }
 		}
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
@@ -637,6 +643,9 @@ namespace Mono.Debugger.Backend.Mono
 
 			UsingMonoDebugger         = reader.ReadAddress ();
 			InterruptionRequest       = reader.ReadAddress ();
+
+			if (HasAbortRuntimeInvoke)
+				AbortRuntimeInvoke = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}
