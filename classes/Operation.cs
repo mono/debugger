@@ -93,9 +93,9 @@ namespace Mono.Debugger
 
 			if (!IsCompleted) {
 				IsCompleted = true;
-				Host.OperationCompleted (sse, args, ThreadingModel);
 				if (args != null)
 					Host.SendResult (sse, args);
+				Host.OperationCompleted (sse, args, ThreadingModel);
 			}
 		}
 

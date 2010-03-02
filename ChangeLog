@@ -1,5 +1,18 @@
 2010-02-24  Martin Baulig  <martin@ximian.com>
 
+	* frontend/Main.cs: Don't deadlock when leaving a nested
+	break state.
+
+	* backend/SingleSteppingEngine.cs
+	(SSE.ProcessEvent): On `ChildEventType.RUNTIME_INVOKE_DONE':
+	terminate the current operation if it's different from the rti.
+
+	* classes/Operation.cs
+	(OperationCommandResult.Completed): Send the result before
+	signalling the wait handle.
+
+2010-02-24  Martin Baulig  <martin@ximian.com>
+
 	* backend/server/x86_64-arch.c
 	(server_ptrace_call_method_invoke): Set correct return address to
 	make this work even if the stack is executable.

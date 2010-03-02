@@ -33,8 +33,8 @@ namespace Mono.Debugger.Frontend
 			get { return interrupt_event; }
 		}
 
-		public ST.AutoResetEvent EnterNestedBreakStateEvent {
-			get { return enter_nested_break_state_event; }
+		public ST.AutoResetEvent NestedBreakStateEvent {
+			get { return nested_break_state_event; }
 		}
 
 		Interpreter interpreter;
@@ -47,7 +47,7 @@ namespace Mono.Debugger.Frontend
 		ST.Thread main_thread;
 
 		ST.AutoResetEvent interrupt_event;
-		ST.AutoResetEvent enter_nested_break_state_event;
+		ST.AutoResetEvent nested_break_state_event;
 
 		Stack<CommandLineInterpreter.MainLoop> main_loop_stack;
 
@@ -88,7 +88,7 @@ namespace Mono.Debugger.Frontend
 			parser = new LineParser (engine);
 
 			interrupt_event = new ST.AutoResetEvent (false);
-			enter_nested_break_state_event = new ST.AutoResetEvent (false);
+			nested_break_state_event = new ST.AutoResetEvent (false);
 
 			main_loop_stack = new Stack<MainLoop> ();
 			main_loop_stack.Push (new MainLoop (interpreter));
@@ -109,7 +109,7 @@ namespace Mono.Debugger.Frontend
 			parser = new LineParser (engine);
 
 			interrupt_event = new ST.AutoResetEvent (false);
-			enter_nested_break_state_event = new ST.AutoResetEvent (false);
+			nested_break_state_event = new ST.AutoResetEvent (false);
 
 			main_loop_stack = new Stack<MainLoop> ();
 			main_loop_stack.Push (new MainLoop (interpreter));
@@ -178,7 +178,7 @@ namespace Mono.Debugger.Frontend
 			Report.Debug (DebugFlags.CLI, "{0} waiting for completion", loop);
 
 			ST.WaitHandle[] wait = new ST.WaitHandle[] {
-				loop.CompletedEvent, interrupt_event, enter_nested_break_state_event
+				loop.CompletedEvent, interrupt_event, nested_break_state_event
 			};
 			int ret = ST.WaitHandle.WaitAny (wait);
 
@@ -197,7 +197,7 @@ namespace Mono.Debugger.Frontend
 
 			Report.Debug (DebugFlags.CLI, "{0} enter nested break state", loop);
 
-			enter_nested_break_state_event.Set ();
+			nested_break_state_event.Set ();
 		}
 
 		public void LeaveNestedBreakState ()
@@ -206,6 +206,8 @@ namespace Mono.Debugger.Frontend
 			nested.Completed = true;
 
 			Report.Debug (DebugFlags.CLI, "{0} leave nested break state", nested);
+
+			nested_break_state_event.Set ();
 		}
 
 		void main_thread_main ()
