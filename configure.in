@@ -106,7 +106,7 @@ AM_PROG_LIBTOOL
 # not 64 bit clean in cross-compile
 AC_CHECK_SIZEOF(void *, 4)
 
-CFLAGS='-g -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs  -Wshadow -Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings -fno-strict-aliasing'
+CFLAGS="-g ${CFLAGS} -Wall -Wunused -Wmissing-prototypes -Wmissing-declarations -Wstrict-prototypes  -Wmissing-prototypes -Wnested-externs  -Wshadow -Wpointer-arith -Wno-cast-qual -Wcast-align -Wwrite-strings -fno-strict-aliasing"
 
 AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 if test "x$PKG_CONFIG" = "xno"; then
@@ -288,7 +288,7 @@ AM_CONDITIONAL(HAVE_XSP, test "x$with_xsp" = "xyes")
 #not sure why, but I cannot get this test to pass on OS X.
 if test x$platform != xi386darwin ; then
 AC_MSG_CHECKING([Whether your Mono is working])
-old_CFLAGS=$cflags
+old_CFLAGS=$CFLAGS
 CFLAGS=$WRAPPER_CFLAGS
 AC_TRY_COMPILE([#include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-mono-symfile.h>
@@ -310,7 +310,7 @@ if test x$mono_working != xyes; then
 fi
 
 AC_MSG_CHECKING([Whether attaching is supported in this version of the Mono runtime])
-old_CFLAGS=$cflags
+old_CFLAGS=$CFLAGS
 CFLAGS=$WRAPPER_CFLAGS
 #define MONO_DEBUGGER_MAJOR_VERSION			81
 #define MONO_DEBUGGER_MINOR_VERSION			3
