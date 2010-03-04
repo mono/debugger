@@ -168,7 +168,7 @@ Mono.Debugger.Frontend.dll: Makefile $(MDB_SRCLIST) Mono.Debugger.dll
 Mono.Debugger.Test.Framework.dll: Makefile $(TEST_FRAMEWORK_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.Framework.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_FRAMEWORK_DEPS) $(TEST_FRAMEWORK_SRCLIST)
 
-Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll
+Mono.Debugger.Test.dll: Makefile $(TEST_SRCLIST) Mono.Debugger.dll Mono.Debugger.Frontend.dll Mono.Debugger.Test.Framework.dll
 	$(MCS) -target:library -out:Mono.Debugger.Test.dll $(MCS_FLAGS) -keyfile:$(top_srcdir)/build/mono.snk $(TEST_DEPS) $(TEST_SRCLIST)
 
 Mono.Cecil.dll:
