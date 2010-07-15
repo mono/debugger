@@ -145,8 +145,20 @@ PKG_CHECK_MODULES(BASE_DEPENDENCIES, glib-2.0 >= $GLIB_REQUIRED_VERSION)
 AC_SUBST(BASE_DEPENDENCIES_CFLAGS)
 AC_SUBST(BASE_DEPENDENCIES_LIBS)
 
+AC_MSG_CHECKING([Whether we're using Mono from trunk])
+## Check for Mono from trunk
+if pkg-config --modversion mono-2>/dev/null; then
+	have_mono_trunk=true
+	mono_pc=mono-2
+	AC_MSG_RESULT([yes])
+else
+	have_mono_trunk=false
+	mono_pc=mono
+	AC_MSG_RESULT([no])
+fi
+
 ## Versions of dependencies
-PKG_CHECK_MODULES(SERVER_DEPENDENCIES, mono >= $MONO_REQUIRED_VERSION glib-2.0 >= $GLIB_REQUIRED_VERSION $martin_deps)
+PKG_CHECK_MODULES(SERVER_DEPENDENCIES, $mono_pc >= $MONO_REQUIRED_VERSION glib-2.0 >= $GLIB_REQUIRED_VERSION $martin_deps)
 AC_SUBST(SERVER_DEPENDENCIES_CFLAGS)
 AC_SUBST(SERVER_DEPENDENCIES_LIBS)
 
@@ -160,7 +172,7 @@ fi
 CECIL_ASM=`pkg-config --variable=Libraries cecil`
 AC_SUBST(CECIL_ASM)
 
-PKG_CHECK_MODULES(WRAPPER, mono >= $MONO_REQUIRED_VERSION gthread-2.0 >= $GLIB_REQUIRED_VERSION)
+PKG_CHECK_MODULES(WRAPPER, $mono_pc >= $MONO_REQUIRED_VERSION glib-2.0 >= $GLIB_REQUIRED_VERSION)
 AC_SUBST(WRAPPER_CFLAGS)
 AC_SUBST(WRAPPER_LIBS)
 
@@ -347,6 +359,10 @@ fi
 AM_CONDITIONAL(MARTIN_PRIVATE, test x$martin_private = xyes)
 
 AM_CONDITIONAL(DISABLED, false)
+
+if test x$have_mono_trunk = xtrue; then
+   AC_DEFINE([USING_MONO_FROM_TRUNK], [1], [Whether we're using Mono from trunk])
+fi
 
 AC_OUTPUT([
 Makefile

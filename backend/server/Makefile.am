@@ -41,8 +41,6 @@ libmonodebuggerserver_la_SOURCES = \
 	$(platform_sources)	\
 	breakpoints.c		\
 	breakpoints.h		\
-	mutex.c			\
-	mutex.h			\
 	libgtop-glue.c		\
 	libgtop-glue.h		\
 	linux-proc-service.h

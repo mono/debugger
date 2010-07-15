@@ -75,47 +75,28 @@ namespace Mono.Debugger.Backend
 
 	internal class DebuggerMutex : DebuggerWaitHandle
 	{
-		protected IntPtr handle;
-
-		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_mutex_new ();
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_mutex_free (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_mutex_lock (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_mutex_unlock (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern bool mono_debugger_mutex_trylock (IntPtr handle);
-
 		public DebuggerMutex (string name)
 			: base (name)
-		{
-			handle = mono_debugger_mutex_new ();
-		}
+		{ }
 
 		public void Lock ()
 		{
 			Debug ("{0} locking {1}", CurrentThread, Name);
-			mono_debugger_mutex_lock (handle);
+			Monitor.Enter (this);
 			Debug ("{0} locked {1}", CurrentThread, Name);
 		}
 
 		public void Unlock ()
 		{
 			Debug ("{0} unlocking {1}", CurrentThread, Name);
-			mono_debugger_mutex_unlock (handle);
+			Monitor.Exit (this);
 			Debug ("{0} unlocked {1}", CurrentThread, Name);
 		}
 
 		public override bool TryLock ()
 		{
 			Debug ("{0} trying to lock {1}", CurrentThread, Name);
-			bool success = mono_debugger_mutex_trylock (handle);
+			bool success = Monitor.TryEnter (this);
 			if (success)
 				Debug ("{0} locked {1}", CurrentThread, Name);
 			else
@@ -124,47 +105,25 @@ namespace Mono.Debugger.Backend
 		}
 
 		protected override void DoDispose ()
-		{
-			mono_debugger_mutex_free (handle);
-			handle = IntPtr.Zero;
-		}
+		{ }
 	}
 
 	internal class DebuggerEventQueue : DebuggerMutex
 	{
-		IntPtr cond;
-
-		[DllImport("monodebuggerserver")]
-		static extern IntPtr mono_debugger_cond_new ();
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_cond_free (IntPtr handle);
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_cond_wait (IntPtr mutex, IntPtr cond);
-
-		[DllImport ("monodebuggerserver")]
-		static extern bool mono_debugger_cond_timed_wait (IntPtr mutex, IntPtr cond, int milliseconds);
-
-		[DllImport("monodebuggerserver")]
-		static extern void mono_debugger_cond_broadcast (IntPtr cond);
-
 		public DebuggerEventQueue (string name)
 			: base (name)
-		{
-			cond = mono_debugger_cond_new ();
-		}
+		{ }
 
 		public void Wait ()
 		{
 			Debug ("{0} waiting {1}", CurrentThread, Name);
-			mono_debugger_cond_wait (handle, cond);
+			Monitor.Wait (this);
 			Debug ("{0} done waiting {1}", CurrentThread, Name);
 		}
 
 		public bool Wait (int milliseconds) {
 			Debug ("{0} waiting {1}", CurrentThread, Name);
-			bool ret = mono_debugger_cond_timed_wait (handle, cond, milliseconds);
+			bool ret = Monitor.Wait (this, milliseconds);
 			Debug ("{0} done waiting {1}", CurrentThread, Name);
 			return ret;
 		}
@@ -172,13 +131,10 @@ namespace Mono.Debugger.Backend
 		public void Signal ()
 		{
 			Debug ("{0} signal {1}", CurrentThread, Name);
-			mono_debugger_cond_broadcast (cond);
+			Monitor.Pulse (this);
 		}
 
 		protected override void DoDispose ()
-		{
-			mono_debugger_cond_free (cond);
-			cond = IntPtr.Zero;
-		}
+		{ }
 	}
 }

@@ -36,9 +36,6 @@ namespace Mono.Debugger.Backend
 			
 			address_domain = AddressDomain.Global;
 
-			command_mutex = new DebuggerMutex ("command_mutex");
-			command_mutex.DebugFlags = DebugFlags.Wait;
-
 			wait_event = new ST.AutoResetEvent (false);
 			engine_event = new ST.ManualResetEvent (true);
 			ready_event = new ST.ManualResetEvent (false);
@@ -76,7 +73,6 @@ namespace Mono.Debugger.Backend
 		DateTime last_pending_sigstop;
 		Dictionary<int,DateTime> pending_sigstops;
 
-		DebuggerMutex command_mutex;
 		bool abort_requested;
 		bool waiting;
 
@@ -100,6 +96,8 @@ namespace Mono.Debugger.Backend
 			while (!abort_requested) {
 				engine_thread_main ();
 			}
+
+			Report.Debug (DebugFlags.Threads, "Engine thread exiting.");
 		}
 
 		// <remarks>
@@ -474,11 +472,16 @@ namespace Mono.Debugger.Backend
 				//
 
 				do {
+					Report.Debug (DebugFlags.Wait,
+						      "Wait thread reaping children");
 					pid = mono_debugger_server_global_wait (out status);
 					Report.Debug (DebugFlags.Wait,
 						      "Wait thread received event: {0} {1:x}",
 						      pid, status);
 				} while (pid > 0);
+
+				Report.Debug (DebugFlags.Wait,
+					      "Wait thread done");
 
 				return false;
 			}
@@ -661,7 +664,10 @@ namespace Mono.Debugger.Backend
 #if FIXME
 				RequestWait ();
 #endif
-				event_queue.Signal();
+				if (event_queue.TryLock ()) {
+					event_queue.Signal();
+					event_queue.Unlock ();
+				}
 				disposed = true;
 			}
 

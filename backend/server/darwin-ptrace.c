@@ -784,7 +784,11 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 	 * user-visible real-time signal.  __SIGRTMIN and __SIGRTMIN+1 are used
 	 * internally by glibc. */
 	sinfo->kernel_sigrtmin = SIGUSR1;
+#ifdef USING_MONO_FROM_TRUNK
+	sinfo->mono_thread_abort = mono_debugger_get_thread_abort_signal ();
+#else
 	sinfo->mono_thread_abort = mono_thread_get_abort_signal ();
+#endif
 
 	*sinfo_out = sinfo;
 
