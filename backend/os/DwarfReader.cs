@@ -108,6 +108,7 @@ namespace Mono.Debugger.Backend
 		ObjectCache debug_pubnames_reader;
 		ObjectCache debug_pubtypes_reader;
 		ObjectCache debug_str_reader;
+		ObjectCache debug_ranges_reader;
 
 		Hashtable source_file_hash;
 		Hashtable method_source_hash;
@@ -150,6 +151,7 @@ namespace Mono.Debugger.Backend
 			debug_pubtypes_reader = create_reader (".debug_pubtypes", true);
 			debug_str_reader = create_reader (".debug_str", true);
 			debug_loc_reader = create_reader (".debug_loc", false);
+			debug_ranges_reader = create_reader (".debug_ranges", true);
 
 			compile_unit_hash = Hashtable.Synchronized (new Hashtable ());
 			method_source_hash = Hashtable.Synchronized (new Hashtable ());
@@ -787,6 +789,13 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		public DwarfBinaryReader DebugRangesReader {
+			get {
+				return new DwarfBinaryReader (
+					bfd, (TargetBlob) debug_ranges_reader.Data, Is64Bit);
+			}
+		}
+
 		public string FileName {
 			get {
 				return filename;
@@ -872,7 +881,8 @@ namespace Mono.Debugger.Backend
 			try_block               = 0x32,
 			variant_block           = 0x33,
 			variable		= 0x34,
-			volatile_type           = 0x35
+			volatile_type           = 0x35,
+			dwarf3_namespace        = 0x39
 		}
 
 		protected enum DwarfAttribute {
@@ -934,7 +944,10 @@ namespace Mono.Debugger.Backend
 			use_location            = 0x4a,
 			variable_parameter      = 0x4b,
 			virtuality		= 0x4c,
-			vtable_elem_location	= 0x4d
+			vtable_elem_location	= 0x4d,
+			entry_pc		= 0x52,
+			extension		= 0x54,
+			ranges			= 0x55
 		}
 
 		protected enum DwarfBaseTypeEncoding {
@@ -1768,8 +1781,11 @@ namespace Mono.Debugger.Backend
 
 				children = new ArrayList ();
 
-				while (reader.PeekByte () != 0)
-					children.Add (CreateDie (reader, comp_unit));
+				while (reader.PeekByte () != 0) {
+					Die child = CreateDie (reader, comp_unit);
+					child.ReadChildren (reader);
+					children.Add (child);
+				}
 
 				reader.Position++;
 				return children;
@@ -1806,11 +1822,6 @@ namespace Mono.Debugger.Backend
 
 				debug ("NEW DIE: {0} {1} {2} {3}", GetType (),
 				       abbrev, Offset, ChildrenOffset);
-
-				if (this is DieCompileUnit)
-					return;
-
-				ReadChildren (reader);
 			}
 
 			public Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit)
@@ -1882,6 +1893,9 @@ namespace Mono.Debugger.Backend
 					debug ("INLINED SUBROUTINE!");
 					return new DieSubprogram (reader, comp_unit, offset, abbrev);
 
+				case DwarfTag.dwarf3_namespace:
+					return new DieNamespace (reader, comp_unit, offset, abbrev);
+
 				default:
 					return new Die (reader, comp_unit, abbrev);
 				}
@@ -1908,7 +1922,7 @@ namespace Mono.Debugger.Backend
 					       AbbrevEntry abbrev)
 				: base (reader, comp_unit, abbrev)
 			{
-				if ((start_pc != 0) && (end_pc != 0))
+				if ((start_pc != null) && (end_pc != null))
 					is_continuous = true;
 
 				string file_name;
@@ -1920,7 +1934,7 @@ namespace Mono.Debugger.Backend
 				file = dwarf.GetSourceFile (file_name);
 			}
 
-			long start_pc, end_pc;
+			long? start_pc, end_pc, entry_pc;
 			string name;
 			string comp_dir;
 			bool is_continuous;
@@ -2021,6 +2035,10 @@ namespace Mono.Debugger.Backend
 					end_pc = (long) attribute.Data;
 					break;
 
+				case DwarfAttribute.entry_pc:
+					entry_pc = (long) attribute.Data;
+					break;
+
 				case DwarfAttribute.stmt_list:
 					line_offset = (long) attribute.Data;
 					has_lines = true;
@@ -2082,7 +2100,7 @@ namespace Mono.Debugger.Backend
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return dwarf.GetAddress (start_pc);
+					return dwarf.GetAddress ((long) start_pc);
 				}
 			}
 
@@ -2091,7 +2109,18 @@ namespace Mono.Debugger.Backend
 					if (!is_continuous)
 						throw new InvalidOperationException ();
 
-					return dwarf.GetAddress (end_pc);
+					return dwarf.GetAddress ((long) end_pc);
+				}
+			}
+
+			public TargetAddress BaseAddress {
+				get {
+					if (entry_pc != null)
+						return dwarf.GetAddress ((long) entry_pc);
+					else if (start_pc != null)
+						return dwarf.GetAddress ((long) start_pc);
+					else
+						return TargetAddress.Null;
 				}
 			}
 
@@ -2153,10 +2182,11 @@ namespace Mono.Debugger.Backend
 			long abstract_origin, specification;
 			long real_offset, start_pc, end_pc;
 			bool is_continuous, resolved;
-			string name;
+			string full_name, name;
 			DwarfTargetMethod method;
 			LineNumberEngine engine;
 			ArrayList param_dies, local_dies;
+			TargetVariable this_var;
 			TargetVariable[] parameters, locals;
 			DwarfLocation frame_base;
 
@@ -2167,17 +2197,17 @@ namespace Mono.Debugger.Backend
 				switch (attribute.DwarfAttribute) {
 				case DwarfAttribute.low_pc:
 					start_pc = (long) attribute.Data;
-					// Console.WriteLine ("{0}: start_pc = {1:x}", Offset, start_pc);
+					debug ("{0}: start_pc = {1:x}", Offset, start_pc);
 					break;
 
 				case DwarfAttribute.high_pc:
 					end_pc = (long) attribute.Data;
-					// Console.WriteLine ("{0}: end_pc = {1:x}", Offset, end_pc);
+					debug ("{0}: end_pc = {1:x}", Offset, end_pc);
 					break;
 
 				case DwarfAttribute.name:
 					name = (string) attribute.Data;
-					// Console.WriteLine ("{0}: name = {1}", Offset, name);
+					debug ("{0}: name = {1}", Offset, name);
 					break;
 
 				case DwarfAttribute.frame_base:
@@ -2201,7 +2231,7 @@ namespace Mono.Debugger.Backend
 
 				case DwarfAttribute.abstract_origin:
 					abstract_origin = (long) attribute.Data;
-					// debug ("{0} ABSTRACT ORIGIN: {1}", Offset, abstract_origin);
+					debug ("{0} ABSTRACT ORIGIN: {1}", Offset, abstract_origin);
 					break;
 
 				case DwarfAttribute.specification:
@@ -2220,6 +2250,9 @@ namespace Mono.Debugger.Backend
 
 				case DwarfTag.variable:
 					return new DieVariable (this, reader, comp_unit, abbrev);
+
+				case DwarfTag.lexical_block:
+					return new DieLexicalBlock (this, reader, comp_unit, abbrev);
 
 				default:
 					return base.CreateDie (reader, comp_unit, offset, abbrev);
@@ -2266,7 +2299,7 @@ namespace Mono.Debugger.Backend
 
 			public string Name {
 				get {
-					return name != null ? name : "<unknown>";
+					return full_name ?? name ?? "<unknown>";
 				}
 			}
 
@@ -2379,57 +2412,121 @@ namespace Mono.Debugger.Backend
 				return retval;
 			}
 
+			public bool HasThis {
+				get {
+					return this_var != null;
+				}
+			}
+
+			public TargetVariable This {
+				get {
+					if (this_var == null)
+						throw new InvalidOperationException ();
+
+					return this_var;
+				}
+			}
+
 			public TargetVariable[] Parameters {
 				get {
-					if (parameters == null)
-						parameters = resolve_variables (param_dies);
-
 					return parameters;
 				}
 			}
 
 			public TargetVariable[] Locals {
 				get {
-					if (locals == null)
-						locals = resolve_variables (local_dies);
-
 					return locals;
 				}
 			}
 
-			public void ReadLineNumbers ()
+			public void Resolve ()
 			{
 				if (resolved)
 					return;
 
-				resolved = true;
+				try {
+					DoResolve ();
+					resolved = true;
+				} catch (Exception ex) {
+					debug ("{0} FUCK: {1}", Offset, ex);
+					return;
+				}
+			}
 
+			void DoResolveSpecification (DieSubprogram specification)
+			{
+				specification.Resolve ();
+
+				if ((name == null) && (specification.name != null))
+					name = specification.name;
+				if ((local_dies == null) && (specification.local_dies != null))
+					local_dies = specification.local_dies;
+				if ((param_dies == null) && (specification.param_dies != null))
+					param_dies = specification.param_dies;
+			}
+
+			void DoResolve ()
+			{
 				if (abstract_origin != 0) {
-					debug ("READ LINE NUMBERS: {0} {1}", this,
-					       abstract_origin);
 					DieSubprogram aorigin = comp_unit.GetSubprogram (abstract_origin);
-					debug ("READ LINE NUMBERS #1: {0}", aorigin);
 					if (aorigin == null)
 						throw new InternalError ();
 
-					aorigin.ReadLineNumbers ();
+					DoResolveSpecification (aorigin);
 				}
 
 				if (specification != 0) {
-					debug ("READ LINE NUMBERS #2: {0} {1}", this, specification);
 					DieSubprogram ssubprog = comp_unit.GetSubprogram (specification);
-					debug ("READ LINE NUMBERS #1: {0}", ssubprog);
 					if (ssubprog == null)
 						throw new InternalError ();
 
-					ssubprog.ReadLineNumbers ();
+					DoResolveSpecification (ssubprog);
+				}
+
+				locals = resolve_variables (local_dies);
+				parameters = resolve_variables (param_dies);
+
+				if (param_dies != null) {
+					DieMethodVariable first_var = (DieMethodVariable) param_dies [0];
+					if ((first_var.IsArtificial != null) && (first_var.Name == "this"))
+						this_var = first_var.Variable;
+				}
+
+				debug ("{0} resolve: {1} {2} {3} {4}", Offset, param_dies != null, local_dies != null,
+				       name != null, this_var != null);
+
+				if ((param_dies != null) && (name != null)) {
+					StringBuilder sb = new StringBuilder ();
+					if (this_var != null) {
+						sb.Append (this_var.Type.Name);
+						sb.Append ("::");
+					}
+					sb.Append (name);
+					sb.Append ("(");
+					bool first = true;
+					for (int i = 0; i < param_dies.Count; i++) {
+						DieMethodVariable the_param = (DieMethodVariable) param_dies [i];
+						if (!first)
+							sb.Append (", ");
+						if (the_param.Type == null)
+							continue;
+						sb.Append (the_param.Type.Name);
+						if (the_param.Name != null) {
+							sb.Append (" ");
+							sb.Append (the_param.Name);
+						}
+						first = false;
+					}
+					sb.Append (")");
+					full_name = sb.ToString ();
 				}
 			}
 
 			public override string ToString ()
 			{
 				return String.Format ("{0} ({1}:{2}:{3}:{4:x}:{5:x})", GetType (),
-						      Name, Offset, RealOffset, start_pc, end_pc);
+						      name ?? "<unknown>", Offset, RealOffset,
+						      start_pc, end_pc);
 			}
 		}
 
@@ -2522,6 +2619,7 @@ namespace Mono.Debugger.Backend
 				this.engine = engine;
 
 				CheckLoaded ();
+				Name = subprog.Name;
 			}
 
 			public DwarfReader DwarfReader {
@@ -2538,16 +2636,25 @@ namespace Mono.Debugger.Backend
 
 			public override TargetClassType GetDeclaringType (Thread target)
 			{
-				return null;
+				if (!subprog.HasThis)
+					return null;
+
+				var type = subprog.This.Type;
+
+				var ptype = type as TargetPointerType;
+				if (ptype != null)
+					type = ptype.StaticType;
+
+				return (TargetClassType) type;
 			}
 
 			public override bool HasThis {
-				get { return false; }
+				get { return subprog.HasThis; }
 			}
 
 			public override TargetVariable GetThis (Thread target)
 			{
-				throw new InvalidOperationException ();
+				return subprog.This;
 			}
 
 			public override TargetVariable[] GetParameters (Thread target)
@@ -2600,22 +2707,16 @@ namespace Mono.Debugger.Backend
 				if (source != null)
 					return;
 
-				subprog.ReadLineNumbers ();
+				subprog.Resolve ();
 
 				SourceAddress start = engine.Lookup (StartAddress);
 				SourceAddress end = engine.Lookup (EndAddress);
-
-				debug ("DTM - READ LNT #0: {0} {1} - {2} {3}",
-				       this, subprog, start, end);
 
 				if ((start == null) || (end == null))
 					return;
 
 				start_row = start.Row;
 				end_row = end.Row;
-
-				debug ("DTM - READ LNT: {0} {1} - {2} {3}", start.LineOffset,
-				       start.LineRange, end.LineOffset, end.LineRange);
 
 				SetMethodBounds (StartAddress + start.LineRange,
 						 EndAddress - end.LineOffset);
@@ -2657,6 +2758,7 @@ namespace Mono.Debugger.Backend
 			Hashtable abbrevs;
 			Hashtable types;
 			Hashtable subprogs;
+			Dictionary<long,DieNamespace> namespaces;
 
 			public CompilationUnit (DwarfReader dwarf, DwarfBinaryReader reader)
 			{
@@ -2677,6 +2779,7 @@ namespace Mono.Debugger.Backend
 				abbrevs = new Hashtable ();
 				types = new Hashtable ();
 				subprogs = new Hashtable ();
+				namespaces = new Dictionary<long,DieNamespace> ();
 
 				DwarfBinaryReader abbrev_reader = dwarf.DebugAbbrevReader;
 
@@ -2721,6 +2824,10 @@ namespace Mono.Debugger.Backend
 				}
 			}
 
+			internal string CurrentNamespace {
+				get; set;
+			}
+
 			public AbbrevEntry this [int abbrev_id] {
 				get {
 					if (abbrevs.Contains (abbrev_id))
@@ -2742,6 +2849,11 @@ namespace Mono.Debugger.Backend
 				subprogs.Add (offset, subprog);
 			}
 
+			public void AddNamespace (long offset, DieNamespace ns)
+			{
+				namespaces.Add (offset, ns);
+			}
+
 			public DieType GetType (long offset)
 			{
 				return (DieType) types [real_start_offset + offset];
@@ -2750,6 +2862,11 @@ namespace Mono.Debugger.Backend
 			public DieSubprogram GetSubprogram (long offset)
 			{
 				return (DieSubprogram) subprogs [real_start_offset + offset];
+			}
+
+			public DieNamespace GetNamespace (long offset)
+			{
+				return namespaces [real_start_offset + offset];
 			}
 
 			public override string ToString ()
@@ -2763,17 +2880,24 @@ namespace Mono.Debugger.Backend
 
 		protected class DwarfLocation
 		{
-			DieSubprogram subprog;
+			CompilationUnit comp_unit;
+			DwarfLocation frame_base;
 			byte[] location_block;
 			long loclist_offset;
 			bool is_byref;
 
 			public DwarfLocation (DieSubprogram subprog, Attribute attribute, bool is_byref)
+				: this (subprog.comp_unit, subprog.FrameBase, attribute, is_byref)
+			{ }
+
+			public DwarfLocation (CompilationUnit comp_unit, DwarfLocation frame_base,
+					      Attribute attribute, bool is_byref)
 			{
-				this.subprog = subprog;
+				this.comp_unit = comp_unit;
+				this.frame_base = frame_base;
 				this.is_byref = is_byref;
 
-				if (subprog == null)
+				if (comp_unit == null)
 					throw new InternalError ();
 
 				switch (attribute.DwarfForm) {
@@ -2795,7 +2919,7 @@ namespace Mono.Debugger.Backend
 						    byte[] data)
 			{
 				TargetBinaryReader locreader = new TargetBinaryReader (
-					data, subprog.dwarf.TargetMemoryInfo);
+					data, comp_unit.DwarfReader.TargetMemoryInfo);
 
 				byte opcode = locreader.ReadByte ();
 				bool is_regoffset;
@@ -2816,10 +2940,9 @@ namespace Mono.Debugger.Backend
 				} else if (opcode == 0x91) { // DW_OP_fbreg
 					off = locreader.ReadSLeb128 ();
 
-					if (subprog.FrameBase != null) {
+					if (frame_base != null) {
 						TargetLocation rloc = new RelativeTargetLocation (
-							subprog.FrameBase.GetLocation (frame, memory),
-							off);
+							frame_base.GetLocation (frame, memory), off);
 						if (is_byref)
 							return new DereferencedTargetLocation (rloc);
 						else
@@ -2845,14 +2968,16 @@ namespace Mono.Debugger.Backend
 					return null;
 				}
 
-				reg = subprog.dwarf.bfd.Architecture.DwarfFrameRegisterMap [reg];
+				reg = comp_unit.DwarfReader.bfd.Architecture.DwarfFrameRegisterMap [reg];
 
 				MonoVariableLocation loc = MonoVariableLocation.Create (
 					memory, is_regoffset, frame.Registers [reg],
 					off, is_byref);
 
-				if (!locreader.IsEof)
+				if (!locreader.IsEof) {
+					Console.WriteLine ("LOCREADER NOT AT EOF!");
 					return null;
+				}
 
 				return loc;
 			}
@@ -2862,11 +2987,12 @@ namespace Mono.Debugger.Backend
 				if (location_block != null)
 					return GetLocation (frame, memory, location_block);
 
-				DwarfBinaryReader reader = subprog.dwarf.DebugLocationReader;
+				DwarfBinaryReader reader = comp_unit.DwarfReader.DebugLocationReader;
 				reader.Position = loclist_offset;
 
 				TargetAddress address = frame.TargetAddress;
-				TargetAddress base_address = subprog.DieCompileUnit.StartAddress;
+				TargetAddress base_address = comp_unit.DieCompileUnit.BaseAddress;
+
 
 				while (true) {
 					long start = reader.ReadAddress ();
@@ -2874,7 +3000,7 @@ namespace Mono.Debugger.Backend
 
 					if (start == -1) {
 						Console.WriteLine ("BASE SELECTION: {0:x}", end);
-						base_address = subprog.dwarf.GetAddress (end);
+						base_address = comp_unit.DwarfReader.GetAddress (end);
 						continue;
 					}
 
@@ -2893,7 +3019,30 @@ namespace Mono.Debugger.Backend
 				return null;
 			}
 
+			public TargetLocation GetLocation (TargetLocation location)
+			{
+				if (location_block == null)
+					throw new NotImplementedException ();
 
+				TargetBinaryReader locreader = new TargetBinaryReader (
+					location_block, comp_unit.DwarfReader.TargetMemoryInfo);
+
+				byte opcode = locreader.ReadByte ();
+
+				if (opcode == 0x23) // DW_OP_plus_uconst
+					location = new RelativeTargetLocation (location, locreader.ReadLeb128 ());
+				else {
+					Console.WriteLine ("UNKNOWN OPCODE: {0:x}", opcode);
+					return null;
+				}
+
+				if (!locreader.IsEof) {
+					Console.WriteLine ("LOCREADER NOT AT EOF!");
+					return null;
+				}
+
+				return location;
+			}
 		}
 
 		protected class DwarfTargetVariable : TargetVariable
@@ -2901,18 +3050,15 @@ namespace Mono.Debugger.Backend
 			readonly string name;
 			readonly TargetType type;
 			readonly DwarfLocation location;
+			readonly DieLexicalBlock lexical_block;
 
-			protected DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type)
+			public DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type,
+						    DwarfLocation location, DieLexicalBlock lexical_block)
 			{
 				this.name = name;
 				this.type = type;
-			}
-
-			public DwarfTargetVariable (DieSubprogram subprog, string name, TargetType type,
-						    DwarfLocation location)
-				: this (subprog, name, type)
-			{
 				this.location = location;
+				this.lexical_block = lexical_block;
 			}
 
 			public override string Name {
@@ -2925,6 +3071,9 @@ namespace Mono.Debugger.Backend
 
 			public override bool IsInScope (TargetAddress address)
 			{
+				if (lexical_block != null)
+					return lexical_block.IsInRange (address);
+
 				return true;
 			}
 
@@ -2982,10 +3131,68 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
+		protected class DieNamespace : Die
+		{
+			long offset;
+			string name;
+			DieNamespace extension;
+
+			public DieNamespace (DwarfBinaryReader reader, CompilationUnit comp_unit,
+					     long offset, AbbrevEntry abbrev)
+				: base (reader, comp_unit, abbrev)
+			{
+				this.offset = offset;
+				comp_unit.AddNamespace (offset, this);
+
+				if (extension != null) {
+					if (extension.name != null) {
+						if (name != null)
+							name = extension.name + "::" + name;
+						else
+							name = extension.name;
+					}
+				}
+			}
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				debug ("NAMESPACE ATTRIBUTE: {0}", attribute);
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.name:
+					name = (string) attribute.Data;
+					break;
+				case DwarfAttribute.extension:
+					debug ("NAMESPACE EXTENSION: {0}", attribute);
+					extension = comp_unit.GetNamespace ((long) attribute.Data);
+					break;
+				}
+			}
+
+			protected override ArrayList ReadChildren (DwarfBinaryReader reader)
+			{
+				string old_ns = comp_unit.CurrentNamespace;
+				if (name == null)
+					comp_unit.CurrentNamespace = null;
+				else if (comp_unit.CurrentNamespace != null)
+					comp_unit.CurrentNamespace = comp_unit.CurrentNamespace + "::" + name;
+				else
+					comp_unit.CurrentNamespace = name;
+
+				try {
+					debug ("NS CHILDREN: {0} -> {1}", name, comp_unit.CurrentNamespace);
+					return base.ReadChildren (reader);
+					debug ("NS CHILDREN DONE: {0}", name);
+				} finally {
+					comp_unit.CurrentNamespace = old_ns;
+				}
+			}
+		}
+
 		protected abstract class DieType : Die, ITypeEntry
 		{
 			string name;
 			protected long offset;
+			DieType specification;
 			bool resolved, type_created;
 			protected readonly Language language;
 			TargetType type;
@@ -2998,8 +3205,16 @@ namespace Mono.Debugger.Backend
 				this.language = reader.Bfd.NativeLanguage;
 				comp_unit.AddType (offset, this);
 
-				if (name != null)
+				if (specification != null) {
+					if ((name == null) && (specification.name != null))
+						name = specification.Name;
+				}
+
+				if (name != null) {
+					if (comp_unit.CurrentNamespace != null)
+						name = comp_unit.CurrentNamespace + "::" + name;
 					comp_unit.DwarfReader.AddType (this);
+				}
 			}
 
 			protected override void ProcessAttribute (Attribute attribute)
@@ -3007,6 +3222,9 @@ namespace Mono.Debugger.Backend
 				switch (attribute.DwarfAttribute) {
 				case DwarfAttribute.name:
 					name = (string) attribute.Data;
+					break;
+				case DwarfAttribute.specification:
+					specification = comp_unit.GetType ((long) attribute.Data);
 					break;
 				}
 			}
@@ -3029,6 +3247,7 @@ namespace Mono.Debugger.Backend
 				resolved = true;
 
 				if (type == null) {
+					debug ("RESOLVE TYPE FAILED: {0}", this);
 					type_created = true;
 					return null;
 				}
@@ -3067,14 +3286,6 @@ namespace Mono.Debugger.Backend
 				get {
 					return name;
 				}
-			}
-
-			protected void SetName (string name)
-			{
-				if (resolved)
-					throw new InvalidOperationException ();
-
-				this.name = name;
 			}
 
 			internal TargetType GetAlias (string name)
@@ -3184,6 +3395,11 @@ namespace Mono.Debugger.Backend
 						return FundamentalKind.Single;
 					else if (byte_size <= 8)
 						return FundamentalKind.Double;
+					break;
+
+				case DwarfBaseTypeEncoding.boolean:
+					if (byte_size == 1)
+						return FundamentalKind.Boolean;
 					break;
 				}
 
@@ -3587,8 +3803,12 @@ namespace Mono.Debugger.Backend
 		protected class DieInheritance : Die
 		{
 			long type_offset;
-			long data_member_location;
+			DwarfLocation data_member_location;
 			DieType reference;
+
+			DwarfBaseInfo base_info;
+			NativeStructType base_type;
+			bool resolved;
 
 			public DieInheritance (DwarfBinaryReader reader,
 					       CompilationUnit comp_unit,
@@ -3604,11 +3824,7 @@ namespace Mono.Debugger.Backend
 					break;
 
 				case DwarfAttribute.data_member_location:
-					// the location is specified as a
-					// block, it appears..  not sure the
-					// format, but it definitely isn't a (long).
-					//
-					// data_member_location = (long)attribute.Data;
+					data_member_location = new DwarfLocation (comp_unit, null, attribute, false);
 					break;
 
 				default:
@@ -3619,6 +3835,64 @@ namespace Mono.Debugger.Backend
 
 			public long TypeOffset {
 				get { return type_offset; }
+			}
+
+			public bool HasDataMember {
+				get { return data_member_location != null; }
+			}
+
+			public DwarfLocation DataMember {
+				get { return data_member_location; }
+			}
+
+			public DwarfBaseInfo BaseInfo {
+				get {
+					Resolve ();
+					return base_info;
+				}
+			}
+
+			public bool Resolve ()
+			{
+				if (resolved)
+					return base_info != null;
+
+				try {
+					DoResolve ();
+					return base_info != null;
+				} finally {
+					resolved = true;
+				}
+			}
+
+			void DoResolve ()
+			{
+				DieType type = comp_unit.GetType (type_offset);
+				if (type == null)
+					return;
+
+				base_type = type.ResolveType () as NativeStructType;
+				if (base_type == null)
+					return;
+
+				base_info = new DwarfBaseInfo (this, base_type);
+			}
+		}
+
+		protected class DwarfBaseInfo : NativeBaseInfo
+		{
+			public readonly DieInheritance Inheritance;
+
+			public DwarfBaseInfo (DieInheritance inheritance, NativeStructType base_type)
+				: base (base_type)
+			{
+				this.Inheritance = inheritance;
+			}
+
+			public override TargetLocation GetBaseLocation (TargetMemoryAccess memory,
+									TargetLocation location)
+			{
+				return Inheritance.DataMember.GetLocation (location);
 			}
 		}
 
@@ -3663,6 +3937,7 @@ namespace Mono.Debugger.Backend
 			ArrayList members;
 			NativeFieldInfo[] fields;
 			NativeStructType type;
+			DwarfBaseInfo base_info;
 
 			public override bool IsComplete {
 				get { return abbrev.HasChildren; }
@@ -3670,10 +3945,21 @@ namespace Mono.Debugger.Backend
 
 			protected override TargetType CreateType ()
 			{
-				if (abbrev.HasChildren)
-					type = new NativeStructType (language, Name, fields, byte_size);
-				else
+				if (!abbrev.HasChildren)
 					return new NativeTypeAlias (language, Name, Name);
+
+				foreach (Die child in Children) {
+					DieInheritance inheritance = child as DieInheritance;
+					if ((inheritance == null) || !inheritance.HasDataMember)
+						continue;
+					if (!inheritance.Resolve ())
+						continue;
+					debug ("INHERITANCE: {0} {1}", inheritance, inheritance.BaseInfo);
+					base_info = inheritance.BaseInfo;
+					break;
+				}
+
+				type = new NativeStructType (language, Name, byte_size, base_info);
 				return type;
 			}
 
@@ -3756,9 +4042,6 @@ namespace Mono.Debugger.Backend
 
 			protected override TargetType CreateType ()
 			{
-				if (!prototyped)
-					return null;
-
 				if (type_offset != 0) {
 					return_type = GetReference (type_offset);
 					if (return_type == null)
@@ -3793,6 +4076,84 @@ namespace Mono.Debugger.Backend
 				}
 
 				function_type.SetPrototype (ret_type, param_list.ToArray ());
+			}
+		}
+
+		protected class DieLexicalBlock : Die
+		{
+			DieSubprogram subprog;
+			long? ranges_offset;
+
+			public DieLexicalBlock (DieSubprogram subprog, DwarfBinaryReader reader,
+						CompilationUnit comp_unit, AbbrevEntry abbrev)
+				: base (reader, comp_unit, abbrev)
+			{
+				this.subprog = subprog;
+			}
+
+			protected override Die CreateDie (DwarfBinaryReader reader, CompilationUnit comp_unit,
+							  long offset, AbbrevEntry abbrev)
+			{
+				switch (abbrev.Tag) {
+				case DwarfTag.formal_parameter:
+					return new DieFormalParameter (subprog, reader, comp_unit, abbrev);
+
+				case DwarfTag.variable:
+					return new DieVariable (subprog, reader, comp_unit, abbrev, this);
+
+				case DwarfTag.lexical_block:
+					return new DieLexicalBlock (subprog, reader, comp_unit, abbrev);
+
+				default:
+					debug ("LEXICAL BLOCK ({0}): unknown die: {1}", Offset, abbrev.Tag);
+					return base.CreateDie (reader, comp_unit, offset, abbrev);
+				}
+			}
+
+			protected override void ProcessAttribute (Attribute attribute)
+			{
+				switch (attribute.DwarfAttribute) {
+				case DwarfAttribute.ranges:
+					ranges_offset = (long) attribute.Data;
+					break;
+
+				default:
+					debug ("UNKNOWN ATTRIBUTE: {0} {1}", this, attribute);
+					base.ProcessAttribute (attribute);
+					break;
+				}
+			}
+
+			public bool IsInRange (TargetAddress address)
+			{
+				if (ranges_offset == null)
+					return true;
+
+				DwarfBinaryReader reader = comp_unit.DwarfReader.DebugRangesReader;
+				reader.Position = (long) ranges_offset;
+
+				TargetAddress base_address = comp_unit.DieCompileUnit.BaseAddress;
+
+				while (true) {
+					long start = reader.ReadAddress ();
+					long end = reader.ReadAddress ();
+
+					if (start == -1) {
+						Console.WriteLine ("BASE SELECTION: {0:x}", end);
+						base_address = comp_unit.DwarfReader.GetAddress (end);
+						continue;
+					}
+
+					if ((start == 0) && (end == 0))
+						break;
+
+					if ((address < base_address+start) || (address >= base_address+end))
+						continue;
+
+					return true;
+				}
+
+				return false;
 			}
 		}
 
@@ -3834,16 +4195,22 @@ namespace Mono.Debugger.Backend
 					return type_offset;
 				}
 			}
+
+			public override string ToString ()
+			{
+				return String.Format ("{0} ({1}:{2})", GetType ().Name, type_offset, name);
+			}
 		}
 
 		protected abstract class DieMethodVariable : DieVariableBase
 		{
 			public DieMethodVariable (DieSubprogram subprog, DwarfBinaryReader reader,
 						  CompilationUnit comp_unit, AbbrevEntry abbrev,
-						  bool is_local)
+						  DieLexicalBlock lexical_block, bool is_local)
 				: base (reader, comp_unit, abbrev)
 			{
 				this.subprog = subprog;
+				this.lexical_block = lexical_block;
 
 				if (subprog != null) {
 					if (is_local)
@@ -3860,6 +4227,10 @@ namespace Mono.Debugger.Backend
 					location_attr = attribute;
 					break;
 
+				case DwarfAttribute.artificial:
+					artificial = (bool) attribute.Data;
+					break;
+
 				default:
 					base.ProcessAttribute (attribute);
 					break;
@@ -3867,9 +4238,11 @@ namespace Mono.Debugger.Backend
 			}
 
 			Attribute location_attr;
-			TargetVariable variable;
+			DwarfTargetVariable variable;
 			DieSubprogram subprog;
 			TargetType type;
+			DieLexicalBlock lexical_block;
+			bool artificial;
 			bool resolved;
 
 			protected bool DoResolveType ()
@@ -3897,7 +4270,8 @@ namespace Mono.Debugger.Backend
 
 				DwarfLocation location = new DwarfLocation (
 					subprog, location_attr, type.IsByRef);
-				variable = new DwarfTargetVariable (subprog, Name, type, location);
+				variable = new DwarfTargetVariable (
+					subprog, Name, type, location, lexical_block);
 				return true;
 			}
 
@@ -3908,7 +4282,7 @@ namespace Mono.Debugger.Backend
 				}
 			}
 
-			public TargetVariable Variable {
+			public DwarfTargetVariable Variable {
 				get {
 					if (!resolved) {
 						DoResolve ();
@@ -3918,13 +4292,19 @@ namespace Mono.Debugger.Backend
 					return variable;
 				}
 			}
+
+			public bool IsArtificial {
+				get {
+					return artificial;
+				}
+			}
 		}
 
 		protected class DieFormalParameter : DieMethodVariable
 		{
 			public DieFormalParameter (DieSubprogram parent, DwarfBinaryReader reader,
 						   CompilationUnit comp_unit, AbbrevEntry abbrev)
-				: base (parent, reader, comp_unit, abbrev, false)
+				: base (parent, reader, comp_unit, abbrev, null, false)
 			{ }
 		}
 
@@ -3932,7 +4312,13 @@ namespace Mono.Debugger.Backend
 		{
 			public DieVariable (DieSubprogram parent, DwarfBinaryReader reader,
 					    CompilationUnit comp_unit, AbbrevEntry abbrev)
-				: base (parent, reader, comp_unit, abbrev, true)
+				: base (parent, reader, comp_unit, abbrev, null, true)
+			{ }
+
+			public DieVariable (DieSubprogram parent, DwarfBinaryReader reader,
+					    CompilationUnit comp_unit, AbbrevEntry abbrev,
+					    DieLexicalBlock lexical)
+				: base (parent, reader, comp_unit, abbrev, lexical, true)
 			{ }
 		}
 

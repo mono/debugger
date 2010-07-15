@@ -770,7 +770,13 @@ namespace Mono.Debugger.Frontend
 			TargetClassObject instance = null;
 			if (method.HasThis) {
 				TargetVariable this_var = method.GetThis (context.CurrentThread);
-				instance = (TargetClassObject) this_var.GetObject (frame);
+				TargetObject this_obj = this_var.GetObject (frame);
+
+				var pobj = this_obj as TargetPointerObject;
+				if (pobj != null)
+					this_obj = pobj.GetDereferencedObject (context.CurrentThread);
+
+				instance = (TargetClassObject) this_obj;
 			}
 
 			member = StructAccessExpression.FindMember (

@@ -14,7 +14,7 @@ namespace Mono.Debugger.Languages.Native
 
 		internal override TargetClassObject GetParentObject (TargetMemoryAccess target)
 		{
-			return null;
+			return type.GetParentObject (target, Location);
 		}
 
 		internal override TargetClassObject GetCurrentObject (TargetMemoryAccess target)

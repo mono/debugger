@@ -91,6 +91,9 @@ namespace Mono.Debugger
 		{
 			result = null;
 
+			if (!obj.Type.Language.IsManaged)
+				return EvaluationResult.MethodNotFound;
+
 		again:
 			TargetStructType ctype = obj.Type;
 			if ((ctype.Name == "System.Object") || (ctype.Name == "System.ValueType"))
@@ -157,9 +160,11 @@ namespace Mono.Debugger
 				return EvaluationResult.Ok;
 			}
 
-			obj = obj.GetParentObject (thread) as TargetClassObject;
-			if (obj != null)
-				goto again;
+			if (obj.Type.HasParent) {
+				obj = obj.GetParentObject (thread) as TargetClassObject;
+				if (obj != null)
+					goto again;
+			}
 
 			return EvaluationResult.MethodNotFound;
 		}

@@ -173,6 +173,9 @@ namespace Mono.Debugger
 			get {
 				return name;
 			}
+			protected set {
+				name = value;
+			}
 		}
 
 		public string ImageFile {

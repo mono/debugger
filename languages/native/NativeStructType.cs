@@ -74,12 +74,26 @@ namespace Mono.Debugger.Languages.Native
 		}
 	}
 
+	internal abstract class NativeBaseInfo
+	{
+		public readonly NativeStructType BaseType;
+
+		public NativeBaseInfo (NativeStructType base_type)
+		{
+			this.BaseType = base_type;
+		}
+
+		public abstract TargetLocation GetBaseLocation (TargetMemoryAccess memory,
+								TargetLocation location);
+	}
+
 	internal class NativeStructType : TargetClassType
 	{
 		string name;
 		int size;
 		NativeFieldInfo[] fields;
 		NativeClass class_info;
+		NativeBaseInfo base_info;
 
 		internal NativeStructType (Language language, string name, int size)
 			: base (language, TargetObjectKind.Struct)
@@ -95,6 +109,15 @@ namespace Mono.Debugger.Languages.Native
 			this.fields = fields;
 		}
 
+		internal NativeStructType (Language language, string name, int size,
+					   NativeBaseInfo base_info)
+			: base (language, base_info != null ? TargetObjectKind.Class : TargetObjectKind.Struct)
+		{
+			this.name = name;
+			this.size = size;
+			this.base_info = base_info;
+		}
+
 		public override bool HasClassType {
 			get { return true; }
 		}
@@ -108,12 +131,15 @@ namespace Mono.Debugger.Languages.Native
 		}
 
 		public override bool HasParent {
-			get { return false; }
+			get { return base_info != null; }
 		}
 
 		internal override TargetClassType GetParentType (TargetMemoryAccess target)
 		{
-			throw new InvalidOperationException ();
+			if (!HasParent)
+				throw new InvalidOperationException ();
+
+			return base_info.BaseType;
 		}
 
 		public override Module Module {
@@ -232,6 +258,15 @@ namespace Mono.Debugger.Languages.Native
 
 			// field.Type.SetObject (field_loc, obj);
 			throw new NotImplementedException ();
+		}
+
+		internal NativeStructObject GetParentObject (TargetMemoryAccess target, TargetLocation location)
+		{
+			if (!HasParent)
+				throw new InvalidOperationException ();
+
+			location = base_info.GetBaseLocation (target, location);
+			return new NativeStructObject (base_info.BaseType, location);
 		}
 	}
 }

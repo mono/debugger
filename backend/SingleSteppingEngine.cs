@@ -146,6 +146,11 @@ namespace Mono.Debugger.Backend
 			return result;
 		}
 
+		public void StartSuspended ()
+		{
+			frame_changed (inferior.CurrentFrame, null);
+		}
+
 #region child event processing
 		// <summary>
 		//   This is called from the SingleSteppingEngine's main event loop to give

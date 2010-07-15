@@ -217,6 +217,8 @@ namespace Mono.Debugger.Backend
 				CommandResult result = current_operation != null ?
 					current_operation : new ThreadCommandResult (new_thread.Thread);
 				new_thread.StartThread (result);
+			} else {
+				new_thread.StartSuspended ();
 			}
 		}
 

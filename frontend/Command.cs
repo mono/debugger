@@ -3870,7 +3870,7 @@ namespace Mono.Debugger.Frontend
 					config.RedirectOutput = enable;
 					break;
 
-				case "stop-daemon-threads":
+				case "stop-daemon":
 					require_expert_mode ();
 					if (enable)
 						config.ThreadingModel |= ThreadingModel.StopDaemonThreads;
@@ -3878,7 +3878,7 @@ namespace Mono.Debugger.Frontend
 						config.ThreadingModel &= ~ThreadingModel.StopDaemonThreads;
 					break;
 
-				case "stop-immutable-threads":
+				case "stop-immutable":
 					require_expert_mode ();
 					if (enable)
 						config.ThreadingModel |= ThreadingModel.StopImmutableThreads;

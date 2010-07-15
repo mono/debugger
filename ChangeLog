@@ -1,3 +1,29 @@
+2010-06-09  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/mutex.c
+	(mono_debugger_wait_handle_initialize): New method to call
+	`g_thread_init (NULL)'.
+
+	* backend/EventQueue.cs
+	(DebuggerWaitHandle.cctor): Call it here.
+
+2010-06-09  Martin Baulig  <martin@ximian.com>
+
+	* backend/ProcessServant.cs: When attaching, compute initial
+	stackframe for all threads.
+
+2010-06-07  Martin Baulig  <martin@ximian.com>
+
+	* backend/server/x86-linux-ptrace.c: Use
+	mono_debugger_get_thread_abort_signal() instead of
+	mono_thread_get_abort_signal().
+
+	* backend/server/darwin-ptrace.c: Likewise.
+
+2010-06-07  Martin Baulig  <martin@ximian.com>
+
+	* configure.in: Require `mono-2', not `mono'.
+
 2010-07-15  Martin Baulig  <martin@ximian.com>
 
 	* configure.in: Support both 2.6 and trunk.
