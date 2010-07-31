@@ -22,9 +22,6 @@ namespace Mono.Debugger
 
 	public class Debugger : DebuggerMarshalByRefObject
 	{
-#if USE_DOMAIN
-		AppDomain domain;
-#endif
 		DebuggerServant servant;
 		ManualResetEvent kill_event;
 
@@ -32,20 +29,7 @@ namespace Mono.Debugger
 		{
 			kill_event = new ManualResetEvent (false);
 
-#if USE_DOMAIN
-			domain = AppDomain.CreateDomain ("mdb");
-
-			ObjectHandle oh = domain.CreateInstance (
-				Assembly.GetExecutingAssembly ().FullName,
-				typeof (DebuggerServant).FullName, false,
-				BindingFlags.Instance | BindingFlags.NonPublic,
-				null, new object [] { this, Report.ReportWriter, config },
-				null, null, null);
-
-			servant = (DebuggerServant) oh.Unwrap ();
-#else
 			servant = new DebuggerServant (this, Report.ReportWriter, config);
-#endif
 		}
 
 		public event ThreadEventHandler ThreadCreatedEvent;
@@ -270,13 +254,6 @@ namespace Mono.Debugger
 					servant.Dispose ();
 					servant = null;
 				}
-
-#if USE_DOMAIN
-				if (domain != null) {
-					AppDomain.Unload (domain);
-					domain = null;
-				}
-#endif
 			}
 		}
 
