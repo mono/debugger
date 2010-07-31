@@ -4,15 +4,6 @@
 
 2010-06-09  Martin Baulig  <martin@ximian.com>
 
-	* backend/server/mutex.c
-	(mono_debugger_wait_handle_initialize): New method to call
-	`g_thread_init (NULL)'.
-
-	* backend/EventQueue.cs
-	(DebuggerWaitHandle.cctor): Call it here.
-
-2010-06-09  Martin Baulig  <martin@ximian.com>
-
 	* backend/ProcessServant.cs: When attaching, compute initial
 	stackframe for all threads.
 
