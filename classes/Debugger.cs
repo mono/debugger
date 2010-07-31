@@ -22,14 +22,39 @@ namespace Mono.Debugger
 
 	public class Debugger : DebuggerMarshalByRefObject
 	{
-		DebuggerServant servant;
 		ManualResetEvent kill_event;
+		DebuggerConfiguration config;
+		ThreadManager thread_manager;
+		Hashtable process_hash;
+		ProcessServant main_process;
+		MyOperationHost operation_host;
+		bool alive;
 
 		public Debugger (DebuggerConfiguration config)
 		{
+			this.config = config;
+			this.alive = true;
+
+			ObjectCache.Initialize ();
+
 			kill_event = new ManualResetEvent (false);
 
-			servant = new DebuggerServant (this, Report.ReportWriter, config);
+			thread_manager = new ThreadManager (this);
+			process_hash = Hashtable.Synchronized (new Hashtable ());
+			stopped_event = new ManualResetEvent (false);
+			operation_host = new MyOperationHost (this);
+		}
+
+		public DebuggerConfiguration Configuration {
+			get { return config; }
+		}
+
+		internal IOperationHost OperationHost {
+			get { return operation_host; }
+		}
+
+		internal ThreadManager ThreadManager {
+			get { return thread_manager; }
 		}
 
 		public event ThreadEventHandler ThreadCreatedEvent;
@@ -59,22 +84,34 @@ namespace Mono.Debugger
 			return new Thread (servant, id);
 		}
 
-		internal void OnMainProcessCreatedEvent (Process process)
+		internal void OnMainProcessCreatedEvent (ProcessServant process)
 		{
+			process_hash.Add (process, process);
 			if (MainProcessCreatedEvent != null)
-				MainProcessCreatedEvent (this, process);
+				MainProcessCreatedEvent (this, process.Client);
+		}
+
+		internal void OnProcessCreatedEvent (ProcessServant process)
+		{
+			process_hash.Add (process, process);
+			if (ProcessCreatedEvent != null)
+				ProcessCreatedEvent (this, process.Client);
+		}
+
+		internal void OnProcessExitedEvent (ProcessServant process)
+		{
+			process_hash.Remove (process);
+			if (ProcessExitedEvent != null)
+				ProcessExitedEvent (this, process.Client);
+
+			if (process_hash.Count == 0)
+				OnTargetExitedEvent ();
 		}
 
 		internal void OnProcessReachedMainEvent (Process process)
 		{
 			if (ProcessReachedMainEvent != null)
 				ProcessReachedMainEvent (this, process);
-		}
-
-		internal void OnProcessCreatedEvent (Process process)
-		{
-			if (ProcessCreatedEvent != null)
-				ProcessCreatedEvent (this, process);
 		}
 
 		internal void OnTargetExitedEvent ()
@@ -85,12 +122,6 @@ namespace Mono.Debugger
 					TargetExitedEvent (this);
 				kill_event.Set ();
 			});
-		}
-
-		internal void OnProcessExitedEvent (Process process)
-		{
-			if (ProcessExitedEvent != null)
-				ProcessExitedEvent (this, process);
 		}
 
 		internal void OnProcessExecdEvent (Process process)
@@ -119,8 +150,13 @@ namespace Mono.Debugger
 
 		internal void OnTargetEvent (Thread thread, TargetEventArgs args)
 		{
-			if (TargetEvent != null)
-				TargetEvent (thread, args);
+			try {
+				if (TargetEvent != null)
+					TargetEvent (thread, args);
+			} catch (Exception ex) {
+				Error ("{0} caught exception while sending {1}:\n{2}",
+				       thread, args, ex);
+			}
 		}
 
 		internal void OnModuleLoadedEvent (Module module)
@@ -147,18 +183,47 @@ namespace Mono.Debugger
 				LeaveNestedBreakStateEvent (this, thread);
 		}
 
+		public void Error (string message, params object[] args)
+		{
+			Console.WriteLine ("ERROR: " + String.Format (message, args));
+		}
+
 		public void Kill ()
 		{
-			if (servant != null) {
-				servant.Kill ();
-				kill_event.WaitOne ();
+			if (!alive)
+				return;
+
+			main_process = null;
+
+			ProcessServant[] procs;
+			lock (process_hash.SyncRoot) {
+				procs = new ProcessServant [process_hash.Count];
+				process_hash.Values.CopyTo (procs, 0);
 			}
+
+			foreach (ProcessServant proc in procs) {
+				proc.Kill ();
+			}
+
+			kill_event.WaitOne ();
 		}
 
 		public void Detach ()
 		{
-			check_servant ();
-			servant.Detach ();
+			if (main_process == null)
+				throw new TargetException (TargetError.NoTarget);
+			else if (!main_process.CanDetach)
+				throw new TargetException (TargetError.CannotDetach);
+
+			ProcessServant[] procs;
+			lock (process_hash.SyncRoot) {
+				procs = new ProcessServant [process_hash.Count];
+				process_hash.Values.CopyTo (procs, 0);
+			}
+
+			foreach (ProcessServant proc in procs) {
+				proc.Detach ();
+			}
 		}
 
 		public Process Run (DebuggerSession session)
@@ -169,8 +234,14 @@ namespace Mono.Debugger
 
 		public Process Run (DebuggerSession session, out CommandResult result)
 		{
-			check_servant ();
-			return servant.Run (session, out result);
+			check_alive ();
+
+			if (main_process != null)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			ProcessStart start = new ProcessStart (session);
+			main_process = thread_manager.StartApplication (start, out result);
+			return main_process.Client;
 		}
 
 		public Process Attach (DebuggerSession session, int pid)
@@ -181,31 +252,167 @@ namespace Mono.Debugger
 
 		public Process Attach (DebuggerSession session, int pid, out CommandResult result)
 		{
-			check_servant ();
-			return servant.Attach (session, pid, out result);
+			check_alive ();
+
+			if (main_process != null)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			ProcessStart start = new ProcessStart (session, pid);
+			main_process = thread_manager.StartApplication (start, out result);
+			return main_process.Client;
 		}
 
 		public Process OpenCoreFile (DebuggerSession session, string core_file,
 					     out Thread[] threads)
 		{
-			check_servant ();
-			return servant.OpenCoreFile (session, core_file, out threads);
+			check_alive ();
+
+			if (main_process != null)
+				throw new TargetException (TargetError.AlreadyHaveTarget);
+
+			ProcessStart start = new ProcessStart (session, core_file);
+
+			main_process = thread_manager.OpenCoreFile (start, out threads);
+			process_hash.Add (main_process, main_process);
+			return main_process.Client;
 		}
 
 		public bool HasTarget {
-			get { return servant != null; }
+			get { return alive; }
 		}
 
 		public Process[] Processes {
 			get {
-				check_servant ();
-				return servant.Processes;
+				check_alive ();
+				lock (process_hash.SyncRoot) {
+					int count = process_hash.Count;
+					Process[] procs = new Process [count];
+					ProcessServant[] servants = new ProcessServant [count];
+					process_hash.Values.CopyTo (servants, 0);
+					for (int i = 0; i < count; i++)
+						procs [i] = servants [i].Client;
+					return procs;
+				}
 			}
 		}
 
 		public bool CanDetach {
-			get { return (servant != null) && servant.CanDetach; }
+			get {
+				return alive && (main_process != null) && main_process.CanDetach;
+			}
 		}
+
+#region Global Threading Model
+
+		ManualResetEvent stopped_event;
+		OperationCommandResult current_operation;
+
+		internal WaitHandle WaitHandle {
+			get { return stopped_event; }
+		}
+
+		internal CommandResult StartOperation (ThreadingModel model, SingleSteppingEngine caller)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			if ((model & ThreadingModel.ThreadingMode) == ThreadingModel.Default) {
+				if (Inferior.HasThreadEvents)
+					model |= ThreadingModel.Single;
+				else
+					model |= ThreadingModel.Process;
+			}
+
+			if ((model & ThreadingModel.ThreadingMode) != ThreadingModel.Global)
+				return caller.Process.StartOperation (model, caller);
+
+			if (current_operation != null)
+				throw new TargetException (TargetError.NotStopped);
+
+			lock (this) {
+				stopped_event.Reset ();
+				current_operation = new GlobalCommandResult (this, model);
+			}
+
+			foreach (ProcessServant process in process_hash.Values) {
+				process.StartGlobalOperation (model, caller, current_operation);
+			}
+
+			return current_operation;
+		}
+
+		void OperationCompleted (SingleSteppingEngine caller, TargetEventArgs result, ThreadingModel model)
+		{
+			if (!ThreadManager.InBackgroundThread)
+				throw new InternalError ();
+
+			foreach (ProcessServant process in process_hash.Values) {
+				process.OperationCompleted (caller, result, model);
+			}
+
+			lock (this) {
+				current_operation = null;
+				stopped_event.Set ();
+			}
+		}
+
+		void StopAll ()
+		{
+			foreach (ProcessServant process in process_hash.Values) {
+				process.Stop ();
+			}
+		}
+
+		protected class MyOperationHost : IOperationHost
+		{
+			public Debugger Debugger;
+
+			public MyOperationHost (Debugger debugger)
+			{
+				this.Debugger = debugger;
+			}
+
+			void IOperationHost.OperationCompleted (SingleSteppingEngine caller, TargetEventArgs result, ThreadingModel model)
+			{
+				Debugger.OperationCompleted (caller, result, model);
+			}
+
+			WaitHandle IOperationHost.WaitHandle {
+				get { return Debugger.stopped_event; }
+			}
+
+			void IOperationHost.SendResult (SingleSteppingEngine sse, TargetEventArgs args)
+			{
+				Debugger.OnTargetEvent (sse.Thread, args);
+			}
+
+			void IOperationHost.Abort ()
+			{
+				Debugger.StopAll ();
+			}
+		}
+
+		protected class GlobalCommandResult : OperationCommandResult
+		{
+			public Debugger Debugger {
+				get; private set;
+			}
+
+			internal override IOperationHost Host {
+				get { return Debugger.OperationHost; }
+			}
+
+			internal GlobalCommandResult (Debugger debugger, ThreadingModel model)
+				: base (model)
+			{
+				this.Debugger = debugger;
+			}
+
+			internal override void OnExecd (SingleSteppingEngine new_thread)
+			{ }
+		}
+
+#endregion
 
 		[Obsolete]
 		GUIManager gui_manager;
@@ -224,9 +431,9 @@ namespace Mono.Debugger
 		// IDisposable
 		//
 
-		void check_servant ()
+		void check_alive ()
 		{
-			if (servant == null)
+			if (!alive)
 				throw new TargetException (TargetError.NoTarget);
 		}
 
@@ -246,14 +453,17 @@ namespace Mono.Debugger
 					return;
 
 				disposed = true;
+				alive = false;
 			}
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				if (servant != null) {
-					servant.Dispose ();
-					servant = null;
+				if (thread_manager != null) {
+					thread_manager.Dispose ();
+					thread_manager = null;
 				}
+
+				ObjectCache.Shutdown ();
 			}
 		}
 

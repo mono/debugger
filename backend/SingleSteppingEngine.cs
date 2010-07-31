@@ -290,7 +290,7 @@ namespace Mono.Debugger.Backend
 					InterruptibleOperation io = nested_break_stack.Pop ();
 					if (io != rti)
 						throw new InternalError ("{0} unexpected item on nested break state stack: {1}", this, io);
-					process.Debugger.OnLeaveNestedBreakState (this);
+					process.Debugger.OnLeaveNestedBreakState (thread);
 				}
 
 				if (current_operation != rti) {
@@ -612,7 +612,7 @@ namespace Mono.Debugger.Backend
 				InterruptibleOperation io = nested_break_stack.Pop ();
 				if (io != rti)
 					throw new InternalError ("{0} aborting rti failed: {1}", this, io);
-				process.Debugger.OnLeaveNestedBreakState (this);
+				process.Debugger.OnLeaveNestedBreakState (thread);
 			}
 
 			return rti;
@@ -643,7 +643,7 @@ namespace Mono.Debugger.Backend
 				operation_completed_event.Set ();
 
 				if (suspended) {
-					process.Debugger.OnEnterNestedBreakState (this);
+					process.Debugger.OnEnterNestedBreakState (thread);
 					((InterruptibleOperation) current_operation).IsSuspended = true;
 					nested_break_stack.Push ((InterruptibleOperation) current_operation);
 					current_operation.CompletedOperation (true);
@@ -714,7 +714,7 @@ namespace Mono.Debugger.Backend
 			if (current_operation != null)
 				OperationCompleted (result);
 			else
-				process.Debugger.SendTargetEvent (this, result);
+				process.Debugger.OnTargetEvent (thread, result);
 
 			process.OnThreadExitedEvent (this);
 			Dispose ();
@@ -1028,7 +1028,7 @@ namespace Mono.Debugger.Backend
 			if (current_operation != null)
 				OperationCompleted (result);
 			else
-				process.Debugger.SendTargetEvent (this, result);
+				process.Debugger.OnTargetEvent (thread, result);
 
 			process.OnThreadExitedEvent (this);
 			Dispose ();
@@ -2010,7 +2010,7 @@ namespace Mono.Debugger.Backend
 					frame_changed (inferior.CurrentFrame, null);
 					TargetEventArgs args = new TargetEventArgs (
 						TargetEventType.TargetStopped, 0, current_frame);
-					process.Debugger.SendTargetEvent (this, args);
+					process.Debugger.OnTargetEvent (thread, args);
 					return null;
 				}
 

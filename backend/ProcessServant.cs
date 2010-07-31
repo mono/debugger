@@ -52,7 +52,7 @@ namespace Mono.Debugger.Backend
 		{
 			this.manager = manager;
 			this.session = session;
-			this.client = manager.Debugger.Client.CreateProcess (this);
+			this.client = manager.Debugger.CreateProcess (this);
 
 			thread_lock_mutex = new DebuggerMutex ("thread_lock_mutex");
 
@@ -162,7 +162,7 @@ namespace Mono.Debugger.Backend
 			get { return main_thread; }
 		}
 
-		public DebuggerServant Debugger {
+		public Debugger Debugger {
 			get { return manager.Debugger; }
 		}
 
@@ -315,7 +315,7 @@ namespace Mono.Debugger.Backend
 			inferior.Dispose ();
 			inferior = null;
 
-			manager.Debugger.OnProcessExecdEvent (this);
+			manager.Debugger.OnProcessExecdEvent (Client);
 			manager.Debugger.OnThreadCreatedEvent (new_thread.Thread);
 			initialized = is_forked = false;
 			main_thread = new_thread;
@@ -379,7 +379,7 @@ namespace Mono.Debugger.Backend
 
 		internal void OnProcessReachedMainEvent ()
 		{
-			manager.Debugger.Client.OnProcessReachedMainEvent (client);
+			manager.Debugger.OnProcessReachedMainEvent (client);
 		}
 
 		internal void OnThreadExitedEvent (ThreadServant thread)
@@ -877,7 +877,7 @@ namespace Mono.Debugger.Backend
 
 		void IOperationHost.SendResult (SingleSteppingEngine sse, TargetEventArgs args)
 		{
-			Debugger.SendTargetEvent (sse, args);
+			Debugger.OnTargetEvent (sse.Client, args);
 		}
 
 		void IOperationHost.Abort ()

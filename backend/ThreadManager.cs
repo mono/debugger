@@ -21,9 +21,9 @@ namespace Mono.Debugger.Backend
 	{
 		public static TimeSpan WaitTimeout = TimeSpan.FromMilliseconds (5000);
 
-		internal ThreadManager (DebuggerServant backend)
+		internal ThreadManager (Debugger debugger)
 		{
-			this.backend = backend;
+			this.debugger = debugger;
 
 			thread_hash = Hashtable.Synchronized (new Hashtable ());
 			engine_hash = Hashtable.Synchronized (new Hashtable ());
@@ -56,7 +56,7 @@ namespace Mono.Debugger.Backend
 			ready_event.WaitOne ();
 		}
 
-		DebuggerServant backend;
+		Debugger debugger;
 		DebuggerEventQueue event_queue;
 		ST.Thread inferior_thread;
 		ST.Thread wait_thread;
@@ -216,8 +216,8 @@ namespace Mono.Debugger.Backend
 			return true;
 		}
 
-		public DebuggerServant Debugger {
-			get { return backend; }
+		public Debugger Debugger {
+			get { return debugger; }
 		}
 
 		public AddressDomain AddressDomain {

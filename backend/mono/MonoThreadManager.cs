@@ -256,7 +256,7 @@ namespace Mono.Debugger.Backend.Mono
 			if ((flags & (ThreadFlags.Internal | ThreadFlags.ThreadPool)) != ThreadFlags.Internal) {
 				engine.Thread.ThreadFlags &= ~(Thread.Flags.Daemon | Thread.Flags.Immutable);
 				if (engine != process.MainThread)
-					process.Debugger.Client.OnManagedThreadCreatedEvent (engine.Thread);
+					process.Debugger.OnManagedThreadCreatedEvent (engine.Thread);
 			} else if ((flags & ThreadFlags.ThreadPool) != 0) {
 				engine.Thread.ThreadFlags &= ~Thread.Flags.Immutable;
 			}

@@ -487,7 +487,7 @@ namespace Mono.Debugger
 
 		void IOperationHost.SendResult (SingleSteppingEngine sse, TargetEventArgs args)
 		{
-			sse.Process.Debugger.SendTargetEvent (sse, args);
+			sse.Process.Debugger.OnTargetEvent (sse.Client, args);
 		}
 
 		void IOperationHost.Abort ()

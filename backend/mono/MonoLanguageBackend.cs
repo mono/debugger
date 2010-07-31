@@ -1402,7 +1402,7 @@ namespace Mono.Debugger.Backend.Mono
 					      "Module load: {0} {1}", data, symfile);
 				if (symfile == null)
 					break;
-				engine.Process.Debugger.OnModuleLoaded (symfile.Module);
+				engine.Process.Debugger.OnModuleLoadedEvent (symfile.Module);
 				if ((builtin_types != null) && (symfile != null)) {
 					if (engine.OnModuleLoaded (symfile.Module))
 						return false;
@@ -1418,7 +1418,7 @@ namespace Mono.Debugger.Backend.Mono
 				if (symfile == null)
 					break;
 
-				engine.Process.Debugger.OnModuleUnLoaded (symfile.Module);
+				engine.Process.Debugger.OnModuleUnLoadedEvent (symfile.Module);
 				close_symfile (symfile);
 				break;
 			}
