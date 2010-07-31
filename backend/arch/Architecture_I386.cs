@@ -9,7 +9,7 @@ namespace Mono.Debugger.Architectures
 	// </summary>
 	internal class Architecture_I386 : X86_Architecture
 	{
-		internal Architecture_I386 (ProcessServant process, TargetInfo info)
+		internal Architecture_I386 (Process process, TargetInfo info)
 			: base (process, info)
 		{ }
 

@@ -12,7 +12,7 @@ namespace Mono.Debugger.Backend
 		Hashtable bfd_hash;
 		Bfd main_bfd;
 
-		public DarwinOperatingSystem (ProcessServant process)
+		public DarwinOperatingSystem (Process process)
 			: base (process)
 		{
 			this.bfd_hash = Hashtable.Synchronized (new Hashtable ());

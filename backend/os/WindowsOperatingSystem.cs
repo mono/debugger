@@ -9,7 +9,7 @@ namespace Mono.Debugger.Backend
 	internal class WindowsOperatingSystem : OperatingSystemBackend
 	{
 
-		public WindowsOperatingSystem(ProcessServant process)
+		public WindowsOperatingSystem(Process process)
 			: base (process)
 		{
 		}

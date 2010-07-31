@@ -12,7 +12,7 @@ namespace Mono.Debugger.Architectures
 		protected const int MONO_FAKE_IMT_METHOD = -1;
 		protected const int MONO_FAKE_VTABLE_METHOD = -2;
 
-		internal Architecture_X86_64 (ProcessServant process, TargetInfo info)
+		internal Architecture_X86_64 (Process process, TargetInfo info)
 			: base (process, info)
 		{ }
 

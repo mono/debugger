@@ -105,12 +105,14 @@ namespace Mono.Debugger.Backend
 		SingleSteppingEngine current_event = null;
 		int current_event_status = 0;
 
-		public ProcessServant OpenCoreFile (ProcessStart start, out Thread[] threads)
+#if DISABLED
+		public Process OpenCoreFile (ProcessStart start, out Thread[] threads)
 		{
 			CoreFile core = CoreFile.OpenCoreFile (this, start);
 			threads = core.GetThreads ();
 			return core;
 		}
+#endif
 
 		internal void AddEngine (SingleSteppingEngine engine)
 		{
@@ -118,7 +120,7 @@ namespace Mono.Debugger.Backend
 			engine_hash.Add (engine.ID, engine);
 		}
 
-		internal void RemoveProcess (ProcessServant process)
+		internal void RemoveProcess (Process process)
 		{
 			processes.Remove (process);
 		}
@@ -252,7 +254,7 @@ namespace Mono.Debugger.Backend
 				return command.Result;
 		}
 
-		public ProcessServant StartApplication (ProcessStart start, out CommandResult result)
+		public Process StartApplication (ProcessStart start, out CommandResult result)
 		{
 			Command command = new Command (CommandType.CreateProcess, start);
 
@@ -272,7 +274,7 @@ namespace Mono.Debugger.Backend
 			if (command.Result is Exception)
 				throw (Exception) command.Result;
 			else {
-				var pair = (KeyValuePair<CommandResult,ProcessServant>) command.Result;
+				var pair = (KeyValuePair<CommandResult,Process>) command.Result;
 				result = pair.Key;
 				return pair.Value;
 			}
@@ -368,14 +370,14 @@ namespace Mono.Debugger.Backend
 			} else if (command.Type == CommandType.CreateProcess) {
 				try {
 					ProcessStart start = (ProcessStart) command.Data1;
-					ProcessServant process = new ProcessServant (this, start);
+					Process process = new Process (this, start);
 					processes.Add (process);
 
 					CommandResult result = process.StartApplication ();
 
 					RequestWait ();
 
-					command.Result = new KeyValuePair<CommandResult,ProcessServant> (result, process);
+					command.Result = new KeyValuePair<CommandResult,Process> (result, process);
 				} catch (ST.ThreadAbortException) {
 					return;
 				} catch (Exception ex) {
@@ -541,7 +543,7 @@ namespace Mono.Debugger.Backend
 
 				ArrayList check_threads = new ArrayList();
 				bool got_threads = true;
-				foreach(ProcessServant process in processes)
+				foreach(Process process in processes)
 					got_threads = got_threads && process.CheckForThreads(check_threads);
 
 				if(got_threads) {
@@ -552,7 +554,7 @@ namespace Mono.Debugger.Backend
 							SingleSteppingEngine old_engine = (SingleSteppingEngine) thread_hash [lwp];					
 							thread_hash.Remove (old_engine.PID);
 							engine_hash.Remove (old_engine.ID);
-							old_engine.ProcessServant.OnThreadExitedEvent (old_engine);
+							old_engine.Process.OnThreadExitedEvent (old_engine);
 							old_engine.Dispose ();
 						}
 					}
@@ -713,7 +715,7 @@ namespace Mono.Debugger.Backend
 				wait_thread.Abort ();
 				wait_thread.Join ();
 
-				ProcessServant[] procs = new ProcessServant [processes.Count];
+				Process[] procs = new Process [processes.Count];
 				processes.CopyTo (procs, 0);
 
 				for (int i = 0; i < procs.Length; i++)

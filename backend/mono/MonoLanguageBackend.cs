@@ -225,12 +225,12 @@ namespace Mono.Debugger.Backend.Mono
 
 		MetadataHelper runtime;
 
-		ProcessServant process;
+		Process process;
 		MonoDebuggerInfo info;
 		TargetAddress[] trampolines;
 		bool initialized;
 
-		public MonoLanguageBackend (ProcessServant process, MonoDebuggerInfo info)
+		public MonoLanguageBackend (Process process, MonoDebuggerInfo info)
 		{
 			this.process = process;
 			this.info = info;
@@ -257,7 +257,7 @@ namespace Mono.Debugger.Backend.Mono
 			get { return builtin_types; }
 		}
 
-		internal override ProcessServant Process {
+		internal override Process Process {
 			get { return process; }
 		}
 

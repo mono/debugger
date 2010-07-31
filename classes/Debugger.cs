@@ -26,7 +26,7 @@ namespace Mono.Debugger
 		DebuggerConfiguration config;
 		ThreadManager thread_manager;
 		Hashtable process_hash;
-		ProcessServant main_process;
+		Process main_process;
 		MyOperationHost operation_host;
 		bool alive;
 
@@ -74,35 +74,30 @@ namespace Mono.Debugger
 		public event ThreadEventHandler EnterNestedBreakStateEvent;
 		public event ThreadEventHandler LeaveNestedBreakStateEvent;
 
-		internal Process CreateProcess (ProcessServant servant)
-		{
-			return new Process (this, servant);
-		}
-
 		internal Thread CreateThread (ThreadServant servant, int id)
 		{
 			return new Thread (servant, id);
 		}
 
-		internal void OnMainProcessCreatedEvent (ProcessServant process)
+		internal void OnMainProcessCreatedEvent (Process process)
 		{
 			process_hash.Add (process, process);
 			if (MainProcessCreatedEvent != null)
-				MainProcessCreatedEvent (this, process.Client);
+				MainProcessCreatedEvent (this, process);
 		}
 
-		internal void OnProcessCreatedEvent (ProcessServant process)
+		internal void OnProcessCreatedEvent (Process process)
 		{
 			process_hash.Add (process, process);
 			if (ProcessCreatedEvent != null)
-				ProcessCreatedEvent (this, process.Client);
+				ProcessCreatedEvent (this, process);
 		}
 
-		internal void OnProcessExitedEvent (ProcessServant process)
+		internal void OnProcessExitedEvent (Process process)
 		{
 			process_hash.Remove (process);
 			if (ProcessExitedEvent != null)
-				ProcessExitedEvent (this, process.Client);
+				ProcessExitedEvent (this, process);
 
 			if (process_hash.Count == 0)
 				OnTargetExitedEvent ();
@@ -195,13 +190,13 @@ namespace Mono.Debugger
 
 			main_process = null;
 
-			ProcessServant[] procs;
+			Process[] procs;
 			lock (process_hash.SyncRoot) {
-				procs = new ProcessServant [process_hash.Count];
+				procs = new Process [process_hash.Count];
 				process_hash.Values.CopyTo (procs, 0);
 			}
 
-			foreach (ProcessServant proc in procs) {
+			foreach (Process proc in procs) {
 				proc.Kill ();
 			}
 
@@ -215,13 +210,13 @@ namespace Mono.Debugger
 			else if (!main_process.CanDetach)
 				throw new TargetException (TargetError.CannotDetach);
 
-			ProcessServant[] procs;
+			Process[] procs;
 			lock (process_hash.SyncRoot) {
-				procs = new ProcessServant [process_hash.Count];
+				procs = new Process [process_hash.Count];
 				process_hash.Values.CopyTo (procs, 0);
 			}
 
-			foreach (ProcessServant proc in procs) {
+			foreach (Process proc in procs) {
 				proc.Detach ();
 			}
 		}
@@ -241,7 +236,7 @@ namespace Mono.Debugger
 
 			ProcessStart start = new ProcessStart (session);
 			main_process = thread_manager.StartApplication (start, out result);
-			return main_process.Client;
+			return main_process;
 		}
 
 		public Process Attach (DebuggerSession session, int pid)
@@ -259,9 +254,10 @@ namespace Mono.Debugger
 
 			ProcessStart start = new ProcessStart (session, pid);
 			main_process = thread_manager.StartApplication (start, out result);
-			return main_process.Client;
+			return main_process;
 		}
 
+#if DISABLED
 		public Process OpenCoreFile (DebuggerSession session, string core_file,
 					     out Thread[] threads)
 		{
@@ -274,8 +270,9 @@ namespace Mono.Debugger
 
 			main_process = thread_manager.OpenCoreFile (start, out threads);
 			process_hash.Add (main_process, main_process);
-			return main_process.Client;
+			return main_process;
 		}
+#endif
 
 		public bool HasTarget {
 			get { return alive; }
@@ -287,10 +284,10 @@ namespace Mono.Debugger
 				lock (process_hash.SyncRoot) {
 					int count = process_hash.Count;
 					Process[] procs = new Process [count];
-					ProcessServant[] servants = new ProcessServant [count];
+					Process[] servants = new Process [count];
 					process_hash.Values.CopyTo (servants, 0);
 					for (int i = 0; i < count; i++)
-						procs [i] = servants [i].Client;
+						procs [i] = servants [i];
 					return procs;
 				}
 			}
@@ -334,7 +331,7 @@ namespace Mono.Debugger
 				current_operation = new GlobalCommandResult (this, model);
 			}
 
-			foreach (ProcessServant process in process_hash.Values) {
+			foreach (Process process in process_hash.Values) {
 				process.StartGlobalOperation (model, caller, current_operation);
 			}
 
@@ -346,7 +343,7 @@ namespace Mono.Debugger
 			if (!ThreadManager.InBackgroundThread)
 				throw new InternalError ();
 
-			foreach (ProcessServant process in process_hash.Values) {
+			foreach (Process process in process_hash.Values) {
 				process.OperationCompleted (caller, result, model);
 			}
 
@@ -358,12 +355,12 @@ namespace Mono.Debugger
 
 		void StopAll ()
 		{
-			foreach (ProcessServant process in process_hash.Values) {
+			foreach (Process process in process_hash.Values) {
 				process.Stop ();
 			}
 		}
 
-		protected class MyOperationHost : IOperationHost
+		class MyOperationHost : IOperationHost
 		{
 			public Debugger Debugger;
 
@@ -392,7 +389,7 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected class GlobalCommandResult : OperationCommandResult
+		class GlobalCommandResult : OperationCommandResult
 		{
 			public Debugger Debugger {
 				get; private set;
@@ -445,7 +442,7 @@ namespace Mono.Debugger
 				throw new ObjectDisposedException ("DebuggerServant");
 		}
 
-		protected void Dispose (bool disposing)
+		void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
 			lock (this) {

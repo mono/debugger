@@ -5,9 +5,9 @@ namespace Mono.Debugger.Backend
 {
 	internal abstract class OperatingSystemBackend : DebuggerMarshalByRefObject, IDisposable
 	{
-		public readonly ProcessServant Process;
+		public readonly Process Process;
 
-		protected OperatingSystemBackend (ProcessServant process)
+		protected OperatingSystemBackend (Process process)
 		{
 			this.Process = process;
 		}

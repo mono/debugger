@@ -9,7 +9,7 @@ namespace Mono.Debugger.Languages.Native
 {
 	internal class NativeLanguage : Language
 	{
-		ProcessServant process;
+		Process process;
 		OperatingSystemBackend os;
 		TargetFundamentalType unsigned_type;
 		TargetFundamentalType integer_type;
@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Native
 
 		Hashtable type_hash;
 
-		public NativeLanguage (ProcessServant process, OperatingSystemBackend os, TargetInfo info)
+		public NativeLanguage (Process process, OperatingSystemBackend os, TargetInfo info)
 		{
 			this.process = process;
 			this.os = os;
@@ -51,7 +51,7 @@ namespace Mono.Debugger.Languages.Native
 			get { return false; }
 		}
 
-		internal override ProcessServant Process {
+		internal override Process Process {
 			get { return process; }
 		}
 

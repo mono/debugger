@@ -64,10 +64,10 @@ namespace Mono.Debugger.Backend.Mono
 
 	internal class MonoThreadManager
 	{
-		ProcessServant process;
+		Process process;
 		MonoDebuggerInfo debugger_info;
 
-		protected MonoThreadManager (ProcessServant process, Inferior inferior,
+		protected MonoThreadManager (Process process, Inferior inferior,
 					     MonoDebuggerInfo debugger_info)
 		{
 			this.process = process;
@@ -79,7 +79,7 @@ namespace Mono.Debugger.Backend.Mono
 			notification_bpt.Insert (inferior);
 		}
 
-		public static MonoThreadManager Initialize (ProcessServant process, Inferior inferior,
+		public static MonoThreadManager Initialize (Process process, Inferior inferior,
 							    TargetAddress info, bool attach)
 		{
 			MonoDebuggerInfo debugger_info = MonoDebuggerInfo.Create (inferior, info);
@@ -255,7 +255,7 @@ namespace Mono.Debugger.Backend.Mono
 		{
 			if ((flags & (ThreadFlags.Internal | ThreadFlags.ThreadPool)) != ThreadFlags.Internal) {
 				engine.Thread.ThreadFlags &= ~(Thread.Flags.Daemon | Thread.Flags.Immutable);
-				if (engine != process.MainThread)
+				if (engine != process.MainThreadServant)
 					process.Debugger.OnManagedThreadCreatedEvent (engine.Thread);
 			} else if ((flags & ThreadFlags.ThreadPool) != 0) {
 				engine.Thread.ThreadFlags &= ~Thread.Flags.Immutable;
@@ -323,13 +323,13 @@ namespace Mono.Debugger.Backend.Mono
 				case NotificationType.AcquireGlobalThreadLock:
 					Report.Debug (DebugFlags.Threads,
 						      "{0} received notification {1}", engine, type);
-					engine.ProcessServant.AcquireGlobalThreadLock (engine);
+					engine.Process.AcquireGlobalThreadLock (engine);
 					break;
 
 				case NotificationType.ReleaseGlobalThreadLock:
 					Report.Debug (DebugFlags.Threads,
 						      "{0} received notification {1}", engine, type);
-					engine.ProcessServant.ReleaseGlobalThreadLock (engine);
+					engine.Process.ReleaseGlobalThreadLock (engine);
 					break;
 
 				case NotificationType.ThreadCreated: {
@@ -370,7 +370,7 @@ namespace Mono.Debugger.Backend.Mono
 						      "{0} created gc thread: {1:x} {2}",
 						      engine, tid, data);
 
-					engine = engine.ProcessServant.GetEngineByTID (inferior, tid);
+					engine = engine.Process.GetEngineByTID (inferior, tid);
 					if (engine == null)
 						throw new InternalError ();
 
@@ -393,7 +393,7 @@ namespace Mono.Debugger.Backend.Mono
 				case NotificationType.InitializeThreadManager:
 					csharp_language = inferior.Process.CreateMonoLanguage (
 						debugger_info);
-					if (engine.ProcessServant.IsAttached)
+					if (engine.Process.IsAttached)
 						csharp_language.InitializeAttach (inferior);
 					else
 						csharp_language.Initialize (inferior);
@@ -403,7 +403,7 @@ namespace Mono.Debugger.Backend.Mono
 				case NotificationType.ReachedMain: {
 					Inferior.StackFrame iframe = inferior.GetCurrentFrame (false);
 					engine.SetMainReturnAddress (iframe.StackPointer);
-					engine.ProcessServant.OnProcessReachedMainEvent ();
+					engine.Process.OnProcessReachedMainEvent ();
 					resume_target = !engine.InitializeBreakpoints ();
 					return true;
 				}

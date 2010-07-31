@@ -7,11 +7,11 @@ namespace Mono.Debugger.Architectures
 {
 	internal abstract class X86_Opcodes : Opcodes
 	{
-		ProcessServant process;
+		Process process;
 		TargetMemoryInfo target_info;
 		Disassembler disassembler;
 
-		protected X86_Opcodes (ProcessServant process)
+		protected X86_Opcodes (Process process)
 		{
 			this.process = process;
 
@@ -32,7 +32,7 @@ namespace Mono.Debugger.Architectures
 			get { return disassembler; }
 		}
 
-		internal ProcessServant Process {
+		internal Process Process {
 			get { return process; }
 		}
 

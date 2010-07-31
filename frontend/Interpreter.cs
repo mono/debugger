@@ -320,6 +320,7 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
+#if DISABLED
 		public Process OpenCoreFile (string core_file)
 		{
 			if ((debugger != null) || (main_process != null))
@@ -345,6 +346,7 @@ namespace Mono.Debugger.Frontend
 				throw;
 			}
 		}
+#endif
 
 		public void SaveSession (Stream stream)
 		{

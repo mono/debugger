@@ -13,7 +13,7 @@ namespace Mono.Debugger.Backend
 	internal class BfdDisassembler : Disassembler, IDisposable
 	{
 		IntPtr handle;
-		ProcessServant process;
+		Process process;
 
 		[DllImport("monodebuggerserver")]
 		extern static int bfd_glue_disassemble_insn (IntPtr handle, long address);
@@ -28,7 +28,7 @@ namespace Mono.Debugger.Backend
 		OutputHandler output_handler;
 		PrintAddressHandler print_handler;
 
-		internal BfdDisassembler (ProcessServant process, bool is_x86_64)
+		internal BfdDisassembler (Process process, bool is_x86_64)
 		{
 			this.process = process;
 

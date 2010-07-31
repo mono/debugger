@@ -80,14 +80,14 @@ namespace Mono.Debugger.Backend
 		internal delegate bool TrampolineHandler (Method method);
 		internal delegate bool CheckBreakpointHandler ();
 
-		protected SingleSteppingEngine (ThreadManager manager, ProcessServant process)
+		protected SingleSteppingEngine (ThreadManager manager, Process process)
 			: base (manager, process)
 		{
 			Report.Debug (DebugFlags.Threads, "New SSE ({0}): {1}",
 				      DebuggerWaitHandle.CurrentThread, this);
 		}
 
-		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
+		public SingleSteppingEngine (ThreadManager manager, Process process,
 					     ProcessStart start)
 			: this (manager, process)
 		{
@@ -103,7 +103,7 @@ namespace Mono.Debugger.Backend
 			manager.AddEngine (this);
 		}
 
-		public SingleSteppingEngine (ThreadManager manager, ProcessServant process,
+		public SingleSteppingEngine (ThreadManager manager, Process process,
 					     Inferior inferior, int pid)
 			: this (manager, process)
 		{
@@ -224,7 +224,7 @@ namespace Mono.Debugger.Backend
 				}
 			}
 
-			if (ProcessServant.IsAttached && !attach_initialized) {
+			if (Process.IsAttached && !attach_initialized) {
 				attach_initialized = true;
 
 				if (cevent.Type == Inferior.ChildEventType.CHILD_INTERRUPTED)
@@ -903,10 +903,6 @@ namespace Mono.Debugger.Backend
 			get { return operation_completed_event; }
 		}
 
-		internal override ProcessServant ProcessServant {
-			get { return process; }
-		}
-
 		internal override ThreadManager ThreadManager {
 			get { return manager; }
 		}
@@ -1181,7 +1177,7 @@ namespace Mono.Debugger.Backend
 			Report.Debug (DebugFlags.SSE, "{0} throwing exception: {1}", this, exc_obj.Type.Name);
 
 			ExceptionAction action;
-			if (process.Client.GenericExceptionCatchPoint (exc_obj.Type.Name, out action)) {
+			if (process.GenericExceptionCatchPoint (exc_obj.Type.Name, out action)) {
 				Report.Debug (DebugFlags.SSE,
 					      "{0} generic exception catchpoint: {1}", this, action);
 				return action;
@@ -2963,10 +2959,10 @@ namespace Mono.Debugger.Backend
 		protected override void DoExecute ()
 		{
 			Report.Debug (DebugFlags.SSE,
-				      "{0} execute start: {1} {2} {3}", sse, sse.ProcessServant.IsAttached,
+				      "{0} execute start: {1} {2} {3}", sse, sse.Process.IsAttached,
 				      inferior.CurrentFrame, inferior.EntryPoint);
 
-			if (!sse.ProcessServant.IsAttached && Inferior.HasThreadEvents)
+			if (!sse.Process.IsAttached && Inferior.HasThreadEvents)
 				sse.do_continue (inferior.EntryPoint);
 			else
 				sse.ProcessEvent (new Inferior.ChildEvent (Inferior.ChildEventType.CHILD_STOPPED, 0, 0, 0));
@@ -2977,7 +2973,7 @@ namespace Mono.Debugger.Backend
 		{
 			Report.Debug (DebugFlags.SSE,
 				      "{0} start: {1} {2} {3} {4}", sse,
-				      cevent, sse.ProcessServant.IsAttached,
+				      cevent, sse.Process.IsAttached,
 				      inferior.CurrentFrame, inferior.EntryPoint);
 
 			args = null;
@@ -2993,13 +2989,13 @@ namespace Mono.Debugger.Backend
 				return EventResult.Running;
 			}
 
-			sse.ProcessServant.OperatingSystem.UpdateSharedLibraries (inferior);
-			sse.ProcessServant.InitializeThreads (inferior, !sse.ProcessServant.IsAttached);
+			sse.Process.OperatingSystem.UpdateSharedLibraries (inferior);
+			sse.Process.InitializeThreads (inferior, !sse.Process.IsAttached);
 
-			if (sse.ProcessServant.IsAttached)
+			if (sse.Process.IsAttached)
 				return EventResult.Completed;
 
-			if (!sse.ProcessServant.IsManaged) {
+			if (!sse.Process.IsManaged) {
 				if (sse.InitializeBreakpoints ())
 					return EventResult.Running;
 			}
@@ -3103,7 +3099,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			MonoDebuggerInfo info = sse.Process.MonoManager.MonoDebuggerInfo;
 
 			MonoFunctionType func = (MonoFunctionType) Handle.Function;
 			TargetAddress image = func.SymbolFile.MonoImage;
@@ -3146,7 +3142,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			MonoDebuggerInfo info = sse.Process.MonoManager.MonoDebuggerInfo;
 
 			Report.Debug (DebugFlags.SSE,
 				      "{0} remove breakpoint: {1} {2}", sse, Handle, Handle.Index);
@@ -3185,7 +3181,7 @@ namespace Mono.Debugger.Backend
 				      "{0} init after fork ({1})", sse,
 				      DebuggerWaitHandle.CurrentThread);
 
-			sse.ProcessServant.BreakpointManager.InitializeAfterFork (inferior);
+			sse.Process.BreakpointManager.InitializeAfterFork (inferior);
 
 			args = null;
 			return EventResult.AskParent;
@@ -3204,7 +3200,7 @@ namespace Mono.Debugger.Backend
 
 		protected override void DoExecute ()
 		{
-			MonoDebuggerInfo info = sse.ProcessServant.MonoManager.MonoDebuggerInfo;
+			MonoDebuggerInfo info = sse.Process.MonoManager.MonoDebuggerInfo;
 			inferior.CallMethod (info.InitCodeBuffer, 0, 0, ID);
 		}
 
@@ -3349,7 +3345,7 @@ namespace Mono.Debugger.Backend
 				      "{0} executing instruction: {1}", sse,
 				      TargetBinaryReader.HexDump (Instruction));
 
-			if (!sse.ProcessServant.MonoManager.HasCodeBuffer) {
+			if (!sse.Process.MonoManager.HasCodeBuffer) {
 				sse.PushOperation (new OperationInitCodeBuffer (sse));
 				pushed_code_buffer = true;
 				return;
@@ -4788,7 +4784,7 @@ namespace Mono.Debugger.Backend
 		protected override void DoExecute ()
 		{
 			try {
-				exc_object = sse.ProcessServant.MonoLanguage.CreateObject (inferior, exc);
+				exc_object = sse.Process.MonoLanguage.CreateObject (inferior, exc);
 			} catch {
 				exc_object = null;
 			}

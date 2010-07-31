@@ -83,7 +83,9 @@ namespace Mono.Debugger.Frontend
 			RegisterAlias   ("r", typeof (RunCommand));
 			RegisterCommand ("start", typeof (StartCommand));
 			RegisterCommand ("attach", typeof (AttachCommand));
+#if DISABLED
 			RegisterCommand ("core", typeof (OpenCoreFileCommand));
+#endif
 			RegisterCommand ("about", typeof (AboutCommand));
 			RegisterCommand ("lookup", typeof (LookupCommand));
 			RegisterCommand ("return", typeof (ReturnCommand));
@@ -1707,6 +1709,7 @@ namespace Mono.Debugger.Frontend
 		public string Documentation { get { return ""; } }
 	}
 
+#if DISABLED
 	public class OpenCoreFileCommand : DebuggerCommand, IDocumentableCommand
 	{
 		protected override bool DoResolve (ScriptingContext context)
@@ -1741,6 +1744,7 @@ namespace Mono.Debugger.Frontend
 		public string Description { get { return "Start debugged program."; } }
 		public string Documentation { get { return ""; } }
 	}
+#endif
 
 	public class KillCommand : ProcessCommand, IDocumentableCommand
 	{

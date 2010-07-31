@@ -182,7 +182,7 @@ namespace Mono.Debugger.Backend.Mono
 		internal readonly TargetMemoryInfo TargetMemoryInfo;
 		internal readonly MonoLanguageBackend MonoLanguage;
 		internal readonly Architecture Architecture;
-		protected readonly ProcessServant process;
+		protected readonly Process process;
 		MonoSymbolTable symtab;
 		Module module;
 		string name;
@@ -196,7 +196,7 @@ namespace Mono.Debugger.Backend.Mono
 		Dictionary<C.SourceFileEntry,SourceFile> source_file_hash;
 		Hashtable method_index_hash;
 
-		internal MonoSymbolFile (MonoLanguageBackend language, ProcessServant process,
+		internal MonoSymbolFile (MonoLanguageBackend language, Process process,
 					 TargetMemoryAccess memory, TargetAddress address)
 		{
 			this.MonoLanguage = language;

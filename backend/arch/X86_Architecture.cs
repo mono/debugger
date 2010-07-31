@@ -45,7 +45,7 @@ namespace Mono.Debugger.Architectures
 
 	internal abstract class X86_Architecture : Architecture
 	{
-		protected X86_Architecture (ProcessServant process, TargetInfo info)
+		protected X86_Architecture (Process process, TargetInfo info)
 			: base (process, info)
 		{ }
 

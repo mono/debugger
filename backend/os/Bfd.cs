@@ -463,12 +463,12 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public ProcessServant Process {
+		public Process Process {
 			get { return os.Process; }
 		}
 
 		public NativeLanguage NativeLanguage {
-			get { return os.Process.NativeLanguage; }
+			get { return (NativeLanguage) os.Process.NativeLanguage; }
 		}
 
 		internal DwarfReader DwarfReader {

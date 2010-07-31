@@ -32,14 +32,14 @@ namespace Mono.Debugger
 				return handle;
 
 			if (frame.Thread.Process.IsManaged) {
-				MonoLanguageBackend mono = frame.Thread.Process.Servant.MonoLanguage;
+				MonoLanguageBackend mono = frame.Thread.Process.MonoLanguage;
 				MonoFunctionType main = mono.MainMethod;
 				if (main == null)
 					return null;
 
 				handle = main.GetBreakpointHandle (this, -1, -1);
 			} else {
-				OperatingSystemBackend os = frame.Thread.Process.Servant.OperatingSystem;
+				OperatingSystemBackend os = frame.Thread.Process.OperatingSystem;
 				TargetAddress main = os.LookupSymbol ("main");
 				if (main.IsNull)
 					return null;

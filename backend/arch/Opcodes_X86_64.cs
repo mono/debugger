@@ -5,7 +5,7 @@ namespace Mono.Debugger.Architectures
 {
 	internal class Opcodes_X86_64 : X86_Opcodes
 	{
-		internal Opcodes_X86_64 (ProcessServant process)
+		internal Opcodes_X86_64 (Process process)
 			: base (process)
 		{ }
 

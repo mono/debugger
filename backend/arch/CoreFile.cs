@@ -1,3 +1,4 @@
+#if DISABLED
 using System;
 using System.IO;
 using System.Collections;
@@ -10,7 +11,7 @@ using Mono.Debugger.Backend.Mono;
 
 namespace Mono.Debugger.Backend
 {
-	internal class CoreFile : ProcessServant
+	internal class CoreFile : Process
 	{
 		TargetMemoryInfo info;
 		Bfd bfd, core_bfd;
@@ -266,7 +267,7 @@ namespace Mono.Debugger.Backend
 				get { return CoreFile.ThreadManager; }
 			}
 
-			internal override ProcessServant ProcessServant {
+			internal override Process Process {
 				get { return CoreFile; }
 			}
 
@@ -723,3 +724,4 @@ namespace Mono.Debugger.Backend
 		}
 	}
 }
+#endif

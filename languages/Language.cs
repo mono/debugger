@@ -13,7 +13,7 @@ namespace Mono.Debugger.Languages
 			get;
 		}
 
-		internal abstract ProcessServant Process {
+		internal abstract Process Process {
 			get;
 		}
 

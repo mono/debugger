@@ -6,7 +6,7 @@ namespace Mono.Debugger.Backend
 	internal class ThreadDB : DebuggerMarshalByRefObject
 	{
 		IntPtr handle;
-		ProcessServant process;
+		Process process;
 		TargetMemoryAccess target;
 		DebuggerMutex mutex;
 
@@ -43,7 +43,7 @@ namespace Mono.Debugger.Backend
 		ReadMemoryFunc read_memory_func;
 		WriteMemoryFunc write_memory_func;
 
-		protected ThreadDB (ProcessServant process)
+		protected ThreadDB (Process process)
 		{
 			this.process = process;
 
@@ -71,7 +71,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public static ThreadDB Create (ProcessServant process, Inferior target)
+		public static ThreadDB Create (Process process, Inferior target)
 		{
 			ThreadDB db = new ThreadDB (process);
 			if (!db.Initialize (target))

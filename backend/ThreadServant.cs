@@ -17,7 +17,7 @@ namespace Mono.Debugger.Backend
 {
 	internal abstract class ThreadServant : DebuggerMarshalByRefObject
 	{
-		protected ThreadServant (ThreadManager manager, ProcessServant process)
+		protected ThreadServant (ThreadManager manager, Process process)
 		{
 			this.manager = manager;
 			this.process = process;
@@ -32,7 +32,7 @@ namespace Mono.Debugger.Backend
 
 		protected readonly int id;
 		protected readonly Thread thread;
-		protected readonly ProcessServant process;
+		protected readonly Process process;
 		protected readonly ThreadManager manager;
 		protected readonly ThreadGroup tgroup;
 
@@ -78,11 +78,7 @@ namespace Mono.Debugger.Backend
 			get;
 		}
 
-		internal abstract ProcessServant ProcessServant {
-			get;
-		}
-
-		internal ProcessServant Process {
+		internal Process Process {
 			get { return process; }
 		}
 

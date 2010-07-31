@@ -45,7 +45,7 @@ namespace Mono.Debugger
 			get { return servant.WaitHandle; }
 		}
 
-		protected internal Language NativeLanguage {
+		internal Language NativeLanguage {
 			get {
 				check_servant ();
 				return servant.NativeLanguage;
@@ -137,17 +137,10 @@ namespace Mono.Debugger
 			}
 		}
 
-		internal ProcessServant ProcessServant {
-			get {
-				check_servant ();
-				return servant.ProcessServant;
-			}
-		}
-
 		public Process Process {
 			get {
 				check_servant ();
-				return ProcessServant.Client;
+				return servant.Process;
 			}
 		}
 
@@ -304,12 +297,12 @@ namespace Mono.Debugger
 			}
 		}
 
-		protected ThreadCommandResult Old_Step (StepMode mode)
+		ThreadCommandResult Old_Step (StepMode mode)
 		{
 			return Old_Step (mode, null);
 		}
 
-		protected ThreadCommandResult Old_Step (StepMode mode, StepFrame frame)
+		ThreadCommandResult Old_Step (StepMode mode, StepFrame frame)
 		{
 			lock (this) {
 				check_alive ();
@@ -785,13 +778,13 @@ namespace Mono.Debugger
 #region IDisposable implementation
 		private bool disposed = false;
 
-		protected void check_disposed ()
+		void check_disposed ()
 		{
 			if (disposed)
 				throw new ObjectDisposedException ("Thread");
 		}
 
-		protected void Dispose (bool disposing)
+		void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
 			if (disposed)

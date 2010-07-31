@@ -25,7 +25,7 @@ namespace Mono.Debugger.Backend
 
 		protected readonly ProcessStart start;
 
-		protected readonly ProcessServant process;
+		protected readonly Process process;
 		protected readonly DebuggerErrorHandler error_handler;
 		protected readonly BreakpointManager breakpoint_manager;
 		protected readonly AddressDomain address_domain;
@@ -309,7 +309,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		protected Inferior (ThreadManager thread_manager, ProcessServant process,
+		protected Inferior (ThreadManager thread_manager, Process process,
 				    ProcessStart start, BreakpointManager bpm,
 				    DebuggerErrorHandler error_handler,
 				    AddressDomain address_domain)
@@ -328,7 +328,7 @@ namespace Mono.Debugger.Backend
 		}
 
 		public static Inferior CreateInferior (ThreadManager thread_manager,
-						       ProcessServant process, ProcessStart start)
+						       Process process, ProcessStart start)
 		{
 			return new Inferior (
 				thread_manager, process, start, process.BreakpointManager, null,
@@ -620,7 +620,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public ProcessServant Process {
+		public Process Process {
 			get {
 				return process;
 			}
@@ -1722,7 +1722,7 @@ namespace Mono.Debugger.Backend
 			}
 		}
 
-		public static OperatingSystemBackend CreateOperatingSystemBackend (ProcessServant process)
+		public static OperatingSystemBackend CreateOperatingSystemBackend (Process process)
 		{
 			ServerType type = mono_debugger_server_get_server_type ();
 			switch (type) {

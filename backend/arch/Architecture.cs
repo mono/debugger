@@ -9,13 +9,13 @@ namespace Mono.Debugger.Backend
 	// </summary>
 	internal abstract class Architecture : DebuggerMarshalByRefObject, IDisposable
 	{
-		protected readonly ProcessServant process;
+		protected readonly Process process;
 		protected readonly TargetInfo TargetInfo;
 
 		Disassembler disassembler;
 		X86_Opcodes opcodes;
 
-		protected Architecture (ProcessServant process, TargetInfo info)
+		protected Architecture (Process process, TargetInfo info)
 		{
 			this.process = process;
 			this.TargetInfo = info;
