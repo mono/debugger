@@ -15,8 +15,6 @@ using Mono.Debugger;
 using Mono.Debugger.Languages;
 using EE=Mono.Debugger.ExpressionEvaluator;
 
-using Mono.GetOptions;
-
 namespace Mono.Debugger.Frontend
 {
 	public class Interpreter : DebuggerMarshalByRefObject, IInterruptionHandler, IDisposable

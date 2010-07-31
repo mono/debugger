@@ -95,7 +95,6 @@ TEST_FRAMEWORK_SRCLIST = \
 	AssemblyInfo.cs
 
 TEST_FRAMEWORK_DEPS = \
-	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll				\
 	-r:./Mono.Debugger.Frontend.dll			\
 	-r:System.Runtime.Remoting			\
@@ -115,25 +114,20 @@ TEST_CASE_EXELIST = \
 	$(top_builddir)/test/src/*.dll
 
 SYMBOL_WRITER_DEPS = \
-	-r:Mono.GetOptions				\
 	-r:./Mono.Cecil.dll
 
 SYMBOL_READER_DEPS = \
-	-r:Mono.GetOptions				\
 	-r:./Mono.Cecil.dll
 
 DEBUGGER_DEPS = \
-	-r:Mono.GetOptions				\
 	-r:Mono.Debugger.SymbolWriter			\
 	-r:System.Runtime.Serialization.Formatters.Soap	\
 	-r:./Mono.Cecil.dll
 
 MDB_DEPS = \
-	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll
 
 TEST_DEPS = \
-	-r:Mono.GetOptions				\
 	-r:./Mono.Debugger.dll				\
 	-r:./Mono.Debugger.Frontend.dll			\
 	-r:./Mono.Debugger.Test.Framework.dll		\

@@ -10,11 +10,6 @@ using System.Runtime.CompilerServices;
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]		
 
-[assembly: Mono.About("Distributed under the GPL")]
-
-[assembly: Mono.Author("Martin Baulig")]
-[assembly: Mono.Author("Miguel de Icaza")]
-
 [assembly: AssemblyVersion("1.0.0.0")]
 
 namespace Mono.Debugger
