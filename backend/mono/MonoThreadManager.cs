@@ -106,6 +106,7 @@ namespace Mono.Debugger.Backend.Mono
 		AddressBreakpoint notification_bpt;
 		IntPtr mono_runtime_info;
 		int debugger_version;
+		int thread_abort_signal;
 
 		internal bool HasCodeBuffer {
 			get;
@@ -149,6 +150,11 @@ namespace Mono.Debugger.Backend.Mono
 				notification_bpt.Remove (inferior);
 				notification_bpt = null;
 			}
+
+			if (debugger_info.HasThreadAbortSignal)
+				thread_abort_signal = inferior.ReadInteger (debugger_info.ThreadAbortSignal);
+			else
+				thread_abort_signal = inferior.MonoThreadAbortSignal;
 		}
 
 		internal void InitCodeBuffer (Inferior inferior, TargetAddress code_buffer)
@@ -465,7 +471,7 @@ namespace Mono.Debugger.Backend.Mono
 			}
 
 			if ((cevent.Type == Inferior.ChildEventType.CHILD_STOPPED) &&
-			    (cevent.Argument == inferior.MonoThreadAbortSignal)) {
+			    (cevent.Argument == thread_abort_signal)) {
 				resume_target = true;
 				return true;
 			}
@@ -539,6 +545,8 @@ namespace Mono.Debugger.Backend.Mono
 
 		public readonly TargetAddress AbortRuntimeInvoke = TargetAddress.Null;
 
+		public readonly TargetAddress ThreadAbortSignal = TargetAddress.Null;
+
 		public static MonoDebuggerInfo Create (TargetMemoryAccess memory, TargetAddress info)
 		{
 			TargetBinaryReader header = memory.ReadMemory (info, 24).GetReader ();
@@ -586,6 +594,10 @@ namespace Mono.Debugger.Backend.Mono
 
 		public bool HasAbortRuntimeInvoke {
 			get { return CheckRuntimeVersion (81, 5); }
+		}
+
+		public bool HasThreadAbortSignal {
+			get { return CheckRuntimeVersion (81, 6); }
 		}
 
 		protected MonoDebuggerInfo (TargetMemoryAccess memory, TargetReader reader)
@@ -646,6 +658,9 @@ namespace Mono.Debugger.Backend.Mono
 
 			if (HasAbortRuntimeInvoke)
 				AbortRuntimeInvoke = reader.ReadAddress ();
+
+			if (HasThreadAbortSignal)
+				ThreadAbortSignal = reader.ReadAddress ();
 
 			Report.Debug (DebugFlags.JitSymtab, this);
 		}

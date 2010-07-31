@@ -785,7 +785,7 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 	 * internally by glibc. */
 	sinfo->kernel_sigrtmin = SIGUSR1;
 #ifdef USING_MONO_FROM_TRUNK
-	sinfo->mono_thread_abort = mono_debugger_get_thread_abort_signal ();
+	sinfo->mono_thread_abort = -1;
 #else
 	sinfo->mono_thread_abort = mono_thread_get_abort_signal ();
 #endif

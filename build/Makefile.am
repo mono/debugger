@@ -6,6 +6,10 @@ two_SCRIPTS = mdb.exe mdb-symbolreader.exe
 
 MCS_FLAGS = -debug -define:DEBUG -define:DEBUGGER_SOURCE -nowarn:0169,0067
 
+if MONO_TRUNK
+MCS_FLAGS += -define:MONO_TRUNK
+endif
+
 if MARTIN_PRIVATE
 # Enable some more stuff for me.
 if ATTACHING_SUPPORTED
