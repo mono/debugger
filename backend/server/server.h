@@ -446,16 +446,6 @@ struct InferiorVTable {
 	guint32               (*get_current_pid) (void);
 
 	guint64               (*get_current_thread) (void);
-	
-	void                  (*sem_init) (void);
-
-	void                  (*sem_wait) (void);
-
-	void                  (*sem_post) (void);
-
-	int                   (*sem_get_value) (void);
-
-	int                   (*get_pending_sigint) (void);
 };
 
 /*
@@ -737,16 +727,6 @@ mono_debugger_server_get_current_pid (void);
 
 guint64
 mono_debugger_server_get_current_thread (void);
-
-
-/* POSIX semaphores */
-
-void mono_debugger_server_sem_init (void);
-void mono_debugger_server_sem_wait (void);
-void mono_debugger_server_sem_post (void);
-int mono_debugger_server_sem_get_value (void);
-
-int mono_debugger_server_get_pending_sigint (void);
 
 G_END_DECLS
 

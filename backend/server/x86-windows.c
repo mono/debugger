@@ -307,12 +307,7 @@ but how and which information should be placed there is not yet clear. To shield
 internal changes accessor function will be used. This accessor functions are yet to be written and 
 one must expect them to change over time */
 static DEBUG_INFO m_debug_info;
-static gboolean initialized = FALSE;
-static HANDLE manager_semaphore;
-static LONG sem_count = 0;
 static GAsyncQueue *bridge;
-
-static int pending_sigint = 0;
 
 
 
@@ -332,7 +327,6 @@ static int get_set_registers (CONTEXT *context,  enum READ_FLAG flag);
 static int single_step_checks (guint32 eip);
 static BOOL decrement_ip (HANDLE debuggee_thread_handle);
 static int resume_from_imports_table (int flag);
-static void emul_sem_post (void);
 static BreakpointInfo* on_breakpoint_exception (DWORD address,int *b_continue);
 
 
@@ -655,8 +649,6 @@ static BOOL do_debug_exception_event (LPDEBUG_EVENT pde, HANDLE debuggee_handle,
     }
 	m_debug_info.debuggee.thread_handle = save_thread_handle;
 	m_debug_info.debuggee.thread_id = save_thread_id;
-	pending_sigint++;
-	emul_sem_post ();
     return (b_continue);
 }
 
@@ -1198,24 +1190,10 @@ static void format_windows_error_message (DWORD error_code)
 	}
 }
 
-static BOOL WINAPI HandlerRoutine (DWORD dwCtrlType)
-{
-	ReleaseSemaphore (manager_semaphore, 1, &sem_count);
-	return TRUE;
-}
-
 static void
 server_win32_static_init (void)
 {
-	if (initialized)
-		return;
-
-	SetConsoleCtrlHandler (HandlerRoutine, TRUE);
-	g_thread_init (NULL);
-
-	initialized = TRUE;
 }
-
 
 static ServerCommandError
 server_win32_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
@@ -2306,74 +2284,6 @@ server_win32_get_current_thread (void)
 	return GetCurrentThreadId ();
 }
 
-static void emul_sem_post (void) {
-
-	LONG l_val;
-	BOOL b_rval;
-
-	SetLastError (0);
-	b_rval = ReleaseSemaphore (manager_semaphore, pending_sigint, &l_val);
-	if (! b_rval) {
-		format_windows_error_message (GetLastError ());
-		g_debug ("%s", windows_error_message);
-	}
-	/* frido test 2009-05-22 */
-	//SetEvent (m_command_events [EVENT_RESUME]);
-}
-
-	
-
-
-static void
-server_win32_sem_init (void)
-{
-	manager_semaphore = CreateSemaphore ( 
-        NULL,           // default security attributes
-        0,  // initial count
-        12,  // maximum count
-        NULL);          // unnamed semaphore
-	if (! manager_semaphore) {
-		format_windows_error_message (GetLastError ());
-		g_debug ("sever_win32_sem_init, error: %s", windows_error_message);
-	}
-}
-
-static void
-server_win32_sem_wait (void)
-{
-	WaitForSingleObject ( manager_semaphore, INFINITE);
-	//	WaitForSingleObject ( manager_semaphore, 45000);	
-}
-
-
-
-static void
-server_win32_sem_post (void)
-{
-	
-	BOOL b_rval;
-	SetLastError (0);
-	b_rval = ReleaseSemaphore (manager_semaphore, 1, &sem_count);
-	if (! b_rval) {
-		format_windows_error_message (GetLastError ());
-		g_debug ("%s, sem_count = %d", windows_error_message,sem_count);
-	}
-}
-
-static int
-server_win32_sem_get_value (void)
-{
-	return sem_count;
-}
-
-static int
-server_win32_get_pending_sigint (void)
-{
-	if (pending_sigint > 0)
-		return pending_sigint--;
-
-	return 0;
-}
 
 static ServerCommandError 
 read_write_memory (ServerHandle *server_handle, guint64 start, guint32 size, gpointer buffer, int read) 
@@ -2528,12 +2438,7 @@ InferiorVTable i386_windows_inferior = {
 	NULL,								/*server_ptrace_restart_notification, */
 	NULL,								/*get_registers_from_core_file, */
 	server_win32_get_current_pid,		/*get_current_pid, */
-	server_win32_get_current_thread,	/*get_current_thread, */
-	server_win32_sem_init,				/*sem_init, */
-	server_win32_sem_wait,				/*sem_wait, */
-	server_win32_sem_post,				/*sem_post, */
-	server_win32_sem_get_value,			/*sem_get_value, */
-	server_win32_get_pending_sigint,	/*get_pending_sigint, */
+	server_win32_get_current_thread		/*get_current_thread, */
 	};
 
 

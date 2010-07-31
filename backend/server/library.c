@@ -522,33 +522,3 @@ mono_debugger_server_static_init (void)
 {
 	(* global_vtable->static_init) ();
 }
-
-int
-mono_debugger_server_get_pending_sigint (void)
-{
-	return (* global_vtable->get_pending_sigint) ();
-}
-
-void
-mono_debugger_server_sem_init (void)
-{
-	(* global_vtable->sem_init) ();
-}
-
-void
-mono_debugger_server_sem_wait (void)
-{
-	(* global_vtable->sem_wait) ();
-}
-
-void
-mono_debugger_server_sem_post (void)
-{
-	(* global_vtable->sem_post) ();
-}
-
-int
-mono_debugger_server_sem_get_value (void)
-{
-	return (* global_vtable->sem_get_value) ();
-}

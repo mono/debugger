@@ -45,7 +45,6 @@ namespace Mono.Debugger.Frontend
 		int line = 0;
 
 		bool is_inferior_main;
-		ST.Thread interrupt_thread;
 		ST.Thread main_thread;
 
 		ST.AutoResetEvent interrupt_event;
@@ -54,17 +53,6 @@ namespace Mono.Debugger.Frontend
 		LineEditor line_editor;
 
 		Stack<CommandLineInterpreter.MainLoop> main_loop_stack;
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_static_init ();
-
-		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_pending_sigint ();
-
-		static CommandLineInterpreter ()
-		{
-			mono_debugger_server_static_init ();
-		}
 
 		internal CommandLineInterpreter (DebuggerOptions options, bool is_interactive)
 		{
@@ -97,6 +85,8 @@ namespace Mono.Debugger.Frontend
 				line_editor.AutoCompleteEvent += delegate (string text, int pos) {
 					return engine.Completer.Complete (text, pos);
 				};
+
+				Console.CancelKeyPress += control_c_event;
 			}
 
 			interrupt_event = new ST.AutoResetEvent (false);
@@ -107,9 +97,6 @@ namespace Mono.Debugger.Frontend
 
 			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
-
-			interrupt_thread = new ST.Thread (new ST.ThreadStart (interrupt_thread_main));
-			interrupt_thread.IsBackground = true;
 		}
 
 		public CommandLineInterpreter (Interpreter interpreter)
@@ -123,14 +110,21 @@ namespace Mono.Debugger.Frontend
 			interrupt_event = new ST.AutoResetEvent (false);
 			nested_break_state_event = new ST.AutoResetEvent (false);
 
+			Console.CancelKeyPress += control_c_event;
+
 			main_loop_stack = new Stack<MainLoop> ();
 			main_loop_stack.Push (new MainLoop (interpreter));
 
 			main_thread = new ST.Thread (new ST.ThreadStart (main_thread_main));
 			main_thread.IsBackground = true;
+		}
 
-			interrupt_thread = new ST.Thread (new ST.ThreadStart (interrupt_thread_main));
-			interrupt_thread.IsBackground = true;
+		void control_c_event (object sender, ConsoleCancelEventArgs a)
+		{
+			a.Cancel = true;
+
+			if (interpreter.Interrupt () > 2)
+				interrupt_event.Set ();
 		}
 
 		public void DoRunMainLoop ()
@@ -242,8 +236,6 @@ namespace Mono.Debugger.Frontend
 		{
 			is_inferior_main = false;
 
-			interrupt_thread.Start ();
-
 			try {
 				if (interpreter.Options.StartTarget)
 					interpreter.Start ();
@@ -264,8 +256,6 @@ namespace Mono.Debugger.Frontend
 		public void RunInferiorMainLoop ()
 		{
 			is_inferior_main = true;
-
-			interrupt_thread.Start ();
 
 			TextReader old_stdin = Console.In;
 			TextWriter old_stdout = Console.Out;
@@ -309,8 +299,6 @@ namespace Mono.Debugger.Frontend
 				interpreter.IsScript = old_is_script;
 				interpreter.IsInteractive = old_is_interactive;
 			}
-
-			interrupt_thread.Abort ();
 		}
 
 		public string ReadInput (bool is_complete)
@@ -343,18 +331,6 @@ namespace Mono.Debugger.Frontend
 				Console.Write ("ERROR: ");
 				Console.WriteLine (message);
 			}
-		}
-
-		void interrupt_thread_main ()
-		{
-			do {
-				Semaphore.Wait ();
-				if (mono_debugger_server_get_pending_sigint () == 0)
-					continue;
-
-				if (interpreter.Interrupt () > 2)
-					interrupt_event.Set ();
-			} while (true);
 		}
 
 		public static void Main (string[] args)

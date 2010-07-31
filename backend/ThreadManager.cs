@@ -83,9 +83,6 @@ namespace Mono.Debugger.Backend
 		static extern int mono_debugger_server_global_wait (out int status);
 
 		[DllImport("monodebuggerserver")]
-		static extern int mono_debugger_server_get_pending_sigint ();
-
-		[DllImport("monodebuggerserver")]
 		static extern Inferior.ChildEventType mono_debugger_server_dispatch_simple (int status, out int arg);
 
 		void start_inferior ()

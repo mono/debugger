@@ -1086,35 +1086,6 @@ server_ptrace_kill (ServerHandle *handle)
 	return COMMAND_ERROR_NONE;
 }
 
-static sem_t *manager_semaphore;
-
-static void
-server_ptrace_sem_init (void)
-{
-	manager_semaphore = sem_open ("mdb", O_CREAT, 0666, 1);
-}
-
-static void
-server_ptrace_sem_wait (void)
-{
-	sem_wait (manager_semaphore);
-}
-
-static void
-server_ptrace_sem_post (void)
-{
-	sem_post (manager_semaphore);
-}
-
-static int
-server_ptrace_sem_get_value (void)
-{
-	int ret;
-
-	sem_getvalue (manager_semaphore, &ret);
-	return ret;
-}
-
 static ServerType
 server_ptrace_get_server_type (void)
 {

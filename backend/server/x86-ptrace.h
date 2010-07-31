@@ -43,8 +43,6 @@ struct InferiorHandle
 
 #endif /* PTRACE_EVENT_FORK */
 
-extern int pending_sigint;
-
 static ServerCommandError
 _server_ptrace_check_errno (InferiorHandle *);
 
@@ -109,17 +107,5 @@ server_ptrace_get_signal_info (ServerHandle *handle, SignalInfo **sinfo);
 
 static gboolean
 _server_ptrace_wait_for_new_thread (ServerHandle *handle);
-
-static void
-server_ptrace_sem_init (void);
-
-static void
-server_ptrace_sem_wait (void);
-
-static void
-server_ptrace_sem_post (void);
-
-static int
-server_ptrace_sem_get_value (void);
 
 #endif

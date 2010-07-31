@@ -574,40 +574,9 @@ server_ptrace_get_current_thread (void)
 	return pthread_self ();
 }
 
-static gboolean initialized = FALSE;
-int pending_sigint = 0;
-
-static void
-sigint_signal_handler (int _dummy)
-{
-	pending_sigint++;
-	server_ptrace_sem_post ();
-}
-
 static void
 server_ptrace_static_init (void)
 {
-	struct sigaction sa;
-
-	if (initialized)
-		return;
-
-	/* catch SIGINT */
-	sa.sa_handler = sigint_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = 0;
-	g_assert (sigaction (SIGINT, &sa, NULL) != -1);
-
-	initialized = TRUE;
-}
-
-static int
-server_ptrace_get_pending_sigint (void)
-{
-	if (pending_sigint > 0)
-		return pending_sigint--;
-
-	return 0;
 }
 
 extern void GC_start_blocking (void);
@@ -690,10 +659,5 @@ InferiorVTable i386_ptrace_inferior = {
 	server_ptrace_restart_notification,
 	server_ptrace_get_registers_from_core_file,
 	server_ptrace_get_current_pid,
-	server_ptrace_get_current_thread,
-	server_ptrace_sem_init,
-	server_ptrace_sem_wait,
-	server_ptrace_sem_post,
-	server_ptrace_sem_get_value,
-	server_ptrace_get_pending_sigint,
+	server_ptrace_get_current_thread
 };
