@@ -1,2 +1,1 @@
-SUBDIRS = bfd
-
+SUBDIRS = bfd server

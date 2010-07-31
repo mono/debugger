@@ -1,3 +1,3 @@
-SUBDIRS = arch os mono server
+SUBDIRS = arch os mono
 
 EXTRA_DIST = $(srcdir)/*.cs

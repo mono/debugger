@@ -14,7 +14,8 @@ libmonodebuggerbfdglue_la_LDFLAGS = \
 libmonodebuggerbfdglue_la_CPPFLAGS = \
 	-I$(top_srcdir)/sysdeps/bfd \
 	-I$(top_srcdir)/sysdeps/bfd/include \
-	-I$(top_srcdir)/sysdeps/bfd/opcodes
+	-I$(top_srcdir)/sysdeps/bfd/opcodes \
+	@SERVER_DEPENDENCIES_CFLAGS@ @server_cflags@
 
 EXTRA_libmonodebuggerserver_la_SOURCES = \
 	i386-arch.c			\

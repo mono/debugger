@@ -378,8 +378,8 @@ sysdeps/bfd/include/aout/Makefile
 sysdeps/bfd/include/coff/Makefile
 sysdeps/bfd/include/elf/Makefile
 sysdeps/bfd/include/opcode/Makefile
+sysdeps/server/Makefile
 backend/Makefile
-backend/server/Makefile
 backend/arch/Makefile
 backend/mono/Makefile
 backend/os/Makefile
