@@ -1,6 +1,0 @@
-VER_1 {
-      global: 
-              mono_debugger_readline_*;
-      local:
-              *;
-};

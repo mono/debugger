@@ -1,4 +1,4 @@
-SUBDIRS = jay libedit
+SUBDIRS = jay
 
 noinst_DATA = CSharpExpressionParser.cs
 

@@ -1,11 +1,15 @@
 using System;
-using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Mono.Debugger.Frontend
 {
+	using Mono.Terminal;
+
 	public class Completer {
 		private Engine engine;
 
@@ -13,55 +17,55 @@ namespace Mono.Debugger.Frontend
 			this.engine = engine;
 		}
 
-		/* This method gets installed as the LineReader completion
-		 * delegate.  It completes commands at the start of the
-		 * line, and does command specific completion for
-		 * arguments. */
-		public void CompletionHandler (string text, int start, int end) {
-			if (start == 0) {
-				CommandCompleter (text, start, end);
-			}
-			else {
-				/* we look up the command in the
-				 * current line buffer and call that
-				 * command's completion generator to
-				 * generate the list of strings. 
-				 */
+		public LineEditor.Completion Complete (string text, int start)
+		{
+			if (start == 0)
+				return new LineEditor.Completion ("", CommandCompleter (text));
 
-				string line = LineReader.CurrentLine;
-				string command;
+			string command;
 
-				int ptr = 0;
-				while (!Char.IsWhiteSpace (line[ptr]))
-					++ptr;
+			int ptr = 0;
+			while (!Char.IsWhiteSpace (text[ptr]))
+				++ptr;
 
-				command = line.Substring (0, ptr);
-				Command c = engine.Get (command, null);
-				if (c != null) {
-					c.Complete (engine, text, start, end);
-				}
-			}
+			command = text.Substring (0, ptr);
+			text = text.Substring (ptr + 1);
+
+			Command c = engine.Get (command, null);
+			if (c == null)
+				return null;
+
+			var completion = c.Complete (engine, text);
+			if (completion == null)
+				return null;
+
+			var choices = new List<string> (completion);
+
+			string prefix = ComputeMCP (choices, text);
+			var results = choices.Select (k => k.Substring (prefix.Length)).ToArray ();
+
+			return new LineEditor.Completion (prefix, results);
 		}
 
-		string ComputeMCP (ArrayList choices, string initial_prefix)
+		string ComputeMCP (List<string> choices, string initial_prefix)
 		{
-			string s = (string)choices[0];
+			string s = choices[0];
 			int maxlen = s.Length;
 
 			for (int i = 1; i < choices.Count; i ++) {
-				if (maxlen > ((string)choices[i]).Length)
-					maxlen = ((string)choices[i]).Length;
+				if (maxlen > choices[i].Length)
+					maxlen = choices[i].Length;
 			}
 			s = s.Substring (0, maxlen);
 
-			for (int l = initial_prefix.Length; l < maxlen; l ++) {
+			for (int l = initial_prefix.Length; l < maxlen; l++) {
 				for (int i = 1; i < choices.Count; i ++) {
-					string test = (string)choices[i];
+					string test = choices[i];
 					if (test[l] != s[l])
 						return s.Substring (0, l);
 				}
 			}
-
+ 
 			return s;
 		}
 
@@ -73,68 +77,35 @@ namespace Mono.Debugger.Frontend
 		 * (but not aliases) that have been registered with the
 		 * engine.  This is used by the CompletionHandler itself to
 		 * complete commands at the beginning of the line. */
-		public void CommandCompleter (string text, int start, int end)
+		public string[] CommandCompleter (string text)
 		{ 
 			/* complete possible commands */
-			ArrayList matched_commands = new ArrayList();
+			var matches = new List<string> ();
 			string[] match_strings = null;
 
 			foreach (string key in engine.Commands.Keys) {
 				if (key.StartsWith (text))
-					matched_commands.Add (key);
+					matches.Add (key);
 			}
 
-
-			if (matched_commands.Count > 0) {
-				if (matched_commands.Count > 1) {
-					/* always add the prefix at
-					 * the beginning when we have
-					 * > 1 matches, so that
-					 * readline will display the
-					 * matches. */
-					matched_commands.Insert (0, ComputeMCP (matched_commands, text));
-				}
-
-				match_strings = new string [matched_commands.Count + 1];
-				matched_commands.CopyTo (match_strings);
-				match_strings [matched_commands.Count] = null;
-			}
-
-			LineReader.SetCompletionMatches (match_strings);
+			return matches.ToArray ();
 		}
 
-		public void StringsCompleter (string[] haystack, string text, int start, int end)
+		public string[] StringsCompleter (string[] haystack, string text)
 		{
-			ArrayList matches = new ArrayList();
+			var matches = new List<string> ();
 
 			foreach (string s in haystack) {
 				if (s.ToLower().StartsWith (text))
 					matches.Add (s.ToLower());
 			}
 
-			string[] match_strings = null;
-
-			if (matches.Count > 0) {
-				if (matches.Count > 1) {
-					/* always add the prefix at
-					 * the beginning when we have
-					 * > 1 matches, so that
-					 * readline will display the
-					 * matches. */
-					matches.Insert (0, ComputeMCP (matches, text));
-				}
-
-				match_strings = new string [matches.Count + 1];
-				matches.CopyTo (match_strings);
-				match_strings [matches.Count] = null;
-			}
-
-			LineReader.SetCompletionMatches (match_strings);
+			return matches.ToArray ();
 		}
 
-		public void ArgumentCompleter (Type t, string text, int start, int end)
+		public string[] ArgumentCompleter (Type t, string text)
 		{
-			ArrayList matched_args = new ArrayList();
+			var matches = new List<string> ();
 			PropertyInfo [] pi = t.GetProperties ();
 
 			foreach (PropertyInfo p in pi) {
@@ -142,40 +113,21 @@ namespace Mono.Debugger.Frontend
 					continue;
 				if (text == "-" ||
 				    p.Name.ToLower().StartsWith (text.Substring (1))) {
-					matched_args.Add ("-" + p.Name.ToLower());
+					matches.Add ("-" + p.Name.ToLower());
 				}
 			}
 
-			string[] match_strings = null;
-
-			if (matched_args.Count > 0) {
-				if (matched_args.Count > 1) {
-					/* always add the prefix at
-					 * the beginning when we have
-					 * > 1 matches, so that
-					 * readline will display the
-					 * matches. */
-					matched_args.Insert (0, ComputeMCP (matched_args, text));
-				}
-
-				match_strings = new string [matched_args.Count + 1];
-				matched_args.CopyTo (match_strings);
-				match_strings [matched_args.Count] = null;
-			}
-
-			LineReader.SetCompletionMatches (match_strings);
+			return matches.ToArray ();
 		}
 
-		public void FilenameCompleter (string text, int start, int end)
+		public string[] FilenameCompleter (string text)
 		{
 			string dir;
 			string file_prefix;
 			DebuggerEngine de = engine as DebuggerEngine;
 
-			LineReader.FilenameCompletionDesired = true;
-
 			if (text.IndexOf (Path.DirectorySeparatorChar) == -1) {
-				dir = de.Interpreter.Options.WorkingDirectory;
+				dir = de.Interpreter.Options.WorkingDirectory ?? Environment.CurrentDirectory;
 				file_prefix = text;
 			}
 			else {
@@ -188,49 +140,30 @@ namespace Mono.Debugger.Frontend
 			try {
 				fs_entries = Directory.GetFileSystemEntries (dir, file_prefix + "*");
 			} catch {
-				LineReader.SetCompletionMatches (null);
-				return;
+				return null;
 			}
 
-			ArrayList matched_paths = new ArrayList();
+			var matched_paths = new List<string> ();
 			foreach (string f in fs_entries) {
-				if (f.StartsWith (dir + file_prefix)) {
+				if (f.StartsWith (Path.Combine (dir, file_prefix))) {
 					matched_paths.Add (f);
 				}
 			}
 
-			string[] match_strings = null;
-
-			if (matched_paths.Count > 0) {
-				if (matched_paths.Count > 1) {
-					/* always add the prefix at
-					 * the beginning when we have
-					 * > 1 matches, so that
-					 * readline will display the
-					 * matches. */
-					matched_paths.Insert (0, ComputeMCP (matched_paths, text));
-				}
-
-				match_strings = new string [matched_paths.Count + 1];
-				matched_paths.CopyTo (match_strings);
-				match_strings [matched_paths.Count] = null;
-			}
-
-			LineReader.SetCompletionMatches (match_strings);
-
+			return matched_paths.ToArray ();
 		}
 
 		/* NoopCompleter: always returns an empty list (no
 		 * matches). */
-	  	public void NoopCompleter (string text, int start, int end)
+	  	public string[] NoopCompleter (string text)
 		{
-			LineReader.SetCompletionMatches (null);
+			return null;
 		}
 
-		public void SymbolCompleter (ScriptingContext context, string text, int start, int end)
+		public string[] SymbolCompleter (ScriptingContext context, string text)
 		{
 			try {
-				ArrayList method_list = new ArrayList ();
+				var method_list = new List<string> ();
 				string[] namespaces = context.GetNamespaces();
 				Module[] modules = context.CurrentProcess.Modules;
 
@@ -267,17 +200,9 @@ namespace Mono.Debugger.Frontend
 					}
 				}
 
-				string[] methods = null;
-				if (method_list.Count > 0) {
-					method_list.Insert (0, ComputeMCP (method_list, text));
-					methods = new string [method_list.Count + 1];
-					method_list.CopyTo (methods);
-					methods [method_list.Count] = null;
-				}
-
-				LineReader.SetCompletionMatches (methods);
+				return method_list.ToArray ();
 			} catch {
-				LineReader.SetCompletionMatches (null);
+				return null;
 			}
 		}
 	}

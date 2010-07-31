@@ -1,30 +1,3 @@
-AC_DEFUN([CHECK_READLINE], [
-    lib="$1"
-
-    old_LIBS=$LIBS
-
-    LIBS="-ltermcap"
-    AC_TRY_LINK(,[tgetent();],[
-	READLINE_DEPLIBS=$LIBS
-    ],[
-	LIBS="-lcurses"
-	AC_TRY_LINK(,[tgetent();],[
-		READLINE_DEPLIBS=$LIBS
-	],[
-		LIBS="-lncurses"
-		AC_TRY_LINK(,[tgetent();],[
-			READLINE_DEPLIBS=$LIBS
-		],[
-			AC_MSG_ERROR([Cannot find termcap library])
-		])
-	])
-    ])
-
-    LIBS=$old_LIBS
-    AC_SUBST(READLINE_DEPLIBS)
-])
-
-
 AC_DEFUN([LINUX_NPTL_CHECK], [
    old_LIBS=$LIBS
    LIBS="$LIBS -lpthread"

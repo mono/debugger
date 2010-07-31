@@ -140,17 +140,17 @@ namespace Mono.Debugger.Frontend
 		}
 
 		/* override this to provide command specific completion */
-		public virtual void Complete (Engine e, string text, int start, int end)
+		public virtual string[] Complete (Engine e, string text)
 		{
 			if (text.StartsWith ("-")) {
 				/* do our super cool argument completion on the command's
 				 * properties, if there are any.
 				 */
-				e.Completer.ArgumentCompleter (GetType(), text, start, end);
+				return e.Completer.ArgumentCompleter (GetType(), text);
 			}
 			else {
 				/* otherwise punt */
-				e.Completer.NoopCompleter (text, start, end);
+				return e.Completer.NoopCompleter (text);
 			}
 		}
 	}
@@ -1104,9 +1104,9 @@ namespace Mono.Debugger.Frontend
 			return file;
 		}
 
-                public override void Complete (Engine e, string text, int start, int end)
+                public override string[] Complete (Engine e, string text)
 		{
-			e.Completer.FilenameCompleter (text, start, end);
+			return e.Completer.FilenameCompleter (text);
                 }
 
 		// IDocumentableCommand
@@ -1175,9 +1175,9 @@ namespace Mono.Debugger.Frontend
 			}
 		}
 
-                public override void Complete (Engine e, string text, int start, int end)
+                public override string[] Complete (Engine e, string text)
 		{
-			e.Completer.FilenameCompleter (text, start, end);
+			return e.Completer.FilenameCompleter (text);
                 }
 
 		// IDocumentableCommand
@@ -1857,7 +1857,7 @@ namespace Mono.Debugger.Frontend
 			return subcommand.Execute (context);
 		}
 
-                public override void Complete (Engine e, string text, int start, int end)
+                public override string[] Complete (Engine e, string text)
 		{
 			// this doesn't quite work yet.  in the end it
 			// should allow completion of subcommand arguments,
@@ -1873,7 +1873,7 @@ namespace Mono.Debugger.Frontend
 				 * completer. */
 				Type subcommand_type = (Type)subcommand_type_hash[(string) Args[0]];
 				if (subcommand_type == null) {
-					e.Completer.NoopCompleter (text, start, end);
+					return e.Completer.NoopCompleter (text);
 				}
 				else {
 					/* copied from above */
@@ -1883,19 +1883,17 @@ namespace Mono.Debugger.Frontend
 						new_args.Add (Args [i]);
 					subcommand.Args = new_args;
 
-					subcommand.Complete (e, text, start, end);
+					return subcommand.Complete (e, text);
 				}
-
-				return;
 			}
 
 			if (subcommand_type_hash.Count == 0) {
-				e.Completer.NoopCompleter (text, start, end);
+				return e.Completer.NoopCompleter (text);
 			}
 			else {
 				string[] haystack = new string[subcommand_type_hash.Count];
 				subcommand_type_hash.Keys.CopyTo (haystack, 0);
-				e.Completer.StringsCompleter (haystack, text, start, end);
+				return e.Completer.StringsCompleter (haystack, text);
 			}
                 }
 	}
@@ -1976,11 +1974,11 @@ namespace Mono.Debugger.Frontend
 				return null;
 			}
 
-			public override void Complete (Engine e, string text, int start, int end)
+			public override string[] Complete (Engine e, string text)
 			{
 				DebuggerEngine engine = (DebuggerEngine) e;
 			  
-				e.Completer.StringsCompleter (engine.Interpreter.GetStyleNames(), text, start, end);
+				return e.Completer.StringsCompleter (engine.Interpreter.GetStyleNames(), text);
 			}
 		}
 #endregion
@@ -3501,14 +3499,14 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-                public override void Complete (Engine e, string text, int start, int end)
+                public override string[] Complete (Engine e, string text)
 		{
 			if (text.StartsWith ("-")) {
-				e.Completer.ArgumentCompleter (GetType(), text, start, end);
+				return e.Completer.ArgumentCompleter (GetType(), text);
 			}
 			else {
 				/* attempt filename completion */
-				e.Completer.FilenameCompleter (text, start, end);
+				return e.Completer.FilenameCompleter (text);
 			}
 		}
 
@@ -3595,10 +3593,10 @@ namespace Mono.Debugger.Frontend
 			return null;
 		}
 
-                public override void Complete (Engine e, string text, int start, int end) {
+                public override string[] Complete (Engine e, string text) {
 			/* arguments to the "help" command are commands
 			 * themselves, so complete against them. */
-			e.Completer.CommandCompleter (text, start, end);
+			return e.Completer.CommandCompleter (text);
                 }
 
 		// IDocumentableCommand
@@ -3941,10 +3939,10 @@ namespace Mono.Debugger.Frontend
 			process.WaitForExit ();
 		}
 
-                public override void Complete (Engine e, string text, int start, int end)
+                public override string[] Complete (Engine e, string text)
 		{
 			/* attempt filename completion */
-			e.Completer.FilenameCompleter (text, start, end);
+			return e.Completer.FilenameCompleter (text);
 		}
 
 		// IDocumentableCommand

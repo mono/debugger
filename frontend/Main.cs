@@ -8,6 +8,8 @@ using ST = System.Threading;
 using Mono.Debugger;
 using Mono.Debugger.Backend;
 
+using Mono.Terminal;
+
 namespace Mono.Debugger.Frontend
 {
 	public class CommandLineInterpreter
@@ -49,6 +51,8 @@ namespace Mono.Debugger.Frontend
 		ST.AutoResetEvent interrupt_event;
 		ST.AutoResetEvent nested_break_state_event;
 
+		LineEditor line_editor;
+
 		Stack<CommandLineInterpreter.MainLoop> main_loop_stack;
 
 		[DllImport("monodebuggerserver")]
@@ -86,6 +90,14 @@ namespace Mono.Debugger.Frontend
 
 			engine = interpreter.DebuggerEngine;
 			parser = new LineParser (engine);
+
+			if (!interpreter.IsScript) {
+				line_editor = new LineEditor ("mdb");
+
+				line_editor.AutoCompleteEvent += delegate (string text, int pos) {
+					return engine.Completer.Complete (text, pos);
+				};
+			}
 
 			interrupt_event = new ST.AutoResetEvent (false);
 			nested_break_state_event = new ST.AutoResetEvent (false);
@@ -310,11 +322,9 @@ namespace Mono.Debugger.Frontend
 				Console.Write (the_prompt);
 				return Console.ReadLine ();
 			} else {
-				string result = LineReader.ReadLine (the_prompt);
+				string result = line_editor.Edit (the_prompt, "");
 				if (result == null)
 					return null;
-				if (result != "")
-					LineReader.AddHistory (result);
 				return result;
 			}
 		}
@@ -349,13 +359,11 @@ namespace Mono.Debugger.Frontend
 
 		public static void Main (string[] args)
 		{
-			bool is_terminal = LineReader.IsTerminal (0);
-
 			DebuggerOptions options = DebuggerOptions.ParseCommandLine (args);
 
 			Console.WriteLine ("Mono Debugger");
 
-			CommandLineInterpreter interpreter = new CommandLineInterpreter (options, is_terminal);
+			CommandLineInterpreter interpreter = new CommandLineInterpreter (options, true);
 
 			interpreter.RunMainLoop ();
 
