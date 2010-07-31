@@ -574,11 +574,6 @@ server_ptrace_get_current_thread (void)
 	return pthread_self ();
 }
 
-static void
-server_ptrace_static_init (void)
-{
-}
-
 extern void GC_start_blocking (void);
 extern void GC_end_blocking (void);
 
@@ -603,7 +598,6 @@ extern void GC_end_blocking (void);
 #endif
 
 InferiorVTable i386_ptrace_inferior = {
-	server_ptrace_static_init,
 	server_ptrace_global_init,
 	server_ptrace_get_server_type,
 	server_ptrace_get_capabilities,

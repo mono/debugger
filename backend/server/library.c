@@ -515,10 +515,3 @@ mono_debugger_server_get_registers_from_core_file (guint64 *values, const guint8
 {
 	(* global_vtable->get_registers_from_core_file) (values, buffer);
 }
-
-
-void
-mono_debugger_server_static_init (void)
-{
-	(* global_vtable->static_init) ();
-}

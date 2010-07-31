@@ -1190,11 +1190,6 @@ static void format_windows_error_message (DWORD error_code)
 	}
 }
 
-static void
-server_win32_static_init (void)
-{
-}
-
 static ServerCommandError
 server_win32_get_signal_info (ServerHandle *handle, SignalInfo **sinfo_out)
 {
@@ -2382,7 +2377,6 @@ server_win32_write_memory (ServerHandle *server_handle, guint64 start, guint32 s
 }
 
 InferiorVTable i386_windows_inferior = {
-	server_win32_static_init,			/*static_init, */
 	server_win32_global_init,			/*global_init, */
 	server_win32_get_server_type,
 	server_win32_get_capabilities,

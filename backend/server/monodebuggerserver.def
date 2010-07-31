@@ -12,7 +12,6 @@ mono_debugger_mutex_lock
 mono_debugger_mutex_unlock
 mono_debugger_mutex_trylock
 
-mono_debugger_server_static_init
 mono_debugger_server_global_init
 mono_debugger_server_create_inferior
 mono_debugger_server_spawn

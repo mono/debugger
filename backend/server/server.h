@@ -159,8 +159,6 @@ struct ServerHandle {
 
 struct InferiorVTable {
 	
-	void                  (* static_init)         (void);
-
 	void                  (* global_init)         (void);
 
 	ServerType            (* get_server_type)     (void);
@@ -454,9 +452,6 @@ struct InferiorVTable {
  * These functions just call the corresponding function in the ServerHandle's vtable.
  * They're just here to be called from C#.
  */
-
-void
-mono_debugger_server_static_init          (void);
 
 void
 mono_debugger_server_global_init          (void);
