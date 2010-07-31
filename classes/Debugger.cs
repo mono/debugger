@@ -20,7 +20,7 @@ namespace Mono.Debugger
 	public delegate void ThreadEventHandler (Debugger debugger, Thread thread);
 	public delegate void ProcessEventHandler (Debugger debugger, Process process);
 
-	public class Debugger : DebuggerMarshalByRefObject
+	public sealed class Debugger : DebuggerMarshalByRefObject
 	{
 		ManualResetEvent kill_event;
 		DebuggerConfiguration config;
@@ -445,7 +445,7 @@ namespace Mono.Debugger
 				throw new ObjectDisposedException ("DebuggerServant");
 		}
 
-		protected virtual void Dispose (bool disposing)
+		protected void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
 			lock (this) {

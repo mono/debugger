@@ -22,7 +22,7 @@ namespace Mono.Debugger
 		StopUnhandled = 2
 	}
 
-	public class Process : DebuggerMarshalByRefObject
+	public sealed class Process : DebuggerMarshalByRefObject
 	{
 		Debugger debugger;
 		ProcessServant servant;

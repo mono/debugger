@@ -18,7 +18,7 @@ namespace Mono.Debugger
 	[Serializable]
 	internal delegate object TargetAccessDelegate (Thread target, object user_data);
 
-	public class Thread : DebuggerMarshalByRefObject, IOperationHost
+	public sealed class Thread : DebuggerMarshalByRefObject, IOperationHost
 	{
 		[Flags]
 		public enum Flags {
@@ -791,15 +791,7 @@ namespace Mono.Debugger
 				throw new ObjectDisposedException ("Thread");
 		}
 
-		protected virtual void DoDispose ()
-		{
-			if (servant != null) {
-				servant.Dispose ();
-				servant = null;
-			}
-		}
-
-		protected virtual void Dispose (bool disposing)
+		protected void Dispose (bool disposing)
 		{
 			// Check to see if Dispose has already been called.
 			if (disposed)
@@ -809,7 +801,10 @@ namespace Mono.Debugger
 
 			// If this is a call to Dispose, dispose all managed resources.
 			if (disposing) {
-				DoDispose ();
+				if (servant != null) {
+					servant.Dispose ();
+					servant = null;
+				}
 			}
 		}
 
