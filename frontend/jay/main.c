@@ -98,6 +98,7 @@ extern char* mktemp();
 
 extern char *getenv();
 
+void
 done(k)
 int k;
 {
@@ -116,6 +117,7 @@ onintr(signo)
 }
 
 
+void
 set_signals()
 {
 #ifdef SIGINT
@@ -133,6 +135,7 @@ set_signals()
 }
 
 
+void
 usage()
 {
     fprintf(stderr, "usage: %s [-tvcp] [-b file_prefix] filename\n", myname);
@@ -253,6 +256,7 @@ unsigned n;
 }
 
 
+void
 create_file_names()
 {
     int i, len;
@@ -316,6 +320,7 @@ create_file_names()
 }
 
 
+void
 open_files()
 {
     create_file_names();
@@ -364,4 +369,5 @@ char *argv[];
     output();
     done(0);
     /*NOTREACHED*/
+    return (-1);
 }

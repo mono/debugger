@@ -74,6 +74,7 @@ static short *VERTICES;
 static int top;
 
 
+void
 lalr()
 {
     tokensetsize = WORDSIZE(ntokens);
@@ -93,6 +94,7 @@ lalr()
 
 
 
+void
 set_state_table()
 {
     register core *sp;
@@ -104,6 +106,7 @@ set_state_table()
 
 
 
+void
 set_accessing_symbol()
 {
     register core *sp;
@@ -115,6 +118,7 @@ set_accessing_symbol()
 
 
 
+void
 set_shift_table()
 {
     register shifts *sp;
@@ -126,6 +130,7 @@ set_shift_table()
 
 
 
+void
 set_reduction_table()
 {
     register reductions *rp;
@@ -137,6 +142,7 @@ set_reduction_table()
 
 
 
+void
 set_maxrhs()
 {
   register short *itemp;
@@ -165,6 +171,7 @@ set_maxrhs()
 
 
 
+void
 initialize_LA()
 {
   register int i, j, k;
@@ -202,6 +209,7 @@ initialize_LA()
 }
 
 
+void
 set_goto_map()
 {
   register shifts *sp;
@@ -296,10 +304,13 @@ int symbol;
 	else
 	    high = middle - 1;
     }
+    /*NOTREACHED*/
+    return (-1);
 }
 
 
 
+void
 initialize_F()
 {
   register int i;
@@ -377,6 +388,7 @@ initialize_F()
 
 
 
+void
 build_relations()
 {
   register int i;
@@ -469,6 +481,7 @@ build_relations()
 }
 
 
+void
 add_lookback_edge(stateno, ruleno, gotono)
 int stateno, ruleno, gotono;
 {
@@ -554,12 +567,14 @@ int n;
 
 
 
+void
 compute_FOLLOWS()
 {
   digraph(includes);
 }
 
 
+void
 compute_lookaheads()
 {
   register int i, n;
@@ -594,6 +609,7 @@ compute_lookaheads()
 }
 
 
+void
 digraph(relation)
 short **relation;
 {
@@ -621,6 +637,7 @@ short **relation;
 
 
 
+void
 traverse(i)
 register int i;
 {

@@ -59,6 +59,7 @@ extern action *add_reductions();
 extern action *add_reduce();
 
 
+void
 make_parser()
 {
     register int i;
@@ -189,6 +190,7 @@ register int ruleno, symbol;
 }
 
 
+void
 find_final_state()
 {
     register int goal, i;
@@ -206,6 +208,7 @@ find_final_state()
 }
 
 
+void
 unused_rules()
 {
     register int i;
@@ -238,6 +241,7 @@ unused_rules()
 }
 
 
+void
 remove_conflicts()
 {
     register int i;
@@ -313,6 +317,7 @@ remove_conflicts()
 }
 
 
+void
 total_conflicts()
 {
     fprintf(stderr, "%s: ", myname);
@@ -362,6 +367,7 @@ int stateno;
 }
 
 
+void
 defreds()
 {
     register int i;
@@ -371,6 +377,7 @@ defreds()
 	defred[i] = sole_reduction(i);
 }
  
+void
 free_action_row(p)
 register action *p;
 {
@@ -384,6 +391,7 @@ register action *p;
     }
 }
 
+void
 free_parser()
 {
   register int i;
