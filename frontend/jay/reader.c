@@ -74,7 +74,7 @@ char *name_pool;
 char *line_format = "\t\t\t\t\t// line %d \"%s\"\n";
 char *default_line_format = "\t\t\t\t\t// line %d\n";
 
-
+void
 cachec(c)
 int c;
 {
@@ -243,6 +243,8 @@ nextc()
 	    return (*s);
 	}
     }
+    /*NOTREACHED*/
+    return (-1);
 }
 
 
@@ -302,6 +304,7 @@ keyword()
     }
     syntax_error(lineno, line, t_cptr);
     /*NOTREACHED*/
+    return (-1);
 }
 
 void
@@ -776,6 +779,7 @@ declare_types()
 }
 
 
+void
 declare_start()
 {
     register int c;
@@ -835,6 +839,7 @@ read_declarations()
 }
 
 
+void
 initialize_grammar()
 {
     nitems = 4;
@@ -866,6 +871,7 @@ initialize_grammar()
 }
 
 
+void
 expand_items()
 {
     maxitems += 300;
@@ -874,6 +880,7 @@ expand_items()
 }
 
 
+void
 expand_rules()
 {
     maxrules += 100;
@@ -886,6 +893,7 @@ expand_rules()
 }
 
 
+void
 advance_to_start()
 {
     register int c;
@@ -936,6 +944,7 @@ advance_to_start()
 }
 
 
+void
 start_rule(bp, s_lineno)
 register bucket *bp;
 int s_lineno;
@@ -951,6 +960,7 @@ int s_lineno;
 }
 
 
+void
 end_rule()
 {
     register int i;
@@ -970,6 +980,7 @@ end_rule()
 }
 
 
+void
 insert_empty_rule()
 {
     register bucket *bp, **bpp;
@@ -1302,6 +1313,7 @@ mark_symbol()
 }
 
 
+void
 read_grammar()
 {
     register int c;
@@ -1350,6 +1362,7 @@ free_tags()
 }
 
 
+void
 pack_names()
 {
     register bucket *bp;
@@ -1375,6 +1388,7 @@ pack_names()
 }
 
 
+void
 check_symbols()
 {
     register bucket *bp;
@@ -1393,6 +1407,7 @@ check_symbols()
 }
 
 
+void
 pack_symbols()
 {
     register bucket *bp;
@@ -1517,6 +1532,7 @@ pack_symbols()
 }
 
 
+void
 pack_grammar()
 {
     register int i, j;
@@ -1612,6 +1628,7 @@ print_grammar()
 }
 
 
+void
 reader()
 {
     create_symbol_table();

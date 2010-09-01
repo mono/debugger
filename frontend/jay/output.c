@@ -62,6 +62,7 @@ void save_column (int symbol, int default_state);
 void output_trailing_text (void);
 void output_semantic_actions (void);
 
+void
 output () {
   int lno = 0;
   char buf [128];
@@ -102,6 +103,7 @@ output () {
   free_parser();
 }
 
+void
 output_rule_data()
 {
     register int i;
@@ -154,6 +156,7 @@ output_rule_data()
 }
 
 
+void
 output_yydefred()
 {
     register int i, j;
@@ -183,6 +186,7 @@ output_yydefred()
 }
 
 
+void
 output_actions()
 {
     nvectors = 2*nstates + nvars;
@@ -211,6 +215,7 @@ output_actions()
 }
 
 
+void
 token_actions()
 {
     register int i, j;
@@ -295,6 +300,7 @@ token_actions()
     FREE(actionrow);
 }
 
+void
 goto_actions()
 {
     register int i, j, k;
@@ -406,6 +412,7 @@ int default_state;
     width[symno] = sp1[-1] - sp[0] + 1;
 }
 
+void
 sort_actions()
 {
   register int i;
@@ -441,6 +448,7 @@ sort_actions()
 }
 
 
+void
 pack_table()
 {
     register int i;
@@ -618,10 +626,13 @@ int vector;
 	    return (j);
 	}
     }
+    /*NOTREACHED*/
+    return (-1);
 }
 
 
 
+void
 output_base()
 {
     register int i, j;
@@ -690,6 +701,7 @@ output_base()
 
 
 
+void
 output_table()
 {
     register int i;
@@ -719,6 +731,7 @@ output_table()
 
 
 
+void
 output_check()
 {
     register int i;
@@ -782,6 +795,7 @@ char *name;
 }
 
 
+void
 output_defines(prefix)
 char *prefix;
 {
@@ -821,6 +835,7 @@ char *prefix;
 }
 
 
+void
 output_stored_text(file, name)
 FILE *file;
 char *name;
@@ -848,6 +863,7 @@ char *name;
 }
 
 
+void
 output_debug()
 {
     register int i, j, k, max;
@@ -1138,6 +1154,7 @@ output_semantic_actions()
 }
 
 
+void
 free_itemsets()
 {
     register core *cp, *next;
@@ -1151,6 +1168,7 @@ free_itemsets()
 }
 
 
+void
 free_shifts()
 {
     register shifts *sp, *next;
@@ -1165,6 +1183,7 @@ free_shifts()
 
 
 
+void
 free_reductions()
 {
     register reductions *rp, *next;
