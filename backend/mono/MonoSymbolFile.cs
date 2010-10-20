@@ -231,7 +231,7 @@ namespace Mono.Debugger.Backend.Mono
 				ImageFile = shadow_location;
 
 			try {
-				Assembly = Cecil.AssemblyFactory.GetAssembly (ImageFile);
+				Assembly = Cecil.AssemblyDefinition.ReadAssembly (ImageFile);
 			} catch (Exception ex) {
 				throw new SymbolTableException (
 					"Cannot load symbol file `{0}': {1}", ImageFile, ex);
@@ -244,7 +244,7 @@ namespace Mono.Debugger.Backend.Mono
 			string mdb_file = ImageFile + ".mdb";
 
 			try {
-				File = C.MonoSymbolFile.ReadSymbolFile (Assembly, mdb_file);
+				File = C.MonoSymbolFile.ReadSymbolFile (ModuleDefinition, mdb_file);
 				if (File == null)
 					Report.Error ("Cannot load symbol file `{0}'", mdb_file);
 				else if (ModuleDefinition.Mvid != File.Guid) {
@@ -571,7 +571,7 @@ namespace Mono.Debugger.Backend.Mono
 		// This must match mono_type_get_desc() in mono/metadata/debug-helpers.c.
 		protected static string GetTypeSignature (Cecil.TypeReference t)
 		{
-			Cecil.ReferenceType rtype = t as Cecil.ReferenceType;
+			Cecil.ByReferenceType rtype = t as Cecil.ByReferenceType;
 			if (rtype != null)
 				return GetTypeSignature (rtype.ElementType) + "&";
 
@@ -693,7 +693,7 @@ namespace Mono.Debugger.Backend.Mono
 				signature = null;
 			}
 
-			Cecil.TypeDefinitionCollection types = Assembly.MainModule.Types;
+			var types = Assembly.MainModule.Types;
 			// FIXME: Work around an API problem in Cecil.
 			foreach (Cecil.TypeDefinition type in types) {
 				if (!method_name.StartsWith (type.FullName))
@@ -773,7 +773,7 @@ namespace Mono.Debugger.Backend.Mono
 		{
 			MonoClassType klass = null;
 
-			Cecil.TypeDefinitionCollection types = Assembly.MainModule.Types;
+			var types = Assembly.MainModule.Types;
 			// FIXME: Work around an API problem in Cecil.
 			foreach (Cecil.TypeDefinition type in types) {
 				if (type.FullName != class_name)
@@ -822,23 +822,23 @@ namespace Mono.Debugger.Backend.Mono
 				if (cname == cgen_attr) {
 					is_compiler_generated = true;
 				} else if (cname == debugger_display_attr) {
-					string text = (string) cattr.ConstructorParameters [0];
+					string text = (string) cattr.ConstructorArguments [0].Value;
 					debugger_display = new DebuggerDisplayAttribute (text);
-					foreach (DictionaryEntry prop in cattr.Properties) {
-						string key = (string) prop.Key;
+					foreach (var named_arg in cattr.Properties) {
+						string key = named_arg.Name;
 						if (key == "Name")
-							debugger_display.Name = (string) prop.Value;
+							debugger_display.Name = (string) named_arg.Argument.Value;
 						else if (key == "Type")
-							debugger_display.Type = (string) prop.Value;
+							debugger_display.Type = (string) named_arg.Argument.Value;
 						else {
 							debugger_display = null;
 							break;
 						}
 					}
 				} else if (cname == browsable_attr) {
-					browsable_state = (DebuggerBrowsableState) cattr.Blob [2];
+					browsable_state = (DebuggerBrowsableState) cattr.GetBlob () [2];
 				} else if (cname == type_proxy_attr) {
-					string text = (string) cattr.ConstructorParameters [0];
+					string text = (string) cattr.ConstructorArguments [0].Value;
 					type_proxy = new DebuggerTypeProxyAttribute (text);
 				}
 			}
@@ -1340,7 +1340,7 @@ namespace Mono.Debugger.Backend.Mono
 					}
 				}
 
-				Cecil.ParameterDefinitionCollection param_info = mdef.Parameters;
+				var param_info = mdef.Parameters;
 				for (int i = 0; i < param_info.Count; i++) {
 					if (captured_vars.ContainsKey (param_info [i].Name))
 						continue;

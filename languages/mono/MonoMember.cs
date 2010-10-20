@@ -124,7 +124,7 @@ namespace Mono.Debugger.Languages.Mono
 			case Cecil.MethodAttributes.Family:
 			case Cecil.MethodAttributes.FamANDAssem:
 				return TargetMemberAccessibility.Protected;
-			case Cecil.MethodAttributes.Assem:
+			case Cecil.MethodAttributes.Assembly:
 			case Cecil.MethodAttributes.FamORAssem:
 				return TargetMemberAccessibility.Internal;
 			default:

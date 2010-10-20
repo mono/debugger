@@ -115,13 +115,8 @@ namespace Mono.Debugger.Languages.Mono
 					function_hash.Add (method, func);
 				}
 
-				foreach (Cecil.MethodDefinition method in TypeDef.Constructors) {
-					MonoFunctionType func = new MonoFunctionType (this, method);
-					function_hash.Add (method, func);
-				}
-
 				int num_methods = 0;
-				foreach (Cecil.MethodDefinition method in TypeDef.Methods) {
+				foreach (Cecil.MethodDefinition method in GetMethods (TypeDef, false)) {
 					if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 						continue;
 					num_methods++;
@@ -130,12 +125,23 @@ namespace Mono.Debugger.Languages.Mono
 				methods = new MonoMethodInfo [num_methods];
 
 				int pos = 0;
-				foreach (Cecil.MethodDefinition method in TypeDef.Methods) {
+				foreach (Cecil.MethodDefinition method in GetMethods (TypeDef, false)) {
 					if ((method.Attributes & Cecil.MethodAttributes.SpecialName) != 0)
 						continue;
 					methods [pos] = MonoMethodInfo.Create (this, pos, method);
 					pos++;
 				}
+			}
+		}
+
+		static IEnumerable<Cecil.MethodDefinition> GetMethods (Cecil.TypeDefinition type, bool constructor)
+		{
+			foreach (var method in type.Methods) {
+				if (constructor && method.IsConstructor)
+					yield return method;
+
+				if (!constructor && !method.IsConstructor)
+					yield return method;
 			}
 		}
 
@@ -145,10 +151,10 @@ namespace Mono.Debugger.Languages.Mono
 				if (constructors != null)
 					return;
 
-				constructors = new MonoMethodInfo [TypeDef.Constructors.Count];
+				var ctors = new List<Cecil.MethodDefinition> (GetMethods (TypeDef, true));
 
-				for (int i = 0; i < constructors.Length; i++) {
-					Cecil.MethodDefinition method = TypeDef.Constructors [i];
+				for (int i = 0; i < ctors.Count; i++) {
+					Cecil.MethodDefinition method = ctors [i];
 					constructors [i] = MonoMethodInfo.Create (this, i, method);
 				}
 			}
