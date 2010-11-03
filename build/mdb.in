@@ -1,3 +1,18 @@
 #!/bin/sh
-export LD_LIBRARY_PATH="@libdir@:${LD_LIBRARY_PATH}"
-exec @mono@ --debug @twodir@/mdb.exe $*
+
+Pathclean ()
+{
+ # Vulnerability fix for insecure path content
+ # Make sure "::", "^:" or ":$" is not left in path arg $1
+
+ local tmp
+ tmp=$(echo "$1" | sed -e 's/::\+// ; s/^:// ; s/:$//' )
+
+ [ "$tmp" ] && echo "$tmp"
+}
+
+LD_LIBRARY_PATH="@libdir@${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+LD_LIBRARY_PATH=$(Pathclean "$LD_LIBRARY_PATH")
+export LD_LIBRARY_PATH
+
+exec @mono@ --debug @twodir@/mdb.exe "$@"
