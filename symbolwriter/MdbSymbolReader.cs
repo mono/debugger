@@ -174,8 +174,8 @@ namespace Mono.Debugger.SymbolWriter
 				if (method == null)
 					throw new MonoSymbolFileException ("Cannot get method {0}.", i+1);
 
-				Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) Assembly.MainModule.LookupByToken (
-					Cecil.Metadata.TokenType.Method, method.Token & 0xffffff);
+				Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) Assembly.MainModule.LookupToken (
+					new Cecil.MetadataToken (Cecil.TokenType.Method, method.Token & 0xffffff));
 				if ((mdef == null) || (mdef.Body == null))
 					throw new MonoSymbolFileException ("Method {0} (token {1:x}) not found in assembly.",
 									   method.Index, method.Token);
@@ -215,8 +215,8 @@ namespace Mono.Debugger.SymbolWriter
 				if (method == null)
 					throw new MonoSymbolFileException ("Cannot get method {0}.", i+1);
 
-				Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) Assembly.MainModule.LookupByToken (
-					Cecil.Metadata.TokenType.Method, method.Token & 0xffffff);
+				Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) Assembly.MainModule.LookupToken (
+					new Cecil.MetadataToken (Cecil.TokenType.Method, method.Token & 0xffffff));
 				if ((mdef == null) || (mdef.Body == null))
 					throw new MonoSymbolFileException ("Method {0} (token {1:x}) not found in assembly.",
 									   method.Index, method.Token);
@@ -328,7 +328,7 @@ namespace Mono.Debugger.SymbolWriter
 
 		protected static string GetTypeSignature (Cecil.TypeReference t)
 		{
-			Cecil.ReferenceType rtype = t as Cecil.ReferenceType;
+			Cecil.ByReferenceType rtype = t as Cecil.ByReferenceType;
 			if (rtype != null)
 				return GetTypeSignature (rtype.ElementType) + "&";
 
@@ -440,8 +440,8 @@ namespace Mono.Debugger.SymbolWriter
 
 		protected void CheckMethod (MethodEntry method)
 		{
-			Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) Assembly.MainModule.LookupByToken (
-				Cecil.Metadata.TokenType.Method, method.Token & 0xffffff);
+			Cecil.MethodDefinition mdef = (Cecil.MethodDefinition) Assembly.MainModule.LookupToken (
+				new Cecil.MetadataToken (Cecil.TokenType.Method, method.Token & 0xffffff));
 			if ((mdef == null) || (mdef.Body == null))
 				throw new MonoSymbolFileException ("Method {0} (token {1:x}) not found in assembly.",
 								   method.Index, method.Token);
@@ -551,8 +551,8 @@ namespace Mono.Debugger.SymbolWriter
 			Mono.Cecil.AssemblyDefinition asm;
 
 			try {
-				asm = Mono.Cecil.AssemblyFactory.GetAssembly (filename);
-				file = MonoSymbolFile.ReadSymbolFile (asm, filename + ".mdb");
+				asm = Mono.Cecil.AssemblyDefinition.ReadAssembly (filename);
+				file = MonoSymbolFile.ReadSymbolFile (asm.MainModule, filename + ".mdb");
 			} catch (Exception ex) {
 				Console.WriteLine ("Can't read {0}: {1}", filename, ex.Message);
 				return -1;

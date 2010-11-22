@@ -34,7 +34,7 @@ namespace Mono.Debugger.Languages.Mono
 				rtype = mdef.DeclaringType;
 				has_return_type = true;
 			} else {
-				rtype = mdef.ReturnType.ReturnType;
+				rtype = mdef.ReturnType;
 				has_return_type = rtype.FullName != "System.Void";
 			}
 			return_type = klass.File.MonoLanguage.LookupMonoType (rtype);
@@ -52,7 +52,7 @@ namespace Mono.Debugger.Languages.Mono
 
 		internal static string GetMethodName (Cecil.MethodDefinition mdef)
 		{
-			Cecil.GenericParameterCollection gen_params = mdef.GenericParameters;
+			var gen_params = mdef.GenericParameters;
 			if ((gen_params == null) || (gen_params.Count == 0))
 				return mdef.Name;
 			else

@@ -90,21 +90,21 @@ namespace Mono.Debugger.Backend.Mono
 
 			DecimalType = MonoFundamentalType.Create (
 				corlib, memory, FundamentalKind.Decimal);
-			Cecil.TypeDefinition decimal_type = corlib.ModuleDefinition.Types ["System.Decimal"];
+			Cecil.TypeDefinition decimal_type = corlib.ModuleDefinition.GetType ("System.Decimal");
 			corlib.AddType (decimal_type, DecimalType);
 
 			TargetAddress klass = corlib.MonoLanguage.MetadataHelper.GetArrayClass (memory);
-			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.Types ["System.Array"];
+			Cecil.TypeDefinition array_type = corlib.ModuleDefinition.GetType ("System.Array");
 			ArrayType = mono.CreateCoreType (corlib, array_type, memory, klass);
 			mono.AddCoreType (array_type, ArrayType, ArrayType, klass);
 
 			klass = corlib.MonoLanguage.MetadataHelper.GetDelegateClass (memory);
-			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.Types ["System.Delegate"];
+			Cecil.TypeDefinition delegate_type = corlib.ModuleDefinition.GetType ("System.Delegate");
 			DelegateType = new MonoClassType (corlib, delegate_type);
 			mono.AddCoreType (delegate_type, DelegateType, DelegateType, klass);
 
 			klass = corlib.MonoLanguage.MetadataHelper.GetExceptionClass (memory);
-			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.Types ["System.Exception"];
+			Cecil.TypeDefinition exception_type = corlib.ModuleDefinition.GetType ("System.Exception");
 			ExceptionType = mono.CreateCoreType (corlib, exception_type, memory, klass);
 			mono.AddCoreType (exception_type, ExceptionType, ExceptionType, klass);
 		}
@@ -289,7 +289,7 @@ namespace Mono.Debugger.Backend.Mono
 
 		internal bool TryFindImage (Thread thread, string filename)
 		{
-			Cecil.AssemblyDefinition ass = Cecil.AssemblyFactory.GetAssembly (filename);
+			Cecil.AssemblyDefinition ass = Cecil.AssemblyDefinition.ReadAssembly (filename);
 			if (ass == null)
 				return false;
 
@@ -325,7 +325,7 @@ namespace Mono.Debugger.Backend.Mono
 				return new MonoArrayType (element_type, array.Rank);
 			}
 
-			Cecil.ReferenceType reftype = type as Cecil.ReferenceType;
+			Cecil.ByReferenceType reftype = type as Cecil.ByReferenceType;
 			if (reftype != null) {
 				TargetType element_type = LookupMonoType (reftype.ElementType);
 				if (element_type == null)
@@ -407,7 +407,7 @@ namespace Mono.Debugger.Backend.Mono
 
 		Cecil.TypeDefinition resolve_cecil_type_ref (Cecil.TypeReference type)
 		{
-			type = type.GetOriginalType ();
+			type = type.GetElementType ();
 
 			if (type is Cecil.TypeDefinition)
 				return (Cecil.TypeDefinition) type;
@@ -418,12 +418,12 @@ namespace Mono.Debugger.Backend.Mono
 				if (assembly == null)
 					return null;
 
-				return assembly.MainModule.Types [type.FullName];
+				return assembly.MainModule.GetType (type.FullName);
 			}
 
 			Cecil.ModuleDefinition module = type.Scope as Cecil.ModuleDefinition;
 			if (module != null)
-				return module.Types [type.FullName];
+				return module.GetType (type.FullName);
 
 			throw new NotImplementedException ();
 		}
@@ -1075,7 +1075,7 @@ namespace Mono.Debugger.Backend.Mono
 
 			foreach (MonoSymbolFile symfile in symfile_by_index.Values) {
 				try {
-					Cecil.TypeDefinitionCollection types = symfile.Assembly.MainModule.Types;
+					var types = symfile.Assembly.MainModule.Types;
 					// FIXME: Work around an API problem in Cecil.
 					foreach (Cecil.TypeDefinition type in types) {
 						if (type.FullName != name)

@@ -42,8 +42,8 @@ namespace Mono.Debugger.Languages.Mono
 				throw new InternalError ();
 
 			Cecil.TypeDefinition typedef;
-			typedef = (Cecil.TypeDefinition) file.ModuleDefinition.LookupByToken (
-				Cecil.Metadata.TokenType.TypeDef, token & 0x00ffffff);
+			typedef = (Cecil.TypeDefinition) file.ModuleDefinition.LookupToken (
+				new Cecil.MetadataToken (Cecil.TokenType.TypeDef, token & 0x00ffffff));
 			if (typedef == null)
 				throw new InternalError ();
 

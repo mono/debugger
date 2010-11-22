@@ -204,7 +204,7 @@ namespace Mono.Debugger.Languages.Mono
 				return class_info;
 
 			if (class_info == null) {
-				int token = (int) type.MetadataToken.ToUInt ();
+				int token = type.MetadataToken.ToInt32 ();
 				class_info = file.LookupClassInfo (target, token);
 			}
 

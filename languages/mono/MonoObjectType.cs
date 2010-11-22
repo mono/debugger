@@ -28,7 +28,7 @@ namespace Mono.Debugger.Languages.Mono
 			int object_size = 2 * memory.TargetMemoryInfo.TargetAddressSize;
 
 			MonoObjectType type = new MonoObjectType (
-				corlib, corlib.ModuleDefinition.Types ["System.Object"],
+				corlib, corlib.ModuleDefinition.GetType ("System.Object"),
 				object_size);
 
 			TargetAddress klass = corlib.MonoLanguage.MetadataHelper.GetObjectClass (memory);

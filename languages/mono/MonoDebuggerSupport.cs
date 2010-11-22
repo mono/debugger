@@ -11,13 +11,13 @@ namespace Mono.Debugger.Languages.Mono
 	{
 		public static int GetMethodToken (Cecil.MethodDefinition method)
 		{
-			return (int) (method.MetadataToken.TokenType + method.MetadataToken.RID);
+			return method.MetadataToken.ToInt32 ();
 		}
 
 		public static Cecil.MethodDefinition GetMethod (Cecil.ModuleDefinition module, int token)
 		{
-			return (Cecil.MethodDefinition) module.LookupByToken (
-				Cecil.Metadata.TokenType.Method, token & 0xffffff);
+			return (Cecil.MethodDefinition) module.LookupToken (
+				new Cecil.MetadataToken (Cecil.TokenType.Method, token & 0xffffff));
 		}
 	}
 }

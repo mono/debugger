@@ -22,7 +22,7 @@ namespace Mono.Debugger.Languages.Mono
 		public static MonoVoidType Create (MonoSymbolFile corlib, TargetMemoryAccess memory)
 		{
 			MonoVoidType type = new MonoVoidType (
-				corlib, corlib.ModuleDefinition.Types ["System.Void"]);
+				corlib, corlib.ModuleDefinition.GetType ("System.Void"));
 
 			TargetAddress klass = corlib.MonoLanguage.MetadataHelper.GetVoidClass (memory);
 			type.create_type (memory, klass);
