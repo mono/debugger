@@ -362,6 +362,7 @@ AM_CONDITIONAL(MONO_TRUNK, test x$have_mono_trunk = xtrue)
 
 AC_OUTPUT([
 Makefile
+mono-debugger.spec
 mono-debugger.pc
 mono-debugger-frontend.pc
 interface/Makefile

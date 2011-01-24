@@ -1,0 +1,56 @@
+Name:           mono-debugger
+License:        GPL v2 or later; LGPL v2.0 or later; X11/MIT
+Group:          Development/Languages/Mono
+Summary:        Mono Debugger
+Url:            http://www.mono-project.com/Debugger
+Version:        @VERSION@
+Release:        30
+Source0:        %{name}-%{version}.tar.bz2
+ExclusiveArch:  %ix86 x86_64
+BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+Requires:       mono-core >= 2.7
+BuildRequires:  glib2-devel
+BuildRequires:  libmono-2_0-devel
+BuildRequires:  mono-devel
+BuildRequires:  mono-nunit
+BuildRequires:  ncurses-devel
+
+%description
+A debugger is an important tool for development. The Mono Debugger
+(MDB) can debug both managed and unmanaged applications.  It provides a
+reusable library that can be used to add debugger functionality to
+different front-ends. The debugger package includes a console debugger
+named "mdb", and MonoDevelop (http://www.monodevelop.com) provides a
+GUI interface to the debugger.
+
+%files
+%defattr(-, root, root)
+%doc AUTHORS COPYING ChangeLog README NEWS
+%{_bindir}/mdb*
+%{_libdir}/*.so*
+%{_prefix}/lib/mono/2.0/mdb*.exe
+%{_prefix}/lib/mono/gac/Mono.Debugger*
+%{_prefix}/lib/mono/mono-debugger
+%{_libdir}/pkgconfig/mono-debugger*.pc
+
+%prep
+%setup -q
+
+%build
+%configure
+make
+
+%install
+make install DESTDIR=%{buildroot}
+# Remove unnecessary devel files
+rm -f %{buildroot}%_libdir/*.la
+rm -f %{buildroot}%_libdir/*.a
+
+%clean
+rm -rf %{buildroot}
+
+%post -p /sbin/ldconfig
+
+%postun -p /sbin/ldconfig
+
+%changelog
