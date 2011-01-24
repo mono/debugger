@@ -4,7 +4,7 @@ Group:          Development/Languages/Mono
 Summary:        Mono Debugger
 Url:            http://www.mono-project.com/Debugger
 Version:        @VERSION@
-Release:        30
+Release:        0
 Source0:        %{name}-%{version}.tar.bz2
 ExclusiveArch:  %ix86 x86_64
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
