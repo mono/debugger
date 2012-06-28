@@ -457,12 +457,12 @@ namespace Mono.CompilerServices.SymbolWriter
 
 		public static MonoSymbolFile ReadSymbolFile (Mono.Cecil.ModuleDefinition module)
 		{
-			return ReadSymbolFile (module, module.FullyQualifiedName);
+			return ReadSymbolFile (module, module.FullyQualifiedName + ".mdb");
 		}
 
 		public static MonoSymbolFile ReadSymbolFile (Mono.Cecil.ModuleDefinition module, string filename)
 		{
-			string name = filename + ".mdb";
+			string name = filename;
 
 			return new MonoSymbolFile (name, module);
 		}
