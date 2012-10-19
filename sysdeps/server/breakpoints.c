@@ -1,6 +1,6 @@
 #include <server.h>
 #include <breakpoints.h>
-#include <glib/gthread.h>
+#include <glib.h>
 #include <sys/stat.h>
 #include <signal.h>
 #ifdef HAVE_UNISTD_H
